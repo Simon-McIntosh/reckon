@@ -47,6 +47,13 @@
       "finding": "duplicate_owner-1",
       "reason": "Section 2 now extends _head_identity with .git/index and reads single files through _file_identity, rather than adding a parallel git-ref reader.",
       "when": "2026-10-15T07:43:21.497264+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "reckon-build coordinator 4fd309f5",
+      "finding": "duplicate_owner-2",
+      "reason": "Section 2 now names the fan-out: _FleetChangeWatch keeps one wake pipe per open stream, writes to each on any detected change, and the stream's wait selects on that pipe beside its own inotify descriptor; the false single-path claim is gone.",
+      "when": "2026-10-15T07:43:22.598039+00:00"
     }
   ],
   "responses": {
@@ -55,6 +62,12 @@
       "by": "reckon-build coordinator 4fd309f5",
       "reason": "Section 2 now extends _head_identity with .git/index and reads single files through _file_identity, rather than adding a parallel git-ref reader.",
       "when": "2026-10-15T07:43:21.497264+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "acted",
+      "by": "reckon-build coordinator 4fd309f5",
+      "reason": "Section 2 now names the fan-out: _FleetChangeWatch keeps one wake pipe per open stream, writes to each on any detected change, and the stream's wait selects on that pipe beside its own inotify descriptor; the false single-path claim is gone.",
+      "when": "2026-10-15T07:43:22.598039+00:00"
     }
   },
   "review_run_id": "r-20261015T073317119686-plan-review-of-a-write-on-any-node-reaches-the-page",
