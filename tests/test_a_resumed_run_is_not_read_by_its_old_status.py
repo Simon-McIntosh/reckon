@@ -64,6 +64,11 @@ DECLARED_MUTATION = (
 
 MUTATION_ENV = "RECKON_RESUMED_RUN_STATUS_NEGATIVE_CONTROL"
 
+# The no-clock isolation control: makes the comparison answer from a clock that
+# is always there, so a case built with no recorded attempt start is dated
+# anyway and must stop holding.
+NO_CLOCK_CONTROL_ENV = "RECKON_RESUMED_RUN_STATUS_NO_CLOCK_CONTROL"
+
 # Ages, in seconds: the predecessor's manifest and stream are old — the stream
 # quiet past the stall window, so liveness reads unknown and the run is not
 # already moving on the stream alone — and the current attempt is young.
@@ -79,6 +84,22 @@ STREAM_RECORDS = ['{"type":"turn.started"}']
 def _no_attempt_comparison(*_args: Any, **_kwargs: Any) -> bool:
     """The declared mutation: the attempt-start comparison is gone."""
     return False
+
+
+def _a_clock_that_is_always_there(_record: Any, manifest: Any) -> bool:
+    """The no-clock control: date the attempt from the wall clock instead.
+
+    A run that recorded no attempt start has no clock the comparison can read,
+    so the case asserting the old word stands passes for that reason alone.
+    Answering from ``time.time()`` — a clock that exists for every run — gives
+    even that run an attempt start, and the case must then fail.
+    """
+    path = Path(str(manifest))
+    try:
+        written = path.stat().st_mtime
+    except OSError:
+        return False
+    return written < time.time()
 
 
 @pytest.fixture(autouse=True)
@@ -108,6 +129,14 @@ def _isolated_crew_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path
             "_manifest_predates_the_current_attempt",
             _no_attempt_comparison,
         )
+    if os.environ.get(NO_CLOCK_CONTROL_ENV) == "1":
+        # The no-clock isolation control: the comparison answers from a clock
+        # every run has, so a run recording no attempt start is dated anyway.
+        monkeypatch.setattr(
+            classification_module,
+            "_manifest_predates_the_current_attempt",
+            _a_clock_that_is_always_there,
+        )
     return config_home
 
 
@@ -133,6 +162,9 @@ def _write_run(
     attempt_start_age_seconds: float | None,
     wait_declaration: bool = False,
     launcher_host: str | None = FOREIGN_HOST,
+    worker_launch_age_seconds: float | None = ATTEMPT_STARTED_SECONDS,
+    attempt_record_undated: bool = False,
+    stream_age_seconds: float = STALE_SECONDS,
 ) -> dict:
     """Write one run's manifest, attempt record, worker record, stream and pointer.
 
@@ -141,6 +173,11 @@ def _write_run(
     start, later than the manifest when the resume has happened. The pointer
     names a foreign launching host, so liveness reads unknown here — the
     cross-host producer of the reported row.
+
+    Both clocks the attempt-start comparison can read are optional, so a case
+    can build a run with no recorded attempt start at all: pass
+    ``attempt_start_age_seconds=None`` for no attempt record and
+    ``worker_launch_age_seconds=None`` for a worker record that names no launch.
     """
     now = time.time()
     run_directory = runs.run_dir(run_id)
@@ -155,34 +192,39 @@ def _write_run(
 
     stream = run_directory / "attempt-1.jsonl"
     stream.write_text("\n".join(STREAM_RECORDS) + "\n", encoding="utf-8")
-    # The stream is the predecessor's: quiet, dated from before the resume, so
-    # an attempt is known to be moving only from its own clock.
-    quiet = now - STALE_SECONDS
+    # The stream is the predecessor's, dated from before the resume by default,
+    # so an attempt is known to be moving only from its own clock.
+    quiet = now - stream_age_seconds
     os.utime(stream, (quiet, quiet))
 
     if attempt_start_age_seconds is not None:
+        attempt_record = {
+            "run_id": run_id,
+            "attempt": 2,
+            "attempt_started_at": _at(now - attempt_start_age_seconds),
+        }
+    elif attempt_record_undated:
+        # The run has published its current attempt's identity and recorded no
+        # start for it, so the identity gate passes and there is still no clock
+        # for the comparison to read.
+        attempt_record = {"run_id": run_id, "attempt": 2}
+    else:
+        attempt_record = None
+    if attempt_record is not None:
         (run_directory / recovery_liveness.ATTEMPT_RECORD_NAME).write_text(
-            json.dumps(
-                {
-                    "run_id": run_id,
-                    "attempt": 2,
-                    "attempt_started_at": _at(now - attempt_start_age_seconds),
-                }
-            ),
-            encoding="utf-8",
+            json.dumps(attempt_record), encoding="utf-8"
         )
 
+    worker_record = {
+        "run_id": run_id,
+        "attempt": 2,
+        "pid": DEAD_PID,
+        "pid_start_time": recovery._process_start_time(DEAD_PID),
+    }
+    if worker_launch_age_seconds is not None:
+        worker_record["launched_at"] = _at(now - worker_launch_age_seconds)
     (run_directory / recovery.WORKER_RECORD_NAME).write_text(
-        json.dumps(
-            {
-                "run_id": run_id,
-                "attempt": 2,
-                "pid": DEAD_PID,
-                "pid_start_time": recovery._process_start_time(DEAD_PID),
-                "launched_at": _at(now - ATTEMPT_STARTED_SECONDS),
-            }
-        ),
-        encoding="utf-8",
+        json.dumps(worker_record), encoding="utf-8"
     )
 
     pointer = {
@@ -278,8 +320,16 @@ def test_a_blocked_manifest_rewritten_after_the_attempt_started_reads_blocked() 
 def test_a_run_with_no_recorded_attempt_start_reads_as_today() -> None:
     """No attempt clock, so nothing separates the word from the attempt.
 
-    No attempt start is recorded anywhere, so the rule cannot date the attempt
-    and the blocked word stands, exactly as it did before the rule existed.
+    The run has published its current attempt's identity — the attempt record
+    names attempt 2, so the rule's first gate passes — and recorded no start for
+    it: the attempt record carries no start time and the worker record names no
+    launch. Nothing anywhere dates the attempt, so the comparison cannot reach
+    the blocked word and it stands, exactly as it did before the rule existed.
+    The case holds only because that clock is absent, which the no-clock control
+    in this module demonstrates: with a clock supplied anyway, the same run reads
+    working and this assertion fails. Its stream is recent, so the rule's
+    live-or-moving fact is satisfied and the missing clock is the only thing
+    standing the comparison down.
     """
     run_id = "run-no-attempt-start"
     pointer = _write_run(
@@ -287,6 +337,9 @@ def test_a_run_with_no_recorded_attempt_start_reads_as_today() -> None:
         status="blocked",
         manifest_age_seconds=5.0,
         attempt_start_age_seconds=None,
+        worker_launch_age_seconds=None,
+        attempt_record_undated=True,
+        stream_age_seconds=5.0,
     )
 
     row = _classify(pointer)

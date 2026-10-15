@@ -44,7 +44,7 @@ def _manifest_is_the_predecessor_attempts_report(
     The comparison itself has one owner,
     :func:`reckon.crew.recovery_liveness._manifest_predates_the_current_attempt`,
     which dates the attempt from the worker's launch or the attempt record's
-    start. This reads it, and adds the two facts a state reading needs and a
+    start. This reads it, and adds the three facts a state reading needs and a
     promotion reading does not.
 
     The first is that the run has published the attempt the manifest would have
@@ -311,15 +311,7 @@ def classify_pointer(
         manifest_commits = []
         manifest_blockers = []
         needs_help = None
-        # The pointer's own liveness goes with the word. The pid it carries is
-        # the one the attempt before this one was launched with, so a process
-        # table that reports it gone is reporting that attempt's end, not this
-        # one's; read as this attempt's it names an abandoned run for a run whose
-        # attempt has only just started. Liveness is left unknown here, exactly
-        # as it already is for a run read from another host, and the attempt is
-        # read from its own clock instead. An attempt that recorded an end of its
-        # own never reaches this point, because a worker or exit record naming it
-        # has already ended the run above.
+        # Liveness follows the word, for the reason the block above states.
         alive = None
         worker_alive = None
     # A provider refusal makes an otherwise-abandoned run a block: the process
