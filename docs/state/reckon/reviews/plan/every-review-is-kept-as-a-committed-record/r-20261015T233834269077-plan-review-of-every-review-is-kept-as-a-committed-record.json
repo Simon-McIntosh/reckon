@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T23:46:50.520Z",
+  "dispatched_at": "2026-10-15T23:39:15Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:183",
+      "id": "anchors_resolve-1",
+      "reason": "the census is a snapshot of a live-growing store and the described cause, mechanism and two skips are unaffected by the count; re-censusing would update the figure, not the plan's reasoning.",
+      "text": "the Why says \"47 reviewed heads carry both a named and a legacy copy\", but a census of `docs/state/reckon/reviews/run/` matching committed records on `reviewed_head_sha` counts 48 (corpus: 126 legacy-*.json files; 46 run directories carry both a legacy and a named copy). The difference is accounted for by the run's own re-review at `48d73cd8a`, which the same paragraph narrates \u2014 so the figure reads as a count taken before that promotion.",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "5b52c256e4e81045338cc2aadcb91fd7cc78edf9e6283ee3f863dd4bffeab519",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 157,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T233834269077-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "b264d3b5e27a145f476c296c4a0dff8c991ab61d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the census \"47 reviewed heads carry both a named and a legacy copy\" does not reproduce: a census of `docs/state/reckon/reviews/run/` by `reviewed_head_sha` today counts 48 (the two oldest duplicated runs are 2026-10-06, not 2026-10-07; the newest is the 2026-10-15 night re-review at `48d73cd8a`).",
+    "done_when": "pass \u2014 \u00a720's done-when is measurable (one committed record for a round written to both granted paths; a disposition surviving a later promotion) and declares a negative control that can fail (removing the byte-identity skip yields two records; removing the already-committed skip drops the disposition).",
+    "evidence_paths": "pass \u2014 the gate and its negative control are logged under the run directory, a durable path, not a scratchpad.",
+    "naming": "pass \u2014 \u00a720 introduces no plan labels, stage names or ticket numbers into code; \u00a7-references are to the plan's own sections.",
+    "reasoning": "pass \u2014 the cited incident reproduces (commit `fa4d24ac4` deletes the four `finding_dispositions` from `legacy-aecfed60aca2.json`, exactly as \u00a720 states), the stated cause matches the code at `_delivered_review_payloads_for_commit` (promotion_checks.py:2089-2110, skipping only the delivered path and de-duplicating by `review_run_id` alone), the caller is named (`promotion.py:954`), and the two skips described produce the done-when's three cases.",
+    "single_goal": "pass \u2014 \u00a720 carries one deliverable (a round written to both paths is committed once), against one write scope.",
+    "wiring": "pass \u2014 \u00a720 is dispatched by open followup f-erkc-020, which also names the ordering behind \u00a719 (both write `reckon/crew/promotion_checks.py`); no dependency \u00a720 needs is unstated."
+  },
+  "section_digests": {
+    "_document": "99c93fc040cd4c04bdec02548126760f5efd05eb3b9122745befa1fddfa9b85a",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "bb85d80dcb9e0286d21a8ca6acd3af79e736c64c84b5ac85569fc6ce2c73863b",
+    "s13": "18a2d10f1e3c66be8277b7b4ef2922db7611cded7589553da5347b9a1ee5cd0f",
+    "s14": "90fd381b5f80417031410428331e779266feb4e517d89e5237d29cbe1c5e4700",
+    "s15": "72f678eb5f0bc62870da1cc4637f6db55365548aa9b52f46884cc0b3551a6ae7",
+    "s16": "7a5788c2a3fa1a2f0029d46feab7c3ed8a6b2a35c6ca9788fbe9911d5ab9cb56",
+    "s17": "86a993485a8a8461fd1e5e336bf8623e585cd4540daa1e5b5e78af2a0c172ce5",
+    "s18": "c89ae3a282a47cc0790b201cd56e732fc633876a1f1bd4dea1ae9521bd21574a",
+    "s19": "1ae8ba274c5965e60610446e8b60f06c93772468c117cf677c3fe8e2efeff862",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s20": "c4d6ffe26d4b44f9ab15c017f5c0524d7dd00fbe4c8d2d2f707923425bb50092",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "85877b77c395ca8a1482bef5887cfc72cbf6109174dba2c01265aa015a906d73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T23:48:56.493265+00:00"
+}
