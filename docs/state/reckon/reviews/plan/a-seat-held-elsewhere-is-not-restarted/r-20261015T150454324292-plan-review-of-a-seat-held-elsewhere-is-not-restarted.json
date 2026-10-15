@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T15:10:47.051Z",
+  "dispatched_at": "2026-10-15T15:05:31Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html:136",
+      "id": "reasoning-1",
+      "reason": "a builder that follows the opening clause writes the renewal into the registration record, whose cross-node half-written read \u00a78 gives as exactly why the lease must be a separate, atomically-replaced file, so the record a foreign reader must parse for its host goes unreadable and the follower reads gone again \u2014 the defect the section exists to remove.",
+      "text": "\u00a78's deliverable opens \"judged by a lease the follower renews in its own registration record\", but three sentences later the same paragraph says \"The renewal cannot go in the registration itself\" and puts it in \"a lease file beside its registration\", replaced atomically by rename; the two statements name opposite homes for the lease, and the body's own reason (an in-place registration write is read half-written by another node that cannot take the lock to serialise) is the reason the record cannot hold it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f47da9a4e5b8c5f96f9a2b4851ce80672815425bfb074a3127d72ded6eed23d2",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 44,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T150454324292-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "b9aa410fda7560af46b9fb92c63f8a97f5865208",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a78 names resolves: `runs.renew_producer_lease` (reckon/crew/runs.py:1764), `producer_lease_seconds` (reckon/crew/runs.py:1702), `_write_watch_record` (reckon/crew/run_paths.py:50), `_follower_liveness` (reckon/crew/follower_registration.py:482), `session_follower_released` (reckon/crew/watch_unit.py:205), `watch_unit.watch_state` (reckon/crew/watch_unit.py:161); the landed test it names to rewrite, tests/test_a_snapshot_is_published_for_every_host.py, exists and holds its lock in-process, confirming \u00a78's claim that \u00a74's tests model both hosts in one kernel.",
+    "done_when": "pass \u2014 \u00a78's done-when names a declared negative control (\"with a foreign registration judged by its lock again, the fresh-renewal case reads gone\") and a suite-delta clause, and each arm can fail.",
+    "evidence_paths": "pass \u2014 \u00a78's negative control is \"logged under the run directory\" and the post-merge confirmation names the durable path `~/.config/reckon/crew/obligations/reckon/`, not a node-local temporary.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches \u00a78's prose or the symbols it introduces.",
+    "reasoning": "a finding \u2014 \u00a78's opening deliverable sentence places the lease \"in its own registration record\" while the same paragraph places it in a separate file and says it \"cannot go in the registration itself\".",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable (a foreign registration judged by a renewed lease); the concurrency, same-node and snapshot-sweep clauses are input checks on that one verdict.",
+    "wiring": "pass \u2014 \u00a79 is gated on \u00a78 by gate g-sheinr-1 (`data-gated-sections=\"s9\"`, required evidence `#s8`) and \u00a713 on \u00a79 by the new g-sheinr-2, and f-sheinr-003 schedules \u00a78 with \u00a710, whose declared write paths (`reckon/crew/recovery_classification.py`) are disjoint from \u00a78's."
+  },
+  "section_digests": {
+    "_document": "c135915165765764c9bad8f38f51510a49e01e93d51fabb331860e53121719eb",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s10": "fd9ced512f1fc6a0610cb111ec8c734e3c55a84ea11034055f5f1c9e60e0c649",
+    "s11": "9d7552bb9a0f7179067d09a67e819e7194fbbac1e34cf450bb6dd2631508389d",
+    "s12": "41b7e2f138ff584e94cdef995cae4ab65e47e6e0efb43dc6d30b0045664f611d",
+    "s13": "441358f17906d8fa159ba5911fc62cfb32cabff650e9ae63b1300701b43f7b6d",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "96d5fc1c72a25970cab856a7dde0a3cab839fd87c83786b7b49ffc4c1dabb1ab",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad",
+    "s7": "d3e16f60d17ef3ee4666f9cd189aa6cd8e26f038173b65ee34b68f3f2cd822e7",
+    "s8": "23fbea4443c851df019270281291f0ac97f82779e1a0b83553eb0966cc8af8a7",
+    "s9": "a2cb7135c4bd3f1439c3ec948d6146c2f5b7527da59b1bbd4c7ce4c141ec3055"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T15:11:30.698707+00:00"
+}
