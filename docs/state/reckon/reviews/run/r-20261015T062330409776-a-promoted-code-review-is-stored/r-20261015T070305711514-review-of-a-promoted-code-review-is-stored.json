@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/crew/promotion_checks.py:_delivered_review_payloads_for_commit",
+    "reckon/crew_run_commands.py:crew_dispose",
+    "reckon/crew/findings.py:findings_by_path"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-15T06:24:25Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the neighbourhood key is derived twice per promoting run, a string suffix read with no I/O; passing it in is a signature change with no behavioural gain",
+      "recorded_at": "2026-10-15T07:26:27.520754+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the coordinator measured the population the worker left unmeasured: 12 test files at base 7dd3203a5 and integrated head, 69 against 75 passed, 0 added (logs under ~/.cache/reckon-hr/s14-store/)",
+      "recorded_at": "2026-10-15T07:26:52.120013+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "line": "1878",
+      "severity": "follow-on",
+      "text": "follow-on: _store_code_review_for_promoting_run recomputes the neighbourhood key with _code_review_key_for_promoting_run after its caller at reckon/crew/promotion_checks.py:1832 has already resolved it, so one run's key is derived twice; passing the resolved key in would keep a single call to the rule."
+    },
+    {
+      "file": "r-20261015T062330409776-a-promoted-code-review-is-stored/manifest.md",
+      "line": "19",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run leaves baseline_suite and after_suite empty, so its done_when clause that the importer test files show no added failure against base is asserted rather than measured, and the store's added_failure_count for this run is unmeasured for the same reason."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/promotion.py:_complete_locked, reckon/crew/promotion_checks.py:_delivered_review_payloads_for_commit, reckon/crew_run_commands.py:crew_dispose, reckon/crew/findings.py:findings_by_path",
+    "diff": "read commit by commit; 27121e47 adds the code-review branch and the two helpers in reckon/crew/promotion_checks.py, 56338a477 adds the evidence fragment beside the plan, and the test file adds six cases; nothing else changed.",
+    "done_when": "the done_when names tests/test_a_promoted_code_review_is_stored.py and its six cases; re-run at head 56338a477 in the reviewed worktree it is 6 passed EXIT=0 (review_transcript.log), the negative control gate_negative.log ends EXIT=1 with test_a_code_review_composed_under_one_run_id_is_stored_on_promotion failing at assert 0 == 1, and the neighbours arm gate_neighbours.log is 56 passed EXIT=0; ruff is logged in gate_ruff.log.",
+    "goal": "the node goal is \u201cpromotion stores a delivered code review in the staging store when its run promotes\u201d; reckon/crew/promotion_checks.py:1832 adds the code-review branch to _staging_review_record_by_run, resolving the key through _code_review_key_for_promoting_run:1838 and storing through _store_code_review_for_promoting_run:1856, which returns no payload.",
+    "manifest": "read; status complete; its tests line records the six-case gate and the 56-case neighbours arm and its negative_control_note names the first case failing, but baseline_suite and after_suite are empty, so its \u201cno added failure against base\u201d clause is asserted, not measured.",
+    "write_paths": "the manifest declares reckon/crew/promotion_checks.py, tests/test_a_promoted_code_review_is_stored.py and the evidence fragment; git diff --name-only 656289a8..56338a477 lists exactly those three."
+  },
+  "justifications": {
+    "durability": "gate_negative.log reinstates the regression by removing the code-review branch and case 1 reddens at assert 0 == 1 (tests/test_a_promoted_code_review_is_stored.py:200), and cases 2-6 each assert a distinct behaviour (no committed code file, the findings view row, dispose, store_error on the sidecar, idempotence) independent of the value under test.",
+    "evidence": "the gate names tests/test_a_promoted_code_review_is_stored.py and its result is recorded in gate_head.log (6 passed EXIT=0, re-confirmed) with the negative control in gate_negative.log (EXIT=1); the manifest's done_when clause that the importer files show no added failure against base is asserted rather than measured because reckon/crew/promotion_checks.py's run logged no base arm, and ruff check does not pass on promotion_checks.py (:154, UP017) though the finding is pre-existing and delta-0.",
+    "fit": "the additions follow the module's private-helper idiom and the file's lazy-import style (reckon/crew/promotion_checks.py:1848 mirrors :781/:958/:1908) and reach plan_review._store_deliveries as the file already reaches plan_review privates at :1973/:1988; no plan, ticket or version token appears in a name or docstring.",
+    "goal_fidelity": "reckon/crew/promotion_checks.py:1832 branches to _store_code_review_for_promoting_run for a review-code- promoting run and returns None, so the delivery is stored in the staging store and no code review is committed, exactly the deliverable \u00a714 states.",
+    "reuse": "the change extends the owners it needs rather than forking them -- review_dispositions.code_review_identity, plan_review.delivered_code_reviews and plan_review._store_deliveries (reckon/crew/promotion_checks.py:1882-1889) -- and adds no store, key or option; a repository search found no prior by-key delivery lookup, so this is the first.",
+    "scope_discipline": "git diff --name-only 656289a8..56338a477 lists only reckon/crew/promotion_checks.py, tests/test_a_promoted_code_review_is_stored.py and the evidence fragment, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 656289a875860dac2d319a9d49a9e95c269f6777\nreviewed_head_sha: 56338a4776a0b9f6477080fbe7f303201cbd99da\nVERDICT goal: the node goal is \u201cpromotion stores a delivered code review in the staging store when its run promotes\u201d; reckon/crew/promotion_checks.py:1832 adds the code-review branch to _staging_review_record_by_run, resolving the key through _code_review_key_for_promoting_run:1838 and storing through _store_code_review_for_promoting_run:1856, which returns no payload.\nVERDICT done_when: the done_when names tests/test_a_promoted_code_review_is_stored.py and its six cases; re-run at head 56338a477 in the reviewed worktree it is 6 passed EXIT=0 (review_transcript.log), the negative control gate_negative.log ends EXIT=1 with test_a_code_review_composed_under_one_run_id_is_stored_on_promotion failing at assert 0 == 1, and the neighbours arm gate_neighbours.log is 56 passed EXIT=0; ruff is logged in gate_ruff.log.\nVERDICT write_paths: the manifest declares reckon/crew/promotion_checks.py, tests/test_a_promoted_code_review_is_stored.py and the evidence fragment; git diff --name-only 656289a8..56338a477 lists exactly those three.\nVERDICT manifest: read; status complete; its tests line records the six-case gate and the 56-case neighbours arm and its negative_control_note names the first case failing, but baseline_suite and after_suite are empty, so its \u201cno added failure against base\u201d clause is asserted, not measured.\nVERDICT diff: read commit by commit; 27121e47 adds the code-review branch and the two helpers in reckon/crew/promotion_checks.py, 56338a477 adds the evidence fragment beside the plan, and the test file adds six cases; nothing else changed.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked, reckon/crew/promotion_checks.py:_delivered_review_payloads_for_commit, reckon/crew_run_commands.py:crew_dispose, reckon/crew/findings.py:findings_by_path\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_checks.py:1832 branches to _store_code_review_for_promoting_run for a review-code- promoting run and returns None, so the delivery is stored in the staging store and no code review is committed, exactly the deliverable \u00a714 states.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate names tests/test_a_promoted_code_review_is_stored.py and its result is recorded in gate_head.log (6 passed EXIT=0, re-confirmed) with the negative control in gate_negative.log (EXIT=1); the manifest's done_when clause that the importer files show no added failure against base is asserted rather than measured because reckon/crew/promotion_checks.py's run logged no base arm, and ruff check does not pass on promotion_checks.py (:154, UP017) though the finding is pre-existing and delta-0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 656289a8..56338a477 lists only reckon/crew/promotion_checks.py, tests/test_a_promoted_code_review_is_stored.py and the evidence fragment, all inside the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: gate_negative.log reinstates the regression by removing the code-review branch and case 1 reddens at assert 0 == 1 (tests/test_a_promoted_code_review_is_stored.py:200), and cases 2-6 each assert a distinct behaviour (no committed code file, the findings view row, dispose, store_error on the sidecar, idempotence) independent of the value under test.\nSCORE fit: 20\nJUSTIFICATION fit: the additions follow the module's private-helper idiom and the file's lazy-import style (reckon/crew/promotion_checks.py:1848 mirrors :781/:958/:1908) and reach plan_review._store_deliveries as the file already reaches plan_review privates at :1973/:1988; no plan, ticket or version token appears in a name or docstring.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the owners it needs rather than forking them -- review_dispositions.code_review_identity, plan_review.delivered_code_reviews and plan_review._store_deliveries (reckon/crew/promotion_checks.py:1882-1889) -- and adds no store, key or option; a repository search found no prior by-key delivery lookup, so this is the first.\nFINDING reckon/crew/promotion_checks.py:1878 follow-on: _store_code_review_for_promoting_run recomputes the neighbourhood key with _code_review_key_for_promoting_run after its caller at reckon/crew/promotion_checks.py:1832 has already resolved it, so one run's key is derived twice; passing the resolved key in would keep a single call to the rule.\nFINDING r-20261015T062330409776-a-promoted-code-review-is-stored/manifest.md:19 follow-on: the reviewed run leaves baseline_suite and after_suite empty, so its done_when clause that the importer test files show no added failure against base is asserted rather than measured, and the store's added_failure_count for this run is unmeasured for the same reason.\n",
+  "review_run_id": "r-20261015T070305711514-review-of-a-promoted-code-review-is-stored",
+  "reviewed_base_sha": "656289a875860dac2d319a9d49a9e95c269f6777",
+  "reviewed_head_sha": "56338a4776a0b9f6477080fbe7f303201cbd99da",
+  "reviewed_run_id": "r-20261015T062330409776-a-promoted-code-review-is-stored",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T07:20:52.353439+00:00",
+  "total": 117
+}
