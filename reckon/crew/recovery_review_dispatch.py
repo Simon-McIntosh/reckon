@@ -1076,16 +1076,28 @@ def _review_backend_excluded(name: str, config: Mapping[str, Any]) -> bool:
     return False
 
 
-def _lifted_backends(config: Mapping[str, Any]) -> set[str]:
+def _lifted_backends(
+    config: Mapping[str, Any], *, session: str | None = None
+) -> set[str]:
     """Backends whose declared budget group is under a lift in force now.
 
     A lift is granted to spend a window faster than its configured pace, so a
     lane under one is a lane the fleet means to use: an exclusion written to
     keep a review off a lane it has been refused for is not meant to withhold
     the very lane the operator has opened, so the exclusion is read against the
-    lifted set rather than the configured one. The lift is resolved through the
-    one resolver the pace path reads, so expiry is judged in one place and this
-    reader cannot disagree with the dispatch about whether a lift still stands.
+    lifted set rather than the configured one.
+
+    The lift is resolved through the one resolver the pace path reads, handed
+    the group's freshest published reading and the asking session — the two
+    arguments every other caller of that resolver passes. Resolving with no
+    readings keeps a reset-anchored lift standing past the reset that ended it,
+    because the observation that would show the rollover is the one withheld;
+    and resolving with no session refuses every lift scoped to a session, so
+    the session that granted one never reaches this reflex. Either way the
+    reflex and the picker would read the same lane differently, which is the
+    disagreement both are resolved through one rule to prevent. The reading is
+    the one a grant itself projects from, so a lift is judged against the same
+    figure it was opened on.
     """
     from reckon.crew import budget_group, budget_lift
 
@@ -1094,21 +1106,32 @@ def _lifted_backends(config: Mapping[str, Any]) -> set[str]:
     lifted: set[str] = set()
     for group, members in groups.items():
         block = budget_lift.effective_budget(
-            config, group=str(group), readings=None, now=moment
+            config,
+            group=str(group),
+            readings=budget_lift.published_readings(
+                config, group=str(group), now=moment
+            ),
+            now=moment,
+            session=session,
         )
         if block.get("lift_id"):
             lifted.update(str(member) for member in members)
     return lifted
 
 
-def _review_excluded_backends(config: Mapping[str, Any]) -> set[str]:
+def _review_excluded_backends(
+    config: Mapping[str, Any], *, session: str | None = None
+) -> set[str]:
     """Backends the flight configuration removes from review routing.
 
     Read as a rule about which lanes may carry a review rather than a
     preference: it is consulted before any ordering, so a fallback cannot walk
     around it. A lane under a lift in force is not excluded: a lifted lane is
     one the fleet means to spend, and its options are offered to a review with
-    the guidance to prefer the lane's cheaper models.
+    the guidance to prefer the lane's cheaper models. ``session`` is the
+    coordinator session composing the review, threaded to the lift resolver so
+    a lift scoped to that session is read as in force here exactly as it is in
+    the picker's state.
     """
     raw = config.get(REVIEW_EXCLUDED_BACKENDS_KEY)
     names = {str(name).strip() for name in raw or () if str(name).strip()}
@@ -1117,7 +1140,7 @@ def _review_excluded_backends(config: Mapping[str, Any]) -> set[str]:
         for name in config.get("backends") or {}
         if _review_backend_excluded(str(name), config)
     }
-    return excluded - _lifted_backends(config)
+    return excluded - _lifted_backends(config, session=session)
 
 
 def _review_in_harness_backends(config: Mapping[str, Any]) -> set[str]:
@@ -1147,7 +1170,7 @@ LANE_READING_FRESH_SECONDS = 45
 
 
 def _ordered_review_lanes(
-    config: Mapping[str, Any], *, owning_backend: str = ""
+    config: Mapping[str, Any], *, owning_backend: str = "", session: str | None = None
 ) -> list[str]:
     """Configured backends a composed review may run on, in preference order.
 
@@ -1166,7 +1189,7 @@ def _ordered_review_lanes(
     ordering's.
     """
     backends = config.get("backends") or {}
-    excluded = _review_excluded_backends(config)
+    excluded = _review_excluded_backends(config, session=session)
     in_harness = _review_in_harness_backends(config)
     names = [
         str(name)
@@ -1239,7 +1262,7 @@ def _lane_over_ceiling(
 
 
 def _review_lane_plan(
-    config: Mapping[str, Any], *, owning_backend: str = ""
+    config: Mapping[str, Any], *, owning_backend: str = "", session: str | None = None
 ) -> tuple[list[str], tuple[str, int | float, int | float] | None]:
     """The review lanes still eligible, and the lane withholding the selection.
 
@@ -1262,7 +1285,9 @@ def _review_lane_plan(
     """
     local = str(config.get("local_backend") or "").strip()
     eligible: list[str] = []
-    for name in _ordered_review_lanes(config, owning_backend=owning_backend):
+    for name in _ordered_review_lanes(
+        config, owning_backend=owning_backend, session=session
+    ):
         reading = _current_lane_reading(config, name)
         over = None if reading is None else _lane_over_ceiling(reading)
         if over is None:
@@ -1274,7 +1299,7 @@ def _review_lane_plan(
 
 
 def _review_lane_candidates(
-    config: Mapping[str, Any], *, owning_backend: str = ""
+    config: Mapping[str, Any], *, owning_backend: str = "", session: str | None = None
 ) -> list[str]:
     """Configured backends a composed review may run on, in selection order.
 
@@ -1288,7 +1313,9 @@ def _review_lane_candidates(
     its place: the hold exists to avoid composing onto a lane measured over its
     limit, not to withhold work no document speaks about.
     """
-    eligible, _withheld = _review_lane_plan(config, owning_backend=owning_backend)
+    eligible, _withheld = _review_lane_plan(
+        config, owning_backend=owning_backend, session=session
+    )
     return eligible
 
 
@@ -1299,6 +1326,7 @@ def _no_lane_reason(
     owning_backend: str = "",
     kind: str,
     previous_lane: str = "",
+    session: str | None = None,
 ) -> str:
     """Why the composed ``kind`` for a run has no lane left, naming each rule.
 
@@ -1315,14 +1343,16 @@ def _no_lane_reason(
     already used, and is empty where a kind places no lane by that rule.
     """
     parts: list[str] = []
-    withheld = _review_lane_plan(config, owning_backend=owning_backend)[1]
+    withheld = _review_lane_plan(
+        config, owning_backend=owning_backend, session=session
+    )[1]
     if withheld is not None:
         lane, running, ceiling = withheld
         parts.append(
             f"backend {lane!r} is saturated at {running:g} running against its "
             f"{ceiling:g} concurrent_requests ceiling"
         )
-    excluded = _review_excluded_backends(config)
+    excluded = _review_excluded_backends(config, session=session)
     if excluded:
         parts.append(
             f"{REVIEW_EXCLUDED_BACKENDS_KEY} excludes "
@@ -1668,7 +1698,9 @@ def _dispatch_composed_review(
     if record.get("subject") == "plan":
         lane = _composed_review_lane(project, record, resolved)
         if lane is None:
-            reason = _no_lane_reason(run_id, resolved, kind="review")
+            reason = _no_lane_reason(
+                run_id, resolved, kind="review", session=fields["session"]
+            )
             _record_review_dispatch(
                 dispatch_subject,
                 status="awaiting-lane",
@@ -1696,7 +1728,9 @@ def _dispatch_composed_review(
         previous_lane = _failed_review_backend(record)
         candidates = [
             name
-            for name in _review_lane_candidates(resolved, owning_backend=owning_lane)
+            for name in _review_lane_candidates(
+                resolved, owning_backend=owning_lane, session=fields["session"]
+            )
             if name != previous_lane
             and (not prefer_local or name == (owning_lane or local_lane))
         ]
@@ -1707,6 +1741,7 @@ def _dispatch_composed_review(
                 owning_backend=owning_lane,
                 kind="review",
                 previous_lane=previous_lane,
+                session=fields["session"],
             )
             _record_review_dispatch(
                 dispatch_subject,

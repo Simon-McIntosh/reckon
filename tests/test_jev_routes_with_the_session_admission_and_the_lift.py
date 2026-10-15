@@ -21,6 +21,7 @@ from reckon.crew import (
     budget_lift,
     dispatch_picker,
     dispatch_plan,
+    paid_lanes,
     recovery_review_dispatch,
 )
 from reckon.crew.node import BudgetHold, TaskNode
@@ -127,6 +128,19 @@ def _node(role: str = "implement", spec_level: str = "guided") -> TaskNode:
         done_when="d",
         time_budget="60m",
     )
+
+
+@pytest.fixture(autouse=True)
+def _isolated_crew_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """Keep every test off the operator's live crew home.
+
+    The picker reaches the crew home for the budget-reset store and the lift
+    record, so a test that read or wrote the operator's own would depend on the
+    workstation it ran on and let two concurrent runs collide on the same flag
+    file. Each test gets its own home instead; a test that needs to read a
+    document this file writes names the path it wrote it to.
+    """
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "crew-home"))
 
 
 @pytest.fixture()
@@ -398,37 +412,63 @@ LIFT = {
 }
 
 
-def _review_excluded(config: dict, *, home: Path, monkeypatch, lift: bool) -> set[str]:
-    monkeypatch.setenv("RECKON_HOME", str(home))
-    document = home / budget_lift.LIFTS_LEAF
-    if lift:
-        now = datetime.now(UTC)
-        document.write_text(
-            json.dumps(
-                {
-                    "version": 1,
-                    "lifts": [
-                        {
-                            "id": "lift-1",
-                            "group": "codex-wallet",
-                            "form": "uncapped",
-                            "scope": "global",
-                            "pace_multiple": 1.0,
-                            "granted_at": now.isoformat(),
-                            "cleared_at": None,
-                            "ends": {
-                                "kind": "at",
-                                "at": (now + timedelta(hours=6)).isoformat(),
-                            },
+def _write_lift_document(home: Path, lift: dict | None) -> None:
+    """Write the workstation's lift record, or an empty one."""
+    home.mkdir(parents=True, exist_ok=True)
+    (home / budget_lift.LIFTS_LEAF).write_text(
+        json.dumps({"version": 1, "lifts": [lift] if lift else []}), encoding="utf-8"
+    )
+
+
+def _write_published_reading(home: Path, *, utilisation: float, resets_at: str) -> None:
+    """Publish codex's own window reading, the figure a lift is judged against."""
+    (home / paid_lanes.DOCUMENT_NAME).write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "accounts": {
+                    CODEX: {
+                        "windows": {
+                            "seven_day": {
+                                "state": paid_lanes.OBSERVED,
+                                "utilisation": utilisation,
+                                "observed_at": datetime.now(UTC).isoformat(),
+                                "resets_at": resets_at,
+                            }
                         }
-                    ],
-                }
-            ),
-            encoding="utf-8",
-        )
-    else:
-        document.write_text(json.dumps({"version": 1, "lifts": []}), encoding="utf-8")
-    return recovery_review_dispatch._review_excluded_backends(config)
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def _lift_record(*, scope: str = "global", ends: dict | None = None) -> dict:
+    now = datetime.now(UTC)
+    return {
+        "id": "lift-1",
+        "group": "codex-wallet",
+        "form": "uncapped",
+        "scope": scope,
+        "pace_multiple": 1.0,
+        "granted_at": now.isoformat(),
+        "cleared_at": None,
+        "ends": ends or {"kind": "at", "at": (now + timedelta(hours=6)).isoformat()},
+    }
+
+
+def _review_excluded(
+    config: dict,
+    *,
+    home: Path,
+    monkeypatch,
+    lift: bool,
+    session: str | None = None,
+) -> set[str]:
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    _write_lift_document(home, _lift_record() if lift else None)
+    return recovery_review_dispatch._review_excluded_backends(config, session=session)
 
 
 def test_a_lift_keeps_its_lane_off_the_exclusion_list(
@@ -477,3 +517,57 @@ def test_a_review_without_the_lift_is_offered_no_lifted_option(
     assert CODEX not in offered
     excluded = [c for c in candidates if c.reasons]
     assert any("review-excluded-backend" in c.reasons for c in excluded)
+
+
+def test_a_reset_the_lane_has_already_reported_ends_the_lift_for_the_reflex(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A lift whose reset the lane's own reading shows is not read as in force.
+
+    The lift's recorded end is a reset, so it stands while no rollover is
+    observed. The lane's published reading stands far below the utilisation
+    recorded at grant, which is a rollover: the pace path ends the lift there,
+    and the reflex must read the same window the pace path reads, or it keeps
+    offering a lane the rest of the system has stopped lifting.
+    """
+    home = tmp_path / "config"
+    home.mkdir()
+    now = datetime.now(UTC)
+    config = _config(tmp_path, codex_review_excluded=True)
+    _write_lift_document(
+        home,
+        _lift_record(
+            ends={
+                "kind": "reset",
+                "clock": "seven_day",
+                "utilisation": 0.63,
+                "resets_at": (now + timedelta(hours=100)).isoformat(),
+            }
+        ),
+    )
+    _write_published_reading(
+        home, utilisation=0.04, resets_at=(now + timedelta(hours=100)).isoformat()
+    )
+    monkeypatch.setenv("RECKON_HOME", str(home))
+
+    assert recovery_review_dispatch._review_excluded_backends(config) == {CODEX}
+
+
+def test_a_lift_scoped_to_the_asking_session_reaches_the_reflex(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A session's own lift is read as in force for that session and no other."""
+    home = tmp_path / "config"
+    home.mkdir()
+    config = _config(tmp_path, codex_review_excluded=True)
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    _write_lift_document(home, _lift_record(scope="session:s-1"))
+
+    assert (
+        recovery_review_dispatch._review_excluded_backends(config, session="s-1")
+        == set()
+    )
+    assert recovery_review_dispatch._review_excluded_backends(
+        config, session="other"
+    ) == {CODEX}
+    assert recovery_review_dispatch._review_excluded_backends(config) == {CODEX}

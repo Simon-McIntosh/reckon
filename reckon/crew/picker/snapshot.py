@@ -747,7 +747,9 @@ def candidates(
     # parsing have one source of truth.
     review_excluded: set[str] = set()
     if request.node.role == "review":
-        review_excluded = recovery._review_excluded_backends(config)
+        review_excluded = recovery._review_excluded_backends(
+            config, session=request.session
+        )
     variants = []
     lanes = config.get("lanes") or {}
     for name, declared in config.get("backends", {}).items():
@@ -831,7 +833,9 @@ def candidates(
         # account, so it rides beside the router's occupancy and is read from
         # the same group allowance the candidate's budget facts come from.
         lane_lift = (
-            group_allowance.get("lift") if isinstance(group_allowance, Mapping) else None
+            group_allowance.get("lift")
+            if isinstance(group_allowance, Mapping)
+            else None
         )
         if lane_lift:
             congestion = {**(congestion or {}), "lift": lane_lift}
