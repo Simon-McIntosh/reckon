@@ -424,6 +424,112 @@ def _attempt_started_seconds(record: Mapping[str, Any]) -> float | None:
     return started.timestamp()
 
 
+def _current_attempt_number(record: Mapping[str, Any]) -> int | None:
+    """The attempt the run's own attempt record names, or None when there is none.
+
+    The attempt record is written when a resume advances the run, so its
+    presence is what says the run has a new attempt whose worker record may not
+    have been written yet. A run with no such record has no attempt identity to
+    compare a worker record against, and is read from its pointer alone.
+    """
+    try:
+        marker = json.loads(
+            (_run_directory(record) / ATTEMPT_RECORD_NAME).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return None
+    if not isinstance(marker, Mapping):
+        return None
+    return _int_or_none(marker.get("attempt"))
+
+
+def _worker_record_names_attempt(record: Mapping[str, Any], attempt: int) -> bool:
+    """Whether the run's worker record carries the attempt number given.
+
+    The worker record is written once the supervisor spawns the attempt's
+    worker, so its attempt number says which process it describes. A record
+    naming another number belongs to an attempt that has already ended.
+    """
+    data = _worker_record(record)
+    return data is not None and _int_or_none(data.get("attempt")) == attempt
+
+
+def _exit_record_names_attempt(record: Mapping[str, Any], attempt: int) -> bool:
+    """Whether the run's exit record is the one the attempt given recorded.
+
+    The supervisor stamps the attempt number onto every receipt it writes, so a
+    record naming another number belongs to an attempt that has already ended.
+    An unstamped record names nothing and so is not evidence about this attempt.
+    """
+    data = _run_exit_record(record)
+    if data is None:
+        return False
+    recorded = _int_or_none(data.get("attempt"))
+    return recorded == attempt
+
+
+def _attempt_awaits_its_worker(record: Mapping[str, Any]) -> bool:
+    """Whether the deferral holds: the attempt has recorded nothing of its own.
+
+    A resume advances the run by publishing the new attempt's identity and
+    retiring the previous attempt's canonical worker and exit records, all
+    before its supervisor can spawn anything. In the window that follows, the
+    attempt record names attempt N and no worker record exists, while the
+    pointer still carries attempt N-1's pid and phase because nothing has
+    rewritten them yet. That pid is an earlier attempt's process, so its
+    absence says nothing about attempt N, and reading it as attempt N's death
+    draws a run that is only starting as halted.
+
+    A run that has no attempt record answers False: it has no new attempt for
+    the pointer to be silent about, and is classified from its pointer exactly
+    as it always was. An attempt whose worker record exists answers False too —
+    dead or alive, that record is the process the run is being read from.
+
+    An exit record naming attempt N ends the deferral: that attempt has
+    recorded its own end, and any end it recorded is the reading a reader
+    wants.
+    """
+    attempt = _current_attempt_number(record)
+    if attempt is None:
+        return False
+    if _worker_record_names_attempt(record, attempt):
+        return False
+    return not _exit_record_names_attempt(record, attempt)
+
+
+def _stranded_attempt_clause(record: Mapping[str, Any]) -> str:
+    """The reason a resumed attempt that wrote no worker record is stranded."""
+    age = (
+        f"more than {STRANDED_LAUNCH_BOUND_SECONDS}s"
+        if _attempt_started_seconds(record) is not None
+        else "an unrecorded span"
+    )
+    return (
+        f"a stranded launch: the current attempt has held no worker record, "
+        f"stream or launch log of its own for {age}, so the resume was cut off "
+        "before it spawned and nothing recorded an end"
+    )
+
+
+def _resumed_launch_is_stranded(
+    record: Mapping[str, Any], *, now_seconds: float
+) -> bool:
+    """Whether a resumed attempt has awaited its worker past the launch bound.
+
+    :func:`_stranded_launch` reads a pointer that named no process, and a
+    resumed run's pointer always names the earlier attempt's, so it can never
+    catch this case. The deferral carries the same bound itself: within it the
+    run reads as starting, and past it the pointer holds a claim no worker
+    backs, which is the stranded-launch reading.
+    """
+    if not _attempt_awaits_its_worker(record):
+        return False
+    started = _attempt_started_seconds(record)
+    if started is None:
+        return False
+    return now_seconds - started > STRANDED_LAUNCH_BOUND_SECONDS
+
+
 def _stranded_launch(record: Mapping[str, Any], *, now_seconds: float) -> bool:
     """Whether a launch that recorded nothing stopped happening past the bound.
 

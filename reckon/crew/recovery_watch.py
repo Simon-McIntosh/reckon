@@ -791,20 +791,32 @@ def _watch_verdict(
     # this reducer would have to keep in step.
     death_reason = None
     ended_without_manifest = False
+    stranded_attempt = False
     if alive is False and state in ("dispatched", "working"):
-        last_record_type = _newest_stream_last_record_type(pointer)
-        if last_record_type == STREAM_RESULT_RECORD_TYPE:
-            # The worker's process ended after a successful result record and
-            # before a terminal manifest: its turn concluded and the record that
-            # says so is on disk. Nothing was lost, the session is resumable, and
-            # the reading names that rather than the mid-turn death a stalled row
-            # would report — a resumable turn has no session to conclude rather
-            # than one whose turn was cut off.
-            ended_without_manifest = True
-            state = "blocked"
-        elif last_record_type is not None:
-            death_reason = _process_exit_reason(pointer, last_record_type)
-            state = "blocked"
+        if _attempt_awaits_its_worker(pointer):
+            # The pointer's dead pid is an earlier attempt's process: a resume
+            # has published the current attempt's identity and retired the
+            # record of the attempt that ran it, while the attempt now starting
+            # has registered no worker yet. Nothing about that pid's absence
+            # speaks for this attempt, so the run holds the state a launch with
+            # no worker record is already given, on that launch's own bound,
+            # instead of reading as a turn that ended.
+            stranded_attempt = _resumed_launch_is_stranded(pointer, now_seconds=moment)
+            state = "launch-failed" if stranded_attempt else "starting"
+        else:
+            last_record_type = _newest_stream_last_record_type(pointer)
+            if last_record_type == STREAM_RESULT_RECORD_TYPE:
+                # The worker's process ended after a successful result record and
+                # before a terminal manifest: its turn concluded and the record
+                # that says so is on disk. Nothing was lost, the session is
+                # resumable, and the reading names that rather than the mid-turn
+                # death a stalled row would report — a resumable turn has no
+                # session to conclude rather than one whose turn was cut off.
+                ended_without_manifest = True
+                state = "blocked"
+            elif last_record_type is not None:
+                death_reason = _process_exit_reason(pointer, last_record_type)
+                state = "blocked"
 
     detail = str(row.get("detail") or "")
     for prefix in (
@@ -831,6 +843,12 @@ def _watch_verdict(
         # working when the process ended, which is the reading this branch
         # exists to replace; the death row states the end it observed instead.
         detail = death_reason
+    elif stranded_attempt:
+        # The run held a claim its attempt's own launch never backed, so the
+        # clause names what is missing and the reason the pointer is read that
+        # way, rather than leaving the classifier's clause about the finished
+        # process that preceded it.
+        detail = _stranded_attempt_clause(pointer)
     elif state in ("dispatched", "working"):
         # A run stops progressing whether it dies during dispatch or mid-work,
         # so the stall check has to reach every non-terminal state a pointer
@@ -894,6 +912,14 @@ def _watch_verdict(
             "record and no terminal manifest followed; the run is resumable "
             "rather than stalled"
         )
+    elif stranded_attempt:
+        # A launch that spawned nothing is the launch-failed reading rather
+        # than a death of the attempt that ran before it, so the reason and the
+        # remedy a reader sees are the ones this vocabulary already carries for
+        # a launch that reached no worker.
+        recovery_classification = "launch-failed"
+        recovery_verb = RECOVERY_VERBS["launch-failed"]
+        lifting_condition = None
     elif state == "stalled":
         recovery_classification = "stalled"
         recovery_verb = RECOVERY_VERBS["stalled"]
@@ -1294,7 +1320,7 @@ def _watch_snapshot(
 # waiting bucket appears while at least one declared condition is outstanding,
 # keeping healthy waits out of both work-in-progress and needs-action figures.
 # Every snapshot belongs to exactly one bucket, so the figures still add up.
-FLEET_WORKING_STATES = ("dispatched", "working", "running")
+FLEET_WORKING_STATES = ("dispatched", "starting", "working", "running")
 # Both words say that the ledger settled the run. One records landed commits;
 # the other records a completed run with no repository commit to claim.
 FLEET_SETTLED_STATES = frozenset({"promoted", "recorded"})
@@ -2643,12 +2669,15 @@ from .recovery_classification import (  # noqa: E402
     classify_pointer,
 )
 from .recovery_liveness import (  # noqa: E402
+    _attempt_awaits_its_worker,
     _attempt_started_seconds,
     _int_or_none,
     _live_descendant,
     _process_reading,
     _record_newest_stream,
+    _resumed_launch_is_stranded,
     _run_stream_quiet_seconds,
+    _stranded_attempt_clause,
     _worker_record_liveness,
     _worker_record_pid,
     local_liveness,
