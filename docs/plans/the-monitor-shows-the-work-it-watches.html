@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="172">
+<meta name="plan-version" content="173">
 <meta name="plan-modified" content="2026-10-16">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -424,15 +424,17 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-fu-body"><p>§23, a lift drawn once per pane, is in flight from a peer session on <code>ticker.py</code> and <code>crew_follow_commands.py</code>. The open sections are §7–§12. Actionable round trips, such as cross-host <code>working → halted → working</code>, still draw, and wait on the lead's decision about holding actionable stops.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches §7</pre>
     </article>
-<article class="r-fu" data-id="f-tmstwiw-031-033" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build the-monitor-shows-the-work-it-watches §33" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tmstwiw-031-033" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build the-monitor-shows-the-work-it-watches §33" data-resolved-at="2026-10-15T23:34:27+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build the duration-override reader and the delivered-run duty window</h4>
     <div class="r-fu-body"><p>§31 shares <code>crew_follow_commands.py</code> and <code>coordinator_obligations.py</code> with seat §12 and §13, so it runs after them. §33 shares <code>recovery_classification.py</code> with seat §14, so it runs after §14.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches §31 §33</pre>
+    <p class="r-fu-outcome"><p>§31, §32 and §33 have landed. The duration-override reader merged as <code>16a36e859</code> (review 118/120). The delivered-run pane hold and the duty that defers to the review reflex landed on 2026-10-15.</p></p>
     </article>
-<article class="r-fu" data-id="f-tmstwiw-034" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build the-monitor-shows-the-work-it-watches §34" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tmstwiw-034" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build the-monitor-shows-the-work-it-watches §34" data-resolved-at="2026-10-15T23:34:27+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Read a resumed run by its current attempt, not its previous status</h4>
     <div class="r-fu-body"><p>§34 writes <code>reckon/crew/recovery_classification.py</code>, as §33 does, so it runs after §33 lands. Dispatch's scope-conflict check enforces the order.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches §34</pre>
+    <p class="r-fu-outcome"><p>§34 landed. A resumed run is read from its current attempt. Merged as <code>822690710</code> (review 112/120).</p></p>
     </article>
 </section>
   <section data-reckon="decisions" id="decisions" class="r-decisions">
@@ -779,7 +781,7 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>§34 reviewed at 48d73cd8a (increment 54435b9d5..48d73cd8a): all six dimensions scored 0..20 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 19; total 112), added_failure_count 0 with no added id; one follow-on finding, no blocking finding. The gained commit repairs the no-attempt-start case so its premise — the absent attempt clock — is the only thing holding it, proves that with a no-clock isolation control (no-clock-control.log: -blocked +running), and states the guard's three facts and the pointer-liveness reason once.</p></div>
 </div>
 <div class="r-comment" data-section="s34" data-id="c-run-r-20261015T204939476969-a-resumed-run-is-not-read-by-its-old-status" data-who="reckon-build" data-when="2026-10-15T23:19:31.006Z">
-    <div class="r-comment-body"><p>§34 landed: a manifest last written before the run&#x27;s current attempt began is not that attempt&#x27;s report, so a resumed run is read from its own attempt&#x27;s liveness rather than the blocked or waiting word the resume left on the file; the comparison has one owner, recovery_liveness._manifest_predates_the_current_attempt, and the pointer&#x27;s own pid liveness is not consulted inside the resume window, where that pid belongs to the attempt the resume replaced.</p></div>
+    <div class="r-comment-body"><p>§34 landed: a manifest last written before the run's current attempt began is not that attempt's report, so a resumed run is read from its own attempt's liveness rather than the blocked or waiting word the resume left on the file; the comparison has one owner, recovery_liveness._manifest_predates_the_current_attempt, and the pointer's own pid liveness is not consulted inside the resume window, where that pid belongs to the attempt the resume replaced.</p></div>
 </div>
 <div class="r-comment" data-section="s31" data-id="c-run-r-20261015T222015606681-review-of-a-duration-override-is-read-one-way-240abaea20ac" data-who="reckon-build" data-when="2026-10-15T22:28:13Z">
     <div class="r-comment-body"><p>Parsed revision-keyed review stored with six scores, zero added failure ids, one blocking finding and one follow-on finding.</p></div>
