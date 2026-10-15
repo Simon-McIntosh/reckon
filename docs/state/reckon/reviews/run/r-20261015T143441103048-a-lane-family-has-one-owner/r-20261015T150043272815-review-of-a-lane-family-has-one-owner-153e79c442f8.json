@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch_picker.py:590 _lane_backend_names",
+    "reckon/crew/dispatch_picker.py:696 _reask_off_zero_slot_lane",
+    "reckon/crew/recovery_review_dispatch.py:1472 _reroute_held_review",
+    "reckon/crew/recovery_review_dispatch.py:1473 _reroute_held_review",
+    "reckon/crew/picker/snapshot.py:928 candidates"
+  ],
+  "completed_at": "2026-10-15T15:15:37.903Z",
+  "dispatched_at": "2026-10-15T15:01:20Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T143441103048-a-lane-family-has-one-owner/logs/head-3.log",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "follow-on: the head chunk-3 log ends mid-run with no summary and no EXIT= line, so it does not support the manifest's 88 passed for that chunk and fails the done_when's requirement that each arm log end in EXIT=; this review re-ran that chunk at head and got 88 passed EXIT=0, so the figure is true but the stored log is not the evidence for it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T143441103048-a-lane-family-has-one-owner/logs/ruff-check.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded ruff logs are stamped before the style commit that removed the snapshot.py _backends import and added the test's trailing newline, so they show an F401 and a W292 the head no longer has; this review re-ran ruff check and format at head and found only the pre-existing C420 at dispatch_picker.py:338."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T143441103048-a-lane-family-has-one-owner/logs/head-4.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head chunk-4 log and all five base logs carry the older arm header that names no revision, so a reader cannot tie the arm to a commit, and head-4 was in fact run at 8b53b51da rather than the head 153e79c44 the manifest attributes it to."
+    }
+  ],
+  "head_log_revision": "153e79c442f871c85372f6bb3af23961dc90d59e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against d6ea082d; the refactor adds lane_family and _ask_excluding_lane in dispatch_picker.py, deletes _review_lane_family from recovery_review_dispatch.py and swaps snapshot.py's inline dialect derivation for the owner; the style commit drops the now-unused _backends import and tidies the test; the docs commit adds the fragment.",
+    "done_when": "the done_when asks for a new tests/test_a_lane_family_has_one_owner.py pinning the owner's mapping and for recovery_review_dispatch.py and picker/snapshot.py to call the owner, with a base/head gate over the importing files; the test file carries the local, dialect, launch-kind and unknown cases, both modules call lane_family, and the manifest records the head arm at 371 passed EXIT=0 against 365 at base, except that the head chunk-3 log is truncated, which this review re-ran at 88 passed EXIT=0.",
+    "goal": "the goal is one owning function for a backend's lane family and one shared helper for the zero-slot excluded-lane ask; reckon/crew/dispatch_picker.py:548 declares lane_family and :625 declares _ask_excluding_lane, and the three former derivers now call them.",
+    "manifest": "read; status complete; three commits (8b53b51da, f21f083e1, 153e79c44); it records the base/head arms with their logs, the negative control with its log, measurement_module and measurement_cwd, and the ruff claim.",
+    "write_paths": "the manifest declares reckon/crew/dispatch_picker.py, reckon/crew/recovery_review_dispatch.py, reckon/crew/picker/snapshot.py, tests/test_a_lane_family_has_one_owner.py, the evidence fragment and a figures dir; git diff --stat d6ea082d..153e79c44 lists exactly those five files and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_lane_family_has_one_owner.py:51 reddens under the declared mutation (3 failed, EXIT=1) but the shared _ask_excluding_lane is guarded only by the pre-existing tests/test_the_review_reflex_asks_before_it_requeues.py:365 and tests/test_jev_routes_with_the_session_admission_and_the_lift.py:326.",
+    "evidence": "logs/head-3.log ends mid-run with no summary and no EXIT= line although the manifest records 88 passed for that chunk, and logs/ruff-check.log predates the style commit showing an F401 the head no longer has.",
+    "fit": "reckon/crew/dispatch_picker.py:548 follows the module's Mapping-typed helper style and the added names carry no plan or version label.",
+    "goal_fidelity": "reckon/crew/dispatch_picker.py:548 lane_family is the one owner and :625 _ask_excluding_lane the one shared helper, read at :590 and :696 and called from recovery_review_dispatch.py:1472-1473 and picker/snapshot.py:928.",
+    "reuse": "the change consolidates three copies of the lane-family derivation onto reckon/crew/dispatch_picker.py:548 and delegates to _backends.dialect_for rather than reimplementing it; no owner is forked.",
+    "scope_discipline": "git diff --stat d6ea082d..153e79c44 lists only the five declared files, each inside the manifest's write paths, plus the declared evidence fragment."
+  },
+  "node": "review-of-a-lane-family-has-one-owner-153e79c442f8",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is one owning function for a backend's lane family and one shared helper for the zero-slot excluded-lane ask; reckon/crew/dispatch_picker.py:548 declares lane_family and :625 declares _ask_excluding_lane, and the three former derivers now call them.\nVERDICT done_when: the done_when asks for a new tests/test_a_lane_family_has_one_owner.py pinning the owner's mapping and for recovery_review_dispatch.py and picker/snapshot.py to call the owner, with a base/head gate over the importing files; the test file carries the local, dialect, launch-kind and unknown cases, both modules call lane_family, and the manifest records the head arm at 371 passed EXIT=0 against 365 at base, except that the head chunk-3 log is truncated, which this review re-ran at 88 passed EXIT=0.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch_picker.py, reckon/crew/recovery_review_dispatch.py, reckon/crew/picker/snapshot.py, tests/test_a_lane_family_has_one_owner.py, the evidence fragment and a figures dir; git diff --stat d6ea082d..153e79c44 lists exactly those five files and nothing outside them.\nVERDICT manifest: read; status complete; three commits (8b53b51da, f21f083e1, 153e79c44); it records the base/head arms with their logs, the negative control with its log, measurement_module and measurement_cwd, and the ruff claim.\nVERDICT diff: read commit by commit against d6ea082d; the refactor adds lane_family and _ask_excluding_lane in dispatch_picker.py, deletes _review_lane_family from recovery_review_dispatch.py and swaps snapshot.py's inline dialect derivation for the owner; the style commit drops the now-unused _backends import and tidies the test; the docs commit adds the fragment.\nCALL_SITES: reckon/crew/dispatch_picker.py:590 _lane_backend_names, reckon/crew/dispatch_picker.py:696 _reask_off_zero_slot_lane, reckon/crew/recovery_review_dispatch.py:1472 _reroute_held_review, reckon/crew/recovery_review_dispatch.py:1473 _reroute_held_review, reckon/crew/picker/snapshot.py:928 candidates\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_picker.py:548 lane_family is the one owner and :625 _ask_excluding_lane the one shared helper, read at :590 and :696 and called from recovery_review_dispatch.py:1472-1473 and picker/snapshot.py:928.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/head-3.log ends mid-run with no summary and no EXIT= line although the manifest records 88 passed for that chunk, and logs/ruff-check.log predates the style commit showing an F401 the head no longer has.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat d6ea082d..153e79c44 lists only the five declared files, each inside the manifest's write paths, plus the declared evidence fragment.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_lane_family_has_one_owner.py:51 reddens under the declared mutation (3 failed, EXIT=1) but the shared _ask_excluding_lane is guarded only by the pre-existing tests/test_the_review_reflex_asks_before_it_requeues.py:365 and tests/test_jev_routes_with_the_session_admission_and_the_lift.py:326.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch_picker.py:548 follows the module's Mapping-typed helper style and the added names carry no plan or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change consolidates three copies of the lane-family derivation onto reckon/crew/dispatch_picker.py:548 and delegates to _backends.dialect_for rather than reimplementing it; no owner is forked.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T143441103048-a-lane-family-has-one-owner/logs/head-3.log:5 follow-on: the head chunk-3 log ends mid-run with no summary and no EXIT= line, so it does not support the manifest's 88 passed for that chunk and fails the done_when's requirement that each arm log end in EXIT=; this review re-ran that chunk at head and got 88 passed EXIT=0, so the figure is true but the stored log is not the evidence for it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T143441103048-a-lane-family-has-one-owner/logs/ruff-check.log:2 follow-on: the recorded ruff logs are stamped before the style commit that removed the snapshot.py _backends import and added the test's trailing newline, so they show an F401 and a W292 the head no longer has; this review re-ran ruff check and format at head and found only the pre-existing C420 at dispatch_picker.py:338.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T143441103048-a-lane-family-has-one-owner/logs/head-4.log:1 follow-on: the head chunk-4 log and all five base logs carry the older arm header that names no revision, so a reader cannot tie the arm to a commit, and head-4 was in fact run at 8b53b51da rather than the head 153e79c44 the manifest attributes it to.\n",
+  "review_run_id": "r-20261015T150043272815-review-of-a-lane-family-has-one-owner-153e79c442f8",
+  "reviewed_base_sha": "d6ea082d9bedb4d3888265889861f432da3384b3",
+  "reviewed_head_sha": "153e79c442f871c85372f6bb3af23961dc90d59e",
+  "reviewed_run_id": "r-20261015T143441103048-a-lane-family-has-one-owner",
+  "reviewer": null,
+  "role": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T15:09:35.503746+00:00",
+  "total": 107
+}
