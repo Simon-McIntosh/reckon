@@ -25,7 +25,7 @@
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -252,6 +252,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-15T16:06:00Z">
     <div class="r-comment-body"><p>§10 landed. A run on another node whose stream is moving is no longer read as gone, so a manifest caught mid-write no longer turns its row halted. Merged as <code>2fc0f81d7</code>. Gate: 459 passed at head with no failures. Review: 119/120. The misleading detail text is §14. <a href="/reckon/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s10">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261015T152751863601-a-mid-write-manifest-on-another-node-is-not-unreadable" data-who="reckon-build" data-when="2026-10-15T15:52:54.969Z">
+    <div class="r-comment-body"><p>fix(crew): read unknown liveness from the run&#x27;s stream before calling it gone — the hoisted process_gone verdict in reckon/crew/recovery_classification.py treated an unknown liveness reading as proof of death, so a run launched on another host whose manifest was caught mid-rewrite read unreadable while its worker was still writing; it now reads only a proven-False process as gone and settles an unknown one from the run&#x27;s newest stream through recovery_liveness._newest_stream_in_motion (assistant turn inside LOG_STALE_AFTER_SECONDS is a run in motion, no second window); measure: tests/test_a_mid_write_manifest_on_another_node_is_not_unreadable.py 4 passed, base 1 failed / 9 passed on the same file, head 459 passed / 0 failed across the 53 files importing the write path.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
