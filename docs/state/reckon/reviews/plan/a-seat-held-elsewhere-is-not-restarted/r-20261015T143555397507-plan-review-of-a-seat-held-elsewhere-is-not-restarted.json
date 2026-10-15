@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T14:43:01.375Z",
+  "dispatched_at": "2026-10-15T14:36:29Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-seat-held-elsewhere-is-not-restarted/r-20261015T143555397507-plan-review-of-a-seat-held-elsewhere-is-not-restarted/plan.html:137",
+      "id": "reasoning-1",
+      "reason": "a builder implementing \"writes a renewal time into its own registration\" literally reuses the in-place writer and ships a mechanism that intermittently reads a fresh registration as gone, so \u00a78 must state how the renewal survives a concurrent cross-host read (an atomic sibling write, or a reader that retries a record it could not parse) and how often it is written.",
+      "text": "\u00a78 has the follower write its lease renewal \"into its own registration\", but that file is rewritten in place (`_write_watch_record`, reckon/crew/run_paths.py:50-57, truncates then writes, no rename) and it is read by the producer on another host, which by \u00a78's own premise cannot take the lock to serialise against the writer \u2014 so a read landing between truncate and write yields `record == {}`, the renewal reads missing, and a healthy foreign follower is judged gone, reproducing exactly the \"no producer\" symptom \u00a78 exists to remove; the plan bounds neither the write cadence nor the read's tolerance of a torn record",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ea94a7e49c2724db803ae74e95d1ad4b7f094620995a8abe68ac60c87dcdd929",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 37,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T143555397507-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "4782e56d1b1739dfbfbacd4d81d0e48ee2e4353e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each cited symbol resolves at base: `producer_lease_seconds` (reckon/crew/runs.py:1702), `renew_producer_lease` (reckon/crew/runs.py:1764), `_follower_liveness` (reckon/crew/follower_registration.py:482), `watch_state` and `seat_names_a_live_foreign_producer` (reckon/crew/watch_unit.py:161, :143), `session_follower_released` (reckon/crew/watch_unit.py:205, reckon/crew/dispatch_watch.py:708), `freshness` (reckon/crew/obligation_snapshot.py:369), `not_fresh_line` (reckon/hooks/coordinator_obligations.py:729), and both landed test files exist.",
+    "done_when": "pass \u2014 \u00a78's and \u00a79's done-whens are measurable in a temporary crew home and each declares a negative control that fails the pre-fix code (`foreign judged by its lock again` reads the fresh-renewal case gone; `freshness` returning `no-producer` again fails \u00a79's first case), and both carry suite-delta clauses naming the exceptions.",
+    "evidence_paths": "pass \u2014 both sections log their negative control under the run directory and cite the durable archive record `docs/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html`; \u00a78's post-merge confirmation names `~/.config/reckon/crew/obligations/reckon/`, a durable path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the new symbols or test filenames (`test_a_follower_on_another_node_renews_a_lease.py`, `test_a_missing_snapshot_names_a_live_seat.py`), and the prose states mechanisms rather than tracker entries.",
+    "reasoning": "a finding \u2014 \u00a78's stated root cause (node-local `flock` makes a foreign registration read gone; \u00a74 judged it by that lock) matches the cited evidence and the code path, but the repair's mechanism does not reliably produce its own done-when, because it writes the renewal into a file that the judging host reads without the lock that would serialise the read.",
+    "single_goal": "pass \u2014 \u00a78 names one deliverable (a foreign follower registration judged by a renewed lease) and \u00a79 names one (the hook line for a missing snapshot beside a live foreign seat); the test rewrites in each are consequences of that deliverable, not a second goal.",
+    "wiring": "pass \u2014 \u00a79's dependency on \u00a78 is carried by gate `g-sheinr-1` (`data-section=\"s9\"`, `data-gated-sections=\"s9\"`, required-evidence `#s8`) and by followup f-sheinr-003, and \u00a78's write paths (`reckon/crew/follower_registration.py`, `reckon/crew_follow_commands.py`) do not overlap \u00a79's, so the declared parallel/gated split is correct."
+  },
+  "section_digests": {
+    "_document": "501722d015c953998d87d14ceb24f7761da89b669c7c8050797fa7b95a32756a",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s10": "fd9ced512f1fc6a0610cb111ec8c734e3c55a84ea11034055f5f1c9e60e0c649",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "96d5fc1c72a25970cab856a7dde0a3cab839fd87c83786b7b49ffc4c1dabb1ab",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad",
+    "s7": "d3e16f60d17ef3ee4666f9cd189aa6cd8e26f038173b65ee34b68f3f2cd822e7",
+    "s8": "da5c01cf9356978f8063a78e85cc1ec65d2a005882015faabb49f6fcfa5f4994",
+    "s9": "a2cb7135c4bd3f1439c3ec948d6146c2f5b7527da59b1bbd4c7ce4c141ec3055"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T14:45:18.001607+00:00"
+}
