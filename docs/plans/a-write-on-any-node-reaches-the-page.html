@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="a-write-on-any-node-reaches-the-page">
+  <meta name="plan-title"     content="A Write on Any Node Reaches the Page">
+  <meta name="plan-summary"   content="The served index and open pages refresh only on local inotify, so docs written from the fleet node never appear; give every derived view a cross-node backstop">
+  <meta name="plan-status"    content="active">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="3.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-tags"      content="spa">
+  <meta name="plan-standalone" content="Repairs the served index's freshness for cross-node writes; no live plan waits on it and it waits on none.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+  <title>A Write on Any Node Reaches the Page | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — What is wrong, measured</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
+<p><strong>The served page stops seeing new documents once work moves off the login node.</strong> Measured 2026-10-15 on imas-ambix. Two research documents were written and committed from the fleet node <code>98dci4-clu-2002</code>, and they did not appear in the SPA. The server on the login node <code>98dci4-srv-1006</code> was healthy: <code>/_server</code> reported its code current, and <code>/_discover/imas-ambix</code> already listed both documents. But <code>/_index/imas-ambix</code>, the rows the page lists documents from, held 885 rows, and its newest research row was dated 2026-10-09. A single <code>touch -c</code> of a docs file on the login node brought it to 890 rows within five seconds, both documents included.</p>
+<p><strong>The cause is that only one of the server's three derived views has a cross-node backstop.</strong> <code>_invalidate_tree_views</code> drops three views of a tree together: the discovery reuse window, the cached discoveries and the in-process metadata index. Two mechanisms trigger it. One is the <code>_FleetChangeWatch</code> thread, which uses inotify. The other is the per-stream inotify watch inside the <code>/_changes/</code> handler. inotify on GPFS reports only writes made on the same node. Discovery survives this, because its reuse window (<code>_SERVED_SIGNATURE_TTL_S</code>, 60 s) re-walks the tree when it lapses. The code says this is deliberate: the window "only backstops writes the kernel does not report, notably a write from another login node on the shared filesystem". <code>metadata_index.index_rows</code> has no such window. It answers from its cache until <code>invalidate_tree</code> is called, and only an inotify event calls it. An open page's change stream likewise waits on inotify alone, so it is never told.</p>
+<p><strong>This is now the normal case, not an edge.</strong> Since agent sessions moved to the fleet allocation, every plan, evidence and research write comes from a compute node. So the page's document list freezes at the last login-node write, and every open page's live updates stop. Restarting the server only hides the fault until the next write.</p>
+
+    <h2 id="s2">§2 — Every derived view gets a cross-node backstop, and open pages are told</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<p><strong>The change.</strong> The served process gains one cross-node change detector per mounted docs tree, inside <code>_FleetChangeWatch</code>, beside its inotify watch. When it sees a change the kernel did not report, it does exactly what an inotify event does. It calls <code>_invalidate_tree_views(root, changed_at=...)</code>, and it wakes every open <code>/_changes/</code> stream for that tree. Those streams then emit the same <code>change</code> event with the same row diff they emit today. There is one entry point and one event shape, and no second invalidation path for a reader to learn.</p>
+<p><strong>The detector must be cheap, because it runs on a login node over GPFS.</strong> A full discovery walk "costs seconds on a shared filesystem", so the detector must not be a walk on a timer. It reads two cheap signals:</p>
+<ul>
+<li><strong>A fast signal, every 10 s by default.</strong> The stat identity (inode, size, nanosecond mtime) of each directory in the tree, which changes when a file is created, removed or renamed in it. And the stat identity of the repository's <code>.git/index</code>, <code>HEAD</code> and current branch ref, which change on every add, commit, merge and pull from any node. The directory identities are already persisted by <code>metadata_index</code> (<code>_load_dir_stamps</code>, <code>_dir_identity</code>), so the detector reuses that owner rather than defining its own.</li>
+<li><strong>A slow signal, every 60 s by default, only for a tree that has an open change stream or was read in the last ten minutes.</strong> The stat identity of every file the index covers. This catches an uncommitted in-place edit from another node, which changes no directory and no git file. A tree nobody is reading pays nothing.</li>
+</ul>
+<p>Both intervals are environment-configurable beside <code>RECKON_DISCOVERY_REUSE_S</code>. A detector pass that raises an <code>OSError</code> is logged and treated as no change, so a storage stall never takes the watch thread down.</p>
+<p><strong>What is not changed.</strong> The inotify path stays and stays first: a local write is still seen in about 0.25 s. The discovery reuse window stays as it is. The metadata index's cache and its <code>revalidate</code> mode are untouched; the detector only decides when <code>invalidate_tree</code> is called. No public name is added except the two environment variables, and nothing existing can absorb them, because the reuse window governs discovery walks and not these signals.</p>
+<p><strong>Deployment.</strong> The node does not restart the served process. The coordinator restarts it on the login node with <code>reckon service restart</code> after the merge, and then takes the live measure below.</p>
+<table>
+<caption>Node for this section.</caption>
+<thead><tr><th>Node</th><th>Writes</th><th>Runs after</th><th>Effort</th></tr></thead>
+<tbody>
+<tr><td><code>cross-node-writes-refresh-the-index</code></td><td><code>reckon/serve.py</code>, <code>reckon/metadata_index.py</code>, <code>tests/test_a_write_on_any_node_reaches_the_page.py</code></td><td>—</td><td>2.75 h</td></tr>
+</tbody>
+</table>
+<p><strong>Done when</strong>: <code>tests/test_a_write_on_any_node_reaches_the_page.py</code> passes against a served process whose inotify watch is replaced by one that never fires, which is how a write from another node looks. It asserts each of the following. A new document added to a mounted tree appears in <code>/_index/&lt;project&gt;</code> within one fast interval, with the interval set to 1 s for the test. A commit that changes an existing document's bytes refreshes its row within one fast interval. An in-place edit with no commit refreshes its row within one slow interval while a change stream is open, and is not detected while no reader is active. An open <code>/_changes/&lt;project&gt;</code> stream receives a <code>change</code> event carrying the added row. A detector pass that raises <code>OSError</code> leaves the watch thread running. Every existing test in <code>tests/test_changes_push_rows.py</code> and <code>tests/test_agent_readers_use_the_index.py</code> still passes. The manifest records, for the imas-ambix tree on GPFS, the stat count and wall time of one fast pass and one slow pass, measured on the node the worker runs on. The declared negative control disables the detector, and the new-document test must then fail.</p>
+<p><strong>Live measure, taken by the coordinator after the restart</strong>: a document committed on the fleet node appears in <code>/_index/imas-ambix</code> on the login node within 15 s, with no touch on the login node.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-awoan-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-15" data-recommends-skill="/reckon-build a-write-on-any-node-reaches-the-page §2" data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Give the served index a cross-node backstop</h4>
+        <div class="r-fu-body"><p>The lead asked for a robust refresh at the root on 2026-10-15, because all work now happens on the fleet node. Backlog by default: no sprint is marked active in this repository.</p></div>
+        <pre class="r-fu-prompt">/reckon-build a-write-on-any-node-reaches-the-page §2</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>
