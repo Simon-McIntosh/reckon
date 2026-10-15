@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "a8f4caba45cc01718ecad21e8ae5de7819e3d563",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:791"
+  ],
+  "completed_at": "2026-10-15T15:02:02.639Z",
+  "dispatched_at": "2026-10-15T14:53:01Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T144150634437-a-replayed-pick-reads-its-own-session/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the tests field records only the pytest gate and names no ruff log, so the done_when's ruff check / ruff format --check arm is claimed without recorded evidence; this review verified both clean on the two changed Python files (exit 0 each)."
+    }
+  ],
+  "head_log_revision": "f11aa7d218ec7c5b8bd3d7081bbdf963fb8f059f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against a8f4caba4; one commit, three files, +281/-4; replay.py composes a view per distinct session and passes views[session] to each pick, the test file adds three cases, the fragment adds the landing anchor.",
+    "done_when": "the done_when names tests/test_a_replayed_pick_reads_its_own_session.py plus the test files that import replay at base and head; the manifest records head 46 passed EXIT=0 and base 43 passed EXIT=0, and the three importer suites are exactly test_picker.py, test_picker_latency.py and test_picker_lanes.py.",
+    "goal": "the goal is to judge each replayed dispatch against the budget view composed for that dispatch's own session; reckon/crew/picker/replay.py:46 composes one view per distinct session and :95 hands each pick views[session], which is the goal.",
+    "manifest": "read; status complete; one commit f11aa7d21; it records the head/base pytest arms and the negative control with its log, but records no ruff arm the done_when also names.",
+    "write_paths": "the manifest declares reckon/crew/picker/replay.py, the new test, docs/evidence/fragments/a-window-paces-the-lane/a-replayed-pick-reads-its-own-session.html and a figures dir; git diff --stat a8f4caba4..f11aa7d21 lists exactly replay.py, the test and the fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_replayed_pick_reads_its_own_session.py:173 asserts the A session's view is not held, and the negative control that restores the single session-less view reddens it (3 failed, EXIT=1).",
+    "evidence": "the manifest records head 46 passed EXIT=0 and base 43 passed EXIT=0 with the negative control reddening the A case, but names no log for the ruff clause the done_when also requires.",
+    "fit": "reckon/crew/picker/replay.py:41-56 follows the module's typed-dict and comment-the-why style and introduces no plan or sprint identifier.",
+    "goal_fidelity": "reckon/crew/picker/replay.py:47 calls snapshot.budget_view(..., session=session) and :95 passes views[session] so each replayed pick is judged against its own session's view.",
+    "reuse": "the fix extends the existing snapshot.budget_view(session=) owner rather than forking it; _distinct_sessions restates the repo-wide dict.fromkeys idiom (reckon/crew/claims.py:168 _distinct) but forks no public owner.",
+    "scope_discipline": "git diff --stat a8f4caba4..f11aa7d21 lists only reckon/crew/picker/replay.py, tests/test_a_replayed_pick_reads_its_own_session.py and the declared evidence fragment."
+  },
+  "node": "review-of-a-replayed-pick-reads-its-own-session-f11aa7d218ec",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to judge each replayed dispatch against the budget view composed for that dispatch's own session; reckon/crew/picker/replay.py:46 composes one view per distinct session and :95 hands each pick views[session], which is the goal.\nVERDICT done_when: the done_when names tests/test_a_replayed_pick_reads_its_own_session.py plus the test files that import replay at base and head; the manifest records head 46 passed EXIT=0 and base 43 passed EXIT=0, and the three importer suites are exactly test_picker.py, test_picker_latency.py and test_picker_lanes.py.\nVERDICT write_paths: the manifest declares reckon/crew/picker/replay.py, the new test, docs/evidence/fragments/a-window-paces-the-lane/a-replayed-pick-reads-its-own-session.html and a figures dir; git diff --stat a8f4caba4..f11aa7d21 lists exactly replay.py, the test and the fragment.\nVERDICT manifest: read; status complete; one commit f11aa7d21; it records the head/base pytest arms and the negative control with its log, but records no ruff arm the done_when also names.\nVERDICT diff: read commit by commit against a8f4caba4; one commit, three files, +281/-4; replay.py composes a view per distinct session and passes views[session] to each pick, the test file adds three cases, the fragment adds the landing anchor.\nCALL_SITES: reckon/crew_dispatch_commands.py:791\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/replay.py:47 calls snapshot.budget_view(..., session=session) and :95 passes views[session] so each replayed pick is judged against its own session's view.\nSCORE evidence: 15\nJUSTIFICATION evidence: the manifest records head 46 passed EXIT=0 and base 43 passed EXIT=0 with the negative control reddening the A case, but names no log for the ruff clause the done_when also requires.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff --stat a8f4caba4..f11aa7d21 lists only reckon/crew/picker/replay.py, tests/test_a_replayed_pick_reads_its_own_session.py and the declared evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_replayed_pick_reads_its_own_session.py:173 asserts the A session's view is not held, and the negative control that restores the single session-less view reddens it (3 failed, EXIT=1).\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/picker/replay.py:41-56 follows the module's typed-dict and comment-the-why style and introduces no plan or sprint identifier.\nSCORE reuse: 17\nJUSTIFICATION reuse: the fix extends the existing snapshot.budget_view(session=) owner rather than forking it; _distinct_sessions restates the repo-wide dict.fromkeys idiom (reckon/crew/claims.py:168 _distinct) but forks no public owner.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T144150634437-a-replayed-pick-reads-its-own-session/manifest.md:11 follow-on: the tests field records only the pytest gate and names no ruff log, so the done_when's ruff check / ruff format --check arm is claimed without recorded evidence; this review verified both clean on the two changed Python files (exit 0 each).\n",
+  "review_run_id": "r-20261015T145232011669-review-of-a-replayed-pick-reads-its-own-session-f11aa7d218ec",
+  "reviewed_base_sha": "a8f4caba45cc01718ecad21e8ae5de7819e3d563",
+  "reviewed_head_sha": "f11aa7d218ec7c5b8bd3d7081bbdf963fb8f059f",
+  "reviewed_run_id": "r-20261015T144150634437-a-replayed-pick-reads-its-own-session",
+  "reviewer": null,
+  "role": "review",
+  "rubric": null,
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T14:58:59.147783+00:00",
+  "total": 106
+}
