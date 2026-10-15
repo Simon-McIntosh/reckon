@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T14:28:53.145Z",
+  "dispatched_at": "2026-10-15T14:23:11Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-session-routes-to-a-serving-lane.html:166",
+      "id": "single_goal-1",
+      "reason": "the section must be split or its reflex clause given its own measure, and the landed work already needed two separately-gated nodes (`fe72bf389` for the queued move, `7722ccd7d` for the reflex).",
+      "text": "\u00a74's deliverable carries two independent deliverables: the waiver carry on redispatch (including the queued move through `_launch_queued`) and the review reflex's re-route of a review the lane held, which the section's own done-when never measures \u2014 so \u00a74 cannot be closed on one verdict and its gate proves only the waiver carry",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-session-routes-to-a-serving-lane.html:168",
+      "id": "done_when-1",
+      "reason": "adding the reflex arm and its control to \u00a74's done-when is the only way the section's second deliverable can be shown to fire, and without it a worker can close \u00a74 having built only the waiver carry.",
+      "text": "\u00a74's done-when tests only the waiver carry (\"a node dispatched with `--allow-unreviewed-plan` \u2026 redispatches \u2026 and finds it launched with the waiver recorded as carried\") and declares no negative control for the reflex clause, so the reflex's ask-and-record \u2014 the part \u00a74's own landed comment reports as its second deliverable \u2014 is unmeasured by the section",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-session-routes-to-a-serving-lane.html:182",
+      "id": "done_when-2",
+      "reason": "the count's share is a ratio over that population, and the landed census had to add a negative-control population of 835 excluded non-held routes that the plan text never asks for, so the section as written under-specifies its own measure.",
+      "text": "\u00a75 declares only a positive control (\"The positive control is the `jccm-lines` hold of 08:16:20Z, which the count must include\") and names no negative control, so nothing in the section's text guards the exclusion rule that decides which dispatches enter the held population",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-session-routes-to-a-serving-lane.html:120",
+      "id": "wiring-1",
+      "reason": "a declared `plan-depends-on`/`plan-section-depends-on` on a-window-paces-the-lane \u00a717 records the ordering and the reading \u00a72 relies on, and its absence is exactly the missing-dependency case this item exists to catch.",
+      "text": "\u00a72's lift clause states \"This relies on a-window-paces-the-lane \u00a717\", but the plan declares no dependency or inform edge to that plan (its only relation meta is `plan-after: a-held-dispatch-waits-its-fair-turn`), so the roadmap/DAG reads \u00a72's lift behaviour as unwired to the section it cannot read a lift without",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1e1ea7f644e8f8e3814d730bb76ab22cd26ff93cc6c3250bff59487c4ad7a784",
+  "plan_slug": "a-held-session-routes-to-a-serving-lane",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T142236472378-plan-review-of-a-held-session-routes-to-a-serving-lane",
+  "reviewed_blob_sha": "e168dfb881045509f11db12c2abc1a31a9a53562",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_lane_worker_allowance` (`reckon/crew/dispatch_plan.py:1151`), `_launch_queued`/`_node_from_pointer` (`reckon/crew/queue_admission.py:142`/`:91`), `_lane_backend_names`/`_reask_off_zero_slot_lane` (`reckon/crew/dispatch_picker.py:548`/`:602`), `_review_lane_family`/`_reroute_held_review` (`reckon/crew/recovery_review_dispatch.py:1391`/`:1443`) and the inline derivation at `reckon/crew/picker/snapshot.py:928` all resolve in the tree; the cross-plan anchors a-window-paces-the-lane \u00a717 (done), a-held-dispatch-waits-its-fair-turn \u00a713 (titled \"A Jev hold queues for the local lane\", matching \u00a71's description) and \u00a711 resolve.",
+    "done_when": "a finding \u2014 \u00a74's done-when measures only the waiver carry and names no measure or control for its review-reflex clause; \u00a75 declares a positive control but no negative control.",
+    "evidence_paths": "pass \u2014 the landed evidence links resolve to `docs/evidence/archive/a-held-session-routes-to-a-serving-lane-landed.html` (anchors `#s2`, `#s3`, `#s4-queued-move`, `#s4-review-reflex`, `#s5` all present) and no section points a gate at a scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 \u00a76's named symbols and its test file (`tests/test_a_lane_family_has_one_owner.py`) are named by mechanism, carrying no plan label, stage name, ticket number or version tag; no changelog prose in the authored text.",
+    "reasoning": "pass \u2014 \u00a71's stated root cause (Jev's rendered state omits the session's own router allowance, so a route lands on a lane that grants this session nothing) matches the cited `pick-timings.jsonl`/router-verdict evidence of row 1; each section's mechanism reaches the measure it asserts (the session figure plus the once-more ask for \u00a72, the mirrored node fields for \u00a73, the carried `dispatch_options` for \u00a74, the single owner function for \u00a76); and each mechanism's caller is named \u2014 `picker/snapshot.py` for \u00a72, the queued rebuild through `_launch_queued` for \u00a74's move, and \u00a76 names `_reroute_held_review` as the reflex's retry that \u00a74 refers to by description.",
+    "single_goal": "a finding \u2014 \u00a74 carries two independent deliverables (waiver carry on redispatch/queued move, and the review reflex's re-route of a held review) behind one done-when that proves only the first.",
+    "wiring": "a finding \u2014 \u00a72 states it relies on a-window-paces-the-lane \u00a717, but the plan's only declared relationship is `plan-after` \u2192 a-held-dispatch-waits-its-fair-turn; no `plan-depends-on`/`plan-informs` edge to a-window-paces-the-lane is declared."
+  },
+  "section_digests": {
+    "_document": "92ea5b9c15f6f442acdb5a7dd43a200e74e014e32e950ddbbd9ebb52457f4a5b",
+    "s1": "bcb76fd1e36c1640de15ae6763cc9a81fa94bbf740e12b844ef8ca1b64273375",
+    "s2": "c645d9e7baae34776f5b8f9c2dd066fc9af4eee8929fde6bf169cffcc3e1583c",
+    "s3": "fb16a2a2293ef2fafdfe6399ffc0da4d1fc940e78110635b413a1bafc2028861",
+    "s4": "9612149e1d24c4df585f6427a61fcb5eb20a529d956831368e08bdc56fed9174",
+    "s5": "6f592a89511473015142bc4e8bea06622bcf51877131ef14231aa8db57ff8fae",
+    "s6": "390bffed17b2602fcd713215842f533ef8755c30aa9137e1d40ce2828d529b65"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T14:30:50.275816+00:00"
+}
