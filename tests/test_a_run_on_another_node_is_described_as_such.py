@@ -1,18 +1,20 @@
 """A run on another node is described as on another node.
 
 The classifier's catch-all running arm covers every run whose liveness this
-host cannot prove. §10 gave it a way in for a foreign run: an unknown liveness
-with a stream still moving is read from that life rather than as gone. But the
-arm's detail text was written for the other cause of an unknown liveness — a
-pid-less run launched in the coordinator's own harness — and told the reader
-"an in-harness run: liveness belongs to the calling harness". A coordinator
-reading a row for a CLI worker on another host was told the run belonged to its
-own harness.
+host cannot prove. A foreign run reaches it when its pointer names another
+machine — this host's process table cannot answer for a pid issued elsewhere —
+and its stream still moves inside the stall window, so the run is read from
+that life rather than as gone. But the arm's detail text was written for the
+other cause of an unknown liveness: a pid-less run launched in the
+coordinator's own harness. It told the reader "an in-harness run: liveness
+belongs to the calling harness", so a coordinator reading a row for a CLI
+worker on another host was told the run belonged to its own harness.
 
-The arm now tells the two cases apart. A pointer naming another machine gets a
-detail naming that host and saying its stream is moving; an in-harness run
-keeps today's wording. The classification itself does not change — both read
-``running`` — only the sentence that describes why.
+The arm now tells the two causes apart. A pointer naming another machine gets a
+detail naming that host, with the stream state read from the same newest-stream
+reader the classifier uses: moving when it is inside the stall window, quiet
+otherwise. An in-harness run keeps its wording. The classification itself does
+not change — every case here still reads ``running``.
 
 Everything the classifier resolves through the environment is pointed at
 ``tmp_path`` so the real crew directories are untouched.
@@ -71,9 +73,9 @@ def test_a_foreign_run_with_a_moving_stream_names_its_host(
 ) -> None:
     # The pointer names another machine, so this host's process table cannot be
     # asked about its pid and liveness reads unknown; its newest stream carries
-    # an assistant turn inside the stall window, so the run is in motion. §10
-    # reads that as running, and the running arm must name the host rather than
-    # call the run one of this harness's.
+    # an assistant turn inside the stall window, so the run is in motion. That
+    # reads as running, and the running arm must name the host rather than call
+    # the run one of this harness's.
     now = time.time()
     pointer = _pointer(
         "r-foreign-moving",
@@ -88,6 +90,34 @@ def test_a_foreign_run_with_a_moving_stream_names_its_host(
     assert OTHER_HOST in row["detail"]
     assert "in-harness" not in row["detail"]
     assert "moving" in row["detail"]
+
+
+def test_a_foreign_run_with_a_quiet_stream_does_not_claim_motion(
+    tmp_path: Path, home: Path
+) -> None:
+    # The same foreign run with its newest stream last written past the stall
+    # window. The arm is reached whatever the stream's state, so the detail must
+    # state the stream is quiet rather than claim motion that is not there — the
+    # run is named by its host either way, and still reads running.
+    now = time.time()
+    pointer = _pointer(
+        "r-foreign-quiet",
+        stream=_stream(
+            tmp_path,
+            "r-foreign-quiet",
+            age_seconds=recovery.LOG_STALE_AFTER_SECONDS + 100000,
+        ),
+        created_at=now - 100300,
+        launcher_host=OTHER_HOST,
+    )
+
+    row = recovery.classify_pointer(pointer, now_seconds=now)
+
+    assert row["classification"] == "running"
+    assert OTHER_HOST in row["detail"]
+    assert "in-harness" not in row["detail"]
+    assert "moving" not in row["detail"]
+    assert "quiet" in row["detail"]
 
 
 def test_an_in_harness_run_keeps_its_wording(tmp_path: Path, home: Path) -> None:
