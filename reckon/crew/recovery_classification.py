@@ -406,7 +406,22 @@ def classify_pointer(
     # manifest or an incomplete wait declaration — consults it here rather than
     # testing liveness for itself, so the guarantee cannot decay into per-arm
     # guards as manifest readings are added.
-    process_gone = alive is not True
+    #
+    # A reading of unknown is not a reading of gone. The pid a run carries is
+    # meaningful only on the host that issued it, so a run launched elsewhere
+    # answers unknown to this reader's process table — most often because the
+    # producer classifying a fleet sits on a different login node than the
+    # worker it launched. Treated as gone, that silence reaches the unreadable
+    # arm while the worker is mid-write, and a working run is drawn halted. The
+    # run's own stream is what settles it, exactly as the orientation-write
+    # exemption settles the same unknown: an assistant turn written inside the
+    # stall window is a run in motion, and one in motion is not gone. No second
+    # window is introduced — the stream reading is the shared helper the
+    # stall clock already stands on. A process observed to have ended is gone
+    # whatever its stream holds, so only an unknown reading consults the stream.
+    process_gone = alive is False or (
+        alive is None and not _newest_stream_in_motion(record, now_seconds=moment)
+    )
     # The same three-way reading the stalled detail states, taken here from the
     # same evidence so the two surfaces cannot call one run alive and gone at
     # once. The offer of a resume is gated on it rather than on ``process_gone``,
@@ -1377,6 +1392,7 @@ from .recovery_liveness import (  # noqa: E402
     _live_descendant,
     _manifest_size_key,
     _manifest_wait,
+    _newest_stream_in_motion,
     _observed_phase,
     _orientation_write_of_a_run_in_motion,
     _process_reading,
