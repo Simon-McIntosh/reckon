@@ -31,6 +31,7 @@ from reckon.crew.dispatch_claims import (
 from reckon._timestamps import (
     parse_utc,
 )
+from reckon.env_duration import read_duration_override
 from reckon.crew.fleet_supervisor import (
     REQUEST_FIFO_NAME,
 )
@@ -2606,15 +2607,9 @@ def _terminal_manifest_grace_seconds() -> float:
     Read from the environment so a test can shorten it, and floored at zero so
     a nonsensical value degrades to an immediate end rather than to no bound.
     """
-    raw = os.environ.get(TERMINAL_MANIFEST_GRACE_ENV, "").strip()
-    if raw:
-        try:
-            value = float(raw)
-        except ValueError:
-            value = None
-        if value is not None and value >= 0:
-            return value
-    return TERMINAL_MANIFEST_GRACE_DEFAULT
+    return read_duration_override(
+        TERMINAL_MANIFEST_GRACE_ENV, TERMINAL_MANIFEST_GRACE_DEFAULT, 0, True
+    )
 
 
 def _stop_grace_seconds() -> float:
@@ -2623,15 +2618,7 @@ def _stop_grace_seconds() -> float:
     Read from the environment so a test can shorten it, and floored at zero so
     a nonsensical value degrades to an immediate end rather than to no bound.
     """
-    raw = os.environ.get(STOP_GRACE_ENV, "").strip()
-    if raw:
-        try:
-            value = float(raw)
-        except ValueError:
-            value = None
-        if value is not None and value >= 0:
-            return value
-    return STOP_GRACE_DEFAULT
+    return read_duration_override(STOP_GRACE_ENV, STOP_GRACE_DEFAULT, 0, True)
 
 
 def _supervisor_manifest_path(run_id: str) -> Path:

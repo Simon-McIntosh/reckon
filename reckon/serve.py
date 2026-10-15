@@ -86,6 +86,7 @@ from reckon._store import (
 )
 from reckon._timestamps import parse_utc
 from reckon.crew.recovery import _PRE_SPAWN_PHASES
+from reckon.env_duration import read_duration_override
 from reckon.evidence import (
     EvidenceSynthesisError,
     compose_landed_record,
@@ -300,18 +301,20 @@ _CROSS_NODE_READ_WINDOW_S = 600.0
 
 
 def _cross_node_fast_s() -> float:
-    return float(os.environ.get("RECKON_CROSS_NODE_FAST_S", str(_CROSS_NODE_FAST_S)))
+    return read_duration_override(
+        "RECKON_CROSS_NODE_FAST_S", _CROSS_NODE_FAST_S, 0, True
+    )
 
 
 def _cross_node_slow_s() -> float:
-    return float(os.environ.get("RECKON_CROSS_NODE_SLOW_S", str(_CROSS_NODE_SLOW_S)))
+    return read_duration_override(
+        "RECKON_CROSS_NODE_SLOW_S", _CROSS_NODE_SLOW_S, 0, True
+    )
 
 
 def _cross_node_read_window_s() -> float:
-    return float(
-        os.environ.get(
-            "RECKON_CROSS_NODE_READ_WINDOW_S", str(_CROSS_NODE_READ_WINDOW_S)
-        )
+    return read_duration_override(
+        "RECKON_CROSS_NODE_READ_WINDOW_S", _CROSS_NODE_READ_WINDOW_S, 0, True
     )
 
 
@@ -4335,8 +4338,8 @@ class Handler(BaseHTTPRequestHandler):
 def _served_signature_ttl() -> float:
     """Return the walk-reuse window the served process reads its walks under."""
 
-    return float(
-        os.environ.get("RECKON_DISCOVERY_REUSE_S", str(_SERVED_SIGNATURE_TTL_S))
+    return read_duration_override(
+        "RECKON_DISCOVERY_REUSE_S", _SERVED_SIGNATURE_TTL_S, 0, True
     )
 
 

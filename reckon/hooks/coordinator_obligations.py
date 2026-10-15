@@ -168,10 +168,11 @@ class _DerivationBudgetError(Exception):
 
 def stop_derivation_budget() -> float:
     """The inline derivation's budget in seconds, honouring the test override."""
-    try:
-        return float(os.environ[STOP_DERIVATION_BUDGET_ENV])
-    except (KeyError, ValueError):
-        return STOP_DERIVATION_BUDGET_SECONDS
+    from reckon.env_duration import read_duration_override
+
+    return read_duration_override(
+        STOP_DERIVATION_BUDGET_ENV, STOP_DERIVATION_BUDGET_SECONDS, 0, False
+    )
 
 
 def _obligations_module():
@@ -676,11 +677,9 @@ PRODUCER_LEASE_ENV = "RECKON_PRODUCER_LEASE_SECONDS"
 
 def producer_lease_seconds() -> float:
     """The producer's lease interval in seconds, honouring the override."""
-    try:
-        value = float(os.environ[PRODUCER_LEASE_ENV])
-    except (KeyError, ValueError):
-        return PRODUCER_LEASE_SECONDS
-    return value if value > 0 else PRODUCER_LEASE_SECONDS
+    from reckon.env_duration import read_duration_override
+
+    return read_duration_override(PRODUCER_LEASE_ENV, PRODUCER_LEASE_SECONDS, 0, False)
 
 
 def producer_lease_path(project: str) -> Path:

@@ -22,7 +22,7 @@ def home(tmp_path, monkeypatch):
     root = tmp_path / "home"
     monkeypatch.setenv("RECKON_HOME", str(root))
     monkeypatch.setattr(hook, "locate_session", lambda payload: (PROJECT, SESSION))
-    monkeypatch.setenv(hook.STOP_DERIVATION_BUDGET_ENV, "0")
+    monkeypatch.setenv(hook.STOP_DERIVATION_BUDGET_ENV, "0.000001")
     return root
 
 
