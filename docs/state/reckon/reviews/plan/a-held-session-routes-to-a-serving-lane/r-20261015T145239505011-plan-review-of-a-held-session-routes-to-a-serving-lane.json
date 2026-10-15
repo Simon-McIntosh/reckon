@@ -1,0 +1,45 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T14:59:25.853Z",
+  "dispatched_at": "2026-10-15T14:53:17Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-session-routes-to-a-serving-lane.html:191",
+      "id": "wiring-1",
+      "reason": "adding a \u00a77 followup carrying its `/reckon-build \u2026 \u00a77` prompt makes the still-open section reachable by the next-step chain, which today it is not.",
+      "text": "\u00a77 is declared `implementable` yet the followups block (`f-hsrs-002`, data-recommends-skill \"...\u00a76\") supplies the one-line \u00a705 invocation only for \u00a76, so `roadmap`/`followup` readers see \u00a76's build prompt but no driver for \u00a77's resume-policy work",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b0608c0e0d2aa2240743eea2392b7238e308596a20bb6c3d165d8a51a97274ae",
+  "plan_slug": "a-held-session-routes-to-a-serving-lane",
+  "plan_version": 22,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T145239505011-plan-review-of-a-held-session-routes-to-a-serving-lane",
+  "reviewed_blob_sha": "5a654d90ed07568636ac57ed59800a8ae5ff222a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew_run_commands.py`, `crew_resume`, `crew_redispatch`, `change_lane` and `resume_plan` all resolve in the tree, the new test path is a declared deliverable, and the evidence-archive anchors `#s2`, `#s3`, `#s4-queued-move`, `#s4-review-reflex`, `#s5` all resolve in `docs/evidence/archive/a-held-session-routes-to-a-serving-lane-landed.html` (the `audit-doc` dangling-link warns are a corpus-scope artifact \u2014 the evidence file exists and carries each id).",
+    "done_when": "pass \u2014 \u00a76 and \u00a77 each state a measurable done-when with a declared negative control (the lane-family pin failing on an unchanged-backend return; the resume cases reading the base value once `crew_resume` passes an empty override tuple again).",
+    "evidence_paths": "pass \u2014 \u00a77's control is logged under the run directory, a durable path that survives the run, not a node-local temp tree.",
+    "naming": "pass \u2014 \u00a77's write paths (`reckon/crew_run_commands.py`, `tests/test_a_resume_runs_under_its_dispatch_policy.py`) carry no plan label, stage name, ticket number or version tag, and the section's prose names mechanisms rather than tracker entries.",
+    "reasoning": "pass \u2014 \u00a77's stated root cause matches the code it cites: `crew_resume` resolves flight with an empty override tuple (`reckon/crew_run_commands.py:1295`) where `crew_redispatch` reads `dispatch_options.overrides` (`reckon/crew_run_commands.py:1407-1409`), both reaching `change_lane`/`resume_plan` (the two and only two `change_lane` callers), so the mechanism runs on the named production caller and produces the done-when.",
+    "single_goal": "pass \u2014 \u00a77 carries one deliverable (resume resolves its flight with the run's recorded overrides through one shared reading).",
+    "wiring": "a finding \u2014 \u00a77 is declared `implementable` but the followups block carries a driving invocation only for \u00a76 (`f-hsrs-002`), so the plan's next-step chain names no `/reckon-build \u2026 \u00a77`."
+  },
+  "section_digests": {
+    "_document": "24eb478ad6be80d10f93d15ded74a28f2d8ed79e85265bbacda638fdea2337d9",
+    "s1": "bcb76fd1e36c1640de15ae6763cc9a81fa94bbf740e12b844ef8ca1b64273375",
+    "s2": "c645d9e7baae34776f5b8f9c2dd066fc9af4eee8929fde6bf169cffcc3e1583c",
+    "s3": "fb16a2a2293ef2fafdfe6399ffc0da4d1fc940e78110635b413a1bafc2028861",
+    "s4": "9612149e1d24c4df585f6427a61fcb5eb20a529d956831368e08bdc56fed9174",
+    "s5": "6f592a89511473015142bc4e8bea06622bcf51877131ef14231aa8db57ff8fae",
+    "s6": "390bffed17b2602fcd713215842f533ef8755c30aa9137e1d40ce2828d529b65",
+    "s7": "6fd55b2badd1679d95e94cd5a5c61b8c477e60647b4ef00465c99018195319f1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T15:01:49.624046+00:00"
+}
