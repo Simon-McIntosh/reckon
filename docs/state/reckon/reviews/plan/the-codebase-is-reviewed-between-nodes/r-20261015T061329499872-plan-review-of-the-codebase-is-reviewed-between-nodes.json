@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T06:20:02.616Z",
+  "dispatched_at": "2026-10-15T06:14:04Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-codebase-is-reviewed-between-nodes.html:348",
+      "id": "reasoning-1",
+      "reason": "the followup is the driving artifact a coordinator reads (\u00a705 invocation `/reckon-build \u2026 \u00a714`), so a builder briefed from it would add the code review to the promotion payloads, which the section itself states would roll the landing back because `store_committed_review` refuses a record naming neither a run nor a plan.",
+      "text": "the followup f-tcirbn-s14 name and body say \u00a714 \"stores and commits a code review when it promotes\", but the section was rewritten (commit 388794951) to say the opposite: \"The promotion commit's review payloads do not change\u2026 The code review stays in the staging store\u2026 Committing code reviews to the tree is a separate decision and not part of this section\"",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "01991a94ad5a780d2fbb682ec3c6b761cc8847ea33160be75b75e2a72d62425d",
+  "plan_slug": "the-codebase-is-reviewed-between-nodes",
+  "plan_version": 70,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T061329499872-plan-review-of-the-codebase-is-reviewed-between-nodes",
+  "reviewed_blob_sha": "ccd2f3edc5cb188984374829c615e58696698d71",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: `_staging_review_record_by_run` (reckon/crew/promotion_checks.py:1804), `_plan_review_record_for_promoting_run` (promotion_checks.py:1830), `code_review_identity` (reckon/crew/review_dispositions.py:272), `store_committed_review` (reckon/crew/review.py:2584), `names_a_review_subject` (review.py:1756), `delivered_report_record` (reckon/crew/plan_review.py:2069), `list_code_reviews` (plan_review.py:2854), the harness `tests/test_a_queued_plan_review_is_stored.py`, and the composed run id `r-20261015T053316274650-review-code-a8eb488cc578` which is the `review_run_id` the nova sidecar `reports/nova/code-review/a8eb488cc578/code-review.json` carries.",
+    "done_when": "pass \u2014 \u00a714's done-when is measurable and declares a negative control (\"removes the code-review branch, and the first case must then fail\"), and its six cases assert observable store/record state rather than a suite that passes either way.",
+    "evidence_paths": "pass \u2014 each run is logged \"under the run directory with its command, its revision and an EXIT= line\", and the gate log lives on a durable path, not a scratchpad.",
+    "naming": "pass \u2014 no plan label, ticket number or version tag reaches a symbol, filename or comment; the test and prompt names describe the mechanism.",
+    "reasoning": "a finding \u2014 \u00a714's evidence and mechanism hold (a code-review record carries no `reviewed_run_id` and no `plan_slug`, so `names_a_review_subject` rejects it and `store_committed_review` would roll the landing back; the neighbourhood key `code_review_identity` reads from the promoting run id resolves the `code-review.json` sidecar by report directory name; the caller `_staging_review_record_by_run` is named and reachable from promotion.py:2053), but the plan's own driving followup, f-tcirbn-s14, still states the deliverable the section was rewritten to refute.",
+    "single_goal": "pass \u2014 \u00a714 carries one deliverable (a promoted code review is stored).",
+    "wiring": "pass \u2014 \u00a714 names its prerequisites (\u00a76 code-review verb, \u00a713 package choice) in prose and declares no depends-on of its own; the section's only cross-plan dependency already landed, so no missing relationship changes the section."
+  },
+  "section_digests": {
+    "_document": "f954db6904e07df8b9bc68b5dcbf09270f97017757c597551761991066a47547",
+    "s1": "9b90bb5d52612fe5176b665cf841e1e32b7f38a28ba1b61073a75cc3d069801a",
+    "s10": "fd23d07301f3cad0c97fef7db3a37873185ea49a190df387e6b4c9c4842520cc",
+    "s11": "9e366a36d7c955b9e20809f7f939f7e5341dea805985ebb4bbd30a8a826983f7",
+    "s12": "d13bdfd65326c7fc01350bcfd52b0cfd2f0f9bf518e2856c3614ffd58d62d013",
+    "s13": "ff8a71976e59f6c5e61ed4c147a4ed36bd28c9212e11574be2670a50b225b0f9",
+    "s14": "4450e65a0c38cab47adf894fcf125a4f65aadc691061dfc9bb4df3a3bf67ae47",
+    "s2": "449650cf3f83a3d58ac9fd8300f391af35ba5aa8ae747d9364d73ed77c82aa7e",
+    "s3": "2c449e0173e76fffe6ccc80b5373b095fe1d7916e7948747fa0976dfb315f33e",
+    "s4": "d90c4e0ae9e513908951452540ead3c635b9c43faa46f9400dd8449543cce1d6",
+    "s5": "6ffcc77242984ec10be759d78f7a93debe73b3743dc9186527661e58ccfe8316",
+    "s6": "cff9b0b879d09b64cc4138b82c72e4814e531c6cf053920f3c05931bbf43abc4",
+    "s7": "d4bab6166d5c436fc12815244f86a04121deb2ca67fc71c1fd66d0498d89fbcf",
+    "s8": "1b50194c1f0c6912b871f624cbfcfc01fc0e693a036d87844203a29ba311f17b",
+    "s9": "f03878914cabdb64631b914dba06b3963c765228e774c1419ab91b13e71b1e9d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T06:21:03.900476+00:00"
+}
