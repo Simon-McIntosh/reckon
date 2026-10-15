@@ -2107,8 +2107,10 @@ def _publish_watch_transitions(
             # seed is the predecessor's last word for a run rather than this
             # producer's own first row. A run the stream named at another state
             # moved while the seat was down, and that row is the news a follower
-            # wakes on; a run the stream never named, or that stands where it
-            # last did, is inventory and is published as a baseline.
+            # wakes on; a run the stream never named is inventory and is
+            # published as a baseline. A run that stands where the stream last
+            # published it is named again by no row: the stream already carries
+            # its state, and a repeated baseline would draw it with no change.
             published = _seed_published_states(producer.path, _live_created(records))
             # Kept on the producer, because the seat's own ticker starts after
             # this sweep has already appended these rows: a ticker that read the
@@ -2122,13 +2124,18 @@ def _publish_watch_transitions(
             for run_id, snapshot in current.items():
                 state = str(snapshot["state"])
                 seeded = published.get(run_id)
+                # A run whose state equals the one the stream last published for
+                # it is neither news nor needed inventory: the stream already
+                # carries that state, so a fresh baseline here would draw the
+                # run again with no change between the rows. A cold follower
+                # builds its inventory from the live pointers, not these rows.
+                if seeded is not None and seeded == state:
+                    continue
                 lines.append(
                     _stream_transition(
                         project,
                         snapshot=snapshot,
-                        previous=(
-                            seeded if seeded is not None and seeded != state else None
-                        ),
+                        previous=seeded,
                         current=state,
                         counts=counts,
                     )

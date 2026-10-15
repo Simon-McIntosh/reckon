@@ -7,8 +7,10 @@ wakes on: a run that finished while the seat was down sits idle until something
 else moves it. These cases hold the contract — the replacement seeds its
 first-poll memory from each live run's last published state, so a run whose
 state changed across the reload is delivered as a transition from that state,
-while a run the stream never named, and a run that stands where it last did,
-still read as baselines.
+while a run the stream never named still reads as a baseline. A run that
+stands where the stream last published it draws no row on the appended stream,
+which already carries its state, while the seat's own ticker still emits it as
+inventory.
 """
 
 from __future__ import annotations
@@ -349,10 +351,14 @@ def test_the_sweep_appends_a_baseline_for_a_run_the_stream_never_named(home) -> 
     assert row["from_state"] is None, row
 
 
-def test_the_sweep_keeps_the_baseline_for_a_run_standing_where_it_last_did(
+def test_the_sweep_appends_nothing_for_a_run_standing_where_it_last_did(
     home,
 ) -> None:
-    """A run the stream already published at its current state is inventory."""
+    """A run the stream already published at its current state draws no row.
+
+    The stream carries the row for that state, so a fresh baseline here would
+    draw the run again with no change between the rows; the sweep leaves it out.
+    """
     run_id = "r-swept-still"
     pointer = _write_pointer(
         run_id,
@@ -366,8 +372,8 @@ def test_the_sweep_keeps_the_baseline_for_a_run_standing_where_it_last_did(
         _row_line(_row(run_id, to_state=standing, from_state="dispatched", at=NOW))
     )
 
-    row = _appended_row(run_id, before=1)
+    rows = _sweep_rows()
 
-    assert row["event"] == "baseline", row
-    assert row["from_state"] is None, row
-    assert row["to_state"] == standing, row
+    assert len(rows) == 1, rows
+    assert rows[0]["run_id"] == run_id, rows
+    assert rows[0]["to_state"] == standing, rows
