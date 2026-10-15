@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T11:40:44.847Z",
+  "dispatched_at": "2026-10-15T11:27:49Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-write-on-any-node-reaches-the-page.html:45",
+      "id": "reasoning-1",
+      "reason": "implemented as written, a detector meant to be stat-only silently reintroduces a git subprocess on the login node over GPFS; a separate index-committed identity helper (or carrying `.git/index` only in the detector's own signal) satisfies the mechanism without breaking `_head_identity`'s \"changes exactly when the commit changes\" contract.",
+      "text": "\u00a72 extends `_head_identity` (serve.py:1291) \"to include the stat identity of `.git/index`\"; `_head_identity`'s only caller is `_git_head` (serve.py:1319), which memoises the resolved sha on that identity tuple and whose docstring promises an unchanged checkout \"start[s] no git process\". Adding `.git/index` makes the identity change on every add/merge/pull even when HEAD does not, so the memo (serve.py:1341) misses and spawns a `git rev-parse HEAD` subprocess per index write, and line 59's own done-when asserts precisely this new behaviour (\"`_head_identity` changes when `.git/index` changes and HEAD does not\") without noting the cost it introduces.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-write-on-any-node-reaches-the-page.html:46",
+      "id": "reasoning-2",
+      "reason": "the plan cites the correct owner by name and its done-when edits a file that becomes the newest mtime, so the node builds the mechanism the plan intends; only the prose overstates what the object computes.",
+      "text": "\u00a72 calls the slow signal \"the stat signature of every covered file\", but its cited owner `_walk_discovery_signature` reduces the swept files to `(file count, newest mtime)` (documented at serve.py:1631, and it returns that pair at serve.py:1691), so it senses an in-place edit only when the edited file becomes the newest mtime or the file count changes; an uncommitted edit to a covered file that does not become the newest is invisible to it.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "17864511a1f3680f7f292a55870ed67f329d23ce8bc38855d4ef7d7aea3d4cf5",
+  "plan_slug": "a-write-on-any-node-reaches-the-page",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T112400148579-plan-review-of-a-write-on-any-node-reaches-the-page",
+  "reviewed_blob_sha": "d669cb580e0dd69a5ea6862c2200625d55d80247",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 opened serve.py:844, :1291, :1262, :1659, :1771, :2782, :4017, :225, metadata_index._load_dir_stamps/_reuse_covered/_covered_files, and both named existing test files; all resolve.",
+    "done_when": "pass \u2014 \u00a72's assertions are each measurable (row appears in `_index` within a set interval, `_head_identity` changes on `.git/index`, pipe registered/removed, single invalidation) and the node declares a negative control that disables the detector and must make the new-document test fail.",
+    "evidence_paths": "pass \u2014 the gate's stat/wall-time figures and the fleet-index answer are recorded in the run's manifest on a durable path, and the deliverable is an in-repo test file; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 the deliverable test file is named by its mechanism (`tests/test_cross_node_writes_refresh_the_index.py`), the node by what it does, and no plan label, ticket number or version tag reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 the plan extends `_head_identity`, whose sole caller `_git_head` uses its return value as a memo key and which is documented to change \"exactly when the resolved commit changes\", to include `.git/index`; the resulting identity changes on every index write, so the memo misses and a `git rev-parse HEAD` process starts on every add/merge/pull even when HEAD is unchanged.",
+    "single_goal": "pass \u2014 one node, one deliverable (the cross-node backstop); the fleet-index check is a manifest report the plan explicitly says it does not change.",
+    "wiring": "pass \u2014 no depends-on/informs/gates relationships are declared and plan-standalone states it waits on and is waited on by none; every node-internal reference resolves."
+  },
+  "section_digests": {
+    "_document": "375c8a0250252dfd8391140955e2378dc5d099cc39e269da05940553993894d2",
+    "s1": "58a6ee92b653b4651357b52cc08c1e80b329e4482143b6bc8ae18570764bcd52",
+    "s2": "c0499f3983d2ad7c22e2f0726a898fecac134ec4d9fe68601a5f228d077a8e28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T11:52:28.519230+00:00"
+}
