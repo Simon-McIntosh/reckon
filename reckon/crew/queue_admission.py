@@ -144,8 +144,15 @@ def _launch_queued(
     *,
     launcher: Callable[..., int] | None,
     config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+    backend_override: str = "",
 ) -> dict[str, Any]:
-    """Launch one queued run through the shared dispatch path a coordinator uses."""
+    """Launch one queued run through the shared dispatch path a coordinator uses.
+
+    ``backend_override`` names the backend this request launches on instead of
+    the one it was queued for: a rebind of a request that never launched, so the
+    request is re-composed from the recorded node and its recorded dispatch
+    options (its waivers among them) rather than the backend it originally named.
+    """
     from reckon.crew.dispatch import dispatch
 
     options = dict(pointer.get("dispatch_options") or {})
@@ -160,6 +167,7 @@ def _launch_queued(
     config = (
         config_for(pointer) if config_for is not None else _resolve_lane_config(pointer)
     )
+    destination = str(backend_override).strip()
     return dispatch(
         node=node,
         project=str(pointer["project"]),
@@ -178,17 +186,129 @@ def _launch_queued(
         unreviewed_plan_override=bool(options.get("allow_unreviewed_plan")),
         watch_required=True,
         watch_override=bool(options.get("no_watch")),
-        local=bool(pointer.get("local")),
-        backend_override=str(pointer.get("backend") or ""),
+        local=bool(pointer.get("local")) and not destination,
+        backend_override=destination or str(pointer.get("backend") or ""),
         repairs=str(options.get("repairs") or ""),
         accept_directory_claim=bool(options.get("accept_directory_claim")),
         no_fence_reason=str(options.get("no_fence_reason") or ""),
-        route=options.get("route"),
+        route="deterministic" if destination else options.get("route"),
         comment=str(options.get("comment") or ""),
         dispatch_options=options,
         admission_launch=True,
         admitted_from=str(pointer["run_id"]),
     )
+
+
+# The dispatch options a rebind copies from the request it moves. The waivers a
+# lane change carries, never adds: the plan-review and directory-claim overrides
+# the original dispatch recorded, and the free-text comment beside them. A
+# rebind copies exactly these, so a run moved to another lane is not refused by
+# a gate the original request had already answered — and a request that carried
+# no waiver arrives carrying none.
+_CARRIED_OPTION_KEYS = ("allow_unreviewed_plan", "accept_directory_claim", "comment")
+
+
+def carried_options(pointer: Mapping[str, Any]) -> dict[str, Any]:
+    """The recorded dispatch options a lane change copies onto the new launch."""
+    options = dict(pointer.get("dispatch_options") or {})
+    return {key: options[key] for key in _CARRIED_OPTION_KEYS if key in options}
+
+
+def move_queued_run(
+    run_id: str,
+    backend_name: str,
+    *,
+    reason: str = "",
+    config: Mapping[str, Any] | None = None,
+    launch: bool = True,
+    launcher: Callable[..., int] | None = None,
+) -> dict[str, Any]:
+    """Move a queued request that never launched onto another backend.
+
+    A queued request has no prompt and no worktree — its first attempt has not
+    started — so the move re-composes its launch from the recorded node through
+    the admission pass's own path rather than composing a fresh prompt. That
+    recomposition forwards the request's recorded dispatch options, so the
+    waivers the original dispatch answered are carried into the new launch, and
+    the request is released only inside it, so the move never races the
+    admission pass with a discard of a request that is still waiting.
+    """
+    record = runs.read_pointer(run_id)
+    if str(record.get("phase") or "") != "queued":
+        raise CrewError(f"run {run_id!r} is not a queued request to move")
+    destination = str(backend_name).strip()
+    if not destination:
+        raise CrewError("changing a run's backend requires a destination backend")
+    config_for = None if config is None else (lambda _pointer: config)
+    if not launch:
+        return {
+            "run_id": run_id,
+            "node": record.get("node"),
+            "backend": destination,
+            "launch": destination,
+            "reason": str(reason),
+            "carried": carried_options(record),
+        }
+    moved = _await_moved_launch(
+        record,
+        snapshot=copy.deepcopy(dict(record)),
+        destination=destination,
+        launcher=launcher,
+        config_for=config_for,
+    )
+    carried = carried_options(record)
+    moved_run_id = str(moved["run_id"])
+
+    def stamp(pointer: dict[str, Any]) -> dict[str, Any]:
+        pointer["carried_options"] = carried
+        pointer["lane_move"] = {
+            "from_backend": str(record.get("backend") or ""),
+            "to_backend": destination,
+            "reason": str(reason),
+        }
+        return pointer
+
+    return runs._mutate_pointer(moved_run_id, stamp)
+
+
+def _await_moved_launch(
+    record: Mapping[str, Any],
+    *,
+    snapshot: dict[str, Any],
+    destination: str,
+    launcher: Callable[..., int] | None,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+) -> Mapping[str, Any]:
+    """Launch a moved queued request, restoring it when the launch does not land.
+
+    The launch releases the request as it launches, so a launch that is refused
+    would otherwise take a request that is still waiting for a lane down with
+    it. The snapshot is written back when the launch leaves no live pointer for
+    it — neither the request's own id nor one naming it as the request it was
+    admitted from. It is not written back when the request came back queued on
+    the destination, so no second copy of one waiting request is created.
+    """
+    run_id = str(record["run_id"])
+    try:
+        return _require_launched_record(
+            _launch_queued(
+                record,
+                launcher=launcher,
+                config_for=config_for,
+                backend_override=destination,
+            )
+        )
+    except Exception:
+        project = str(record.get("project") or "")
+        survives = any(
+            str(row.get("run_id") or "") == run_id
+            or str(row.get("admitted_from") or "") == run_id
+            for row in runs.list_live(project=project or None)
+        )
+        if not survives:
+            with contextlib.suppress(Exception):
+                runs.queue_dispatch(snapshot)
+        raise
 
 
 def _session_allowance(
