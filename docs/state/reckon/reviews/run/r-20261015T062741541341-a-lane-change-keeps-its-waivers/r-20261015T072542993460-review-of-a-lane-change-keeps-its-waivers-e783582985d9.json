@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run records both baseline_suite (8c74f2f2e, 181 passed, EXIT=0, completed) and after_suite (3836a362e, 183 passed, EXIT=0, completed) in its manifest, each with failure_count 0 and no failure ids, so the delta this review records is 0 -- no failure exists at head that is absent at base.",
+  "backend": "local",
+  "base_log_revision": "8c74f2f2e49f4c4fe163198864a3a7796ad45807",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1302 (crew_resume -> change_lane)",
+    "reckon/crew_run_commands.py:1415 (crew_redispatch -> change_lane)",
+    "reckon/crew/queue_admission.py:881 (admit_once -> _launch_queued)",
+    "reckon/crew/dispatch.py:2554 (re-export of change_lane)"
+  ],
+  "completed_at": "2026-10-15T07:40:29.606Z",
+  "dispatched_at": "2026-10-15T07:26:29Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "1295",
+      "severity": "follow-on",
+      "text": "follow-on: crew_resume --backend resolves its flight config without the request's recorded dispatch_options[\"overrides\"], while crew_redispatch at :1407 now passes them, so a queued move reached through crew resume can resolve a different lane policy than crew redispatch and than the admission pass's own _resolve_lane_config (queue_admission.py:132)."
+    }
+  ],
+  "head_log_revision": "3836a362e5065d84254f0ce3a65f22f34ecd9783",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:1302 (crew_resume -> change_lane), reckon/crew_run_commands.py:1415 (crew_redispatch -> change_lane), reckon/crew/queue_admission.py:881 (admit_once -> _launch_queued), reckon/crew/dispatch.py:2554 (re-export of change_lane)",
+    "diff": "read commit by commit against the base -- 3836a362e adds move_queued_run, _await_moved_launch, carried_options, the change_lane queued branch and the crew_redispatch overrides, ccea297c5 is format-only, e78358298 adds the fragment -- every file inside the declared write paths.",
+    "done_when": "the done_when names tests/test_a_lane_change_keeps_its_waivers.py; the manifest records that run (2 passed, EXIT=0) and the base/head arms over the importing test files (181 and 183 passed, EXIT=0), which logs/gate-base.txt and logs/gate-head.txt confirm.",
+    "goal": "the node's goal is to carry a run's recorded dispatch waivers into the launch a move to another lane makes; reckon/crew/queue_admission.py:213 move_queued_run re-launches the queued request through _launch_queued, whose recorded dispatch_options supply the waivers, and tests/test_a_lane_change_keeps_its_waivers.py:130 asserts the launched run carries them.",
+    "manifest": "read; it reports 2 passed at head, the base/head arms, and a negative_control_log, and carries a correction to that log's path in its evidence_inputs prose.",
+    "write_paths": "the declared scope is the three modules, the new test file and the evidence fragment; git diff --stat 8c74f2f2e..e78358298 lists exactly those five files and docs/figures/ is left empty."
+  },
+  "justifications": {
+    "durability": "tests/test_a_lane_change_keeps_its_waivers.py:131 reddens if the carried_options stamp at queue_admission.py:263 is dropped and :122 fails if the change_lane queued branch is removed, so the assertions guard the regression rather than restating an input; the declared removal of the carry in _launch_queued reddens the same case (logs/negative-control.txt, EXIT=1).",
+    "evidence": "the gate ran and its result is recorded rather than claimed -- tests/test_a_lane_change_keeps_its_waivers.py 2 passed EXIT=0 in logs/head-first.txt, base 181 / head 183 passed in logs/gate-base.txt and logs/gate-head.txt, and the declared negative control reddens the first case with EXIT=1 in logs/negative-control.txt.",
+    "fit": "the move extends the existing admission-pass path (queue_admission.py:213) with a backend_override keyword in the idiom of _launch_queued, and the added names carry no version, plan or ticket label.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:213 move_queued_run rebuilds the queued request's launch through _launch_queued so its recorded dispatch_options carry the waivers onto the destination backend, and dispatch_sessions.py:1452 routes a queued record to it instead of refusing it.",
+    "reuse": "the queued move extends the owner of the capability rather than forking it -- move_queued_run calls _launch_queued (queue_admission.py:142) and change_lane (dispatch_sessions.py:1452) delegates to it, as the plan requires; a search over reckon/ found no other queued-run move or rebind capability.",
+    "scope_discipline": "git diff --stat 8c74f2f2e..e78358298 touches only the five declared write paths (dispatch_sessions.py, queue_admission.py, crew_run_commands.py, the new test file and the evidence fragment)."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to carry a run's recorded dispatch waivers into the launch a move to another lane makes; reckon/crew/queue_admission.py:213 move_queued_run re-launches the queued request through _launch_queued, whose recorded dispatch_options supply the waivers, and tests/test_a_lane_change_keeps_its_waivers.py:130 asserts the launched run carries them.\nVERDICT done_when: the done_when names tests/test_a_lane_change_keeps_its_waivers.py; the manifest records that run (2 passed, EXIT=0) and the base/head arms over the importing test files (181 and 183 passed, EXIT=0), which logs/gate-base.txt and logs/gate-head.txt confirm.\nVERDICT write_paths: the declared scope is the three modules, the new test file and the evidence fragment; git diff --stat 8c74f2f2e..e78358298 lists exactly those five files and docs/figures/ is left empty.\nVERDICT manifest: read; it reports 2 passed at head, the base/head arms, and a negative_control_log, and carries a correction to that log's path in its evidence_inputs prose.\nVERDICT diff: read commit by commit against the base -- 3836a362e adds move_queued_run, _await_moved_launch, carried_options, the change_lane queued branch and the crew_redispatch overrides, ccea297c5 is format-only, e78358298 adds the fragment -- every file inside the declared write paths.\nCALL_SITES: reckon/crew_run_commands.py:1302 (crew_resume -> change_lane), reckon/crew_run_commands.py:1415 (crew_redispatch -> change_lane), reckon/crew/queue_admission.py:881 (admit_once -> _launch_queued), reckon/crew/dispatch.py:2554 (re-export of change_lane)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:213 move_queued_run rebuilds the queued request's launch through _launch_queued so its recorded dispatch_options carry the waivers onto the destination backend, and dispatch_sessions.py:1452 routes a queued record to it instead of refusing it.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate ran and its result is recorded rather than claimed -- tests/test_a_lane_change_keeps_its_waivers.py 2 passed EXIT=0 in logs/head-first.txt, base 181 / head 183 passed in logs/gate-base.txt and logs/gate-head.txt, and the declared negative control reddens the first case with EXIT=1 in logs/negative-control.txt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 8c74f2f2e..e78358298 touches only the five declared write paths (dispatch_sessions.py, queue_admission.py, crew_run_commands.py, the new test file and the evidence fragment).\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_lane_change_keeps_its_waivers.py:131 reddens if the carried_options stamp at queue_admission.py:263 is dropped and :122 fails if the change_lane queued branch is removed, so the assertions guard the regression rather than restating an input; the declared removal of the carry in _launch_queued reddens the same case (logs/negative-control.txt, EXIT=1).\nSCORE fit: 18\nJUSTIFICATION fit: the move extends the existing admission-pass path (queue_admission.py:213) with a backend_override keyword in the idiom of _launch_queued, and the added names carry no version, plan or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the queued move extends the owner of the capability rather than forking it -- move_queued_run calls _launch_queued (queue_admission.py:142) and change_lane (dispatch_sessions.py:1452) delegates to it, as the plan requires; a search over reckon/ found no other queued-run move or rebind capability.\nFINDING reckon/crew_run_commands.py:1295 follow-on: crew_resume --backend resolves its flight config without the request's recorded dispatch_options[\"overrides\"], while crew_redispatch at :1407 now passes them, so a queued move reached through crew resume can resolve a different lane policy than crew redispatch and than the admission pass's own _resolve_lane_config (queue_admission.py:132).",
+  "review_run_id": "r-20261015T072542993460-review-of-a-lane-change-keeps-its-waivers-e783582985d9",
+  "reviewed_base_sha": "8c74f2f2e49f4c4fe163198864a3a7796ad45807",
+  "reviewed_head_sha": "e783582985d954029413f8c3128431fd3bbb972a",
+  "reviewed_run_id": "r-20261015T062741541341-a-lane-change-keeps-its-waivers",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T07:37:07+00:00",
+  "total": 111
+}
