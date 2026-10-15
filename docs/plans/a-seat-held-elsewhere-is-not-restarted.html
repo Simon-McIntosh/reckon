@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="the-review-loop-runs-without-hand-steps">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;deferred&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="59">
+<meta name="plan-version" content="60">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -182,7 +182,7 @@
 <p><strong>Done when</strong> no private temporary-and-rename writer remains in <code>reckon/crew/run_paths.py</code>, and §8's tests in <code>tests/test_a_follower_on_another_node_renews_a_lease.py</code> pass unchanged, the concurrent-reader case included. The test files that import <code>reckon/crew/run_paths.py</code> give the same pass and fail ids at head as at base. Negative control: with the lease written by truncate-then-write in place, the concurrent-reader case fails; the control is logged under the run directory. Write paths: <code>reckon/crew/run_paths.py</code> and <code>reckon/crew/follower_registration.py</code>.</p>
 
     <h2 id="s16">§16 — An exclusive claim with reclaim has one owner</h2>
-<section data-reckon="section" data-id="s16" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s16" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
 <p><strong>Why.</strong> §11 added <code>claim_next_attempt</code> and <code>_create_attempt_claim</code> to <code>reckon/crew/resumption.py</code>. They create a claim file with <code>O_CREAT | O_EXCL</code> and reclaim it once it goes stale. <code>reckon/crew/dispatch_claims.py</code> already owns that mechanism in <code>_claim_node_dispatch</code>, with <code>_reclaim_stale_node_dispatch_claim</code> and <code>_empty_claim_is_stale</code>, and §11's copy repeats its bounded-reclaim comment almost word for word. §11's review scored reuse at 9, below the floor of 10, for this. The two staleness rules differ: the dispatch claim asks whether its holder is alive, and the attempt claim asks whether the pointer has moved on. So the shared part is the exclusive create, the empty-claim grace and the bounded reclaim loop, not the staleness rule.</p>
 <p><strong>Deliverable.</strong> One function in <code>reckon/crew/dispatch_claims.py</code> performs the exclusive create and the bounded reclaim loop. It takes the claim path, the record to write and a staleness predicate. Every staleness rule lives in the caller's predicate, not in the shared function. That includes the dispatch path's empty-claim grace (<code>_empty_claim_is_stale</code>), which belongs to its holder-liveness rule. The attempt claim keeps its own rule: the pointer has moved, or the launch window has passed. <code>_claim_node_dispatch</code> and <code>claim_next_attempt</code> both call it, each with its own predicate. Neither caller changes its behaviour, its refusal wording or its claim file's location and content.</p>
 <p><strong>Done when</strong> neither <code>dispatch_claims.py</code> nor <code>resumption.py</code> makes an exclusive-create claim except through the shared function. The manifest lists every other exclusive-create claim in <code>reckon/</code> as a candidate for the owner, with its staleness rule. One is the lift claim in <code>reckon/crew_follow_commands.py</code>, which is age-bounded; it is left out of this node's scope. The dispatch path's empty-claim cases in its existing tests pass unchanged. §11's tests in <code>tests/test_a_resume_never_launches_beside_another_node.py</code>, and the node-dispatch claim tests, pass unchanged. A new test drives the shared function with an always-stale predicate and a never-stale one, and finds a claim reclaimed and refused respectively. The test files that import either module give the same pass and fail ids at head as at base, apart from the new file. Negative control: with the shared function never reclaiming, the always-stale case is refused; the control is logged under the run directory. Write paths: <code>reckon/crew/dispatch_claims.py</code>, <code>reckon/crew/resumption.py</code> and <code>tests/test_an_exclusive_claim_has_one_owner.py</code>.</p>
@@ -304,6 +304,9 @@
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261015T161738531981-review-of-a-resume-never-launches-beside-another-node-d1ceef9e6e04" data-who="reckon-build" data-when="2026-10-15T16:36:23.926Z">
     <div class="r-comment-body"><p>Review of r-20261015T152907807302-a-resume-never-launches-beside-another-node stored at r-...node.json and r-...node.at-d1ceef9e6e04....json: status parsed, six dimensions scored goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 19, reuse 9 (total 102), reviewing diff f2ac7cc28be5409beae3b2c8b13fda58c83c9148..d1ceef9e6e04c296bf37033497f10e336a588c25 (reviewed_base_sha/reviewed_head_sha recorded), with added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own gate logs; three follow-on findings, none blocking.</p></div>
 </div>
+<div class="r-comment" data-section="s16" data-id="c-s16-deferred" data-who="reckon-build" data-when="2026-10-15T17:05:00Z">
+    <div class="r-comment-body"><p>§16 is deferred, not built. Four content reviews each found a real mismatch in the proposed shared interface:</p><ul><li>the empty-claim grace is the dispatch claim's own staleness rule;</li><li>a third claim, the lift claim, sits outside the scope;</li><li>the attempt claim re-derives its path on every pass and advances its number after a reclaim, which one fixed path cannot express.</li></ul><p>The two claims share only the exclusive <code>os.open</code> call. A shared function would add coupling without removing logic, and it would risk the behaviour change the section forbids. The reuse floor on §11's review is exempted with this reason. §17 no longer waits on this section.</p></div>
+</div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
@@ -316,10 +319,11 @@
     <h4 class="r-gate-measure">the missing-snapshot hook line for a live seat elsewhere is merged on main, so the stop path&#x27;s reload reading builds on the same freshness states and not_fresh_line</h4>
     <p class="r-gate-required-evidence">a-seat-held-elsewhere-is-not-restarted#s9</p>
     </div>
-<div class="r-gate" data-id="g-sheinr-3" data-section="s17" data-gated-sections="s17" data-status="open" data-verdict="">
+<div class="r-gate" data-id="g-sheinr-3" data-section="s17" data-gated-sections="s17" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">the exclusive-claim consolidation is merged on main, since both sections edit reckon/crew/resumption.py</h4>
     <p class="r-gate-required-evidence">a-seat-held-elsewhere-is-not-restarted#s16</p>
-    </div>
+    <a class="r-gate-evidence" href="a-seat-held-elsewhere-is-not-restarted#s16 is deferred, so nothing else edits reckon/crew/resumption.py ahead of §17">Evidence</a>
+</div>
 </section>
 </main>
 </body>
