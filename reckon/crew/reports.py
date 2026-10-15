@@ -1642,17 +1642,16 @@ def _unresolved_revision_findings(node: TaskNode | None) -> list[str]:
 
 
 def _review_record_status_findings(node: TaskNode | None) -> list[str]:
-    """Report a review run's stored records whose status no reader acts on.
+    """Report a review run's stored records no reader can act on.
 
-    A reviewer can bypass :func:`reckon.crew.review.store_review`'s status check
+    A reviewer can bypass :func:`reckon.crew.review.store_review`'s check
     by writing its record straight into the record path its dispatch granted,
-    and the record then sits on disk carrying a status every reader reads as
-    absent — the reviewed run reads as unreviewed while a file beside it claims
-    a verdict. Every reviewer passes check-manifest before it finishes, so the
+    leaving an unreadable status or a finding that states no claim. Every
+    reviewer passes check-manifest before it finishes, so the
     check the store applies is re-applied here, to each record the node's own
     declarations grant, through the one shared
     :func:`reckon.crew.review.review_status_refusal`. The refusal names the
-    record path, the status found and the accepted set, so the reviewer repairs
+    record path and the missing status or claim, so the reviewer repairs
     its own record while it still holds its turn rather than leaving a
     coordinator to find it hours later.
 

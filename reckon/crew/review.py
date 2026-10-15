@@ -183,8 +183,8 @@ def finding_claim(finding: Any) -> str | None:
     return None
 
 
-def claimless_findings(review: Mapping[str, Any]) -> list[Any]:
-    """Return the entries in a record's ``findings`` list that state no claim.
+def claimless_findings(review: Mapping[str, Any]) -> list[tuple[int, Any]]:
+    """Return each claimless entry with its index in the record's findings.
 
     Only the record's own ``findings`` list is read: a record carrying a
     reviewer's ``raw_text`` is parsed into findings elsewhere, and the
@@ -195,7 +195,11 @@ def claimless_findings(review: Mapping[str, Any]) -> list[Any]:
     findings = review.get("findings")
     if not isinstance(findings, list):
         return []
-    return [finding for finding in findings if finding_claim(finding) is None]
+    return [
+        (index, finding)
+        for index, finding in enumerate(findings)
+        if finding_claim(finding) is None
+    ]
 
 
 # ── The plan rubrics ────────────────────────────────────────────────────────
@@ -569,7 +573,7 @@ RECOGNISED_REVIEW_STATUSES: frozenset[str] = frozenset(
 
 
 def review_status_refusal(record: Mapping[str, Any]) -> str | None:
-    """The refusal a record earns when its ``status`` is one no reader acts on.
+    """Refuse a record with an unreadable status or a finding with no claim.
 
     The one check on a record's status, so the store that writes a record and
     every reader that judges one already written cannot disagree about which
@@ -592,6 +596,22 @@ def review_status_refusal(record: Mapping[str, Any]) -> str | None:
         return (
             f"review record carries status {status!r}, which no reader acts on; "
             f"the accepted statuses are {accepted}"
+        )
+    claimless = claimless_findings(record)
+    if claimless:
+        entries = "; ".join(
+            f"index {index} keys "
+            + (
+                ", ".join(sorted(str(key) for key in finding))
+                if isinstance(finding, Mapping)
+                else "(not a mapping)"
+            )
+            for index, finding in claimless
+        )
+        accepted = ", ".join(FINDING_CLAIM_FIELDS)
+        return (
+            f"review record has findings that state no claim: {entries}; "
+            f"accepted claim fields are {accepted}"
         )
     return None
 
