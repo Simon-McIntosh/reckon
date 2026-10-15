@@ -132,7 +132,7 @@ structured state (decisions, followups). Do not implement items marked
 
 **Write path:** use `edit_plan` to record outcomes atomically:
 1. `read_plan(resource={project,type:"plan",id:slug}, view="raw")` → get `version`.
-2. `edit_plan(…, ops=[set status/impl + resolve driving followup + append next followup], expected_version=…)`.
+2. `edit_plan(…, ops=[set status + resolve driving followup + append next followup], expected_version=…)`.
 3. On 412 conflict: re-read + retry.
 
 ## Reading state: ask the tool, and ask it for a view
@@ -890,8 +890,6 @@ edit_plan(
   project="<project>",
   slug="<slug>",
   ops=[
-    {"op": "set", "path": "impl",
-     "value": <completed_executable_nodes> / <total_executable_nodes>},
     {"op": "set", "path": "commits",
      "value": <existing_commits_with_sha_appended_once>},
     {"op": "set", "path": "artifacts",
@@ -905,8 +903,7 @@ edit_plan(
 )
 ```
 
-That single state write carries the commit and gate measure alongside `impl`;
-a moved percentage is never the only new information. Preserve the manifest's
+That single state write carries the commit and gate measure. Preserve the manifest's
 exact measure and artifact paths rather than replacing them with “passed”. The
 cumulative evidence record receives the worker's anchor with its merge; edit or
 append to it in the same beat, never re-write what the worker authored.
@@ -931,10 +928,13 @@ versioned request object) and `links` are required, not defaulted.
 ]
 ```
 
-**`impl`** = (count of completed executable nodes) / (count of total executable
-nodes) over the whole selected plan (the orchestrator owns the denominator),
-monotonic. Set it on EVERY node landing — the server does NOT compute it; you
-MUST set it.
+**Do not set `impl`.** On a plan with section declarations it is derived on
+every read: effort-weighted over the section records when they cover every
+declaration, otherwise sections declared `done` over those declared `done` or
+`implementable`. A `set` is refused in the first case and accepted but never
+served in the second. It moves only when a section's declaration is ticked to
+`done`, so record a node that lands without closing its section in its comment,
+not in `impl`.
 
 If the node also closes its section, include the driving-followup resolution
 and the section's `section_declarations` reclassification to `done` in the same

@@ -275,7 +275,6 @@ the `anchor` that `append_evidence` writes.
 
 ```python
 edit_plan(project="<project>", slug="<slug>", ops=[
-  {"op": "set", "path": "impl", "value": <completed> / <total>},
   {"op": "set", "path": "commits", "value": <...sha appended once>},
   {"op": "append", "target": "comments", "section": "<section-id>",
    "item": {"id": "c-<ts>", "who": "reckon-build", "when": "<iso-now>",
@@ -283,9 +282,12 @@ edit_plan(project="<project>", slug="<slug>", ops=[
   expected_version=state["version"])
 ```
 
-`impl` = count of completed executable nodes / count of total executable nodes
-over the whole plan. Set it on EVERY node landing; the server does not compute
-it. After ticking a section, its `section_declarations` entry reads `done`; a
+Do not set `impl`: on a plan with section declarations it is derived on every
+read, effort-weighted over the section records when they cover every
+declaration, otherwise sections declared `done` over those declared `done` or
+`implementable`. A `set` is refused in the first case and accepted but never
+served in the second. It moves only when a section is ticked, so a node that
+lands without closing its section leaves it unchanged. After ticking a section, its `section_declarations` entry reads `done`; a
 section comment records a landed node, not completion, so a node that
 does not close its section leaves that followup open — never wait for section
 closure to record earlier nodes. A project's declared suite holds a lighter

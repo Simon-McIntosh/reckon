@@ -863,12 +863,18 @@ def test_fixed_read_set_conditional_links_resolve() -> None:
         assert section in guidance
 
 
-def test_ship_advances_implementation_for_every_node_landing() -> None:
+def test_ship_leaves_impl_to_the_derivation() -> None:
+    """impl is derived from the section declarations on every read.
+
+    The skill must not tell a coordinator to set it: the store refuses the write
+    once records cover the declarations, and otherwise accepts a figure the read
+    never serves.
+    """
     ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
 
-    assert "count of completed executable nodes" in ship
-    assert "count of total executable nodes" in ship
-    assert "Set it on EVERY node landing" in ship
+    assert "Do not set `impl`" in ship
+    assert "derived on every read" in ship
+    assert "Set it on EVERY node landing" not in ship
     assert "never wait for section closure to record earlier nodes" in ship
 
 
@@ -889,7 +895,7 @@ def test_ship_ticks_a_landed_section_as_done() -> None:
     assert "and tick it too" in ship
 
 
-def test_ship_landing_state_carries_commit_and_gate_measure_with_impl() -> None:
+def test_ship_landing_state_carries_commit_and_gate_measure() -> None:
     ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     reference = normalized(
         (
@@ -897,7 +903,7 @@ def test_ship_landing_state_carries_commit_and_gate_measure_with_impl() -> None:
         ).read_text()
     )
 
-    assert '"path": "impl"' in ship
+    assert '"path": "impl"' not in ship
     assert '"path": "commits"' in ship
     assert '"target": "comments"' in ship
     assert "gate <gate-name> <verdict>" in ship
