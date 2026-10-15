@@ -345,9 +345,7 @@ def test_a_held_review_is_re_routed_with_the_refusing_lane_excluded(
     """
     config_home, repo = isolated_project
     _write_lift(config_home, granted=True)
-    record = _scoring_pointer(
-        config_home, repo, "r-rerouted", head=_repo_head(repo)
-    )
+    record = _scoring_pointer(config_home, repo, "r-rerouted", head=_repo_head(repo))
     seen = _stub_pick(
         monkeypatch, [_answer(action="route", backend=OTHER_BACKEND, lane="codex")]
     )
@@ -412,9 +410,7 @@ def test_an_answer_that_declines_is_not_overridden(
     """
     config_home, repo = isolated_project
     _write_lift(config_home, granted=True)
-    record = _scoring_pointer(
-        config_home, repo, "r-declined", head=_repo_head(repo)
-    )
+    record = _scoring_pointer(config_home, repo, "r-declined", head=_repo_head(repo))
     _stub_pick(monkeypatch, [_answer(action="hold", backend=None, lane="codex")])
     try:
         report = _retry(record, _config(tmp_path))
