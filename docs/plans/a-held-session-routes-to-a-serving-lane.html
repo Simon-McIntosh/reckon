@@ -25,7 +25,7 @@
   <title>A Held Session Routes To A Serving Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -103,16 +103,18 @@
       queue plan.
     </p>
     <p>
-      <strong>Under a lift, nothing queues behind a congested local lane.</strong> The lead's rule, given on 2026-10-15:
+      <strong>Under a lift, Jev routes with the lift in view instead of defaulting to the local queue.</strong> The lead's rule, given on 2026-10-15:
       a lift is not a free-for-all. Jev still chooses the lane, sending harder work to the metered lane as before. But
       a lift means the window is to be spent. With two full weekly resets in hand, or a deadline, the fleet scales at
       full width rather than queueing. While a lift governs a metered lane that serves the node
-      (<code>budget_lift.effective_budget</code> names it), the rendered state names the lift on that lane, and the
-      route question's guidance says the lane's burn and pace do not press it. When the local lane grants the session no
-      slot, every node the session would leave queued or held for the local lane is re-asked with that lane excluded,
-      at any specification level, and dispatched on the answer. A review keeps the standing
-      <code>review_excluded_backends</code> policy and still queues locally. When the local lane has a slot, Jev routes
-      exactly as it does without a lift. This relies on <a href="/reckon/plans/a-window-paces-the-lane#s17">a-window-paces-the-lane
+      (<code>budget_lift.effective_budget</code> names it), Jev decides with the lift in view, and no deterministic
+      rule overrides its answer: the choice is a trade of cost, speed and quality that Jev weighs. Three things
+      change. The rendered state names the lift on that lane, with its form and end. The route question's guidance
+      says a lifted lane is meant to be spent: its burn and pace do not press it, and when the local lane is full,
+      holding or queueing for it is no longer the default for work the lifted lane can serve. And
+      <code>review_excluded_backends</code> does not exclude a lifted lane, so a review is offered the lifted lane's
+      options, with guidance that a review should prefer the lane's cheaper models. When the local lane has a slot and
+      no lift is in force, Jev routes exactly as it does today. This relies on <a href="/reckon/plans/a-window-paces-the-lane#s17">a-window-paces-the-lane
       §17</a>: until the budget preflight reads the lift, Jev sees a lifted lane as held at its reserve ceiling.
     </p>
     <p>
@@ -121,11 +123,12 @@
       state with the session granted one slot routes as before; an open-specification node in the zero-slot state is
       still allowed to hold. The picker's and dispatch's test files show no added failure against base. Negative control:
       without the session figure in the rendered state, the zero-slot case must reproduce the 2026-10-13 queueing.
-      Under a lift, in addition: a test renders the zero-slot state with an uncapped lift in force on codex, and finds
-      that a routine open-specification implement node is dispatched to codex rather than queued, that a review node
-      still queues locally, and that the same node with the session granted one slot routes as it does without a
-      lift. Negative control: with the lift removed from the rendered state, the routine node holds and queues as on
-      2026-10-13.
+      Under a lift, in addition: a test renders the zero-slot state with an uncapped lift in force on codex. It finds
+      that the rendered state names the lift on the codex lane, that the guidance carries the lifted-lane wording,
+      and that a review node is offered the codex options with the cheaper-model guidance. Without the lift, the same
+      review node is offered no codex option and the lift wording is absent. A replay through a stub picker that
+      returns hold for a routine node shows the hold is recorded as Jev's own answer and not overridden. Negative
+      control: with the lift removed from the rendered state, the review is offered no codex option.
     </p>
 
     <h2 id="s3">§3 — A pick probe uses the inputs a dispatch would</h2>
