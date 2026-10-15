@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T22:28:50.477Z",
+  "dispatched_at": "2026-10-15T22:17:21Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/every-review-is-kept-as-a-committed-record/r-20261015T221642637644-plan-review-of-every-review-is-kept-as-a-committed-record/plan.html:178",
+      "id": "wiring-1",
+      "reason": "without a filed invocation \u00a719 has no dispatch route at all, and the same gap was raised for \u00a718 at the previous review and answered by filing `f-erkc-018`, so the plan's own remedy is a followup \u2014 and the live one it should replace is stale against a finished \u00a718, which can send a coordinator back to re-run \u00a718 rather than start \u00a719.",
+      "text": "\u00a719 carries `data-status=\"implementable\"` and `plan-section-declarations` `s19: implementable`, but no followup dispatches it: the last filed followup is `f-erkc-018` (snapshot line 304), whose body and prompt name \u00a718 alone, and it stays open even though \u00a718 is declared done and its reader (`_ctest_failure_ids` at `reckon/crew/review.py:1537`, `_gate_log_format` at `:1565`, merged as `6a4142027`) has landed.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/every-review-is-kept-as-a-committed-record/r-20261015T221642637644-plan-review-of-every-review-is-kept-as-a-committed-record/plan.html:179",
+      "id": "reasoning-1",
+      "reason": "the two callers cannot absorb `None` as written \u2014 `promotion_gate.py:843` computes `tuple(sorted(_control_failure_ids(replay_text)))` and `promotion_checks.py:1455` computes `sorted(control_ids - reference_ids)` after `check[\"control_failure_ids\"] = sorted(control_ids)` \u2014 so a node implementing the deliverable literally either crashes verify-gate's replay or keeps a bare `set()` for an unreadable control log, which is the silent-empty-set reading \u00a718's rule forbids; the plan's Why names `promotion_gate.py`'s replay as served by the reader while its done-when never exercises that path, so the missing one-line contract changes what the node must implement and what it must test.",
+      "text": "\u00a719's deliverable requires \"`added_failures_from_gate_logs` and the promotion-side readers [to] all go through\" one reader that returns \"no reading for a log in neither format\", and names `_control_failure_ids` as one that \"reads a ctest control's failure block\", yet it specifies a `None` return only for `_head_arm_log_failure_ids` and never states what `_control_failure_ids` returns for a log in neither format, nor how its two production callers handle it.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c944b96247334d6d192bc3c084a86d501255cc4977286f175607b23e04f61920",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 151,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T221642637644-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "f74fe59dbfd19a3bcbb37c9a4db3ee56d19b56a4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited modules (`review.py`, `promotion_checks.py`, `promotion_evidence.py`, `promotion_gate.py`), both existing test files and the cited review run all resolve; `_control_failure_ids` returns `review_module._pytest_failure_ids` at `promotion_checks.py:1277` and `_head_arm_log_failure_ids` returns `_control_failure_ids` at `promotion_evidence.py:1158`, as \u00a719 states.",
+    "done_when": "pass \u2014 \u00a719's done-when names falsifiable assertions (`_zero_added_against_a_red_base` false, `_head_arm_log_failure_ids` None, `_control_failure_ids` returning both ctest names) and a negative control that reddens by pointing the two promotion readers back at `_pytest_failure_ids`.",
+    "evidence_paths": "pass \u2014 the gate and control logs are written under the run directory, which is the same durable host path the manifest's `test_logs` and `negative_control_log` resolve to.",
+    "naming": "pass \u2014 \u00a719's symbols and its new test filename are mechanism-descriptive; no plan label, stage name, ticket number or version tag reaches code.",
+    "reasoning": "a finding \u2014 \u00a719's stated root cause matches the reproduced evidence, but its deliverable leaves the return contract of `_control_failure_ids` undefined where its two production callers depend on it.",
+    "single_goal": "pass \u2014 \u00a719 names one deliverable, one format-aware gate-log reader shared by the review and promotion paths, and its three write-path modules all serve that one goal.",
+    "wiring": "a finding \u2014 \u00a719 is declared implementable in `plan-section-declarations` and by `data-status=\"implementable\"`, but no followup dispatches it."
+  },
+  "section_digests": {
+    "_document": "1567348f87450d3854291ffff04282ae212e591fe73cb50ee21e2a1534805f1d",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "bb85d80dcb9e0286d21a8ca6acd3af79e736c64c84b5ac85569fc6ce2c73863b",
+    "s13": "18a2d10f1e3c66be8277b7b4ef2922db7611cded7589553da5347b9a1ee5cd0f",
+    "s14": "90fd381b5f80417031410428331e779266feb4e517d89e5237d29cbe1c5e4700",
+    "s15": "72f678eb5f0bc62870da1cc4637f6db55365548aa9b52f46884cc0b3551a6ae7",
+    "s16": "7a5788c2a3fa1a2f0029d46feab7c3ed8a6b2a35c6ca9788fbe9911d5ab9cb56",
+    "s17": "86a993485a8a8461fd1e5e336bf8623e585cd4540daa1e5b5e78af2a0c172ce5",
+    "s18": "c89ae3a282a47cc0790b201cd56e732fc633876a1f1bd4dea1ae9521bd21574a",
+    "s19": "159b853a6f53f4e45c29450493c06b07f9d6f7f4cccd4a0b5ee947f4a921c30b",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "85877b77c395ca8a1482bef5887cfc72cbf6109174dba2c01265aa015a906d73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T22:32:47.879882+00:00"
+}
