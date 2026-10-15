@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-write-on-any-node-reaches-the-page-landed">
+  <meta name="plan-title" content="A Write on Any Node Reaches the Page — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Write on Any Node Reaches the Page: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-write-on-any-node-reaches-the-page">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Write on Any Node Reaches the Page — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Write on Any Node Reaches the Page — landed record</h1>
+  <p>Closure synthesis for A Write on Any Node Reaches the Page: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s2">
+    <h2>§2 — a docs tree&#x27;s derived views get a cross-node backstop, and open pages are told</h2>
+    <p><code>_FleetChangeWatch</code> now runs a detector thread beside its inotify event loop. Every 10 s the fast pass compares each mounted tree's directory identities against the stamps the index persisted, and reloads those stamps when the persisted index file changes. It also compares the tree's git signal: <code>_head_identity</code> paired with the identity of the repository's <code>index</code> file. Both are read from files, so no git process starts. Every 60 s, for a tree with an open change stream or read through <code>/_index</code> or <code>/_discover</code> in the last ten minutes, the slow pass compares the covered files' count and newest mtime. A change invalidates the tree's views once and writes one byte to each wake pipe its open streams registered. <code>_ProjectChangeWatch.wait</code> treats a readable pipe as a change. <code>close()</code> stops and joins the detector thread. Commit <code>104956724</code>, merged at <code>18fce3db2</code>.</p><p>Measured by the worker on the imas-ambix tree on GPFS: a fast pass made 520 directory stats in 8.6 ms, and a slow pass 1,169 file stats in 0.79 s. The cross-project rollup does not miss a cross-node write, because <code>/_projects/index.json</code> is derived live on every request. Gate: 57 passed across the new test and the four regression files. The negative control disabled the detector, and the new-document test failed. Review 108/120, with three non-blocking follow-ons. First, a pipe write outside the lock can wake a reused descriptor. Second, the <code>/_discover</code> read stamp is untested. Third, one assertion compares a value with itself.</p>
+  </section>
+
+</main>
+</body>
+</html>
