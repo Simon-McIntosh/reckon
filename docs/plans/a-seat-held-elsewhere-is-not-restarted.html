@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="the-review-loop-runs-without-hand-steps">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="55">
+<meta name="plan-version" content="57">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -178,8 +178,20 @@
     <h2 id="s15">§15 — The follower lease is written through the repository&#x27;s atomic writer</h2>
 <section data-reckon="section" data-id="s15" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> §8 added <code>_write_json_atomically</code> to <code>reckon/crew/run_paths.py</code> to replace the follower lease by rename. <code>reckon/_store.py</code> already owns that capability in <code>write_json_atomically</code>, which wraps <code>write_atomically</code>. Its docstring says it is "the one place a file is published through a sibling temporary", so that no module keeps a private temporary-and-rename beside it. <code>run_paths.py</code> already imports from <code>reckon._store</code>. §8's review scored reuse at 5 of 20 for this.</p>
-<p><strong>Deliverable.</strong> The lease is written through <code>_store.write_json_atomically</code>, and <code>run_paths._write_json_atomically</code> is removed. The written bytes and the rename semantics are unchanged.</p>
+<p><strong>Deliverable.</strong> The lease is written through <code>_store.write_json_atomically</code>, and <code>run_paths._write_json_atomically</code> is removed. The call passes <code>indent=None</code> and <code>mode=0o644</code>. The store's defaults are <code>indent=2</code> and <code>0o600</code>, and with those the bytes would be indented and the file private. The removed writer wrote compact <code>json.dumps(record, sort_keys=True)</code> plus a newline, at the process default <code>0o644</code>. The bytes, the file mode and the rename semantics are unchanged.</p>
 <p><strong>Done when</strong> no private temporary-and-rename writer remains in <code>reckon/crew/run_paths.py</code>, and §8's tests in <code>tests/test_a_follower_on_another_node_renews_a_lease.py</code> pass unchanged, the concurrent-reader case included. The test files that import <code>reckon/crew/run_paths.py</code> give the same pass and fail ids at head as at base. Negative control: with the lease written by truncate-then-write in place, the concurrent-reader case fails; the control is logged under the run directory. Write paths: <code>reckon/crew/run_paths.py</code> and <code>reckon/crew/follower_registration.py</code>.</p>
+
+    <h2 id="s16">§16 — An exclusive claim with reclaim has one owner</h2>
+<section data-reckon="section" data-id="s16" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §11 added <code>claim_next_attempt</code> and <code>_create_attempt_claim</code> to <code>reckon/crew/resumption.py</code>. They create a claim file with <code>O_CREAT | O_EXCL</code> and reclaim it once it goes stale. <code>reckon/crew/dispatch_claims.py</code> already owns that mechanism in <code>_claim_node_dispatch</code>, with <code>_reclaim_stale_node_dispatch_claim</code> and <code>_empty_claim_is_stale</code>, and §11's copy repeats its bounded-reclaim comment almost word for word. §11's review scored reuse at 9, below the floor of 10, for this. The two staleness rules differ: the dispatch claim asks whether its holder is alive, and the attempt claim asks whether the pointer has moved on. So the shared part is the exclusive create, the empty-claim grace and the bounded reclaim loop, not the staleness rule.</p>
+<p><strong>Deliverable.</strong> One function in <code>reckon/crew/dispatch_claims.py</code> performs the exclusive create, the empty-claim grace and the bounded reclaim. It takes the claim path, the record to write and a staleness predicate. <code>_claim_node_dispatch</code> and <code>claim_next_attempt</code> both call it, each with its own predicate. Neither caller changes its behaviour, its refusal wording or its claim file's location and content.</p>
+<p><strong>Done when</strong> no other module calls <code>os.open</code> with <code>O_EXCL</code> to make a claim. §11's tests in <code>tests/test_a_resume_never_launches_beside_another_node.py</code>, and the node-dispatch claim tests, pass unchanged. A new test drives the shared function with an always-stale predicate and a never-stale one, and finds a claim reclaimed and refused respectively. The test files that import either module give the same pass and fail ids at head as at base, apart from the new file. Negative control: with the shared function never reclaiming, the always-stale case is refused; the control is logged under the run directory. Write paths: <code>reckon/crew/dispatch_claims.py</code>, <code>reckon/crew/resumption.py</code> and <code>tests/test_an_exclusive_claim_has_one_owner.py</code>.</p>
+
+    <h2 id="s17">§17 — A dry-run resume predicts the launcher&#x27;s stream reading</h2>
+<section data-reckon="section" data-id="s17" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §11's worker found a parity gap. A resume refuses when the current attempt's liveness is unknown and its stream is moving. <code>_observed_end_refusal</code> in <code>reckon/crew/resumption.py</code> applies that reading, but <code>_launcher_refusal</code>, the dry-run prediction of the same launch, does not. A dry run can therefore predict a launch that the real resume then refuses. <code>tests/test_dry_run_predicts_the_launcher.py</code> exists to hold the two in step, and it has no case for a run on another host.</p>
+<p><strong>Deliverable.</strong> <code>_launcher_refusal</code> applies the same stream reading <code>_observed_end_refusal</code> applies, through one shared helper rather than a copy, so a dry run predicts the refusal the launcher makes.</p>
+<p><strong>Done when</strong> the parity test in <code>tests/test_dry_run_predicts_the_launcher.py</code> gains a case for a run whose current attempt carries another host's pid and a stream moving inside the stall window. The dry run and the launcher both refuse it, and with the stream past the window both proceed. The test files that import <code>reckon/crew/resumption.py</code> give the same pass and fail ids at head as at base, apart from the new cases. Negative control: with <code>_launcher_refusal</code>'s stream reading removed, the new case's dry run predicts a launch; the control is logged under the run directory. Write paths: <code>reckon/crew/resumption.py</code> and <code>tests/test_dry_run_predicts_the_launcher.py</code>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -195,10 +207,16 @@
     <pre class="r-fu-prompt">/reckon-build a-seat-held-elsewhere-is-not-restarted §8 §9</pre>
     <p class="r-fu-outcome"><p>Superseded by f-sheinr-003. The content review found that §9 depends on §8, so the two cannot run in parallel; §9 is now gated on §8. §10 was added.</p></p>
     </article>
-<article class="r-fu" data-id="f-sheinr-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build a-seat-held-elsewhere-is-not-restarted §8" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-sheinr-003" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build a-seat-held-elsewhere-is-not-restarted §8" data-resolved-at="2026-10-15T16:40:12+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Judge a follower on another node by a lease, then fix the hook line; stop a mid-write manifest reading halted</h4>
     <div class="r-fu-body"><p>§8 and §10 are independent and can run in parallel: they write different files. §9 is gated on §8 (g-sheinr-1) and goes once §8 is merged.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-seat-held-elsewhere-is-not-restarted §8 §10</pre>
+    <p class="r-fu-outcome"><p>§8 (<code>bbaee1634</code>), §10 (<code>2fc0f81d7</code>) and §11 (<code>474754591</code>) landed on 2026-10-15. The remaining work is carried by f-sheinr-004.</p></p>
+    </article>
+<article class="r-fu" data-id="f-sheinr-004" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build a-seat-held-elsewhere-is-not-restarted §9" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Finish the cross-node sections: the hook lines, the cycling exit, the wording and the two consolidations</h4>
+    <div class="r-fu-body"><p>§9 can go now, since g-sheinr-1 has passed. §13 is gated on §9. §12 shares <code>watch_unit.py</code> with §9, so it runs after §9. §14, §15 and §16 are independent. §17 is gated on §16.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-seat-held-elsewhere-is-not-restarted §9 §14 §15 §16</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -284,18 +302,23 @@
     <div class="r-comment-body"><p>The resume guard's two cross-node facts landed — each launch reserves its attempt with an `O_CREAT|O_EXCL` claim in the run directory (of two doors reading one current attempt, one creates the claim and launches, the other refuses with the existing in-flight wording and keeps its advice; a claim past the pointer's attempt or past the launch window is reclaimed), and a run whose current attempt carries another host's pid is decided by its own stream through `_newest_stream_in_motion` (in motion inside the stall window refuses, quiet past it launches); `tests/test_a_resume_never_launches_beside_another_node.py` reports `5 passed`, and the declared mutation `with the exclusive attempt claim removed, both doors must launch` reports `2 failed, 3 passed in 14.10s` with `EXIT=1`.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261015T161738531981-review-of-a-resume-never-launches-beside-another-node-d1ceef9e6e04" data-who="reckon-build" data-when="2026-10-15T16:36:23.926Z">
-    <div class="r-comment-body"><p>Review of r-20261015T152907807302-a-resume-never-launches-beside-another-node stored at r-...node.json and r-...node.at-d1ceef9e6e04....json: status parsed, six dimensions scored goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 19, reuse 9 (total 102), reviewing diff f2ac7cc28be5409beae3b2c8b13fda58c83c9148..d1ceef9e6e04c296bf37033497f10e336a588c25 (reviewed_base_sha/reviewed_head_sha recorded), with added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s own gate logs; three follow-on findings, none blocking.</p></div>
+    <div class="r-comment-body"><p>Review of r-20261015T152907807302-a-resume-never-launches-beside-another-node stored at r-...node.json and r-...node.at-d1ceef9e6e04....json: status parsed, six dimensions scored goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 19, reuse 9 (total 102), reviewing diff f2ac7cc28be5409beae3b2c8b13fda58c83c9148..d1ceef9e6e04c296bf37033497f10e336a588c25 (reviewed_base_sha/reviewed_head_sha recorded), with added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own gate logs; three follow-on findings, none blocking.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
-<div class="r-gate" data-id="g-sheinr-1" data-section="s9" data-gated-sections="s9" data-status="open" data-verdict="">
+<div class="r-gate" data-id="g-sheinr-1" data-section="s9" data-gated-sections="s9" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">a follower registration from another node is judged by its renewed lease, merged on main</h4>
     <p class="r-gate-required-evidence">a-seat-held-elsewhere-is-not-restarted#s8</p>
-    </div>
+    <a class="r-gate-evidence" href="a-seat-held-elsewhere-is-not-restarted#s8: the follower lease merged as bbaee1634 and was live-checked at 16:27Z on 2026-10-15">Evidence</a>
+</div>
 <div class="r-gate" data-id="g-sheinr-2" data-section="s13" data-gated-sections="s13" data-status="open" data-verdict="">
     <h4 class="r-gate-measure">the missing-snapshot hook line for a live seat elsewhere is merged on main, so the stop path&#x27;s reload reading builds on the same freshness states and not_fresh_line</h4>
     <p class="r-gate-required-evidence">a-seat-held-elsewhere-is-not-restarted#s9</p>
+    </div>
+<div class="r-gate" data-id="g-sheinr-3" data-section="s17" data-gated-sections="s17" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">the exclusive-claim consolidation is merged on main, since both sections edit reckon/crew/resumption.py</h4>
+    <p class="r-gate-required-evidence">a-seat-held-elsewhere-is-not-restarted#s16</p>
     </div>
 </section>
 </main>
