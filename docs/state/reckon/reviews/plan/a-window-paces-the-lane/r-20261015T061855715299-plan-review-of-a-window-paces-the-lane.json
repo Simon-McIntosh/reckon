@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T06:34:58.961Z",
+  "dispatched_at": "2026-10-15T06:19:46Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-window-paces-the-lane/r-20261015T061855715299-plan-review-of-a-window-paces-the-lane/plan.html:1995",
+      "id": "anchors_resolve-1",
+      "reason": "a worker handed this deliverable searches for `_picker_inputs`, finds nothing, and must reconstruct the call chain by hand before rebuilding the section's own gate, so the wrong name costs a node the exact step the section exists to make mechanical.",
+      "text": "the deliverable states \"`dispatch_picker_selection` ... holds it and passes it down through `_picker_inputs` and `_picker_budget_snapshot` to the budget view\", but `grep -rn '_picker_inputs' reckon/` returns nothing: the builder is `build_picker_inputs` (`reckon/crew/dispatch_picker.py:189`), and the call to `_picker_budget_snapshot` sits inside its body at `:274` \u2014 so the plan names a caller that resolves to no function, at the one point where the node must thread a new parameter",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-window-paces-the-lane/r-20261015T061855715299-plan-review-of-a-window-paces-the-lane/plan.html:1995",
+      "id": "reasoning-1",
+      "reason": "without `reckon/crew/dispatch.py`, `reckon/crew/picker/__init__.py` and (for the dry run) `reckon/crew_dispatch_commands.py` in the write paths the section's fix reaches `budget.preflight` only from a test, leaving the real dispatch path handing the preflight no session.",
+      "text": "the deliverable makes the session reach `budget.preflight` only through the picker's snapshot, but `budget_view` is composed at two sites that both need the session and neither is in \u00a717's write paths (`reckon/budget.py`, `reckon/crew/picker/snapshot.py`, `reckon/crew/dispatch_picker.py`, `tests/test_the_preflight_reads_the_lift.py`): `_picker_budget_snapshot` (`reckon/crew/dispatch_picker.py:159-169`) is reached from `build_picker_inputs` (`:189`), whose production callers are `reckon/crew/dispatch.py:807` (the dispatch path, which holds `session` and names it at `:813`) and `reckon/crew_dispatch_commands.py:1326` (the dry-run path) \u2014 neither passes a session and neither is writable under the fence; and `pick()` itself composes the view with no session at `reckon/crew/picker/__init__.py:346`, on a file also outside the write paths \u2014 so a session-scoped lift would still not release on the production picker path after this node, and the done-when cannot show it: its picker arm uses a global uncapped lift, whose release is session-independent",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "abef4707a28ced19ee3ffe46a6576eab2492eb7b8f3502c391aee5e063a7793e",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 226,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T061855715299-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "961dbf9d5786b07f8dfb5216497f5016d895c3c1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the deliverable names `_picker_inputs` as the frame the session is passed through, and no such symbol exists in `reckon/`.",
+    "done_when": "pass \u2014 the done-when is measurable (codex at 95% with a global lift reads not held and `effective_ceiling_pct` 100; cleared, held at 92%) and names a declared negative control (\"hand the preflight the configured block again: the 95% case must then read held\"), which fails on the unfixed code because `preflight` judges every backend on `policy_block` (`reckon/budget.py:1707`).",
+    "evidence_paths": "pass \u2014 the section's gate logs to the run directory, a durable path, not a session scratchpad or node-local temp.",
+    "naming": "pass \u2014 the new test file `tests/test_the_preflight_reads_the_lift.py` and every symbol named (`effective_block`, `_picker_budget_snapshot`, `_budget_view_request_key`, `effective_ceiling_pct`) name mechanisms, and no plan label, ticket number or version tag reaches them.",
+    "reasoning": "a finding \u2014 the session reaches `budget_view` by two call sites and both are outside \u00a717's declared write paths, so the section's own mechanism does not run on the production path it was written to fix, and the done-when cannot catch it.",
+    "single_goal": "pass \u2014 \u00a717 carries one deliverable: make `budget.preflight` judge each backend against its group's effective block, so the lift's release and \u00a711's review-exclusion reach the preflight path; the session/cache-key clauses are the same mechanism's correctness condition, not a second goal.",
+    "wiring": "pass \u2014 \u00a717 names no per-section link, but the plan declares `plan-informs=background-agent-fitness-and-dispatch-scope` at plan level and every dependency \u00a717's deliverable rests on (`budget_group.effective_block` from \u00a710/\u00a711, `budget_lift.effective_budget`) resolves in the tree, so the section is wired to what it consumes."
+  },
+  "section_digests": {
+    "_document": "5ac6cbc2aed0c316268f7dd35c0a784705a273faecd8a33765c62eac4461413a",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "cff30d466dd7580b4623ab4ba85a967692183d1c1fbf0a887b817140c3fe2bf9",
+    "s11": "4f344761a1c7f9eeda684c28b5399f6cc6c50a6961808244c50f4f385a8dfb83",
+    "s12": "d332f915a715e0ce7c1efdd5027285714154977800a9ec70d7b055bf5762609f",
+    "s13": "627916281462553dd6f077d4f3ad0d176f2e5177a66b12b43e0c6d7b6788b3d7",
+    "s14": "5c54d28fac7106fc49f1eb45cc396fb761556bbd5ae16f469c6cf14cdd342fc8",
+    "s15": "5acca22c78776d5b829195bb01b2c5d660f4787c61cd3b04e511e66046bc7cf0",
+    "s16": "3dcf3315f6ba2812e050e78dff00ef7816e3e4ecc36a672d2a94915c9b63b57e",
+    "s17": "8b71c65a703947468b1706438e748193102720dd0fdb861902704626b619d704",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T06:35:51.182067+00:00"
+}
