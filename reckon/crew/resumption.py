@@ -969,9 +969,16 @@ def _launcher_refusal(
     # rather than report a resume the real call refuses. Consulted here, ahead
     # of the sweep's observed-end gate, so both doors report the same reason
     # for a run that fails several.
-    return resume_window_refusal(
+    refusal = resume_window_refusal(
         run_id, record, backend=_backend_settings(record, config), config=config
     )
+    if refusal is not None:
+        return refusal
+    # The launcher's last guard reads a run whose end nothing observed from the
+    # run's own stream, and the prediction consults the same helper rather than
+    # restating the reading: a preview that skipped it would offer a lift the
+    # real resume refuses, which is the whole claim `would_resume` makes.
+    return _stream_reading_refusal(record, reading=_observed_process_reading(record))
 
 
 def _newest_stream_ended(record: Mapping[str, Any]) -> bool:
@@ -988,6 +995,60 @@ def _newest_stream_ended(record: Mapping[str, Any]) -> bool:
     return _newest_stream_shows_work(record) and not _newest_stream_in_motion(record)
 
 
+def _observed_process_reading(record: Mapping[str, Any]) -> str:
+    """The three-way process reading this host can stand behind for one run.
+
+    A run's liveness and the record its supervisor left of the end are folded
+    together here so every door that reads the pair composes one verdict. The
+    supervisor's record is an observation of the end, and it is the one a
+    prompt reader can never have: it outlives a pointer nobody updated and it
+    stays readable on a machine that never launched the worker. Folding it in
+    before the reading is what the classifier does for the same evidence, so a
+    recorded exit reads as an ended process on both surfaces rather than as
+    the unknown a bare reading of it composes. Where the process table says
+    the worker is still there the record is an earlier attempt's and does not
+    apply, which is why the fold is conditional on the living answer.
+    """
+    alive, liveness_proven = local_liveness(record)
+    exit_record = _run_exit_record(record)
+    ended_exit = exit_record if exit_record is not None and alive is not True else None
+    return _process_reading(
+        False if ended_exit is not None else alive,
+        liveness_proven=liveness_proven,
+        exit_record=ended_exit,
+    )
+
+
+def _stream_reading_refusal(
+    record: Mapping[str, Any], *, reading: str
+) -> CrewError | None:
+    """The refusal a run owes while its newest stream shows a worker writing.
+
+    A worker on another machine answers no pid this host can look up, so its
+    liveness is unknown here rather than proven, and the run's own stream
+    decides instead — exactly as the stalled-row reader decides it. An
+    assistant turn written inside the stall window is a worker producing
+    output right now, and no second worker may be started over it: the lift
+    would collide with the one the stream shows writing. Its wording is the
+    live-process refusal's, because it is that situation read from a stream
+    rather than from a pid, and a coordinator who reads it can check the run's
+    stream where this host can offer no process to check.
+
+    Only a run whose liveness this host cannot settle is decided this way. A
+    proven death has already ended the work and a proven life is refused on
+    its own terms, so the caller supplies the reading it took and this answers
+    the unknown alone. Both the launcher and the dry-run prediction of it
+    consult this one helper, so a preview cannot offer a lift the launcher
+    then refuses.
+    """
+    if reading != "liveness unknown" or not _newest_stream_in_motion(record):
+        return None
+    run_id = str(record.get("run_id") or "")
+    return CrewError(
+        f"run {run_id!r} still has a live process; observe or stop it before resuming"
+    )
+
+
 def _observed_end_refusal(record: Mapping[str, Any]) -> CrewError | None:
     """The refusal a lift owes a run whose process end nothing observed.
 
@@ -1002,50 +1063,27 @@ def _observed_end_refusal(record: Mapping[str, Any]) -> CrewError | None:
 
     So the lift requires an observation, and there are three: a pid checked on
     this host and found dead, the supervisor's exit record, or — for a worker
-    on another machine this host cannot take a pid reading for — a newest
-    stream that carries an assistant turn and has gone quiet past the stall
-    window. The third is the reachable substitute for a process-table answer
-    the reading host cannot take, and it resolves the unknown both ways: a
-    stream still in motion refuses, as a live pid does, and one that has gone
-    quiet licenses the lift. The reading is composed here through the same
-    three-way vocabulary the row states (``local_liveness`` under
-    ``_process_reading``), so the sweep cannot act on a verdict the reader was
-    never shown, and the reason names the reading it is holding.
+    that answers no pid this host can look up — a newest stream that carries an
+    assistant turn and has gone quiet past the stall window. The third is the
+    reachable substitute for a process-table answer the reading host cannot
+    take, and it resolves the unknown both ways: a stream still in motion
+    refuses, as a live pid does, and one that has gone quiet licenses the lift.
+    The verdict is composed through the same three-way vocabulary the row
+    states (``local_liveness`` under ``_process_reading``), so the sweep cannot
+    act on a reading the reader was never shown, and the reason names the
+    reading it is holding.
     """
-    alive, liveness_proven = local_liveness(record)
-    exit_record = _run_exit_record(record)
-    # The supervisor's record is an observation of the end, and it is the one a
-    # prompt reader can never have: it outlives a pointer nobody updated and it
-    # stays readable on a machine that never launched the worker. Folding it in
-    # before the reading is what the classifier does for the same evidence, so a
-    # recorded exit reads as an ended process on both surfaces rather than as
-    # the unknown a bare reading of it composes. Where the process table says
-    # the worker is still there the record is an earlier attempt's and does not
-    # apply, which is why the fold is conditional on the living answer.
-    ended_exit = exit_record if exit_record is not None and alive is not True else None
-    if ended_exit is not None:
-        alive = False
-    reading = _process_reading(
-        alive, liveness_proven=liveness_proven, exit_record=ended_exit
-    )
+    reading = _observed_process_reading(record)
     if reading == "process gone":
         return None
-    # A worker on another machine answers no pid this host can look up, so its
-    # liveness is unknown here rather than proven. The run's own stream decides
-    # instead, exactly as the stalled-row reader decides it: a worker still
-    # writing has an assistant turn in its newest stream written inside the
-    # stall window, and that is a life this host cannot see but can read. A
-    # stream that carries an assistant turn and has gone quiet past the window
-    # is the opposite reading — the worker wrote and stopped — and licenses the
-    # resume the way an observed end does. A run with no such record at all
-    # stays unknown, and the missing end still refuses.
     if reading == "liveness unknown":
-        if _newest_stream_in_motion(record):
-            run_id = str(record.get("run_id") or "")
-            return CrewError(
-                f"run {run_id!r} still has a live process; observe or stop it "
-                "before resuming"
-            )
+        stream_refusal = _stream_reading_refusal(record, reading=reading)
+        if stream_refusal is not None:
+            return stream_refusal
+        # A stream that carries an assistant turn and has gone quiet past the
+        # window is the opposite reading — the worker wrote and stopped — and
+        # licenses the resume the way an observed end does. A run with no such
+        # record at all stays unknown, and the missing end still refuses.
         if _newest_stream_ended(record):
             return None
     run_id = str(record.get("run_id") or "")
