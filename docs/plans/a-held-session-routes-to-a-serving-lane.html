@@ -25,8 +25,8 @@
   <title>A Held Session Routes To A Serving Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
-<meta name="plan-modified" content="2026-10-13">
+<meta name="plan-version" content="5">
+<meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
   <main class="plan-doc">
@@ -103,11 +103,29 @@
       queue plan.
     </p>
     <p>
+      <strong>Under a lift, nothing queues behind a congested local lane.</strong> The lead's rule, given on 2026-10-15:
+      a lift is not a free-for-all. Jev still chooses the lane, sending harder work to the metered lane as before. But
+      a lift means the window is to be spent. With two full weekly resets in hand, or a deadline, the fleet scales at
+      full width rather than queueing. While a lift governs a metered lane that serves the node
+      (<code>budget_lift.effective_budget</code> names it), the rendered state names the lift on that lane, and the
+      route question's guidance says the lane's burn and pace do not press it. When the local lane grants the session no
+      slot, every node the session would leave queued or held for the local lane is re-asked with that lane excluded,
+      at any specification level, and dispatched on the answer. A review keeps the standing
+      <code>review_excluded_backends</code> policy and still queues locally. When the local lane has a slot, Jev routes
+      exactly as it does without a lift. This relies on <a href="/reckon/plans/a-window-paces-the-lane#s17">a-window-paces-the-lane
+      §17</a>: until the budget preflight reads the lift, Jev sees a lifted lane as held at its reserve ceiling.
+    </p>
+    <p>
       <strong>Done when</strong> a test renders a state in which the local lane is open lane-wide but grants the session
       no slot, with codex serving, and finds that a guided implement node is not left queued on the local lane; the same
       state with the session granted one slot routes as before; an open-specification node in the zero-slot state is
       still allowed to hold. The picker's and dispatch's test files show no added failure against base. Negative control:
       without the session figure in the rendered state, the zero-slot case must reproduce the 2026-10-13 queueing.
+      Under a lift, in addition: a test renders the zero-slot state with an uncapped lift in force on codex, and finds
+      that a routine open-specification implement node is dispatched to codex rather than queued, that a review node
+      still queues locally, and that the same node with the session granted one slot routes as it does without a
+      lift. Negative control: with the lift removed from the rendered state, the routine node holds and queues as on
+      2026-10-13.
     </p>
 
     <h2 id="s3">§3 — A pick probe uses the inputs a dispatch would</h2>
