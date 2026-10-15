@@ -22,6 +22,7 @@ from typing import Any as Any
 from reckon import __version__ as __version__
 from reckon._store import _config_home as _config_home, _docs_dir_for_project as _docs_dir_for_project, write_atomically as write_atomically, write_json_atomically as write_json_atomically
 from reckon._timestamps import parse_utc as parse_utc
+from reckon.env_duration import read_duration_override
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS as LEASE_RENEW_SECONDS, HostLease as HostLease
 from reckon.crew.node import _TERMINAL_RUN_PHASES as _TERMINAL_RUN_PHASES, DEFAULT_WATCH_STALL_WINDOW as DEFAULT_WATCH_STALL_WINDOW, RUN_DRAIN_DISPOSITIONS as RUN_DRAIN_DISPOSITIONS, CrewError as CrewError, TaskNode as TaskNode, parse_duration as parse_duration
 from reckon.crew.obligation_snapshot import CLI_MODULE_FILES as CLI_MODULE_FILES
@@ -1720,14 +1721,9 @@ def producer_lease_seconds() -> float:
     non-positive override falls back to the default rather than to zero, because
     a lease of zero would end every producer on its first wake-up.
     """
-    raw = os.environ.get(PRODUCER_LEASE_ENV)
-    if raw is None:
-        return DEFAULT_PRODUCER_LEASE_SECONDS
-    try:
-        value = float(raw)
-    except (TypeError, ValueError):
-        return DEFAULT_PRODUCER_LEASE_SECONDS
-    return value if value > 0 else DEFAULT_PRODUCER_LEASE_SECONDS
+    return read_duration_override(
+        PRODUCER_LEASE_ENV, DEFAULT_PRODUCER_LEASE_SECONDS, 0, False
+    )
 
 
 def read_watch_registration(project: str) -> dict[str, Any]:

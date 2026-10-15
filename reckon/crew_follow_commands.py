@@ -18,6 +18,7 @@ from reckon import checkout_trust
 from reckon._timestamps import parse_utc
 from reckon.crew.session_host import SETTLE_ENV, SETTLED_EXIT_CODE
 from reckon.crew_dispatch_commands import _crew_modules, _emit_crew_result, crew
+from reckon.env_duration import read_duration_override
 
 
 def _follow_selects(
@@ -510,13 +511,9 @@ def _settle_grace_default() -> float:
     grace bounds how long a pane is held open, and a follower that refused to run
     because its environment carried a typo would take the pane down with it.
     """
-    raw = os.environ.get(FOLLOWER_SETTLE_GRACE_ENV, "").strip()
-    if not raw:
-        return FOLLOWER_SETTLE_GRACE_SECONDS
-    try:
-        return float(raw)
-    except ValueError:
-        return FOLLOWER_SETTLE_GRACE_SECONDS
+    return read_duration_override(
+        FOLLOWER_SETTLE_GRACE_ENV, FOLLOWER_SETTLE_GRACE_SECONDS, 0, True
+    )
 
 
 # How often a follower allowed to settle samples its session's population while
