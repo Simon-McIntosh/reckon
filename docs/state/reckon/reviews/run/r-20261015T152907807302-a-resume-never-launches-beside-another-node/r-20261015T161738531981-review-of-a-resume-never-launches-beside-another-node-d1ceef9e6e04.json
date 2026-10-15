@@ -12,6 +12,13 @@
     "reckon/crew/dispatch_sessions.py:1109"
   ],
   "completed_at": "2026-10-15T16:36:23.926Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "exempted",
+      "reason": "the attempt claim and the node-dispatch claim share only the exclusive os.open call; their claim paths, retry loops and staleness rules differ (the attempt claim re-derives its path and advances its number after a reclaim; the dispatch claim keys on holder liveness and an empty-record grace). Four plan reviews of a consolidation section each found a real interface mismatch, so a shared function would add coupling without removing logic; the consolidation section is deferred",
+      "recorded_at": "2026-10-15T17:04:39.680447+00:00"
+    }
+  },
   "dispatched_at": "2026-10-15T16:18:11Z",
   "findings": [
     {
