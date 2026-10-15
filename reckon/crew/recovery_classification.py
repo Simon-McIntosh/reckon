@@ -23,7 +23,6 @@ from reckon.crew.reports import (
 )
 
 
-
 def _manifest_is_the_predecessor_attempts_report(
     record: Mapping[str, Any],
     manifest: Path,
@@ -48,17 +47,19 @@ def _manifest_is_the_predecessor_attempts_report(
     start. This reads it, and adds the two facts a state reading needs and a
     promotion reading does not.
 
-    The first is that the run is in the resume window at all. Until a resume
-    publishes the new attempt's identity the pointer's pid *is* the run's own
-    process, so a manifest it did not outlive is simply the run's last word on
-    itself. :func:`reckon.crew.recovery_liveness._attempt_awaits_its_worker`
-    answers exactly that: an attempt record names the run's current attempt and
-    nothing of that attempt's own — no worker record, no exit record — has been
-    written, which is what says the pid the pointer still carries belongs to the
-    attempt before this one. Outside that window the manifest stands untouched,
-    whatever a liveness reading says about it.
+    The first is that the run has published the attempt the manifest would have
+    to belong to. The resume window is what makes a manifest ambiguous, and the
+    record that opens it lives in the run directory: a run whose attempt record
+    names no current attempt has nothing newer for its manifest to predate, and
+    is read from its pointer alone exactly as before. Outside that window the
+    manifest stands untouched, whatever a liveness reading says about it.
 
-    The second is that the attempt is live or moving, because the word only
+    The second is that the manifest offers no progress word. A run that reports
+    itself working has already said it has no verdict, so there is nothing to
+    withdraw, and dropping that word would take away the one thing that keeps a
+    resumed launch from reading as a run abandoned without a manifest.
+
+    The third is that the attempt is live or moving, because the word only
     stops describing the run while something is there to replace it. A
     proven-live worker, a live worker record, or an attempt still inside the
     quiet window a fresh dispatch gets — read through
@@ -81,6 +82,7 @@ def _manifest_is_the_predecessor_attempts_report(
         _run_stream_quiet_seconds(record, now_seconds=now_seconds)
         <= LOG_STALE_AFTER_SECONDS
     )
+
 
 def classify_pointer(
     record: Mapping[str, Any],

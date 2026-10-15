@@ -324,18 +324,18 @@ def test_a_word_that_already_means_no_verdict_is_left_alone() -> None:
     the attempt's own, and dropping it would read a resumed launch as a run
     abandoned without a manifest.
     """
-    run_id = 'run-superseded-progress'
+    run_id = "run-superseded-progress"
     pointer = _write_run(
         run_id=run_id,
-        status='in-progress',
+        status="in-progress",
         manifest_age_seconds=STALE_SECONDS,
         attempt_start_age_seconds=ATTEMPT_STARTED_SECONDS,
     )
 
     row = _classify(pointer)
 
-    assert row['classification'] == 'running', row['detail']
-    assert row['manifest_present'] is True, row['manifest_present']
+    assert row["classification"] == "running", row["detail"]
+    assert row["manifest_present"] is True, row["manifest_present"]
 
 
 def test_a_resumed_run_naming_the_predecessors_dead_pid_reads_working() -> None:
@@ -347,10 +347,10 @@ def test_a_resumed_run_naming_the_predecessors_dead_pid_reads_working() -> None:
     the manifest, so attempt 1's ``blocked`` word is not this attempt's status
     and the run must not read blocked.
     """
-    run_id = 'run-dead-predecessor-pid'
+    run_id = "run-dead-predecessor-pid"
     pointer = _write_run(
         run_id=run_id,
-        status='blocked',
+        status="blocked",
         manifest_age_seconds=STALE_SECONDS,
         attempt_start_age_seconds=ATTEMPT_STARTED_SECONDS,
         launcher_host=socket.gethostname(),
@@ -358,9 +358,9 @@ def test_a_resumed_run_naming_the_predecessors_dead_pid_reads_working() -> None:
 
     row = _classify(pointer)
 
-    assert row['classification'] == 'running', row['detail']
-    assert row['recovery_classification'] != 'blocked', row
-    assert row['manifest_present'] is False, row
+    assert row["classification"] == "running", row["detail"]
+    assert row["recovery_classification"] != "blocked", row
+    assert row["manifest_present"] is False, row
 
 
 def test_a_superseded_blocked_run_derives_no_blocked_duty(
