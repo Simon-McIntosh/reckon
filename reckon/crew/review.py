@@ -1562,6 +1562,31 @@ def _ctest_failure_ids(log_text: str) -> set[str]:
     return ids
 
 
+def gate_log_failure_ids(
+    log_text: str, arm_directory: str | Path | None = None
+) -> set[str] | None:
+    """Return the failing ids a gate log names, in whichever format it is written.
+
+    This is the one reader both the review's added-failure count and the
+    promotion-side readers go through, so a single log cannot be read two ways.
+    A pytest log's failures are its ``FAILED``/``ERROR`` node ids, canonicalised
+    against the arm's own recorded directory; a ctest log's are the entries of
+    its ``The following tests FAILED:`` block, including those marked ``Not
+    Run``, keyed by test name verbatim.
+
+    ``None`` means the log is in neither format, so the reader cannot tell
+    whether it recorded failures: the caller reads that as unmeasured rather
+    than as a zero. A log whose format is recognised but which lists no failures
+    reads the empty set — it was read, and it names nothing.
+    """
+    log_format = _gate_log_format(log_text)
+    if log_format is None:
+        return None
+    if log_format == "ctest":
+        return _ctest_failure_ids(log_text)
+    return _pytest_failure_ids(log_text, arm_directory)
+
+
 def _gate_log_format(log_text: str) -> str | None:
     """Return the format a gate log is written in, or ``None`` when unreadable.
 
@@ -2094,14 +2119,9 @@ def added_failures_from_gate_logs(
     if base_format is None or head_format is None or base_format != head_format:
         return None, []
 
-    def failures(text: str, arm_directory: str | Path | None) -> set[str]:
-        if base_format == "ctest":
-            return _ctest_failure_ids(text)
-        return _pytest_failure_ids(text, arm_directory)
-
-    added = sorted(
-        failures(head_text, head_directory) - failures(base_text, base_directory)
-    )
+    base_ids = gate_log_failure_ids(base_text, base_directory)
+    head_ids = gate_log_failure_ids(head_text, head_directory)
+    added = sorted((head_ids or set()) - (base_ids or set()))
     return len(added), added
 
 
