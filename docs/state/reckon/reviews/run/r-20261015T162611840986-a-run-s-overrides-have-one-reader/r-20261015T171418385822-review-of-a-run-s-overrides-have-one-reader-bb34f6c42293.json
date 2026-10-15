@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:136",
+    "reckon/crew_run_commands.py:1300",
+    "reckon/crew_run_commands.py:1419"
+  ],
+  "completed_at": "2026-10-15T17:30:14.489Z",
+  "dispatched_at": "2026-10-15T17:14:49Z",
+  "findings": [
+    {
+      "file": "tests/test_a_run_s_overrides_have_one_reader.py",
+      "line": "183",
+      "severity": "follow-on",
+      "text": "follow-on: seen[\"change_lane\"] is overwritten by the resume-with-backend call asserted at :177, so the redispatch assertion can pass on the value that earlier invocation left and does not independently prove crew redispatch resolves through the owner."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 8ca322743; efa3fd7aa adds the owner and routes three call sites, bb34f6c42 adds only the evidence fragment, all inside the declared scope.",
+    "done_when": "the done_when's measure is that no module in reckon/ reads dispatch_options overrides except the owner plus a sentinel test and a base/head gate over the importing files; grep of reckon/ at head shows runs.py:667 the only reader of the key, the manifest records both arms and the sentinel test, so the gate asserts the measure.",
+    "goal": "the goal is to make runs.recorded_dispatch_overrides the one reader of a run's recorded dispatch overrides; reckon/crew/runs.py:657 adds that owner and reckon/crew_run_commands.py no longer defines its private _recorded_dispatch_overrides, so the goal lands.",
+    "manifest": "read; it reports head 837 passed/2 skipped/1 error and base 835/2/1 over the importer set, a negative control that reddens the sentinel test with the hand read restored, and names its three logs.",
+    "write_paths": "read the six declared paths (reckon/crew/runs.py, reckon/crew_run_commands.py, reckon/crew/queue_admission.py, tests/test_a_resume_runs_under_its_dispatch_policy.py, tests/test_a_run_s_overrides_have_one_reader.py, docs/evidence/fragments/a-held-session-routes-to-a-serving-lane/a-run-s-overrides-have-one-reader.html); the diff's six files are exactly those."
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_s_overrides_have_one_reader.py:170 fails whenever _resolve_lane_config hand-reads the key (the recorded negative control reddens it, base-model != sentinel-model), though the redispatch assertion at :183 rides a capture value already written at :177.",
+    "evidence": "the gate is recorded in the reviewed run's own head-gate.log and base-gate.log (head 837 passed = base 835 + 2 new tests, one identical conftest teardown error in each), though the head arm log names efa3fd7 while the reviewed head is its child bb34f6c4.",
+    "fit": "the owner sits beside read_pointer in reckon/crew/runs.py:657 and each command uses the file's existing in-function-import idiom (crew_run_commands.py:1298).",
+    "goal_fidelity": "reckon/crew/runs.py:667 is the one owner of the overrides read and every reader calls it (queue_admission.py:136, crew_run_commands.py:1300 and :1419), with the old private copy deleted.",
+    "reuse": "the change removes the two hand readers and makes reckon/crew/runs.py:657 the single owner of the capability rather than forking it.",
+    "scope_discipline": "the diff touches exactly the six declared write paths and no path outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make runs.recorded_dispatch_overrides the one reader of a run's recorded dispatch overrides; reckon/crew/runs.py:657 adds that owner and reckon/crew_run_commands.py no longer defines its private _recorded_dispatch_overrides, so the goal lands.\nVERDICT done_when: the done_when's measure is that no module in reckon/ reads dispatch_options overrides except the owner plus a sentinel test and a base/head gate over the importing files; grep of reckon/ at head shows runs.py:667 the only reader of the key, the manifest records both arms and the sentinel test, so the gate asserts the measure.\nVERDICT write_paths: read the six declared paths (reckon/crew/runs.py, reckon/crew_run_commands.py, reckon/crew/queue_admission.py, tests/test_a_resume_runs_under_its_dispatch_policy.py, tests/test_a_run_s_overrides_have_one_reader.py, docs/evidence/fragments/a-held-session-routes-to-a-serving-lane/a-run-s-overrides-have-one-reader.html); the diff's six files are exactly those.\nVERDICT manifest: read; it reports head 837 passed/2 skipped/1 error and base 835/2/1 over the importer set, a negative control that reddens the sentinel test with the hand read restored, and names its three logs.\nVERDICT diff: read commit by commit against base 8ca322743; efa3fd7aa adds the owner and routes three call sites, bb34f6c42 adds only the evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/queue_admission.py:136, reckon/crew_run_commands.py:1300, reckon/crew_run_commands.py:1419\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:667 is the one owner of the overrides read and every reader calls it (queue_admission.py:136, crew_run_commands.py:1300 and :1419), with the old private copy deleted.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate is recorded in the reviewed run's own head-gate.log and base-gate.log (head 837 passed = base 835 + 2 new tests, one identical conftest teardown error in each), though the head arm log names efa3fd7 while the reviewed head is its child bb34f6c4.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly the six declared write paths and no path outside them.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_run_s_overrides_have_one_reader.py:170 fails whenever _resolve_lane_config hand-reads the key (the recorded negative control reddens it, base-model != sentinel-model), though the redispatch assertion at :183 rides a capture value already written at :177.\nSCORE fit: 19\nJUSTIFICATION fit: the owner sits beside read_pointer in reckon/crew/runs.py:657 and each command uses the file's existing in-function-import idiom (crew_run_commands.py:1298).\nSCORE reuse: 20\nJUSTIFICATION reuse: the change removes the two hand readers and makes reckon/crew/runs.py:657 the single owner of the capability rather than forking it.\nFINDING tests/test_a_run_s_overrides_have_one_reader.py:183 follow-on: seen[\"change_lane\"] is overwritten by the resume-with-backend call asserted at :177, so the redispatch assertion can pass on the value that earlier invocation left and does not independently prove crew redispatch resolves through the owner.\nreviewed_base_sha: 8ca322743306c2f379aec69dd272bd81ca42cdf9\nreviewed_head_sha: bb34f6c42293665a39d7af1afd81ea3340d77561\n",
+  "review_run_id": "r-20261015T171418385822-review-of-a-run-s-overrides-have-one-reader-bb34f6c42293",
+  "reviewed_base_sha": "8ca322743306c2f379aec69dd272bd81ca42cdf9",
+  "reviewed_head_sha": "bb34f6c42293665a39d7af1afd81ea3340d77561",
+  "reviewed_run_id": "r-20261015T162611840986-a-run-s-overrides-have-one-reader",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261015T171418385822-review-of-a-run-s-overrides-have-one-reader-bb34f6c42293",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T17:26:44.709060+00:00",
+  "total": 115
+}
