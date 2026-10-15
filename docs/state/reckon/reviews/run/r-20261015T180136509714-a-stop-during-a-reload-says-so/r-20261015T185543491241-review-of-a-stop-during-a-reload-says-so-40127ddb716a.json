@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:_prompt",
+    "reckon/hooks/coordinator_obligations.py:_stop",
+    "reckon/crew_follow_commands.py:_FollowerReloader.poll"
+  ],
+  "completed_at": "2026-10-15T19:10:21.155Z",
+  "dispatched_at": "2026-10-15T18:57:27Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "482",
+      "severity": "follow-on",
+      "text": "follow-on: watch_reload_started_at is now called by nothing, production or test, after both hook paths moved to watch_reload_state, leaving a dead wrapper beside its replacement."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit 40127ddb7 against 1460998113; four files changed, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_stop_during_a_reload_says_so.py plus the files importing coordinator_obligations.py/obligation_snapshot.py holding the same pass and fail ids at head as at base; that new file passes 5/5 at 40127ddb7 and the manifest records the importing-test arms.",
+    "goal": "the node goal is that the stop path asks reload_in_progress exactly as the prompt path does, that a recorded producer deferral reaches both paths naming its files, and that a stale stamp with neither keeps today's --ensure line; reckon/hooks/coordinator_obligations.py:1175-1195 and reckon/crew_follow_commands.py:274-300 implement exactly that.",
+    "manifest": "read; it records head 455 passed/2 failed against base 448/4 over ten chunks, zero head-only failure ids, and a negative control red at EXIT=1.",
+    "write_paths": "the manifest declares reckon/hooks/coordinator_obligations.py, reckon/crew/obligation_snapshot.py, reckon/crew_follow_commands.py, tests/test_a_stop_during_a_reload_says_so.py and two docs paths; the diff's four changed files all sit inside that set."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows test_bounded_stop_names_reload_without_ensure failing with the --ensure line at EXIT=1 when the stop path prints not_fresh_line directly again, so the guard reddens on its target regression.",
+    "evidence": "the done_when asks the same pass and fail ids at head as at base, but the base arm's 4 failures include two test_hook_installer ids absent from head-chunk-3.log, attributed to a scratch-tree .venv link and rechecked at base-installer-recheck.log, so the comparison is recorded with a documented environment asymmetry.",
+    "fit": "the new line helpers follow the existing not_fresh_line idiom at reckon/hooks/coordinator_obligations.py:729 and carry no plan or ticket identifiers.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:1175-1195 gives the stop path the deferral and reload branches the prompt path at :937-950 already has.",
+    "reuse": "freshness_reading extends the existing obligation_snapshot.freshness owner and _record_reload_deferral delegates to runs._read_watch_record/_write_watch_record rather than re-implementing the seat store.",
+    "scope_discipline": "every changed path (reckon/hooks/coordinator_obligations.py, reckon/crew/obligation_snapshot.py, reckon/crew_follow_commands.py, tests/test_a_stop_during_a_reload_says_so.py) is inside the manifest's declared set."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the stop path asks reload_in_progress exactly as the prompt path does, that a recorded producer deferral reaches both paths naming its files, and that a stale stamp with neither keeps today's --ensure line; reckon/hooks/coordinator_obligations.py:1175-1195 and reckon/crew_follow_commands.py:274-300 implement exactly that.\nVERDICT done_when: the done_when names tests/test_a_stop_during_a_reload_says_so.py plus the files importing coordinator_obligations.py/obligation_snapshot.py holding the same pass and fail ids at head as at base; that new file passes 5/5 at 40127ddb7 and the manifest records the importing-test arms.\nVERDICT write_paths: the manifest declares reckon/hooks/coordinator_obligations.py, reckon/crew/obligation_snapshot.py, reckon/crew_follow_commands.py, tests/test_a_stop_during_a_reload_says_so.py and two docs paths; the diff's four changed files all sit inside that set.\nVERDICT manifest: read; it records head 455 passed/2 failed against base 448/4 over ten chunks, zero head-only failure ids, and a negative control red at EXIT=1.\nVERDICT diff: read commit 40127ddb7 against 1460998113; four files changed, all inside the declared scope.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:_prompt, reckon/hooks/coordinator_obligations.py:_stop, reckon/crew_follow_commands.py:_FollowerReloader.poll\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:1175-1195 gives the stop path the deferral and reload branches the prompt path at :937-950 already has.\nSCORE evidence: 14\nJUSTIFICATION evidence: the done_when asks the same pass and fail ids at head as at base, but the base arm's 4 failures include two test_hook_installer ids absent from head-chunk-3.log, attributed to a scratch-tree .venv link and rechecked at base-installer-recheck.log, so the comparison is recorded with a documented environment asymmetry.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path (reckon/hooks/coordinator_obligations.py, reckon/crew/obligation_snapshot.py, reckon/crew_follow_commands.py, tests/test_a_stop_during_a_reload_says_so.py) is inside the manifest's declared set.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log shows test_bounded_stop_names_reload_without_ensure failing with the --ensure line at EXIT=1 when the stop path prints not_fresh_line directly again, so the guard reddens on its target regression.\nSCORE fit: 17\nJUSTIFICATION fit: the new line helpers follow the existing not_fresh_line idiom at reckon/hooks/coordinator_obligations.py:729 and carry no plan or ticket identifiers.\nSCORE reuse: 19\nJUSTIFICATION reuse: freshness_reading extends the existing obligation_snapshot.freshness owner and _record_reload_deferral delegates to runs._read_watch_record/_write_watch_record rather than re-implementing the seat store.\nFINDING reckon/crew/obligation_snapshot.py:482 follow-on: watch_reload_started_at is now called by nothing, production or test, after both hook paths moved to watch_reload_state, leaving a dead wrapper beside its replacement.\n",
+  "review_run_id": "r-20261015T185543491241-review-of-a-stop-during-a-reload-says-so-40127ddb716a",
+  "reviewed_base_sha": "14609981136f65404bfdcf25c28e6a34876b4617",
+  "reviewed_head_sha": "40127ddb716a78365790e820a54b047155609770",
+  "reviewed_run_id": "r-20261015T180136509714-a-stop-during-a-reload-says-so",
+  "reviewer_run_id": "r-20261015T185543491241-review-of-a-stop-during-a-reload-says-so-40127ddb716a",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T180136509714-a-stop-during-a-reload-says-so/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/a-stop-during-a-reload-says-so",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T19:08:13.351120+00:00",
+  "total": 106
+}
