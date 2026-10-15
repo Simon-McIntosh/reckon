@@ -57,23 +57,29 @@ def _expected_id(file: str, line: str, text: str) -> str:
 def _store(tmp_path: Path, findings: list[object]) -> str:
     """Write a review record into a temporary store root and return that root."""
     base_dir = str(tmp_path / "reviews")
-    review_module.store_review(
-        {
-            "project": PROJECT,
-            "reviewed_run_id": RUN_ID,
-            "review_run_id": REVIEW_RUN_ID,
-            "reviewed_base_sha": BASE_SHA,
-            "reviewed_head_sha": HEAD_SHA,
-            "status": "parsed",
-            "scores": dict.fromkeys(review_module.REVIEW_DIMENSIONS, 15),
-            "findings": findings,
-        },
-        base_dir=base_dir,
+    path = review_path(PROJECT, RUN_ID, base_dir, reviewed_head_sha=HEAD_SHA)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "project": PROJECT,
+                "reviewed_run_id": RUN_ID,
+                "review_run_id": REVIEW_RUN_ID,
+                "reviewed_base_sha": BASE_SHA,
+                "reviewed_head_sha": HEAD_SHA,
+                "status": "parsed",
+                "scores": dict.fromkeys(review_module.REVIEW_DIMENSIONS, 15),
+                "findings": findings,
+            }
+        ),
+        encoding="utf-8",
     )
     return base_dir
 
 
-def _report_for(failures: list[dict[str, str]], path: Path | None) -> dict[str, str] | None:
+def _report_for(
+    failures: list[dict[str, str]], path: Path | None
+) -> dict[str, str] | None:
     """The report naming one file, or ``None`` when it is not named."""
     for entry in failures:
         if entry["path"] == str(path):
@@ -271,7 +277,9 @@ def test_a_promoted_claimless_record_is_committed_and_still_reported(
         review_run_id=REVIEW_RUN_ID,
     )
     assert committed.is_file()
-    assert json.loads(committed.read_text(encoding="utf-8"))["findings"] == [PLACEHOLDER]
+    assert json.loads(committed.read_text(encoding="utf-8"))["findings"] == [
+        PLACEHOLDER
+    ]
 
     # The malformed report still stands over the committed store.
     with review_module.collect_read_failures() as failures:

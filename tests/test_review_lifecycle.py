@@ -137,7 +137,9 @@ def test_a_plan_review_is_answered_once_its_finding_is_answered() -> None:
 
 
 def test_a_run_review_lands_when_its_run_has_a_ledger_row() -> None:
-    record = _run_record(findings=[{"id": "f1", "severity": "blocking"}])
+    record = _run_record(
+        findings=[{"id": "f1", "severity": "blocking", "text": "the run needs repair"}]
+    )
     assert module.lifecycle(record, run_closed=True) == module.LANDED
 
 
@@ -148,17 +150,21 @@ def test_a_run_review_is_superseded_by_a_later_review_of_the_same_run() -> None:
 
 
 def test_a_run_review_is_open_while_a_blocking_finding_is_unanswered() -> None:
-    record = _run_record(findings=[{"id": "f1", "severity": "blocking"}])
+    record = _run_record(
+        findings=[{"id": "f1", "severity": "blocking", "text": "the run needs repair"}]
+    )
     assert module.lifecycle(record) == module.OPEN
 
 
 def test_a_run_finding_with_no_declared_severity_blocks() -> None:
-    record = _run_record(findings=[{"id": "f1"}])
+    record = _run_record(findings=[{"id": "f1", "text": "the run needs repair"}])
     assert module.lifecycle(record) == module.OPEN
 
 
 def test_a_follow_on_only_run_review_is_answered_not_open() -> None:
-    record = _run_record(findings=[{"id": "f1", "severity": "follow-on"}])
+    record = _run_record(
+        findings=[{"id": "f1", "severity": "follow-on", "text": "a follow-up remains"}]
+    )
     assert module.lifecycle(record) == module.ANSWERED
 
 
@@ -188,7 +194,7 @@ def test_an_id_less_run_finding_reads_by_its_severity() -> None:
 
 def test_a_blocking_finding_answered_through_response_events_is_answered() -> None:
     record = _run_record(
-        findings=[{"id": "f1", "severity": "blocking"}],
+        findings=[{"id": "f1", "severity": "blocking", "text": "the run needs repair"}],
         response_events=[{"finding": "f1", "action": "acted"}],
     )
     assert module.lifecycle(record) == module.ANSWERED
@@ -214,7 +220,9 @@ def test_landed_takes_precedence_over_superseded_and_open_for_a_plan_review() ->
 
 
 def test_landed_takes_precedence_over_open_for_a_run_review() -> None:
-    record = _run_record(findings=[{"id": "f1", "severity": "blocking"}])
+    record = _run_record(
+        findings=[{"id": "f1", "severity": "blocking", "text": "the run needs repair"}]
+    )
     assert module.lifecycle(record, run_closed=True) == module.LANDED
 
 
@@ -274,7 +282,12 @@ def test_the_loader_pairs_each_records_path_with_its_state(
         _plan_record(findings=[{"id": "f1", "type": "wiring"}]), base_dir=store
     )
     run_path = review_module.store_review(
-        _run_record(findings=[{"id": "f2", "severity": "follow-on"}]), base_dir=store
+        _run_record(
+            findings=[
+                {"id": "f2", "severity": "follow-on", "text": "a follow-up remains"}
+            ]
+        ),
+        base_dir=store,
     )
     _write_plan(checkout, status="active")
 
@@ -311,7 +324,12 @@ def test_the_loader_reads_a_closed_run_from_the_ledger(
 ) -> None:
     store = tmp_path / "store"
     path = review_module.store_review(
-        _run_record(findings=[{"id": "f1", "severity": "blocking"}]), base_dir=store
+        _run_record(
+            findings=[
+                {"id": "f1", "severity": "blocking", "text": "the run needs repair"}
+            ]
+        ),
+        base_dir=store,
     )
     _write_plan(checkout, status="active")
     assert (
