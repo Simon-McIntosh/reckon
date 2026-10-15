@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "344805c9613487e59bcc8001ffc0302a55f8ae50",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:follower_row_path",
+    "reckon/crew/ticker.py:PaneRowPath.__init__"
+  ],
+  "completed_at": "2026-10-15T12:45:42.403Z",
+  "dispatched_at": "2026-10-15T12:31:34Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-released-run-row-is-never-blank",
+      "recorded_at": "2026-10-15T12:45:36.877093+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "1061",
+      "severity": "follow-on",
+      "text": "follow-on: the rewritten comment claims a held settle row \"is never released\" once a later row shows its run in a live pane word, but the branch at reckon/crew/ticker.py:1543 releases it at once (out.append(opener)) when that word differs from the one the pane shows, and the same commit's docstring at tests/test_a_halt_the_run_left_is_not_drawn.py:7 says plainly that the held row prints then; the \"plain statement\" this commit exists to make is wrong for one of its three cases."
+    }
+  ],
+  "head_log_revision": "d31cd5907738b4408995862abfc13580eb3aca80",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base d31cd5907738b4408995862abfc13580eb3aca80; the single commit 911f02031 rewrites a 4-line comment at reckon/crew/ticker.py:1059, the test module docstring, one case docstring, and the SESSION/RUN/PROJECT/NODE fixture literals at tests/test_a_halt_the_run_left_is_not_drawn.py:24-27 \u2014 no assertion and no executable line changes.",
+    "done_when": "\u00a729's done_when names tests/test_a_halt_the_run_left_is_not_drawn.py; the manifest records its rerun at head 911f020 as 4 passed EXIT=0 in logs/halt-run-left-hygiene.log, which I reproduced (4 passed in 0.76s), and the done_when's \"no added failure against base\" clause is not re-measured for this commit.",
+    "goal": "the node goal is that a held settle row is never released once a later row moves its run on to a live pane word; the commits gained since the last review (base d31cd59) only neutralise the incident naming the landed change carried, rewriting reckon/crew/ticker.py:1059 and tests/test_a_halt_the_run_left_is_not_drawn.py:1-27 with no executable statement changed.",
+    "manifest": "read; it names both commits, the 79-passed gate at d31cd59, the 4-passed rerun at 911f020, the base/head importer arms and the negative control log, and every log it names exists on disk.",
+    "write_paths": "\u00a729 declares reckon/crew/ticker.py and tests/test_a_halt_the_run_left_is_not_drawn.py; git diff --stat d31cd59..911f020 lists exactly those two files and nothing else."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion, and the guard at tests/test_a_halt_the_run_left_is_not_drawn.py:88 still reddens under the recorded mutation (logs/negative-control-mutated.log, EXIT=1) while I reproduced it green at head (4 passed), so the fixture rename left the behaviour covered.",
+    "evidence": "the commit's own check is the rerun of tests/test_a_halt_the_run_left_is_not_drawn.py recorded in logs/halt-run-left-hygiene.log (4 passed, EXIT=0) at head 911f020, but no gate asserts the commit's own goal, that no incident identifier survives in the changed source.",
+    "fit": "reckon/crew/ticker.py:1061 says the held row \"is never released\" once a later row shows a live word, contradicting ticker.py:1543, where that same branch appends the held opener to the pane, and contradicting this commit's own docstring at tests/test_a_halt_the_run_left_is_not_drawn.py:7.",
+    "goal_fidelity": "reckon/crew/ticker.py:1059-1062 and tests/test_a_halt_the_run_left_is_not_drawn.py:1-9 state the settle rule without the incident run, project or node ids, which is what the commit set out to do, though ticker.py:1061 misstates one branch.",
+    "reuse": "the commit adds no definition at all \u2014 the only identifiers it touches are the test-local fixtures at tests/test_a_halt_the_run_left_is_not_drawn.py:24-27 \u2014 so no capability is forked or duplicated by this change.",
+    "scope_discipline": "git diff --stat d31cd59..911f020 lists only reckon/crew/ticker.py (10 changed lines) and tests/test_a_halt_the_run_left_is_not_drawn.py (32), both declared write paths, and touches nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a held settle row is never released once a later row moves its run on to a live pane word; the commits gained since the last review (base d31cd59) only neutralise the incident naming the landed change carried, rewriting reckon/crew/ticker.py:1059 and tests/test_a_halt_the_run_left_is_not_drawn.py:1-27 with no executable statement changed.\nVERDICT done_when: \u00a729's done_when names tests/test_a_halt_the_run_left_is_not_drawn.py; the manifest records its rerun at head 911f020 as 4 passed EXIT=0 in logs/halt-run-left-hygiene.log, which I reproduced (4 passed in 0.76s), and the done_when's \"no added failure against base\" clause is not re-measured for this commit.\nVERDICT write_paths: \u00a729 declares reckon/crew/ticker.py and tests/test_a_halt_the_run_left_is_not_drawn.py; git diff --stat d31cd59..911f020 lists exactly those two files and nothing else.\nVERDICT manifest: read; it names both commits, the 79-passed gate at d31cd59, the 4-passed rerun at 911f020, the base/head importer arms and the negative control log, and every log it names exists on disk.\nVERDICT diff: read commit by commit against base d31cd5907738b4408995862abfc13580eb3aca80; the single commit 911f02031 rewrites a 4-line comment at reckon/crew/ticker.py:1059, the test module docstring, one case docstring, and the SESSION/RUN/PROJECT/NODE fixture literals at tests/test_a_halt_the_run_left_is_not_drawn.py:24-27 \u2014 no assertion and no executable line changes.\nCALL_SITES: reckon/crew_follow_commands.py:follower_row_path, reckon/crew/ticker.py:PaneRowPath.__init__\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:1059-1062 and tests/test_a_halt_the_run_left_is_not_drawn.py:1-9 state the settle rule without the incident run, project or node ids, which is what the commit set out to do, though ticker.py:1061 misstates one branch.\nSCORE evidence: 16\nJUSTIFICATION evidence: the commit's own check is the rerun of tests/test_a_halt_the_run_left_is_not_drawn.py recorded in logs/halt-run-left-hygiene.log (4 passed, EXIT=0) at head 911f020, but no gate asserts the commit's own goal, that no incident identifier survives in the changed source.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat d31cd59..911f020 lists only reckon/crew/ticker.py (10 changed lines) and tests/test_a_halt_the_run_left_is_not_drawn.py (32), both declared write paths, and touches nothing else.\nSCORE durability: 18\nJUSTIFICATION durability: the diff adds no assertion, and the guard at tests/test_a_halt_the_run_left_is_not_drawn.py:88 still reddens under the recorded mutation (logs/negative-control-mutated.log, EXIT=1) while I reproduced it green at head (4 passed), so the fixture rename left the behaviour covered.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/ticker.py:1061 says the held row \"is never released\" once a later row shows a live word, contradicting ticker.py:1543, where that same branch appends the held opener to the pane, and contradicting this commit's own docstring at tests/test_a_halt_the_run_left_is_not_drawn.py:7.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no definition at all \u2014 the only identifiers it touches are the test-local fixtures at tests/test_a_halt_the_run_left_is_not_drawn.py:24-27 \u2014 so no capability is forked or duplicated by this change.\nFINDING reckon/crew/ticker.py:1061 follow-on: the rewritten comment claims a held settle row \"is never released\" once a later row shows its run in a live pane word, but the branch at reckon/crew/ticker.py:1543 releases it at once (out.append(opener)) when that word differs from the one the pane shows, and the same commit's docstring at tests/test_a_halt_the_run_left_is_not_drawn.py:7 says plainly that the held row prints then; the \"plain statement\" this commit exists to make is wrong for one of its three cases.\n",
+  "review_run_id": "r-20261015T123104557924-review-of-a-halt-the-run-left-is-not-drawn-911f020313ca",
+  "reviewed_base_sha": "d31cd5907738b4408995862abfc13580eb3aca80",
+  "reviewed_head_sha": "911f020313ca24afdb746b56e94def8a45cd6c84",
+  "reviewed_run_id": "r-20261015T113314443143-a-halt-the-run-left-is-not-drawn",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T12:47:31.618593+00:00",
+  "total": 108
+}
