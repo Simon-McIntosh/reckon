@@ -23,7 +23,7 @@
   <title>A Write on Any Node Reaches the Page | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -80,6 +80,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-s2-live-measure" data-who="reckon-build" data-when="2026-10-15T14:34:00Z">
     <div class="r-comment-body"><p>Live measure passed. The landing beat wrote <code>docs/evidence/archive/a-write-on-any-node-reaches-the-page-landed.html</code> from the fleet node <code>98dci4-clu-2002</code>, with file mtime 14:32:59Z. That was a new document, not yet committed. The served process on <code>98dci4-srv-1006</code> listed it in <code>/_index/reckon</code> at 14:33:09Z, on the first poll and 10 s after the write. Nothing was touched on the login node, whose inotify cannot see a fleet-node write. Before the change, <code>/_index/imas-ambix</code> stayed stale until a login-node <code>touch</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261015T134211685404-cross-node-writes-refresh-the-index" data-who="reckon-build" data-when="2026-10-15T14:18:37.844Z">
+    <div class="r-comment-body"><p>reckon/serve.py — `_FleetChangeWatch` runs a detector thread beside its inotify reader: a fast pass (every `_CROSS_NODE_FAST_S`, default 10 s) stamps each mounted tree&#x27;s directory identities via `metadata_index._dir_identity` and its git signal `(_head_identity(repo_dir), _file_identity(git_dir/&quot;index&quot;))` read from files only, so no git process starts; a slow pass (every `_CROSS_NODE_SLOW_S`, default 60 s) counts and dates the tree&#x27;s covered files via `_walk_discovery_signature`. A tree is swept only while it has an open `/_changes/` subscription or was read within `_CROSS_NODE_READ_WINDOW_S` (default 600 s), stamped by `_note_tree_read` at `/_index` and `/_discover` and left standing by an invalidation. A moved signal drops the tree&#x27;s derived views once through `_invalidate_tree_views` and wakes every open stream: the watch hands each stream a per-stream wake pipe, and `_ProjectChangeWatch.wait` selects on it beside the inotify fd and the connection, returning True when the pipe is readable and False only on client disconnect. `close()` stops and joins both threads; `start_fleet_change_watch` keeps its one-argument shape with the state root read from `_STATE_ROOT`.</p></div>
 </div>
 </section>
 </main>
