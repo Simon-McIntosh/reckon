@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="114">
+<meta name="plan-version" content="115">
 <meta name="plan-modified" content="2026-10-15">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -641,6 +641,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s24" data-id="c-run-r-20261015T061724102243-scratch-housekeeping-is-not-printed" data-who="reckon-build" data-when="2026-10-15T07:26:32.099Z">
     <div class="r-comment-body"><p>Scratch housekeeping never prints to a pane: the bare print() calls in remove_worker_scratch and garbage_collect_scratch are gone, while every removal stays named with its path and size on the result they return, so a promotion or discard inside a follower or producer leaves nothing on the pane; measured by tests/test_scratch_housekeeping_is_not_printed.py (3 passed, EXIT=0, at head 971e8b8ee) with both declared controls red (EXIT=1), the three focused files at 22 passed, and the importer-population gate at 200 passed / 2 failed at head against the same 2 ids at base 4870a37ab.</p></div>
+</div>
+<div class="r-comment" data-section="s24" data-id="c-close-s24" data-who="reckon-build" data-when="2026-10-15T07:55:00Z">
+    <div class="r-comment-body"><p>§24 landed. Scratch removal no longer prints to stdout, so a promotion inside a follower stops writing housekeeping onto the session pane. Each removal stays named in the emitted result. Merged as <code>f59ddd87b</code>, and the gate was replayed green. Population: 109 files, 0 added. Review: 113. Follow-on: <code>crew gc</code>'s worktree-trash sweep still prints a line ahead of its JSON. That is not pane noise. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s24-scratch-housekeeping-not-printed">evidence</a></p></div>
 </div>
 </section>
 </main>
