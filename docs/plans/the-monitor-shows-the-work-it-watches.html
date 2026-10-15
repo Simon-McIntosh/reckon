@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="120">
+<meta name="plan-version" content="121">
 <meta name="plan-modified" content="2026-10-15">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -659,6 +659,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s27" data-id="c-close-s27" data-who="reckon-build" data-when="2026-10-15T09:20:00Z">
     <div class="r-comment-body"><p>§27 landed. A resumed run reads starting until its new attempt records a worker or an exit, instead of halted on the previous attempt's exited process. Merged as <code>1ea672be0</code>; gate 711 passed with one failure that also fails at base, from a test path containing the run's name. Review: 101/120. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s27">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s27" data-id="c-run-r-20261015T074733638173-a-resume-is-not-halted-on-its-last-attempt" data-who="reckon-build" data-when="2026-10-15T09:09:07.865Z">
+    <div class="r-comment-body"><p>the producer&#x27;s death branch now applies only to the attempt a run&#x27;s own attempt record names: while that attempt has recorded no worker or exit record of its own the run reads starting, past STRANDED_LAUNCH_BOUND_SECONDS it reads launch-failed as a stranded launch, and an attempt that recorded its own end reads that failure at once instead of the previous attempt&#x27;s process being read as this attempt&#x27;s death</p></div>
 </div>
 </section>
 </main>
