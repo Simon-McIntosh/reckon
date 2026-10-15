@@ -327,6 +327,7 @@ def _record_review_dispatch(
     review_run_id: str = "",
     backend: str = "",
     reviewed_head: str = "",
+    asks: Sequence[Mapping[str, Any]] | None = None,
 ) -> None:
     """Write the reflex's outcome onto the run it acted for.
 
@@ -348,7 +349,7 @@ def _record_review_dispatch(
         return
 
     def record(pointer: dict[str, Any]) -> dict[str, Any]:
-        pointer[REVIEW_DISPATCH_FIELD] = {
+        entry: dict[str, Any] = {
             "status": status,
             "reason": reason,
             "run_id": review_run_id or None,
@@ -360,6 +361,12 @@ def _record_review_dispatch(
             )
             + 1,
         }
+        if asks:
+            # A retry that re-asked the route question records both asks, so a
+            # reader sees the lane that refused the review and the lane the
+            # second answer named rather than only the outcome it produced.
+            entry["asks"] = [dict(ask) for ask in asks]
+        pointer[REVIEW_DISPATCH_FIELD] = entry
         return pointer
 
     if isinstance(run_id, Mapping):
@@ -1373,6 +1380,146 @@ def _no_lane_reason(
     return f"{reason} ({detail})" if detail else reason
 
 
+# The dispatch statuses under which a review attempt was *held* on a lane
+# rather than carried by one. A held attempt names a lane that took nothing
+# from the run, so it is free to be re-routed; an attempt a lane actually
+# carried and dropped is demoted by :func:`_failed_review_backend` instead, and
+# the two records answer different questions.
+HELD_REVIEW_DISPATCH_STATUSES = frozenset({"lane-paused", "awaiting-lane"})
+
+
+def _review_lane_family(config: Mapping[str, Any], name: str) -> str:
+    """The lane a configured backend belongs to, read as the picker reads it.
+
+    The lane is the local marker or the backend's resolved dialect, the same
+    derivation the picker's own exclusion uses, so a converted lane is left out
+    of the offering as one lane rather than by a backend name list kept here.
+    """
+    if name and name == str(config.get("local_backend") or "").strip():
+        return "local"
+    from reckon import _backends
+
+    settings = (config.get("backends") or {}).get(name)
+    if not isinstance(settings, Mapping):
+        return name
+    try:
+        return _backends.dialect_for(settings).name
+    except _backends.BackendError:
+        return str(settings.get("launch") or name)
+
+
+def _zero_slot_held_lane(
+    record: Mapping[str, Any], *, config: Mapping[str, Any], session: str
+) -> str:
+    """The lane a recorded hold names whose router grants this session nothing.
+
+    The attempt's status gates the reading: only a hold names a lane that took
+    no work from the run and so may be re-routed, and only a record for it is
+    read at all. The lane's own published admission then decides: a router
+    granting the session no worker is the case the route question exists for,
+    and a lane publishing no figure holds nothing, because absence of a signal
+    is not exhaustion. A paused gate records the same status without a zero
+    allowance, so the allowance check is what tells the two apart.
+    """
+    recorded = record.get(REVIEW_DISPATCH_FIELD)
+    if not isinstance(recorded, Mapping):
+        return ""
+    if str(recorded.get("status") or "").strip() not in HELD_REVIEW_DISPATCH_STATUSES:
+        return ""
+    backend = str(recorded.get("backend") or "").strip()
+    if not backend:
+        return ""
+    settings = (config.get("backends") or {}).get(backend)
+    if not isinstance(settings, Mapping):
+        return ""
+    from reckon.crew.dispatch_plan import _dispatch_lane_allowance
+
+    allowance = _dispatch_lane_allowance(settings, session=session)
+    if allowance is None or not allowance.get("held"):
+        return ""
+    return backend
+
+
+def _reroute_held_review(
+    record: Mapping[str, Any],
+    *,
+    node: Any,
+    fields: Mapping[str, Any],
+    config: Mapping[str, Any],
+    project: str,
+    repo: str,
+    owning_backend: str = "",
+) -> dict[str, Any] | None:
+    """Ask the route question for a review the local lane held, once, with it out.
+
+    The reflex composes a review onto the local lane deterministically, so a
+    local lane whose router grants this session no worker re-queues the same
+    review there on every sweep — the loop the plan records as the review
+    re-queued twice on a lane that still granted the session no slot. The retry
+    asks the same question the picker's own zero-slot re-ask asks, with the
+    refusing lane left out of the offering, and the answer is the retry's: a
+    route carries the review onto the lane the answer named, and a hold or a
+    refusal is reported rather than stepped over.
+
+    The question is asked only when the reflex can offer another lane at all.
+    A fleet whose every other lane is review-excluded or in-harness has nothing
+    to ask about, and the retry keeps its existing path — which re-queues on the
+    local lane exactly as it did before — rather than asking a question whose
+    only answer is the lane already in hand. A picker that did not decide (a
+    timeout, an unreadable input) answers with a fallback rather than an answer,
+    so that too keeps the existing path.
+
+    None says the retry has nothing to add. A returned mapping carries
+    ``backend`` when the answer routed the review, and ``refusing_lane`` with a
+    ``reason`` when the answer held it; both carries ``asks``, naming the lane
+    that refused the review beside the answer the second ask produced.
+    """
+    session = str(fields.get("session") or "")
+    refusing = _zero_slot_held_lane(record, config=config, session=session)
+    if not refusing:
+        return None
+    eligible = [
+        name
+        for name in _review_lane_candidates(
+            config, owning_backend=owning_backend or refusing, session=session
+        )
+        if name != refusing
+    ]
+    if not eligible:
+        return None
+    from reckon.crew import dispatch_picker
+
+    lane = _review_lane_family(config, refusing)
+    selection = dispatch_picker.dispatch_picker_selection(
+        node=node,
+        config=dispatch_picker._config_without_lane(config, lane),
+        project=project,
+        repo=Path(repo),
+        session=session,
+    )
+    action = str(selection.get("action") or "")
+    backend = str(selection.get("backend") or "")
+    if action == "fallback":
+        return None
+    asks = [
+        {"action": "held", "backend": refusing, "lane": lane},
+        dispatch_picker._ask_summary(selection),
+    ]
+    if action == "route" and backend in (config.get("backends") or {}):
+        return {"backend": backend, "asks": asks}
+    return {
+        "backend": "",
+        "refusing_lane": refusing,
+        "reason": (
+            f"the route question for the review of {fields.get('run_id')} after "
+            f"backend {refusing!r} granted session {session or 'unidentified'} no "
+            f"worker was answered with {action or 'refuse'!r}, so the review is "
+            "held rather than re-queued on the lane that refused it"
+        ),
+        "asks": asks,
+    }
+
+
 def _resolved_review_config(
     project: str, config: Mapping[str, Any] | None
 ) -> Mapping[str, Any]:
@@ -1695,6 +1842,19 @@ def _dispatch_composed_review(
                 "reason": reason,
             }
 
+    node = TaskNode(
+        id=fields["node_id"],
+        goal=fields["goal"],
+        plan=fields["plan"],
+        section=fields["section"],
+        brief=str(fields.get("brief") or ""),
+        role="review",
+        spec_level="exact",
+        done_when=fields["done_when"],
+        write_paths=list(fields["write_paths"]),
+        time_budget=fields["time_budget"],
+    )
+    lane_asks: list[Mapping[str, Any]] | None = None
     if record.get("subject") == "plan":
         lane = _composed_review_lane(project, record, resolved)
         if lane is None:
@@ -1722,56 +1882,81 @@ def _dispatch_composed_review(
         local_lane = str(resolved.get("local_backend") or "").strip()
         owning_lane = str(record.get("backend") or "").strip()
         if prefer_local:
-            node = record.get("node") or {}
-            declaration = node.get("lane_declaration") or {}
+            declared_node = record.get("node") or {}
+            declaration = declared_node.get("lane_declaration") or {}
             owning_lane = str(declaration.get("backend") or "").strip()
         previous_lane = _failed_review_backend(record)
-        candidates = [
-            name
-            for name in _review_lane_candidates(
-                resolved, owning_backend=owning_lane, session=fields["session"]
-            )
-            if name != previous_lane
-            and (not prefer_local or name == (owning_lane or local_lane))
-        ]
-        if not candidates:
-            reason = _no_lane_reason(
-                run_id,
-                resolved,
-                owning_backend=owning_lane,
-                kind="review",
-                previous_lane=previous_lane,
-                session=fields["session"],
-            )
+        reroute = _reroute_held_review(
+            record,
+            node=node,
+            fields=fields,
+            config=resolved,
+            project=project,
+            repo=repo,
+            owning_backend=owning_lane,
+        )
+        if reroute is not None and not reroute.get("backend"):
+            # The answer with the refusing lane left out held the review. It is
+            # reported as it stands rather than stepped over: a retry that
+            # overrode Jev would be the same deterministic composition this
+            # question exists to replace.
+            reason = str(reroute["reason"])
+            refusing = str(reroute.get("refusing_lane") or "")
             _record_review_dispatch(
                 dispatch_subject,
                 status="awaiting-lane",
                 reason=reason,
-                backend=previous_lane,
+                backend=refusing,
                 reviewed_head=fields["head"],
+                asks=reroute.get("asks"),
             )
             return {
                 "run_id": run_id,
                 "dispatched": False,
                 "awaiting_lane": True,
-                "backend": previous_lane,
+                "backend": refusing,
                 "reason": reason,
+                "asks": reroute.get("asks"),
             }
-        backend = candidates[0]
-        on_local_lane = backend == local_lane
+        if reroute is not None:
+            backend = str(reroute["backend"])
+            on_local_lane = backend == local_lane
+            lane_asks = reroute.get("asks")
+        else:
+            candidates = [
+                name
+                for name in _review_lane_candidates(
+                    resolved, owning_backend=owning_lane, session=fields["session"]
+                )
+                if name != previous_lane
+                and (not prefer_local or name == (owning_lane or local_lane))
+            ]
+            if not candidates:
+                reason = _no_lane_reason(
+                    run_id,
+                    resolved,
+                    owning_backend=owning_lane,
+                    kind="review",
+                    previous_lane=previous_lane,
+                    session=fields["session"],
+                )
+                _record_review_dispatch(
+                    dispatch_subject,
+                    status="awaiting-lane",
+                    reason=reason,
+                    backend=previous_lane,
+                    reviewed_head=fields["head"],
+                )
+                return {
+                    "run_id": run_id,
+                    "dispatched": False,
+                    "awaiting_lane": True,
+                    "backend": previous_lane,
+                    "reason": reason,
+                }
+            backend = candidates[0]
+            on_local_lane = backend == local_lane
 
-    node = TaskNode(
-        id=fields["node_id"],
-        goal=fields["goal"],
-        plan=fields["plan"],
-        section=fields["section"],
-        brief=str(fields.get("brief") or ""),
-        role="review",
-        spec_level="exact",
-        done_when=fields["done_when"],
-        write_paths=list(fields["write_paths"]),
-        time_budget=fields["time_budget"],
-    )
     if dry_run:
         # The plan review's brief is composed rather than given, so a preview
         # holds its text while a dispatch writes it. The resolver reads the
@@ -1916,6 +2101,7 @@ def _dispatch_composed_review(
         review_run_id=review_run_id,
         backend=backend,
         reviewed_head=fields["head"],
+        asks=lane_asks,
     )
     return {
         "run_id": run_id,
