@@ -1,0 +1,46 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T16:17:52.532Z",
+  "dispatched_at": "2026-10-15T16:12:17Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-session-routes-to-a-serving-lane.html:199",
+      "id": "reasoning-1",
+      "reason": "as written the node either breaks a landed test and fails its own gate, or must keep a delegating shim under the old name, and neither is stated; the plan must either add `tests/test_a_resume_runs_under_its_dispatch_policy.py` to \u00a78's write paths (to repoint its monkeypatch at `runs.recorded_dispatch_overrides`) or say the private name stays as a thin delegate to the new owner.",
+      "text": "\u00a78's deliverable says `crew_run_commands.py` \"drops its private `_recorded_dispatch_overrides` and calls the owner\", but the landed \u00a77 test `tests/test_a_resume_runs_under_its_dispatch_policy.py:186` does `real = crew_run_commands._recorded_dispatch_overrides` and `:192` does `monkeypatch.setattr(crew_run_commands, \"_recorded_dispatch_overrides\", spy)` (reproduced at base 47c10fa50: 1 passed), so dropping the name raises AttributeError on line 186 and reddens that test; \u00a78's done-when at line 200 instead requires \"the test files that import \u2026 `reckon/crew_run_commands.py` give the same pass and fail ids at head as at base\", and \u00a78's declared write paths (`reckon/crew/runs.py`, `reckon/crew_run_commands.py`, `reckon/crew/queue_admission.py`, `tests/test_a_run_s_overrides_have_one_reader.py`) do not include that \u00a77 test file",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "41a32fd87ed1cc200065d7e10b7461483c62a63833f6556c1bd4f9aa8cbbae25",
+  "plan_slug": "a-held-session-routes-to-a-serving-lane",
+  "plan_version": 32,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T161139797308-plan-review-of-a-held-session-routes-to-a-serving-lane",
+  "reviewed_blob_sha": "69d3a5d343849209a8dbfe01be511b315274b10c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the owner is to be added in `reckon/crew/runs.py` beside `read_pointer` (`reckon/crew/runs.py:641`); the cited `_recorded_dispatch_overrides` (`reckon/crew_run_commands.py:21`), `_resolve_lane_config` (`reckon/crew/queue_admission.py:127`) and its hand read (`reckon/crew/queue_admission.py:132-133`) all resolve, as do the cited module paths.",
+    "done_when": "pass \u2014 \u00a78's done-when is measurable (a grep that no module reads `dispatch_options` overrides but the owner, plus two tests) and it declares a negative control (\"with `_resolve_lane_config`'s hand read restored, the second test's admission case fails\").",
+    "evidence_paths": "pass \u2014 the negative control is logged under the run directory, a durable path, not a scratchpad or node-local temp.",
+    "naming": "pass \u2014 `recorded_dispatch_overrides` and `tests/test_a_run_s_overrides_have_one_reader.py` are named by mechanism; no plan label, stage name, ticket number or version tag appears.",
+    "reasoning": "a finding \u2014 \u00a78's deliverable (drop `crew_run_commands`' private `_recorded_dispatch_overrides`) cannot produce \u00a78's own done-when (the files importing `crew_run_commands.py` must give the same pass/fail ids at head as at base), because a landed \u00a77 test dereferences and monkeypatches that exact attribute and \u00a78's write paths exclude that test file.",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable: one owner for a run's recorded overrides, with `crew_run_commands` and `queue_admission._resolve_lane_config` both calling it.",
+    "wiring": "pass \u2014 \u00a78 introduces no new node relationship and rests only on \u00a77, whose helper `_recorded_dispatch_overrides` exists at `reckon/crew_run_commands.py:21`; the plan's sole relationship meta is `plan-after: a-held-dispatch-waits-its-fair-turn`, unchanged by this unit."
+  },
+  "section_digests": {
+    "_document": "762d4ec33203f259b944d6a3b3ffc40cfe03634b64296d2a698d1eebe41cb56e",
+    "s1": "bcb76fd1e36c1640de15ae6763cc9a81fa94bbf740e12b844ef8ca1b64273375",
+    "s2": "c645d9e7baae34776f5b8f9c2dd066fc9af4eee8929fde6bf169cffcc3e1583c",
+    "s3": "fb16a2a2293ef2fafdfe6399ffc0da4d1fc940e78110635b413a1bafc2028861",
+    "s4": "9612149e1d24c4df585f6427a61fcb5eb20a529d956831368e08bdc56fed9174",
+    "s5": "6f592a89511473015142bc4e8bea06622bcf51877131ef14231aa8db57ff8fae",
+    "s6": "390bffed17b2602fcd713215842f533ef8755c30aa9137e1d40ce2828d529b65",
+    "s7": "6fd55b2badd1679d95e94cd5a5c61b8c477e60647b4ef00465c99018195319f1",
+    "s8": "c32f26d58cbf505135e7d65a2d70e57fb15cb5fec0544a392e5985d553d78dec"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T16:18:04.219434+00:00"
+}
