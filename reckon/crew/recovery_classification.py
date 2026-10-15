@@ -1048,10 +1048,34 @@ def classify_pointer(
         )
     else:
         classification = "running"
-        detail = (
-            "an in-harness run: liveness belongs to the calling harness, so it "
-            "is reported as running until a manifest appears"
-        )
+        # An unknown liveness has two causes, and the sentence that fits one
+        # misdescribes the other. A pid-less run launched in the coordinator's
+        # own harness belongs to it; they are reported as running because no
+        # process table here will ever say otherwise. A run whose pointer names
+        # another machine reaches this arm too, through the stream-in-motion
+        # reading, and is a worker on that host rather than one in this
+        # harness — so it is named by the host that issued it.
+        if _record_is_known_foreign(record):
+            host = str(record.get("launcher_host"))
+            # This arm is reached whatever the stream's state, so the sentence
+            # states what the stream actually is rather than assuming motion: a
+            # foreign run whose newest stream is past the stall window is quiet,
+            # and saying it moves would be false.
+            if _newest_stream_in_motion(record, now_seconds=moment):
+                detail = (
+                    f"a run on {host}: its liveness is unknown on this host and its "
+                    "stream is moving, so it is reported as running"
+                )
+            else:
+                detail = (
+                    f"a run on {host}: its liveness is unknown on this host and its "
+                    "stream has been quiet, so it is reported as running"
+                )
+        else:
+            detail = (
+                "an in-harness run: liveness belongs to the calling harness, so it "
+                "is reported as running until a manifest appears"
+            )
         action = f"reckon crew observe --run {run_id}"
 
     session_resolution = None
@@ -1396,6 +1420,7 @@ from .recovery_liveness import (  # noqa: E402
     _observed_phase,
     _orientation_write_of_a_run_in_motion,
     _process_reading,
+    _record_is_known_foreign,
     _record_newest_stream,
     _remember_manifest_size,
     _run_chain_manifest_freshness,
