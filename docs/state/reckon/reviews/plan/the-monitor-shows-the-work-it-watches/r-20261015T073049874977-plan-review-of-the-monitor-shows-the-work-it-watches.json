@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T07:44:09.164Z",
+  "dispatched_at": "2026-10-15T07:31:27Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-shows-the-work-it-watches.html:346",
+      "id": "done_when-1",
+      "reason": "the test spec would build a state the resume cannot leave, so the first case would not be a faithful reproduction and the guard's absent-record arm (the one the real state exercises) would go untested.",
+      "text": "the done-when builds the first two cases with \"whose worker record and pointer still name attempt 5's exited process\", but the resume path `_prepare_attempt_records` (reckon/crew/dispatch_launch.py:1621-1638) unlinks the canonical `worker.json` and `exit.json` in one loop before attempt 6's supervisor starts, so the measured state at 06:58:17\u201306:58:30 has the worker record ABSENT (the plan's own timeline has attempt 6's worker \"register\" only at 06:58:30Z); a test built to this spec does not reproduce the incident it cites, and the plan's earlier review already corrected exactly this mistake for the exit record while treating the worker record as surviving",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-shows-the-work-it-watches.html:345",
+      "id": "reasoning-1",
+      "reason": "the deliverable already states the requirement (past the bound it reads as a stranded launch), so the parenthetical \"as today\" is a wording imprecision a careful implementer resolves against the done-when, not a wrong mechanism.",
+      "text": "\u00a727 asserts a run past the bound \"reads as a stranded launch, as today\", but `_stranded_launch` (reckon/crew/recovery_liveness.py:444-458) returns False whenever the pointer carries a pid, and the case \u00a727 describes always carries attempt 5's pid, so the existing stranded path does not fire for it; the deferral must carry its own bound rather than delegate",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "f8868ced5b8d6726a06d85dec3fbdc6137b20b7c3ac6868c076e5e994069c61e",
+  "plan_slug": "the-monitor-shows-the-work-it-watches",
+  "plan_version": 110,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T073049874977-plan-review-of-the-monitor-shows-the-work-it-watches",
+  "reviewed_blob_sha": "fac33c1df26e3eacac1c81b8a15f979388937e49",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/recovery_watch.py` carries the death branch `if alive is False and state in (\"dispatched\",\"working\")` at :794; `STRANDED_LAUNCH_BOUND_SECONDS = 900` is `reckon/crew/recovery_liveness.py:62`; `docs/plans/a-run-has-one-live-writer.html` \u00a74 exists and is `done`; the `attempt.json`/`worker.json`/`exit.json` records \u00a727 describes all exist.",
+    "done_when": "a finding \u2014 \u00a727's first two cases build a run \"whose worker record ... still name[s] attempt 5's exited process\", but the resume it describes retires the canonical `worker.json` in the same loop that removes the exit record, so the production state has no worker record at all.",
+    "evidence_paths": "pass \u2014 \"The control is logged under the run directory\", matching the convention \u00a7\u00a724\u201326 use.",
+    "naming": "pass \u2014 `tests/test_a_resume_is_not_halted_on_its_last_attempt.py` and the reused `STRANDED_LAUNCH_BOUND_SECONDS` name the mechanism, with no plan label or ticket number.",
+    "reasoning": "a finding \u2014 the stated root cause, the mechanism and the code path all hold, but the deliverable's claim that a pid-bearing pointer past the bound \"reads as a stranded launch\" is not what `_stranded_launch` does today, since `_stranded_launch` refuses any record that carries a pid.",
+    "single_goal": "pass \u2014 \u00a727 carries one deliverable (defer the death branch when the worker record does not name the current attempt).",
+    "wiring": "pass \u2014 \u00a727 declares no depends-on edge and needs none: among the implementable sections (\u00a77\u2013\u00a712, \u00a724, \u00a726, \u00a727) only \u00a727 writes `reckon/crew/recovery_liveness.py` or `reckon/crew/recovery_watch.py`, and its cited dependency `a-run-has-one-live-writer` \u00a74 is `done`."
+  },
+  "section_digests": {
+    "_document": "cb58fa198637e30f9c5b3fbd8f06ed3a1fb594517caa2cf9822575cecb63361e",
+    "s1": "52c4b79a6da0bc1e71b00748d6314e8a255bd5fa91b6acae30f6943e3c16cee5",
+    "s10": "ce58141a18e475a484415380e6ae181e597ad53c112e6cb22e1cfc60bb6b09fc",
+    "s11": "24bc7e718fa0dce82e99f82b1a80aa7f382204659e1a5fe08844c9bd4df9f21d",
+    "s12": "6b56be12afc45f4700363688128158c594eba3edb30de411ea7d4ca356b3335b",
+    "s13": "af506684f5bf69d74d9b3cdbdf5fa5888d1c3e2ec6b43d93fb08dc79c5821889",
+    "s14": "87e50c4f3edfdf578cc4501636727b40a183a8737e7f4673669428dbae23a0e5",
+    "s15": "09f7a8c8a774c6a9eebd4d5d69d79451363a282a7bf1bb77100479e9a7e98a02",
+    "s16": "867b2716d09b2503e28914fb9f8d9ef0902ca6517f1b150bda6a941a7b0be06b",
+    "s17": "141c743461dc46b9edeb2cbc1bdc6d82a711cf479391112777980c80b87d6e01",
+    "s18": "fce8a8c220cf6ee49aad89aea5514558f0aef180fc5f908cd07bf61114fbfbd2",
+    "s19": "cfcf6302efee0b3938220a54ba297408406e7500dc55f2e1a52535b18480b3fb",
+    "s2": "eeca9b70e096de79d92846f4178d8f31832962cb9c7c73d122ac2a9e06546f32",
+    "s20": "d85f627de7ebd9017fa3940ac745a4530bf4158cbe0d02a52677379592397aab",
+    "s21": "87fc24dd24da2dbf4d094ca09e8a791b4a346cc4b6d23073fce5682d4791d5ad",
+    "s22": "b76862cd2ea9a3ac095f2db0f0bf8ed1475a85d382ef62be3a3c21a7f6aa19b5",
+    "s23": "2c68818cff083fb95dc03b3dce7a6999800c0e2ec909807973c07ee3c7c2b63a",
+    "s24": "82fc0276f85695f792d5a131fc6ac6c80f05065cac46605e169da3ddfe73b94c",
+    "s25": "4ed98bf2d9d237fc80769d9520d20ef87865a01298e70c566624d8412f020937",
+    "s26": "028b6535672d666cedba73394169d0c89c7fc30e8981779a21a44fc7235146c9",
+    "s27": "f792106695b6d264c21127e82398f3977670db871dac11c9f085fd9a4bd86eee",
+    "s3": "a37e4f17cfa5318f2229db2eabe7a7b80adf7bb6fcb474e3d262981478abba8e",
+    "s4": "fb6bae83cab6ff2e0a33bf64f8a01d35db72cb3113a73e4659d22617724629c9",
+    "s5": "349ee19ab8c71fbc5e62c4cfa2fd4c32d34af2e2f3e9ced2db0580bfd0e74815",
+    "s6": "301b59df6e0fdccf6650e206628516f0e967dbf4e1b58a616e3d6999015f18cc",
+    "s7": "aede0bed1a72c26f45a72032497a3a58f24022a1a5e8cd4f8f6e08aada09aab3",
+    "s8": "7b9b1e94e523da3024a014b4d3d8532114544257c92fcfe64893085d2166840f",
+    "s9": "b85d6764b003c3933d1609383c69602e5f4b2d502c8200fe4bab51f3e9085466"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T07:45:04.756276+00:00"
+}
