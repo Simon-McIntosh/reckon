@@ -1023,14 +1023,13 @@ def garbage_collect_scratch(
     and this survey's own decision is never made by age. Every path and its
     size are named in the result before anything is deleted, and the whole
     survey is a dry run unless ``apply`` is given. A directory no run can be
-    attributed to,
-    whether beneath the scratch root or a stray tree beside it, is reported
-    here with its ctime, its size and any process holding it, and is left for
-    the orphan sweep: :func:`garbage_collect_orphan_scratch` removes such a
-    directory by age, once its ctime is older than SCRATCH_GRACE_SECONDS
-    (7200 seconds), after re-checking live pointers and holders. So the two
-    agree — an unattributed directory is removed by age, and only by that
-    sweep.
+    attributed to, whether beneath the scratch root or a stray tree beside
+    it, is reported here with its ctime, its size and any process holding
+    it, and is left for the orphan sweep:
+    :func:`garbage_collect_orphan_scratch` removes such a directory by age,
+    once its ctime is older than SCRATCH_GRACE_SECONDS (7200 seconds), after
+    re-checking live pointers and holders. So the two agree — an unattributed
+    directory is removed by age, and only by that sweep.
     """
     from reckon.crew.dispatch import tree_size_bytes, worker_scratch_root
     from reckon.crew.promotion import discard_record_path
