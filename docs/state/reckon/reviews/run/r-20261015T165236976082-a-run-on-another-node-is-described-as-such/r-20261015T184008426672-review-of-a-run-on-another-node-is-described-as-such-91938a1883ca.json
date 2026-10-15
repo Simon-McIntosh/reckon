@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:306",
+    "reckon/crew/recovery_watch.py:1140",
+    "reckon/crew/directory.py:71",
+    "reckon/mcp_views.py:1867",
+    "reckon/crew/promotion.py:256",
+    "reckon/serve.py:1050"
+  ],
+  "completed_at": "2026-10-15T19:01:56.962Z",
+  "dispatched_at": "2026-10-15T18:41:23Z",
+  "findings": [
+    {
+      "file": "tests/test_a_run_on_another_node_is_described_as_such.py",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "follow-on: the docstring says a foreign run reaches the running arm only \"when ... its stream still moves inside the stall window\", but the stale-stream case added by the same commit (:95-121) reaches that arm with a quiet stream, so the docstring misstates the reach condition and would mislead a reader about when the arm applies."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "1055",
+      "severity": "follow-on",
+      "text": "follow-on: the untouched comment says a foreign run reaches the arm \"through the stream-in-motion reading\", directly contradicting the comment the delta adds at :1062 (\"reached whatever the stream's state\") and the quiet case at :1068-1073; the delta left the stale sentence standing beside its own correction."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read both commits since the reviewed head a880b52 - f7ead92dc splits the foreign detail on the stream state, rewrites the test docstring without the plan-section citation and adds the stale-stream case, while 91938a188 rewrites one evidence-fragment sentence; three files, all inside scope.",
+    "done_when": "the section's done_when asks a temp-home classification of a foreign run with a moving stream to name the host and carry no \"in-harness\" with the in-harness wording unchanged; tests/test_a_run_on_another_node_is_described_as_such.py:71-92 asserts that and :95-121 adds the stale-stream case, and the manifest records the run and its result.",
+    "goal": "the delta's goal, stated by commit f7ead92dc, is to state the foreign run's real stream state in the running arm; reckon/crew/recovery_classification.py:1064 branches the foreign detail on `_newest_stream_in_motion(record, now_seconds=moment)`, saying \"moving\" inside the stall window and \"has been quiet\" otherwise, and both sentences leave the classification at \"running\".",
+    "manifest": "read; it records the head gate at f7ead92dc as 1543 passed against a 1539 base over 19/19 chunks EXIT=0, the negative control red at EXIT=1, and two retry failure ids absent from both final arms.",
+    "write_paths": "the manifest declares four write paths (reckon/crew/recovery_classification.py, tests/test_a_run_on_another_node_is_described_as_such.py, the evidence fragment and a figures dir); the delta's three changed paths all sit inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_on_another_node_is_described_as_such.py:119 (\"moving\" not in row[\"detail\"]) reddens if the foreign branch reverts to always claiming motion and is independent of the value the test passed in, though the recorded control trips the host assertion at :117 first and so does not isolate that line.",
+    "evidence": "the manifest records the head arm at 1543 passed against a 1539 base (gate/head.*.log, gate/base.*.log, all EXIT=0), but the gate ran at f7ead92dc while the landed head is 91938a188, whose delta is one evidence-fragment sentence.",
+    "fit": "the delta removed the plan-section citations the prior review flagged and follows the arm idiom at reckon/crew/recovery_classification.py:1049-1075.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:1064-1073 states the stream's real state and :1058-1075 keeps every case reading \"running\", which is the delta's stated goal.",
+    "reuse": "the branch reuses the existing `_newest_stream_in_motion` (reckon/crew/recovery_liveness.py:194) and `_record_is_known_foreign` (reckon/crew/recovery_liveness.py:948) rather than re-deriving either, and no other owner of a foreign-host stream-state wording exists.",
+    "scope_discipline": "the three paths changed across a880b52..91938a188 are all inside the four write paths the manifest declares."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta's goal, stated by commit f7ead92dc, is to state the foreign run's real stream state in the running arm; reckon/crew/recovery_classification.py:1064 branches the foreign detail on `_newest_stream_in_motion(record, now_seconds=moment)`, saying \"moving\" inside the stall window and \"has been quiet\" otherwise, and both sentences leave the classification at \"running\".\nVERDICT done_when: the section's done_when asks a temp-home classification of a foreign run with a moving stream to name the host and carry no \"in-harness\" with the in-harness wording unchanged; tests/test_a_run_on_another_node_is_described_as_such.py:71-92 asserts that and :95-121 adds the stale-stream case, and the manifest records the run and its result.\nVERDICT write_paths: the manifest declares four write paths (reckon/crew/recovery_classification.py, tests/test_a_run_on_another_node_is_described_as_such.py, the evidence fragment and a figures dir); the delta's three changed paths all sit inside that set.\nVERDICT manifest: read; it records the head gate at f7ead92dc as 1543 passed against a 1539 base over 19/19 chunks EXIT=0, the negative control red at EXIT=1, and two retry failure ids absent from both final arms.\nVERDICT diff: read both commits since the reviewed head a880b52 - f7ead92dc splits the foreign detail on the stream state, rewrites the test docstring without the plan-section citation and adds the stale-stream case, while 91938a188 rewrites one evidence-fragment sentence; three files, all inside scope.\nCALL_SITES: reckon/crew/recovery_watch.py:306, reckon/crew/recovery_watch.py:1140, reckon/crew/directory.py:71, reckon/mcp_views.py:1867, reckon/crew/promotion.py:256, reckon/serve.py:1050\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1064-1073 states the stream's real state and :1058-1075 keeps every case reading \"running\", which is the delta's stated goal.\nSCORE evidence: 15\nJUSTIFICATION evidence: the manifest records the head arm at 1543 passed against a 1539 base (gate/head.*.log, gate/base.*.log, all EXIT=0), but the gate ran at f7ead92dc while the landed head is 91938a188, whose delta is one evidence-fragment sentence.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the three paths changed across a880b52..91938a188 are all inside the four write paths the manifest declares.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_run_on_another_node_is_described_as_such.py:119 (\"moving\" not in row[\"detail\"]) reddens if the foreign branch reverts to always claiming motion and is independent of the value the test passed in, though the recorded control trips the host assertion at :117 first and so does not isolate that line.\nSCORE fit: 17\nJUSTIFICATION fit: the delta removed the plan-section citations the prior review flagged and follows the arm idiom at reckon/crew/recovery_classification.py:1049-1075.\nSCORE reuse: 20\nJUSTIFICATION reuse: the branch reuses the existing `_newest_stream_in_motion` (reckon/crew/recovery_liveness.py:194) and `_record_is_known_foreign` (reckon/crew/recovery_liveness.py:948) rather than re-deriving either, and no other owner of a foreign-host stream-state wording exists.\nFINDING tests/test_a_run_on_another_node_is_described_as_such.py:5 follow-on: the docstring says a foreign run reaches the running arm only \"when ... its stream still moves inside the stall window\", but the stale-stream case added by the same commit (:95-121) reaches that arm with a quiet stream, so the docstring misstates the reach condition and would mislead a reader about when the arm applies.\nFINDING reckon/crew/recovery_classification.py:1055 follow-on: the untouched comment says a foreign run reaches the arm \"through the stream-in-motion reading\", directly contradicting the comment the delta adds at :1062 (\"reached whatever the stream's state\") and the quiet case at :1068-1073; the delta left the stale sentence standing beside its own correction.\n",
+  "review_run_id": "r-20261015T184008426672-review-of-a-run-on-another-node-is-described-as-such-91938a1883ca",
+  "reviewed_base_sha": "a880b52e20cbce7c3bd4e993692b5011254cf2cf",
+  "reviewed_head_sha": "91938a1883ca31478f0a02d495d8827d7d4a91c3",
+  "reviewed_run_id": "r-20261015T165236976082-a-run-on-another-node-is-described-as-such",
+  "reviewer_run_id": "r-20261015T184008426672-review-of-a-run-on-another-node-is-described-as-such-91938a1883ca",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T165236976082-a-run-on-another-node-is-described-as-such/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/a-run-on-another-node-is-described-as-such",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T18:57:19.187573+00:00",
+  "total": 106
+}
