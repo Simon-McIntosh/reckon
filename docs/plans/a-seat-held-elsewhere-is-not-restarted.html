@@ -25,7 +25,7 @@
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="79">
+<meta name="plan-version" content="80">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -372,6 +372,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-10-15T21:38:00Z">
     <div class="r-comment-body"><p>§12 landed. <code>crew watch --ensure</code> exits non-zero on a cycling unit, and the restart-count parse is pinned against literal output. Merged as <code>84dbd3208</code>. Gate: 318 passed at head against 313 at base, with the same pre-existing error. Three load-sensitive tests were re-run in isolation, 18 of 18 passing in both arms. <a href="/reckon/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s12">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261015T192005522846-a-cycling-unit-fails-ensure" data-who="reckon-build" data-when="2026-10-15T20:56:35.985Z">
+    <div class="r-comment-body"><p>watch --ensure now exits non-zero on a cycling unit (JSON still printed) and SystemdUserUnitManager.restart_count parses the NRestarts=&lt;int&gt; property line systemctl show emits, absent output reading as unknown; measure tests/test_a_cycling_unit_fails_ensure.py 5 passed, counts 3 then 5 print cycling: true and exit non-zero, 3 then 3 exit 0</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
