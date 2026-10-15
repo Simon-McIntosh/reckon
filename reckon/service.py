@@ -321,6 +321,25 @@ def write_named_unit(
     return target, not unchanged
 
 
+def parse_restart_count(output: str) -> int | None:
+    """Read ``NRestarts`` from ``systemctl show -p NRestarts`` output.
+
+    The property is read as the ``NRestarts=<int>`` line systemctl emits. Output
+    carrying no such line, or a value that is not an integer, reads as unknown
+    rather than as zero: an unreadable unit and a unit that has restarted zero
+    times are different facts, and only one of them is a reason to call the unit
+    healthy.
+    """
+    for line in output.splitlines():
+        name, separator, value = line.partition("=")
+        if separator and name.strip() == "NRestarts":
+            try:
+                return int(value.strip())
+            except ValueError:
+                return None
+    return None
+
+
 class SystemdUserUnitManager:
     """Control one family's named user units through the shared installer."""
 
@@ -348,24 +367,23 @@ class SystemdUserUnitManager:
         """Return the unit's restart count, or ``None`` when it cannot be read.
 
         Read as a unit property through ``systemctl show`` because the count
-        systemd keeps is runtime state that no unit file carries. A manager that
-        does not answer leaves the count unknown rather than zero, so a caller
-        never reads an unreadable unit as one that has never restarted.
+        systemd keeps is runtime state that no unit file carries. The output is
+        the property line systemctl emits, so the parse is pinned against that
+        text rather than against whatever a value-only flag would strip it to.
+        A manager that does not answer, or output carrying no NRestarts line,
+        leaves the count unknown rather than zero, so a caller never reads an
+        unreadable unit as one that has never restarted.
         """
         completed = systemctl(
             "show",
             "--property",
             "NRestarts",
-            "--value",
             self._unit_name(project),
             check=False,
         )
         if completed.returncode != 0:
             return None
-        try:
-            return int((completed.stdout or "").strip())
-        except ValueError:
-            return None
+        return parse_restart_count(completed.stdout or "")
 
     def lingering(self) -> bool:
         return linger_enabled()
