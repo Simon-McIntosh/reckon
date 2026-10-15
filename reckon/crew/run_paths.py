@@ -57,25 +57,6 @@ def _write_watch_record(handle, record: Mapping[str, Any]) -> None:
     os.fsync(handle.fileno())
 
 
-def _write_json_atomically(path: Path, record: Mapping[str, Any]) -> None:
-    """Replace a small JSON file whole, by renaming a temporary sibling over it.
-
-    A reader on another node cannot take the advisory lock a writer on this one
-    would hold to serialise an in-place rewrite, so a half-written record would
-    be visible to it. A rename publishes the whole record or leaves the previous
-    one in place, so such a reader sees the old record or the new one and never
-    an empty or torn one.
-    """
-    payload = (json.dumps(record, sort_keys=True) + "\n").encode()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
-    with temporary.open("wb") as handle:
-        handle.write(payload)
-        handle.flush()
-        os.fsync(handle.fileno())
-    os.replace(temporary, path)
-
-
 def _read_json_file(path: Path, *, attempts: int = 2) -> dict[str, Any] | None:
     """Read a JSON object, retrying, and report None when every read failed.
 

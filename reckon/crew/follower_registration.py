@@ -14,6 +14,7 @@ from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Any
 
+from reckon._store import write_json_atomically
 from reckon.crew.obligation_snapshot import CLI_MODULE_FILES
 
 
@@ -106,9 +107,11 @@ def renew_follower_lease(
     another host cannot, so the lease is what it has.
     """
     moment = time.time() if now is None else float(now)
-    _write_json_atomically(
+    write_json_atomically(
         follower_lease_path(project, session),
         {"project": project, "session": session, "renewed_at": moment},
+        indent=None,
+        mode=0o644,
     )
 
 
@@ -800,7 +803,6 @@ from .run_paths import (  # noqa: E402
     _read_json_file,
     _read_watch_record,
     _utc_now,
-    _write_json_atomically,
     _write_watch_record,
     watch_lock_path,
 )
