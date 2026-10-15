@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="171">
+<meta name="plan-version" content="172">
 <meta name="plan-modified" content="2026-10-16">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -776,7 +776,10 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>§34 landed. A resumed run is now read from its current attempt, so the monitor and the obligations hook no longer report it by the blocked or complete word its previous attempt left in the manifest. Merged as <code>822690710</code>. Zero added failures against a base with one pre-existing red. Review: 112/120 after one repair round. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s34">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s34" data-id="c-run-r-20261015T232024105375-review-of-a-resumed-run-is-not-read-by-its-old-status-48d73cd8a39d" data-who="reckon-build" data-when="2026-10-15T23:29:53.227Z">
-    <div class="r-comment-body"><p>§34 reviewed at 48d73cd8a (increment 54435b9d5..48d73cd8a): all six dimensions scored 0..20 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 19; total 112), added_failure_count 0 with no added id; one follow-on finding, no blocking finding. The gained commit repairs the no-attempt-start case so its premise — the absent attempt clock — is the only thing holding it, proves that with a no-clock isolation control (no-clock-control.log: -blocked +running), and states the guard&#x27;s three facts and the pointer-liveness reason once.</p></div>
+    <div class="r-comment-body"><p>§34 reviewed at 48d73cd8a (increment 54435b9d5..48d73cd8a): all six dimensions scored 0..20 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 19; total 112), added_failure_count 0 with no added id; one follow-on finding, no blocking finding. The gained commit repairs the no-attempt-start case so its premise — the absent attempt clock — is the only thing holding it, proves that with a no-clock isolation control (no-clock-control.log: -blocked +running), and states the guard's three facts and the pointer-liveness reason once.</p></div>
+</div>
+<div class="r-comment" data-section="s34" data-id="c-run-r-20261015T204939476969-a-resumed-run-is-not-read-by-its-old-status" data-who="reckon-build" data-when="2026-10-15T23:19:31.006Z">
+    <div class="r-comment-body"><p>§34 landed: a manifest last written before the run&#x27;s current attempt began is not that attempt&#x27;s report, so a resumed run is read from its own attempt&#x27;s liveness rather than the blocked or waiting word the resume left on the file; the comparison has one owner, recovery_liveness._manifest_predates_the_current_attempt, and the pointer&#x27;s own pid liveness is not consulted inside the resume window, where that pid belongs to the attempt the resume replaced.</p></div>
 </div>
 <div class="r-comment" data-section="s31" data-id="c-run-r-20261015T222015606681-review-of-a-duration-override-is-read-one-way-240abaea20ac" data-who="reckon-build" data-when="2026-10-15T22:28:13Z">
     <div class="r-comment-body"><p>Parsed revision-keyed review stored with six scores, zero added failure ids, one blocking finding and one follow-on finding.</p></div>
