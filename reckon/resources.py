@@ -261,16 +261,19 @@ def _read_head(path: Path) -> tuple[str, dict[str, str]]:
 
 
 def _identify_meta(path: Path) -> dict:
-    """Read one file's metadata, sharing a parse of byte-identical content.
+    """Read one file's head metadata, sharing a parse of byte-identical content.
 
     Identification runs once per file per docs tree, and a promotion reads the
     same documents from several trees. The digest-keyed memo reuses one parse
     across the trees holding identical bytes instead of re-parsing each copy.
+    The identity is declared in the head, so this is the head parse: it builds
+    no soup, and the derived ``impl`` a record read wants stays with
+    ``_plan_html.parse_meta``.
     """
 
     from reckon import metadata_index
 
-    return metadata_index.parse_meta_shared(path)
+    return metadata_index.parse_meta_head_shared(path)
 
 
 def identify_resource(docs_dir: Path, path: Path, project: str) -> Resource | None:
@@ -357,7 +360,7 @@ def _typed_migration_resource(
     if location_type not in {"plan", "research", "evidence"}:
         return None
     archived = len(parts) > 2 and parts[1] == "archive"
-    meta = _plan_html.parse_meta(path)
+    meta = _plan_html.parse_meta_head(path)
     _, head_meta = _read_head(path)
     explicit_type = head_meta.get("reckon-type")
     artifact_type = canonical_type(explicit_type) if explicit_type else location_type
@@ -622,7 +625,7 @@ def _canonical_resource_at(
         return None
     if path.name in NON_RESOURCE_FILES:
         return None
-    meta = _plan_html.parse_meta(path)
+    meta = _plan_html.parse_meta_head(path)
     if canonical_type(meta.get("type")) != artifact_type:
         return None
     if (meta.get("slug") or path.stem) != slug:
@@ -1237,7 +1240,7 @@ def migrate_typed_layout(docs_dir: Path, project: str) -> dict:
         )
         active = active_by_source.get(relative)
         if active is not None:
-            current_slug = _plan_html.parse_meta(path).get("slug") or path.stem
+            current_slug = _plan_html.parse_meta_head(path).get("slug") or path.stem
             if current_slug != active["slug"]:
                 rewritten_text = _rewrite_meta(
                     rewritten_text,

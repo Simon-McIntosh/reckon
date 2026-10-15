@@ -2214,8 +2214,69 @@ def parse_meta(path: Path, slug: str | None = None) -> dict:
     )
 
 
+def parse_meta_head(path: Path, slug: str | None = None) -> dict:
+    """Inventory record from a document's head alone, building no soup.
+
+    Identity — the type, slug and archived flag a slug resolve sorts on — is
+    declared in the head, so a reader that only classifies a file must not pay
+    for the parser. This returns the same head fields :func:`parse_meta` builds
+    and stops before the derived ``impl``, whose section records live in the
+    body: a document carrying records reports its authored figure here, so ask
+    :func:`parse_meta` for the derived one. The record is memoised against the
+    file's stat identity, as :func:`parse_meta` is.
+    """
+    from reckon.file_memo import memoized
+
+    return memoized(
+        "parse_meta_head",
+        path,
+        lambda: _parse_meta_head_uncached(path, slug),
+        variant=slug,
+    )
+
+
+def _parse_meta_head_uncached(path: Path, slug: str | None) -> dict:
+    rec, _metas = _meta_head_fields(path, _read_plan_text(path), slug)
+    return rec
+
+
 def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
     text = _read_plan_text(path)
+    rec, metas = _meta_head_fields(path, text, slug)
+    # The record contract is validated in one place only: a document carrying
+    # record metadata is read by the parser, so this path can never report a
+    # figure the parsed read refuses to produce.
+    if _document_carries_records(text):
+        try:
+            parsed_state = read_state(text)
+        except ValueError:
+            parsed_state = None
+        derived, source = (
+            (None, None)
+            if parsed_state is None
+            else derive_impl_with_source(
+                parsed_state.get("sections"), parsed_state.get("section_declarations")
+            )
+        )
+        if source is not None:
+            rec["impl"] = derived
+            rec["impl_source"] = source
+        elif "plan-impl" in metas:
+            rec["impl_source"] = "authored"
+    return rec
+
+
+def _meta_head_fields(
+    path: Path, text: str, slug: str | None
+) -> tuple[dict, dict[str, str]]:
+    """The metadata fields a document's head declares, and the raw meta map.
+
+    Everything a record carries except the section-based ``impl``: the regex
+    parse of ``<meta name="plan-*">`` and ``<title>``, the capability block,
+    the open-decision count and the effort warnings. The raw ``metas`` map is
+    returned so the caller can tell an authored ``plan-impl`` from a derived
+    one without re-reading the head.
+    """
     head = text[:16384]
     rec = dict(_DEFAULTS)
     metas: dict[str, str] = {}
@@ -2266,26 +2327,6 @@ def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
             f"{duplicate_name}: duplicated in the document; the first "
             "occurrence in document order wins and every later copy is ignored"
         )
-    # The record contract is validated in one place only: a document carrying
-    # record metadata is read by the parser, so this path can never report a
-    # figure the parsed read refuses to produce.
-    if _document_carries_records(text):
-        try:
-            parsed_state = read_state(text)
-        except ValueError:
-            parsed_state = None
-        derived, source = (
-            (None, None)
-            if parsed_state is None
-            else derive_impl_with_source(
-                parsed_state.get("sections"), parsed_state.get("section_declarations")
-            )
-        )
-        if source is not None:
-            rec["impl"] = derived
-            rec["impl_source"] = source
-        elif "plan-impl" in metas:
-            rec["impl_source"] = "authored"
     authored_hours = "plan-effort-hours" in metas and "effort_hours" in rec
     legacy_effort = metas.get("plan-effort", "")
     if authored_hours:
@@ -2322,7 +2363,7 @@ def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
     rec["impl"] = float(rec.get("impl", 0) or 0)
     rec["version"] = int(rec.get("version", 0) or 0)
     rec["blockers"] = 0
-    return rec
+    return rec, metas
 
 
 # ── Plan record (inventory + full state) ────────────────────────────────────
