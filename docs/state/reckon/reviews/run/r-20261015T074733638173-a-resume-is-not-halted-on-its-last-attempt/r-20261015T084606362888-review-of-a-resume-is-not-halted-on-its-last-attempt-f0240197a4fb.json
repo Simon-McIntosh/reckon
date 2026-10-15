@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "93e347dba820851e2078283216e2bdaa2bcc33a1",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:1349 (classify_pointer publishes fleet_verdict)",
+    "reckon/crew/recovery_memo.py:631 (fleet_verdict recompute for a held lane event)",
+    "reckon/crew/recovery_watch.py:1367 (working count over FLEET_WORKING_STATES)",
+    "reckon/crew/ticker.py:601 (pane word for a working state)"
+  ],
+  "completed_at": "2026-10-15T09:03:37.272Z",
+  "dispatched_at": "2026-10-15T08:46:36Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T074733638173-a-resume-is-not-halted-on-its-last-attempt/logs/head-gate.log",
+      "line": "9",
+      "severity": "follow-on",
+      "text": "follow-on: the node's own arm logs do not satisfy the done_when's 'each to a log ending in EXIT=' clause -- logs/head-gate.log stops at line 9 mid-progress-bar and logs/base-gate.log at line 10, neither carrying an EXIT= line -- while the manifest's test_logs names those two and its baseline_suite/after_suite read the literal value 'pending', so the base/head comparison the done_when requires is not recorded in the record even though complete arms (logs/base-93e347dba.log, logs/head-93e347dba.log, both '3 failed, 709 passed' with EXIT=1) exist in the same directory."
+    }
+  ],
+  "head_log_revision": "f0240197a4fb3c889fc78789ea3eabb763aee596",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s): reckon/crew/recovery_classification.py:1349, reckon/crew/recovery_memo.py:631, reckon/crew/recovery_watch.py:1367, reckon/crew/ticker.py:601",
+    "diff": "read commit by commit against base 93e347dba820851e2078283216e2bdaa2bcc33a1; one commit f0240197a4fb ('read a resume from the attempt it names, not the process it replaced') adds four helpers to reckon/crew/recovery_liveness.py, wraps the death branch in reckon/crew/recovery_watch.py:796 behind the deferral, adds 'starting' to FLEET_WORKING_STATES at recovery_watch.py:1323 and imports the helpers at :2672, and adds the new test file; every path is inside the declared scope.",
+    "done_when": "the done_when names seven cases and a base/head gate over the test files that import the write paths, each log ending in EXIT=; the manifest records baseline_suite and after_suite as the literal value 'pending' and its test_logs name logs/head-gate.log:9 and logs/base-gate.log:10, each truncated mid-progress-bar with no EXIT= line, so the done_when's own arm evidence is not in the record although complete arms exist beside them.",
+    "goal": "the node's goal is to apply the producer's death reading only to the process the run's own attempt record names; reckon/crew/recovery_watch.py:796 gates the death branch on _attempt_awaits_its_worker(pointer) so a resumed run whose pointer still names the previous attempt's exited process is not read as this attempt's death.",
+    "manifest": "read; it states status in-progress with a 'complete; the deferral is committed and gated' checkpoint, one commit f0240197a4fb3c889fc78789ea3eabb763aee596, changed_paths of the three source/test files, the negative control at 3 failed/4 passed, and leaves baseline_suite/after_suite 'pending'.",
+    "write_paths": "the manifest declares reckon/crew/recovery_liveness.py, reckon/crew/recovery_watch.py, tests/test_a_resume_is_not_halted_on_its_last_attempt.py plus a docs evidence fragment and figure path; the diff touches exactly the three declared source/test paths and nothing else."
+  },
+  "justifications": {
+    "durability": "the declared mutation is applied and recorded: logs/negative-control.log runs the deferral without the attempt check and reddens tests/test_a_resume_is_not_halted_on_its_last_attempt.py:208 (starting vs blocked), :227 and :294, EXIT=1, so the first case's assertions fail on exactly the regression they guard.",
+    "evidence": "the manifest records baseline_suite: pending and after_suite: pending and the logs it names (logs/head-gate.log:9, logs/base-gate.log:10) are truncated with no EXIT= line, so the arm evidence rests on the complete arms logs/base-93e347dba.log ('3 failed, 709 passed', EXIT=1) and logs/head-93e347dba.log ('3 failed, 709 passed', EXIT=1); added_failure_count is 0 because the base arm's three failures are the three new tests (which pass at head) and the head arm's three failures are untouched tests that pass serially (recheck-three.log, 25 passed), i.e. parallel-contention flakes rather than failures the change adds.",
+    "fit": "the new helpers follow the surrounding recovery_liveness.py idiom (recovery_liveness.py:398-420 _attempt_started_seconds) and their names (_attempt_awaits_its_worker, _resumed_launch_is_stranded, _stranded_attempt_clause) carry no version, plan or ticket label.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:796-805 defers the death branch to the attempt the run's own record names, so the previous attempt's exited process no longer draws a resuming run halted, matching the goal.",
+    "reuse": "the additions extend existing owners rather than fork them -- _current_attempt_number (recovery_liveness.py:427) reads attempt.json as _attempt_started_seconds already does, _worker_record_names_attempt wraps _worker_record and _exit_record_names_attempt wraps _run_exit_record, and _resumed_launch_is_stranded covers the pid-naming case _stranded_launch (recovery_liveness.py:561) cannot see.",
+    "scope_discipline": "every path in git diff 93e347dba..f0240197a (reckon/crew/recovery_liveness.py, reckon/crew/recovery_watch.py, tests/test_a_resume_is_not_halted_on_its_last_attempt.py) is inside the manifest's declared write_paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 93e347dba820851e2078283216e2bdaa2bcc33a1\nreviewed_head_sha: f0240197a4fb3c889fc78789ea3eabb763aee596\nVERDICT goal: the node's goal is to apply the producer's death reading only to the process the run's own attempt record names; reckon/crew/recovery_watch.py:796 gates the death branch on _attempt_awaits_its_worker(pointer) so a resumed run whose pointer still names the previous attempt's exited process is not read as this attempt's death.\nVERDICT done_when: the done_when names the seven cases and a base/head gate over the importing test files, each log ending in EXIT=; the manifest records baseline_suite and after_suite as the literal value 'pending' and its test_logs name two arm logs that stop mid-progress-bar (logs/head-gate.log:9, logs/base-gate.log:10) with no EXIT= line, so the done_when's own arm evidence is not in the record even though complete arms exist beside it.\nVERDICT write_paths: the manifest declares reckon/crew/recovery_liveness.py, reckon/crew/recovery_watch.py, tests/test_a_resume_is_not_halted_on_its_last_attempt.py plus a docs evidence fragment and figure path; the diff touches exactly the three declared source/test paths and nothing else.\nVERDICT manifest: read; it states status in-progress with a 'complete; the deferral is committed and gated' checkpoint, one commit f0240197a4fb3c889fc78789ea3eabb763aee596, changed_paths of the three source/test files, the negative control at 3 failed/4 passed, and leaves baseline_suite/after_suite 'pending'.\nVERDICT diff: read commit by commit against base 93e347dba820851e2078283216e2bdaa2bcc33a1; one commit f0240197a4fb adds four helpers to recovery_liveness.py, wraps the death branch in recovery_watch.py behind the deferral, adds 'starting' to FLEET_WORKING_STATES and imports the helpers, and adds the new test file.\nCALL_SITES: reckon/crew/recovery_classification.py:1349 (classify_pointer publishes fleet_verdict), reckon/crew/recovery_memo.py:631 (fleet_verdict recompute for a held lane event), reckon/crew/recovery_watch.py:1367 (working count over FLEET_WORKING_STATES), reckon/crew/ticker.py:601 (pane word for a working state)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:796-805 defers the death branch to the attempt the run's own record names, so the previous attempt's exited process no longer draws a resuming run halted, matching the goal.\nSCORE evidence: 11\nJUSTIFICATION evidence: the manifest records baseline_suite: pending and after_suite: pending, and the logs it names (logs/head-gate.log, logs/base-gate.log) are truncated with no EXIT= line, so the arm evidence rests on the complete arms logs/base-93e347dba.log ('3 failed, 709 passed', EXIT=1) and logs/head-93e347dba.log ('3 failed, 709 passed', EXIT=1).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 93e347dba..f0240197a (reckon/crew/recovery_liveness.py, reckon/crew/recovery_watch.py, tests/test_a_resume_is_not_halted_on_its_last_attempt.py) is inside the manifest's declared write_paths.\nSCORE durability: 18\nJUSTIFICATION durability: the declared mutation is applied and recorded: logs/negative-control.log runs without the attempt check and reddens tests/test_a_resume_is_not_halted_on_its_last_attempt.py:208 (starting vs blocked), :227 and :294, EXIT=1, so the first case's assertions fail on exactly the regression they guard.\nSCORE fit: 16\nJUSTIFICATION fit: the new helpers follow the surrounding recovery_liveness.py idiom (recovery_liveness.py:398-420 _attempt_started_seconds) and their names (_attempt_awaits_its_worker, _resumed_launch_is_stranded, _stranded_attempt_clause) carry no version, plan or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the additions extend existing owners rather than fork them -- _current_attempt_number (recovery_liveness.py:427) reads attempt.json as _attempt_started_seconds already does, _worker_record_names_attempt wraps _worker_record and _exit_record_names_attempt wraps _run_exit_record, and _resumed_launch_is_stranded covers the diff from _stranded_launch (recovery_liveness.py:561).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T074733638173-a-resume-is-not-halted-on-its-last-attempt/logs/head-gate.log:9 follow-on: the node's own arm logs do not satisfy the done_when's 'each to a log ending in EXIT=' clause -- head-gate.log stops at line 9 and base-gate.log at line 10, neither carrying an EXIT= line -- while the manifest names those two and leaves baseline_suite/after_suite 'pending', so the base/head comparison the done_when requires is not recorded although complete arms (base-93e347dba.log, head-93e347dba.log, both '3 failed, 709 passed', EXIT=1) exist in the same directory.\n",
+  "review_run_id": "r-20261015T084606362888-review-of-a-resume-is-not-halted-on-its-last-attempt-f0240197a4fb",
+  "reviewed_base_sha": "93e347dba820851e2078283216e2bdaa2bcc33a1",
+  "reviewed_head_sha": "f0240197a4fb3c889fc78789ea3eabb763aee596",
+  "reviewed_run_id": "r-20261015T074733638173-a-resume-is-not-halted-on-its-last-attempt",
+  "scores": {
+    "durability": 18,
+    "evidence": 11,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T08:56:00+00:00",
+  "total": 101
+}
