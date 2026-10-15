@@ -25,7 +25,7 @@
   <title>A Held Session Routes To A Serving Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -267,6 +267,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261015T150043272815-review-of-a-lane-family-has-one-owner-153e79c442f8" data-who="reckon-build" data-when="2026-10-15T15:15:37.903Z">
     <div class="r-comment-body"><p>landing: independent review of a-lane-family-has-one-owner (base d6ea082d9b..head 153e79c442) scores goal_fidelity 19, evidence 14, scope_discipline 20, durability 16, fit 18, reuse 20 (total 107); the consolidation is behaviour-preserving and inside its declared scope, with three follow-on record defects (truncated head-3 gate log, stale ruff logs, unlabelled-revision arm logs) and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261015T143441103048-a-lane-family-has-one-owner" data-who="reckon-build" data-when="2026-10-15T15:19:00.721Z">
+    <div class="r-comment-body"><p>landing: lane_family(config, name, backend=None) in reckon/crew/dispatch_picker.py is now the one owner mapping a configured backend to its lane family (local marker, else resolved dialect, else launch kind); _lane_backend_names reads it, recovery_review_dispatch.py calls it in place of its removed _review_lane_family, and picker/snapshot.py&#x27;s candidate family comes from it, so only the owner derives a lane family from dialect_for; the reflex retry and the dispatch re-ask share _ask_excluding_lane, each keeping its own trigger. Measure: the gate over the 45 importing test files 371 passed at head (EXIT=0) against 365 passed at base over the 44 present there (EXIT=0), no failure in either arm.</p></div>
 </div>
 </section>
 </main>
