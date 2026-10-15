@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T06:19:53.704Z",
+  "dispatched_at": "2026-10-15T06:12:48Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch_plan.py:1157",
+      "id": "reuse_search-1",
+      "reason": "the plan should re-frame \u00a72 as extending the existing helper and the `if local` guard at reckon/crew/picker/snapshot.py:817, which shrinks the node and avoids a drifting second reader.",
+      "text": "\u00a72 describes reading `admission.sessions[session].worker_slots` then `new_session_worker_slots` then the global as new work, but `_lane_worker_allowance` already implements that precedence and the picker already calls it at reckon/crew/picker/snapshot.py:272; a second rendering would be a fork",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/queue_admission.py:142",
+      "id": "reuse_search-2",
+      "reason": "\u00a74's queued-run clause should name this owner and extend it rather than describe a second path.",
+      "text": "\u00a74 proposes re-composing a queued run's launch from the recorded node, which `_launch_queued` already does (it rebuilds the node via `_node_from_pointer` and forwards the pointer's `dispatch_options` to `dispatch`), and the plan does not cite it",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_plan.py:1157",
+      "id": "duplicate_owner-1",
+      "reason": "naming the owner turns \u00a72 into a one-site extension and prevents two readers of the queued admission block diverging.",
+      "text": "\u00a72's per-session slot reading is a duplicate of the shared state reader `_lane_worker_allowance` in this file; the plan names no owner, so the author may add a parallel reader beside the one the picker already trusts",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/queue_admission.py:142",
+      "id": "duplicate_owner-2",
+      "reason": "the queued-move behaviour should extend this owner, which already carries `dispatch_options` and `_node_from_pointer`, instead of forking a second launch recomposition.",
+      "text": "\u00a74's \"moved by re-composing its launch from the recorded node\" duplicates the pointer-to-launch path `_launch_queued`; the plan names no owner",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew_dispatch_commands.py:664",
+      "id": "interface_budget-1",
+      "reason": "the section must state that these options mirror the fields `dispatch` already passes (existing inputs restated on a second command, not net-new interface) or name the option it replaces.",
+      "text": "\u00a73 adds write paths, negative control, estimated hours and section as `crew pick` options (a `cli_options` family that this week stands at 350) and the section names neither what it retires or merges nor why nothing can be, so the added surface is unaccounted for in its own text",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d3d7f0cd9aa0b3900ea4e07e7e19ae6dab8c9c27ca1aa5f7ef0f5bd7ffac0d69",
+  "plan_slug": "a-held-session-routes-to-a-serving-lane",
+  "plan_version": 7,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T061204200142-plan-review-of-a-held-session-routes-to-a-serving-lane",
+  "reviewed_blob_sha": "7a8f282a8b5e5e967c4c08832302e5ee65070061",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the mechanism \u00a72 needs is already one deep helper (`_lane_worker_allowance`) that hides the admission-map shape, the session precedence and the headroom fallback; \u00a72's addition is a guard-rail and guidance, not a new surface spread over many wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a72 duplicates the session-slot state reader owned by `reckon/crew/dispatch_plan.py:_lane_worker_allowance`, and \u00a74 duplicates the pointer-to-launch recomposition owned by `reckon/crew/queue_admission.py:_launch_queued`.",
+    "interface_budget": "a finding \u2014 public_definitions 1724, cli_options 350, mcp_views 34, refusal_families 23; \u00a73 adds CLI options to `crew pick` without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan re-describes machinery that already exists and cites neither: the session-slot reader `_lane_worker_allowance` (reckon/crew/dispatch_plan.py:1157, already called by the picker at reckon/crew/picker/snapshot.py:272) and the queued-launch recomposition `_launch_queued` (reckon/crew/queue_admission.py:142).",
+    "thin_wrapper": "pass \u2014 no wrapper is proposed; \u00a73 extends the existing `crew pick` command and \u00a74 would extend the existing `change_lane`, both extensions of owners rather than parallel thin layers."
+  },
+  "section_digests": {
+    "_document": "0f7fc3a75c07becf80fe3c66b456c62ad62c832999ab5e569510858c3ce45e73",
+    "s1": "bcb76fd1e36c1640de15ae6763cc9a81fa94bbf740e12b844ef8ca1b64273375",
+    "s2": "e275b8a0e9b13d4e4a5041a7ce692157850f1a1780a2375abbfcebdf1c439856",
+    "s3": "3c649a45d2a8825a4ace1f3f9a817ed7eaefb8a5c6e6c74e8c23631080d54ed2",
+    "s4": "be2c46fd928d1c67967082cfe9fafa8f967512ac8742598341d5ceb4ea016808",
+    "s5": "6f592a89511473015142bc4e8bea06622bcf51877131ef14231aa8db57ff8fae"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T06:20:47.469825+00:00"
+}
