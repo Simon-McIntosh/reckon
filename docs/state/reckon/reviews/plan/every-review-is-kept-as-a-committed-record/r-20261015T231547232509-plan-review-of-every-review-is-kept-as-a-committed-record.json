@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T23:30:19.687Z",
+  "dispatched_at": "2026-10-15T23:16:27Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:183",
+      "id": "reasoning-1",
+      "reason": "the fix's scope is derived from the stated cause, so naming one function as \"the cause\" of a 47-member population that four of its members contradict leaves a duplicate-producing path the plan's own figure already contains.",
+      "text": "\u00a720's Why says \"The cause is `_delivered_review_payloads_for_commit` in `reckon/crew/promotion_checks.py`\" for the 47 duplicated heads, but tracing each legacy copy to the commit that added it shows 43 added by `promote(...)` commits and 4 (the two oldest pairs, plus `r-20261007T022830505122` and `r-20261007T031159720545`) added by `feat(reviews): import reckon's host review store into the committed tree`; `scripts/import_host_reviews.py` files an unnamed staging round under `review_store.derived_legacy_review_run_id` (import_host_reviews.py:185) and calls neither `_delivered_review_payloads_for_commit` nor any promotion path, so the \u00a720 change, scoped to `promotion_checks.py`, cannot prevent that route",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "efb9ae362821c98f3b00011a085eee5ea422cd172c62b0276af97b04c9e742cf",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 156,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T231547232509-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "0578b758aa259c17552b9224eaad95dbe90b07bc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_delivered_review_payloads_for_commit` (promotion_checks.py:2020), `review.stored_records_for_run` (review.py:3175), `derived_legacy_review_run_id` (review.py:1883), `crew dispose`, \u00a712 and the cited run directory all resolve.",
+    "done_when": "pass \u2014 the done-when is measurable (the committed directory then holds one record filed under the review run's id; a second round at another head with different bytes is still committed under its legacy id) and declares a negative control (byte-identity skip removed \u2192 two records for the one round).",
+    "evidence_paths": "pass \u2014 the control log is \"under the run directory\" (durable), and the test writes only into temporary crew-home and committed-tree directories, not a session scratchpad.",
+    "naming": "pass \u2014 \u00a720's title and its new test filename carry no plan labels, stage names, ticket numbers or changelog prose; the mechanism is stated as what the code does.",
+    "reasoning": "a finding \u2014 the stated root cause attributes all 47 duplicated heads to `_delivered_review_payloads_for_commit`, but 4 of the 47 were filed by the host-import path, which calls no promotion code.",
+    "single_goal": "pass \u2014 \u00a720 carries one deliverable (a staged record byte-equal to the delivered record is not filed again); leaving already-committed duplicates alone is a scope statement, not a second deliverable.",
+    "wiring": "pass \u2014 \u00a720 is declared `implementable` in `plan-section-declarations` (snapshot line 23) and dispatched by `f-erkc-020` (lines 320\u2013324), whose body also states its ordering after \u00a719 because both write `promotion_checks.py`."
+  },
+  "section_digests": {
+    "_document": "99c93fc040cd4c04bdec02548126760f5efd05eb3b9122745befa1fddfa9b85a",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "bb85d80dcb9e0286d21a8ca6acd3af79e736c64c84b5ac85569fc6ce2c73863b",
+    "s13": "18a2d10f1e3c66be8277b7b4ef2922db7611cded7589553da5347b9a1ee5cd0f",
+    "s14": "90fd381b5f80417031410428331e779266feb4e517d89e5237d29cbe1c5e4700",
+    "s15": "72f678eb5f0bc62870da1cc4637f6db55365548aa9b52f46884cc0b3551a6ae7",
+    "s16": "7a5788c2a3fa1a2f0029d46feab7c3ed8a6b2a35c6ca9788fbe9911d5ab9cb56",
+    "s17": "86a993485a8a8461fd1e5e336bf8623e585cd4540daa1e5b5e78af2a0c172ce5",
+    "s18": "c89ae3a282a47cc0790b201cd56e732fc633876a1f1bd4dea1ae9521bd21574a",
+    "s19": "1ae8ba274c5965e60610446e8b60f06c93772468c117cf677c3fe8e2efeff862",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s20": "5629140420e9d88893c853880e44ee7034bae5dad47b35ce6cd60375369b3c09",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "85877b77c395ca8a1482bef5887cfc72cbf6109174dba2c01265aa015a906d73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T23:36:44.103865+00:00"
+}
