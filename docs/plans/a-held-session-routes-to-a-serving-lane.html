@@ -25,7 +25,7 @@
   <title>A Held Session Routes To A Serving Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -203,6 +203,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-s4-queued-move" data-who="reckon-build" data-when="2026-10-15T07:50:00Z">
     <div class="r-comment-body"><p>§4's queued-move node landed. <code>crew redispatch</code> moves a queued request to another backend through <code>_launch_queued</code>, carrying its recorded waivers, and replaces the pointer rather than discarding it. Merged as <code>fe72bf389</code>; gate 183 passed at head against 181 at base. Review: 111/120. The section stays open for its review-reflex clause, which waits on §2. <a href="/reckon/evidence/archive/a-held-session-routes-to-a-serving-lane-landed.html#s4-queued-move">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261015T062741541341-a-lane-change-keeps-its-waivers" data-who="reckon-build" data-when="2026-10-15T07:19:55.872Z">
+    <div class="r-comment-body"><p>A queued request moved to another backend launches with the launch inputs its original dispatch recorded: `move_queued_run(run_id, backend_name, *, reason, config, launch, launcher)` in `reckon/crew/queue_admission.py` rebuilds the launch through `_launch_queued` with a new `backend_override` for the destination, so the pointer&#x27;s recorded `dispatch_options` still supply the waiver (`unreviewed_plan_override`), `accept_directory_claim` and the recorded comment — and a waiver the original dispatch never carried is never added. The launched run is stamped with `carried_options` and a `lane_move` record (source and destination backend, reason) and names the request it came from in `admitted_from`; the queued pointer is replaced rather than discarded, so the move does not race the admission pass, and a launch the move cannot complete puts the request back exactly where it was (`_await_moved_launch` + `runs.queue_dispatch` when no live pointer survives) rather than destroying a still-waiting request. `change_lane` in `reckon/crew/dispatch_sessions.py` routes a `queued` record to this path instead of refusing it, and `crew_redispatch` in `reckon/crew_run_commands.py` resolves the flight from the request&#x27;s recorded `dispatch_options[&quot;overrides&quot;]`, so the move is judged by the lane policy the original dispatch carried into it.</p></div>
 </div>
 </section>
 </main>
