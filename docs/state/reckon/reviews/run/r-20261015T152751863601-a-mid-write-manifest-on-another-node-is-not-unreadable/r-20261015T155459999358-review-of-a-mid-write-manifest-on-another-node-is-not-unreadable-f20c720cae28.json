@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:306",
+    "reckon/crew/recovery_watch.py:2529",
+    "reckon/crew/query.py:187",
+    "reckon/crew/runs.py:1587",
+    "reckon/mcp_views.py:1867",
+    "reckon/serve.py:1050",
+    "reckon/crew/promotion.py:256",
+    "reckon/crew/directory.py:71",
+    "reckon/crew/obligations.py:167",
+    "reckon/crew/resumption.py:1530"
+  ],
+  "completed_at": "2026-10-15T16:03:57.179Z",
+  "dispatched_at": "2026-10-15T15:55:29Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "1052",
+      "severity": "follow-on",
+      "text": "follow-on: a foreign run whose liveness is unknown, whose stream is in motion and whose manifest is present-but-unreadable now falls through to the catch-all running arm at :1048, whose detail text at :1052 reads \"an in-harness run: liveness belongs to the calling harness\" \u2014 a sentence written for a local pid-less run that misdescribes a run launched on another node; the classification (running) is correct and matches the deliverable, so this does not hold the node, and the worker recorded it in follow_ons rather than changing it because \u00a710's deliverable names only the hoisted verdict and its tests."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "",
+    "done_when": "the done_when's cases are all asserted in tests/test_a_mid_write_manifest_on_another_node_is_not_unreadable.py (foreign mid-write inside the window not unreadable :121; past the window unreadable :147; alive-False with a fresh stream unreadable :172; the real home untouched) and its result is recorded, not claimed, in logs/gate-base.log, logs/gate-head.log and logs/gate-negative-control.log.",
+    "goal": "the node goal is that \u00a710's hoisted process_gone verdict reads unknown liveness from the run's own stream; reckon/crew/recovery_classification.py:422 now decides that verdict from _newest_stream_in_motion, exactly the reading \u00a77 established.",
+    "manifest": "read; status complete; commit f20c720ca; it records baseline_suite (base EXIT=1, 1 failure, the new test's first case) and after_suite (head EXIT=0, 0 failures), the negative control, measurement_module and measurement_cwd, and states no fragment or figure was written because the done-when names no artifact.",
+    "write_paths": "the source manifest declares reckon/crew/recovery_classification.py, tests/test_a_mid_write_manifest_on_another_node_is_not_unreadable.py and an unwritten evidence-fragment/figure path; git diff --stat f2ac7cc28..f20c720ca lists exactly the two code paths."
+  },
+  "justifications": {
+    "durability": "restoring the declared mutation process_gone = alive is not True reddens tests/test_a_mid_write_manifest_on_another_node_is_not_unreadable.py:121 (assert != \"unreadable\") as logs/gate-negative-control.log shows, and :121 compares the classifier's output against a literal rather than a value the test handed it.",
+    "evidence": "the four done-when cases are asserted in tests/test_a_mid_write_manifest_on_another_node_is_not_unreadable.py and their outcome is recorded in logs/gate-base.log (EXIT=1, the new case red), logs/gate-head.log (459 passed, EXIT=0) and logs/gate-negative-control.log (EXIT=1).",
+    "fit": "the change composes into the hoisted verdict at reckon/crew/recovery_classification.py:422 and joins the module's existing deferred-import block at :1395, and both files carry no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:422-423 makes process_gone consult the run's newest stream for an unknown reading and remain true only for a proven-False process, which is the \u00a710 deliverable.",
+    "reuse": "the stream reading delegates to _newest_stream_in_motion in reckon/crew/recovery_liveness.py:194 rather than restating the stall-window test, so \u00a77's owner of that capability is extended and no second window is introduced.",
+    "scope_discipline": "git diff --stat f2ac7cc28..f20c720ca lists only reckon/crew/recovery_classification.py and tests/test_a_mid_write_manifest_on_another_node_is_not_unreadable.py, the two declared code write paths, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that \u00a710's hoisted process_gone verdict reads unknown liveness from the run's own stream; reckon/crew/recovery_classification.py:422 now decides that verdict from _newest_stream_in_motion, exactly the reading \u00a77 established.\nVERDICT done_when: the done_when's cases are all asserted in tests/test_a_mid_write_manifest_on_another_node_is_not_unreadable.py (foreign mid-write inside the window not unreadable :121; past the window unreadable :147; alive-False with a fresh stream unreadable :172; the real home untouched) and its result is recorded, not claimed, in logs/gate-base.log, logs/gate-head.log and logs/gate-negative-control.log.\nVERDICT write_paths: the source manifest declares reckon/crew/recovery_classification.py, tests/test_a_mid_write_manifest_on_another_node_is_not_unreadable.py and an unwritten evidence-fragment/figure path; git diff --stat f2ac7cc28..f20c720ca lists exactly the two code paths.\nVERDICT manifest: read; status complete; commit f20c720ca; it records baseline_suite (base EXIT=1, 1 failure, the new test's first case) and after_suite (head EXIT=0, 0 failures), the negative control, measurement_module and measurement_cwd, and states no fragment or figure was written because the done-when names no artifact.\nVERDICT diff: read commit by commit against f2ac7cc28be5409beae3b2c8b13fda58c83c9148; the single commit f20c720cae2883fbb75175dfdb92e9db025a449b changes two files (+197/-1): the hoisted verdict at reckon/crew/recovery_classification.py:422-423 with its explanatory comment, the _newest_stream_in_motion import at :1395, and the new four-case test file tests/test_a_mid_write_manifest_on_another_node_is_not_unreadable.py.\nCALL_SITES: reckon/crew/recovery_watch.py:306, reckon/crew/recovery_watch.py:2529, reckon/crew/query.py:187, reckon/crew/runs.py:1587, reckon/mcp_views.py:1867, reckon/serve.py:1050, reckon/crew/promotion.py:256, reckon/crew/directory.py:71, reckon/crew/obligations.py:167, reckon/crew/resumption.py:1530\nSCORE goal_fidelity: 20\nSCORE evidence: 20\nSCORE scope_discipline: 20\nSCORE durability: 20\nSCORE fit: 19\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:422-423 makes process_gone consult the run's newest stream for an unknown reading and remain true only for a proven-False process, which is the \u00a710 deliverable.\nJUSTIFICATION evidence: the four done-when cases are asserted in tests/test_a_mid_write_manifest_on_another_node_is_not_unreadable.py and their outcome is recorded in logs/gate-base.log (EXIT=1, the new case red), logs/gate-head.log (459 passed, EXIT=0) and logs/gate-negative-control.log (EXIT=1).\nJUSTIFICATION scope_discipline: git diff --stat f2ac7cc28..f20c720ca lists only reckon/crew/recovery_classification.py and tests/test_a_mid_write_manifest_on_another_node_is_not_unreadable.py, the two declared code write paths, and nothing else.\nJUSTIFICATION durability: restoring the declared mutation process_gone = alive is not True reddens tests/test_a_mid_write_manifest_on_another_node_is_not_unreadable.py:121 (assert != \"unreadable\") as logs/gate-negative-control.log shows, and :121 compares the classifier's output against a literal rather than a value the test handed it.\nJUSTIFICATION fit: the change composes into the hoisted verdict at reckon/crew/recovery_classification.py:422 and joins the module's existing deferred-import block at :1395, and both files carry no plan, ticket or version label.\nJUSTIFICATION reuse: the stream reading delegates to _newest_stream_in_motion in reckon/crew/recovery_liveness.py:194 rather than restating the stall-window test, so \u00a77's owner of that capability is extended and no second window is introduced.\nFINDING reckon/crew/recovery_classification.py:1052 follow-on: follow-on: a foreign run whose liveness is unknown, whose stream is in motion and whose manifest is present-but-unreadable now falls through to the catch-all running arm at :1048, whose detail text at :1052 reads \"an in-harness run: liveness belongs to the calling harness\" \u2014 a sentence written for a local pid-less run that misdescribes a run launched on another node; the classification (running) is correct and matches the deliverable, so this does not hold the node, and the worker recorded it in follow_ons rather than changing it because \u00a710's deliverable names only the hoisted verdict and its tests.\n",
+  "review_run_id": "r-20261015T155459999358-review-of-a-mid-write-manifest-on-another-node-is-not-unreadable-f20c720cae28",
+  "reviewed_base_sha": "f2ac7cc28be5409beae3b2c8b13fda58c83c9148",
+  "reviewed_head_sha": "f20c720cae2883fbb75175dfdb92e9db025a449b",
+  "reviewed_run_id": "r-20261015T152751863601-a-mid-write-manifest-on-another-node-is-not-unreadable",
+  "role": "review",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T16:01:32.001181+00:00",
+  "total": 119
+}
