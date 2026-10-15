@@ -144,7 +144,10 @@ def test_the_shipped_defaults_declare_both_dialects():
     """The shipped layer names each dialect's operator-home files."""
     shipped = flight.shipped_harness_home_files()
     assert shipped["claude"] == [
-        {"path": "settings.json", "keys": ["hooks", "attribution", "includeCoAuthoredBy"]},
+        {
+            "path": "settings.json",
+            "keys": ["hooks", "attribution", "includeCoAuthoredBy"],
+        },
         {"path": "CLAUDE.md"},
     ]
     assert shipped["codex"] == [
@@ -157,7 +160,10 @@ def test_the_shipped_defaults_declare_both_dialects():
 def test_a_backend_entry_replaces_its_dialect_default():
     """A backend's own declaration wins over the shipped per-dialect default."""
     assert flight.harness_home_files("claude") == [
-        {"path": "settings.json", "keys": ["hooks", "attribution", "includeCoAuthoredBy"]},
+        {
+            "path": "settings.json",
+            "keys": ["hooks", "attribution", "includeCoAuthoredBy"],
+        },
         {"path": "CLAUDE.md"},
     ]
     override = {"harness_home_files": [{"path": "AGENTS.md"}]}

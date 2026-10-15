@@ -152,7 +152,10 @@ def test_the_shipped_defaults_declare_the_home_root_file():
     ]
     # The config-dir table is untouched by the addition.
     assert flight.harness_home_files("claude") == [
-        {"path": "settings.json", "keys": ["hooks", "attribution", "includeCoAuthoredBy"]},
+        {
+            "path": "settings.json",
+            "keys": ["hooks", "attribution", "includeCoAuthoredBy"],
+        },
         {"path": "CLAUDE.md"},
     ]
 
