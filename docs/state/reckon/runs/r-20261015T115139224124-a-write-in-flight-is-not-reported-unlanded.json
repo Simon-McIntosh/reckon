@@ -1,0 +1,430 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "3b5e72d0e9b956cd720e407f39b19ed48ed95af0",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 3803509,
+      "input_tokens_cumulative": 3803509,
+      "output_tokens": 14684,
+      "output_tokens_cumulative": 14684,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 17,
+    "files": 1,
+    "removed": 3
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 410,
+        "name": "_run_under_deadline",
+        "path": "reckon/mcp_deadlines.py"
+      },
+      "run_function": {
+        "line": 303,
+        "name": "_start_body",
+        "path": "reckon/mcp_deadlines.py"
+      },
+      "window_line": 304
+    },
+    {
+      "existing_function": {
+        "line": 303,
+        "name": "_start_body",
+        "path": "reckon/mcp_deadlines.py"
+      },
+      "run_function": {
+        "line": 410,
+        "name": "_run_under_deadline",
+        "path": "reckon/mcp_deadlines.py"
+      },
+      "window_line": 411
+    }
+  ],
+  "commit_list_shortfall": {
+    "declared": 2,
+    "kind": "presented_commits_subset_of_manifest",
+    "message": "run 'r-20261015T115139224124-a-write-in-flight-is-not-reported-unlanded' has a passing gate presenting 1 commit(s) of the 2 its manifest declares; missing: 234584d5ef4f7d9df52a8bb3965f1cff22d086ef. The out-of-scope boundary check runs against the presented commits, so an incomplete presentation narrows it. This is a report, not a refusal — present the full list, or the boundary check may not cover the node's work",
+    "missing": [
+      "234584d5ef4f7d9df52a8bb3965f1cff22d086ef"
+    ],
+    "presented": 1
+  },
+  "commit_resolution": null,
+  "commits": [
+    "41d19bbd9417ef1be91b173f048769491f41e107"
+  ],
+  "completed_at": "2026-10-15T12:30:14.961Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-15T11:52:35Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "runs the test",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_write_in_flight_is_not_reported_unlanded.py tests/test_mcp_deadline_names_its_cause.py tests/test_mcp_reads_have_deadlines.py tests/test_mcp_retry_joins_running_read.py tests/test_mcp_tools.py tests/test_crew_lanes_view.py tests/test_skill_contracts.py tests/test_edit_plan.py tests/test_mcp_audit.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T115139224124-a-write-in-flight-is-not-reported-unlanded/gate-head2.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.75,
+    "plan": "an-mcp-failure-names-its-cause",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane": "clive",
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-15T12:51:39.580712+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-15T11:51:39Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 2,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 1,
+    "headroom": 7,
+    "mean_context": 140000,
+    "observed_at": "2026-10-15T11:51:45Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 2,
+      "aggregate_tokens_per_second": 108.62,
+      "detail": "",
+      "mean_tokens_per_second": 77.586,
+      "observed_at": "2026-10-15T11:51:45Z",
+      "runs": 1.4,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-15T12:30:14.961Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T115139224124-a-write-in-flight-is-not-reported-unlanded/manifest.md",
+  "member": "disposable-r-20261015T115139224124-a-write-in-flight-is-not-reported-unlanded",
+  "model_key": "flash",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_a_write_in_flight_is_not_reported_unlanded.py::test_write_still_in_flight_reports_landed_none"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_a_write_in_flight_is_not_reported_unlanded.py::test_write_still_in_flight_reports_landed_none"
+    ],
+    "declaration": "with False answered whenever the grace ends with the file unchanged, the first body must report landed False",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T115139224124-a-write-in-flight-is-not-reported-unlanded/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T115139224124-a-write-in-flight-is-not-reported-unlanded/negative-control.log",
+    "test_paths": [
+      "tests/test_a_write_in_flight_is_not_reported_unlanded.py",
+      "tests/test_mcp_reads_have_deadlines.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "a-write-in-flight-is-not-reported-unlanded",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 812,
+          "cached_input_tokens": 912736,
+          "input_tokens": 913550,
+          "output_tokens": 1130,
+          "reasoning_output_tokens": 40,
+          "total_tokens": 914680,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "f653840f-3ca8-4792-819c-9ee9708bdbac",
+      "session_id": "f653840f-3ca8-4792-819c-9ee9708bdbac"
+    },
+    "done_when": "new tests/test_a_write_in_flight_is_not_reported_unlanded.py drives the write deadline with three bodies: one writes its file after the landing grace and reports landed None with wording that the write is still in flight and a hint to read the resource back and resubmit only what is missing, not the retry hint; one finishes without writing and reports landed False; one writes within the grace and reports landed True; the landing check reads the abandoned body's future that _InflightBody already holds; no real plan or crew home is written; its gate runs the test files that import its write paths at base and at head with /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest, each to a log under its run directory ending in EXIT=, and shows no failure at head that is absent at base; ruff check and ruff format --check add no findings on the changed Python files against base",
+    "estimated_hours": 0.75,
+    "goal": "Report a timed-out write whose body is still running as landed unknown rather than false",
+    "id": "a-write-in-flight-is-not-reported-unlanded",
+    "images": [],
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-15T11:51:39Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 2,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 1,
+      "headroom": 7,
+      "mean_context": 140000,
+      "observed_at": "2026-10-15T11:51:45Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 2,
+        "aggregate_tokens_per_second": 108.62,
+        "detail": "",
+        "mean_tokens_per_second": 77.586,
+        "observed_at": "2026-10-15T11:51:45Z",
+        "runs": 1.4,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T115139224124-a-write-in-flight-is-not-reported-unlanded/manifest.md",
+    "negative_control": "with False answered whenever the grace ends with the file unchanged, the first body must report landed False",
+    "plan": "an-mcp-failure-names-its-cause",
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§16",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/mcp_deadlines.py",
+      "reckon/_mcp_tools.py",
+      "tests/test_a_write_in_flight_is_not_reported_unlanded.py",
+      "docs/evidence/fragments/an-mcp-failure-names-its-cause/a-write-in-flight-is-not-reported-unlanded.html",
+      "docs/figures/an-mcp-failure-names-its-cause/a-write-in-flight-is-not-reported-unlanded",
+      "tests/test_mcp_reads_have_deadlines.py"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 735528.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "lift_id": null,
+    "member": null,
+    "node": "a-write-in-flight-is-not-reported-unlanded",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-15T11:52:05.077157+00:00",
+    "score": 0.7375,
+    "session": null,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "s16 was reviewed at plan version 93 and both findings answered; the only changes since add the read-back hint and a followup naming the section, exactly as those findings asked",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout in pick:capability",
+    "family": null,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 5005.503,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {
+      "budget-snapshot": 801.305,
+      "context-estimate": 40.531,
+      "records": 950.403,
+      "verdict-inputs": 1144.408
+    }
+  },
+  "plan": "an-mcp-failure-names-its-cause",
+  "plan_impl_at_dispatch": 0.75,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "41d19bbd9417ef1be91b173f048769491f41e107",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "3b5e72d0e9b956cd720e407f39b19ed48ed95af0",
+    "reviewed_head_sha": "41d19bbd9417ef1be91b173f048769491f41e107",
+    "scores": {
+      "durability": 19,
+      "evidence": 19,
+      "fit": 16,
+      "goal_fidelity": 19,
+      "reuse": 20,
+      "scope_discipline": 12
+    },
+    "status": "parsed",
+    "total": 105
+  },
+  "review_tier": "light",
+  "role": "implement",
+  "route_mode": "shadow",
+  "run_id": "r-20261015T115139224124-a-write-in-flight-is-not-reported-unlanded",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§16",
+  "session": "f653840f-3ca8-4792-819c-9ee9708bdbac",
+  "session_harness": "claude",
+  "session_id": "620a0388-6ad2-4044-9647-3e0b6997c0af",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 3,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 10717731,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 543.454,
+    "generated_tokens": 64982,
+    "generation_seconds": 197.611,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 73.5,
+    "machine_seconds": 345.843,
+    "peak_input_tokens": 169207,
+    "tokens_per_second": 328.84,
+    "wall_tokens_per_second": 119.57
+  },
+  "time_budget": "60m",
+  "tool_steps": 65.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 2259,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-10-15T12:30:18Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-15T12:20:58Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261015T115139224124-a-write-in-flight-is-not-reported-unlanded",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 13731,
+    "worker_pid": 1088979
+  },
+  "worker_seconds": 2170,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
