@@ -32,6 +32,7 @@ complete-but-unpromoted run's scratch fails.
 from __future__ import annotations
 
 import importlib
+import json
 import os
 import time
 from pathlib import Path
@@ -189,8 +190,12 @@ def test_a_dry_run_keeps_it_and_apply_removes_a_promoted_runs_scratch(
     )
     assert dry.exit_code == 0, dry.output
     assert scratch.is_dir(), "a dry run must not remove anything"
-    assert "would remove" in dry.output
-    assert str(scratch) in dry.output
+    # The would-remove directory is named in the emitted JSON, not printed: a
+    # dry run reports it in the report's own directories rather than a pane.
+    dry_report = json.loads(dry.output)
+    assert str(scratch.resolve()) in {
+        item["path"] for item in dry_report["directories"]
+    }
 
     report = _run_gc(repository, scratch_root, tmp_path, apply=False)
     assert _entry(report, scratch)["state"] == routing.SCRATCH_TERMINAL
@@ -200,7 +205,8 @@ def test_a_dry_run_keeps_it_and_apply_removes_a_promoted_runs_scratch(
         ["crew", "gc", "--repo", str(repository), "--scratch", "--apply"],
     )
     assert applied.exit_code == 0, applied.output
-    assert f"removing worker scratch directory {scratch}" in applied.output
+    applied_report = json.loads(applied.output)
+    assert str(scratch.resolve()) in applied_report["removed"]
     assert not scratch.exists(), "a promoted run's scratch must be gone"
 
 

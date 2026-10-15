@@ -225,7 +225,6 @@ def test_promotion_removes_the_runs_scratch_directory(
     scratch_root: Path,
     repository: Path,
     tmp_path: Path,
-    capsys: pytest.CaptureFixture,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A completed run's scratch is gone and the removal is reported."""
@@ -249,14 +248,14 @@ def test_promotion_removes_the_runs_scratch_directory(
     assert release["scratch_removed"] is True
     assert release["scratch_path"] == str(scratch)
     assert not scratch.exists(), "the run's scratch directory must be gone"
-    assert f"removed worker scratch directory {scratch}" in capsys.readouterr().out
+    removed = {item["path"]: item["bytes"] for item in release["scratch_removed_paths"]}
+    assert removed.get(str(scratch), 0) > 0
 
 
 def test_discard_removes_the_runs_scratch_directory(
     scratch_root: Path,
     repository: Path,
     tmp_path: Path,
-    capsys: pytest.CaptureFixture,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A discarded run's scratch is gone, a sibling run's survives, both reported."""
@@ -276,7 +275,8 @@ def test_discard_removes_the_runs_scratch_directory(
     assert not scratch.exists(), "the discarded run's scratch must be gone"
     assert sibling.is_dir(), "a different run's scratch must survive"
     assert (sibling / "worker-temp.txt").is_file()
-    assert f"removed worker scratch directory {scratch}" in capsys.readouterr().out
+    removed = {item["path"]: item["bytes"] for item in result["scratch_removed_paths"]}
+    assert removed.get(str(scratch), 0) > 0
 
 
 def test_the_real_scratch_root_is_untouched(
@@ -337,7 +337,6 @@ def test_promotion_removes_the_scratch_recorded_at_dispatch(
     scratch_root: Path,
     repository: Path,
     tmp_path: Path,
-    capsys: pytest.CaptureFixture,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The recorded directory is removed though the promoter's TMPDIR differs."""
@@ -362,7 +361,8 @@ def test_promotion_removes_the_scratch_recorded_at_dispatch(
     assert release["scratch_removed"] is True
     assert release["scratch_path"] == str(scratch)
     assert not scratch.exists()
-    assert f"removed worker scratch directory {scratch}" in capsys.readouterr().out
+    removed = {item["path"]: item["bytes"] for item in release["scratch_removed_paths"]}
+    assert removed.get(str(scratch), 0) > 0
 
 
 def _raise_audit(*_args: object, **_kwargs: object) -> object:
@@ -396,7 +396,6 @@ def test_the_discard_release_fallback_reports_the_scratch(
     scratch_root: Path,
     repository: Path,
     tmp_path: Path,
-    capsys: pytest.CaptureFixture,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A release that raises on discard still reports the scratch outcome."""
@@ -411,7 +410,8 @@ def test_the_discard_release_fallback_reports_the_scratch(
     assert result["scratch_removed"] is True
     assert result["scratch_path"] == str(scratch)
     assert not scratch.exists()
-    assert f"removed worker scratch directory {scratch}" in capsys.readouterr().out
+    removed = {item["path"]: item["bytes"] for item in result["scratch_removed_paths"]}
+    assert removed.get(str(scratch), 0) > 0
 
 
 def _trust_recorded(monkeypatch: pytest.MonkeyPatch) -> None:

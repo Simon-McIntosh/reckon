@@ -1021,8 +1021,9 @@ def garbage_collect_scratch(
     A run's scratch directory is removed here only when the run has no live
     pointer and its terminal record exists — a ledger row or a discard marker —
     and this survey's own decision is never made by age. Every path and its
-    size are printed before anything is deleted, and the whole survey is a dry
-    run unless ``apply`` is given. A directory no run can be attributed to,
+    size are named in the result before anything is deleted, and the whole
+    survey is a dry run unless ``apply`` is given. A directory no run can be
+    attributed to,
     whether beneath the scratch root or a stray tree beside it, is reported
     here with its ctime, its size and any process holding it, and is left for
     the orphan sweep: :func:`garbage_collect_orphan_scratch` removes such a
@@ -1069,14 +1070,10 @@ def garbage_collect_scratch(
         if state == SCRATCH_UNATTRIBUTED:
             report["ctime"] = _iso_ctime(child)
             report["held_by"] = _processes_holding(child)
-        if state == SCRATCH_TERMINAL:
-            if apply:
-                print(f"removing worker scratch directory {child} ({size} bytes)")
-                shutil.rmtree(child)
-                report["removed"] = True
-                removed.append(str(child))
-            else:
-                print(f"would remove worker scratch directory {child} ({size} bytes)")
+        if state == SCRATCH_TERMINAL and apply:
+            shutil.rmtree(child)
+            report["removed"] = True
+            removed.append(str(child))
         directories.append(report)
 
     unattributed: list[dict[str, Any]] = []

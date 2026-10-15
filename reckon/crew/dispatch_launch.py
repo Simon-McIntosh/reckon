@@ -804,7 +804,7 @@ def remove_worker_scratch(
     recorded_path: str | os.PathLike[str] | None = None,
     budget_bytes: int | None = None,
 ) -> dict[str, Any]:
-    """Remove a run's scratch directories, printing each path and size.
+    """Remove a run's scratch directories, returning each path and size.
 
     The path removed is ``<scratch root>/<run id>``, or the ``recorded_path`` a
     dispatch recorded when it created the directory — which is accepted only
@@ -860,21 +860,15 @@ def remove_worker_scratch(
             f"run scratch for {name} is {result['scratch_bytes']} bytes, "
             f"above the {budget_bytes} byte budget"
         )
-        print(
-            f"warning: run scratch for {name} is {result['scratch_bytes']} bytes, "
-            f"above the {budget_bytes} byte budget"
-        )
     failures = []
     for target in targets:
         size = sizes[target]
-        print(f"removing worker scratch directory {target} ({size} bytes)")
         try:
             shutil.rmtree(target)
         except OSError as exc:
             failures.append(f"{target}: {exc}")
             continue
         result["scratch_removed_paths"].append({"path": str(target), "bytes": size})
-        print(f"removed worker scratch directory {target}")
     result["scratch_removed"] = not failures
     result["scratch_withheld"] = "; ".join(failures)
     return result
