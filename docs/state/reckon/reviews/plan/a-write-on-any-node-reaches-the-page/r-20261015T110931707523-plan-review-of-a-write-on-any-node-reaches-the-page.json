@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T11:22:15.901Z",
+  "dispatched_at": "2026-10-15T11:10:28Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-write-on-any-node-reaches-the-page.html:43",
+      "id": "reasoning-1",
+      "reason": "a node implementing this literally either duplicates the walk it means to avoid or needs an extra hook (a rebuild callback, or a stamp set recomputed by walking at arm time) that the plan should name; without it the detector's correctness on the second and later passes is unstated.",
+      "text": "the fast signal's cached stamps are refreshed \"again after each rebuild of that tree's index\", but nothing in the plan says how the watch learns a rebuild happened: the rebuild is lazy and triggered by a later `/_index` reader, and `_load_dir_stamps` reads the persisted file, which is rewritten only *by* that rebuild \u2014 so reading it right after the detector fires the invalidation still returns the pre-change stamps. Left as written, the first detected change leaves the cached stamp permanently unequal to the current `_dir_identity`, and the fast pass re-fires `_invalidate_tree_views` every 10 s for that tree, so the metadata index never settles and `/_index` re-walks the tree on every request \u2014 the cost the section exists to avoid",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-write-on-any-node-reaches-the-page.html:47",
+      "id": "reasoning-2",
+      "reason": "the mechanism is unchanged and correct, and line 43 already states the always-on cost, so only this cost-rationale sentence needs correcting; it does not redirect the node's implementation.",
+      "text": "\"The detector costs stat calls only, only while a tree has readers\" is not true of the fast signal as line 43 describes it: the fast pass runs \"every 10 s by default\" over every mounted tree with no reader condition (line 43's own \"36 reads every 10 s across 18 mounted trees\"), and only the slow signal is reader-gated (line 44, \"A tree nobody is reading pays nothing\"). The clause generalises the slow signal's rule to both signals",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "c088f3ce3f54ba67333d0ff2777d756b9c6df3860985646692b8094f2c86916e",
+  "plan_slug": "a-write-on-any-node-reaches-the-page",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T110931707523-plan-review-of-a-write-on-any-node-reaches-the-page",
+  "reviewed_blob_sha": "87b15aa7e30ae563317f55f8f010902053dcbd9a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited line resolves: `serve.py:844` reads `fleet_index.compute_project_row`, `:1262` `_file_identity`, `:1291` `_head_identity`, `:1659` `_walk_discovery_signature`, `:2782` `_ProjectChangeWatch(docs_dir)`, `:4017` `_FleetChangeWatch(mounts.values())`; `metadata_index._load_dir_stamps` (842), `_dir_identity` (563), `_reuse_covered` (215), `_covered_files` (477) all exist; `reckon service restart` exists (`reckon/cli.py:606`); `tests/test_changes_push_rows.py` and `tests/test_agent_readers_use_the_index.py` both exist.",
+    "done_when": "pass \u2014 \u00a72's done-when asserts an added document within one fast interval, a commit that changes an existing document, an in-place edit while a stream is open and its non-detection when none is, the pipe-delivered `change` event, pipe removal on close, the `.git/index` extension, `OSError` tolerance, the two regression suites, and the manifest's measured stat count and fleet-index answer \u2014 each measurable, with a declared negative control (detector disabled \u21d2 the new-document test must fail).",
+    "evidence_paths": "pass \u2014 the gate log and the measurements (stat count, wall time, fleet-index answer) land in the run manifest on a durable path; no session scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 the node (`cross-node-writes-refresh-the-index`) and the test file (`tests/test_cross_node_writes_refresh_the_index.py`) are named after their mechanism; no plan slug, stage label or ticket number reaches a source path.",
+    "reasoning": "a finding \u2014 the fast signal's in-memory directory stamps have no named refresh trigger, so a detected change leaves the cached stamp stale and every later 10 s pass re-fires the invalidation; the section's own arithmetic (`18 mounted trees`) confirms the fast pass is unconditional, which contradicts the reader-gated cost claimed two paragraphs below.",
+    "single_goal": "pass \u2014 the node has one deliverable, the cross-node backstop plus the stream wake; the fleet-index question it must answer is reported evidence, not a second change.",
+    "wiring": "pass \u2014 the plan declares itself standalone (`plan-standalone`, empty `data-links`) and waits on no other plan; \u00a72's single node needs no upstream node to land."
+  },
+  "section_digests": {
+    "_document": "375c8a0250252dfd8391140955e2378dc5d099cc39e269da05940553993894d2",
+    "s1": "58a6ee92b653b4651357b52cc08c1e80b329e4482143b6bc8ae18570764bcd52",
+    "s2": "b04540a982ba939d9ea8fdc4e5ecbbc1306d0cbc97d2dec30a7df999e9c62301"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T11:22:18.671607+00:00"
+}
