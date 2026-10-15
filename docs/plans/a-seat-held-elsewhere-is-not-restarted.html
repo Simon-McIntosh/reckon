@@ -25,7 +25,7 @@
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -187,7 +187,10 @@
     <div class="r-comment-body"><p>§2 landed. A producer that finds the seat held by a live producer on another host waits and re-reads the seat every 5 s instead of exiting into a restart loop, and takes the seat once that stream goes stale. One stream seed now serves both the sweep and the ticker. Merged as <code>77bfa2b96</code>. The gate's first run had one load-flaky follower test, recorded as an infrastructure failure. Review: 110/120, after a repair round caught by reckon-cd. <a href="/reckon/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s2">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261014T211737909806-review-of-a-producer-waits-on-a-foreign-seat-a0efd2253a95" data-who="reckon-build" data-when="2026-10-14T21:43:25.979Z">
-    <div class="r-comment-body"><p>reviewed run r-20261014T194358037727-a-producer-waits-on-a-foreign-seat at base 9677c89ed7411f96d716bcad44dd1c102025a303 and head a0efd2253a958398e459b743913030bd7d3809a8: goal_fidelity 20, evidence 18, scope_discipline 15, durability 19, fit 18, reuse 20 (total 110), added_failure_count 0, two follow-on findings (a hung foreign holder whose seat lock outlives its stream still exits and cycles the unit; the reviewed manifest&#x27;s baseline_suite/after_suite are prose so the derived added-failure count reads as unmeasured), stored as a parsed record.</p></div>
+    <div class="r-comment-body"><p>reviewed run r-20261014T194358037727-a-producer-waits-on-a-foreign-seat at base 9677c89ed7411f96d716bcad44dd1c102025a303 and head a0efd2253a958398e459b743913030bd7d3809a8: goal_fidelity 20, evidence 18, scope_discipline 15, durability 19, fit 18, reuse 20 (total 110), added_failure_count 0, two follow-on findings (a hung foreign holder whose seat lock outlives its stream still exits and cycles the unit; the reviewed manifest's baseline_suite/after_suite are prose so the derived added-failure count reads as unmeasured), stored as a parsed record.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261014T194358037727-a-producer-waits-on-a-foreign-seat" data-who="reckon-build" data-when="2026-10-14T21:08:40.053Z">
+    <div class="r-comment-body"><p>`_watch_registration` waits out a producer seat held on another host (db9c10f5f), and the seat&#x27;s ticker now takes the seed its own first sweep read rather than re-reading the stream that sweep just wrote (a0efd2253), delivered as tests/test_a_producer_waits_on_a_foreign_seat.py (4 cases) against the existing transitions suite; nothing is left uncommitted and no plan HTML or figure was written.</p></div>
 </div>
 </section>
 </main>
