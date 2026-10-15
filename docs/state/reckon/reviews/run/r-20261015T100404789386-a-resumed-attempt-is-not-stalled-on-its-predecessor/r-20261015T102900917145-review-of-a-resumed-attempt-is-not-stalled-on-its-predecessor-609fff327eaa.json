@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "bdcad93fc0020faafebd637df71de1491e590cf9",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_liveness.py:527",
+    "reckon/crew/recovery_liveness.py:561",
+    "reckon/crew/recovery_watch.py:1157",
+    "reckon/crew/placement.py:866"
+  ],
+  "completed_at": "2026-10-15T10:43:24.392Z",
+  "dispatched_at": "2026-10-15T10:29:29Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-resumed-attempt-is-not-stalled-on-its-predecessor.html",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment is a heading with no landing element and no plan-verifies meta, so it attaches no evidence to \u00a728 and no landing paragraph a reader can open; every sibling section-style fragment in the same directory (for example a-lift-is-drawn-once-per-pane.html) carries a <p id=\"<node>-landing\"> with the landing text, and docs/AGENTS.md:485 names a tiny standalone page as a recorded failure mode."
+    },
+    {
+      "file": "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py",
+      "line": "70",
+      "severity": "follow-on",
+      "text": "follow-on: the mutation harness _pointer_first_reading calls recovery_liveness._attempt_started_seconds, which the autouse fixture at line 83 has rebound to _pointer_first_reading itself, so any record with no attempt_started_at recurses forever; the negative-control log records RecursionError for test_an_attempt_only_start_reads_fresh_and_is_not_stalled, so one of its three red cases is the harness failing rather than a reading the restored defect produced."
+    },
+    {
+      "file": "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py",
+      "line": "243",
+      "severity": "follow-on",
+      "text": "follow-on: test_a_pointer_only_start_is_measured_from_that_one asserts _attempt_started_seconds(pointer) == started - STALE_SECONDS, where started - STALE_SECONDS is the same value the test handed the pointer at line 233, so the assertion holds under the pointer-first read it sits beside and could not redden on that regression; the case's only guarding assertion is the snapshot at line 246."
+    },
+    {
+      "file": "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py",
+      "line": "108",
+      "severity": "follow-on",
+      "text": "follow-on: _stub_resumed_run and _write_attempt_record duplicate the run-stubbing capability tests/test_stall_clock_starts_at_the_attempt.py:_stub_pointer:60 already owns for the same module under test -- both build a pointer through liveness._pointer, set it apart from a live host, backdate the stream with os.utime and write the run directory's attempt.json -- so a change to the attempt-record shape must now be made in two places."
+    }
+  ],
+  "head_log_revision": "988f0811bbd419e0ce3104d0f7ccec5725f1c768",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s): reckon/crew/recovery_liveness.py:527, reckon/crew/recovery_liveness.py:561, reckon/crew/recovery_watch.py:1157, reckon/crew/placement.py:866",
+    "diff": "read commit by commit against base bdcad93fc; 988f0811b rewrites _attempt_started_seconds to read both records and return max(starts) and adds the 6-case test file, 609fff327 rewrites the new docstring's dated incident into the source docstring on reckon/crew/recovery_liveness.py:400-414 with no behavioural change, and the fragment is a 3-line section with heading only.",
+    "done_when": "the done_when names a new test file under a temporary crew home, a base/head gate over the test files importing the write paths each ending in EXIT=, and a reverting negative control; the manifest records baseline_suite (bdcad93fc, EXIT=1, 1 failure) and after_suite (988f0811b, EXIT=1, 1 failure, 189 passed) with their log paths and the negative-control log ends EXIT=1 with the declared first case red, but the gate ran at 988f0811b rather than the reviewed head 609fff327 and no log records the done_when's ruff clause.",
+    "goal": "the node's goal is to read a run's attempt start as the later of the pointer's and the attempt record's; reckon/crew/recovery_liveness.py:417-429 collects both attempt_started_at values, parses each, and returns max(starts).",
+    "manifest": "read; status complete, commits 988f0811b and 609fff327, the fix and a 6-case test, the negative control at 3 failed/3 passed EXIT=1, and complete baseline_suite/after_suite JSON naming their logs.",
+    "write_paths": "the manifest declares reckon/crew/recovery_liveness.py, tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py and the a-resumed-attempt-is-not-stalled-on-its-predecessor evidence fragment; the diff touches exactly those three and nothing else."
+  },
+  "justifications": {
+    "durability": "the declared mutation is recorded and real: negative-control.log runs tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py with the pointer-first read restored, the first case fails, EXIT=1, so the guard reddens on the regression it was written against; two assertions in the same file (lines 243 and 274) instead compare against the value the test itself supplied and hold under that same regression, so they add no durability.",
+    "evidence": "the manifest's baseline_suite and after_suite are complete (baseline EXIT=1 with failure_ids [tests/test_recovery_state_typing.py::test_causes_with_opposite_recoveries_have_distinct_types] at 183 passed, after EXIT=1 with the same single id at 189 passed), so added_failure_count is 0 against a red base, but the head gate log's own header names 988f0811b rather than the reviewed head 609fff327 and no log records the done_when's ruff clause though I confirmed 1 pre-existing finding at both base and head with the repo config.",
+    "fit": "the rewrite stays inside _attempt_started_seconds, keeps the existing parse_utc/_run_directory idiom of the surrounding module at reckon/crew/recovery_liveness.py:398-429, and every name it touches carries no plan, stage or ticket label.",
+    "goal_fidelity": "reckon/crew/recovery_liveness.py:417-429 reads the pointer's and attempt.json's attempt_started_at, keeps every one that parses, and returns max(starts), which is exactly the done_when's 'returns the later parseable start'.",
+    "reuse": "the production change extends the existing owner rather than forking it -- no new module or symbol is added -- but the test file's _stub_resumed_run and _write_attempt_record (lines 95 and 108) re-implement the run-stubbing helper tests/test_stall_clock_starts_at_the_attempt.py:_stub_pointer:60 already owns for the same module under test, with a parameterisation rather than an import or a call.",
+    "scope_discipline": "every path in git diff bdcad93fc..609fff327 (reckon/crew/recovery_liveness.py, tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py, the evidence fragment) is inside the manifest's declared write_paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: bdcad93fc0020faafebd637df71de1491e590cf9\nreviewed_head_sha: 609fff327eaa08e17ff5dae87fe9101bd0c43bbd\nVERDICT goal: the node's goal is to read a run's attempt start as the later of the pointer's and the attempt record's; reckon/crew/recovery_liveness.py:417-429 collects both attempt_started_at values, parses each, and returns max(starts).\nVERDICT done_when: the done_when names a new test file under a temporary crew home, a base/head gate over the test files importing the write paths each ending in EXIT=, and a reverting negative control; the manifest records baseline_suite (bdcad93fc, EXIT=1, 1 failure) and after_suite (988f0811b, EXIT=1, 1 failure, 189 passed) with their log paths and the negative-control log ends EXIT=1 with the declared first case red, but the gate ran at 988f0811b rather than the reviewed head 609fff327 and no log records the done_when's ruff clause.\nVERDICT write_paths: the manifest declares reckon/crew/recovery_liveness.py, tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py and the a-resumed-attempt-is-not-stalled-on-its-predecessor evidence fragment; the diff touches exactly those three and nothing else.\nVERDICT manifest: read; status complete, commits 988f0811b and 609fff327, the fix and a 6-case test, the negative control at 3 failed/3 passed EXIT=1, and complete baseline_suite/after_suite JSON naming their logs.\nVERDICT diff: read commit by commit against base bdcad93fc; 988f0811b rewrites _attempt_started_* to read both records and return max(starts) and adds the 6-case test file, 609fff327 rewrites the new docstring's dated incident into the mechanism with no behavioural change, and the fragment is a 3-line section with heading only.\nCALL_SITES: reckon/crew/recovery_liveness.py:527, reckon/crew/recovery_liveness.py:561, reckon/crew/recovery_watch.py:1157, reckon/crew/placement.py:866\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:417-429 reads the pointer's and attempt.json's attempt_started_at, keeps every one that parses, and returns max(starts), which is exactly the done_when's 'returns the later parseable start'.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest's baseline_suite and after_suite are complete (both EXIT=1, one pre-existing failure id each, 183 and 189 passed), so added_failure_count is 0 against a red base, but the head gate log's header names 988f0811b rather than the reviewed head 609fff327 and no log records the done_when's ruff clause.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff bdcad93fc..609fff327 (reckon/crew/recovery_liveness.py, the new test file and the evidence fragment) is inside the manifest's declared write_paths.\nSCORE durability: 16\nJUSTIFICATION durability: the declared mutation is recorded and real -- negative-control.log runs the test with the pointer-first read restored, the first case fails, EXIT=1 -- but assertions at lines 243 and 277 compare against the value the test itself supplied and hold under that same regression.\nSCORE fit: 18\nJUSTIFICATION fit: the rewrite stays inside _attempt_started_seconds and keeps the parse_utc/_run_directory idiom of reckon/crew/recovery_liveness.py:398-429, with no plan, stage or ticket label in any name.\nSCORE reuse: 15\nJUSTIFICATION reuse: the production change extends the existing owner with no new module or symbol, but tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py:108 re-implements the run-stubbing helper tests/test_stall_clock_starts_at_the_attempt.py:_stub_pointer:60 owns for the same module.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-resumed-attempt-is-not-stalled-on-its-predecessor.html:2 follow-on: the fragment is a heading with no landing element and no plan-verifies meta, so it attaches no evidence to \u00a728; every sibling section-style fragment in the same directory carries a landing paragraph, and docs/AGENTS.md:485 names a tiny standalone page as a recorded failure mode.\nFINDING tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py:70 follow-on: _pointer_first_reading calls recovery_liveness._attempt_started_seconds, which the fixture at line 83 has rebound to itself, so a record with no attempt_started_at recurses forever; the negative-control log records RecursionError for test_an_attempt_only_start_reads_fresh_and_is_not_stalled, making one of its three red cases the harness failing rather than a reading.\nFINDING tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py:243 follow-on: test_a_pointer_only_start_is_measured_from_that_one asserts _attempt_started_seconds(pointer) == started - STALE_SECONDS, the same value it handed the test at line 233, so the assertion holds under the pointer-first read it sits beside and cannot redden on that regression.\nFINDING tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py:108 follow-on: _stub_resumed_run and _write_attempt_record duplicate the run-stubbing capability tests/test_stall_clock_starts_at_the_attempt.py:_stub_pointer:60 already owns for the same module under test, so the attempt-record shape must now be changed in two places.\n",
+  "review_run_id": "r-20261015T102900917145-review-of-a-resumed-attempt-is-not-stalled-on-its-predecessor-609fff327eaa",
+  "reviewed_base_sha": "bdcad93fc0020faafebd637df71de1491e590cf9",
+  "reviewed_head_sha": "609fff327eaa08e17ff5dae87fe9101bd0c43bbd",
+  "reviewed_run_id": "r-20261015T100404789386-a-resumed-attempt-is-not-stalled-on-its-predecessor",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 15,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T10:41:20+00:00",
+  "total": 104
+}
