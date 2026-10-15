@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T18:28:37.001Z",
+  "dispatched_at": "2026-10-15T18:16:41Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:162",
+      "id": "reasoning-1",
+      "reason": "without naming the existing predicate and saying whether it is extended or duplicated, the node can add a second claimless predicate, contradicting \u00a716's own \"one predicate\" claim and \u00a79's one-owner-per-mechanism rule.",
+      "text": "\u00a716 says \"One predicate in `reckon/crew/review.py` names the claimless entries, and both points call it\", but `claimless_findings` (reckon/crew/review.py:186, landed by \u00a714) already returns exactly those entries and returns only the entries \u2014 no index \u2014 while \u00a716's done-when requires the refusal to name \"index 0\" and the entry's keys; the plan therefore does not resolve whether the node extends the existing predicate to yield index+keys (repointing its \u00a714 caller at review.py:2823, which reads only its length) or adds a second predicate of the same name",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3e00ee7daeffb4c0b3b418136591e1ee094e8ef99acc33aacc159e4f3c9532fe",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 138,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T181545232413-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "0392be3df5a74fc0c95faefd5f3e8f1ce2d40904",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 FINDING_CLAIM_FIELDS (review.py:156), finding_claim (:159), review_status_refusal (:571), store_review (:2216), store_committed_review (:2589), _reviewer_store_records (reports.py:1549), _review_record_status_findings (:1644), tests/test_a_claimless_finding_is_not_a_finding.py, and the imas-efit record at docs/state/imas-efit/reviews/run/r-20261015T162752320759-containment-frac-reachable/ all resolve; extensionless hrefs read as `<path>.html`.",
+    "done_when": "pass \u2014 \u00a716's done-when is measurable (store_review refused naming index 0 / the three keys / the four accepted fields, check-manager refusal, the `text`-for-`message` positive arm, a head-vs-base pass/fail-id delta) and names a declared negative control (predicate returning no claimless entries, both points accept).",
+    "evidence_paths": "pass \u2014 the negative control is \"logged under the run directory\", a durable crew run path, not a scratchpad.",
+    "naming": "pass \u2014 \u00a716 introduces no plan labels; the run ids it cites are evidence, and the new test file name carries no ticket, stage or version tag.",
+    "reasoning": "a finding \u2014 the Deliverable asserts \"One predicate in `reckon/crew/review.py` names the claimless entries\" but \u00a714 already landed `claimless_findings`, which returns the claimless entries without the index \u00a716's own refusal message must name.",
+    "single_goal": "pass \u2014 \u00a716 carries one deliverable: refuse a claimless review at the two points where a record's status is already validated.",
+    "wiring": "pass \u2014 \u00a716's unit declares no depends-on/gates of its own; f-erkc-017 correctly states \u00a716 is independent and sequences the sibling fix after `obligation_snapshot.py`'s other editor, and every relationship the section cites resolves."
+  },
+  "section_digests": {
+    "_document": "7986812063e3ef6eaa59808063e3eef5c63281d497d9e197e0be369f749fd70c",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "bb85d80dcb9e0286d21a8ca6acd3af79e736c64c84b5ac85569fc6ce2c73863b",
+    "s13": "18a2d10f1e3c66be8277b7b4ef2922db7611cded7589553da5347b9a1ee5cd0f",
+    "s14": "90fd381b5f80417031410428331e779266feb4e517d89e5237d29cbe1c5e4700",
+    "s15": "72f678eb5f0bc62870da1cc4637f6db55365548aa9b52f46884cc0b3551a6ae7",
+    "s16": "e10f8e9157501bc2c8df30d2b97e6eef6cde86e0b05646b59b853f18240305b8",
+    "s17": "86a993485a8a8461fd1e5e336bf8623e585cd4540daa1e5b5e78af2a0c172ce5",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "85877b77c395ca8a1482bef5887cfc72cbf6109174dba2c01265aa015a906d73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T18:29:51.490076+00:00"
+}
