@@ -1,0 +1,31 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T13:40:12.013Z",
+  "dispatched_at": "2026-10-15T13:36:48Z",
+  "findings": [],
+  "plan_fingerprint": "ae413d6113f3a74fe9381eba9b2816f6cf20394d59cfe5ad5bbfccb17d21c789",
+  "plan_slug": "a-write-on-any-node-reaches-the-page",
+  "plan_version": 10,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T133611727723-plan-review-of-a-write-on-any-node-reaches-the-page",
+  "reviewed_blob_sha": "b8f47a6b831db67648f46746a4deeb8f2db8dbc3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each file/line anchor in \u00a72 (serve.py:2782, :196, :4017, :322, :1291, :1262, :1588, :3282, :3358, :1659, :844) and each cited test path resolves, with extensionless hrefs resolved as `<path>.html`.",
+    "done_when": "pass \u2014 \u00a72's done-when is measurable and names both halves: the simulation that silences every inotify watch on the tree (fleet watch's and each stream's own) and a declared negative control (\"disables the detector, and the new-document test must then fail\").",
+    "evidence_paths": "pass \u2014 the gate writes tests/test_cross_node_writes_refresh_the_index.py results in the repository tree, and the done-when's manifest fields (stat count, wall time, fleet-index answer) are durable, not a session scratchpad.",
+    "naming": "pass \u2014 the deliverable and its test are named by mechanism (cross-node-writes-refresh-the-index), with no plan slug, stage label or ticket number carried into source.",
+    "reasoning": "pass \u2014 \u00a71's root cause (inotify is node-local on GPFS; discovery has the 60 s reuse-window backstop, metadata_index.index_rows has none) matches its cited measurement, and \u00a72's mechanism (detector \u2192 `_invalidate_tree_views` and a wake pipe \u2192 `wait` returns `True` on the drained pipe) runs on the named production path `_send_project_changes` \u2192 `while watch.wait(self.connection)` (serve.py:2780-2806), producing the done-when's assertions including the subscription-pipe wake of an open stream.",
+    "single_goal": "pass \u2014 the node `cross-node-writes-refresh-the-index` carries one deliverable (the cross-node backstop) and the Writes column grants only reckon/serve.py and its test.",
+    "wiring": "pass \u2014 the plan declares itself standalone (plan-standalone: no live plan waits on it, it waits on none) and \u00a72's node table names no depends-on/informs/gates, so there is no relationship to be missing or mis-pointed."
+  },
+  "section_digests": {
+    "_document": "375c8a0250252dfd8391140955e2378dc5d099cc39e269da05940553993894d2",
+    "s1": "58a6ee92b653b4651357b52cc08c1e80b329e4482143b6bc8ae18570764bcd52",
+    "s2": "13a3b7ff9062a58fb9a9b7ed81ab67f80a13e34b8ab9e0a390bb74c6a11027b9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T13:40:56.036008+00:00"
+}
