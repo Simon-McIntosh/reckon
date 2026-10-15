@@ -61,16 +61,19 @@
     without asking, the declared mutation — the lifted and declined arms fail
     (<code>report["dispatched"] is False</code>, and the record carries
     <code>error: lane-paused</code> on backend <code>alpha</code>, i.e. the local lane), while the un-lifted arm
-    still passes, which is what makes the failure the mutation and not a broken fixture. The mutated tree is
-    <code>/tmp/reflex-gate/mutated</code>, archived from this node's revision and patched there.
+    still passes, which is what makes the failure the mutation and not a broken fixture. The mutation is a
+    one-line return of <code>None</code> at the top of <code>_reroute_held_review</code>, applied to an archived
+    copy of this node's revision in a node-local scratch tree that was removed after the run; the log is the
+    durable record.
   </p>
 
   <p id="the-review-reflex-asks-before-it-requeues-gate">
-    Gate: the reflex test files that exercise the composed-review dispatch and lane selection were run at base
-    and at head with <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q</code>,
-    each to a log under the run directory ending in <code>EXIT=</code> — <code>gate-head.log</code> at the head
-    revision in this worktree, <code>gate-base.log</code> at <code>bd37b85bb</code> in a scratch tree under
-    <code>/tmp/reflex-gate/base</code>, each log naming the module under test as imported and the working
-    directory it resolved from.
+    Gate: every test file that imports the changed module — 39 at head, 38 at base, the extra being the new test —
+    was run at base and at head with <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest
+    -p no:cacheprovider -q -n 6</code>, in four chunks per arm, one log per chunk under the run directory, each
+    ending in <code>EXIT=</code> and each naming its revision, its tree, the module actually imported and the
+    exact command: <code>gate-head-00..03.log</code> in this worktree and <code>gate-base-00..03.log</code> at
+    <code>bd37b85bb</code> in a scratch tree. Every chunk exited 0. Head passed 259 with 1 skipped; base passed
+    256 with 1 skipped; the two arms differ by exactly the three new tests and by no failure.
   </p>
 </article>
