@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="a-held-dispatch-waits-its-fair-turn">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>A Held Session Routes To A Serving Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -135,7 +135,7 @@
     </p>
 
     <h2 id="s3">§3 — A pick probe uses the inputs a dispatch would</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p>
       <strong>Deliverable.</strong> <code>reckon crew pick</code> accepts the node fields that dispatch hands to the picker
       (write paths, negative control, estimated hours and section). These options mirror fields <code>crew dispatch</code>
@@ -220,7 +220,10 @@
     <div class="r-comment-body"><p>§2 landed. Jev routes with the session's own slots and any lift in view: a well-defined node routed onto a zero-slot lane is re-asked once without it, a lifted lane's burn does not press it, and reviews are offered the lifted lane's cheaper models. Merged as <code>0249aeaa5</code>; gate 869 passed with the same three failures and setup error as base. Review: 112/120. <a href="/reckon/evidence/archive/a-held-session-routes-to-a-serving-lane-landed.html#s2">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261015T075223938148-jev-routes-with-the-session-admission-and-the-lift" data-who="reckon-build" data-when="2026-10-15T11:29:48.546Z">
-    <div class="r-comment-body"><p>tests/test_jev_routes_with_the_session_admission_and_the_lift.py — 11 passed; reckon/crew/picker/snapshot.py reads the session&#x27;s own worker figure for every lane whose backend publishes a lane document, through dispatch_plan._lane_worker_allowance (one reader, not two), carries a lift in force on the lane&#x27;s budget group inside the candidate&#x27;s congestion block, and names the asking session when it reads the review exclusion; reckon/crew/picker/prompts.py renders and glosses worker_slots, and questions.jinja tells Jev that a lane granting this session no worker is not available to it and that a lift marks a window meant to be spent; reckon/crew/dispatch_picker.py re-asks once off a zero-slot lane with that lane excluded for well-defined implementation and test nodes and records both asks; reckon/crew/recovery_review_dispatch.py resolves the lift through the one resolver every other caller uses — handed the group&#x27;s freshest published window reading and the asking session — and threads that session from the compose path into the lane ordering and the hold reason, so the reflex and the picker agree about a lane</p></div>
+    <div class="r-comment-body"><p>tests/test_jev_routes_with_the_session_admission_and_the_lift.py — 11 passed; reckon/crew/picker/snapshot.py reads the session's own worker figure for every lane whose backend publishes a lane document, through dispatch_plan._lane_worker_allowance (one reader, not two), carries a lift in force on the lane's budget group inside the candidate's congestion block, and names the asking session when it reads the review exclusion; reckon/crew/picker/prompts.py renders and glosses worker_slots, and questions.jinja tells Jev that a lane granting this session no worker is not available to it and that a lift marks a window meant to be spent; reckon/crew/dispatch_picker.py re-asks once off a zero-slot lane with that lane excluded for well-defined implementation and test nodes and records both asks; reckon/crew/recovery_review_dispatch.py resolves the lift through the one resolver every other caller uses — handed the group's freshest published window reading and the asking session — and threads that session from the compose path into the lane ordering and the hold reason, so the reflex and the picker agree about a lane</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-15T13:50:00Z">
+    <div class="r-comment-body"><p>§3 landed. <code>crew pick</code> takes the node fields a dispatch hands the picker and names any it was not given, so a probe and a dry-run dispatch render Jev the same state. Merged as <code>101c2ff40</code>; gate 780 passed over 61 files with the two congested-lane failures base shares. Review: 109/120. <a href="/reckon/evidence/archive/a-held-session-routes-to-a-serving-lane-landed.html#s3">evidence</a></p></div>
 </div>
 </section>
 </main>
