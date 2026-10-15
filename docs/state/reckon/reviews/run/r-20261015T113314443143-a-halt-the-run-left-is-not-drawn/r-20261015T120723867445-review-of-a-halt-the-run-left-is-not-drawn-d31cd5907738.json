@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:follower_row_path",
+    "reckon/crew/ticker.py:PaneRowPath.__init__"
+  ],
+  "completed_at": "2026-10-15T12:24:08.730Z",
+  "dispatched_at": "2026-10-15T12:08:33Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "covered by the coordinator's arms: all three files were in the base and head population over every test importing reckon/crew/ticker.py (612 passed + 1 clock flake at base ada69f81c, 617 passed at the merged head), no added failure; logs at ~/.cache/reckon-hr/a-halt-the-run-left-is-not-drawn/",
+      "recorded_at": "2026-10-15T12:27:11.115510+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "a figure is not a quota: the three cases are stated as rows in the evidence fragment and the test, and a state diagram would add ink without adding a fact",
+      "recorded_at": "2026-10-15T12:27:36.320857+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_row_policy_holds_observer_context.py",
+      "line": "72",
+      "severity": "follow-on",
+      "text": "follow-on: this file and tests/test_the_pane_draws_no_round_trip.py and tests/test_a_pane_shows_its_own_starts.py all import reckon/crew/ticker.py and exercise RowPolicy holds, but none was in the gate, so the done_when's \"test files that import ticker.py show no added failure against base\" is unverified for the three files closest to the changed branch."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-halt-the-run-left-is-not-drawn.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment is fenced and committed, but the dispatch also fenced docs/figures/the-monitor-shows-the-work-it-watches/a-halt-the-run-left-is-not-drawn and no figure was produced for a state-machine change whose three cases are easier to read than to parse."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 344805c9; the single commit d31cd59 adds LIVE_PANE_WORDS and one elif branch in RowPolicy._feed (29 lines), a new 180-line test, and a 31-line evidence fragment, nothing else.",
+    "done_when": "the done_when names tests/test_a_halt_the_run_left_is_not_drawn.py driving PaneRowPath with an injected clock and rendering through one Ticker; the gate asserts the fast-read replay releases exactly the start and the block, and its result is recorded in logs/head-gate.log as \"79 passed\".",
+    "goal": "the node's goal is that a held settle row is never released after a later row has moved its run on to a live pane word; reckon/crew/ticker.py:1065 names the live words and ticker.py:1526 resolves the hold on that later row, which is what \u00a729 asks.",
+    "manifest": "read; it records the gate command and its result, the base/head importer arms, a negative control with its log, and names files that exist on disk.",
+    "write_paths": "the dispatch fence named reckon/crew/ticker.py, tests/test_a_halt_the_run_left_is_not_drawn.py, the evidence fragment and a figures directory; git diff 344805c9..d31cd59 changes only the first three, every one inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_halt_the_run_left_is_not_drawn.py:96 asserts the released row list equals [START, BLOCK], and logs/negative-control-mutated.log (EXIT=1) shows that reverting the fix makes that file release a stopped-destination row and fail two cases.",
+    "evidence": "the gate tests/test_a_halt_the_run_left_is_not_drawn.py asserts the exact released rows and their rendered text and its head result is recorded in logs/head-gate.log, but the done_when clause \"the test files that import reckon/crew/ticker.py show no added failure against base\" is measured only for the 8 files in logs/importers-head.log.",
+    "fit": "the frozenset and comment at ticker.py:1059-1065 and the branch at ticker.py:1526 follow the surrounding style of RowPolicy._feed, though LIVE_PANE_WORDS is now the third place in the module that enumerates pane words beside PANE_STATES at ticker.py:276 and _CELLS at ticker.py:387.",
+    "goal_fidelity": "ticker.py:1526 resolves the held row on a later live-word row \u2014 the shown-word return drops both halves (ticker.py:1535), another live word prints the halt ahead (ticker.py:1545), and a settled word still falls to the untouched else (ticker.py:1549) \u2014 exactly \u00a729's three cases.",
+    "reuse": "a search of reckon/ for a live-word owner finds only reckon/sprint_liveness.py:37 LIVE_STATES (raw states, roadmap liveness) and reckon/crew/recovery_wait.py:771 _WAIT_LIVE_STATE_TOKENS (probe tokens), neither of which owns pane-word liveness, so LIVE_PANE_WORDS forks no existing mechanism.",
+    "scope_discipline": "git diff --stat 344805c9..d31cd59 lists only reckon/crew/ticker.py, tests/test_a_halt_the_run_left_is_not_drawn.py and the evidence fragment, all within the dispatch fence and none carrying work the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a held settle row is never released after a later row has moved its run on to a live pane word; reckon/crew/ticker.py:1065 names the live words and ticker.py:1526 resolves the hold on that later row, which is what \u00a729 asks.\nVERDICT done_when: the done_when names tests/test_a_halt_the_run_left_is_not_drawn.py driving PaneRowPath with an injected clock and rendering through one Ticker; the gate asserts the fast-read replay releases exactly the start and the block, and its result is recorded in logs/head-gate.log as \"79 passed\".\nVERDICT write_paths: the dispatch fence named reckon/crew/ticker.py, tests/test_a_halt_the_run_left_is_not_drawn.py, the evidence fragment and a figures directory; git diff 344805c9..d31cd59 changes only the first three, every one inside the fence.\nVERDICT manifest: read; it records the gate command and its result, the base/head importer arms, a negative control with its log, and names files that exist on disk.\nVERDICT diff: read commit by commit against base 344805c9; the single commit d31cd59 adds LIVE_PANE_WORDS and one elif branch in RowPolicy._feed (29 lines), a new 180-line test, and a 31-line evidence fragment, nothing else.\nCALL_SITES: reckon/crew_follow_commands.py:follower_row_path, reckon/crew/ticker.py:PaneRowPath.__init__\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: ticker.py:1526 resolves the held row on a later live-word row \u2014 the shown-word return drops both halves (ticker.py:1535), another live word prints the halt ahead (ticker.py:1545), and a settled word still falls to the untouched else (ticker.py:1549) \u2014 exactly \u00a729's three cases.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate tests/test_a_halt_the_run_left_is_not_drawn.py asserts the exact released rows and their rendered text and its head result is recorded in logs/head-gate.log, but the done_when clause \"the test files that import reckon/crew/ticker.py show no added failure against base\" is measured only for the 8 files in logs/importers-head.log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 344805c9..d31cd59 lists only reckon/crew/ticker.py, tests/test_a_halt_the_run_left_is_not_drawn.py and the evidence fragment, all within the dispatch fence and none carrying work the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_halt_the_run_left_is_not_drawn.py:96 asserts the released row list equals [START, BLOCK], and logs/negative-control-mutated.log (EXIT=1) shows that reverting the fix makes that file release a stopped-destination row and fail two cases.\nSCORE fit: 18\nJUSTIFICATION fit: the frozenset and comment at ticker.py:1059-1065 and the branch at ticker.py:1526 follow the surrounding style of RowPolicy._feed, though LIVE_PANE_WORDS is now the third place in the module that enumerates pane words beside PANE_STATES at ticker.py:276 and _CELLS at ticker.py:387.\nSCORE reuse: 19\nJUSTIFICATION reuse: a search of reckon/ for a live-word owner finds only reckon/sprint_liveness.py:37 LIVE_STATES (raw states, roadmap liveness) and reckon/crew/recovery_wait.py:771 _WAIT_LIVE_STATE_TOKENS (probe tokens), neither of which owns pane-word liveness, so LIVE_PANE_WORDS forks no existing mechanism.\nFINDING tests/test_row_policy_holds_observer_context.py:72 follow-on: this file and tests/test_the_pane_draws_no_round_trip.py and tests/test_a_pane_shows_its_own_starts.py all import reckon/crew/ticker.py and exercise RowPolicy holds, but none was in the gate, so the done_when's \"test files that import ticker.py show no added failure against base\" is unverified for the three files closest to the changed branch.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-halt-the-run-left-is-not-drawn.html:1 follow-on: the fragment is fenced and committed, but the dispatch also fenced docs/figures/the-monitor-shows-the-work-it-watches/a-halt-the-run-left-is-not-drawn and no figure was produced for a state-machine change whose three cases are easier to read than to parse.",
+  "review_run_id": "r-20261015T120723867445-review-of-a-halt-the-run-left-is-not-drawn-d31cd5907738",
+  "reviewed_base_sha": "344805c9613487e59bcc8001ffc0302a55f8ae50",
+  "reviewed_head_sha": "d31cd5907738b4408995862abfc13580eb3aca80",
+  "reviewed_run_id": "r-20261015T113314443143-a-halt-the-run-left-is-not-drawn",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T12:19:58.362191+00:00",
+  "total": 110
+}

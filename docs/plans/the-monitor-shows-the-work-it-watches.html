@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="128">
+<meta name="plan-version" content="129">
 <meta name="plan-modified" content="2026-10-15">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -689,6 +689,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s28" data-id="c-run-r-20261015T100404789386-a-resumed-attempt-is-not-stalled-on-its-predecessor" data-who="reckon-build" data-when="2026-10-15T10:27:43.551Z">
     <div class="r-comment-body"><p>§28 landed — _attempt_started_seconds now reads both the pointer's attempt_started_at and attempt.json's and returns the later parseable one, so a just-resumed cross-host run is not stalled on its predecessor's quiet; new test 6/6 pass, head arm 189 passed / 1 pre-existing failure against base 183 passed / 1, 0 added; the negative control restores the pointer-first read and the first case then reads stalled.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261015T120723867445-review-of-a-halt-the-run-left-is-not-drawn-d31cd5907738" data-who="reckon-build" data-when="2026-10-15T12:24:08.730Z">
+    <div class="r-comment-body"><p>Independent review of r-20261015T113314443143-a-halt-the-run-left-is-not-drawn stored: a parsed six-dimension record (goal_fidelity 19, evidence 16, scope_discipline 19, durability 19, fit 18, reuse 19; total 110) for base 344805c9613487e59bcc8001ffc0302a55f8ae50 .. d31cd5907738b4408995862abfc13580eb3aca80, no blocking finding, added_failure_count 0. The landed change is faithful to plan §29: reckon/crew/ticker.py:1526 resolves a held settle row on a later live-word row in all three specified cases, tests/test_a_halt_the_run_left_is_not_drawn.py asserts the exact released rows and reddens under the mutation, and every changed path sits inside the dispatch fence.</p></div>
 </div>
 </section>
 </main>
