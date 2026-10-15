@@ -15,6 +15,7 @@ from typing import Any
 from reckon import _backends, budget, capabilities, capability, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew import (
+    budget_lift,
     budget_reset,
     lane_document,
     paid_lanes,
@@ -448,6 +449,7 @@ def _budget_view_request_key(
         "repo": str(Path(repo).resolve()),
         "cached_only": cached_only,
         "records": len(records) if records is not None else None,
+        "budget_lifts": capabilities.file_stamp(str(budget_lift.lifts_path())),
         "config": hashlib.sha256(
             json.dumps(config, sort_keys=True, default=str).encode()
         ).hexdigest(),

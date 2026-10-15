@@ -49,7 +49,7 @@ rather than a zero, which is the first rule above applied to a second quantity.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -1642,8 +1642,27 @@ def preflight(
         config=config,
         **({"records": records} if records is not None else {}),
     )
+    pace_records = _runway_records(project, records, root=root)
+    group_policies: dict[str, dict[str, Any]] = {}
+    for group, members in budget_group.declared_groups(config).items():
+        freshest = _freshest_reading(members, windows or {}, moment=moment)
+        reading = (
+            freshest[1] if freshest is not None else window_reading.WindowReading()
+        )
+        block = budget_group.effective_block(
+            config,
+            group,
+            readings=_lift_history(
+                pace_records, members=set(members), reading=reading, moment=moment
+            ),
+            now=moment,
+            session=session,
+        )
+        group_policies[group] = policy({**config, "budget": block})
     verdicts = []
     for name in names:
+        group = budget_group.declared_group_for(config, name)
+        judged_policy = group_policies.get(group, policy_block)
         settings = configured.get(name)
         state = state_for(
             name,
@@ -1658,7 +1677,7 @@ def preflight(
         # probe, provider availability is observed rather than inferred from a
         # clock. A stated reset and an unknown backend never reach the probe.
         timeless_policy = {
-            **policy_block,
+            **judged_policy,
             "evidence_shelf_life_minutes": 0,
         }
         recorded_verdict = decide(state, timeless_policy, purpose=purpose, now=moment)
@@ -1675,7 +1694,7 @@ def preflight(
                 name,
                 settings,
                 root=root,
-                cache_seconds=availability_probe_cache_seconds(policy_block),
+                cache_seconds=availability_probe_cache_seconds(judged_policy),
                 now=moment,
                 runner=lane_probe_runner,
             )
@@ -1704,7 +1723,7 @@ def preflight(
                     availability_cached=bool(observation.get("cached")),
                     detail=str(observation.get("detail") or state.detail),
                 )
-        verdicts.append(decide(state, policy_block, purpose=purpose, now=moment))
+        verdicts.append(decide(state, judged_policy, purpose=purpose, now=moment))
 
     held = [verdict for verdict in verdicts if verdict["held"]]
     waits = [
@@ -1744,7 +1763,7 @@ def preflight(
         config,
         windows=pace_windows,
         ready=ready,
-        records=_runway_records(project, records, root=root),
+        records=pace_records,
         now=moment,
         session=session,
     )
