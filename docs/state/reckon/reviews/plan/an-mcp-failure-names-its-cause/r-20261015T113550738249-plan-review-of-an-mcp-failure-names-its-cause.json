@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T11:49:28.316Z",
+  "dispatched_at": "2026-10-15T11:36:47Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-mcp-failure-names-its-cause/r-20261015T113550738249-plan-review-of-an-mcp-failure-names-its-cause/plan.html:240",
+      "id": "wiring-1",
+      "reason": "the plan's own sequencing is the only route to an implementable section, so without a followup naming \u00a716 (or \u00a716 added to f-amfc-004's body) the section is orphaned and will not be dispatched; the author has acted on this same class of finding three times already for \u00a78/\u00a79/\u00a710/\u00a711.",
+      "text": "\u00a716 is added to plan-section-declarations as `implementable` (plan.html:24, `&quot;s16&quot;:&quot;implementable&quot;`), but the only open followup, f-amfc-004, recommends `/reckon-build an-mcp-failure-names-its-cause \u00a713` and neither its body nor its prompt names \u00a716, so no followup drives the new section and the plan's declared next invocation builds \u00a713 and stops",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-mcp-failure-names-its-cause/r-20261015T113550738249-plan-review-of-an-mcp-failure-names-its-cause/plan.html:206",
+      "id": "reasoning-1",
+      "reason": "the mechanism does not remove the double-write the section exists to prevent, because the field the caller reads for advice still instructs a retry; the author should extend the deliverable to the hint (or state that the message supersedes it), and the done-when should assert the hint as well.",
+      "text": "the section's Why states the harm is \"The result's hint says to retry once storage recovers, so a caller following it would have written each landing twice\", but the Deliverable changes only \"the message\"; `_STORAGE_SLOW_HINT` in `reckon/_mcp_tools.py:16` is unmodified and is still returned as `hint` for a write whose `cause` is `waiting`, so a write that now reports `landed: None` still carries the advice \"Retry once the storage recovers\"",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "34de6407bd73e6cc2f4f2036f636ef00693e67ba3d30dc9391d8a828a77a6b2f",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 93,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T113550738249-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "9b857bfecfa9761e0aca4d840d786daf24806003",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_landing_state`, `_landing_grace_seconds` and `_InflightBody` resolve in `reckon/mcp_deadlines.py`, `StorageSlowResult` resolves in `reckon/_mcp_tools.py`, and the two cited plan slugs (`a-seat-held-elsewhere-is-not-restarted`, `a-held-session-routes-to-a-serving-lane`) both exist under `docs/plans/`.",
+    "done_when": "pass \u2014 \u00a716's three-body done-when is measurable and names a real negative control (restoring today's \"False whenever the grace ends with the file unchanged\" reddens the in-flight body), with the control logged under the run directory.",
+    "evidence_paths": "pass \u2014 \u00a716 places its control log under the run directory, the plan's existing convention (\u00a713, \u00a715), not a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 \u00a716 names the mechanism (`test_a_write_in_flight_is_not_reported_unlanded.py`, `_landing_state`, `_InflightBody`); no plan labels, stage names, ticket numbers or changelog prose.",
+    "reasoning": "a finding \u2014 \u00a716's Why names the retry hint as how the double-write happens, but its Deliverable changes only the message, leaving that hint in place.",
+    "single_goal": "pass \u2014 \u00a716 carries one deliverable: a timed-out write whose body is still running reports `landed: None` rather than `False`.",
+    "wiring": "a finding \u2014 \u00a716 is declared `implementable` in plan-section-declarations, but the only open followup (f-amfc-004) recommends only \u00a713, so the plan's declared next invocation never reaches \u00a716."
+  },
+  "section_digests": {
+    "_document": "a3e83b99798a6e3122d2b2d1a16d8ac64ba717f9c8886967d0764440bedd83c0",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s10": "469866bcda74ceac15429518848b4083b1f85964c53820829d32e65df2661acc",
+    "s11": "ba5d0db257057d6dede25c9555898552abc78e291d39b953a7da192229ffbd2f",
+    "s12": "371c3889cd142db38637604c178d996b86294895ad0edc5534d1731f0271fefe",
+    "s13": "79a2b6dff46b0ddd765c409edeb1596fe9bbdf3e4c884875a0e137630010b0db",
+    "s14": "9c62796a08277a796de0c39af58a83a98ae5b16d930532f934636d24dad5d4c5",
+    "s15": "2cc785cc7428c93e41c236ddb2a247143254032421d61d555e7da335bcaf3734",
+    "s16": "8a29a4c7348df4859f6cd02325a8ce2a77a364f056ab7bd5415f0416d9136098",
+    "s2": "3a0632a9c77266389bb16c116a82d809d3c62b98f0ca44f8c9f8eb4ccde7a18e",
+    "s3": "05d43e5ed58103318c10e33d1dc6795cf27a2ab17593f4c172bb381d8c00fcde",
+    "s4": "fd5d8817baa9c4f4d8838eaad2fd20fb5a6088ac1c8dad8718a0fc1f7eeec45f",
+    "s5": "16d91b56539888d5683fc9808616b764742e6c7e93516541ff6dc793aec9fc84",
+    "s6": "38a3b13749c17899e607aeb6eb1c1324c5b7b7ecbe0f2027b43a50657e063c20",
+    "s7": "9a485205c44b324dcb24ad7acf24f7bfd53171fa8c18a03e9c9a2bdf3a458bed",
+    "s8": "019dc7e9b6ed8d4895820ecc99822eb6c6d34ba61c11a67986dd5d0154d5f3c1",
+    "s9": "633f50004da507a9f6881ceffc2c738ff841e6e61a27b5ff963f53749c491fcd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T11:49:45.423071+00:00"
+}
