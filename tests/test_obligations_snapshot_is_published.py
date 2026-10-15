@@ -18,6 +18,7 @@ import importlib
 import importlib.util
 import json
 import os
+import socket
 import subprocess
 import sys
 import threading
@@ -43,6 +44,7 @@ obligations_module = importlib.import_module("reckon.crew.obligations")
 
 PROJECT = "snapshot-fixture"
 SESSION = "coordinator-fixture"
+FOREIGN_SEAT_HOST = "snapshot-foreign-node.invalid"
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 SNAPSHOT_MODULE = REPOSITORY_ROOT / "reckon" / "crew" / "obligation_snapshot.py"
 DERIVATION_MODULES = ("reckon._plan_html", "reckon._backends", "reckon.ledger")
@@ -326,6 +328,40 @@ def test_each_freshness_outcome_is_returned_for_its_case() -> None:
     assert (
         obligation_snapshot.freshness(None, current_stamp="stamp-one") == "no-producer"
     )
+
+    # The fourth reason: no snapshot at all while the project's seat names a
+    # live producer on another host. That is the reading a session with no
+    # follower of its own earns, so it is distinct from no-producer. With no
+    # project named, or with the foreign seat's stream stalled, it stays
+    # no-producer -- the seat, not the absence of a snapshot, is what makes the
+    # difference.
+    foreign = "snapshot-foreign-fixture"
+    _plant_live_foreign_seat(foreign)
+    assert (
+        obligation_snapshot.freshness(None, project=foreign, current_stamp="stamp-one")
+        == "no-follower"
+    )
+    assert (
+        obligation_snapshot.freshness(None, current_stamp="stamp-one") == "no-producer"
+    )
+
+
+def _plant_live_foreign_seat(project: str) -> None:
+    """Record a seat on another host whose transition stream is fresh."""
+    assert socket.gethostname() != FOREIGN_SEAT_HOST
+    seat = runs.watch_lock_path(project)
+    seat.parent.mkdir(parents=True, exist_ok=True)
+    seat.write_text(
+        json.dumps(
+            {"project": project, "host": FOREIGN_SEAT_HOST, "pid": 1, "stall_window": "10m"}
+        ),
+        encoding="utf-8",
+    )
+    stream = runs.watch_stream_path(project)
+    stream.parent.mkdir(parents=True, exist_ok=True)
+    stream.write_text("", encoding="utf-8")
+    written = time.time()
+    os.utime(stream, (written, written))
 
 
 def _sweep_memory_row(module: Any, key: str) -> str:

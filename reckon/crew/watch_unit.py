@@ -140,8 +140,8 @@ def _stream_says_alive(record: Mapping[str, Any], project: str | None) -> bool:
     return bool(name) and _seat_stream_fresh(name, record)
 
 
-def seat_names_a_live_foreign_producer(project: str) -> bool:
-    """Report whether a project's seat names a foreign host still producing.
+def live_foreign_seat_host(project: str) -> str:
+    """The host a live foreign seat names, or an empty string when none.
 
     A reader on the seat's own host cannot read a foreign producer's process
     table, so the two facts the shared home carries are the ones it has: the
@@ -149,13 +149,31 @@ def seat_names_a_live_foreign_producer(project: str) -> bool:
     moved within its stall window. Both together are a producer still at work
     elsewhere; either alone is not, because a stale-or-absent stream marks a
     foreign producer no more alive than a local dead pid does.
+
+    The host is returned rather than a flag because a reader that has decided a
+    producer is live elsewhere still needs to say *where* -- the sentence a
+    coordinator reads names the node, and the seat is the only place that name
+    lives. A caller that needs only the yes/no wraps this result in
+    :func:`seat_names_a_live_foreign_producer`, so the two can never disagree
+    about which seat is live.
     """
     try:
         with watch_lock_path(project).open("rb") as handle:
             record = _read_watch_record(handle)
     except OSError:
-        return False
-    return _seat_names_a_foreign_host(record) and _seat_stream_fresh(project, record)
+        return ""
+    if not _seat_names_a_foreign_host(record):
+        return ""
+    return _seat_host(record) if _seat_stream_fresh(project, record) else ""
+
+
+def seat_names_a_live_foreign_producer(project: str) -> bool:
+    """Report whether a project's seat names a foreign host still producing.
+
+    A test on :func:`live_foreign_seat_host`'s result, so a caller that needs
+    only the yes/no and a caller that needs the host read one judgement.
+    """
+    return bool(live_foreign_seat_host(project))
 
 
 def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:

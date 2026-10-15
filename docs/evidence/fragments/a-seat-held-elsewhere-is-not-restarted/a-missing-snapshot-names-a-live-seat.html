@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-seat-held-elsewhere-is-not-restarted">
+  <meta name="plan-evidence-for" content="a-seat-held-elsewhere-is-not-restarted">
+  <title>A missing snapshot names a live seat elsewhere | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="a-missing-snapshot-names-a-live-seat-landing">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>A missing snapshot beside a live seat elsewhere says so</h2>
+      </header>
+      <p id="a-missing-snapshot-names-a-live-seat-landing-note">
+        <code>watch_unit.live_foreign_seat_host(project)</code> returns the host a
+        live foreign seat names, or an empty string, and
+        <code>seat_names_a_live_foreign_producer</code> is now the boolean test on
+        that result, so both readers share one judgement.
+        <code>freshness</code> gains a fourth fixed state, <code>no-follower</code>:
+        a session with no snapshot while the project's seat names a live producer on
+        another host reads <code>no-follower</code>; with no seat, or a stalled
+        stream, it still reads <code>no-producer</code>.
+        <code>not_fresh_line</code> takes the host from that same function and, for
+        <code>no-follower</code>, names the host and offers this session's follower
+        arming line instead of <code>watch --ensure</code>.
+        <code>tests/test_a_missing_snapshot_names_a_live_seat.py</code> passes 5
+        tests; the two-arm gate over the 31 importing test files passes 237 at head
+        against 232 at base with no head-only failure. Reverting
+        <code>freshness</code> to return <code>no-producer</code> for a missing
+        snapshot fails 2 of them.
+      </p>
+    </section>
+  </main>
+</body>
+</html>

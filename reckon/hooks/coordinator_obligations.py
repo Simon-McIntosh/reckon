@@ -731,14 +731,17 @@ def not_fresh_line(
 ) -> str:
     """One line naming why the session's snapshot is not fresh, and the remedy.
 
-    Each of the three not-fresh states is said in its own words a coordinator
-    reads at the open of a turn: no producer, a producer running older code
-    than the checkout, or the age of a snapshot. A stale snapshot beside a live
-    producer lease -- the seat is healthy and only this session's list is old,
-    because a session's snapshot is refreshed only while that session has a
-    live follower -- is answered with the follower arming, which is the command
-    that can actually refresh it; the seat command only reports that the seat
-    is held. Every other reading, including a stale snapshot whose lease has
+    Each of the four not-fresh states is said in its own words a coordinator
+    reads at the open of a turn: no producer, no follower for a session beside a
+    producer seated on another host, a producer running older code than the
+    checkout, or the age of a snapshot. A no-follower reading -- this session has
+    no snapshot at all while the project's seat names a live producer elsewhere,
+    because a session's snapshot is refreshed only while that session has a live
+    follower -- names the host the seat is on and is answered with the follower
+    arming, which is the command that can register this session and start its
+    lease; the seat command would change nothing on this host. A stale snapshot
+    beside a live producer lease earns the same follower arming, for the same
+    reason. Every other reading, including a stale snapshot whose lease has
     lapsed, keeps the command that publishes a snapshot again. A caller that
     routes a live stale producer through the reload reading never reaches this
     line for it, and a direct caller gets the state it asked about rather than
@@ -754,6 +757,12 @@ def not_fresh_line(
             if age is None
             else f"the snapshot is {age}s old"
         )
+    elif state == module.NO_FOLLOWER:
+        host = module.live_foreign_seat_host(project)
+        reason = (
+            f"the seat is held on {host}, whose producer has published no "
+            "snapshot for this session"
+        )
     else:
         reason = "no producer"
     if state == module.STALE_SNAPSHOT and producer_lease_is_live(project):
@@ -761,6 +770,12 @@ def not_fresh_line(
             "the producer is live, so run "
             f"`reckon crew follow --project {project} --session {session}` "
             "to arm this session's follower"
+        )
+    elif state == module.NO_FOLLOWER:
+        remedy = (
+            "run "
+            f"`reckon crew follow --project {project} --session {session}` "
+            f"to arm this session's follower"
         )
     else:
         remedy = f"run `reckon crew watch --ensure --project {project}`"
