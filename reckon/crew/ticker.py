@@ -1056,10 +1056,13 @@ START_KINDS: frozenset[tuple[Any, Any]] = frozenset(
 SETTLE_WINDOW = 20.0
 SETTLE_CAP = 120.0
 
-# The pane words of a run that is still being worked on. A held settle row says
-# the run has stopped; once a later row shows the run in one of these words, the
-# held row is stale and is never released. A settled destination, such as the
-# terminal echo ``complete -> recorded``, is not one of them.
+# The pane words of a run that is still being worked on. A later row that moves
+# a run into one of these words resolves the run's held settle row on that row
+# instead of leaving it to its window: a return to the word the pane shows drops
+# the held row with the return, and a move to another live word prints the held
+# row at once, ahead of the move. A held row is never released stale after the
+# run has moved on. A settled destination, such as the terminal echo
+# ``complete -> recorded``, is not one of these words.
 LIVE_PANE_WORDS = frozenset({"working", "waiting", "queued"})
 
 
@@ -1115,6 +1118,23 @@ class _Departure(NamedTuple):
     deadline: float
     event: Mapping[str, Any]
     word: str
+
+
+def _pane_word(event: Mapping[str, Any]) -> str:
+    """The pane word a row's destination draws, as the renderer reads it.
+
+    A cause-specific recovery word the producer supplied for a stop or an
+    unproducible wait stands in for the raw destination exactly as the renderer
+    substitutes it, so a caller judges a row by the word the pane would show
+    rather than by the event's own field.
+    """
+    typed = str(event.get("recovery_classification") or "")
+    entry = (
+        typed
+        if typed in {"held", "needs-help", "unwritten"}
+        else str(event.get("to_state") or "")
+    )
+    return _display_state(entry)
 
 
 class RowPolicy:
@@ -1223,23 +1243,6 @@ class RowPolicy:
             if self._lands_in_an_action_state({"to_state": str(state)}):
                 self._told[str(run_id)] = True
 
-    @staticmethod
-    def _pane_word(event: Mapping[str, Any]) -> str:
-        """The pane word a row's destination draws, as the renderer reads it.
-
-        A cause-specific recovery word the producer supplied for a stop or an
-        unproducible wait stands in for the raw destination exactly as the
-        renderer substitutes it, so the policy judges a departure by the word
-        the pane would show rather than by the event's own field.
-        """
-        typed = str(event.get("recovery_classification") or "")
-        entry = (
-            typed
-            if typed in {"held", "needs-help", "unwritten"}
-            else str(event.get("to_state") or "")
-        )
-        return _display_state(entry)
-
     def _note_shown(self, rows: Iterable[Mapping[str, Any]]) -> None:
         """Record the word the pane showed for each run a printed row names.
 
@@ -1251,7 +1254,7 @@ class RowPolicy:
         for event in rows:
             run_id = str(event.get("run_id") or "")
             if run_id:
-                self._shown[run_id] = self._pane_word(event)
+                self._shown[run_id] = _pane_word(event)
 
     def _row_class(self, event: Mapping[str, Any], kind: tuple[Any, Any]) -> str:
         """The class of a row: coordinator, observer or counter.
@@ -1318,12 +1321,7 @@ class RowPolicy:
     @staticmethod
     def _actionable(event: Mapping[str, Any]) -> bool:
         """Whether the row's own classification names a coordinator duty."""
-        from reckon.crew.recovery import ACTIONABLE_RECOVERY_CLASSIFICATIONS
-
-        return (
-            str(event.get("recovery_classification") or "")
-            in ACTIONABLE_RECOVERY_CLASSIFICATIONS
-        )
+        return _actionable_recovery(event)
 
     def _asks_for_coordinator(
         self, event: Mapping[str, Any], kind: tuple[Any, Any]
@@ -1353,7 +1351,7 @@ class RowPolicy:
         own, whatever word the run left.
         """
         shown = self._shown.get(run_id) if run_id else None
-        word = self._pane_word(event)
+        word = _pane_word(event)
         if not run_id or shown in (None, word) or self._actionable(event):
             return False
         if str(event.get("to_state") or "") not in SETTLED_STATES and word != "dropped":
@@ -1501,7 +1499,7 @@ class RowPolicy:
         # trip's middle, which the pane is not shown.
         departure = self._departures.pop(run_id, None) if run_id else None
         if departure is not None:
-            if self._pane_word(event) == departure.word:
+            if _pane_word(event) == departure.word:
                 return out
             if self._row_class(event, kind) != ROW_COORDINATOR and not self._actionable(
                 event
@@ -1521,7 +1519,7 @@ class RowPolicy:
                 chain_start = held.first_held
                 self._held.pop(run_id, None)
                 held = None
-            elif self._pane_word(event) in LIVE_PANE_WORDS:
+            elif _pane_word(event) in LIVE_PANE_WORDS:
                 # The run has moved on to a live pane word, so the held settle
                 # row is stale: releasing it when its window closed would draw
                 # the pane a halt for a run a later row has already shown
@@ -1530,7 +1528,7 @@ class RowPolicy:
                 self._held.pop(run_id, None)
                 opener = held.opener
                 held = None
-                if self._pane_word(event) == self._shown.get(run_id):
+                if _pane_word(event) == self._shown.get(run_id):
                     # The run came back to the word the pane last showed for it,
                     # so the held row and this return are one round trip and
                     # neither is drawn — exactly as the departure rule drops a
@@ -1602,17 +1600,23 @@ class RowPolicy:
                 self._reported[run_id] = to_state
             return out
 
-        # A row restating the state the pane already shows is a
-        # re-derivation rather than news, so it is silent — unless it declares
-        # an external wait, whose condition the coordinator must be able to
-        # read even when its state word repeats. A suppressed duty is the
-        # failure this policy exists to prevent, so the exemption is on the
-        # duty's own evidence rather than on the kind alone.
+        # A row whose destination draws the word the pane already shows for its
+        # run is a re-derivation rather than news, so it is withheld — unless
+        # :func:`same_word_row_is_news` names it news, because it carries a duty
+        # whose condition the coordinator must be able to read even when its
+        # state word repeats. The policy and the renderer read one predicate for
+        # this, so a row the policy releases is never drawn as the blank line
+        # the reader never saw. A suppressed duty is the failure this policy
+        # exists to prevent, so the exemption is on the duty's own evidence
+        # rather than on the kind alone.
+        word = _pane_word(event)
         if (
             run_id
-            and self._reported.get(run_id) == to_state
-            and not declares_a_wait(event)
+            and word
+            and word == _remembered_word(self._reported.get(run_id))
+            and not same_word_row_is_news(event)
         ):
+            self._reported[run_id] = to_state
             return out
 
         if self._is_own_start(event, kind):
@@ -1990,6 +1994,40 @@ def unprobed_wait(event: Mapping[str, Any]) -> bool:
     return declares_a_wait(event) and event.get("wait_condition_state") is None
 
 
+def _actionable_recovery(event: Mapping[str, Any]) -> bool:
+    """Whether the row's own classification names a coordinator duty.
+
+    The classifier owns "needs the coordinator", so its actionable verdict is
+    read from the vocabulary rather than restated as a list of kinds here.
+    """
+    from reckon.crew.recovery import ACTIONABLE_RECOVERY_CLASSIFICATIONS
+
+    return (
+        str(event.get("recovery_classification") or "")
+        in ACTIONABLE_RECOVERY_CLASSIFICATIONS
+    )
+
+
+def same_word_row_is_news(event: Mapping[str, Any]) -> bool:
+    """Whether a row repeating the pane's word for its run is still news.
+
+    The pane draws a transition only where its two halves differ, so a row
+    whose destination word equals the word the pane already shows for the run
+    would draw an empty line — and a released row that draws nothing is a duty
+    the reader never saw. Two such rows are news all the same, because each
+    carries something a repeated word would hide: a recovery classification the
+    fleet calls actionable, or a declared external wait whose condition the
+    coordinator must be able to read.
+
+    ``RowPolicy`` and ``Ticker.render`` read this one predicate. The policy
+    withholds every other same-word row, so a row it releases is never drawn
+    blank, and the renderer draws the ones this names news rather than dropping
+    them as the empty line the pane never put up. A row whose two halves name
+    different words is judged by them and is news wherever they differ.
+    """
+    return _actionable_recovery(event) or declares_a_wait(event)
+
+
 def _agent_label(agent: Any) -> str:
     """The agent column label: alias plus the full effort word, or the record as it stands.
 
@@ -2252,7 +2290,17 @@ class Ticker:
                 else _display_state(event.get("from_state"))
             )
         if from_state == to_state:
-            return ""
+            # The row's destination repeats the word the pane already shows for
+            # the run. That draws no transition — unless the row carries a duty
+            # (:func:`same_word_row_is_news`), which the pane owes the reader
+            # even when the word repeats. Such a row prints the destination word
+            # twice, or its own left word where the row names a different one,
+            # so a block or an unreadable the pane already shows is never
+            # released as an empty line the reader never saw.
+            if not same_word_row_is_news(event):
+                return ""
+            own_left = _display_state(event.get("from_state"))
+            from_state = own_left if own_left and own_left != to_state else to_state
         if stream_event:
             self._reported[run_id] = to_state
 
