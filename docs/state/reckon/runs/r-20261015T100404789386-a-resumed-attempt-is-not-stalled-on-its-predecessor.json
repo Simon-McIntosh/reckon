@@ -1,0 +1,474 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "bdcad93fc0020faafebd637df71de1491e590cf9",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 2245852,
+      "input_tokens_cumulative": 2245852,
+      "output_tokens": 6239,
+      "output_tokens_cumulative": 6239,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 4,
+    "files": 1,
+    "removed": 5
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 27,
+        "name": "classify_pointer",
+        "path": "reckon/crew/recovery_classification.py"
+      },
+      "run_function": {
+        "line": 905,
+        "name": "external_wait",
+        "path": "reckon/crew/recovery_liveness.py"
+      },
+      "window_line": 923
+    },
+    {
+      "existing_function": {
+        "line": 249,
+        "name": "test_an_attempt_only_start_reads_fresh_and_is_not_stalled",
+        "path": "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py"
+      },
+      "run_function": {
+        "line": 108,
+        "name": "_stub_resumed_run",
+        "path": "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py"
+      },
+      "window_line": 129
+    },
+    {
+      "existing_function": {
+        "line": 231,
+        "name": "test_a_pointer_only_start_is_measured_from_that_one",
+        "path": "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py"
+      },
+      "run_function": {
+        "line": 214,
+        "name": "test_a_run_with_no_attempt_record_stalls_as_today",
+        "path": "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py"
+      },
+      "window_line": 216
+    },
+    {
+      "existing_function": {
+        "line": 214,
+        "name": "test_a_run_with_no_attempt_record_stalls_as_today",
+        "path": "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py"
+      },
+      "run_function": {
+        "line": 231,
+        "name": "test_a_pointer_only_start_is_measured_from_that_one",
+        "path": "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py"
+      },
+      "window_line": 233
+    },
+    {
+      "existing_function": {
+        "line": 108,
+        "name": "_stub_resumed_run",
+        "path": "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py"
+      },
+      "run_function": {
+        "line": 249,
+        "name": "test_an_attempt_only_start_reads_fresh_and_is_not_stalled",
+        "path": "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py"
+      },
+      "window_line": 259
+    }
+  ],
+  "commit_list_shortfall": {
+    "declared": 2,
+    "kind": "presented_commits_subset_of_manifest",
+    "message": "run 'r-20261015T100404789386-a-resumed-attempt-is-not-stalled-on-its-predecessor' has a passing gate presenting 1 commit(s) of the 2 its manifest declares; missing: 988f0811bbd419e0ce3104d0f7ccec5725f1c768. The out-of-scope boundary check runs against the presented commits, so an incomplete presentation narrows it. This is a report, not a refusal — present the full list, or the boundary check may not cover the node's work",
+    "missing": [
+      "988f0811bbd419e0ce3104d0f7ccec5725f1c768"
+    ],
+    "presented": 1
+  },
+  "commit_resolution": null,
+  "commits": [
+    "609fff327eaa08e17ff5dae87fe9101bd0c43bbd"
+  ],
+  "completed_at": "2026-10-15T10:27:43.551Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-15T10:05:59Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "runs the test",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_live_run_never_reads_dead.py tests/test_a_pointer_names_its_launching_host.py tests/test_a_resume_is_not_halted_on_its_last_attempt.py tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py tests/test_a_wait_probe_that_can_never_match_is_caught.py tests/test_a_worker_never_outlives_its_supervisor.py tests/test_an_overrun_names_its_cause.py tests/test_crew_live_honours_fields.py tests/test_crew_record_liveness.py tests/test_crew_surface_parity.py tests/test_every_signal_caller_names_its_run_directory.py tests/test_liveness_is_read_when_it_is_used.py tests/test_mcp_crew_obligations.py tests/test_obligations_snapshot_is_published.py tests/test_producer_shares_the_classifier_verdict.py tests/test_recovery_state_typing.py tests/test_recovery_timestamps_reuse_the_parser.py tests/test_server_serves_one_code_version.py tests/test_stall_clock_starts_at_the_attempt.py tests/test_worker_wait_contract.py",
+    "exit_status": 1,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T100404789386-a-resumed-attempt-is-not-stalled-on-its-predecessor/gate-head.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.7672413793103449,
+    "plan": "the-monitor-shows-the-work-it-watches",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane": "clive",
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-15T11:04:08.650788+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-15T10:04:08Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 25,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 3,
+    "headroom": 9,
+    "mean_context": 120000,
+    "observed_at": "2026-10-15T10:04:17Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 25,
+      "aggregate_tokens_per_second": 281.296,
+      "detail": "",
+      "mean_tokens_per_second": 66.975,
+      "observed_at": "2026-10-15T10:04:17Z",
+      "runs": 4.2,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-15T10:27:43.551Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T100404789386-a-resumed-attempt-is-not-stalled-on-its-predecessor/manifest.md",
+  "member": "disposable-r-20261015T100404789386-a-resumed-attempt-is-not-stalled-on-its-predecessor",
+  "model_key": "flash",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py::test_a_resumed_attempt_is_not_stalled_on_its_predecessors_clock",
+      "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py::test_an_attempt_only_start_reads_fresh_and_is_not_stalled",
+      "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py::test_attempt_start_is_the_later_of_the_two_recorded_starts"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_recovery_state_typing.py::test_causes_with_opposite_recoveries_have_distinct_types"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py::test_a_resumed_attempt_is_not_stalled_on_its_predecessors_clock",
+      "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py::test_an_attempt_only_start_reads_fresh_and_is_not_stalled",
+      "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py::test_attempt_start_is_the_later_of_the_two_recorded_starts"
+    ],
+    "declaration": "with the pointer-first read of attempt_started_at restored, the first case must read stalled",
+    "head_failure_ids": [
+      "tests/test_recovery_state_typing.py::test_causes_with_opposite_recoveries_have_distinct_types"
+    ],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T100404789386-a-resumed-attempt-is-not-stalled-on-its-predecessor/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T100404789386-a-resumed-attempt-is-not-stalled-on-its-predecessor/negative-control.log",
+    "test_paths": [
+      "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "a-resumed-attempt-is-not-stalled-on-its-predecessor",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1513,
+          "cached_input_tokens": 827151,
+          "input_tokens": 828666,
+          "output_tokens": 1635,
+          "reasoning_output_tokens": 49,
+          "total_tokens": 830301,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "f653840f-3ca8-4792-819c-9ee9708bdbac",
+      "session_id": "f653840f-3ca8-4792-819c-9ee9708bdbac"
+    },
+    "done_when": "new tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py, with the crew home pointed at a temporary directory, builds a run whose pointer liveness reads unknown, whose pointer still carries the previous attempt's attempt_started_at from 17 minutes ago, whose newest stream was last written 17 minutes ago and whose attempt.json names an attempt started a second ago, and finds it not stalled; with both starts longer ago than the stall window and the stream quiet it reads stalled as today; a run carrying only one of the two starts is measured from that one as today; _attempt_started_seconds returns the later parseable start; its gate runs the test files that import its write paths at base and at head with /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest, each to a log under its run directory ending in EXIT=, and shows no failure at head that is absent at base; ruff check and ruff format --check add no findings on the changed Python files against base",
+    "estimated_hours": 0.75,
+    "goal": "Read a run's attempt start as the later of the pointer's and the attempt record's",
+    "id": "a-resumed-attempt-is-not-stalled-on-its-predecessor",
+    "images": [],
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-15T10:04:08Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 25,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 3,
+      "headroom": 9,
+      "mean_context": 120000,
+      "observed_at": "2026-10-15T10:04:17Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 25,
+        "aggregate_tokens_per_second": 281.296,
+        "detail": "",
+        "mean_tokens_per_second": 66.975,
+        "observed_at": "2026-10-15T10:04:17Z",
+        "runs": 4.2,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T100404789386-a-resumed-attempt-is-not-stalled-on-its-predecessor/manifest.md",
+    "negative_control": "with the pointer-first read of attempt_started_at restored, the first case must read stalled",
+    "plan": "the-monitor-shows-the-work-it-watches",
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§28",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/recovery_liveness.py",
+      "tests/test_a_resumed_attempt_is_not_stalled_on_its_predecessor.py",
+      "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-resumed-attempt-is-not-stalled-on-its-predecessor.html",
+      "docs/figures/the-monitor-shows-the-work-it-watches/a-resumed-attempt-is-not-stalled-on-its-predecessor"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 1806234.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "lift_id": null,
+    "member": null,
+    "node": "a-resumed-attempt-is-not-stalled-on-its-predecessor",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-15T10:05:11.436504+00:00",
+    "score": 0.6625,
+    "session": null,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "s28 was reviewed at plan version 122 and both findings answered; the only changes since locate the stale start in _attempt_started_seconds and give the first case the pointer's stale start, exactly as those findings asked",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout in pick:capability",
+    "family": null,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 5001.96,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {
+      "budget-snapshot": 569.71,
+      "context-estimate": 12.005,
+      "records": 887.002,
+      "verdict-inputs": 795.189
+    }
+  },
+  "plan": "the-monitor-shows-the-work-it-watches",
+  "plan_impl_at_dispatch": 0.7672413793103449,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "609fff327eaa08e17ff5dae87fe9101bd0c43bbd",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "bdcad93fc0020faafebd637df71de1491e590cf9",
+    "reviewed_head_sha": "609fff327eaa08e17ff5dae87fe9101bd0c43bbd",
+    "scores": {
+      "durability": 16,
+      "evidence": 17,
+      "fit": 18,
+      "goal_fidelity": 20,
+      "reuse": 15,
+      "scope_discipline": 18
+    },
+    "status": "parsed",
+    "total": 104
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "shadow",
+  "run_id": "r-20261015T100404789386-a-resumed-attempt-is-not-stalled-on-its-predecessor",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§28",
+  "session": "f653840f-3ca8-4792-819c-9ee9708bdbac",
+  "session_harness": "claude",
+  "session_id": "15d2ee97-4870-4d3d-a090-10002cc82fb8",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 6,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 9761480,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 169.971,
+    "generated_tokens": 40493,
+    "generation_seconds": 126.04,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 67.7,
+    "machine_seconds": 43.931,
+    "peak_input_tokens": 155825,
+    "tokens_per_second": 321.27,
+    "wall_tokens_per_second": 238.23
+  },
+  "time_budget": "60m",
+  "tool_steps": 75.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 1304,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-10-15T10:27:46Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-15T10:24:48Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261015T100404789386-a-resumed-attempt-is-not-stalled-on-its-predecessor",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 5156,
+    "worker_pid": 381516
+  },
+  "worker_seconds": 1271,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}

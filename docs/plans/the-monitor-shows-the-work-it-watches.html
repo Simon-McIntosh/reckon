@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="126">
+<meta name="plan-version" content="127">
 <meta name="plan-modified" content="2026-10-15">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -686,6 +686,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s28" data-id="c-close-s28" data-who="reckon-build" data-when="2026-10-15T11:20:00Z">
     <div class="r-comment-body"><p>§28 landed. A resumed attempt's start is read as the later of the pointer's and the attempt record's, so a cross-host run is no longer drawn stalled on the quiet its predecessor left. Merged as <code>124ae0b31</code>; gate 189 passed with one failure that also fails at base. Review: 104/120. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s28">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s28" data-id="c-run-r-20261015T100404789386-a-resumed-attempt-is-not-stalled-on-its-predecessor" data-who="reckon-build" data-when="2026-10-15T10:27:43.551Z">
+    <div class="r-comment-body"><p>§28 landed — _attempt_started_seconds now reads both the pointer&#x27;s attempt_started_at and attempt.json&#x27;s and returns the later parseable one, so a just-resumed cross-host run is not stalled on its predecessor&#x27;s quiet; new test 6/6 pass, head arm 189 passed / 1 pre-existing failure against base 183 passed / 1, 0 added; the negative control restores the pointer-first read and the first case then reads stalled.</p></div>
 </div>
 </section>
 </main>
