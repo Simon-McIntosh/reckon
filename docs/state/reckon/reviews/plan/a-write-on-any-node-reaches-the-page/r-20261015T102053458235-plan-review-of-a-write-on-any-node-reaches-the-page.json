@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T10:34:52.328Z",
+  "dispatched_at": "2026-10-15T10:21:31Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-write-on-any-node-reaches-the-page.html:47",
+      "id": "reasoning-1",
+      "reason": "the plan's chosen discriminator and its stated cost justification both change, to reading `_load_dir_stamps` alone or holding the baseline in memory, with `None` separated from \"no persisted index\" so the fast pass reads `None` as no-change when there is nothing to compare.",
+      "text": "\"The detector costs stat calls only\" is not what the cited owner does: `metadata_index._reuse_covered` calls `_load_dir_stamps` and `_load_persisted` (metadata_index.py:229-230), which read and JSON-parse the same `_index_path` file twice, once per mounted tree per fast pass (18 mounts in mounts.json), so a 10 s pass is 36 shared-home index reads and parses, not stat calls; and its `None` return means a stored shape that no longer matches OR no persisted index at all (metadata_index.py:231-232 \"any difference (or an absent index) returns None\"), so a detector that reads `None` as \"changed\" fires `_invalidate_tree_views` on every pass for any mounted tree whose index is not persisted \u2014 and `_invalidate_tree_views` also drops that tree's cached discoveries (serve.py:1784), the recomputation the reuse window exists to avoid",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-write-on-any-node-reaches-the-page.html:57",
+      "id": "done_when-1",
+      "reason": "the plan gains a third configurable (the read-recency window) or states how read-recency is tracked and falsified without wall-clock waiting, which also contradicts the \"two environment variables\" sentence, and the node is told the gate's real floor.",
+      "text": "the negative half \"is not detected when no change stream is open and the tree has not been read for ten minutes, the slow signal's own activation rule\" cannot be driven by the one knob the section declares: \u00a72 makes the two *intervals* environment-configurable (line 46, \"Both intervals are environment-configurable beside `RECKON_DISCOVERY_REUSE_S`\") and \u00a72's \"What is not changed\" fixes the public surface at exactly two new names (line 48), so the ten-minute read-recency window is fixed and the only way to establish the antecedent is to wait ten real minutes with no reader, which also means the observation path itself counts as a read \u2014 a `/_index` request to check for absence is a read that re-activates the slow signal the assertion needs switched off",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3a6fc1ef7423aa5d0f76b8b803fc54376f6cc3254ef5141c1e9a89f34c0d3fc8",
+  "plan_slug": "a-write-on-any-node-reaches-the-page",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T102053458235-plan-review-of-a-write-on-any-node-reaches-the-page",
+  "reviewed_blob_sha": "8a0ad3551ef5bf7c8791b4cc46607856e045c119",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: `_FleetChangeWatch(mounts.values())` serve.py:4017, `_ProjectChangeWatch(docs_dir)` serve.py:2782, `_head_identity` serve.py:1291, `_file_identity` serve.py:1262, `_walk_discovery_signature` serve.py:1659, the fleet-index read at serve.py:844, `_SERVED_SIGNATURE_TTL_S` = 60.0 at serve.py:1005, `RECKON_DISCOVERY_REUSE_S` at serve.py:4003, `metadata_index._reuse_covered/_load_dir_stamps/_dir_identity/_covered_files`, `reckon/fleet_index.py`, and the two existing test files.",
+    "done_when": "a finding \u2014 \u00a72's done-when requires the negative half \"not detected when no change stream is open and the tree has not been read for ten minutes\", whose antecedent can only be established by a silent ten-minute wait that the section declares no knob for.",
+    "evidence_paths": "pass \u2014 the done-when's measurements (stat count, wall time, the fleet-index request and rows) land in the manifest, and the coordinator's live measure names the served index on the login node; no gate log or artifact is directed at a session scratchpad or /tmp.",
+    "naming": "pass \u2014 the node and its test file are named by mechanism (`cross-node-writes-refresh-the-index`, `tests/test_cross_node_writes_refresh_the_index.py`), and a grep of \u00a72's new text finds no plan label, stage name, ticket number or changelog prose.",
+    "reasoning": "a finding \u2014 \u00a72 chooses `metadata_index._reuse_covered` as the fast signal's discriminator and justifies it as stat-only, but that owner reads and parses the persisted index JSON twice per call and its `None` return conflates two different states.",
+    "single_goal": "pass \u2014 the node `cross-node-writes-refresh-the-index` names one deliverable (a cross-node change reaches the served index and the open streams), with the fleet-index question carried as a manifest report rather than a second change.",
+    "wiring": "pass \u2014 \u00a72's section element carries no depends-on/informs/gates and the plan declares `plan-standalone`; no other plan in docs/plans names this slug, so there is no relationship to be wrong."
+  },
+  "section_digests": {
+    "_document": "375c8a0250252dfd8391140955e2378dc5d099cc39e269da05940553993894d2",
+    "s1": "58a6ee92b653b4651357b52cc08c1e80b329e4482143b6bc8ae18570764bcd52",
+    "s2": "d57e0032e3fab6eb5b290f15293cbb7b1b30cf350dcb533a900a90dbfe0be7d6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T11:07:37.300139+00:00"
+}
