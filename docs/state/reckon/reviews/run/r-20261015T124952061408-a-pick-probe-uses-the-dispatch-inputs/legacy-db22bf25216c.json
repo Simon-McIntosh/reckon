@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own two gate arms: gate-head.log at 37437c85d reads 780 passed, 1 skipped, 2 failed and gate-base-congested.log at base 15adacba8 reads the same two failures, test_congested_local_lane_still_reaches_the_picker.py::test_congested_local_lane_routing[alpha] and [explicit], so the head set minus the base set is zero added failing tests. The reviewed manifest names no baseline_suite/after_suite keys (the reviewed run is not armed), so the count was taken from the two gate logs its run directory carries rather than from those manifest fields.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:218",
+    "reckon/crew_dispatch_commands.py:822"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-15T12:50:59Z",
+  "findings": [
+    {
+      "file": "tests/test_a_pick_probe_uses_the_dispatch_inputs.py",
+      "line": 230,
+      "severity": "follow-on",
+      "text": "the equality assertion compares prompts.build_state's node block, which renders write_path_count, negative_control_declared and estimated_hours but not section, so dropping section=section from crew_dispatch_commands.py:807 leaves all six tests green and the node's section wiring is untested."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T124952061408-a-pick-probe-uses-the-dispatch-inputs/gate-base-congested.log",
+      "line": 1,
+      "severity": "follow-on",
+      "text": "the base arm reran only test_congested_local_lane_still_reaches_the_picker.py at base, not the full 61-file importing set the done_when names; it is enough to attribute the two head failures, but it does not reproduce the head set at base."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 15adacba8; 37437c85d adds _PROBE_INPUT_FIELDS, _omitted_probe_inputs, four pick options and the TaskNode wiring plus a 280-line test, and 790bb5fac adds a 23-line evidence fragment; nothing else moves.",
+    "done_when": "the done_when asks a pick and a dry-run dispatch over the same fields to render equal node state, a pick naming the fields it omitted, and pick options that mirror dispatch and retire none; tests/test_a_pick_probe_uses_the_dispatch_inputs.py:226 asserts the two states equal, :250 asserts omitted_inputs names the four, and :280 asserts the mirror, recorded 6 passed EXIT=0 in head-probe.log.",
+    "goal": "the node goal is that crew pick accepts the node fields a dispatch hands the picker so the probe renders the state a dispatch would; reckon/crew_dispatch_commands.py:800 builds the probed TaskNode with section, write_paths, negative_control and estimated_hours, which is the goal.",
+    "manifest": "read; it records status complete, commits 37437c85d and 790bb5fac, the head-probe gate 6 passed EXIT=0, the 61-file importer gate 780 passed/1 skipped/2 failed, and a negative_control_log whose log reddens two tests under the declared mutation.",
+    "write_paths": "the manifest declares five fenced paths; git show --name-only over 15adacba8..790bb5fac lists reckon/crew_dispatch_commands.py, tests/test_a_pick_probe_uses_the_dispatch_inputs.py and docs/evidence/fragments/a-held-session-routes-to-a-serving-lane/a-pick-probe-uses-the-dispatch-inputs.html, all inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_pick_probe_uses_the_dispatch_inputs.py:230 compares two independently CLI-built node states and reddens under the declared mutation, but its state block never renders node.section, so the new --section wiring is unguarded.",
+    "evidence": "head-probe.log records 6 passed EXIT=0 for tests/test_a_pick_probe_uses_the_dispatch_inputs.py and gate-head.log records 780 passed/1 skipped/2 failed, but gate-base-congested.log reran only the one failing file at base rather than the 61-file importing set the done_when names.",
+    "fit": "the four options and the _omitted_probe_inputs helper at reckon/crew_dispatch_671-673 follow the file's own Click idiom and naming, carry no plan or ticket identifier, and both commits carry a conventional subject with a body.",
+    "goal_fidelity": "reckon/crew_dispatch_807-810 now threads section, negative_control, write_paths and estimated_hours from crew pick into the probed TaskNode, which is exactly the goal.",
+    "reuse": "no owner builds a TaskNode from command options, so _omitted_probe_inputs at reckon/crew_dispatch_commands.py:671 is the first mechanism of its kind and command duplication of the field list is inherent.",
+    "scope_discipline": "git show --name-only 15adacba8..790bb5fac lists only the source module, the new test and the evidence fragment, all inside the manifest's declared write paths and carrying nothing the goal does not imply."
+  },
+  "node": "review-of-a-pick-probe-uses-the-dispatch-inputs-790bb5facd6f",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that crew pick accepts the node fields a dispatch hands the picker so the probe renders the state a dispatch would; reckon/crew_dispatch_commands.py:800 builds the probed TaskNode with section, write_paths, negative_control and estimated_hours, which is the goal.\nVERDICT done_when: the done_when asks a pick and a dry-run dispatch over the same fields to render equal node state, a pick naming the fields it omitted, and pick options that mirror dispatch and retire none; tests/test_a_pick_probe_uses_the_dispatch_inputs.py:226 asserts the two states equal, :250 asserts omitted_inputs names the four, and :280 asserts the mirror, recorded 6 passed EXIT=0 in head-probe.log.\nVERDICT write_paths: the manifest declares five fenced paths; git show --name-only over 15adacba8..790bb5fac lists reckon/crew_dispatch_commands.py, tests/test_a_pick_probe_uses_the_dispatch_inputs.py and docs/evidence/fragments/a-held-session-routes-to-a-serving-lane/a-pick-probe-uses-the-dispatch-inputs.html, all inside that scope.\nVERDICT manifest: read; it records status complete, commits 37437c85d and 790bb5fac, the head-probe gate 6 passed EXIT=0, the 61-file importer gate 780 passed/1 skipped/2 failed, and a negative_control_log whose log reddens two tests under the declared mutation.\nVERDICT diff: read commit by commit against base 15adacba8; 37437c85d adds _PROBE_INPUT_FIELDS, _omitted_probe_inputs, four pick options and the TaskNode wiring plus a 280-line test, and 790bb5fac adds a 23-line evidence fragment; nothing else moves.\nCALL_SITES: reckon/cli.py:218, reckon/crew_dispatch_commands.py:822\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_dispatch_commands.py:807 now threads section, negative_control, write_paths and estimated_hours from crew pick into the probed TaskNode, which is exactly the goal.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-probe.log records 6 passed EXIT=0 for tests/test_a_pick_probe_uses_the_dispatch_inputs.py and gate-head.log records 780 passed/1 skipped/2 failed, but gate-base-congested.log reran only the one failing file at base rather than the 61-file importing set the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --name-only 15adacba8..790bb5fac lists only the source module, the new test and the evidence fragment, all inside the manifest's declared write paths and carrying nothing the goal does not imply.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_pick_probe_uses_the_dispatch_inputs.py:230 compares two independently CLI-built node states and reddens under the declared mutation, but its state block never renders node.section, so the new --section wiring is unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: the four options and the _omitted_probe_inputs helper at reckon/crew_dispatch_commands.py:671-673 follow the file's own Click idiom and naming, carry no plan or ticket identifier, and both commits carry a conventional subject with a body.\nSCORE reuse: 19\nJUSTIFICATION reuse: no owner builds a TaskNode from command options, so _omitted_probe_inputs at reckon/crew_dispatch_commands.py:671 is the first mechanism of its kind and command duplication of the field list is inherent.\nFINDING tests/test_a_pick_probe_uses_the_dispatch_inputs.py:230 follow-on: the equality assertion compares prompts.build_state's node block, which renders write_path_count, negative_control_declared and estimated_hours but not section, so dropping section=section from crew_dispatch_commands.py:807 leaves all six tests green and the node's section wiring is untested.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T124952061408-a-pick-probe-uses-the-dispatch-inputs/gate-base-congested.log:1 follow-on: the base arm reran only test_congested_local_lane_still_reaches_the_picker.py at base, not the full 61-file importing set the done_when names; it is enough to attribute the two head failures, but it does not reproduce the head set at base.",
+  "review_run_id": "legacy-db22bf25216c",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "15adacba85355fba461917bf2733ca462e046709",
+  "reviewed_head_sha": "790bb5facd6f81d45606b50b4197e305e773d8dc",
+  "reviewed_run_id": "r-20261015T124952061408-a-pick-probe-uses-the-dispatch-inputs",
+  "reviewer_run_id": "r-20261015T133743553833-review-of-a-pick-probe-uses-the-dispatch-inputs-790bb5facd6f",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T13:43:19.222624+00:00",
+  "total": 109
+}
