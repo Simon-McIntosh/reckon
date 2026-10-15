@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T12:45:28.562Z",
+  "dispatched_at": "2026-10-15T12:30:10Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-write-on-any-node-reaches-the-page.html:50",
+      "id": "reasoning-1",
+      "reason": "the plan should name where the passes run (their own thread, or a bounded slice per loop iteration); a node implementing them inline on the event-loop thread silently voids the 0.25 s claim the coordinator's live measure and the fast-interval assertions rest on.",
+      "text": "\"the inotify paths stay and stay first, so a local write is still seen in about 0.25 s\" is not produced by the mechanism: \u00a72 places the fast (10 s) and slow (60 s) passes with the `_FleetChangeWatch` whose `_run` (serve.py:279) is an untimed `select.select` over the inotify descriptors, and \u00a72 itself says a pass over the covered set \"costs seconds on a shared filesystem\" (plan.html:43), so a local write that lands during a slow pass waits for that pass rather than 0.25 s.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-write-on-any-node-reaches-the-page.html:41",
+      "id": "reasoning-2",
+      "reason": "the node must be told the subscription is a no-op when no fleet watch is running, or the existing suite the done-when names turns red for a reason unrelated to the change and a regression cannot be told from the guard the node was told to keep.",
+      "text": "\u00a72 has each `/_changes/` stream \"register one wake pipe for its tree\" on the fleet watch, but `_FLEET_WATCH` defaults to `None` (serve.py:1102) and is set only by `start_fleet_change_watch` (serve.py:4007), which today only `main()` calls (serve.py:4058); the done-when requires `tests/test_changes_push_rows.py` to keep passing, and that file's `served_project` fixture starts an HTTP server without a fleet watch, so the registration runs against `None`.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "62c2538f51bec298e8d604204121b4c3626955f2928845eaef38668604bf8b43",
+  "plan_slug": "a-write-on-any-node-reaches-the-page",
+  "plan_version": 6,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T122934697432-plan-review-of-a-write-on-any-node-reaches-the-page",
+  "reviewed_blob_sha": "44c691c007686f69fc7f5fa4a1d4399ce8fd9ce1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: `_head_identity` serve.py:1291, `_file_identity` serve.py:1262, `_walk_discovery_signature` serve.py:1659, `_ProjectChangeWatch(docs_dir)` serve.py:2782, `mounts.values()` serve.py:4017, the `/_index` handler serve.py:3282, the `/_discover` handler serve.py:3358, `docs_dir.parent` at serve.py:1588, `fleet_index` serve.py:844, and both named test files (`tests/test_changes_push_rows.py`, `tests/test_agent_readers_use_the_index.py`) exist.",
+    "done_when": "pass \u2014 the done-when (plan.html:59) is measurable, every assertion names an observable, and it declares one negative control (\"disables the detector, and the new-document test must then fail\") that can actually fail, since with inotify silenced a disabled detector leaves the new document unseen.",
+    "evidence_paths": "pass \u2014 the gate is a pytest suite, the stat/wall-time figures are recorded in the manifest, and the post-restart live measure is named as the coordinator's (plan.html:51, :60); nothing is directed at a session scratchpad or node-local `/tmp`.",
+    "naming": "pass \u2014 the new test file is named for its mechanism (`tests/test_cross_node_writes_refresh_the_index.py`), no plan slug, stage label or ticket number reaches a symbol, path or comment, and the only new public names are the three environment variables.",
+    "reasoning": "a finding \u2014 the periodic detector passes are described as work of the `_FleetChangeWatch` thread, whose event loop is a bare `select.select` over the inotify descriptors with no timeout, so a slow pass delays the inotify path the plan promises stays at about 0.25 s; and the stream-subscription mechanism assumes a live `_FLEET_WATCH`, which the done-when also requires be absent for two existing suites.",
+    "single_goal": "pass \u2014 the node carries one deliverable, a cross-node backstop for the metadata index plus a wake for the tree's open streams, both landing in `reckon/serve.py`; the fleet-index question is a manifest report, not a second code deliverable.",
+    "wiring": "pass \u2014 the plan declares itself standalone (`plan.html` line 21, `plan-standalone`: \"no live plan waits on it and it waits on none\"), and each collaborator it names exists (`_FleetChangeWatch` serve.py:225, `_ProjectChangeWatch` serve.py:135, `fleet_index` serve.py:844); no depends-on/informs/gates is claimed, so none is missing."
+  },
+  "section_digests": {
+    "_document": "375c8a0250252dfd8391140955e2378dc5d099cc39e269da05940553993894d2",
+    "s1": "58a6ee92b653b4651357b52cc08c1e80b329e4482143b6bc8ae18570764bcd52",
+    "s2": "b3192682f1aa1233682c53f85f63f566bfbdade83bb14184df6b8a7fa5806a31"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T12:45:52.885422+00:00"
+}
