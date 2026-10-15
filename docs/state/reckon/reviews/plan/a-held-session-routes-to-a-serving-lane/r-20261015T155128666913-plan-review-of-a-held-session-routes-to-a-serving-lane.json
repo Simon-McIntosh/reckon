@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T15:57:59.598Z",
+  "dispatched_at": "2026-10-15T15:52:17Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-session-routes-to-a-serving-lane.html:198",
+      "id": "reasoning-1",
+      "reason": "a node asked to reproduce the stated defect on the queued lane-change path finds the overrides already supplied by the caller and cannot show \"the lane change reads them by hand\", so the Why and title must name the admission-pass callers the consolidation actually repairs.",
+      "text": "\u00a78 states `_resolve_lane_config` is \"used when a queued run changes lane\", but `move_queued_run` passes a resolved `config` down (`reckon/crew/queue_admission.py:242`, `257`) and both callers (`crew_resume --backend`, `crew_redispatch`) resolve the flight from the run's recorded overrides before calling `change_lane` (`reckon/crew_run_commands.py:1304-1319`, `1424-1432`), so `config_for` is never `None` on that path and `_resolve_lane_config`'s hand-read is bypassed; the copy that actually runs is the one serving the admission pass's own launch, session-allowance and gate checks (`reckon/crew/queue_admission.py:168`, `326`, `358`).",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-session-routes-to-a-serving-lane.html:214",
+      "id": "wiring-1",
+      "reason": "it is a dated outcome record, accurate when written, and section readiness derives from `data-status`, not the outcome prose; correcting it is bookkeeping rather than a change to what will be built.",
+      "text": "`f-hsrs-002`'s outcome still reads \"\u00a77 is in flight under f-hsrs-003\" while `f-hsrs-003` is now resolved and \u00a77 is declared `done`, so the followups block contradicts itself about whether \u00a77 is pending.",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "9c237397b95b6bbf16324ee97da6caa34c38d6c3deed43adbb6dbb5db5d32842",
+  "plan_slug": "a-held-session-routes-to-a-serving-lane",
+  "plan_version": 28,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T155128666913-plan-review-of-a-held-session-routes-to-a-serving-lane",
+  "reviewed_blob_sha": "e804eed9945cb61d215ff1635b596100c57aad5c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_recorded_dispatch_overrides` exists at `reckon/crew_run_commands.py:21`, `_resolve_lane_config` at `reckon/crew/queue_admission.py:127` (hand-reading `overrides` at lines 132-133), and every comment evidence href (`#s2`, `#s3`, `#s4-queued-move`, `#s4-review-reflex`, `#s5`, `#s6`, `#s7`) resolves in the landed-evidence page.",
+    "done_when": "pass \u2014 \u00a78's done-when gives a measurable grep (\"no module in `reckon/` reads `dispatch_options` overrides except the owner\"), pins the owner for three record shapes, and declares a negative control (\"with the owner returning an empty tuple, the first case fails\") whose log path is stated; the measure can fail in both directions.",
+    "evidence_paths": "pass \u2014 the negative-control log is recorded \"under the run directory\" (`~/.config/reckon/crew/runs/<run>/`, which survives the run) and the section's evidence link targets `docs/evidence/archive/a-held-session-routes-to-a-serving-lane-landed.html`, which exists with an `id=\"s7\"` anchor; nothing writes to a node-local scratch path.",
+    "naming": "pass \u2014 the new section and its test path (`tests/test_a_run_s_overrides_have_one_reader.py`) carry no plan labels, ticket numbers or version tags, and the prose names mechanisms (`_resolve_lane_config`, the overrides key) rather than a tracker entry.",
+    "reasoning": "a finding \u2014 \u00a78's title and Why place the third hand-read copy on the queued lane-change path, but that path does not call `_resolve_lane_config`; the function is reached by the admission pass instead.",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable: a single reader for a run's recorded `dispatch_options` overrides, called by both `crew_run_commands.py` and `queue_admission.py`.",
+    "wiring": "pass \u2014 \u00a78 is declared `implementable` in `plan-section-declarations` and its driver is present: `f-hsrs-004` (open) carries `data-recommends-skill=\"/reckon-build a-held-session-routes-to-a-serving-lane \u00a78\"`, so the roadmap sees a build prompt for the one open section, and the plan's `plan-after: a-held-dispatch-waits-its-fair-turn` relation and the evidence anchors all resolve."
+  },
+  "section_digests": {
+    "_document": "762d4ec33203f259b944d6a3b3ffc40cfe03634b64296d2a698d1eebe41cb56e",
+    "s1": "bcb76fd1e36c1640de15ae6763cc9a81fa94bbf740e12b844ef8ca1b64273375",
+    "s2": "c645d9e7baae34776f5b8f9c2dd066fc9af4eee8929fde6bf169cffcc3e1583c",
+    "s3": "fb16a2a2293ef2fafdfe6399ffc0da4d1fc940e78110635b413a1bafc2028861",
+    "s4": "9612149e1d24c4df585f6427a61fcb5eb20a529d956831368e08bdc56fed9174",
+    "s5": "6f592a89511473015142bc4e8bea06622bcf51877131ef14231aa8db57ff8fae",
+    "s6": "390bffed17b2602fcd713215842f533ef8755c30aa9137e1d40ce2828d529b65",
+    "s7": "6fd55b2badd1679d95e94cd5a5c61b8c477e60647b4ef00465c99018195319f1",
+    "s8": "6fe1587736520d59efc4e3e420c1eeb9c2324c2476abc2148ae1dc79e9fc39c6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T15:58:04.748636+00:00"
+}
