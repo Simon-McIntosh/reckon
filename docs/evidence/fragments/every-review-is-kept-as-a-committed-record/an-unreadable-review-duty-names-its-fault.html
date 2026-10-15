@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <title>Landing: an unreadable review record's duty names its fault | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="an-unreadable-review-duty-names-its-fault-landing">
+      <p>Split the single unreadable-review-record remedy in <code>obligation_snapshot</code> on the fault the review reader reported: a record that does not parse keeps "read it again once its writer finishes, or remove the unfinished file", while one that parses but holds findings stating no claim now earns "&lt;n&gt; claimless finding(s) in this record: rewrite the record or resume the reviewing run, stating each finding's claim under one of text, summary, detail, title". The two are told apart from the reader's own error string, and the accepted claim fields are mirrored locally from <code>review.FINDING_CLAIM_FIELDS</code> with a test asserting the two agree. The unused <code>watch_reload_started_at</code> wrapper is removed. Gate: the new file 5 passed, EXIT=0; negative control (single mid-write remedy restored) 3 failed, EXIT=1, the claimless case reading "writer finishes".</p>
+    </section>
+  </main>
+</body>
+</html>
