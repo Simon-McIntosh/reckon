@@ -301,7 +301,7 @@ def test_an_over_budget_derivation_allows_the_stop_with_its_reason(
     over = _drive(
         "stop",
         _stop_payload(repository),
-        env={coordinator_obligations.STOP_DERIVATION_BUDGET_ENV: "0"},
+        env={coordinator_obligations.STOP_DERIVATION_BUDGET_ENV: "0.000001"},
     )
 
     assert over.returncode == 0
