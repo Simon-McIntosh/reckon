@@ -2,13 +2,16 @@
 
 The classifier's catch-all running arm covers every run whose liveness this
 host cannot prove. A foreign run reaches it when its pointer names another
-machine — this host's process table cannot answer for a pid issued elsewhere —
-and its stream still moves inside the stall window, so the run is read from
-that life rather than as gone. But the arm's detail text was written for the
-other cause of an unknown liveness: a pid-less run launched in the
-coordinator's own harness. It told the reader "an in-harness run: liveness
-belongs to the calling harness", so a coordinator reading a row for a CLI
-worker on another host was told the run belonged to its own harness.
+machine — this host's process table cannot answer for a pid issued elsewhere.
+The arm is reached whatever the stream's state: a delivered foreign run with a
+moving stream is deferred to ``running`` by its own arm above, and a foreign
+run whose stream has gone quiet is read as gone; what arrives here is only the
+unknown liveness itself, so the stream's motion is not what gates the arm. But
+the arm's detail text was written for the other cause of an unknown liveness: a
+pid-less run launched in the coordinator's own harness. It told the reader "an
+in-harness run: liveness belongs to the calling harness", so a coordinator
+reading a row for a CLI worker on another host was told the run belonged to its
+own harness.
 
 The arm now tells the two causes apart. A pointer naming another machine gets a
 detail naming that host, with the stream state read from the same newest-stream

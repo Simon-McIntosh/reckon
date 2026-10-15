@@ -341,8 +341,55 @@ def classify_pointer(
         and worker_alive is True
         and _worker_launched_after_manifest(record, manifest)
     )
+    # The liveness test is hoisted above the chain as one verdict, and every
+    # reading that could call a run unreadable — a present-but-unparseable
+    # manifest or an incomplete wait declaration — consults it here rather than
+    # testing liveness for itself, so the guarantee cannot decay into per-arm
+    # guards as manifest readings are added.
+    #
+    # A reading of unknown is not a reading of gone. The pid a run carries is
+    # meaningful only on the host that issued it, so a run launched elsewhere
+    # answers unknown to this reader's process table — most often because the
+    # producer classifying a fleet sits on a different login node than the
+    # worker it launched. Treated as gone, that silence reaches the unreadable
+    # arm while the worker is mid-write, and a working run is drawn halted. The
+    # run's own stream is what settles it, exactly as the orientation-write
+    # exemption settles the same unknown: an assistant turn written inside the
+    # stall window is a run in motion, and one in motion is not gone. No second
+    # window is introduced — the stream reading is the shared helper the
+    # stall clock already stands on. A process observed to have ended is gone
+    # whatever its stream holds, so only an unknown reading consults the stream.
+    process_gone = alive is False or (
+        alive is None and not _newest_stream_in_motion(record, now_seconds=moment)
+    )
+    # The same three-way reading the stalled detail states, taken here from the
+    # same evidence so the two surfaces cannot call one run alive and gone at
+    # once. The offer of a resume is gated on it rather than on ``process_gone``,
+    # which is true of an unproven reading as well as of an observed end:
+    # resuming on an unproven reading is the reading's most expensive misread,
+    # because nobody observed the process the resume is predicated on.
+    process_reading = _process_reading(
+        alive, liveness_proven=liveness_proven, exit_record=ended_exit
+    )
+    # A delivered run is deferred — held at ``running``, owing no review — while
+    # the worker that wrote its verdict may still be finishing. That reading was
+    # taken from ``alive is True`` alone, which is proven only on the host that
+    # issued the pid; a producer classifying the fleet from another node reads a
+    # worker's liveness as unknown, so a delivered worker still in its final
+    # turn read ``scoring`` and raised a review duty the reflex was about to
+    # discharge itself. The hoisted verdict already answers the question the
+    # deferral means to ask — is the worker gone — from the process table where
+    # it can and from the run's own stream where it cannot, so the deferral
+    # consults it rather than liveness alone.
+    #
+    # The exit record is the other half of the question, and it crosses nodes on
+    # the shared home where a pid cannot. It is folded into the hoisted verdict:
+    # a present record forces ``alive`` to false, so ``process_gone`` is true
+    # and the deferral does not fire. An exited worker on another node therefore
+    # reads ``scoring`` at once rather than waiting a quarter of an hour for its
+    # stream to pass the stall window.
     deferred_outcome = manifest_status in TERMINAL_MANIFEST_STATUSES and (
-        alive is True or superseded_manifest
+        not process_gone or superseded_manifest
     )
     interruption = None
     interruption_commits = 0
@@ -400,37 +447,6 @@ def classify_pointer(
     # never as unreadable, so a strictness added for manifests at rest cannot
     # misreport work in progress; the manifest and its status become
     # authoritative only once the process is gone.
-    #
-    # The liveness test itself is hoisted above the chain as one verdict, and
-    # every reading that could call a run unreadable — a present-but-unparseable
-    # manifest or an incomplete wait declaration — consults it here rather than
-    # testing liveness for itself, so the guarantee cannot decay into per-arm
-    # guards as manifest readings are added.
-    #
-    # A reading of unknown is not a reading of gone. The pid a run carries is
-    # meaningful only on the host that issued it, so a run launched elsewhere
-    # answers unknown to this reader's process table — most often because the
-    # producer classifying a fleet sits on a different login node than the
-    # worker it launched. Treated as gone, that silence reaches the unreadable
-    # arm while the worker is mid-write, and a working run is drawn halted. The
-    # run's own stream is what settles it, exactly as the orientation-write
-    # exemption settles the same unknown: an assistant turn written inside the
-    # stall window is a run in motion, and one in motion is not gone. No second
-    # window is introduced — the stream reading is the shared helper the
-    # stall clock already stands on. A process observed to have ended is gone
-    # whatever its stream holds, so only an unknown reading consults the stream.
-    process_gone = alive is False or (
-        alive is None and not _newest_stream_in_motion(record, now_seconds=moment)
-    )
-    # The same three-way reading the stalled detail states, taken here from the
-    # same evidence so the two surfaces cannot call one run alive and gone at
-    # once. The offer of a resume is gated on it rather than on ``process_gone``,
-    # which is true of an unproven reading as well as of an observed end:
-    # resuming on an unproven reading is the reading's most expensive misread,
-    # because nobody observed the process the resume is predicated on.
-    process_reading = _process_reading(
-        alive, liveness_proven=liveness_proven, exit_record=ended_exit
-    )
     marker = None
     needs_help_complete_value = None
     if phase == "queued":
@@ -1052,9 +1068,12 @@ def classify_pointer(
         # misdescribes the other. A pid-less run launched in the coordinator's
         # own harness belongs to it; they are reported as running because no
         # process table here will ever say otherwise. A run whose pointer names
-        # another machine reaches this arm too, through the stream-in-motion
-        # reading, and is a worker on that host rather than one in this
-        # harness — so it is named by the host that issued it.
+        # another machine reaches this arm too, and is a worker on that host
+        # rather than one in this harness — so it is named by the host that
+        # issued it. The arm is reached whatever the stream's state: a delivered
+        # foreign run whose stream is in motion is deferred above, a foreign run
+        # whose stream has gone quiet is read as gone by the arms above this
+        # one, and what arrives here is only the unknown liveness itself.
         if _record_is_known_foreign(record):
             host = str(record.get("launcher_host"))
             # This arm is reached whatever the stream's state, so the sentence
