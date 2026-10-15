@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T12:21:49.704Z",
+  "dispatched_at": "2026-10-15T12:08:55Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-write-on-any-node-reaches-the-page.html:59",
+      "id": "done_when-1",
+      "reason": "as written the done-when can be satisfied by a test that never exercises the pipe, so the gate would pass on a node whose stream wake is not wired.",
+      "text": "the simulation \"a served process whose inotify watch is replaced by one that never fires\" names one watch, but two exist per tree: the fleet watch's `_ProjectChangeWatch` armed in `_FleetChangeWatch._arm_every_tree` (serve.py:265-272) and each stream's own `_ProjectChangeWatch(docs_dir)` at serve.py:2782. A test that replaces only the fleet watch still has the stream's own inotify descriptor live, so a locally written document wakes that stream directly and the assertion \"an open stream receives a `change` event through its subscription pipe\" passes with the subscription pipe broken \u2014 the very mechanism the node exists to add would be untested",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-write-on-any-node-reaches-the-page.html:56",
+      "id": "single_goal-1",
+      "reason": "it narrows a scope annotation rather than the mechanism, and the worker can still land the section without touching the module.",
+      "text": "the node's Writes column grants `reckon/metadata_index.py`, but \u00a72 uses only existing read-only owners there (`_load_dir_stamps`, `reckon.`_dir_identity`, `_covered_files`) and states \"the metadata index's cache and its `revalidate` mode are untouched\", so no deliverable requires writing that file",
+      "type": "single_goal",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "7c7d29e8c97646d325dc0306b97e6063a45e2748bfb9eb8e471b044379a9ed15",
+  "plan_slug": "a-write-on-any-node-reaches-the-page",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T120815084529-plan-review-of-a-write-on-any-node-reaches-the-page",
+  "reviewed_blob_sha": "906573bdbfa136975f09c412cae09bd33810d5ab",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves in the tree: `_invalidate_tree_views` at serve.py:1771 with `changed_at`, `_FleetChangeWatch` at serve.py:225 and built from `mounts.values()` at serve.py:4017, `_ProjectChangeWatch(docs_dir)` at serve.py:2782, `_head_identity` at serve.py:1291 and `_file_identity` at serve.py:1262, `_git_directory`/`_common_git_directory`, `repo_dir = docs_dir.parent` at serve.py:1588, `fleet_index` read at serve.py:844, the `/_index/<project>` and `/_discover/<project>` handlers at serve.py:3282 and serve.py:3358, `_walk_discovery_signature` at serve.py:1659, `_SERVED_SIGNATURE_TTL_S` at serve.py:1005, `RECKON_DISCOVERY_REUSE_S` at serve.py:4003, `_load_dir_stamps`/`_dir_identity`/`_covered_files` in metadata_index, and the two regression test files both exist.",
+    "done_when": "a finding \u2014 \u00a72's done-when names the cross-node simulation as \"a served process whose inotify watch is replaced by one that never fires\", but the served process holds two inotify watches per tree and the singular leaves the stream's own watch in place.",
+    "evidence_paths": "pass \u2014 the done-when writes its facts into the node's manifest (stat count and wall time of one fast and one slow pass, the fleet-index answer with its request and rows) and the coordinator's live measure names `/ _index/imas-ambix`; no session scratchpad or node-local temporary path is named as a store.",
+    "naming": "pass \u2014 the test file is named by mechanism (`tests/test_cross_node_writes_refresh_the_index.py`), the new knobs are environment variable names rather than plan labels, and no section, stage or ticket identifier reaches a symbol or path.",
+    "reasoning": "pass \u2014 the root cause \u00a71 names (only discovery has a reuse window, while the metadata index and the change stream wait on inotify alone) matches the cited code, and each mechanism produces its done-when. The fast signal's two owners are real and stat-only: `_dir_identity` (metadata_index.py:563) is exactly the comparison `_reuse_covered` makes (metadata_index.py:236), and the git identity pairs `_head_identity(repo_dir)` with `_file_identity(_git_directory(repo_dir) / \"index\")`, correctly leaving `_head_identity` unchanged so `_git_head`'s memo (serve.py:1319) starts no git process. The callers are named: `main()` (serve.py:4021) calls `start_fleet_change_watch(load_mounts())` at serve.py:4058, and the stream path is `_send_project_changes` (serve.py:2782). The one change aborting the burst path \u2014 replacing the cached stamp before invalidating \u2014 is what makes the done-when's \"invalidates the callers once\" hold.",
+    "single_goal": "a finding \u2014 the node's Writes column grants `reckon/metadata_index.py`, in which \u00a72 describes no change.",
+    "wiring": "pass \u2014 the plan declares no depends-on, informs or gates and carries `plan-standalone` (\"no live plan waits on it and it waits on none\"); no other plan in docs/ references this slug, so no relationship is missing or mispointed."
+  },
+  "section_digests": {
+    "_document": "375c8a0250252dfd8391140955e2378dc5d099cc39e269da05940553993894d2",
+    "s1": "58a6ee92b653b4651357b52cc08c1e80b329e4482143b6bc8ae18570764bcd52",
+    "s2": "45749f3c85563e776da97ac14d3234c43909fc289ab355fd84d6fce2330b1fce"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T12:28:24.260501+00:00"
+}
