@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="117">
+<meta name="plan-version" content="118">
 <meta name="plan-modified" content="2026-10-15">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -649,7 +649,10 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>§26 landed. A follower holds its settle for a two-minute grace, so a queued request's admission no longer ends the pane before the admitted run is drawn, and "no live work" no longer prints while work is starting. Merged as <code>d6ed89d00</code>; gate 257 passed. Review: 88/120 after a repair round for a real-follower test. Follow-on: the env seconds parse wants one shared owner. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s26">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s26" data-id="c-run-r-20261015T064551107412-a-pane-does-not-settle-during-admission" data-who="reckon-build" data-when="2026-10-15T08:03:10.832Z">
-    <div class="r-comment-body"><p>reckon:the-monitor-shows-the-work-it-watches §26 — the follower&#x27;s settle now requires its population to have held no unfinished run for a grace (FOLLOWER_SETTLE_GRACE_SECONDS, 120 s) instead of ending on the first empty reading, so an admission handover (queued pointer deleted, admitted worktree built, pointer written later) no longer leaves the pane before the admitted run is drawn; the grace resolves per arming from an explicit argument, then RECKON_FOLLOWER_SETTLE_GRACE, then the constant, so production and every ordinary child keep the two minutes while a caller that runs a follower itself can hand it a short one. tests/test_a_pane_does_not_settle_during_admission.py drives the follower&#x27;s own generator on an injected clock and sleeper (handover survives and the admitted run&#x27;s start is drawn; a population empty past the grace settles once with the idle line naming the last-seen time; a queued request never settles), and restoring the one-second hold turns the handover case red with EXIT=1.</p></div>
+    <div class="r-comment-body"><p>reckon:the-monitor-shows-the-work-it-watches §26 — the follower's settle now requires its population to have held no unfinished run for a grace (FOLLOWER_SETTLE_GRACE_SECONDS, 120 s) instead of ending on the first empty reading, so an admission handover (queued pointer deleted, admitted worktree built, pointer written later) no longer leaves the pane before the admitted run is drawn; the grace resolves per arming from an explicit argument, then RECKON_FOLLOWER_SETTLE_GRACE, then the constant, so production and every ordinary child keep the two minutes while a caller that runs a follower itself can hand it a short one. tests/test_a_pane_does_not_settle_during_admission.py drives the follower's own generator on an injected clock and sleeper (handover survives and the admitted run's start is drawn; a population empty past the grace settles once with the idle line naming the last-seen time; a queued request never settles), and restoring the one-second hold turns the handover case red with EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s26" data-id="c-run-r-20261015T080731294982-review-of-a-pane-does-not-settle-during-admission-2a01b2d1a545" data-who="reckon-build" data-when="2026-10-15T08:25:57.073Z">
+    <div class="r-comment-body"><p>reckon:the-monitor-shows-the-work-it-watches §26 — independent review of run r-20261015T064551107412 attached: goal_fidelity 19, evidence 16, scope_discipline 14, durability 18, fit 16, reuse 5, total 88; three follow-on findings (a duplicated env-seconds parse, a granted out-of-scope test file, a head-arm log header that predates the content it measured) and no blocking finding.</p></div>
 </div>
 </section>
 </main>

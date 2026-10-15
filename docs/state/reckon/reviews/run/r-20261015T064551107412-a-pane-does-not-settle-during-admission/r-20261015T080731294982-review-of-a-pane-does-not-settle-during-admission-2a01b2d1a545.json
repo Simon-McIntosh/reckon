@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "7dd3203a547c38129fdaf14477d0d98307d2f446",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:2841 (crew_follow -> _follow_watch_lines the settle consumer)",
+    "reckon/cli.py:398 (crew_follow command wiring)"
+  ],
+  "completed_at": "2026-10-15T08:25:57.073Z",
+  "dispatched_at": "2026-10-15T08:08:02Z",
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "469",
+      "severity": "follow-on",
+      "text": "follow-on: _settle_grace_default duplicates the parse-a-seconds-override-from-an-env-var-with-a-default capability already owned by reckon/mcp_deadlines.py:63 _positive_seconds and reckon/crew/dispatch_launch.py:2610 _terminal_manifest_grace_seconds; it neither calls nor extracts a shared owner, so a fourth copy of the same parse now exists."
+    },
+    {
+      "file": "tests/test_a_pane_settles_when_no_work_is_live.py",
+      "line": "537",
+      "severity": "follow-on",
+      "text": "follow-on: the _child_env change lands in a file outside the node's declared write paths; the manifest discloses it as a granted repair, but the run record's write_paths predate the grant so reckon crew check-manifest reports the run as writing outside its scope."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T064403541986-a-pane-does-not-settle-during-admission/logs/head-arm-repair.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head-arm log's header names revision 625c713c7 while the manifest's after_suite records revision 451f7c9ca, so the log alone cannot be tied to the content it measured; the pairing rests on the manifest's gate_provenance claim and the separate focused arm at 451f7c9ca."
+    }
+  ],
+  "head_log_revision": "625c713c7",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 7dd3203a547c38129fdaf14477d0d98307d2f446 -- fe8a8dc39 adds the grace and the emptiness reset, 6d2810526 the test that drives it, 3fdbea55c and 625c713c7 the evidence fragment and the figure, 451f7c9ca the per-arming environment seam and the child-env fix, 2a01b2d1a the closing record -- every path inside the declared scope but for the granted test file.",
+    "done_when": "the done_when names the three carved cases and the base/head gate; the manifest records 257 passed EXIT=0 at head and 2 failed at base, and the cases landed at tests/test_a_pane_does_not_settle_during_admission.py:222 (handover kept and the admitted start drawn), :292 (a population empty past the grace settles once and the idle line names the drain) and :347 (a queued request never settles).",
+    "goal": "the node's goal is to hold a follower's settle for a grace longer than an admission handover so an admitted run is drawn; reckon/crew_follow_commands.py:1451 ends the pane only once its population has held nothing unfinished for FOLLOWER_SETTLE_GRACE_SECONDS, and :1445 clears that emptiness on any sighting of live work so an admitted run keeps the pane.",
+    "manifest": "read; it states status complete, the 25-file head gate at 257 passed EXIT=0, the base arm at 2 failed, the negative control at 3 failed and 1 passed, and it discloses under gate_provenance that the head-arm log's header names an earlier revision than the content it measured.",
+    "write_paths": "the manifest declares reckon/crew_follow_commands.py, tests/test_a_pane_does_not_settle_during_admission.py and the fragment and figure paths; the diff adds a fifth file, tests/test_a_pane_settles_when_no_work_is_live.py, which the manifest records as a coordinator repair-round grant outside the declared pair."
+  },
+  "justifications": {
+    "durability": "with FOLLOWER_SETTLE_GRACE_SECONDS restored to the one-second hold the handover case at tests/test_a_pane_does_not_settle_during_admission.py:255 reddens with \"the pane settled while an admitted run was still being placed\", and :219 pins the constant, so both assertions fail when the change regresses.",
+    "evidence": "the head gate at logs/head-arm-repair.log reads 257 passed EXIT=0 and the base arm at logs/base-arm.log reads 2 failed, recorded in the manifest's after_suite and baseline_suite; the head-arm log's header names revision 625c713c7 which predates commit 451f7c9ca, so the pairing of log to content rests on the manifest's gate_provenance claim and the separate focused arm at 451f7c9ca rather than on the log itself.",
+    "fit": "the change extends the existing settle seam at reckon/crew_follow_commands.py:1406 with a per-arming grace, and its added names (FOLLOWER_SETTLE_GRACE_SECONDS, FOLLOWER_SETTLE_GRACE_ENV, _settle_grace_default) carry no version, plan or ticket label.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:1442-1452 measures the pane's emptiness against the grace and clears it on any live sighting (:1445), so a run admitted inside the handover keeps the pane rather than being missed.",
+    "reuse": "_settle_grace_default at reckon/crew_follow_commands.py:469 re-implements the env-parsed-seconds-with-default capability the repository already owns at reckon/mcp_deadlines.py:63 _positive_seconds and reckon/crew/dispatch_launch.py:2610 _terminal_manifest_grace_seconds without extending either owner.",
+    "scope_discipline": "tests/test_a_pane_settles_when_no_work_is_live.py:537 is changed outside the node's four declared write paths, disclosed as a coordinator repair-round tests grant in the manifest's scope_grant line."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 7dd3203a547c38129fdaf14477d0d98307d2f446\nreviewed_head_sha: 2a01b2d1a5455a0399e249f49f00884819b77cf9\nVERDICT goal: the node's goal is to hold a follower's settle for a grace longer than an admission handover so an admitted run is drawn; reckon/crew_follow_commands.py:1451 ends the pane only once its population has held nothing unfinished for FOLLOWER_SETTLE_GRACE_SECONDS, and :1445 clears that emptiness on any sighting of live work so an admitted run keeps the pane.\nVERDICT done_when: the done_when names the three carved cases and the base/head gate; the manifest records 257 passed EXIT=0 at head and 2 failed at base, and the cases landed at tests/test_a_pane_does_not_settle_during_admission.py:222 (handover kept and the admitted start drawn), :292 (a population empty past the grace settles once and the idle line names the drain) and :347 (a queued request never settles).\nVERDICT write_paths: the manifest declares reckon/crew_follow_commands.py, tests/test_a_pane_does_not_settle_during_admission.py and the fragment and figure paths; the diff adds a fifth file, tests/test_a_pane_settles_when_no_work_is_live.py, which the manifest records as a coordinator repair-round grant outside the declared pair.\nVERDICT manifest: read; it states status complete, the 25-file head gate at 257 passed EXIT=0, the base arm at 2 failed, the negative control at 3 failed and 1 passed, and it discloses under gate_provenance that the head-arm log's header names an earlier revision than the content it measured.\nVERDICT diff: read commit by commit against base 7dd3203a547c38129fdaf14477d0d98307d2f446 -- fe8a8dc39 adds the grace and the emptiness reset, 6d2810526 the test that drives it, 3fdbea55c and 625c713c7 the evidence fragment and the figure, 451f7c9ca the per-arming environment seam and the child-env fix, 2a01b2d1a the closing record -- every path inside the declared scope but for the granted test file.\nCALL_SITES: reckon/crew_follow_commands.py:2841 (crew_follow -> _follow_watch_lines the settle consumer), reckon/cli.py:398 (crew_follow command wiring)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:1442-1452 measures the pane's emptiness against the grace and clears it on any live sighting (:1445), so a run admitted inside the handover keeps the pane rather than being missed.\nSCORE evidence: 16\nJUSTIFICATION evidence: the head gate at logs/head-arm-repair.log reads 257 passed EXIT=0 and the base arm at logs/base-arm.log reads 2 failed, recorded in the manifest's after_suite and baseline_suite; the head-arm log's header names revision 625c713c7 which predates commit 451f7c9ca, so the pairing of log to content rests on the manifest's gate_provenance claim and the separate focused arm at 451f7c9ca rather than on the log itself.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: tests/test_a_pane_settles_when_no_work_is_live.py:537 is changed outside the node's four declared write paths, disclosed as a coordinator repair-round tests grant in the manifest's scope_grant line.\nSCORE durability: 18\nJUSTIFICATION durability: with FOLLOWER_SETTLE_GRACE_SECONDS restored to the one-second hold the handover case at tests/test_a_pane_does_not_settle_during_admission.py:255 reddens with \"the pane settled while an admitted run was still being placed\", and :219 pins the constant, so both assertions fail when the change regresses.\nSCORE fit: 16\nJUSTIFICATION fit: the change extends the existing settle seam at reckon/crew_follow_commands.py:1406 with a per-arming grace, and its added names (FOLLOWER_SETTLE_GRACE_SECONDS, FOLLOWER_SETTLE_GRACE_ENV, _settle_grace_default) carry no version, plan or ticket label.\nSCORE reuse: 5\nJUSTIFICATION reuse: _settle_grace_default at reckon/crew_follow_commands.py:469 re-implements the env-parsed-seconds-with-default capability the repository already owns at reckon/mcp_deadlines.py:63 _positive_seconds and reckon/crew/dispatch_launch.py:2610 _terminal_manifest_grace_seconds without extending either owner.\nFINDING reckon/crew_follow_commands.py:469 follow-on: _settle_grace_default duplicates the parse-a-seconds-override-from-an-env-var-with-a-default capability already owned by reckon/mcp_deadlines.py:63 _positive_seconds and reckon/crew/dispatch_launch.py:2610 _terminal_manifest_grace_seconds; it neither calls nor extracts a shared owner, so a fourth copy of the same parse now exists.\nFINDING tests/test_a_pane_settles_when_no_work_is_live.py:537 follow-on: the _child_env change lands in a file outside the node's declared write paths; the manifest discloses it as a granted repair, but the run record's write_paths predate the grant so reckon crew check-manifest reports the run as writing outside its scope.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T064403541986-a-pane-does-not-settle-during-admission/logs/head-arm-repair.log:1 follow-on: the head-arm log's header names revision 625c713c7 while the manifest's after_suite records revision 451f7c9ca, so the log alone cannot be tied to the content it measured; the pairing rests on the manifest's gate_provenance claim and the separate focused arm at 451f7c9ca.\n",
+  "review_run_id": "r-20261015T080731294982-review-of-a-pane-does-not-settle-during-admission-2a01b2d1a545",
+  "reviewed_base_sha": "7dd3203a547c38129fdaf14477d0d98307d2f446",
+  "reviewed_head_sha": "2a01b2d1a5455a0399e249f49f00884819b77cf9",
+  "reviewed_run_id": "r-20261015T064551107412-a-pane-does-not-settle-during-admission",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T08:24:11.770047+00:00",
+  "total": 88
+}
