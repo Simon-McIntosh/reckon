@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="147">
+<meta name="plan-version" content="148">
 <meta name="plan-modified" content="2026-10-15">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -731,6 +731,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s32" data-id="c-close-s32" data-who="reckon-build" data-when="2026-10-15T16:24:00Z">
     <div class="r-comment-body"><p>§32 landed. The pane's departure hold now covers a run leaving a finished word, so a delivered row no longer flips to working and back while its worker rewrites its own manifest. Merged as <code>cf7be12c4</code>. Gate: 432 passed at base and head over the ticker importers, plus 2 new tests, with no failures. Review: 111/120. The hold also covers <code>landed</code>, which is untested. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s32">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s32" data-id="c-run-r-20261015T151856051712-a-delivered-row-does-not-round-trip" data-who="reckon-build" data-when="2026-10-15T16:07:08.867Z">
+    <div class="r-comment-body"><p>§32 landed — RowPolicy&#x27;s departure hold now also covers a run leaving a word the pane draws for finished work (delivered/landed), so the manifest-rewrite round trip delivered → working → delivered one second apart releases no row while a departure with no return still releases once the settle window passes; gate 432 passed / 0 failed identical at base and head, new file 2 passed.</p></div>
 </div>
 </section>
 </main>
