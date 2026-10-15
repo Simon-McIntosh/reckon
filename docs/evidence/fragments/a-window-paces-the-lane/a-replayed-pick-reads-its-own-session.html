@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-window-paces-the-lane">
+  <meta name="plan-title" content="A replayed pick reads its own session">
+  <meta name="plan-summary" content="The dispatch replay composes one budget view per distinct session and judges each record against its own, so a session-scoped lift releases only that session's reserves.">
+  <meta name="plan-evidence-for" content="reckon:a-window-paces-the-lane">
+  <meta name="plan-node" content="a-replayed-pick-reads-its-own-session">
+  <meta name="plan-recorded-at" content="2026-10-15">
+  <meta name="plan-environment" content="Linux node; Python venv at /home/ITER/mcintos/Code/reckon/.venv; pytest with an isolated RECKON_HOME under tmp_path">
+  <title>A replayed pick reads its own session &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1 id="a-replayed-pick-reads-its-own-session-title">A replayed pick reads its own session</h1>
+    <p class="plan-summary">Each replayed dispatch is judged against the budget view composed for that dispatch's own session.</p>
+  </header>
+
+  <p id="a-replayed-pick-reads-its-own-session-landing">The dispatch replay now composes at most one budget view per distinct
+  session in the replayed set and hands each record the view for its own session, so a dispatch carrying no session reads the
+  session-less view as before and a session-scoped lift releases exactly that session's reserves. A lift scoped to session A
+  over a group read at 95% leaves the A dispatch at the released ceiling (100) and the B dispatch held at the reserve ceiling
+  (92), a one-session replay composes one view, and the negative control that restores the single session-less view reddens the
+  A case (3 failed, EXIT=1).</p>
+</main>
+</body>
+</html>
