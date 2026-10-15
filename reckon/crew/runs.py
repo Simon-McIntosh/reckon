@@ -654,6 +654,19 @@ def read_pointer(run_id: str) -> dict[str, Any]:
     return data
 
 
+def recorded_dispatch_overrides(record: Mapping[str, Any]) -> tuple[str, ...]:
+    """Return the ``--set`` overrides a run was dispatched with, if any.
+
+    The one reader of a run's recorded dispatch overrides. Every command that
+    resolves flight config under the policy the original dispatch answered —
+    resume, redispatch and the queued-admission pass — calls this, so a run
+    moved through any door runs under the same overrides. A record that carries
+    none resolves as the base policy.
+    """
+    options = record.get("dispatch_options") or {}
+    return tuple(options.get("overrides") or ())
+
+
 def _list_live_records(
     *, project: str | None = None, phase: str | None = None
 ) -> list[dict[str, Any]]:

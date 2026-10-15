@@ -18,18 +18,6 @@ from reckon.crew_dispatch_commands import (
 )
 
 
-def _recorded_dispatch_overrides(record: Mapping[str, Any]) -> tuple[str, ...]:
-    """Return the ``--set`` overrides a run was dispatched with, if any.
-
-    Both commands that move a run resolve its flight config under the policy
-    the original dispatch answered, so a run moved through a resume runs under
-    the same overrides as one moved through a redispatch. A record that carries
-    none resolves exactly as before.
-    """
-    options = record.get("dispatch_options") or {}
-    return tuple(options.get("overrides") or ())
-
-
 @crew.command(name="resume-ready")
 @click.option("--project", required=True, help="Project whose ready runs to resume.")
 @click.option(
@@ -1298,6 +1286,7 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
     if reason and not backend:
         raise click.UsageError("--reason requires --backend")
     crew_module, flight_module = _crew_modules()
+    from reckon.crew import runs as runs_module
     from reckon.crew.dispatch import LanePaused
 
     try:
@@ -1308,7 +1297,7 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
                 flight_module,
                 project,
                 record.get("repo"),
-                _recorded_dispatch_overrides(record),
+                runs_module.recorded_dispatch_overrides(record),
             )
             if project
             else None
@@ -1416,14 +1405,19 @@ def crew_redispatch(
 ):
     """Move one working run to another backend without replacing its identity."""
     crew_module, flight_module = _crew_modules()
+    from reckon.crew import runs as runs_module
     from reckon.crew.dispatch import LanePaused
 
     try:
         record = crew_module.read_pointer(run_id)
         project = str(record.get("project") or "")
-        overrides = _recorded_dispatch_overrides(record)
         config = (
-            _resolved_flight(flight_module, project, record.get("repo"), overrides)
+            _resolved_flight(
+                flight_module,
+                project,
+                record.get("repo"),
+                runs_module.recorded_dispatch_overrides(record),
+            )
             if project
             else {}
         )
