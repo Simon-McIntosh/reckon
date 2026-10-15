@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T12:05:07.378Z",
+  "dispatched_at": "2026-10-15T11:56:55Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-write-on-any-node-reaches-the-page.html:48",
+      "id": "reasoning-1",
+      "reason": "with no owner named the worker must invent one, and the two available inventions break opposite halves of the done-when \u2014 reading the memo as \"read\" makes a tree never-read so the uncommitted cross-node edit is never caught, while treating every tree as read makes \"a tree nobody is reading pays nothing\" and the negative half of line 59 false.",
+      "text": "the slow signal \"runs only for a tree that has an open change stream, or that was read in the last ten minutes\", but the plan names no owner or caller that records a read: `reckon/serve.py` holds no reader-activity timestamp today (a grep for `last_read`, `_SERVED_READ`, `reader_activity` and `recently read` returns nothing), and the only read-derived state, `_SIGNATURE_MEMO` (`serve.py:1001`), is deleted for a root by `_invalidate_tree_views` (`serve.py:1655-1656`) at exactly the moment a change lands",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-write-on-any-node-reaches-the-page.html:45",
+      "id": "reasoning-2",
+      "reason": "a worker taking \"the tree's own git directory\" literally passes the docs tree, `_git_directory` returns `None`, the git source silently never fires, and the done-when clause requiring a git-index change with HEAD unchanged to fire the detector becomes unreachable.",
+      "text": "the detector's git identity is `_head_identity` paired with `_file_identity` of `_git_directory(repo_dir) / \"index\"`, but the watch holds only the mounted tree paths (`mounts.values()`, which `mounts.json` fills with `.../docs`) and \u00a72 line 42 has the watch learn project and state root only, never a repository root; measured on the node, `_git_directory(\"/home/ITER/mcintos/Code/imas-ambix/docs\")` returns `None` because `docs/.git` does not exist, and only `_git_directory(tree.parent)` resolves to `/home/ITER/mcintos/Code/imas-ambix/.git` with a readable `index`",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3b78f306b992db62f47fc96edd5a13d1dff4e07170495831d5f41c1ce3a04614",
+  "plan_slug": "a-write-on-any-node-reaches-the-page",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T115615865602-plan-review-of-a-write-on-any-node-reaches-the-page",
+  "reviewed_blob_sha": "157d66fb9130f2b570469db9c07a76bbbb7c33a9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves in the served tree: `serve.py:1262` `_file_identity`, `:1291` `_head_identity`, `:1659` `_walk_discovery_signature`, `:2782` `_ProjectChangeWatch(docs_dir)`, `:4017` `_FleetChangeWatch(mounts.values())`, `:844` the `fleet_index` read; `reckon/fleet_index.py`, `metadata_index._load_dir_stamps`/`_dir_identity`/`_covered_files`/`_reuse_covered`/`_index_path`, and both named test modules exist. No hrefs appear in the plan body, so no extensionless link needed resolving.",
+    "done_when": "pass \u2014 \u00a72's done-when names a measurable negative control (\"The declared negative control disables the detector, and the new-document test must then fail\") and every other clause names a knob, a log or an observable the node can produce; the two clauses that do not stand up for a mechanism reason are reported under reasoning.",
+    "evidence_paths": "pass \u2014 the gate is a tracked test file under `tests/` and the pass timings and stat counts land in the manifest, both durable paths a later reader can open; no scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 the deliverable is named after its mechanism (`tests/test_cross_node_writes_refresh_the_index.py`), the node id names the mechanism, and no plan label, ticket number or version tag reaches a symbol, comment or path.",
+    "reasoning": "a finding \u2014 the slow signal's \"read in the last ten minutes\" gate names no owner that records a read, and the git source's `_git_directory(repo_dir)` does not resolve for the tree's own path.",
+    "single_goal": "pass \u2014 the node `cross-node-writes-refresh-the-index` lands one deliverable, the cross-node backstop and the test that drives it.",
+    "wiring": "pass \u2014 the plan declares `plan-standalone` with no depends-on, informs or gates, \u00a72's node closes on its own test, and nothing in \u00a72 needs a relationship it omits."
+  },
+  "section_digests": {
+    "_document": "375c8a0250252dfd8391140955e2378dc5d099cc39e269da05940553993894d2",
+    "s1": "58a6ee92b653b4651357b52cc08c1e80b329e4482143b6bc8ae18570764bcd52",
+    "s2": "16b650278c0f8910b3278c6c7decd1d70c754c988cc21eba6b93093ca5cb4e7f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T12:05:15.562363+00:00"
+}
