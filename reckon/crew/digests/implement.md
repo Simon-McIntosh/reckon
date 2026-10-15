@@ -1,7 +1,7 @@
 # Worker role digest: implement
 #
-# Generated from ~/.agents/AGENTS.md (sha256 a7d08b85477bc47b0ba22cf1c0720e9955f8e41c903026f66143ee2d3b7cc47f,
-# 101033 bytes, ~25259 — the same policy holds for every
+# Generated from ~/.agents/AGENTS.md (sha256 6f0f53fab0e05fc71f3616a88c537fc9e3792398a74015805f9ba3afb2a7cdd3,
+# 102088 bytes, ~25522 — the same policy holds for every
 # role; this digest retains the sections below and withholds the
 # coordinator-only delivery text.
 # Regenerate with: python -m reckon.crew.worker_digest
@@ -432,6 +432,25 @@ about 8 to 12 pytest processes, not one per core.
   and manifests. Node-local `/tmp`, and the session scratchpad under it, is
   invisible from login and gone when the allocation ends. Write logs to a named
   path under the repository or `~/.cache/<repo>-<topic>/`.
+- **Every job removes what it wrote to `/tmp` before it exits.** Make one
+  directory per job, point `TMPDIR` and every tool cache at it, and remove it on
+  any exit:
+
+  ```bash
+  D=$(mktemp -d /tmp/$USER-${SLURM_JOB_ID:-$$}-XXXX); trap 'rm -rf "$D"' EXIT
+  export TMPDIR=$D EFIT_RF_CACHE_DIR=$D/rf_cache
+  ```
+
+  Never write a named tree such as `/tmp/<experiment>-src` or
+  `/tmp/efit_rf_cache_<tag>`. Nothing removes it, and the debug nodes are reused
+  by every session. Measured 2026-10-15: `98dci4-clu-3141`'s 45 GB `/tmp` was 100%
+  full with build copies, per-experiment solver caches and job scratch from runs
+  one to seven days dead. That killed two jobs within seconds and pushed a third
+  onto GPFS, where 37 environment-dependent UNIT tests then failed and read as a
+  regression. Kill and timeout paths skip the trap, so after a wave run
+  `tmp-sweep --debug-nodes` to list the leftovers, then the same command with
+  `--apply`. It removes only your entries untouched for 6 hours with no process
+  inside them, and it prints every removal.
 - **Every parallel test run gets a separate basetemp for each process.**
   Concurrent pytest processes share `/tmp/pytest-of-$USER` and delete each other's
   basetemp, because pytest keeps only three. Measured 2026-09-24: 16 per-file
