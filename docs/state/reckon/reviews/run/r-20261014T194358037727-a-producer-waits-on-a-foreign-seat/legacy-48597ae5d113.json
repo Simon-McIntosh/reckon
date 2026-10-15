@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:watch_ticker",
+    "reckon/crew/recovery_watch.py:watch_follow",
+    "reckon/crew_follow_commands.py:2972"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-14T19:44:53Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "372",
+      "severity": "follow-on",
+      "text": "the wait loop yields False and returns once seat_names_a_live_foreign_producer is false, so a foreign holder whose stream has gone stale while its seat lock is still held (a hung producer) takes the pre-change exit path: the caller yields a watcher-live row and returns, the unit exits and systemd restarts it, which is the cycling the node exists to stop for that sub-case; the plan's 'taking the seat when that producer's stream goes stale' is only reached when the holder has also released the lock, as the test arranges."
+    },
+    {
+      "file": "manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "baseline_suite and after_suite are prose rather than the armed-JSON shape the manifest key requests, so a reader that derives the added-failure count from them (reckon/crew/review.py:2140 annotate_review_of_run) finds no log_path and records added_failure_count as unmeasured (None) rather than the 0 the cited gate logs support."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production sites: reckon/crew/recovery_watch.py:watch_ticker, reckon/crew/recovery_watch.py:watch_follow and reckon/crew_follow_commands.py:2972, which drives watch_follow for the reckon crew watch CLI.",
+    "diff": "read commit by commit against 9677c89ed: db9c10f5f adds the wait loop and sleeper parameter in recovery_watch.py, a0efd2253 moves the seed read onto the producer record in runs.py and consumes it in watch_ticker, with a 322-line test file in between and nothing the goal does not imply.",
+    "done_when": "the done-when is the FENCE-EVIDENCE paragraph naming tests/test_a_producer_waits_on_a_foreign_seat.py and the base/head gate arms; I re-ran the named file (4 passed) and the pre-existing transitions file (7 passed) at head, and the manifest records each arm to a log ending in EXIT=.",
+    "goal": "the node goal is 'Keep a producer that finds the project seat held on another host waiting and re-reading the seat instead of exiting'; reckon/crew/recovery_watch.py:344 does exactly that, loop-re-reading the seat and yielding only when the claim succeeds or the foreign holder is gone.",
+    "manifest": "read; it records status complete, the two commits, the gate arms and their log paths, a negative control and a flake attribution, but its baseline_suite/after_suite are prose rather than armed JSON (manifest.md:21-22).",
+    "write_paths": "declared as reckon/crew/recovery_watch.py, tests/test_a_producer_waits_on_a_foreign_seat.py and a fragment/figure pair; the diff also touches reckon/crew/runs.py, recorded in the manifest under scope_grant as granted by the coordinator, while the fragment and figure were never written."
+  },
+  "justifications": {
+    "durability": "the pre-existing tests/test_a_replacement_producer_publishes_transitions.py reproduces the defect at db9c10f5f (gate-confirm.log: 2 failed) and passes at head, and the new cases assert against literals (tests/test_a_producer_waits_on_a_foreign_seat.py:193 row['from_state'] == 'working') with a recorded negative control (negative-control.log, 3 failed, EXIT=1); docked one for the companion parity assertions at :195-197 that compare the stream's row to the ticker's own row and hold only in step.",
+    "evidence": "the done-when names tests/test_a_producer_waits_on_a_foreign_seat.py and base/head gate arms, and the source manifest records each arm's log with its EXIT line (gate-base.log 384 passed EXIT=0, gate-head-2-rerun.log 395 passed EXIT=0) plus a negative control; docked because manifest.md:21-22 record baseline_suite/after_suite as prose rather than the armed-JSON shape the key requests, so the promotion-time annotation reads no log path and counts the added failures as unmeasured.",
+    "fit": "the new code follows the surrounding idiom of reckon/crew/recovery_watch.py:2240 (a module constant with a mechanism comment, a keyword-only sleeper defaulting to time.sleep, a @contextmanager) and adds no name the naming rules forbid.",
+    "goal_fidelity": "the goal is to keep a producer that finds the project seat on another host waiting and re-reading instead of exiting, and reckon/crew/recovery_watch.py:344 now loops, calling seat_names_a_live_foreign_producer and sleeping FOREIGN_SEAT_REREAD_SECONDS until the claim succeeds or the holder is gone.",
+    "reuse": "the change extends the seat owner rather than forking it, calling the shared watch_unit.seat_names_a_live_foreign_producer (reckon/crew/recovery_watch.py:44) instead of recomposing the two primitives, and reuses _seed_published_states; a capability search over reckon/ found no second implementation of a foreign-seat wait or of a seed read.",
+    "scope_discipline": "every path in the diff is inside the declared write paths except reckon/crew/runs.py, which the manifest records under scope_grant as granted for the repair round and which the seed relocation genuinely requires; the declared fragment and figure paths were not written because the done-when names no artifact."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Keep a producer that finds the project seat held on another host waiting and re-reading the seat instead of exiting'; reckon/crew/recovery_watch.py:344 loop-re-reads the seat and yields only when the claim succeeds or the foreign holder is gone.\nVERDICT done_when: the done-when names tests/test_a_producer_waits_on_a_foreign_seat.py and the base/head gate arms; the manifest records each arm to a log ending in EXIT= and I re-ran the named file (4 passed) and the pre-existing transitions file (7 passed) at head.\nVERDICT write_paths: read the manifest's declared scope; the diff is inside it save reckon/crew/runs.py, recorded under scope_grant as a coordinator grant, and the fragment/figure paths were not written.\nVERDICT manifest: read; it reports status complete, both commits, the gate arms and their logs, a negative control and a flake attribution, with baseline_suite/after_suite as prose rather than armed JSON.\nVERDICT diff: read commit by commit against 9677c89ed; db9c10f5f adds the seat wait, a0efd2253 relocates the seed read onto the producer record, and a 322-line test file lands beside them, all inside the goal.\nCALL_SITES: reckon/crew/recovery_watch.py:watch_ticker, reckon/crew/recovery_watch.py:watch_follow, reckon/crew_follow_commands.py:2972\nSCORE goal_fidelity: 20\nSCORE evidence: 18\nSCORE scope_discipline: 15\nSCORE durability: 19\nSCORE fit: 18\nSCORE reuse: 20\nFINDING reckon/crew/recovery_watch.py:372 follow-on: a foreign holder whose stream is stale but whose seat lock is still held takes the pre-change exit path, so a hung foreign producer still cycles the unit.\nFINDING manifest.md:21 follow-on: baseline_suite/after_suite are prose rather than armed JSON, so the derived added-failure count reads as unmeasured rather than 0.\n",
+  "review_run_id": "legacy-48597ae5d113",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "9677c89ed7411f96d716bcad44dd1c102025a303",
+  "reviewed_head_sha": "a0efd2253a958398e459b743913030bd7d3809a8",
+  "reviewed_run_id": "r-20261014T194358037727-a-producer-waits-on-a-foreign-seat",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T21:36:25Z",
+  "total": 110
+}
