@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T22:44:38.136Z",
+  "dispatched_at": "2026-10-15T22:37:48Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:219",
+      "id": "wiring-1",
+      "reason": "without a followup naming \u00a714 no coordinator is told to build it, and it would stall behind a plan that reads as fully routed.",
+      "text": "\u00a714 is freshly declared `implementable` in `plan-section-declarations` (line 24), but the only open followup, `f-araiid-009`, names \u00a78, \u00a711, \u00a710, \u00a712, \u00a713 and \u00a76 and does not name \u00a714, so the plan's newest implementable section has no dispatch route",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:128",
+      "id": "wiring-2",
+      "reason": "a \u00a76 measurement taken before \u00a714 lands is stale the moment \u00a714 merges, and the plan's success criterion would be asserted against a superseded tree.",
+      "text": "\u00a76's deliverable re-measures after \"\u00a72 to \u00a75 and the read fixes \u00a78, \u00a710, \u00a711, \u00a712 and \u00a713\", omitting \u00a714, which changes `resolve_resource`/identification on the very roadmap read path \u00a76 measures (\u00a714's own Why: \"Every slug resolve whose memo is cold pays this cost: a dispatch, an MCP read and a roadmap\"), so the section repeats the stale-and-incomplete dependency list a prior review already corrected once for \u00a78\u2013\u00a713",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:167",
+      "id": "wiring-3",
+      "reason": "two implementable sections editing `resources.py` with no declared edge can be dispatched concurrently and lose one node's edits at merge.",
+      "text": "\u00a714 writes `reckon/resources.py`, the same file \u00a712 writes (still `implementable`, and its own text says \"This section runs after \u00a78 and \u00a710, because it also writes `resources.py`\"), yet \u00a714 declares no ordering relative to \u00a712, unlike every other section that shares a file",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e14d13cac28e0cf755cd0a36db982ca4abfa050e9fdac4acbfa2b5e3afd1fb01",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 58,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T223705963312-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "61ca17b5b74ebaba08fb8a7c3089002d566fd732",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `picker._resolved_plan_path` (reckon/crew/picker/__init__.py:125), `resources.resolve_resource` (reckon/resources.py:728), `_canonical_identity_is_unique` (reckon/resources.py:690), `identify_resource` (reckon/resources.py:276), `_identify_meta` (reckon/resources.py:263), `parse_meta` (reckon/_plan_html.py:2204), commit `ec53f8f61` (fix(plans): make the record fast path defer to the parser, 2026-09-26) and the plan `lane-and-model-routing.html` all resolve; `health-tool-latency/scripts/profile_reads.py` resolves under the health-review report directory cited in \u00a71.",
+    "done_when": "pass \u2014 every changed section names a negative control that makes the guarded thing happen (`s6`'s base arm must exceed the deadline; `s14`'s control routes identification back through the full `parse_meta` and requires the zero-entry case to fail).",
+    "evidence_paths": "pass \u2014 `s6` writes to the run's log directory and `s14` to the run's log directory; neither names a node-local or session-scratch path.",
+    "naming": "pass \u2014 `s14` and `s6` name no plan, sprint or ticket label in code symbols or filenames; the commit and run ids they cite are plan-doc citations, not source names.",
+    "reasoning": "pass \u2014 \u00a714's root cause matches its evidence (verified: `_parse_meta_uncached` calls `read_state` for a record-carrying document, `reckon/_plan_html.py:2274`, introduced by `ec53f8f61`), its mechanism produces its done-when, and its production caller is named (`_canonical_identity_is_unique` through `_resolved_plan_path`).",
+    "single_goal": "pass \u2014 `s6` delivers one measurement, `s14` one change (identification reads head only).",
+    "wiring": "a finding \u2014 \u00a714 is declared `implementable` but appears in no followup, so it has no dispatch route."
+  },
+  "section_digests": {
+    "_document": "f4637df53874e7106caf8714189b621097aade634a64f452e334c0c56a39f2b1",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "5c8f5c0f196e3c26f731e3b66256c7b9f91ddaff459ce8273f51eef5e484cd06",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "b37a251dd9f6bf01cc18bf1b863798857d2f85ef1a22aeb239fe53b1c5adb2f6",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T22:50:56.326597+00:00"
+}
