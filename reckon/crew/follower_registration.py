@@ -10,7 +10,7 @@ import socket
 import stat
 import time
 from collections.abc import Mapping
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Any
 
@@ -82,6 +82,58 @@ def follower_lock_path(project: str, session: str) -> Path:
     readable = re.sub(r"[^A-Za-z0-9._-]", "-", session).strip("-") or "session"
     digest = hashlib.sha256(session.encode()).hexdigest()[:12]
     return follower_dir(project) / f"{readable}-{digest}.lock"
+
+
+def follower_lease_path(project: str, session: str) -> Path:
+    """Lease file a follower renews to prove it still delivers.
+
+    Beside the registration, and separate from it. The registration is
+    rewritten in place so it keeps the inode its advisory lock lives on, which
+    a reader on another host cannot take; but an in-place rewrite can be read
+    half-written by such a reader. The lease is a whole record published by a
+    rename, so it crosses the shared home even where the lock does not.
+    """
+    return follower_lock_path(project, session).with_suffix(".lease")
+
+
+def renew_follower_lease(
+    project: str, session: str, *, now: float | None = None
+) -> None:
+    """Record this follower's renewal instant in the lease beside its registration.
+
+    Called on the follower's wait pass. A reader on the follower's own host
+    judges the registration by its advisory lock and process, but a reader on
+    another host cannot, so the lease is what it has.
+    """
+    moment = time.time() if now is None else float(now)
+    _write_json_atomically(
+        follower_lease_path(project, session),
+        {"project": project, "session": session, "renewed_at": moment},
+    )
+
+
+def _producer_lease_seconds() -> float:
+    """The producer's own lease window, which the follower lease is judged by."""
+    from reckon.crew.runs import producer_lease_seconds
+
+    return producer_lease_seconds()
+
+
+def _follower_lease_renewed_at(lock_path: Path) -> float | None:
+    """The instant a registration's lease last renewed, or None if it has not.
+
+    The lease is published by a rename, so one read sees a whole record. A
+    reader that finds it missing or unparseable reads once more before judging
+    it, because the writer may be mid-rename and the previous record is a truer
+    answer than an empty one.
+    """
+    record = _read_json_file(lock_path.with_suffix(".lease"))
+    if record is None:
+        return None
+    value = record.get("renewed_at")
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value)
 
 
 def _pipe_reader_pids(inode: int, *, exclude: int) -> list[int]:
@@ -498,28 +550,24 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
             try:
                 fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:
-                registered = True
+                lock_held = True
                 record = _read_watch_record(handle)
             else:
-                registered = False
+                lock_held = False
                 record = _read_watch_record(handle)
                 fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-        if record or not registered or time.monotonic() >= deadline:
+        if record or not lock_held or time.monotonic() >= deadline:
             break
         time.sleep(0.005)
 
     pid = record.get("pid")
     foreign = _seat_names_a_foreign_host(record)
+    lease_renewed_at: float | None = None
     if foreign:
         # A pid is issued by one kernel, so a registration written on another
         # host names a process this host's table cannot answer for: its absence
-        # here is not evidence of death, the rule a foreign watcher
-        # registration is already read under. The one fact that crosses the
-        # shared home is the registration's own advisory lock, which the
-        # follower holds for as long as it delivers and the kernel frees the
-        # instant it ends -- so a held lock is a live follower and a free one is
-        # a follower that has gone. The pid probes are left unknown rather than
-        # run against a number this host cannot see.
+        # here is not evidence of death. The pid probes are left unknown rather
+        # than run against a number this host cannot see.
         running: bool | None = None
         consumer_alive: bool | None = None
     else:
@@ -548,26 +596,46 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
         else None
     )
     delivery = observed or str(record.get("delivery") or "unknown")
-    # The two checkers that would read the local table are gated on "is not
-    # False", not on truth: for a foreign registration they answer unknown, and
-    # unknown must not be reported as death. The lock is what answers a foreign
-    # one, so a free lock is a released follower and reads gone.
-    live = bool(
-        registered
-        and running is not False
-        and consumer_alive is not False
-        and delivery in DELIVERING_MODES
-    )
+
+    if foreign:
+        # The registration's advisory lock is node-local on this home, so a
+        # reader here reads every foreign follower's lock as free whether it is
+        # delivering or not. The one fact that crosses is the lease the follower
+        # renews beside its registration, and it decides the whole verdict: a
+        # registration whose lease is fresh is registered, live and not
+        # released, and a stale or missing one has gone -- registered False and
+        # released True, exactly as a free lock reads for a registration on this
+        # host. Reading only ``live`` from the lease would still let a live
+        # foreign follower read ``released: True`` through ``watch_state``.
+        lease_renewed_at = _follower_lease_renewed_at(path)
+        lease_fresh = (
+            lease_renewed_at is not None
+            and time.time() - lease_renewed_at <= _producer_lease_seconds()
+        )
+        registered = lease_fresh
+        live = lease_fresh
+    else:
+        registered = lock_held
+        # The two checkers that would read the local table are gated on "is not
+        # False", not on truth: an unknown reading must not be reported as
+        # death.
+        live = bool(
+            registered
+            and running is not False
+            and consumer_alive is not False
+            and delivery in DELIVERING_MODES
+        )
+
     # A row that is not live says which condition ended it. Its `since` records
     # when it attached, so a dead row's only timestamp makes it look older and
     # better established rather than stale — and a reader counting rows to ask
     # "is this project covered" is then answered by a registration that ended.
     reason = ""
     if not live:
-        if not registered and record:
-            # A foreign record's process is not this host's to confirm gone, so
-            # its release is stated without that claim.
-            if foreign or running:
+        if foreign:
+            reason = "its lease has not been renewed within the producer's lease window"
+        elif not registered and record:
+            if running:
                 reason = "the registration was released"
             else:
                 reason = (
@@ -576,11 +644,6 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
                 )
         elif not registered:
             reason = "no registration remains"
-        elif foreign:
-            reason = (
-                f"its lines end in a {delivery}, which nothing reads until the "
-                "command exits — and a follower does not exit"
-            )
         elif not running:
             reason = f"the registered process {record.get('pid')} is gone"
         elif not consumer_alive:
@@ -598,9 +661,9 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
         "live": live,
         "host": _seat_host(record),
         "foreign": foreign,
-        # A registration file that exists while its advisory lock is free is a
-        # follower that was armed and has since expired; a path that was never
-        # created is a session that never armed one. Both read as not
+        # A registration file that exists while it does not read as registered
+        # is a follower that was armed and has since expired; a path that was
+        # never created is a session that never armed one. Both read as not
         # registered, so a release keeps a record of its own — the file the
         # release left behind — and this is the flag that tells them apart.
         "released": bool(record) and not registered,
@@ -609,6 +672,7 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
         "delivery_recorded": str(record.get("delivery") or "unknown"),
         "delivery_observed": observed,
         "consumer_alive": consumer_alive,
+        "lease_renewed_at": lease_renewed_at,
         "follower": record,
     }
 
@@ -705,6 +769,11 @@ def sweep_released_followers(
                     continue
                 session = str(_read_watch_record(handle).get("session") or path.stem)
                 path.unlink()
+                # The lease is only ever read beside a registration, so it goes
+                # with the registration rather than accumulating one file per
+                # session that has ever followed the project.
+                with suppress(OSError):
+                    path.with_suffix(".lease").unlink()
             finally:
                 fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
         finally:
@@ -728,8 +797,10 @@ from .process_liveness import (  # noqa: E402
 
 
 from .run_paths import (  # noqa: E402
+    _read_json_file,
     _read_watch_record,
     _utc_now,
+    _write_json_atomically,
     _write_watch_record,
     watch_lock_path,
 )
