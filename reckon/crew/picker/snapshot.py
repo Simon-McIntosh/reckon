@@ -433,14 +433,18 @@ def _budget_view_request_key(
     records: list[dict[str, Any]],
     *,
     cached_only: bool,
+    session: str = "",
 ) -> dict[str, Any]:
     """The selecting fields of one budget view, hashed into its cache name.
 
     Two calls sharing every field read the same files and the same records and
-    share one entry; a changed project, repository, configuration, record count
-    or cache mode selects a different entry rather than serving a figure built
-    for another request. The records themselves are keyed by the ledger stamp in
-    the value's stamp rather than re-hashed here, because the committed rows a
+    share one entry; a changed project, repository, configuration, record count,
+    cache mode or session selects a different entry rather than serving a figure
+    built for another request. The session is one of those fields because a
+    session-scoped lift releases one session's reserves and no other's, so a
+    view composed for one session must never be served to a caller asking for a
+    different one. The records themselves are keyed by the ledger stamp in the
+    value's stamp rather than re-hashed here, because the committed rows a
     caller passes are exactly the rows the ledger files carry.
     """
 
@@ -449,6 +453,7 @@ def _budget_view_request_key(
         "repo": str(Path(repo).resolve()),
         "cached_only": cached_only,
         "records": len(records) if records is not None else None,
+        "session": session,
         "budget_lifts": capabilities.file_stamp(str(budget_lift.lifts_path())),
         "config": hashlib.sha256(
             json.dumps(config, sort_keys=True, default=str).encode()
@@ -464,8 +469,16 @@ def _compose_budget_report(
     moment: datetime,
     *,
     cached_only: bool,
+    session: str = "",
 ) -> dict[str, Any]:
-    """Compose one dated live budget view at a stated moment."""
+    """Compose one dated live budget view at a stated moment.
+
+    ``session`` is the dispatching session the view is asked about. It is handed
+    to the preflight, which resolves each backend's budget block for that
+    session, so a session-scoped lift releases the reserves on the path the
+    picker reads. No session is passed as no session, which is how a caller
+    naming none behaves as it did before the preflight took one.
+    """
 
     windows = budget.recorded_windows(project, config, root=repo, records=records)
     document = paid_lanes.read_document()
@@ -489,6 +502,7 @@ def _compose_budget_report(
         records=records,
         now=moment,
         document=document,
+        session=session or None,
         **({"probe_runner": lambda _: {}} if cached_only else {}),
     )
     by_backend = {entry["backend"]: entry for entry in report["backends"]}
@@ -606,6 +620,7 @@ def budget_view(
     cached_only: bool = False,
     now: datetime | None = None,
     cache_root: str | Path | None = None,
+    session: str = "",
 ) -> dict[str, Any]:
     """Compose one dated live budget view, its file-derived part cached.
 
@@ -617,6 +632,12 @@ def budget_view(
     reuses it, and every time-derived field is recomputed on each call so a
     cached entry never serves a stale age. ``now`` and ``cache_root`` exist so a
     caller can pin the clock and the cache location.
+
+    ``session`` is the dispatching session the view is composed for. It reaches
+    the preflight so a session-scoped lift releases that session's reserves, and
+    it is part of the cache key so a figure built for one session is never
+    served from cache to another. A caller naming no session reads the figures a
+    sessionless preflight produced, unchanged.
     """
 
     moment = datetime.now(UTC) if now is None else now
@@ -633,7 +654,13 @@ def budget_view(
 
     def compose() -> dict[str, Any]:
         return _compose_budget_report(
-            project, config, repo, records, moment, cached_only=cached_only
+            project,
+            config,
+            repo,
+            records,
+            moment,
+            cached_only=cached_only,
+            session=session,
         )
 
     def build() -> dict[str, Any]:
@@ -655,7 +682,7 @@ def budget_view(
 
     try:
         request_key = _budget_view_request_key(
-            project, config, repo, records, cached_only=cached_only
+            project, config, repo, records, cached_only=cached_only, session=session
         )
         name = "budget-view-" + hashlib.sha256(
             json.dumps(request_key, sort_keys=True, default=str).encode()
@@ -697,7 +724,14 @@ def candidates(
     view = (
         budget_snapshot
         if budget_snapshot is not None
-        else budget_view(request.project, config, repo, rows, cached_only=cached_only)
+        else budget_view(
+            request.project,
+            config,
+            repo,
+            rows,
+            cached_only=cached_only,
+            session=request.session,
+        )
     )
     # The node's estimate is independent of the candidate. Parsing its plan
     # once keeps a backend census from multiplying identical repository reads.

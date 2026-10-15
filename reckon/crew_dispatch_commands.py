@@ -1323,7 +1323,7 @@ def crew_dispatch(
             picker_verdict_inputs,
             picker_budget,
             picker_input_errors,
-        ) = build_picker_inputs(project, config, picker_repo)
+        ) = build_picker_inputs(project, config, picker_repo, session=session)
         # The dry-run preview holds no dispatcher-resolved authority, so it
         # resolves the same one and passes it, reporting a resolution failure
         # on the pick rather than leaving the granted fragment silently charged.

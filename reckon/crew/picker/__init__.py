@@ -344,7 +344,12 @@ def pick(
         budget_snapshot
         if budget_snapshot is not None
         else snapshot.budget_view(
-            request.project, config, repo, rows, cached_only=cached_only
+            request.project,
+            config,
+            repo,
+            rows,
+            cached_only=cached_only,
+            session=request.session,
         )
     )
     # One docs-tree scan serves every candidate's plan lookup in this pick.
