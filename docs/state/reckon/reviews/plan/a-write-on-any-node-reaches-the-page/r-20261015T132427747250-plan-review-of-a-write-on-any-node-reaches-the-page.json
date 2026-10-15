@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T13:35:14.552Z",
+  "dispatched_at": "2026-10-15T13:26:06Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-write-on-any-node-reaches-the-page.html:41",
+      "id": "reasoning-1",
+      "reason": "the plan must state the pipe counts as a change source inside `wait` (drain it and return true), else an implementer adding the pipe to the select while keeping the early False return silently defeats the one path the feature exists to deliver.",
+      "text": "\u00a72 says \"The stream's wait selects on that pipe beside its own inotify descriptor\", but the cited owner `_ProjectChangeWatch.wait` (serve.py:196-205) returns `False` \u2014 which the stream loop `while watch.wait(self.connection)` (serve.py:2814) treats as a disconnect and exits \u2014 whenever `self.fd` is not in the readable set, unconditionally; a cross-node change fires only the subscription pipe (the whole reason every inotify watch is silenced in this test), so the inotify fd is silent, `wait` returns `False`, and the stream closes before it can emit the `change` the done-when requires",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f4a4c099dff1dbd6040b680005c1b9b38c1a8f273e6d81941c336fd199eb5fba",
+  "plan_slug": "a-write-on-any-node-reaches-the-page",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T132427747250-plan-review-of-a-write-on-any-node-reaches-the-page",
+  "reviewed_blob_sha": "bee6779577f9785d12b6f31b9f880a401eb42054",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves at the stated line: `_STATE_ROOT` serve.py:322, `_FleetChangeWatch(mounts.values())` serve.py:4017, `_head_identity` 1291, `_file_identity` 1262, `_walk_discovery_signature` 1659, `_ProjectChangeWatch(docs_dir)` 2782, `/_index/` handler 3282, `/_discover/` handler 3358, `repo_dir = docs_dir.parent` 1588, `fleet_index` read 844; no extensionless hrefs are present.",
+    "done_when": "pass \u2014 the node's done-when is measurable (per-assertion polls of `/_index`, `/_changes`, `_git_head`, detector-thread liveness, existing suites) and declares a negative control: \"disables the detector, and the new-document test must then fail\".",
+    "evidence_paths": "pass \u2014 the gate runs the repo test file under `tests/`, and the manifest-recorded measurements (stat count, wall time) land on the run's own manifest, not a scratchpad or node-local temporary.",
+    "naming": "pass \u2014 the node `cross-node-writes-refresh-the-index` and the file `tests/test_cross_node_writes_refresh_the_index.py` are named after the mechanism; no plan label, stage name or ticket number reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 the changed unit's primary path, an open stream waking on its subscription pipe, does not produce its own done-when under the cited owner's present `wait` body.",
+    "single_goal": "pass \u2014 the one node `cross-node-writes-refresh-the-index` carries one deliverable: cross-node refresh of a tree's derived views and its open streams.",
+    "wiring": "pass \u2014 the plan is standalone (`plan-standalone` declares no plan waits on it and it waits on none); it declares no `depends-on`/`informs`/`gates`, and its one followup `f-awoan-001` routes to `/reckon-build a-write-on-any-node-reaches-the-page \u00a72`, the node the section table names."
+  },
+  "section_digests": {
+    "_document": "375c8a0250252dfd8391140955e2378dc5d099cc39e269da05940553993894d2",
+    "s1": "58a6ee92b653b4651357b52cc08c1e80b329e4482143b6bc8ae18570764bcd52",
+    "s2": "aa3d5109d842cd9ac84e848b9d60a6bc88aeda7c5e684f00dc31acd103679e73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T13:35:29.006452+00:00"
+}
