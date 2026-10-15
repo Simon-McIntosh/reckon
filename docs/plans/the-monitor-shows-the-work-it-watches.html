@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="105">
+<meta name="plan-version" content="106">
 <meta name="plan-modified" content="2026-10-15">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -626,6 +626,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261014T202826692283-review-of-a-lift-is-drawn-once-per-pane-6e38a06e27e4" data-who="reckon-build" data-when="2026-10-14T20:44:38.756Z">
     <div class="r-comment-body"><p>an independent review record for r-20261014T190832327112-a-lift-is-drawn-once-per-pane is stored at &lt;store&gt;/reckon/r-20261014T190832327112-a-lift-is-drawn-once-per-pane.json with status parsed, all six dimensions scored in 0..20, reviewed_base_sha 08e743032449b3baa2002e032d92e78ce8f8261d and reviewed_head_sha 6e38a06e27e494e5d6f2b6dc15135f3dcc0eeb17, added_failure_count 0 and added_failure_ids []; it covers only the single commit the run gained since its prior review (6e38a06e27, a docstring-only repair of tests/test_a_lift_is_drawn_once_per_pane.py).</p></div>
+</div>
+<div class="r-comment" data-section="s25" data-id="c-run-r-20261015T061918202296-a-reload-republishes-no-unmoved-run" data-who="reckon-build" data-when="2026-10-15T07:03:06.116Z">
+    <div class="r-comment-body"><p>The first sweep of _publish_watch_transitions in reckon/crew/runs.py now appends no row for a live run whose state equals the state the stream last published for it, so a producer reload republishes only runs that moved (a transition from the predecessor&#x27;s state) or that the stream never named (a baseline); measure 155 passed at head against 154 at base, zero added failures, and the unchanged-run case is red under the base first sweep (1 failed, EXIT=1).</p></div>
 </div>
 </section>
 </main>
