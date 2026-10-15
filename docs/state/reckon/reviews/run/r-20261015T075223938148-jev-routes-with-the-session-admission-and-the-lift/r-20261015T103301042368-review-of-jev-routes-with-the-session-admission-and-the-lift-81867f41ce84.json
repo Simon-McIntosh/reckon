@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "91f8944b0725d3eb7a7f874a456fb879790960f9",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/picker/snapshot.py:750 (recovery._review_excluded_backends, session=request.session)",
+    "reckon/crew/recovery_review_dispatch.py:1192 (_ordered_review_lanes -> _review_excluded_backends)",
+    "reckon/crew/recovery_review_dispatch.py:1702 (_no_lane_reason, session=fields[\"session\"])",
+    "reckon/crew/recovery_review_dispatch.py:1731 (_review_lane_candidates, session=fields[\"session\"])",
+    "reckon/crew/budget_group.py:159 (_review_excluded_backends, no session)"
+  ],
+  "completed_at": "2026-10-15T10:45:19.475Z",
+  "dispatched_at": "2026-10-15T10:33:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "line": "807",
+      "severity": "follow-on",
+      "text": "follow-on: dispatch_repair_for_run and the review-subject composers at reckon/crew/recovery_review_subject.py:810,824,869 still call _review_lane_candidates/_review_lane_plan/_no_lane_reason without a session, so a lift scoped to the asking session is invisible on those paths and the parity the repair restores in the composed-review path is not held across the whole reflex family."
+    },
+    {
+      "file": "tests/test_jev_routes_with_the_session_admission_and_the_lift.py",
+      "line": "471",
+      "severity": "follow-on",
+      "text": "follow-on: the negative control's arm A counts the exclusion case among its three failures, but that case fails with a TypeError from the changed helper signature rather than a reverted clause, so only the reset case in arm A and the reset case in arm B demonstrate a behavioural revert."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T075223938148-jev-routes-with-the-session-admission-and-the-lift/manifest.md",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: the after_suite command field reads \"cd <worktree> && PYTHONPATH=<worktree> ...\", so the record's own command is not the literal command the store expects even though log_path resolves to a log whose header carries it; carried from the prior review and unchanged by this increment."
+    }
+  ],
+  "head_log_revision": "1b1a5d5ac97bd5ca11877e35bded3252563be7bc",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit from ebcb2cbc4436cb3f65bebd74bd54a37f74f1b4e0 to 81867f41ce84e4fddc0c249faae2f11b647e8c85; two commits touch four files, all inside the declared scope, and the fix threads session=fields[\"session\"] from the compose path into the lane helpers.",
+    "done_when": "the done_when names tests/test_jev_routes_with_the_session_admission_and_the_lift.py and a base/head gate; the manifest records 11 passed and both gate logs.",
+    "goal": "the node's goal is that Jev's rendered state and guidance carry the session's own worker slots and any lift; the increment answers the prior blocking finding and reckon/crew/recovery_review_dispatch.py:1108-1117 now resolves the reflex lift with the published reading and the asking session.",
+    "manifest": "read at runs/r-20261015T075223938148-jev-routes-with-the-session-admission-and-the-lift/manifest.md; status complete, recording the repair commit, the two-arm negative control, and the base/head gate logs.",
+    "write_paths": "the gained diff writes exactly the four declared paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_jev_routes_with_the_session_admission_and_the_lift.py:553 and :565-575 assert independent outcomes that the negative control reddens when each clause is reverted.",
+    "evidence": "gate-base-round2.log and gate-head-round3.log share the same three failure ids (test_congested_local_lane_still_reaches_the_picker.py::test_congested_local_lane_routing[alpha], [explicit], test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated) so added_failure_count is 0, and the node test file re-ran at head with 11 passed.",
+    "fit": "the added session keyword matches the sibling callers of budget_lift.effective_budget at reckon/crew/budget_group.py:210 and reckon/budget.py:2651.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:1108-1117 resolves the reflex lift through the one resolver with the published reading and the asking session.",
+    "reuse": "reckon/crew/recovery_review_dispatch.py:1108 reads through the existing budget_lift.published_readings rather than a second reader.",
+    "scope_discipline": "the gained diff touches only the four declared paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: ebcb2cbc4436cb3f65bebd74bd54a37f74f1b4e0\nreviewed_head_sha: 81867f41ce84e4fddc0c249faae2f11b647e8c85\nVERDICT goal: the node's goal is that Jev's rendered state and guidance carry the session's own worker slots and any lift in force; the reviewed increment answers the prior review's blocking finding, and reckon/crew/recovery_review_dispatch.py:1094-1146 now hands budget_lift.effective_budget the group's freshest published reading (budget_lift.published_readings) and the asking session, where it previously passed readings=None and no session.\nVERDICT done_when: the done_when names tests/test_jev_routes_with_the_session_admission_and_the_lift.py and a base/head gate over the importers of the changed modules; the manifest records 11 passed for the node test file and the two gate logs, and the file now holds the two cases that pin the repair's clauses.\nVERDICT write_paths: the node declares the review-relevant paths; the gained diff writes exactly the four declared paths docs/evidence/fragments/a-held-session-routes-to-a-serving-lane/jev-routes-with-the-session-admission-and-the-lift.html, reckon/crew/picker/snapshot.py, reckon/crew/recovery_review_dispatch.py and tests/test_jev_routes_with_the_session_admission_and_the_lift.py, and nothing else.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T075223938148-jev-routes-with-the-session-admission-and-the-lift/manifest.md; status complete, and it records the repair commit 1b1a5d5ac, the two-arm negative control, and the base/head gate logs.\nVERDICT diff: read commit by commit from ebcb2cbc4436cb3f65bebd74bd54a37f74f1b4e0 to 81867f41ce84e4fddc0c249faae2f11b647e8c85; two commits (1b1a5d5ac the fix, 81867f41c the fragment update) touch four files, all inside the declared scope, and the fix threads session=fields[\"session\"] from the compose path into _ordered_review_lanes, _review_lane_plan, _review_lane_candidates and _no_lane_reason.\nCALL_SITES: reckon/crew/picker/snapshot.py:750 (recovery._review_excluded_backends, now with session=request.session), reckon/crew/recovery_review_dispatch.py:1192 (_ordered_review_lanes -> _review_excluded_backends), reckon/crew/recovery_review_dispatch.py:1702 (_no_lane_reason with session=fields[\"session\"]), reckon/crew/recovery_review_dispatch.py:1731 (_review_lane_candidates with session=fields[\"session\"]), reckon/crew/budget_group.py:159 (calls without session)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:1108-1117 resolves the reflex lift through the one resolver with the group's published reading and the asking session, which is the parity the finding named and section 2 requires.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-base-round2.log (3 failed, 857 passed) and gate-head-round3.log (3 failed, 869 passed) share the same three failure ids so added_failure_count is 0, and tests/test_jev_routes_with_the_session_admission_and_the_lift.py re-run at head gave 11 passed EXIT=0, though the source manifest's after_suite command still carries <worktree> placeholders.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained diff touches only the four declared paths listed in the node's write_paths and carries no edit outside the goal.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_jev_routes_with_the_session_admission_and_the_lift.py:553 asserts _review_excluded_backends(config) == {CODEX} for an ended lift and :565-575 asserts the session-scoped outcome per session, each independent of the value under test and each shown red by the negative control when its clause is reverted.\nSCORE fit: 18\nJUSTIFICATION fit: the added session keyword matches the sibling callers of the resolver at reckon/crew/budget_group.py:210 and reckon/budget.py:2651, and no plan, sprint or ticket identifier is introduced.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/recovery_review_dispatch.py:1108 reads the group's reading through the existing budget_lift.published_readings rather than writing a second reader, extending the owner of that capability.\nFINDING reckon/crew/recovery_repair_dispatch.py:807 follow-on: dispatch_repair_for_run and the review-subject composers at reckon/crew/recovery_review_subject.py:810,824,869 still call _review_lane_candidates/_review_lane_plan/_no_lane_reason without a session, so a lift scoped to the asking session is invisible on those paths and the parity the repair restores in the composed-review path is not held across the whole reflex family.\nFINDING tests/test_jev_routes_with_the_session_admission_and_the_lift.py:471 follow-on: the negative control's arm A (base revision with this node's test file) counts the exclusion case among its three failures, but that case fails with a TypeError from the changed helper signature rather than a reverted clause, so only the reset case in arm A and the reset case in arm B demonstrate a behavioural revert.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T075223938148-jev-routes-with-the-session-admission-and-the-lift/manifest.md:16 follow-on: the after_suite command field reads \"cd <worktree> && PYTHONPATH=<worktree> ...\", so the record's own command is not the literal command the store expects even though log_path resolves to a log whose header carries it; carried from the prior review and unchanged by this increment.\n",
+  "review_run_id": "r-20261015T103301042368-review-of-jev-routes-with-the-session-admission-and-the-lift-81867f41ce84",
+  "reviewed_base_sha": "ebcb2cbc4436cb3f65bebd74bd54a37f74f1b4e0",
+  "reviewed_head_sha": "81867f41ce84e4fddc0c249faae2f11b647e8c85",
+  "reviewed_run_id": "r-20261015T075223938148-jev-routes-with-the-session-admission-and-the-lift",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T10:42:34.758144+00:00",
+  "total": 112
+}
