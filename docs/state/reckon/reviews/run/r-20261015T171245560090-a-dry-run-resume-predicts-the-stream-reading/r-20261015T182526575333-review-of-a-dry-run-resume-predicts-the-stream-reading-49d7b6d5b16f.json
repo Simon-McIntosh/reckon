@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/resumption.py:1829",
+    "reckon/crew/resumption.py:1831",
+    "reckon/crew/dispatch_sessions.py:1109",
+    "reckon/crew/dispatch_sessions.py:1663"
+  ],
+  "commits_read": [
+    "af04316ea",
+    "49d7b6d5b16f9090703fca7d9187528a8aabfedb"
+  ],
+  "completed_at": "2026-10-15T18:46:41.209Z",
+  "dispatched_at": "2026-10-15T18:26:25Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T171245560090-a-dry-run-resume-predicts-the-stream-reading/manifest.md",
+      "line": "6",
+      "severity": "follow-on",
+      "text": "follow-on: the checkpoint names the unfinished chunk as the fifth while the tests line at line 11 and the gate logs (base-chunk02.log and head-chunk02.log, the only logs with no EXIT line) name chunk02, so the two fields disagree about which chunk's delta is unstated."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "1044",
+      "severity": "follow-on",
+      "text": "follow-on: `_stream_reading_refusal` returns None whenever the newest stream is not in motion, so for a run on another host with an unknown liveness and a stream carrying no assistant turn `_launcher_refusal` returns None while `_observed_end_refusal` refuses the missing end; production is unaffected because the manifest records both are consulted at reckon/crew/resumption.py:1829-1831, but the prediction helper still does not fully mirror the launcher's end gate."
+    },
+    {
+      "file": "docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/a-dry-run-resume-predicts-the-stream-reading.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the landing commit 49d7b6d5b body claims it adds the gate figure, but no figure landed and docs/figures/a-seat-held-elsewhere-is-not-restarted/ does not exist, so a reader following the commit message for a figure finds none."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit: af04316ea extracts `_observed_process_reading` from `_observed_end_refusal`'s inline fold and adds `_stream_reading_refusal`, wiring both doors through them, and 49d7b6d5b adds the landing fragment; the extraction preserves `_observed_end_refusal`'s semantics and adds only the stream-reading refusal to `_launcher_refusal`.",
+    "done_when": "section 17's done-when names a parity case in tests/test_dry_run_predicts_the_launcher.py for another host's pid with a stream moving inside the stall window, both doors refusing, and both proceeding past the window; the manifest records that case and I re-ran the file at head and saw 8 passed, matching the manifest's 8-against-7.",
+    "goal": "the node goal is that `_launcher_refusal` applies the same stream reading `_observed_end_refusal` applies, through one shared helper rather than a copy, so a dry run predicts the refusal the launcher makes; at reckon/crew/resumption.py:981 the prediction now returns `_stream_reading_refusal(record, reading=_observed_process_reading(record))`, and `_observed_end_refusal` consults the same two helpers at reckon/crew/resumption.py:1076-1081.",
+    "manifest": "read; it records the parity case, the negative control and a five-chunk gate over the 37 importing test files, and it reports the unfinished chunk rather than a finished one, though its checkpoint line names the fifth chunk while its tests line and the gate logs name chunk02.",
+    "write_paths": "section 17 names reckon/crew/resumption.py and tests/test_dry_run_predicts_the_launcher.py, and the manifest adds the landing fragment; the diff d68b2d592..49d7b6d5b changes exactly those two code files plus docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/a-dry-run-resume-predicts-the-stream-reading.html, every path inside the declared set."
+  },
+  "justifications": {
+    "durability": "the recorded negative control reddens the added case (negative-control.log fails at tests/test_dry_run_predicts_the_launcher.py:228), and the added assertions hold the prediction's verdict against `_observed_end_refusal`'s independent one rather than a value the test passed in.",
+    "evidence": "the parity case and its negative control reproduce at tests/test_dry_run_predicts_the_launcher.py:207, but the done-when's same-pass-and-fail-ids clause is unstated for one gate chunk, since base-chunk02.log and head-chunk02.log carry no EXIT line.",
+    "fit": "the two added helpers follow the mechanism-named, long-docstring idiom of reckon/crew/resumption.py:984.",
+    "goal_fidelity": "reckon/crew/resumption.py:981 makes the prediction return the same `_stream_reading_refusal` the launcher's `_observed_end_refusal` consults at reckon/crew/resumption.py:1080, so the two doors cannot disagree about the stream.",
+    "reuse": "`_observed_process_reading` extracts `_observed_end_refusal`'s own inline fold rather than forking it, and both helpers stand on the existing owners `_process_reading` and `_newest_stream_in_motion` in reckon/crew/recovery_liveness.py.",
+    "scope_discipline": "every path in the diff is inside the paths the manifest declares."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that `_launcher_refusal` applies the same stream reading `_observed_end_refusal` applies, through one shared helper rather than a copy, so a dry run predicts the refusal the launcher makes; at reckon/crew/resumption.py:981 the prediction now returns `_stream_reading_refusal(record, reading=_observed_process_reading(record))`, and `_observed_end_refusal` consults the same two helpers at reckon/crew/resumption.py:1076-1081.\nVERDICT done_when: section 17's done-when names a parity case in tests/test_dry_run_predicts_the_launcher.py for another host's pid with a stream moving inside the stall window, both doors refusing, and both proceeding past the window; the manifest records that case and I re-ran the file at head and saw 8 passed, matching the manifest's 8-against-7.\nVERDICT write_paths: section 17 names reckon/crew/resumption.py and tests/test_dry_run_predicts_the_launcher.py, and the manifest adds the landing fragment; the diff d68b2d592..49d7b6d5b changes exactly those two code files plus docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/a-dry-run-resume-predicts-the-stream-reading.html, every path inside the declared set.\nVERDICT manifest: read; it records the parity case, the negative control and a five-chunk gate over the 37 importing test files, and it reports the unfinished chunk rather than a finished one, though its checkpoint line names the fifth chunk while its tests line and the gate logs name chunk02.\nVERDICT diff: read commit by commit: af04316ea extracts `_observed_process_reading` from `_observed_end_refusal`'s inline fold and adds `_stream_reading_refusal`, wiring both doors through them, and 49d7b6d5b adds the landing fragment; the extraction preserves `_observed_end_refusal`'s semantics and adds only the stream-reading refusal to `_launcher_refusal`.\nCALL_SITES: reckon/crew/resumption.py:1829, reckon/crew/resumption.py:1831, reckon/crew/dispatch_sessions.py:1109, reckon/crew/dispatch_sessions.py:1663\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:981 makes the prediction return the same `_stream_reading_refusal` the launcher's `_observed_end_refusal` consults at reckon/crew/resumption.py:1080, so the two doors cannot disagree about the stream.\nSCORE evidence: 14\nJUSTIFICATION evidence: the parity case and its negative control reproduce at tests/test_dry_run_predicts_the_launcher.py:207, but the done-when's same-pass-and-fail-ids clause is unstated for one gate chunk, since base-chunk02.log and head-chunk02.log carry no EXIT line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the paths the manifest declares.\nSCORE durability: 19\nJUSTIFICATION durability: the recorded negative control reddens the added case (negative-control.log fails at tests/test_dry_run_predicts_the_launcher.py:228), and the added assertions hold the prediction's verdict against `_observed_end_refusal`'s independent one rather than a value the test passed in.\nSCORE fit: 18\nJUSTIFICATION fit: the two added helpers follow the mechanism-named, long-docstring idiom of reckon/crew/resumption.py:984.\nSCORE reuse: 20\nJUSTIFICATION reuse: `_observed_process_reading` extracts `_observed_end_refusal`'s own inline fold rather than forking it, and both helpers stand on the existing owners `_process_reading` and `_newest_stream_in_motion` in reckon/crew/recovery_liveness.py.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T171245560090-a-dry-run-resume-predicts-the-stream-reading/manifest.md:6 follow-on: the checkpoint names the unfinished chunk as the fifth while the tests line at line 11 and the gate logs (base-chunk02.log and head-chunk02.log, the only logs with no EXIT line) name chunk02, so the two fields disagree about which chunk's delta is unstated.\nFINDING reckon/crew/resumption.py:1044 follow-on: `_stream_reading_refusal` returns None whenever the newest stream is not in motion, so for a run on another host with an unknown liveness and a stream carrying no assistant turn `_launcher_refusal` returns None while `_observed_end_refusal` refuses the missing end; production is unaffected because the manifest records both are consulted at reckon/crew/resumption.py:1829-1831, but the prediction helper still does not fully mirror the launcher's end gate.\nFINDING docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/a-dry-run-resume-predicts-the-stream-reading.html:1 follow-on: the landing commit 49d7b6d5b body claims it adds the gate figure, but no figure landed and docs/figures/a-seat-held-elsewhere-is-not-restarted/ does not exist, so a reader following the commit message for a figure finds none.\n",
+  "review_run_id": "r-20261015T182526575333-review-of-a-dry-run-resume-predicts-the-stream-reading-49d7b6d5b16f",
+  "reviewed_base": "d68b2d592bb444b1ed1e8c4c8f30ae76fb44b5e9",
+  "reviewed_base_sha": "d68b2d592bb444b1ed1e8c4c8f30ae76fb44b5e9",
+  "reviewed_commit": "49d7b6d5b16f9090703fca7d9187528a8aabfedb",
+  "reviewed_head_sha": "49d7b6d5b16f9090703fca7d9187528a8aabfedb",
+  "reviewed_run_id": "r-20261015T171245560090-a-dry-run-resume-predicts-the-stream-reading",
+  "reviewer_run_id": "r-20261015T182526575333-review-of-a-dry-run-resume-predicts-the-stream-reading-49d7b6d5b16f",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T18:48:41.938811+00:00",
+  "total": 109
+}
