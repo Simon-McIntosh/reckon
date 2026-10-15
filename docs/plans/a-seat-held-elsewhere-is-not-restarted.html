@@ -25,7 +25,7 @@
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="54">
+<meta name="plan-version" content="55">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -281,7 +281,10 @@
     <div class="r-comment-body"><p>§11 landed. A resume can no longer launch beside an attempt another node holds: each attempt number is claimed with an exclusive create, and an unknown liveness with a moving stream refuses. Merged as <code>474754591</code>. Gate: 653 passed at head against 648 at base, with the same single pre-existing failure in each. Review: 102/120. The duplicated claim mechanism and the dry-run parity gap are filed as the next sections. <a href="/reckon/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s11">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261015T152907807302-a-resume-never-launches-beside-another-node" data-who="reckon-build" data-when="2026-10-15T16:16:55.966Z">
-    <div class="r-comment-body"><p>The resume guard&#x27;s two cross-node facts landed — each launch reserves its attempt with an `O_CREAT|O_EXCL` claim in the run directory (of two doors reading one current attempt, one creates the claim and launches, the other refuses with the existing in-flight wording and keeps its advice; a claim past the pointer&#x27;s attempt or past the launch window is reclaimed), and a run whose current attempt carries another host&#x27;s pid is decided by its own stream through `_newest_stream_in_motion` (in motion inside the stall window refuses, quiet past it launches); `tests/test_a_resume_never_launches_beside_another_node.py` reports `5 passed`, and the declared mutation `with the exclusive attempt claim removed, both doors must launch` reports `2 failed, 3 passed in 14.10s` with `EXIT=1`.</p></div>
+    <div class="r-comment-body"><p>The resume guard's two cross-node facts landed — each launch reserves its attempt with an `O_CREAT|O_EXCL` claim in the run directory (of two doors reading one current attempt, one creates the claim and launches, the other refuses with the existing in-flight wording and keeps its advice; a claim past the pointer's attempt or past the launch window is reclaimed), and a run whose current attempt carries another host's pid is decided by its own stream through `_newest_stream_in_motion` (in motion inside the stall window refuses, quiet past it launches); `tests/test_a_resume_never_launches_beside_another_node.py` reports `5 passed`, and the declared mutation `with the exclusive attempt claim removed, both doors must launch` reports `2 failed, 3 passed in 14.10s` with `EXIT=1`.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261015T161738531981-review-of-a-resume-never-launches-beside-another-node-d1ceef9e6e04" data-who="reckon-build" data-when="2026-10-15T16:36:23.926Z">
+    <div class="r-comment-body"><p>Review of r-20261015T152907807302-a-resume-never-launches-beside-another-node stored at r-...node.json and r-...node.at-d1ceef9e6e04....json: status parsed, six dimensions scored goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 19, reuse 9 (total 102), reviewing diff f2ac7cc28be5409beae3b2c8b13fda58c83c9148..d1ceef9e6e04c296bf37033497f10e336a588c25 (reviewed_base_sha/reviewed_head_sha recorded), with added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s own gate logs; three follow-on findings, none blocking.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">

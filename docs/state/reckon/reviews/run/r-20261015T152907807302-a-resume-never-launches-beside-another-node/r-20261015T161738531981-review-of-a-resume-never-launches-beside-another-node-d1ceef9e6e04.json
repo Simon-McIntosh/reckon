@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "set(after_suite.failure_ids) - set(baseline_suite.failure_ids): both arms carry tests/test_crew_recover.py::test_a_stopped_run_with_no_session_anywhere_still_reads_discardable, so the added set is empty; read from gate-base-*.log and gate-head-*.log under the reviewed run directory",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1330",
+    "reckon/crew/resumption.py:1811",
+    "reckon/crew/resumption.py:1793",
+    "reckon/crew/dispatch_sessions.py:1109"
+  ],
+  "completed_at": "2026-10-15T16:36:23.926Z",
+  "dispatched_at": "2026-10-15T16:18:11Z",
+  "findings": [
+    {
+      "file": "tests/test_a_resume_never_launches_beside_another_node.py",
+      "line": "254",
+      "severity": "follow-on",
+      "text": "follow-on: assert launched[\"pid\"] == liveness._absent_pid() compares the record against the value the test's own launcher seam returns (_resume returns {\"pid\": pid} straight from the seam at reckon/crew/resumption.py:1315), so it holds whenever the door returns without raising and cannot distinguish a launch from a return that never spawned; the same shape recurs at :311, though both tests retain a real guard in the raise/no-raise on the same calls."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "380",
+      "severity": "follow-on",
+      "text": "follow-on: claim_next_attempt and _create_attempt_claim re-implement the O_CREAT|O_EXCL claim-file-with-reclaim capability the repository already owns at reckon/crew/dispatch_claims.py:491 (_claim_node_dispatch, with _reclaim_stale_node_dispatch_claim and _empty_claim_is_stale); the staleness predicates differ (pointer-progress versus holder-liveness) so a full merge is a refactor, but the mechanism is duplicated rather than factored, and the bounded-reclaim comment is copied near-verbatim."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T152907807302-a-resume-never-launches-beside-another-node/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the head-arm `tests:` summary states the four chunk logs sum to \"654 passed, 1 failed\" where the logs themselves sum to 653 passed, 1 failed (76+384+96+97); the substantive claim is unaffected, but the quoted total does not reconcile with the logs it cites."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read against base f2ac7cc28: the single commit d1ceef9e adds attempt_claim_path/_create_attempt_claim/_claim_may_be_reclaimed/claim_next_attempt/_newest_stream_ended/_move_attempt_claim_aside/release_attempt_claim and extends _observed_end_refusal and _resume in resumption.py, leaves the fenced dispatch_sessions.py unchanged, and adds the test file and the evidence fragment.",
+    "done_when": "the done_when's five cases are asserted in tests/test_a_resume_never_launches_beside_another_node.py (two doors one launch :229, stream-in-motion refuses :275, stream past the window launches :296, abandoned claim reclaimed :317, fresh claim not reclaimed :341) and each arm's result is recorded in the run's gate-head-*/gate-base-* and negative-control logs, not claimed.",
+    "goal": "the node goal is to refuse a resume beside an attempt on another node through an exclusive attempt claim and a stream-in-motion reading; reckon/crew/resumption.py:380 claim_next_attempt reserves the attempt with O_CREAT|O_EXCL and :991 _observed_end_refusal now decides an unknown-liveness run from its own stream through _newest_stream_in_motion, and both landed.",
+    "manifest": "read; status complete; it records the four-chunk base/head gate on the identical single failing id, the negative control (2 failed, EXIT=1), measurement_module and measurement_cwd, and the reverted sha256; its head-arm pass total reads 654 where the four head logs I summed give 653.",
+    "write_paths": "the manifest declares reckon/crew/resumption.py, reckon/crew/dispatch_sessions.py, tests/test_a_resume_never_launches_beside_another_node.py, the evidence fragment and a figures directory; git diff --name-only f2ac7cc28..d1ceef9e lists exactly resumption.py, the new test and the evidence fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows tests/test_a_resume_never_launches_beside_another_node.py:229 reddening (2 failed, EXIT=1) when the exclusive claim is removed, so the two-door guard is falsified by reinstating the regression; the pid assertions at :254 and :311 are weaker but the raise/no-raise on the same calls still fails if the door refuses.",
+    "evidence": "the five done-when cases are asserted in tests/test_a_resume_never_launches_beside_another_node.py:229-359 and the gate result is recorded in the run's gate-head-*.log and gate-base-*.log (each 1 failed on the same id) with negative-control.log EXIT=1.",
+    "fit": "the additions follow the module's idiom (module-level bounded-loop constant beside the existing guards, private helpers with mechanism docstrings) at reckon/crew/resumption.py:284-411 and carry no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/resumption.py:1262 takes the exclusive attempt claim before any plan is built and :991-1049 decides an unknown-liveness run by its own stream, which is the two cross-node facts the goal names, on the one launch path all doors share.",
+    "reuse": "reckon/crew/resumption.py:380 claim_next_attempt restates the exclusive-create claim-and-reclaim mechanism already owned by reckon/crew/dispatch_claims.py:491 _claim_node_dispatch (with _reclaim_stale_node_dispatch_claim), including a near-verbatim copy of its bounded-reclaim comment, rather than extending that owner.",
+    "scope_discipline": "git diff --name-only f2ac7cc28..d1ceef9e lists exactly the declared resumption.py, the declared new test and the declared evidence fragment, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to refuse a resume beside an attempt on another node through an exclusive attempt claim and a stream-in-motion reading; reckon/crew/resumption.py:380 claim_next_attempt reserves the attempt with O_CREAT|O_EXCL and :991 _observed_end_refusal now decides an unknown-liveness run from its own stream through _newest_stream_in_motion, and both landed.\nVERDICT done_when: the done_when's five cases are asserted in tests/test_a_resume_never_launches_beside_another_node.py (two doors one launch :229, stream-in-motion refuses :275, stream past the window launches :296, abandoned claim reclaimed :317, fresh claim not reclaimed :341) and each arm's result is recorded in the run's gate-head-*/gate-base-* and negative-control logs, not claimed.\nVERDICT write_paths: the manifest declares reckon/crew/resumption.py, reckon/crew/dispatch_sessions.py, tests/test_a_resume_never_launches_beside_another_node.py, the evidence fragment and a figures directory; git diff --name-only f2ac7cc28..d1ceef9e lists exactly resumption.py, the new test and the evidence fragment, all inside them.\nVERDICT manifest: read; status complete; it records the four-chunk base/head gate on the identical single failing id, the negative control (2 failed, EXIT=1), measurement_module and measurement_cwd, and the reverted sha256; its head-arm pass total reads 654 where the four head logs I summed give 653.\nVERDICT diff: read against base f2ac7cc28: the single commit d1ceef9e adds attempt_claim_path/_create_attempt_claim/_claim_may_be_reclaimed/claim_next_attempt/_newest_stream_ended/_move_attempt_claim_aside/release_attempt_claim and extends _observed_end_refusal and _resume in resumption.py, leaves the fenced dispatch_sessions.py unchanged, and adds the test file and the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:1330, reckon/crew/resumption.py:1811, reckon/crew/resumption.py:1793, reckon/crew/dispatch_sessions.py:1109\nSCORE goal_fidelity: 19\nSCORE evidence: 18\nSCORE scope_discipline: 20\nSCORE durability: 17\nSCORE fit: 19\nSCORE reuse: 9\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:1262 takes the exclusive attempt claim before any plan is built and :991-1049 decides an unknown-liveness run by its own stream, which is the two cross-node facts the goal names, on the one launch path all doors share.\nJUSTIFICATION evidence: the five done-when cases are asserted in tests/test_a_resume_never_launches_beside_another_node.py:229-359 and the gate result is recorded in the run's gate-head-*.log and gate-base-*.log (each 1 failed on the same id) with negative-control.log EXIT=1.\nJUSTIFICATION scope_discipline: git diff --name-only f2ac7cc28..d1ceef9e lists exactly the declared resumption.py, the declared new test and the declared evidence fragment, and nothing else.\nJUSTIFICATION durability: negative-control.log shows tests/test_a_resume_never_launches_beside_another_node.py:229 reddening (2 failed, EXIT=1) when the exclusive claim is removed, so the two-door guard is falsified by reinstating the regression; the pid assertions at :254 and :311 are weaker but the raise/no-raise on the same calls still fails if the door refuses.\nJUSTIFICATION fit: the additions follow the module's idiom (module-level bounded-loop constant beside the existing guards, private helpers with mechanism docstrings) at reckon/crew/resumption.py:284-411 and carry no plan, ticket or version label.\nJUSTIFICATION reuse: reckon/crew/resumption.py:380 claim_next_attempt restates the exclusive-create claim-and-reclaim mechanism already owned by reckon/crew/dispatch_claims.py:491 _claim_node_dispatch (with _reclaim_stale_node_dispatch_claim), including a near-verbatim copy of its bounded-reclaim comment, rather than extending that owner.\nFINDING tests/test_a_resume_never_launches_beside_another_node.py:254 follow-on: assert launched[\"pid\"] == liveness._absent_pid() compares the record against the value the test's own launcher seam returns (_resume returns {\"pid\": pid} straight from the seam at reckon/crew/resumption.py:1315), so it holds whenever the door returns without raising and cannot distinguish a launch from a return that never spawned; the same shape recurs at :311, though both tests retain a real guard in the raise/no-raise on the same calls.\nFINDING reckon/crew/resumption.py:380 follow-on: claim_next_attempt and _create_attempt_claim re-implement the O_CREAT|O_EXCL claim-file-with-reclaim capability the repository already owns at reckon/crew/dispatch_claims.py:491 (_claim_node_dispatch, with _reclaim_stale_node_dispatch_claim and _empty_claim_is_stale); the staleness predicates differ (pointer-progress versus holder-liveness) so a full merge is a refactor, but the mechanism is duplicated rather than factored, and the bounded-reclaim comment is copied near-verbatim.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T152907807302-a-resume-never-launches-beside-another-node/manifest.md:11 follow-on: the head-arm `tests:` summary states the four chunk logs sum to \"654 passed, 1 failed\" where the logs themselves sum to 653 passed, 1 failed (76+384+96+97); the substantive claim is unaffected, but the quoted total does not reconcile with the logs it cites.\n",
+  "review_run_id": "r-20261015T161738531981-review-of-a-resume-never-launches-beside-another-node-d1ceef9e6e04",
+  "reviewed_base_sha": "f2ac7cc28be5409beae3b2c8b13fda58c83c9148",
+  "reviewed_head_sha": "d1ceef9e6e04c296bf37033497f10e336a588c25",
+  "reviewed_run_id": "r-20261015T152907807302-a-resume-never-launches-beside-another-node",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 9,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T16:29:46.898191+00:00",
+  "total": 102
+}
