@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:863",
+    "reckon/mcp.py:1969",
+    "reckon/crew/picker/snapshot.py:481",
+    "reckon/crew/picker/snapshot.py:655",
+    "reckon/crew/routing.py:395",
+    "reckon/crew/dispatch_admission.py:322"
+  ],
+  "completed_at": "2026-10-15T07:50:51.214Z",
+  "dispatched_at": "2026-10-15T07:37:43Z",
+  "findings": [
+    {
+      "file": "reckon/budget.py",
+      "line": "1655",
+      "severity": "follow-on",
+      "text": "follow-on: the preflight hands effective_block a multi-row _lift_history while the routing path passes at most one reading row (reckon/crew/dispatch_admission.py:325), so a reset-anchored lift can end on one path and not the other."
+    },
+    {
+      "file": "reckon/budget.py",
+      "line": "1738",
+      "severity": "follow-on",
+      "text": "follow-on: report[\"policy\"] stays the configured block while the per-backend verdicts now carry a per-group judged block, so under a lift the report's own policy and its verdicts disagree."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read against base 8ef0fdc744d6542d013a9799331464535ceea199; the single commit 687da66054858ea2061cf94eda38ee5a4bbdbe7c changes three files, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_the_preflight_reads_the_lift.py and its cases for the 95% codex-sub reading under a global uncapped lift, session scoping, cache refresh and review-exclusion parity; all four landed and their result is recorded in the manifest.",
+    "goal": "the node's goal is that budget.preflight judge each backend against the block its group's governing lift puts in force; reckon/budget.py:1652 resolves it through budget_group.effective_block, the same function routing calls.",
+    "manifest": "read; it states the importer gate ran 642 passed at base and 646 at head, the negative control ran 3 failed and 1 passed, and it names its logs.",
+    "write_paths": "the manifest declares reckon/budget.py, reckon/crew/picker/snapshot.py, tests/test_the_preflight_reads_the_lift.py and the unused fragment and figure paths; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "the negative control reinstated the configured-block defect and three cases in tests/test_the_preflight_reads_the_lift.py reddened with EXIT=1.",
+    "evidence": "tests/test_the_preflight_reads_the_lift.py:84 asserts effective_ceiling_pct 100 after a grant, matching the done_when's stated figure, and the manifest records the run.",
+    "fit": "reckon/budget.py:1661 composes {**config, \"budget\": block} inline, mirroring the private reckon/crew/routing.py:396 helper rather than sharing it.",
+    "goal_fidelity": "reckon/budget.py:1652 hands each backend the budget_group.effective_block result for its group, so a lift and the review-exclusion rule both reach the verdict.",
+    "reuse": "the change calls the existing budget_group.effective_block owner at reckon/budget.py:1652 and adds no new definition, so no capability is forked.",
+    "scope_discipline": "every hunk in 687da66054858ea2061cf94eda38ee5a4bbdbe7c lands in reckon/budget.py, reckon/crew/picker/snapshot.py and the new test file, the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that budget.preflight judge each backend against the block its group's governing lift puts in force; reckon/budget.py:1652 resolves it through budget_group.effective_block, the same function routing calls.\nVERDICT done_when: the done_when names tests/test_the_preflight_reads_the_lift.py and its cases for the 95% codex-sub reading under a global uncapped lift, session scoping, cache refresh and review-exclusion parity; all four landed and their result is recorded in the manifest.\nVERDICT write_paths: the manifest declares reckon/budget.py, reckon/crew/picker/snapshot.py, tests/test_the_preflight_reads_the_lift.py and the unused fragment and figure paths; every path in the diff is inside them.\nVERDICT manifest: read; it states the importer gate ran 642 passed at base and 646 at head, the negative control ran 3 failed and 1 passed, and it names its logs.\nVERDICT diff: read against base 8ef0fdc744d6542d013a9799331464535ceea199; the single commit 687da66054858ea2061cf94eda38ee5a4bbdbe7c changes three files, all inside the declared scope.\nCALL_SITES: reckon/crew_dispatch_commands.py:863, reckon/mcp.py:1969, reckon/crew/picker/snapshot.py:481, reckon/crew/picker/snapshot.py:655, reckon/crew/routing.py:395, reckon/crew/dispatch_admission.py:322\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/budget.py:1652 hands each backend the budget_group.effective_block result for its group, so a lift and the review-exclusion rule both reach the verdict.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_the_preflight_reads_the_lift.py:84 asserts effective_ceiling_pct 100 after a grant, matching the done_when's stated figure, and the manifest records the run.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every hunk in 687da66054858ea2061cf94eda38ee5a4bbdbe7c lands in reckon/budget.py, reckon/crew/picker/snapshot.py and the new test file, the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control reinstated the configured-block defect and three cases in tests/test_the_preflight_reads_the_lift.py reddened with EXIT=1.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/budget.py:1661 composes {**config, \"budget\": block} inline, mirroring the private reckon/crew/routing.py:396 helper rather than sharing it.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change calls the existing budget_group.effective_block owner at reckon/budget.py:1652 and adds no new definition, so no capability is forked.\nFINDING reckon/budget.py:1655 follow-on: the preflight hands effective_block a multi-row _lift_history while the routing path passes at most one reading row (reckon/crew/dispatch_admission.py:325), so a reset-anchored lift can end on one path and not the other.\nFINDING reckon/budget.py:1738 follow-on: report[\"policy\"] stays the configured block while the per-backend verdicts now carry a per-group judged block, so under a lift the report's own policy and its verdicts disagree.\n",
+  "review_run_id": "r-20261015T073712473480-review-of-the-preflight-reads-the-lift-687da6605485",
+  "reviewed_base_sha": "8ef0fdc744d6542d013a9799331464535ceea199",
+  "reviewed_head_sha": "687da66054858ea2061cf94eda38ee5a4bbdbe7c",
+  "reviewed_run_id": "r-20261015T070209653969-the-preflight-reads-the-lift",
+  "reviewer_run_id": "r-20261015T073712473480-review-of-the-preflight-reads-the-lift-687da6605485",
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T07:45:52.071611+00:00",
+  "total": 111
+}
