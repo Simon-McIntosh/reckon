@@ -1449,6 +1449,23 @@ def change_lane(
             f"run {run_id!r} already uses backend {destination!r}; resume it without "
             "a backend override"
         )
+    if str(record.get("phase") or "") == "queued":
+        # A queued request has never launched, so it names no prompt and no
+        # worktree for this path to rebuild. Its move is the admission pass's
+        # own recomposition, given the new backend: the recorded node and the
+        # request's recorded dispatch options — its waivers among them — are
+        # carried into the launch rather than a second prompt composed for an
+        # attempt that has not started.
+        from reckon.crew.queue_admission import move_queued_run
+
+        return move_queued_run(
+            run_id,
+            destination,
+            reason=explanation,
+            config=config,
+            launch=launch,
+            launcher=launcher,
+        )
     repository = Path(str(record.get("repo") or ".")).resolve()
     node = _recorded_task_node(record)
     if estimated_hours is not None:

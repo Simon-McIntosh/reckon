@@ -1404,8 +1404,9 @@ def crew_redispatch(
     try:
         record = crew_module.read_pointer(run_id)
         project = str(record.get("project") or "")
+        overrides = tuple((record.get("dispatch_options") or {}).get("overrides") or ())
         config = (
-            _resolved_flight(flight_module, project, record.get("repo"), ())
+            _resolved_flight(flight_module, project, record.get("repo"), overrides)
             if project
             else {}
         )
