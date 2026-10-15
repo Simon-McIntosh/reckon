@@ -39,9 +39,10 @@ RUN_QUEUED = "r-awaiting-admission"
 RUN_MINE = "r-mine"
 RUN_ADMITTED = "r-admitted"
 
-# The grace this case drives. A real caller holds the two-minute default; the
-# cases below shorten it so the whole hold fits on their own clock.
-GRACE = 30.0
+# The grace the cases drive: the module's own named constant, so the hold
+# under test is the one a real follower runs with and shortening it is the
+# mutation the negative control applies.
+GRACE = follow_commands.FOLLOWER_SETTLE_GRACE_SECONDS
 # The wait pass's step, real time only: the case's own clock never advances
 # with it, so an empty window lasts exactly as long as the case says.
 POLL = 0.005
@@ -147,14 +148,15 @@ def _yield_briefly(_seconds: float) -> None:
 class _Arming:
     """One follower generator consumed on a thread, with its own clock."""
 
-    def __init__(self, *, settle_interval: float = GRACE, clock: _Clock | None = None):
+    def __init__(self, *, clock: _Clock | None = None):
         self.clock = clock if clock is not None else _Clock()
         self.events: list[dict] = []
         self.stop = threading.Event()
         self.thread: threading.Thread | None = None
-        self._settle_interval = settle_interval
 
     def start(self) -> _Arming:
+        # No settle_interval: the grace under test is the module's own default,
+        # so shortening the constant is the mutation the control applies.
         generator = follow_commands._follow_watch_lines(
             PROJECT,
             session=SESSION,
@@ -164,7 +166,6 @@ class _Arming:
             sweep=None,
             clock=self.clock,
             settle=True,
-            settle_interval=self._settle_interval,
         )
 
         def run() -> None:
@@ -202,6 +203,17 @@ def _wait_until(predicate, *, timeout: float, description: str) -> None:
             return
         time.sleep(0.01)
     pytest.fail(f"timed out after {timeout:g}s waiting for {description}")
+
+
+def test_the_settle_grace_is_two_minutes() -> None:
+    """The hold is one named constant of two minutes.
+
+    It bounds the dispatch an admission pass makes -- the queued request's
+    pointer deleted, the admitted run's worktree built, its pointer written --
+    and that window is what the pane must survive, so the figure is a bound on
+    the handover rather than a poll interval.
+    """
+    assert follow_commands.FOLLOWER_SETTLE_GRACE_SECONDS == 120.0
 
 
 def test_a_handover_keeps_the_pane_and_draws_the_admitted_run(home: Path) -> None:
