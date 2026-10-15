@@ -285,8 +285,8 @@ edit_plan(project="<project>", slug="<slug>", ops=[
 Do not set `impl`: on a plan with section declarations it is derived on every
 read, effort-weighted over the section records when they cover every
 declaration, otherwise sections declared `done` over those declared `done` or
-`implementable`. A `set` is refused in the first case and accepted but never
-served in the second. It moves only when a section is ticked, so a node that
+`implementable`. The store refuses a `set` in both cases. It moves only when a
+section is ticked, so a node that
 lands without closing its section leaves it unchanged. After ticking a section, its `section_declarations` entry reads `done`; a
 section comment records a landed node, not completion, so a node that
 does not close its section leaves that followup open — never wait for section

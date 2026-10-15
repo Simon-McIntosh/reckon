@@ -931,8 +931,8 @@ versioned request object) and `links` are required, not defaulted.
 **Do not set `impl`.** On a plan with section declarations it is derived on
 every read: effort-weighted over the section records when they cover every
 declaration, otherwise sections declared `done` over those declared `done` or
-`implementable`. A `set` is refused in the first case and accepted but never
-served in the second. It moves only when a section's declaration is ticked to
+`implementable`. The store refuses a `set` in both cases. It moves only when a
+section's declaration is ticked to
 `done`, so record a node that lands without closing its section in its comment,
 not in `impl`.
 

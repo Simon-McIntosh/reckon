@@ -527,7 +527,6 @@ def test_the_chain_stays_intact_from_worker_to_sprint(setup) -> None:
         project,
         "plan-a",
         [
-            {"op": "set", "path": "impl", "value": 0.5},
             {
                 "op": "resolve",
                 "target": "followups",

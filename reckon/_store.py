@@ -2512,17 +2512,24 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
     if head == "impl":
         from reckon import _plan_html
 
-        if (
-            _plan_html.derive_impl_from_sections(
-                working.get("sections"), working.get("section_declarations")
-            )
-            is not None
-        ):
+        _, source = _plan_html.derive_impl_with_source(
+            working.get("sections"), working.get("section_declarations")
+        )
+        if source == "computed":
             raise OpError(
                 "impl is computed from the section records on this plan: the sum of "
                 "effort over sections whose status is done, over that sum plus the "
                 "predicted effort of every remaining implementable section. It is "
                 "not authorable — move a section's status instead."
+            )
+        if source == "declarations":
+            # Every read derives impl from the declaration count and discards the
+            # stored figure, so an accepted write would be lost without a trace.
+            raise OpError(
+                "impl is counted from the section declarations on this plan: "
+                "sections declared done over those declared done or implementable. "
+                "It is not authorable — set section_declarations.<id> to done when "
+                "a section lands instead."
             )
         try:
             f = float(value)

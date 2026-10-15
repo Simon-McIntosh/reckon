@@ -1,12 +1,10 @@
-"""An impl write is accepted while the section records are partial.
+"""An impl write is refused wherever the read derives impl.
 
 A plan whose section records do not cover its declarations serves the
-declaration count as its impl, sourced ``declarations``. The store nonetheless
-refuses ``set impl`` only once the records cover the declarations, so an
-authored write on a partially recorded plan is accepted — the served figure
-stays the declaration count and the carried meta and the server disagree until
-the next landing. The refusal belongs on the same coverage condition the
-computed figure answers on.
+declaration count as its impl, sourced ``declarations``; one whose records
+cover them serves the effort-weighted figure, sourced ``computed``. Either way
+every read discards a stored figure, so the store refuses ``set impl`` in both
+cases rather than accept a write that would never be served.
 
 A plan also changes its impl rule silently on its first section record, so the
 append or insert that writes that record carries a warning naming the change.
@@ -106,7 +104,7 @@ def _edit(checkout: Path, slug: str, op: dict) -> dict:
     )
 
 
-def test_set_impl_succeeds_while_records_are_partial(tmp_path: Path) -> None:
+def test_set_impl_is_refused_while_records_are_partial(tmp_path: Path) -> None:
     checkout = tmp_path / "repo"
     slug = "partial-records"
     path = _write_plan(checkout, slug, [_record("s1", "done")])
@@ -119,16 +117,18 @@ def test_set_impl_succeeds_while_records_are_partial(tmp_path: Path) -> None:
         )
         is None
     ), "the derived figure must not answer for a plan with partial records"
+    # The served figure is the declaration count: one done of one done plus one
+    # implementable.
+    assert state["impl"] == 0.5
+    assert state["impl_source"] == "declarations"
+    before = path.read_text(encoding="utf-8")
 
     result = _edit(checkout, slug, {"op": "set", "path": "impl", "value": 0.25})
 
-    assert result["ok"] is True, result
-    written = _plan_html.read_state(path.read_text(encoding="utf-8"))
-    # The write is accepted, but the served figure is the declaration count
-    # (one done of one done plus one implementable), so the carried meta and the
-    # server disagree until the next landing.
-    assert written["impl"] == 0.5
-    assert written["impl_source"] == "declarations"
+    assert result["ok"] is False, result
+    assert result["error"] == "op_error"
+    assert "counted from the section declarations" in result["detail"]
+    assert path.read_text(encoding="utf-8") == before
 
 
 def test_set_impl_is_refused_when_records_cover_the_declarations(

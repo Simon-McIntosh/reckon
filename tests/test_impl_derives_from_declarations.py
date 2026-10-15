@@ -224,7 +224,7 @@ def _record(section_id: str, status: str) -> dict:
     }
 
 
-def test_an_impl_write_on_the_partial_plan_is_accepted(tmp_path: Path) -> None:
+def test_an_impl_write_on_the_partial_plan_is_refused(tmp_path: Path) -> None:
     checkout = tmp_path / "repo"
     slug = "partial"
     path = checkout / "docs" / "plans" / f"{slug}.html"
@@ -244,6 +244,7 @@ def test_an_impl_write_on_the_partial_plan_is_accepted(tmp_path: Path) -> None:
     )
     state = _plan_html.read_state(path.read_text(encoding="utf-8"))
     assert state["impl_source"] == "declarations", state
+    before = path.read_text(encoding="utf-8")
 
     result = mcp_module._edit_plan_tool(
         "sample",
@@ -255,12 +256,9 @@ def test_an_impl_write_on_the_partial_plan_is_accepted(tmp_path: Path) -> None:
         ops=[{"op": "set", "path": "impl", "value": 0.25}],
     )
 
-    assert result["ok"] is True, result
-    written = _plan_html.read_state(path.read_text(encoding="utf-8"))
-    # The authored write is accepted (it is refused only once the records cover
-    # the declarations), but the served figure stays the declaration count, so
-    # the file's meta and the server disagree and the audit reports it.
-    assert written["impl"] == pytest.approx(0.5)
-    assert written["impl_source"] == "declarations"
-    codes = {finding.code for finding in doccheck.audit_file(path)}
-    assert "impl-meta-stale" in codes
+    # Every read serves the declaration count and would discard the written
+    # figure, so the store refuses the write instead of accepting one it never
+    # serves, and the file is left as it was.
+    assert result["ok"] is False, result
+    assert "counted from the section declarations" in result["detail"]
+    assert path.read_text(encoding="utf-8") == before
