@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>A promoted code review is stored</title>
+</head>
+<body>
+<h2 id="a-promoted-code-review-is-stored">A promoted code review is stored</h2>
+<p id="a-promoted-code-review-is-stored-summary">Promotion recognises a
+<code>review-code-&lt;key&gt;</code> promoting run, resolves its neighbourhood key
+with <code>code_review_identity</code>, finds the delivery through its
+<code>code-review.json</code> sidecar, and stores it in the staging store through
+the refusal-recording loop the plan-review path uses. Nothing is committed: a
+code review names neither a plan nor a reviewed run, so a committed payload
+would roll the landing back.</p>
+<p id="a-promoted-code-review-is-stored-diff">Changed 62 lines in
+<code>reckon/crew/promotion_checks.py</code> and added
+<code>tests/test_a_promoted_code_review_is_stored.py</code> (6 cases pass;
+negative control removes the code-review branch and the first case fails).</p>
+</body>
+</html>
