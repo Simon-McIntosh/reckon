@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T16:36:05.377Z",
+  "dispatched_at": "2026-10-15T16:27:50Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s15",
+      "id": "reasoning-1",
+      "reason": "the author would name the arguments that keep the bytes (`indent=None, mode=None`) or drop the byte-unchanged clause, so a builder following the \"implement as written\" contract is not left with a deliverable whose two clauses conflict and a measure that cannot tell.",
+      "text": "\u00a715's deliverable asserts \"The written bytes and the rename semantics are unchanged\" while naming only `_store.write_json_atomically` as the replacement; that writer's defaults serialise with `indent=2` and `mode=0o600`, so a literal call produces indented bytes and a 0o600 file, whereas the removed `run_paths._write_json_atomically` wrote compact bytes (`json.dumps(record, sort_keys=True) + \"\\n\"`) at the process default 0o644 \u2014 measured: run_paths b'{\"project\": \"reckon\", \"renewed_at\": 1760550000.5, \"session\": \"f653840f\"}\\n' mode 0o644 against _store b'{\\n  \"project\": \"reckon\",\\n  \"renewed_at\": 1760550000.5,\\n  \"session\": \"f653840f\"\\n}\\n' mode 0o600, not identical \u2014 and \u00a715's done-when (\"\u00a78's tests \u2026 pass unchanged\") cannot catch this, because those tests parse the JSON and are blind to indentation and mode.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html#_document",
+      "id": "wiring-1",
+      "reason": "resolving the delivered followup, closing the satisfied gate and filing the next one-line invocation for the remaining implementable sections is a plan edit, and without it the plan's own tracking tells a later reader the work is outstanding.",
+      "text": "the document's followup and gate state disagrees with the code: \u00a78 landed (bbaee1634) and \u00a710 landed (2fc0f81d7), yet the sole open followup `f-sheinr-003` still reads \"\u00a78 and \u00a710 are independent and can run in parallel\" with prompt `/reckon-build \u2026 \u00a78 \u00a710`, and gate `g-sheinr-1` still reads `open` for a merged \u00a78, so a coordinator reading the plan is told the cross-node follow-on is unbuilt and \u00a79 is still held \u2014 while the six implementable sections (\u00a79, \u00a711, \u00a712, \u00a713, \u00a714, \u00a715) have no open followup naming how to build them.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0a50ae39763664e0e76976398f9f5b1e842e1eab22461587be02733692635b49",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 51,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T162716252636-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "3fa76d830c621d8c521f1cd90fa87c8372aea4cb",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a714's cited detail text resolves at reckon/crew/recovery_classification.py:1052 (\"an in-harness run: liveness belongs to the calling harness\"), \u00a715's cited `_store.write_json_atomically`/`write_atomically` and `run_paths.py:60` resolve (reckon/_store.py:521,470; reckon/crew/run_paths.py:60), and its cited \"\u00a78's review scored reuse at 5 of 20\" resolves exactly in the stored review record (reuse 5, total 104).",
+    "done_when": "pass \u2014 every node's done-when is measurable and names a declared negative control; the two scoped controls are falsifiable (\u00a714 restores the catch-all wording so the first case must read \"in-harness\"; \u00a715 writes the lease truncate-then-write so the concurrent-reader case must fail).",
+    "evidence_paths": "pass \u2014 the scoped controls are logged \"under the run directory\", a durable path a later reader can open, not a session scratchpad or node-local temporary.",
+    "naming": "pass \u2014 the scoped unit text and the symbols it names (\"in-harness\", the catch-all running arm, `_write_json_atomically`) carry no plan labels, stage names, ticket numbers or version tags, with no changelog prose.",
+    "reasoning": "a finding \u2014 \u00a715's stated mechanism (\"the lease is written through `_store.write_json_atomically`\") cannot produce its own deliverable claim that \"the written bytes and the rename semantics are unchanged\", because `_store.write_json_atomically` serialises through different defaults than the writer it replaces.",
+    "single_goal": "pass \u2014 the scoped \u00a714 (separate the foreign-node detail from the in-harness detail) and \u00a715 (route the lease write through the repository's writer) each carry one deliverable, and the rest of the plan likewise.",
+    "wiring": "a finding \u2014 the plan's tracking relationships still describe \u00a78's cross-node work as outstanding: the only open followup (`f-sheinr-003`, docs/plans/a-seat-held-elsewhere-is-not-restarted.html:198) recommends `/reckon-build \u2026 \u00a78 \u00a710`, and both \u00a78 and \u00a710 have landed (bbaee1634 at :269, 2fc0f81d7 at :260), while gate `g-sheinr-1` (\u2026:280) still reads open for a merged \u00a78; \u00a79, \u00a711, \u00a712, \u00a713, \u00a714 and \u00a715 are all `implementable` with no open followup naming how to build them."
+  },
+  "section_digests": {
+    "_document": "eaff8a0c8a6d54b5764ab354f819a3b05d2a8bdabbfab88eca52cedf8f24992d",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s10": "fd9ced512f1fc6a0610cb111ec8c734e3c55a84ea11034055f5f1c9e60e0c649",
+    "s11": "9d7552bb9a0f7179067d09a67e819e7194fbbac1e34cf450bb6dd2631508389d",
+    "s12": "41b7e2f138ff584e94cdef995cae4ab65e47e6e0efb43dc6d30b0045664f611d",
+    "s13": "441358f17906d8fa159ba5911fc62cfb32cabff650e9ae63b1300701b43f7b6d",
+    "s14": "15dd48418b8a42e818c6a6c93d4914efb531dc5439e368a148fd7168b3a89faa",
+    "s15": "c32c8281db57accfa68e5484328984ab39577d8ed4b0290c28d0404fdc4baceb",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "96d5fc1c72a25970cab856a7dde0a3cab839fd87c83786b7b49ffc4c1dabb1ab",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad",
+    "s7": "d3e16f60d17ef3ee4666f9cd189aa6cd8e26f038173b65ee34b68f3f2cd822e7",
+    "s8": "b41130ef26282f759c1b7be0de0136701972d055ed7878e2f2d9cd21c96b4f63",
+    "s9": "a2cb7135c4bd3f1439c3ec948d6146c2f5b7527da59b1bbd4c7ce4c141ec3055"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T16:38:10.612161+00:00"
+}
