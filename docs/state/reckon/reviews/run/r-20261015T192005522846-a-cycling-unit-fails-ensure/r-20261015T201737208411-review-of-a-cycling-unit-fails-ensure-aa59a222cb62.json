@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_watch_seat_across_hosts.py::test_a_linger_failure_falls_back_rather_than_raising"
+  ],
+  "added_failures_note": "total capped at 5: the reviewed run added 1 failing test(s) not retired by name (tests/test_watch_seat_across_hosts.py::test_a_linger_failure_falls_back_rather_than_raising)",
+  "backend": "clive",
+  "base_log_revision": "cbe8c91fb664397b4d293e80053b013a3d34bef5",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3183",
+    "reckon/crew/watch_unit.py:407",
+    "reckon/crew/watch_unit.py:451",
+    "reckon/hooks/coordinator_obligations.py:790"
+  ],
+  "completed_at": "2026-10-15T20:42:10.753Z",
+  "dispatched_at": "2026-10-15T20:18:07Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T192005522846-a-cycling-unit-fails-ensure/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the baseline_suite and after_suite command values are angle-bracket placeholders rather than the literal command that ran, and after_suite.revision names fba3f027 while reviewed_head_sha is aa59a222, so no gate log measured the exact revision the record's pair names."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T192005522846-a-cycling-unit-fails-ensure/manifest.md",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the head chunk log the record names carries an error id, tests/test_watch_seat_across_hosts.py::test_a_linger_failure_falls_back_rather_than_raising, that the base chunk log it names does not, so the added-failure derivation reads one head-only id; the manifest's one-shared-error claim rests on the serial arms, not on the logs it points at."
+    },
+    {
+      "file": "tests/test_a_cycling_unit_fails_ensure.py",
+      "line": "133",
+      "severity": "follow-on",
+      "text": "follow-on: the restart_count_before and restart_count_after assertions compare the payload against the same literals the test fed ScriptedUnitManager, so they constrain only that the two readings are propagated in order; the exit-code and cycling assertions at :130-132 carry the regression guard."
+    },
+    {
+      "file": "tests/test_a_cycling_unit_fails_ensure.py",
+      "line": "38",
+      "severity": "follow-on",
+      "text": "follow-on: ScriptedUnitManager duplicates the CyclingWatchService seam, the RecordingSleeper class and the ensure_home fixture that tests/test_ensure_reports_a_cycling_unit.py:21-91 already owns, so a change to the ensure seam must now be mirrored in two files."
+    }
+  ],
+  "head_log_revision": "fba3f027a3ecdcd55663fcf6b7f7c99cfaac5e66",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read fba3f027 and aa59a222 against cbe8c91fb; four files, +253/-8, the only production behaviour changes being the sys.exit(1) in the --ensure branch and the NRestarts property-line parse in reckon/service.py.",
+    "done_when": "The done_when asks counts 3 then 5 to print cycling true and exit non-zero, counts 3 then 3 to exit 0, the parse pinned against three literal systemctl outputs, the same pass and fail ids at head and base, and a logged negative control; tests/test_a_cycling_unit_fails_ensure.py holds all five cases and the gate and negative-control logs bear each out.",
+    "goal": "The node goal is that crew watch --ensure exits non-zero on a cycling unit with its restart-count parse pinned by a test; reckon/crew_follow_commands.py:3183-3187 exits 1 on result.get(\"cycling\") after _emit_crew_result, and reckon/service.py:324-340 backs the parse with the three literal-output tests.",
+    "manifest": "Read; it records the chunked gate on both arms, the serial re-runs of the disputed chunk, a red negative control at EXIT=1, and one shared error, though the two chunk logs it names derive an added head-only error id the record does not carry.",
+    "write_paths": "The source manifest declares reckon/service.py, reckon/crew/watch_unit.py, reckon/crew_follow_commands.py, tests/test_a_cycling_unit_fails_ensure.py plus two docs paths, and every path in the diff against cbe8c91fb sits inside that set, with watch_unit.py and the figures path declared and left untouched."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows test_a_cycling_unit_makes_ensure_fail reddening with sys.exit(1) removed, and test_the_parse_reads_a_counted_unit at tests/test_a_cycling_unit_fails_ensure.py:179 reddens on the old whole-string int parse, so both halves fail on their target regression.",
+    "evidence": "the source manifest's own baseline_suite and after_suite logs derive one head-only error id at tests/test_watch_seat_across_hosts.py::test_a_linger_failure_falls_back_rather_than_raising, the gate ran at fba3f027 while reviewed_head_sha is aa59a222, and manifest.md:21-22 carry angle-bracket placeholders in the command fields.",
+    "fit": "parse_restart_count at reckon/service.py:324 carries the idiom of its neighbours in reckon/service.py, and the comment at reckon/crew_follow_commands.py:3184-3186 names the mechanism rather than a plan or ticket id.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:3187 exits 1 on result.get(\"cycling\") after _emit_crew_result, so the JSON the plan requires is still printed, and reckon/service.py:324-340 backs the parse with the three literal-output tests.",
+    "reuse": "no production owner exists for parsing systemctl show property output, so the parse forks nothing, but tests/test_a_cycling_unit_fails_ensure.py:38-91 re-implements the ScriptedUnitManager, RecordingSleeper and ensure_home helpers already owned by tests/test_ensure_reports_a_cycling_unit.py:21-91.",
+    "scope_discipline": "every changed path in the diff (reckon/service.py, reckon/crew_follow_commands.py, tests/test_a_cycling_unit_fails_ensure.py, the evidence fragment) is inside the declared write paths, and the evidence fragment is the landing record the dispatch requires."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that crew watch --ensure exits non-zero on a cycling unit with its restart-count parse pinned by a test; reckon/crew_follow_commands.py:3183-3187 exits 1 on result.get(\"cycling\") after _emit_crew_result, and reckon/service.py:324-340 backs the parse with the three literal-output tests.\nVERDICT done_when: The done_when asks counts 3 then 5 to print cycling true and exit non-zero, counts 3 then 3 to exit 0, the parse pinned against three literal systemctl outputs, the same pass and fail ids at head and base, and a logged negative control; tests/test_a_cycling_unit_fails_ensure.py holds all five cases and the gate and negative-control logs bear each out.\nVERDICT write_paths: The source manifest declares reckon/service.py, reckon/crew/watch_unit.py, reckon/crew_follow_commands.py, tests/test_a_cycling_unit_fails_ensure.py plus two docs paths, and every path in the diff against cbe8c91fb sits inside that set, with watch_unit.py and the figures path declared and left untouched.\nVERDICT manifest: Read; it records the chunked gate on both arms, the serial re-runs of the disputed chunk, a red negative control at EXIT=1, and one shared error, though the two chunk logs it names derive an added head-only error id the record does not carry.\nVERDICT diff: Read fba3f027 and aa59a222 against cbe8c91fb; four files, +253/-8, the only production behaviour changes being the sys.exit(1) in the --ensure branch and the NRestarts property-line parse in reckon/service.py.\nCALL_SITES: reckon/crew_follow_commands.py:3183, reckon/crew/watch_unit.py:407, reckon/crew/watch_unit.py:451, reckon/hooks/coordinator_obligations.py:790\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:3187 exits 1 on result.get(\"cycling\") after _emit_crew_result, so the JSON the plan requires is still printed, and reckon/service.py:324-340 backs the parse with the three literal-output tests.\nSCORE evidence: 15\nJUSTIFICATION evidence: the source manifest's own baseline_suite and after_suite logs derive one head-only error id at tests/test_watch_seat_across_hosts.py::test_a_linger_failure_falls_back_rather_than_raising, the gate ran at fba3f027 while reviewed_head_sha is aa59a222, and manifest.md:21-22 carry angle-bracket placeholders in the command fields.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path in the diff (reckon/service.py, reckon/crew_follow_commands.py, tests/test_a_cycling_unit_fails_ensure.py, the evidence fragment) is inside the declared write paths, and the evidence fragment is the landing record the dispatch requires.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log shows test_a_cycling_unit_makes_ensure_fail reddening with sys.exit(1) removed, and test_the_parse_reads_a_counted_unit at tests/test_a_cycling_unit_fails_ensure.py:179 reddens on the old whole-string int parse, so both halves fail on their target regression.\nSCORE fit: 18\nJUSTIFICATION fit: parse_restart_count at reckon/service.py:324 carries the idiom of its neighbours in reckon/service.py, and the comment at reckon/crew_follow_commands.py:3184-3186 names the mechanism rather than a plan or ticket id.\nSCORE reuse: 15\nJUSTIFICATION reuse: no production owner exists for parsing systemctl show property output, so the parse forks nothing, but tests/test_a_cycling_unit_fails_ensure.py:38-91 re-implements the ScriptedUnitManager, RecordingSleeper and ensure_home helpers already owned by tests/test_ensure_reports_a_cycling_unit.py:21-91.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T192005522846-a-cycling-unit-fails-ensure/manifest.md:21 follow-on: the baseline_suite and after_suite command values are angle-bracket placeholders rather than the literal command that ran, and after_suite.revision names fba3f027 while reviewed_head_sha is aa59a222, so no gate log measured the exact revision the record's pair names.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T192005522846-a-cycling-unit-fails-ensure/manifest.md:22 follow-on: the head chunk log the record names carries an error id, tests/test_watch_seat_across_hosts.py::test_a_linger_failure_falls_back_rather_than_raising, that the base chunk log it names does not, so the added-failure derivation reads one head-only id; the manifest's one-shared-error claim rests on the serial arms, not on the logs it points at.\nFINDING tests/test_a_cycling_unit_fails_ensure.py:133 follow-on: the restart_count_before and restart_count_after assertions compare the payload against the same literals the test fed ScriptedUnitManager, so they constrain only that the two readings are propagated in order; the exit-code and cycling assertions at :130-132 carry the regression guard.\nFINDING tests/test_a_cycling_unit_fails_ensure.py:38 follow-on: ScriptedUnitManager duplicates the CyclingWatchService seam, the RecordingSleeper class and the ensure_home fixture that tests/test_ensure_reports_a_cycling_unit.py:21-91 already owns, so a change to the ensure seam must now be mirrored in two files.\n",
+  "review_run_id": "r-20261015T201737208411-review-of-a-cycling-unit-fails-ensure-aa59a222cb62",
+  "reviewed_base_sha": "cbe8c91fb664397b4d293e80053b013a3d34bef5",
+  "reviewed_head_sha": "aa59a222cb62c3b58605bef68f077f078b8855ef",
+  "reviewed_run_id": "r-20261015T192005522846-a-cycling-unit-fails-ensure",
+  "reviewer_run_id": "r-20261015T201737208411-review-of-a-cycling-unit-fails-ensure-aa59a222cb62",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T192005522846-a-cycling-unit-fails-ensure/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/a-cycling-unit-fails-ensure",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T20:36:18.631920+00:00",
+  "total": 5
+}
