@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/review.py:2158",
+    "reckon/crew/promotion_checks.py:1461",
+    "reckon/crew/promotion_evidence.py:1270",
+    "reckon/crew/promotion_gate.py:843"
+  ],
+  "completed_at": "2026-10-15T23:47:54.089Z",
+  "dispatched_at": "2026-10-15T23:38:56Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the admit case is the positive control that must stay true; the red-base refusal case is the one the declared negative control reddens",
+      "recorded_at": "2026-10-15T23:47:38.485940+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_ctest_gate_is_read_at_promotion.py",
+      "line": "105",
+      "severity": "follow-on",
+      "text": "follow-on: the admit-direction case asserts True, which holds whether or not the head log is read, so it does not discriminate the regression the negative control covers and carries no durability weight on its own."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base e276b365; the single commit 112baa94b changes reckon/crew/review.py, promotion_checks.py, promotion_evidence.py, adds tests/test_a_ctest_gate_is_read_at_promotion.py and the evidence fragment, all inside the declared scope.",
+    "done_when": "The done_when names tests/test_a_ctest_gate_is_read_at_promotion.py; the manifest records that gate at 24 passed EXIT=0 and its log is gate-own.log, and tests/test_a_ctest_gate_is_read_at_promotion.py:91,105,113,119,128,134 assert the ctest red-base refusal, the admit, the None-for-neither reading and both control readings.",
+    "goal": "The node goal is to make promotion read a ctest gate log the way the review does through one format-aware reader; reckon/crew/review.py:1565 adds gate_log_failure_ids, reckon/crew/promotion_evidence.py:1162 returns it (None for a log in neither format) and reckon/crew/promotion_checks.py:1282 maps its None to the empty set, so the goal is met.",
+    "manifest": "read; it reads status: complete, names commit 112baa94b, records the own gate at 24 passed in 2.55s EXIT=0, the negative control at EXIT=1 with three failing ids, ruff delta zero and 12 parity chunks identical base vs head.",
+    "write_paths": "declared write paths are reckon/crew/review.py, reckon/crew/promotion_checks.py, reckon/crew/promotion_evidence.py, tests/test_a_ctest_gate_is_read_at_promotion.py and the evidence fragment; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_ctest_gate_is_read_at_promotion.py:91 fails under the declared mutation, as negative-control.log shows three failing ids the head arm does not fail.",
+    "evidence": "tests/test_a_ctest_gate_is_read_at_promotion.py:91 asserts the red-base refusal on a ctest head log and gate-own.log:8 records 24 passed EXIT=0 for the named gate.",
+    "fit": "reckon/crew/review.py:1565 follows the module's regex-and-prose docstring idiom with no plan label in its name, though the evidence fragment at docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-ctest-gate-is-read-at-promotion.html ends without a trailing newline.",
+    "goal_fidelity": "reckon/crew/review.py:1565 adds the one format-aware reader and reckon/crew/promotion_evidence.py:1162 and reckon/crew/promotion_checks.py:1282 both route through it, which is the deliverable exactly.",
+    "reuse": "the new gate_log_failure_ids at reckon/crew/review.py:1565 is the owner both added_failures_from_gate_logs and the two promotion readers now share, and it removes the local format dispatch that previously duplicated it at reckon/crew/review.py:2119.",
+    "scope_discipline": "every path in 112baa94b is inside the declared write paths, with nothing the goal does not imply."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to make promotion read a ctest gate log the way the review does through one format-aware reader; reckon/crew/review.py:1565 adds gate_log_failure_ids, reckon/crew/promotion_evidence.py:1162 returns it (None for a log in neither format) and reckon/crew/promotion_checks.py:1282 maps its None to the empty set, so the goal is met.\nVERDICT done_when: The done_when names tests/test_a_ctest_gate_is_read_at_promotion.py; the manifest records that gate at 24 passed EXIT=0 and its log is gate-own.log, and tests/test_a_ctest_gate_is_read_at_promotion.py:91,105,113,119,128,134 assert the ctest red-base refusal, the admit, the None-for-neither reading and both control readings.\nVERDICT write_paths: declared write paths are reckon/crew/review.py, reckon/crew/promotion_checks.py, reckon/crew/promotion_evidence.py, tests/test_a_ctest_gate_is_read_at_promotion.py and the evidence fragment; every path in the diff is inside them.\nVERDICT manifest: read; it reads status: complete, names commit 112baa94b, records the own gate at 24 passed in 2.55s EXIT=0, the negative control at EXIT=1 with three failing ids, ruff delta zero and 12 parity chunks identical base vs head.\nVERDICT diff: read commit by commit against base e276b365; the single commit 112baa94b changes reckon/crew/review.py, promotion_checks.py, promotion_evidence.py, adds tests/test_a_ctest_gate_is_read_at_promotion.py and the evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/review.py:2158, reckon/crew/promotion_checks.py:1461, reckon/crew/promotion_evidence.py:1270, reckon/crew/promotion_gate.py:843\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:1565 adds the one format-aware reader and reckon/crew/promotion_evidence.py:1162 and reckon/crew/promotion_checks.py:1282 both route through it, which is the deliverable exactly.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_ctest_gate_is_read_at_promotion.py:91 asserts the red-base refusal on a ctest head log and gate-own.log:8 records 24 passed EXIT=0 for the named gate.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 112baa94b is inside the declared write paths, with nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_ctest_gate_is_read_at_promotion.py:91 fails under the declared mutation, as negative-control.log shows three failing ids the head arm does not fail.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/review.py:1565 follows the module's regex-and-prose docstring idiom with no plan label in its name, though the evidence fragment at docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-ctest-gate-is-read-at-promotion.html ends without a trailing newline.\nSCORE reuse: 20\nJUSTIFICATION reuse: the new gate_log_failure_ids at reckon/crew/review.py:1565 is the owner both added_failures_from_gate_logs and the two promotion readers now share, and it removes the local format dispatch that previously duplicated it at reckon/crew/review.py:2119.\nFINDING tests/test_a_ctest_gate_is_read_at_promotion.py:105 follow-on: the admit-direction case asserts True, which holds whether or not the head log is read, so it does not discriminate the regression the negative control covers and carries no durability weight on its own.",
+  "review_run_id": "r-20261015T233827103916-review-of-a-ctest-gate-is-read-at-promotion-112baa94b53c",
+  "reviewed_base_sha": "e276b365cbaf4f7a7f8215abb7a48ce1e0e568eb",
+  "reviewed_head_sha": "112baa94b53c55ace5a14b0d99ff5f968c7c9b2c",
+  "reviewed_run_id": "r-20261015T230911549134-a-ctest-gate-is-read-at-promotion",
+  "reviewer_run_id": "r-20261015T233827103916-review-of-a-ctest-gate-is-read-at-promotion-112baa94b53c",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T230911549134-a-ctest-gate-is-read-at-promotion/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/a-ctest-gate-is-read-at-promotion",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T23:45:20.981521+00:00",
+  "total": 111
+}
