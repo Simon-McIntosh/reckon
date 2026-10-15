@@ -71,9 +71,7 @@ def _config(repo: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     monkeypatch.setattr(
         crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: config
     )
-    monkeypatch.setattr(
-        crew_run_commands, "_resolved_flight", lambda *_a, **_k: config
-    )
+    monkeypatch.setattr(crew_run_commands, "_resolved_flight", lambda *_a, **_k: config)
     monkeypatch.setattr(
         crew_dispatch_commands, "_model_availability_refusal", lambda *_a, **_k: None
     )
@@ -187,9 +185,12 @@ def test_a_node_dispatched_without_the_waiver_is_still_refused_on_redispatch(
     assert "review" in moved.output.lower()
     # The request the move could not launch is left exactly where it was.
     assert runs.read_pointer("queued-without-waiver")["phase"] == "queued"
-    assert subprocess.run(
-        ["git", "-C", str(dispatch_repo), "worktree", "list", "--porcelain"],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.count("worktree ") == 1
+    assert (
+        subprocess.run(
+            ["git", "-C", str(dispatch_repo), "worktree", "list", "--porcelain"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.count("worktree ")
+        == 1
+    )
