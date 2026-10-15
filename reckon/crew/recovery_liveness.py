@@ -404,11 +404,10 @@ def _attempt_started_seconds(record: Mapping[str, Any]) -> float | None:
     so in the window between them the pointer still dates the attempt that
     already ended while the attempt record beside it already names the new one.
     Reading the pointer first therefore dates a just-resumed run from its
-    predecessor: measured 2026-10-15, a run four seconds past a resume read its
-    quiet time as the previous attempt's 17 minutes and was drawn stalled. The
-    attempt record is written when the attempt begins, so the later of the two
-    that parse is the one the run is actually on, and neither record alone can
-    date it earlier than it began.
+    predecessor, so the predecessor's quiet reads as the run's own and it is
+    drawn stalled. The attempt record is written when the attempt begins, so the
+    later of the two that parse is the one the run is actually on, and neither
+    record alone can date it earlier than it began.
 
     Absent from both means the run has no attempt clock, and its quiet time
     then falls back to the launch window a fresh dispatch gets. A run carrying
