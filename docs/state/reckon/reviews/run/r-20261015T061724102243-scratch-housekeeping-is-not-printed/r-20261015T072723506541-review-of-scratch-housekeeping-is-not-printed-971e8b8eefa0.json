@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "4870a37aba26f70f25ff293f1c65646eff2a6d1c",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion_release.py:463 (remove_worker_scratch at every promotion and discard)",
+    "reckon/crew/promotion_records.py:596 (the scratch release fallback when the surrounding release raises)",
+    "reckon/crew_run_commands.py:1236 (crew gc --scratch via reckon/crew/routing.py)",
+    "reckon/crew/promotion.py:1461 (the key list carrying scratch_removed_paths and scratch_warning into the persisted record)",
+    "reckon/crew/dispatch.py:2433 (re-export of remove_worker_scratch)"
+  ],
+  "completed_at": "2026-10-15T07:43:52.216Z",
+  "dispatched_at": "2026-10-15T07:27:59Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T061724102243-scratch-housekeeping-is-not-printed/head-importers.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's header records the base revision (4870a37ab+worktree) rather than the head the tree holds, so the stored record's base_log_revision and head_log_revision read identically and a reader cannot tie the added-failure count to the commit it measured from the revisions alone."
+    },
+    {
+      "file": "tests/test_a_runs_scratch_ends_with_the_run.py",
+      "line": "195",
+      "severity": "follow-on",
+      "text": "follow-on: the rewritten dry-run assertion checks the path appears in directories without pinning the entry's state, so a directory listed for any disposition satisfies it, and the would-remove property the plan names is not guarded by this line."
+    }
+  ],
+  "head_log_revision": "4870a37aba26f70f25ff293f1c65646eff2a6d1c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base 4870a37ab \u2014 7ce77e773 removes the prints and rewrites the pinned assertions, bf811a254 adds the evidence fragment, 971e8b8ee reflows a docstring paragraph with no code change; every file inside the declared scope.",
+    "done_when": "the done_when names tests/test_scratch_housekeeping_is_not_printed.py; the manifest records that run at head (3 passed, EXIT=0, head-housekeeping.log), the focused three-file set (22 passed, head-focus.log) and the importer arms (200 passed / 2 failed, identical ids both, EXIT=1), and both declared controls red at EXIT=1.",
+    "goal": "the node's goal is to stop remove_worker_scratch and garbage_collect_scratch writing to stdout while every removal stays named on the result; at head `git show 971e8b8ee:reckon/crew/dispatch_launch.py` carries no `print(` in remove_worker_scratch (its body builds scratch_removed_paths, scratch_bytes and scratch_warning unchanged) and `git show 971e8b8ee:reckon/crew/gc.py` carries no `print(` in garbage_collect_scratch.",
+    "manifest": "read; it states 3 passed at head with the logs named, both arms with the same two failure ids, negative_control_log naming the promotion-print control, and names the gc-print control in its note, with the reviewed revision pair recorded.",
+    "write_paths": "the manifest and the dispatch declare seven write paths; `git diff --stat 4870a37aba26f70f25ff293f1c65646eff2a6d1c..971e8b8eefa0b2324a75e673461b6d8293f17667` lists exactly the two modules, three test files and the evidence fragment, all inside them, with docs/figures/ left empty."
+  },
+  "justifications": {
+    "durability": "tests/test_scratch_housekeeping_is_not_printed.py:220 fails if the housekeeping line returns and :232 compares the planted scratch path against the release result, so both are independent of the code under test, while :270 pins only the path's presence in directories, not its disposition.",
+    "evidence": "the gate ran and is recorded, but head-importers.log:1 declares revision 4870a37ab+worktree, so both arms state the same revision and only the tree and module paths tell them apart.",
+    "fit": "the removal and the docstring reflow follow the module idiom of reckon/crew/gc.py:1011, and the added names carry no version, plan or ticket label.",
+    "goal_fidelity": "`git show 971e8b8ee:reckon/crew/dispatch_launch.py` remove_worker_scratch and `git show 971e8b8ee:reckon/crew/gc.py` garbage_collect_scratch both hold no stdout write, while scratch_removed_paths, scratch_bytes and scratch_warning are still built at dispatch_launch.py:876 and gc.py:1073.",
+    "reuse": "the change edits the owners in place \u2014 remove_worker_scratch (reckon/crew/dispatch_launch.py:801) and garbage_collect_scratch (reckon/crew/gc.py:1011) \u2014 and a capability search over reckon/ for a scratch-removal owner or a housekeeping-line helper found none.",
+    "scope_discipline": "`git diff --stat 4870a37ab..971e8b8ee` touches only reckon/crew/dispatch_launch.py, reckon/crew/gc.py, the three test files and the evidence fragment, all within the declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to stop remove_worker_scratch and garbage_collect_scratch writing to stdout while every removal stays named on the result; at head `git show 971e8b8ee:reckon/crew/dispatch_launch.py` carries no `print(` in remove_worker_scratch (its body builds scratch_removed_paths, scratch_bytes and scratch_warning unchanged) and `git show 971e8b8ee:reckon/crew/gc.py` carries no `print(` in garbage_collect_scratch.\nVERDICT done_when: the done_when names tests/test_scratch_housekeeping_is_not_printed.py; the manifest records that run at head (3 passed, EXIT=0, head-housekeeping.log), the focused three-file set (22 passed, head-focus.log) and the importer arms (200 passed / 2 failed, identical ids both, EXIT=1), and both declared controls red at EXIT=1.\nVERDICT write_paths: the manifest and the dispatch declare seven write paths; `git diff --stat 4870a37aba26f70f25ff293f1c65646eff2a6d1c..971e8b8eefa0b2324a75e673461b6d8293f17667` lists exactly the two modules, three test files and the evidence fragment, all inside them, with docs/figures/ left empty.\nVERDICT manifest: read; it states 3 passed at head with the logs named, both arms with the same two failure ids, negative_control_log naming the promotion-print control, and names the gc-print control in its note, with the reviewed revision pair recorded.\nVERDICT diff: read commit by commit against base 4870a37ab \u2014 7ce77e773 removes the prints and rewrites the pinned assertions, bf811a254 adds the evidence fragment, 971e8b8ee reflows a docstring paragraph with no code change; every file inside the declared scope.\nCALL_SITES: reckon/crew/promotion_release.py:463 (remove_worker_scratch at every promotion and discard), reckon/crew/promotion_records.py:596 (the scratch release fallback when the surrounding release raises), reckon/crew_run_commands.py:1236 (crew gc --scratch via reckon/crew/routing.py), reckon/crew/promotion.py:1461 (the key list carrying scratch_removed_paths and scratch_warning into the persisted record), reckon/crew/dispatch.py:2433 (re-export of remove_worker_scratch)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: `git show 971e8b8ee:reckon/crew/dispatch_launch.py` remove_worker_scratch and `git show 971e8b8ee:reckon/crew/gc.py` garbage_collect_scratch both hold no stdout write, while scratch_removed_paths, scratch_bytes and scratch_warning are still built at dispatch_launch.py:876 and gc.py:1073.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate ran and is recorded, but head-importers.log:1 declares revision 4870a37ab+worktree, so both arms state the same revision and only the tree and module paths tell them apart.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 4870a37ab..971e8b8ee` touches only reckon/crew/dispatch_launch.py, reckon/crew/gc.py, the three test files and the evidence fragment, all within the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_scratch_housekeeping_is_not_printed.py:220 fails if the housekeeping line returns and :232 compares the planted scratch path against the release result, so both are independent of the code under test, while :270 pins only the path's presence in directories, not its disposition.\nSCORE fit: 19\nJUSTIFICATION fit: the removal and the docstring reflow follow the module idiom of reckon/crew/gc.py:1011, and the added names carry no version, plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change edits the owners in place \u2014 remove_worker_scratch (reckon/crew/dispatch_launch.py:801) and garbage_collect_scratch (reckon/crew/gc.py:1011) \u2014 and a capability search over reckon/ for a scratch-removal owner or a housekeeping-line helper found none.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T061724102243-scratch-housekeeping-is-not-printed/head-importers.log:1 follow-on: the head arm's header records the base revision (4870a37ab+worktree) rather than the head the tree holds, so the stored record's base_log_revision and head_log_revision read identically and a reader cannot tie the added-failure count to the commit it measured from the revisions alone.\nFINDING tests/test_a_runs_scratch_ends_with_the_run.py:195 follow-on: the rewritten dry-run assertion checks the path appears in directories without pinning the entry's state, so a directory listed for any disposition satisfies it, and the would-remove property the plan names is not guarded by this line.",
+  "review_run_id": "r-20261015T072723506541-review-of-scratch-housekeeping-is-not-printed-971e8b8eefa0",
+  "reviewed_base_sha": "4870a37aba26f70f25ff293f1c65646eff2a6d1c",
+  "reviewed_head_sha": "971e8b8eefa0b2324a75e673461b6d8293f17667",
+  "reviewed_run_id": "r-20261015T061724102243-scratch-housekeeping-is-not-printed",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T07:40:54.741867+00:00",
+  "total": 113
+}
