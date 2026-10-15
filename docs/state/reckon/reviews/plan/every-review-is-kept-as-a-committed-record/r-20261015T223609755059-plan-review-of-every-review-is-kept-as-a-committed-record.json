@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T22:46:54.636Z",
+  "dispatched_at": "2026-10-15T22:36:52Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:299",
+      "id": "wiring-1",
+      "reason": "a coordinator reading the plan sees \u00a716/\u00a717 as pending and would re-dispatch work already built and merged; resolving f-erkc-017 with its outcome records what actually landed.",
+      "text": "\u00a716 and \u00a717 are declared done in `plan-section-declarations` (snapshot line 23) and carry `data-status=\"done\"`, and their code is landed (indexed `claimless_findings`, the claimless store refusal, the claimless duty), yet `f-erkc-017` \u2014 the only followup that dispatches \u00a716 and \u00a717 \u2014 remains `open` with an empty outcome",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:179",
+      "id": "reasoning-1",
+      "reason": "a node following the \"neither of its callers changes\" sentence literally keeps `_head_arm_log_failure_ids` delegating to `_control_failure_ids` and returns `set()` instead of `None`, so the red-base clause never refuses on an unreadable head log; the deliverable should say that function stops routing through `_control_failure_ids` (or calls the new reader directly), which is a one-line clarification that removes the wrong path.",
+      "text": "\u00a719's deliverable says `_control_failure_ids` \"keeps its set return \u2026 and neither of its callers changes\", but `_head_arm_log_failure_ids` (`reckon/crew/promotion_evidence.py:1158`) is a caller of `_control_failure_ids` and the same deliverable requires it to return `None` for a log in neither format, which a set-returning `_control_failure_ids` cannot yield",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3597e8fab298e0d1d6eb5bc47fa231eae6b2a4ed3454aec6834e266d0c8adec3",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 153,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T223609755059-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "8b2748da7619f84a27b112bd58b94366b6a51e81",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every module and test path \u00a719 cites resolves (`reckon/crew/promotion_checks.py:1268`, `reckon/crew/promotion_evidence.py:1138/1158`, `reckon/crew/review.py` `_pytest_failure_ids`/`_ctest_failure_ids`, `reckon/crew/promotion_gate.py:843`, `tests/test_a_ctest_gate_log_is_read.py`, `tests/test_review_node_id_canonical_form.py`), and the cited review run`r-20261015T215213995471` exists and holds the finding named.",
+    "done_when": "pass \u2014 \u00a719's done-when is measurable (`_zero_added_against_a_red_base` false for the ctest head log, true when the baseline names both ctest tests; `_head_arm_log_failure_ids` returns `None` for a log in neither format) and it names a declared negative control that reddens the first case (the two promotion readers pointed back at `_pytest_failure_ids`).",
+    "evidence_paths": "pass \u2014 \u00a719's control log is written under the run directory (a durable path) and its gate logs are prose files on disk; no scratch or node-local temporary path is named.",
+    "naming": "pass \u2014 \u00a719 introduces no plan label, stage name or ticket number; its new reader is named by mechanism and the deliverable keeps the existing mechanism-named symbols.",
+    "reasoning": "a finding \u2014 \u00a719's deliverable states `_control_failure_ids` \"keeps its set return\" and that \"neither of its callers changes\", but `_head_arm_log_failure_ids` (promotion_evidence.py:1158) is one of its callers and the same deliverable requires that function to return `None` for a log in neither format \u2014 which `_control_failure_ids` cannot produce.",
+    "single_goal": "pass \u2014 \u00a719 carries one deliverable, one format-aware reader in `review.py` that the review and the promotion-side readers share.",
+    "wiring": "a finding \u2014 \u00a716 and \u00a717 are declared done and their code has landed, yet their dispatcher followup `f-erkc-017` (plan line 299) is still open with no outcome, so the plan advertises pending work that is already built."
+  },
+  "section_digests": {
+    "_document": "1567348f87450d3854291ffff04282ae212e591fe73cb50ee21e2a1534805f1d",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "bb85d80dcb9e0286d21a8ca6acd3af79e736c64c84b5ac85569fc6ce2c73863b",
+    "s13": "18a2d10f1e3c66be8277b7b4ef2922db7611cded7589553da5347b9a1ee5cd0f",
+    "s14": "90fd381b5f80417031410428331e779266feb4e517d89e5237d29cbe1c5e4700",
+    "s15": "72f678eb5f0bc62870da1cc4637f6db55365548aa9b52f46884cc0b3551a6ae7",
+    "s16": "7a5788c2a3fa1a2f0029d46feab7c3ed8a6b2a35c6ca9788fbe9911d5ab9cb56",
+    "s17": "86a993485a8a8461fd1e5e336bf8623e585cd4540daa1e5b5e78af2a0c172ce5",
+    "s18": "c89ae3a282a47cc0790b201cd56e732fc633876a1f1bd4dea1ae9521bd21574a",
+    "s19": "4fc7526bb26ae0165791e1f2039a893efa523d5b4cf6ea5f24225bf5a7213bdb",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "85877b77c395ca8a1482bef5887cfc72cbf6109174dba2c01265aa015a906d73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T22:54:35.845929+00:00"
+}
