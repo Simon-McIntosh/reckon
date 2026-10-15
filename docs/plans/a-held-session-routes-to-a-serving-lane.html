@@ -25,7 +25,7 @@
   <title>A Held Session Routes To A Serving Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -95,8 +95,11 @@
       <strong>Deliverable.</strong> The state rendered for Jev carries, for each lane with a router, the worker slots
       the router would grant this coordinator session, taken from the lane document's
       <code>admission.sessions[session].worker_slots</code> or, when the session is not listed,
-      <code>admission.new_session_worker_slots</code>, in the order the global routing rules already define. The
-      route question's guidance says that a lane granting the session no slot is not available to it now. When a
+      <code>admission.new_session_worker_slots</code>, in the order the global routing rules already define. That
+      reading already exists as <code>_lane_worker_allowance</code> in <code>reckon/crew/dispatch_plan.py</code>, which the
+      picker's snapshot calls (<code>reckon/crew/picker/snapshot.py</code>, behind its local-lane guard). This section
+      extends that helper and that guard to carry the session's figure into the rendered state, and writes no second
+      reader. The route question's guidance says that a lane granting the session no slot is not available to it now. When a
       route nonetheless lands on such a lane for an implement or test node at the exact or guided specification
       level, Jev is asked once more with that lane excluded. The second answer stands, and the record names both
       asks, so the decision is visible. Routine or open work keeps today's behaviour and is queued under §13 of the
@@ -135,7 +138,10 @@
 <section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p>
       <strong>Deliverable.</strong> <code>reckon crew pick</code> accepts the node fields that dispatch hands to the picker
-      (write paths, negative control, estimated hours and section), and its answer lists any of them the probe left out,
+      (write paths, negative control, estimated hours and section). These options mirror fields <code>crew dispatch</code>
+      already takes and hands to the picker, so they restate existing inputs on a second command rather than add new
+      interface, and they retire nothing because no option of <code>crew pick</code> carries them today. Its answer lists
+      any of them the probe left out,
       so a coordinator can see that a hold may come from what the probe lacked. With every field supplied, a pick and a dry-run
       dispatch render the same node state for Jev.
     </p>
@@ -154,7 +160,10 @@
       by a gate the original dispatch had already answered. A waiver is never added by a redispatch, only carried. A queued
       run is moved by redispatch without being discarded, so the move does not race the admission pass, and a queued run
       that never launched is moved by re-composing its launch from the recorded node rather than refused for having no
-      prompt. The review reflex's retry asks the same question §2 asks before it re-queues on the lane that refused it.
+      prompt. That recomposition already exists as <code>_launch_queued</code> in <code>reckon/crew/queue_admission.py</code>,
+      which rebuilds the node with <code>_node_from_pointer</code> and forwards the pointer's <code>dispatch_options</code>
+      to <code>dispatch</code>. The queued move extends that path with the new backend, and does not write a second
+      one. The review reflex's retry asks the same question §2 asks before it re-queues on the lane that refused it.
     </p>
     <p>
       <strong>Done when</strong> a test dispatches a node with <code>--allow-unreviewed-plan</code> against an uncovered plan,
