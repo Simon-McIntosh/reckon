@@ -31,6 +31,13 @@
       "finding": "reasoning-1",
       "reason": "s2 revised (2387dc4a4): the detector passes run on their own thread beside the fleet watch's event loop, whose untimed select is unchanged, and the pipe registry is guarded by one lock.",
       "when": "2026-10-15T12:48:11.129514+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "reckon-build",
+      "finding": "reasoning-2",
+      "reason": "s2 revised (2387dc4a4): a stream's subscription is a no-op when _FLEET_WATCH is None, so a test server without a fleet watch waits on its own inotify watch as today.",
+      "when": "2026-10-15T12:48:11.979870+00:00"
     }
   ],
   "responses": {
@@ -39,6 +46,12 @@
       "by": "reckon-build",
       "reason": "s2 revised (2387dc4a4): the detector passes run on their own thread beside the fleet watch's event loop, whose untimed select is unchanged, and the pipe registry is guarded by one lock.",
       "when": "2026-10-15T12:48:11.129514+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "reckon-build",
+      "reason": "s2 revised (2387dc4a4): a stream's subscription is a no-op when _FLEET_WATCH is None, so a test server without a fleet watch waits on its own inotify watch as today.",
+      "when": "2026-10-15T12:48:11.979870+00:00"
     }
   },
   "review_run_id": "r-20261015T122934697432-plan-review-of-a-write-on-any-node-reaches-the-page",
