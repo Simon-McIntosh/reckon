@@ -1818,13 +1818,75 @@ def _staging_review_record_by_run(
     the index lookup by the promoting run's id finds nothing for a plan review.
     Its delivered report names the promoting run, and is the join between them,
     so the run's own record resolves the report and the record it delivered.
+
+    A code review's record is keyed by the neighbourhood it read rather than by
+    any run id, so the index lookup finds nothing for it either. Its delivery is
+    stored here and returns no payload: a code review names neither a plan nor a
+    reviewed run, so it is not committed to the staging-to-committed tree.
     """
     found = review_module.record_for_review_run(project, run_id)
     if found is not None:
         return found[1]
     if record is None:
         return None
+    if _code_review_key_for_promoting_run(record):
+        _store_code_review_for_promoting_run(project, record)
+        return None
     return _plan_review_record_for_promoting_run(project, run_id, record)
+
+
+def _code_review_key_for_promoting_run(record: Mapping[str, Any]) -> str:
+    """The neighbourhood key a promoting run's code review read, or ``""``.
+
+    A code review's node id carries the store's own ``review-code-`` prefix, and
+    the neighbourhood key is the suffix after it. The promoting run's id carries
+    the same key, so either resolves it; the node id is read because it is the
+    identity the dispatch minted. A run that is not a code review yields the
+    empty string, so a caller can tell a code review from a plan review or a run
+    review without a second lookup.
+    """
+    from reckon.crew import review_dispositions
+
+    node_id = str((record.get("node") or {}).get("id") or "")
+    if not node_id.startswith(plan_review.CODE_REVIEW_NODE_PREFIX):
+        return ""
+    return review_dispositions.code_review_identity(node_id)
+
+
+def _store_code_review_for_promoting_run(
+    project: str, record: Mapping[str, Any]
+) -> None:
+    """Store the code review a promoting run delivered, in the staging store.
+
+    A code review is keyed by the neighbourhood it read rather than by the run
+    that composed it: the composed run id and the promoting run id differ, so
+    the store index lookup by the promoting run's id finds nothing. Both ids
+    carry the neighbourhood key, and the delivered report directory carries a
+    ``code-review.json`` sidecar naming that key, so the delivery is the join
+    between the promoting run and the record it delivered.
+
+    Nothing is returned to commit. A code review names neither a plan nor a
+    reviewed run, so ``store_committed_review`` refuses it and a landing that
+    carried one would roll back. It stays in the staging store, where the
+    findings view and ``crew dispose`` read it and where a plan build already
+    stores it. The delivery is stored through the refusal-recording loop the
+    plan-review path uses, so a delivery the store refuses records its reason on
+    its own sidecar and promotion proceeds with nothing committed for it. A
+    delivery already stored, or one with no matching report directory, is left
+    alone.
+    """
+    key = _code_review_key_for_promoting_run(record)
+    if not key:
+        return
+    matched: Mapping[str, Any] | None = None
+    for sidecar in plan_review.delivered_code_reviews(project):
+        if str(sidecar.get("neighbourhood_key") or "") != key:
+            continue
+        matched = sidecar
+        break
+    if matched is None or matched.get("stored"):
+        return
+    plan_review._store_deliveries([matched])
 
 
 def _plan_review_record_for_promoting_run(
