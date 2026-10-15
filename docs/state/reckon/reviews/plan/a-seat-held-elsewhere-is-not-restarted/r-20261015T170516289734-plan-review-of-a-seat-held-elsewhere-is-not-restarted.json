@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T17:10:39.090Z",
+  "dispatched_at": "2026-10-15T17:05:59Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html:219",
+      "id": "wiring-1",
+      "reason": "the prompt is what the next dispatcher runs, so leaving \u00a716 in it sends a node at work the plan has deferred and contradicts the gating relationship the same commit closed.",
+      "text": "the only open followup, f-sheinr-004, is the driving instruction for the next dispatch and still carries the prompt `/reckon-build a-seat-held-elsewhere-is-not-restarted \u00a79 \u00a714 \u00a715 \u00a716`, with its body (line 218) stating \"\u00a714, \u00a715 and \u00a716 are independent\" and \"\u00a717 is gated on \u00a716\", while the plan now declares \u00a716 `deferred` in both `plan-section-declarations` and the \u00a716 element and closes g-sheinr-3; a coordinator dispatching from this followup builds a deferred section and reads \u00a717 as still gated when the gate is passed",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html:323",
+      "id": "wiring-2",
+      "reason": "a passed gate whose named measure is false is a record asserting \u00a716 landed, and the measure text must be restated to the deferral basis (nothing else edits reckon/crew/resumption.py ahead of \u00a717) rather than left to contradict the section declaration beside it.",
+      "text": "gate g-sheinr-3 records `data-status=\"closed\" data-verdict=\"passed\"` while its measure still reads \"the exclusive-claim consolidation is merged on main\", an event that did not occur: \u00a716 is deferred, so no consolidation was merged, and the gate's own evidence line is what corrects it",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "cc8935a7911cf66ac196f7f9758ada84c7619fae71a03c11f703396e1a3f1c6e",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 60,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T170516289734-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "42f49814a7fa199b6d9e604f70febaedc43809c7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every archive anchor the document cites (#s2, #s3, #s4, #s5, #s6, #s7, #s8, #s10) resolves in the landed-evidence file, and the extensionless gate hrefs resolve as `<path>.html` under the docs surface convention.",
+    "done_when": "pass \u2014 the section this change defers is refused dispatch by its own `deferred` declaration, and no live node's done-when was altered by the change under review.",
+    "evidence_paths": "pass \u2014 the changed unit writes no gate or evidence path; the archive the document links (`docs/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html`) is present on disk, not a scratchpad.",
+    "naming": "pass \u2014 the changed unit is plan prose and gate fields; no plan label, stage name or ticket number reaches code, and no changelog prose was introduced.",
+    "reasoning": "pass \u2014 the deferral's stated ground (the two claims share only the exclusive `os.open`, their staleness rules differ, and the attempt claim re-derives its path and advances its number after a reclaim) is confirmed in the cited code: `claim_next_attempt` re-derives `path = attempt_claim_path(run_id, claimed)` per iteration and sets `claimed = current + 1` after a reclaim (reckon/crew/resumption.py:391,405), while the dispatch claim's `_empty_claim_is_stale` is a holder-liveness rule (reckon/crew/dispatch_claims.py:420).",
+    "single_goal": "pass \u2014 no node's goal was split or joined by the change under review; \u00a716 carries one deliverable and is now deferred.",
+    "wiring": "a finding \u2014 the deferral of \u00a716 updated the section declaration, the section element and gate g-sheinr-3, but left the sole open followup f-sheinr-004 still naming \u00a716 as independent to build and still asserting \"\u00a717 is gated on \u00a716\", a gating relationship the same commit closed."
+  },
+  "section_digests": {
+    "_document": "8f47b441532f54746649ecd74b6918f5e7797f91ab4f9f69811e656770b291f3",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s10": "fd9ced512f1fc6a0610cb111ec8c734e3c55a84ea11034055f5f1c9e60e0c649",
+    "s11": "9d7552bb9a0f7179067d09a67e819e7194fbbac1e34cf450bb6dd2631508389d",
+    "s12": "41b7e2f138ff584e94cdef995cae4ab65e47e6e0efb43dc6d30b0045664f611d",
+    "s13": "441358f17906d8fa159ba5911fc62cfb32cabff650e9ae63b1300701b43f7b6d",
+    "s14": "15dd48418b8a42e818c6a6c93d4914efb531dc5439e368a148fd7168b3a89faa",
+    "s15": "707b8d39391cbd7e59f3dbd9cc4748c655d8870e48f237e84889148855f5b9e7",
+    "s16": "e185fa1e0f4aa25f213b2df34164fcfb48751f19156d05a48ec1118841ee463d",
+    "s17": "73a4699a4193793731da87cf3a489de8f9e91df7e596e68dad4897797177cb9e",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "96d5fc1c72a25970cab856a7dde0a3cab839fd87c83786b7b49ffc4c1dabb1ab",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad",
+    "s7": "d3e16f60d17ef3ee4666f9cd189aa6cd8e26f038173b65ee34b68f3f2cd822e7",
+    "s8": "b41130ef26282f759c1b7be0de0136701972d055ed7878e2f2d9cd21c96b4f63",
+    "s9": "a2cb7135c4bd3f1439c3ec948d6146c2f5b7527da59b1bbd4c7ce4c141ec3055"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T17:10:47.957902+00:00"
+}
