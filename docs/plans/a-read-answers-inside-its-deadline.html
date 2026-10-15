@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="60">
+<meta name="plan-version" content="61">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -216,15 +216,21 @@
     <pre class="r-fu-prompt">/reckon-build a-read-answers-inside-its-deadline §8</pre>
     <p class="r-fu-outcome">superseded by f-araiid-009: §12 was split into §12, the audit walk, and §13, the audit parse</p>
     </article>
-<article class="r-fu" data-id="f-araiid-009" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline §8" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-araiid-009" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline §8" data-resolved-at="2026-10-15T23:12:56+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build §8 and §11, then §10, §12 and §13; then re-measure §6</h4>
     <div class="r-fu-body"><p>§8 (one walk per read) and §11 (one soup per plan file per cold read) are independent and run first. §10 (identification reused across reads) follows §8. §12 (the audit's walk) follows §8 and §10. §13 (the audit's parse) follows §11 and §12. §6 is re-measured once all five land.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-read-answers-inside-its-deadline §8</pre>
+    <p class="r-fu-outcome"><p>§8, §10 and §11 have landed. The remaining order changed when §14 was filed, because it shares <code>resources.py</code> with §12. Superseded by f-araiid-011.</p></p>
     </article>
 <article class="r-fu" data-id="f-araiid-010" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline §14" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Build §14 — identifying a plan reads its head, not its body</h4>
     <div class="r-fu-body"><p>A slug resolve parses every sibling plan in full to check uniqueness: 17.1 s profiled for one resolve. The picker's capability step pays this on a cold memo, so 35 of 50 unnamed implementation dispatches fell back on 14–15 October. Build §14 before §12, which also writes <code>resources.py</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-read-answers-inside-its-deadline §14</pre>
+    </article>
+<article class="r-fu" data-id="f-araiid-011" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline §12" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §14, then §12 and §13; then re-measure §6</h4>
+    <div class="r-fu-body"><p>§8, §10 and §11 have landed. §14 (head-only identification) runs first, under f-araiid-010. §12 (the audit's walk) follows §14 because both write <code>resources.py</code>. §13 (the audit's parse) follows §12. §6 is re-measured once §12, §13 and §14 have all landed.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-read-answers-inside-its-deadline §12</pre>
     </article>
 </section>
   
