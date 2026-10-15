@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T14:16:03.833Z",
+  "dispatched_at": "2026-10-15T14:09:47Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s8",
+      "id": "reasoning-1",
+      "reason": "a builder following \u00a78 as written leaves a dispatch guard reading a foreign follower's health from a fact \u00a78 proves does not cross nodes.",
+      "text": "\u00a78 says `_follower_liveness` stays the single reader so \"its other readers take the corrected value\", but it corrects only the `live` field: `registered` (and the `released` field derived from it at follower_registration.py:606) still come from the node-local flock, which \u00a78 itself shows reads free on every other node, so a live foreign follower still yields `released: True`, and that value flows through `watch_state` (watch_unit.py:205) into `session_follower_released`, which the dispatch admission at dispatch_watch.py:822 treats as \"the follower can keep dispatching on a live watcher process\" \u2014 the plan's premise that the shared reader fixes every consumer is false for this reader",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s9",
+      "id": "reasoning-2",
+      "reason": "\u00a79's stated remedy addresses no cause it names and is inert until \u00a78 lands, so a node built to \u00a79's own words ships a hook line that recommends a no-op command.",
+      "text": "\u00a79 rejects `--ensure` because it \"changes nothing\", then offers the follower arming line \"the command that registers the session\"; but the incident \u00a79 describes is one where all live reckon followers are already registered (its sibling \u00a78: \"All four live reckon followers are registered from clu-2002\"), so re-arming a registered follower also changes nothing, and produces a snapshot only once \u00a78's corrected foreign-liveness judgement is present",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s9",
+      "id": "reasoning-3",
+      "reason": "the builder must either widen freshness's return beyond the stated single state or reintroduce the second seat read the section forbids, and a build that does neither fails \u00a79's own done-when that the line names the host.",
+      "text": "\u00a79 requires the hook line to \"name that host\" while also requiring that `freshness` \"gains one state for this reading, so the hook does not judge the seat a second way\"; `not_fresh_line` receives only `state: str` (coordinator_obligations.py:729), so the stated mechanism supplies a state and not the host, and the section forbids the hook from reading the seat itself",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4d462aa7527fb0834149289650bde8bd86138a5dff790753af1145e65dc3644c",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 30,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T140857818096-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "d9559d063fe2b1415cdad3b0240bb002ba97dc93",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves: `runs.renew_producer_lease` (reckon/crew/runs.py:1764), `producer_lease_seconds` (runs.py:1702), `_follower_liveness` (reckon/crew/follower_registration.py:482), `seat_names_a_live_foreign_producer` (reckon/crew/watch_unit.py:143), `freshness` (reckon/crew/obligation_snapshot.py:369), `not_fresh_line` (reckon/hooks/coordinator_obligations.py:729); the extensionless archive href resolves to the landed `.html` and its `#s3`/`#s4` anchors exist.",
+    "done_when": "pass \u2014 \u00a78 and \u00a79 each name a negative control that fails on the unfixed code (free-lock foreign registration reads gone under lock-judgement; missing snapshot reads no-producer), so neither measure can pass on the unbuilt code.",
+    "evidence_paths": "pass \u2014 both controls are logged under the run directory and \u00a78's post-merge check reads the crew home's obligations directory, all durable paths a later reader can open.",
+    "naming": "pass \u2014 \u00a78 and \u00a79 name no new symbol by a plan label or ticket number, and the run ids and commit shas they cite are evidence data, not code names.",
+    "reasoning": "findings \u2014 \u00a78 corrects only `live` while a lock-derived `released` still reaches a dispatch guard; \u00a79's remedy does not address the cause it names and its own line cannot carry the host it requires.",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable (a foreign follower judged by a renewed lease) and \u00a79 one (the hook line for a missing snapshot beside a live foreign seat).",
+    "wiring": "a finding \u2014 \u00a79's deliverable depends on \u00a78's corrected foreign-liveness judgement, but the carrying followup f-sheinr-002 declares the two \"write different files and can run in parallel\" and neither section declares the dependency."
+  },
+  "section_digests": {
+    "_document": "2ac1d8e51d202dbd31601c53a01d6eb02138e6a8b9127e0c65d16e4f8d3ed0ff",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "96d5fc1c72a25970cab856a7dde0a3cab839fd87c83786b7b49ffc4c1dabb1ab",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad",
+    "s7": "d3e16f60d17ef3ee4666f9cd189aa6cd8e26f038173b65ee34b68f3f2cd822e7",
+    "s8": "d0505a9aab0b48c3dd556814029c2d37da1bd48ec0cf2d59031a7cd23a1f9cce",
+    "s9": "6b7c1de882ba5249b07bcaa4f051c56c9a7c2027eda8767541579144066da8ad"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T14:18:26.302821+00:00"
+}
