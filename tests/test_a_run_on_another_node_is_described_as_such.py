@@ -25,8 +25,6 @@ import socket
 import time
 from pathlib import Path
 
-import pytest
-
 from reckon.crew import recovery
 
 ASSISTANT_RECORD = '{"type":"assistant","message":"working"}\n'
