@@ -398,30 +398,40 @@ ATTEMPT_RECORD_NAME = "attempt.json"
 def _attempt_started_seconds(record: Mapping[str, Any]) -> float | None:
     """When the run's current attempt began, or None when nothing records it.
 
-    The pointer carries ``attempt_started_at`` once a supervisor wrote it; a run
-    whose pointer predates that field still names the same moment in the current
-    attempt record the supervisor publishes beside it, so both are read. Absent
-    from both means the run has no attempt clock, and its quiet time then falls
-    back to the launch window a fresh dispatch gets.
+    Two records carry the moment, and the later one is the current attempt's.
+    The pointer carries ``attempt_started_at`` once a supervisor wrote it, but a
+    resume rewrites the pointer after it publishes the new attempt's identity,
+    so in the window between them the pointer still dates the attempt that
+    already ended while the attempt record beside it already names the new one.
+    Reading the pointer first therefore dates a just-resumed run from its
+    predecessor, so the predecessor's quiet reads as the run's own and it is
+    drawn stalled. The attempt record is written when the attempt begins, so the
+    later of the two that parse is the one the run is actually on, and neither
+    record alone can date it earlier than it began.
+
+    Absent from both means the run has no attempt clock, and its quiet time
+    then falls back to the launch window a fresh dispatch gets. A run carrying
+    only one of the two is still dated from that one.
     """
-    raw = record.get("attempt_started_at")
-    if not raw:
-        try:
-            marker = json.loads(
-                (_run_directory(record) / ATTEMPT_RECORD_NAME).read_text(
-                    encoding="utf-8"
-                )
-            )
-        except (OSError, ValueError):
-            marker = None
-        if isinstance(marker, Mapping):
-            raw = marker.get("attempt_started_at")
-    if not raw:
+    candidates = [record.get("attempt_started_at")]
+    try:
+        marker = json.loads(
+            (_run_directory(record) / ATTEMPT_RECORD_NAME).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        marker = None
+    if isinstance(marker, Mapping):
+        candidates.append(marker.get("attempt_started_at"))
+    starts = []
+    for raw in candidates:
+        if not raw:
+            continue
+        started = parse_utc(str(raw))
+        if started is not None:
+            starts.append(started.timestamp())
+    if not starts:
         return None
-    started = parse_utc(str(raw))
-    if started is None:
-        return None
-    return started.timestamp()
+    return max(starts)
 
 
 def _current_attempt_number(record: Mapping[str, Any]) -> int | None:
