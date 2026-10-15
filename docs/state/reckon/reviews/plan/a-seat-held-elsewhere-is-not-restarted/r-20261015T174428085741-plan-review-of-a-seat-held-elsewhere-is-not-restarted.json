@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T17:58:01.463Z",
+  "dispatched_at": "2026-10-15T17:45:04Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html:224",
+      "id": "wiring-1",
+      "reason": "a coordinator dispatching the prompt verbatim builds \u00a717 and leaves \u00a712, \u00a713 and \u00a714 with no open followup naming them, so ready work stalls behind a stale instruction; the body and prompt must be rewritten to the post-\u00a79/\u00a715 state.",
+      "text": "the only open followup, f-sheinr-005, is the driving instruction for the next dispatch and its body is stale: it states \"\u00a79, \u00a714 and \u00a715 are in flight\" although \u00a79 (merged d5e27d17b, data-status=\"done\", c-close-s9) and \u00a715 (merged 025c3b5b4, data-status=\"done\", c-close-s15) have landed, and its prompt `/reckon-build a-seat-held-elsewhere-is-not-restarted \u00a717` omits \u00a712 and \u00a713, whose only ordering constraints (\"\u00a713 is gated on \u00a79 (g-sheinr-2)\", \"\u00a712 \u2026 runs after \u00a79\") are both now satisfied since \u00a79 merged",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0c4173cae8ba01bdb839cf36bbb666b5b4f5b163130e73ca4d2a9df6531411c2",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 66,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T174428085741-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "2980e1bdf46079f006870c8b31acd9004426d2b2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited file, test file and commit resolves (commits 7ebf0de29, ed650e36b, bbaee1634, 2fc0f81d7, 474754591, d5e27d17b, 025c3b5b4, 77bfa2b96, 7f372b245, 45b962dd6, d141e65f1 all resolve as commits), and the extensionless evidence hrefs resolve as `<path>.html` with anchors s2\u2013s6, s9\u2013s11 and s15 present in the landed page.",
+    "done_when": "pass \u2014 each section's done-when names a declared negative control and a suite-delta clause; the sections are the unchanged units and were read for context only.",
+    "evidence_paths": "pass \u2014 gate evidence lands in docs/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html and per-run directories under ~/.config/reckon/crew/, not a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 the new test and module names are descriptive of what they measure; no plan labels, stage names or ticket numbers reach code, and no changelog prose appears in the document's records.",
+    "reasoning": "pass \u2014 the document's claims agree with the code it points at: \u00a79 and \u00a715 are landed (tests/test_a_missing_snapshot_names_a_live_seat.py and tests/test_the_follower_lease_uses_the_store_writer.py present, run_paths._write_json_atomically removed), \u00a716 is genuinely unbuilt (dispatch_claims.py still owns _claim_node_dispatch), and the gate verdicts g-sheinr-1/g-sheinr-2 cite merged shas that resolve.",
+    "single_goal": "pass \u2014 each node carries one deliverable; the \u00a712 pairing was already declined as a single defect (the parse test is the verdict's input check).",
+    "wiring": "a finding \u2014 the sole open followup f-sheinr-005 states that \u00a79 and \u00a715 are \"in flight\" although both have landed, and its prompt names only \u00a717 while \u00a712 and \u00a713 are now unblocked."
+  },
+  "section_digests": {
+    "_document": "d9d2d42ea8eb2d30d7dac358fa5116918f98ee1851252ad971f7375244d27d0f",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s10": "fd9ced512f1fc6a0610cb111ec8c734e3c55a84ea11034055f5f1c9e60e0c649",
+    "s11": "9d7552bb9a0f7179067d09a67e819e7194fbbac1e34cf450bb6dd2631508389d",
+    "s12": "41b7e2f138ff584e94cdef995cae4ab65e47e6e0efb43dc6d30b0045664f611d",
+    "s13": "441358f17906d8fa159ba5911fc62cfb32cabff650e9ae63b1300701b43f7b6d",
+    "s14": "15dd48418b8a42e818c6a6c93d4914efb531dc5439e368a148fd7168b3a89faa",
+    "s15": "707b8d39391cbd7e59f3dbd9cc4748c655d8870e48f237e84889148855f5b9e7",
+    "s16": "e185fa1e0f4aa25f213b2df34164fcfb48751f19156d05a48ec1118841ee463d",
+    "s17": "73a4699a4193793731da87cf3a489de8f9e91df7e596e68dad4897797177cb9e",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "96d5fc1c72a25970cab856a7dde0a3cab839fd87c83786b7b49ffc4c1dabb1ab",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad",
+    "s7": "d3e16f60d17ef3ee4666f9cd189aa6cd8e26f038173b65ee34b68f3f2cd822e7",
+    "s8": "b41130ef26282f759c1b7be0de0136701972d055ed7878e2f2d9cd21c96b4f63",
+    "s9": "a2cb7135c4bd3f1439c3ec948d6146c2f5b7527da59b1bbd4c7ce4c141ec3055"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T17:58:17.632422+00:00"
+}
