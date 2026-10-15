@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="97">
+<meta name="plan-version" content="98">
 <meta name="plan-modified" content="2026-10-15">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
@@ -350,7 +350,10 @@
     <div class="r-comment-body"><p>§16 landed. A write that times out while its body is still running reports <code>landed: None</code>, with a hint to read the resource back rather than retry, so a caller is no longer told to repeat a write that lands seconds later. Merged as <code>6f17bca2b</code>; gate 232 passed. Review: 105/120. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s16">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261015T115139224124-a-write-in-flight-is-not-reported-unlanded" data-who="reckon-build" data-when="2026-10-15T12:30:14.961Z">
-    <div class="r-comment-body"><p>§16 — a timed-out write&#x27;s landing verdict now reads the abandoned body&#x27;s own future: landed is None (still in flight) when the body is still running at the end of the landing grace, False only when the body has finished and the file is unchanged, True when the file changed within the grace; the in-flight hint says to read the resource back and resubmit only what is missing, and landed False keeps the retry hint.</p></div>
+    <div class="r-comment-body"><p>§16 — a timed-out write's landing verdict now reads the abandoned body's own future: landed is None (still in flight) when the body is still running at the end of the landing grace, False only when the body has finished and the file is unchanged, True when the file changed within the grace; the in-flight hint says to read the resource back and resubmit only what is missing, and landed False keeps the retry hint.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261015T123144218914-review-of-a-write-in-flight-is-not-reported-unlanded-41d19bbd9417" data-who="reckon-build" data-when="2026-10-15T12:44:03.567Z">
+    <div class="r-comment-body"><p>reviewed r-20261015T115139224124-a-write-in-flight-is-not-reported-unlanded at base 3b5e72d0 head 41d19bbd9 and stored a parsed record (6 dimensions: goal_fidelity 19, evidence 19, scope_discipline 12, durability 19, fit 16, reuse 20; total 105; added_failure_count 0, added_failure_ids []) with two follow-on findings.</p></div>
 </div>
 </section>
 </main>

@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:2912",
+    "reckon/mcp_deadlines.py:_deadline_tool"
+  ],
+  "completed_at": "2026-10-15T12:44:03.567Z",
+  "dispatched_at": "2026-10-15T12:32:15Z",
+  "findings": [
+    {
+      "file": "tests/test_mcp_reads_have_deadlines.py",
+      "line": "246",
+      "severity": "follow-on",
+      "text": "follow-on: this file is outside the node's fenced write paths yet its body-still-running case had to change from landed False to landed None; the edit is entailed by the new behaviour and keeps its coverage, but the scope deviation was not requested from the coordinator."
+    },
+    {
+      "file": "reckon/_mcp_tools.py",
+      "line": "195",
+      "severity": "follow-on",
+      "text": "follow-on: the landed-None message and hint at reckon/_mcp_tools.py:195 and :212-215 assert \"the write is still in flight\", but landed None is also produced by the stat-timeout path at reckon/mcp_deadlines.py:251, where the abandoned body may already have finished; the message names one cause of two."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 3b5e72d0; 234584d5e changes the landing check and the None wording/hint (reckon/mcp_deadlines.py, reckon/_mcp_tools.py), and 41d19bbd9 adds the three-case test and re-specifies the body-still-running case in tests/test_mcp_reads_have_deadlines.py.",
+    "done_when": "the done_when names tests/test_a_write_in_flight_is_not_reported_unlanded.py driving the write deadline with three bodies; gate-head2.log records \"232 passed\" (EXIT=0) at head 41d19bbd9 and gate-base2.log \"229 passed\" (EXIT=0) at base 3b5e72d0, a delta of exactly the three new cases with no failure at head absent at base.",
+    "goal": "the node goal is to report a timed-out write whose body is still running as landed unknown rather than false; reckon/mcp_deadlines.py:225 returns False only when the abandoned body's future is done and the file is unchanged, and :228 returns None when the body is still running at the grace end, which is the goal.",
+    "manifest": "read; it records the gate command and result, base/head arms with their logs, a declared negative control with its log, and names files that exist on disk.",
+    "write_paths": "the dispatch fence named reckon/mcp_deadlines.py, reckon/_mcp_tools.py, tests/test_a_write_in_flight_is_not_reported_unlanded.py, the evidence fragment and a figures directory; git diff 3b5e72d0..41d19bbd9 changes the first three plus tests/test_mcp_reads_have_deadlines.py, which is outside the fence."
+  },
+  "justifications": {
+    "durability": "reinstating the old behaviour (answer False whenever the grace ends with the file unchanged) in a scratch tree reddens tests/test_a_write_in_flight_is_not_reported_unlanded.py:85 with \"assert False is None\", and the shipped negative-control.log records the same failure at EXIT=1.",
+    "evidence": "gate-head2.log records \"232 passed\" (EXIT=0) and gate-base2.log \"229 passed\" (EXIT=0), with no failure at head absent at base, and the manifest's baseline_suite/after_suite carry revision, command, completed=true and empty failure_ids.",
+    "fit": "reckon/mcp_deadlines.py:225 and reckon/_mcp_tools.py:212 follow the surrounding style of the landing check and for_call, and introduce no forbidden name, though the landed-None message at reckon/_mcp_tools.py:195 names one cause of two.",
+    "goal_fidelity": "reckon/mcp_deadlines.py:225 returns False only when the abandoned body's future is done with the file unchanged, and :228 returns None when it is still running at the grace end, so a still-in-flight write is no longer reported not-landed.",
+    "reuse": "the change reads the future _InflightBody already holds (reckon/mcp_deadlines.py:394) rather than keeping a second completion record; a search of reckon/ for a body-completion mechanism finds only the read-side add_done_callback at reckon/mcp_deadlines.py:436, so no existing owner is forked.",
+    "scope_discipline": "git diff --stat 3b5e72d0..41d19bbd9 changes tests/test_mcp_reads_have_deadlines.py, which the dispatch fence did not list among the node's write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to report a timed-out write whose body is still running as landed unknown rather than false; reckon/mcp_deadlines.py:225 returns False only when the abandoned body's future is done and the file is unchanged, and :228 returns None when the body is still running at the grace end, which is the goal.\nVERDICT done_when: the done_when names tests/test_a_write_in_flight_is_not_reported_unlanded.py driving the write deadline with three bodies; gate-head2.log records \"232 passed\" (EXIT=0) at head 41d19bbd9 and gate-base2.log \"229 passed\" (EXIT=0) at base 3b5e72d0, a delta of exactly the three new cases with no failure at head absent at base.\nVERDICT write_paths: the dispatch fence named reckon/mcp_deadlines.py, reckon/_mcp_tools.py, tests/test_a_write_in_flight_is_not_reported_unlanded.py, the evidence fragment and a figures directory; git diff 3b5e72d0..41d19bbd9 changes the first three plus tests/test_mcp_reads_have_deadlines.py, which is outside the fence.\nVERDICT manifest: read; it records the gate command and result, base/head arms with their logs, a declared negative control with its log, and names files that exist on disk.\nVERDICT diff: read commit by commit against base 3b5e72d0; 234584d5e changes the landing check and the None wording/hint (reckon/mcp_deadlines.py, reckon/_mcp_tools.py), and 41d19bbd9 adds the three-case test and re-specifies the body-still-running case in tests/test_mcp_reads_have_deadlines.py.\nCALL_SITES: reckon/mcp.py:2912, reckon/mcp_deadlines.py:_deadline_tool\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp_deadlines.py:225 returns False only when the abandoned body's future is done with the file unchanged, and :228 returns None when it is still running at the grace end, so a still-in-flight write is no longer reported not-landed.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head2.log records \"232 passed\" (EXIT=0) and gate-base2.log \"229 passed\" (EXIT=0), with no failure at head absent at base, and the manifest's baseline_suite/after_suite carry revision, command, completed=true and empty failure_ids.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: git diff --stat 3b5e72d0..41d19bbd9 changes tests/test_mcp_reads_have_deadlines.py, which the dispatch fence did not list among the node's write paths.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the old behaviour (answer False whenever the grace ends with the file unchanged) in a scratch tree reddens tests/test_a_write_in_flight_is_not_reported_unlanded.py:85 with \"assert False is None\", and the shipped negative-control.log records the same failure at EXIT=1.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/mcp_deadlines.py:225 and reckon/_mcp_tools.py:212 follow the surrounding style of the landing check and for_call, and introduce no forbidden name, though the landed-None message at reckon/_mcp_tools.py:195 names one cause of two.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change reads the future _InflightBody already holds (reckon/mcp_deadlines.py:394) rather than keeping a second completion record; a search of reckon/ for a body-completion mechanism finds only the read-side add_done_callback at reckon/mcp_deadlines.py:436, so no existing owner is forked.\nFINDING tests/test_mcp_reads_have_deadlines.py:246 follow-on: follow-on: this file is outside the node's fenced write paths yet its body-still-running case had to change from landed False to landed None; the edit is entailed by the new behaviour and keeps its coverage, but the scope deviation was not requested from the coordinator.\nFINDING reckon/_mcp_tools.py:195 follow-on: follow-on: the landed-None message and hint at reckon/_mcp_tools.py:195 and :212-215 assert \"the write is still in flight\", but landed None is also produced by the stat-timeout path at reckon/mcp_deadlines.py:251, where the abandoned body may already have finished; the message names one cause of two.",
+  "review_run_id": "r-20261015T123144218914-review-of-a-write-in-flight-is-not-reported-unlanded-41d19bbd9417",
+  "reviewed_base_sha": "3b5e72d0e9b956cd720e407f39b19ed48ed95af0",
+  "reviewed_head_sha": "41d19bbd9417ef1be91b173f048769491f41e107",
+  "reviewed_run_id": "r-20261015T115139224124-a-write-in-flight-is-not-reported-unlanded",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T12:41:00.000000+00:00",
+  "total": 105
+}
