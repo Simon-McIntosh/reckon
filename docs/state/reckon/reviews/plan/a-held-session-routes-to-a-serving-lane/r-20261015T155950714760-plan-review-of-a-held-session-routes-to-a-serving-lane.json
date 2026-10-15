@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T16:07:12.436Z",
+  "dispatched_at": "2026-10-15T16:00:25Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-session-routes-to-a-serving-lane.html:200",
+      "id": "done_when-1",
+      "reason": "the done-when needs a control that reverts the consolidated call (or a test that asserts the one-reader property), otherwise a node can pass its gate without performing the section's whole deliverable.",
+      "text": "the declared negative control (\"with the owner returning an empty tuple, the first case fails\") reddens the test that pins `_recorded_dispatch_overrides`, which already returns the recorded overrides for all three record shapes before \u00a78 is built; nothing in the node's automated gate fails if `reckon/crew/queue_admission.py:133` keeps its hand read and only the new test file is added",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-session-routes-to-a-serving-lane.html:200",
+      "id": "done_when-2",
+      "reason": "the owner is importable from `queue_admission.py` while staying in `reckon/crew_run_commands.py`, which is already a listed write path, so the placeholder resolves to a named file at implementation and costs the node nothing.",
+      "text": "the write-path list names \"the module that holds the owner\" rather than a concrete path, and the importer-parity clause names \"either changed module\" (two), so if the owner lands in a new module neither its own path nor its importers are covered by the gate",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "88eb4bfb35f2da840158ef4acde11fa3e965ede226a2a119a82c4e70e0c21cb0",
+  "plan_slug": "a-held-session-routes-to-a-serving-lane",
+  "plan_version": 31,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T155950714760-plan-review-of-a-held-session-routes-to-a-serving-lane",
+  "reviewed_blob_sha": "57afa5579d62d165bcc1ec2ebf11ca11823737fa",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_recorded_dispatch_overrides`, `_resolve_lane_config`, both module paths, the cross-plan \u00a717 anchor and every `#s\u2026` archive anchor named by the plan resolve at the reviewed revision.",
+    "done_when": "a finding \u2014 \u00a78's negative control mutates the owner, a behaviour \u00a77 already landed, so the node's automated gate passes on the unfixed code and does not cover the consolidation the section delivers.",
+    "evidence_paths": "pass \u2014 \u00a78's negative control is logged under the run directory, a durable path, and its landed evidence slot in the archive doc already exists.",
+    "naming": "pass \u2014 \u00a78's symbols and its new test filename carry no plan label, ticket number or version tag, and the title states the mechanism rather than a stage.",
+    "reasoning": "pass \u2014 \u00a78's corrected root cause matches the code: the queued lane change takes the resolved-config branch and the admission pass takes the hand-read one; all three named reaching call sites verify, and the import-graph assertion holds. `move_queued_run`'s own `config=None` default still reaches `_resolve_lane_config`, so \"never\" is true of the production caller rather than of the signature \u2014 noted, not a defect.",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable, giving the run's recorded overrides a single reader on the real call path.",
+    "wiring": "pass \u2014 \u00a78 sits under the open followup f-hsrs-004 whose prompt names its slug, its predecessor \u00a77 is resolved, and the declared `plan-after: a-held-dispatch-waits-its-fair-turn` relation resolves."
+  },
+  "section_digests": {
+    "_document": "762d4ec33203f259b944d6a3b3ffc40cfe03634b64296d2a698d1eebe41cb56e",
+    "s1": "bcb76fd1e36c1640de15ae6763cc9a81fa94bbf740e12b844ef8ca1b64273375",
+    "s2": "c645d9e7baae34776f5b8f9c2dd066fc9af4eee8929fde6bf169cffcc3e1583c",
+    "s3": "fb16a2a2293ef2fafdfe6399ffc0da4d1fc940e78110635b413a1bafc2028861",
+    "s4": "9612149e1d24c4df585f6427a61fcb5eb20a529d956831368e08bdc56fed9174",
+    "s5": "6f592a89511473015142bc4e8bea06622bcf51877131ef14231aa8db57ff8fae",
+    "s6": "390bffed17b2602fcd713215842f533ef8755c30aa9137e1d40ce2828d529b65",
+    "s7": "6fd55b2badd1679d95e94cd5a5c61b8c477e60647b4ef00465c99018195319f1",
+    "s8": "41ac6755cb279f60d0d2a8bd3a2b339ed8ed47c9bc79b58283b7fd8d923e5a97"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T16:09:38.858137+00:00"
+}
