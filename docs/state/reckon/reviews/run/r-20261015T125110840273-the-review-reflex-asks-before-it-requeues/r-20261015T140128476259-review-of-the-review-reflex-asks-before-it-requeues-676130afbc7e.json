@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "bd37b85bba36a2e2ea5a0f2d598305f4e0e3bb99",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2650 dispatch_review_for_run (the review reflex loop)",
+    "reckon/crew/recovery.py:226 re-export _dispatch_composed_review"
+  ],
+  "completed_at": "2026-10-15T14:13:29.060Z",
+  "dispatched_at": "2026-10-15T14:02:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "1391",
+      "severity": "follow-on",
+      "text": "_review_lane_family re-derives a backend's lane family (\u201clocal\u201d for the local backend, else its resolved dialect with the launch fallback) that reckon/crew/dispatch_picker.py:548 _lane_backend_names already owns, and that reckon/crew/picker/snapshot.py:928 inlines too, so a change to the family rule now has a fourth place to be made."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "1443",
+      "severity": "follow-on",
+      "text": "_reroute_held_review restates the orchestration of reckon/crew/dispatch_picker.py:602 _reask_off_zero_slot_lane \u2014 ask Jev once with the zero-slot lane excluded and record both asks \u2014 as a second implementation instead of a caller of it; it does reuse that module's primitives (_config_without_lane, _ask_summary) and the differing trigger (a recorded hold rather than a fresh selection) justifies a separate entry point, but the two now share an answer summary only by convention and will drift."
+    }
+  ],
+  "head_log_revision": "a88b6ee3067810a1c37a78a54570c4f626422739",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s) \u2014 the reflex loop at reckon/crew/recovery_watch.py:2650 and the re-export at reckon/crew/recovery.py:226; _dispatch_composed_review's three in-module callers (recovery_review_dispatch.py:1587/1616/1731) are the same runtime path.",
+    "diff": "read all five commits against bd37b85bb \u2014 f74779612 lands the re-route and its record, fc664067b formats the test, and a88b6ee30/cba248dee/676130afb are docs-only on the evidence fragment \u2014 every path inside the declared scope.",
+    "done_when": "the done_when's three clauses are exactly the three tests in tests/test_the_review_reflex_asks_before_it_requeues.py, and each gate chunk of gate-head-00..03.log ends EXIT=0 with the new file in chunk 03 (head 83, base 80).",
+    "goal": "read _reroute_held_review at reckon/crew/recovery_review_dispatch.py:1443 and its call site in _dispatch_composed_review: the retry asks the picker with the refusing lane excluded and carries the review onto the answer, which is the goal.",
+    "manifest": "read; it records the chunked importing-set arms (head 259 passed/1 skipped, base 256 passed/1 skipped, every chunk EXIT=0, delta the three new tests), the negative control and the ruff result, and I confirmed all eight gate logs and the control log.",
+    "write_paths": "git diff --stat bd37b85bb..676130afb names exactly three files, all inside the four declared write paths; the declared figures directory is granted but unused."
+  },
+  "justifications": {
+    "durability": "the recorded negative control (negative-control.log, EXIT=1, 2 failed, ids test_a_held_review_is_re_routed_with_the_refusing_lane_excluded and test_an_answer_that_declines_is_not_overridden) reinstates the pre-change re-queue and reddens tests 1 and 3 while test 2 stays green, and each assertion compares against the stub's answer or the record the test set, not against the code's own output.",
+    "evidence": "the gate logs named in the manifest run the files that import the changed module at base and head and every chunk ends EXIT=0, and the done_when's three clauses map one-to-one onto the three tests in tests/test_the_review_reflex_asks_before_it_requeues.py.",
+    "fit": "the helpers at reckon/crew/recovery_review_dispatch.py:1388-1443 follow the module's private-helper, lazy-import and docstring idiom, and every new name is mechanism-named with no plan label or version suffix.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:1443 asks the picker with the refusing lane excluded and returns the answer's backend, which _dispatch_composed_review carries onto the review run.",
+    "reuse": "the orchestration at reckon/crew/recovery_review_dispatch.py:1443 duplicates the owned re-ask at reckon/crew/dispatch_picker.py:602 and _review_lane_family at :1391 restates the family derivation at dispatch_picker.py:548, though the primitives _config_without_lane, _ask_summary and _dispatch_lane_allowance are reused.",
+    "scope_discipline": "git diff --stat bd37b85bb..676130afb names only reckon/crew/recovery_review_dispatch.py, tests/test_the_review_reflex_asks_before_it_requeues.py and the evidence fragment, every one inside the declared write paths."
+  },
+  "node": "review-of-the-review-reflex-asks-before-it-requeues-676130afbc7e",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read _reroute_held_review at reckon/crew/recovery_review_dispatch.py:1443 and its call site in _dispatch_composed_review; the retry now asks the picker with the refusing lane excluded and carries the review onto the answer it gives, which is the goal.\nVERDICT done_when: the done_when names tests/test_the_review_reflex_asks_before_it_requeues.py; its three clauses (re-route with the lane excluded once and both asks recorded; re-queue unchanged with no alternative lane; the decline not overridden) are exactly the three tests, and gate-head-00..03.log and gate-base-00..03.log record the result.\nVERDICT write_paths: git diff --stat bd37b85bb..676130afb names three files, every one inside the four declared write paths; the declared figures directory is unused.\nVERDICT manifest: read; it records the chunked importing-set arms (head 259 passed/1 skipped, base 256 passed/1 skipped, all EXIT=0, delta the three new tests), the negative control and the ruff result, and I confirmed the eight gate logs and the control log.\nVERDICT diff: read all five commits against bd37b85bb; f74779612 lands the re-route and fc664067b formats the test, with a88b6ee30/cba248dee/676130afb docs-only, all inside scope.\nCALL_SITES: reckon/crew/recovery_watch.py:2650 dispatch_review_for_run (the review reflex loop), reckon/crew/recovery.py:226 re-export\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: recovery_review_dispatch.py:1443 asks the picker with the refusing lane excluded and returns the answer's backend, which _dispatch_composed_review at :1925 carries onto the review run.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's gate-head-03.log and gate-base-03.log end EXIT=0 and the three new tests carry the done_when's three clauses.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diffstat over bd37b85bb..676130afb names only recovery_review_dispatch.py, its test and its evidence fragment, all inside the declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: the recorded negative control (negative-control.log, EXIT=1, 2 failed) reinstates the pre-change re-queue and reddens tests 1 and 3 while test 2 stays green.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers at recovery_review_dispatch.py:1388-1443 follow the module's private-helper, lazy-import and docstring idiom, and no new name carries a plan label or version suffix.\nSCORE reuse: 12\nJUSTIFICATION reuse: _review_lane_family at recovery_review_dispatch.py:1391 restates the family derivation at dispatch_picker.py:548 and _reroute_held_review at :1443 duplicates the re-ask orchestration at dispatch_picker.py:602, though the primitives are reused.\nFINDING reckon/crew/recovery_review_dispatch.py:1391 follow-on: _review_lane_family re-derives a backend's lane family (\u201clocal\u201d or its resolved dialect) that dispatch_picker.py:548 _lane_backend_names already owns (and picker/snapshot.py:928 inlines), so a change to the family rule now has a fourth place to be made.\nFINDING reckon/crew/recovery_review_dispatch.py:1443 follow-on: _reroute_held_review parallel-restates the re-ask orchestration of dispatch_picker.py:602 _reask_off_zero_slot_lane rather than calling it; the differing trigger justifies a separate entry point, but the two share only by convention and will drift.",
+  "review_run_id": "r-20261015T140128476259-review-of-the-review-reflex-asks-before-it-requeues-676130afbc7e",
+  "reviewed_base_sha": "bd37b85bba36a2e2ea5a0f2d598305f4e0e3bb99",
+  "reviewed_head_sha": "676130afbc7e4216b163034038feeca573f22a02",
+  "reviewed_run_id": "r-20261015T125110840273-the-review-reflex-asks-before-it-requeues",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T14:15:00+00:00",
+  "total": 106
+}

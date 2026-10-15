@@ -25,7 +25,7 @@
   <title>A Held Session Routes To A Serving Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -224,7 +224,10 @@
     <div class="r-comment-body"><p>§4 landed. A lane change keeps the run's waivers (queued move, merged earlier). Now a review held on a lane that grants the session no worker is re-routed once through the picker with that lane left out, and both asks are recorded. Without a lift it re-queues locally as before. Merged as <code>7722ccd7d</code>. Gate over the full set of importing files: 259 passed at head against 256 at base, no failures in either arm. Review: 106/120. Two reuse follow-ons are filed as §6. <a href="/reckon/evidence/archive/a-held-session-routes-to-a-serving-lane-landed.html#s4-review-reflex">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261015T125110840273-the-review-reflex-asks-before-it-requeues" data-who="reckon-build" data-when="2026-10-15T14:00:01.090Z">
-    <div class="r-comment-body"><p>the review reflex&#x27;s retry now asks the route question before it re-queues on the lane that refused it — a run whose local-lane review dispatch was held because that lane&#x27;s router grants the session no worker is re-routed through the picker with the refusing lane left out of the offering, both asks recorded on the run&#x27;s dispatch record; the question is asked only when the reflex has another lane it may offer, so a review-excluded metered lane is never offered to a review and the un-lifted fleet re-queues locally unchanged. tests/test_the_review_reflex_asks_before_it_requeues.py 3 passed, EXIT=0.</p></div>
+    <div class="r-comment-body"><p>the review reflex's retry now asks the route question before it re-queues on the lane that refused it — a run whose local-lane review dispatch was held because that lane's router grants the session no worker is re-routed through the picker with the refusing lane left out of the offering, both asks recorded on the run's dispatch record; the question is asked only when the reflex has another lane it may offer, so a review-excluded metered lane is never offered to a review and the un-lifted fleet re-queues locally unchanged. tests/test_the_review_reflex_asks_before_it_requeues.py 3 passed, EXIT=0.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261015T140128476259-review-of-the-review-reflex-asks-before-it-requeues-676130afbc7e" data-who="reckon-build" data-when="2026-10-15T14:13:29.060Z">
+    <div class="r-comment-body"><p>review of the-review-reflex-asks-before-it-requeues (r-20261015T125110840273) at base bd37b85bba36a2e2ea5a0f2d598305f4e0e3bb99, head 676130afbc7e4216b163034038feeca573f22a02 — the landed change re-routes a review the local lane held through the route question with the refusing lane excluded; scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 18, reuse 12, total 106; two follow-on findings, no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261015T092113080272-review-of-jev-routes-with-the-session-admission-and-the-lift-ebcb2cbc4436" data-who="reckon-build" data-when="2026-10-15T09:40:43.302Z">
     <div class="r-comment-body"><p>review of run r-20261015T075223938148-jev-routes-with-the-session-admission-and-the-lift at head ebcb2cbc44: goal_fidelity 19, evidence 15, scope_discipline 12, durability 13, fit 17, reuse 17 (total 93); one blocking finding (reckon/crew/recovery_review_dispatch.py:1096 resolves the lift with readings=None and no session, so the reflex can disagree with the snapshot about whether a lift stands) and four follow-on findings. Add to §2 of the plan the outcome that Jev's state and guidance now carry the session's own worker slots plus any lift, with the review's blocking finding recorded against the lift resolver's reader.</p></div>
