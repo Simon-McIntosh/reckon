@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:983 (sweep -> payload_for -> _with_unreadable_records at :616)",
+    "reckon/hooks/coordinator_obligations.py:930",
+    "reckon/hooks/coordinator_obligations.py:953",
+    "reckon/hooks/coordinator_obligations.py:1172 (live_payload)"
+  ],
+  "completed_at": "2026-10-15T20:44:28.120Z",
+  "dispatched_at": "2026-10-15T20:31:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "126",
+      "severity": "follow-on",
+      "text": "follow-on: FINDING_CLAIM_FIELDS duplicates review.FINDING_CLAIM_FIELDS (reckon/crew/review.py:156), the owner of that capability, rather than importing it; the parity test keeps the copy in step so it does not hold the node, but a second declaration of an owned constant is a divergence that only a test prevents."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "126",
+      "severity": "follow-on",
+      "text": "follow-on: _unreadable_record_remedy tells the two faults apart by matching the reader's human-readable error prose (_CLAIMLESS_RECORD_ERROR at :117) instead of a structured fault code, so any rewording of review.py:2828's ValueError silently reverts the duty to the mid-write remedy; only the end-to-end test test_a_claimless_record_names_its_fault_and_does_not_wait catches that, the direct unit test carrying the same literal."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit f23bd6de8 against 204afb91dc; three files changed \u2014 obligation_snapshot.py splitting the remedy on the reader's reported error and removing the dead watch_reload_started_at wrapper, a new 264-line test file, and a 21-line evidence fragment.",
+    "done_when": "the done_when names tests/test_an_unreadable_review_duty_names_its_fault.py; the manifest records the new file 5 passed EXIT=0 and the base/head arms over the importing files (head 103/0, base 98/0), which I re-ran (5 passed at head), and its ruff arm, unrecorded in the manifest, I re-ran as \"All checks passed\" and \"2 files already formatted\".",
+    "goal": "the node goal is to make the unreadable review record duty tell a claimless complete record from one caught mid-write; reckon/crew/obligation_snapshot.py:584 _unreadable_record_remedy now returns the claimless remedy when the reader's error names claimless findings and today's mid-write remedy otherwise, wired at :630.",
+    "manifest": "read; status complete; it records commit f23bd6de842b8771fcc8031b804b537ae5cb23e8, base 98 passed/0 failed and head 103 passed/0 failed over two chunks each, and a negative control at 3 failed EXIT=1.",
+    "write_paths": "the source manifest declares reckon/crew/obligation_snapshot.py, tests/test_an_unreadable_review_duty_names_its_fault.py, the evidence fragment and a figure dir; the diff's three changed paths all sit inside that set and no figure was written."
+  },
+  "justifications": {
+    "durability": "negative-control-claimless-remedy-restored.log shows the single mid-write remedy reddening test_a_claimless_record_names_its_fault_and_does_not_wait and test_the_remedy_tells_the_two_faults_apart at EXIT=1, and test_the_claim_fields_mirror_the_review_reader compares two independent module constants.",
+    "evidence": "the done_when's pytest cases are asserted in tests/test_an_unreadable_review_duty_names_its_fault.py and recorded in the manifest and gate logs, but the manifest records no ruff result even though the done_when names ruff check and format as part of the gate.",
+    "fit": "_unreadable_record_remedy and _CLAIMLESS_RECORD_ERROR follow the module's existing private-helper idiom at reckon/crew/obligation_snapshot.py:570 and carry no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:584-603 returns the claimless remedy for the reader's claimless error string and the mid-write remedy otherwise, which is exactly the section's deliverable.",
+    "reuse": "FINDING_CLAIM_FIELDS at reckon/crew/obligation_snapshot.py:126 re-declares review.py:156's tuple rather than importing it, mitigated by the parity test at tests/test_an_unreadable_review_duty_names_its_fault.py:260.",
+    "scope_discipline": "every changed path (reckon/crew/obligation_snapshot.py, tests/test_an_unreadable_review_duty_names_its_fault.py, docs/evidence/fragments/every-review-is-kept-as-a-committed-record/an-unreadable-review-duty-names-its-fault.html) is inside the source manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the unreadable review record duty tell a claimless complete record from one caught mid-write; reckon/crew/obligation_snapshot.py:584 _unreadable_record_remedy now returns the claimless remedy when the reader's error names claimless findings and today's mid-write remedy otherwise, wired at :630.\nVERDICT done_when: the done_when names tests/test_an_unreadable_review_duty_names_its_fault.py; the manifest records the new file 5 passed EXIT=0 and the base/head arms over the importing files (head 103/0, base 98/0), which I re-ran (5 passed at head), and its ruff arm, unrecorded in the manifest, I re-ran as \"All checks passed\" and \"2 files already formatted\".\nVERDICT write_paths: the source manifest declares reckon/crew/obligation_snapshot.py, tests/test_an_unreadable_review_duty_names_its_fault.py, the evidence fragment and a figure dir; the diff's three changed paths all sit inside that set and no figure was written.\nVERDICT manifest: read; status complete; it records commit f23bd6de842b8771fcc8031b804b537ae5cb23e8, base 98 passed/0 failed and head 103 passed/0 failed over two chunks each, and a negative control at 3 failed EXIT=1.\nVERDICT diff: read commit f23bd6de8 against 204afb91dc; three files changed \u2014 obligation_snapshot.py splitting the remedy on the reader's reported error and removing the dead watch_reload_started_at wrapper, a new 264-line test file, and a 21-line evidence fragment.\nCALL_SITES: reckon/crew/obligation_snapshot.py:983 (sweep -> payload_for -> _with_unreadable_records at :616), reckon/hooks/coordinator_obligations.py:930, reckon/hooks/coordinator_obligations.py:953, reckon/hooks/coordinator_obligations.py:1172 (live_payload)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:584-603 returns the claimless remedy for the reader's claimless error string and the mid-write remedy otherwise, which is exactly the section's deliverable.\nSCORE evidence: 15\nJUSTIFICATION evidence: the done_when's pytest cases are asserted in tests/test_an_unreadable_review_duty_names_its_fault.py and recorded in the manifest and gate logs, but the manifest records no ruff result even though the done_when names ruff check and format as part of the gate.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path (reckon/crew/obligation_snapshot.py, tests/test_an_unreadable_review_duty_names_its_fault.py, docs/evidence/fragments/every-review-is-kept-as-a-committed-record/an-unreadable-review-duty-names-its-fault.html) is inside the source manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control-claimless-remedy-restored.log shows the single mid-write remedy reddening test_a_claimless_record_names_its_fault_and_does_not_wait and test_the_remedy_tells_the_two_faults_apart at EXIT=1, and test_the_claim_fields_mirror_the_review_reader compares two independent module constants.\nSCORE fit: 18\nJUSTIFICATION fit: _unreadable_record_remedy and _CLAIMLESS_RECORD_ERROR follow the module's existing private-helper idiom at reckon/crew/obligation_snapshot.py:570 and carry no plan, ticket or version label.\nSCORE reuse: 15\nJUSTIFICATION reuse: FINDING_CLAIM_FIELDS at reckon/crew/obligation_snapshot.py:126 re-declares review.py:156's tuple rather than importing it, mitigated by the parity test at tests/test_an_unreadable_review_duty_names_its_fault.py:260.\nFINDING reckon/crew/obligation_snapshot.py:126 follow-on: FINDING_CLAIM_FIELDS duplicates review.FINDING_CLAIM_FIELDS (reckon/crew/review.py:156), the owner of that capability, rather than importing it; the parity test keeps the copy in step so it does not hold the node, but a second declaration of an owned constant is a divergence that only a test prevents.\nFINDING reckon/crew/obligation_snapshot.py:126 follow-on: _unreadable_record_remedy tells the two faults apart by matching the reader's human-readable error prose (_CLAIMLESS_RECORD_ERROR at :117) instead of a structured fault code, so any rewording of review.py:2828's ValueError silently reverts the duty to the mid-write remedy; only the end-to-end test test_a_claimless_record_names_its_fault_and_does_not_wait catches that, the direct unit test carrying the same literal.\n",
+  "review_run_id": "r-20261015T203032540329-review-of-an-unreadable-review-duty-names-its-fault-f23bd6de842b",
+  "reviewed_base_sha": "204afb91dc7f85d7bb3e60e5cd1b72c0c74a5cea",
+  "reviewed_head_sha": "f23bd6de842b8771fcc8031b804b537ae5cb23e8",
+  "reviewed_run_id": "r-20261015T194302913300-an-unreadable-review-duty-names-its-fault",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T20:41:27.901270+00:00",
+  "total": 104
+}
