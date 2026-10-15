@@ -1,0 +1,122 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T06:12:19.373Z",
+  "dispatched_at": "2026-10-15T05:56:28Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-shows-the-work-it-watches.html:330",
+      "id": "done_when-1",
+      "reason": "as written a node can land the fix in `dispatch_launch.py`, leave `gc.py` printing, pass every case and the control, and close \u00a724 with the pane symptom the section exists to remove still reachable.",
+      "text": "\u00a724's deliverable requires both `remove_worker_scratch` and `garbage_collect_scratch` to write nothing to stdout, but its three cases and its negative control cover only `remove_worker_scratch`: the control restores the print there alone, and the two `crew gc --scratch` cases assert only that a path is present \"in the emitted JSON\", which still holds while `reckon/crew/gc.py:1074` and `:1079` keep printing \u2014 and `gc.py:1074` emits the very string the section's Why quotes from the lead's pane (`removing worker scratch directory \u2026 (0 bytes)`), so the half that may have been the observed cause is the half no case fails on",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-shows-the-work-it-watches.html:330,334",
+      "id": "evidence_paths-1",
+      "reason": "the dispatch manifest contract requires `negative_control_log` as a bare path regardless of what the section says, so the evidence is produced without the plan naming it; the omission breaks the plan's own convention rather than the record.",
+      "text": "neither \u00a724 nor \u00a725 states where the negative-control log is written, where \u00a7\u00a72\u20136, \u00a715\u2013\u00a719, \u00a721\u2013\u00a723 each end their done-when with \"It is logged under the run directory\"; \u00a724 and \u00a725 stop at \"turns the first case red\"",
+      "type": "evidence_paths",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/the-monitor-shows-the-work-it-watches.html:334",
+      "id": "reasoning-1",
+      "reason": "the deliverable is the stream-level row, the code verifiably appends one for an unchanged live run (`reckon/crew/runs.py:2110-2124`), so removing it is correct and harmless whatever the pane also does; only the Why's justification is unverified.",
+      "text": "\u00a725 states \"Those baselines are drawn\" as the reason the section exists, but `RowPolicy` already drops a row that restates the state the pane shows (`reckon/crew/ticker.py:1583-1590`), and \u00a721 states that an in-place reload restores the pane's run states through the carried checkpoint and `follow_checkpoint.seed_states`, so a reload baseline for an unchanged run whose raw state is stable is suppressed at the pane; the observed `new \u2192 delivered` row therefore implies a pane with no memory of that run, which the Why does not say",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "83e032f6e44a3d2240af2a0b1b02a2d1dde967ccef527707125401f58c204e3e",
+  "plan_slug": "the-monitor-shows-the-work-it-watches",
+  "plan_version": 99,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "67139f13-acc5-4116-8e4d-ecb63acaac2c",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-15T06:12:56.310433+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "67139f13-acc5-4116-8e4d-ecb63acaac2c",
+      "finding": "evidence_paths-1",
+      "reason": "",
+      "when": "2026-10-15T06:13:05.858565+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "67139f13-acc5-4116-8e4d-ecb63acaac2c",
+      "finding": "reasoning-1",
+      "reason": "the lead observed the delivered run redrawn on a pane, so some pane held no memory of it (an observing session's pane or an attach whose checkpoint was lost); the stream-level row is what every such pane draws, and the finding itself grants that removing it at source is correct whatever the row policy does",
+      "when": "2026-10-15T06:13:15.682835+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "67139f13-acc5-4116-8e4d-ecb63acaac2c",
+      "reason": "",
+      "when": "2026-10-15T06:12:56.310433+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "67139f13-acc5-4116-8e4d-ecb63acaac2c",
+      "reason": "",
+      "when": "2026-10-15T06:13:05.858565+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "67139f13-acc5-4116-8e4d-ecb63acaac2c",
+      "reason": "the lead observed the delivered run redrawn on a pane, so some pane held no memory of it (an observing session's pane or an attach whose checkpoint was lost); the stream-level row is what every such pane draws, and the finding itself grants that removing it at source is correct whatever the row policy does",
+      "when": "2026-10-15T06:13:15.682835+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-monitor-shows-the-work-it-watches.v99.json",
+  "review_run_id": "r-20261015T055546710496-plan-review-of-the-monitor-shows-the-work-it-watches",
+  "reviewed_blob_sha": "dd28e9cbb9587f2961a0866e9bced52d6b8385b5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `remove_worker_scratch` (`reckon/crew/dispatch_launch.py:801`), `promotion_release` (`reckon/crew/promotion_release.py:340` `_release_run_workspace`, which reaches `remove_worker_scratch` at `:463`), `garbage_collect_scratch` (`reckon/crew/gc.py:1011`), `_publish_watch_transitions` (`reckon/crew/runs.py:2061`, called from `list_live` at `:2176`), `runs.watch_stream_cursor` (`reckon/crew/runs.py:2323`), \u00a714 and both existing test files (`tests/test_a_runs_scratch_ends_with_the_run.py`, `tests/test_worker_scratch_lives_with_its_run.py`, `tests/test_a_replacement_producer_publishes_transitions.py`) all resolve; the only new file named, `tests/test_a_reload_republishes_no_unmoved_run.py`, is declared as one to be created.",
+    "done_when": "a finding \u2014 \u00a724's deliverable names two functions, but its measure and its negative control exercise only one of them.",
+    "evidence_paths": "a finding \u2014 unlike every other section in this plan, \u00a724 and \u00a725 name no path for the negative-control log.",
+    "naming": "pass \u2014 the new symbols are named by mechanism (`test_scratch_housekeeping_is_not_printed.py`, `test_a_reload_republishes_no_unmoved_run.py`); the `\u00a7n` references inside the prose are the plan's own structural cross-references, not code names, and no stage label, ticket number or version tag reaches a symbol.",
+    "reasoning": "a finding \u2014 \u00a725's Why asserts the reload baselines \"are drawn\", while the row policy in `reckon/crew/ticker.py:1583-1590` is built to make exactly such a row silent.",
+    "single_goal": "pass \u2014 \u00a724 carries one deliverable (both housekeeping prints leave stdout, with the pinning tests moved onto the result) and \u00a725 carries one (the first sweep stops re-announcing an unchanged live run), its reader enumeration being a guard on that same change rather than a second deliverable.",
+    "wiring": "pass \u2014 s24 and s25 declare no `depends-on` and need none: their write paths (`reckon/crew/dispatch_launch.py`, `reckon/crew/gc.py`, `reckon/crew/runs.py`) are disjoint from every other implementable section (\u00a77\u2013\u00a712) and from each other, and every section they build on (\u00a714, \u00a715, \u00a716, \u00a723) is declared `done`."
+  },
+  "section_digests": {
+    "_document": "f4dc3bb664a04760a7d13135f8ee52bac5768c9a5febbc4ba3d3731b90039ce0",
+    "s1": "52c4b79a6da0bc1e71b00748d6314e8a255bd5fa91b6acae30f6943e3c16cee5",
+    "s10": "ce58141a18e475a484415380e6ae181e597ad53c112e6cb22e1cfc60bb6b09fc",
+    "s11": "24bc7e718fa0dce82e99f82b1a80aa7f382204659e1a5fe08844c9bd4df9f21d",
+    "s12": "6b56be12afc45f4700363688128158c594eba3edb30de411ea7d4ca356b3335b",
+    "s13": "af506684f5bf69d74d9b3cdbdf5fa5888d1c3e2ec6b43d93fb08dc79c5821889",
+    "s14": "87e50c4f3edfdf578cc4501636727b40a183a8737e7f4673669428dbae23a0e5",
+    "s15": "09f7a8c8a774c6a9eebd4d5d69d79451363a282a7bf1bb77100479e9a7e98a02",
+    "s16": "867b2716d09b2503e28914fb9f8d9ef0902ca6517f1b150bda6a941a7b0be06b",
+    "s17": "141c743461dc46b9edeb2cbc1bdc6d82a711cf479391112777980c80b87d6e01",
+    "s18": "fce8a8c220cf6ee49aad89aea5514558f0aef180fc5f908cd07bf61114fbfbd2",
+    "s19": "cfcf6302efee0b3938220a54ba297408406e7500dc55f2e1a52535b18480b3fb",
+    "s2": "eeca9b70e096de79d92846f4178d8f31832962cb9c7c73d122ac2a9e06546f32",
+    "s20": "d85f627de7ebd9017fa3940ac745a4530bf4158cbe0d02a52677379592397aab",
+    "s21": "87fc24dd24da2dbf4d094ca09e8a791b4a346cc4b6d23073fce5682d4791d5ad",
+    "s22": "b76862cd2ea9a3ac095f2db0f0bf8ed1475a85d382ef62be3a3c21a7f6aa19b5",
+    "s23": "2c68818cff083fb95dc03b3dce7a6999800c0e2ec909807973c07ee3c7c2b63a",
+    "s24": "82fc0276f85695f792d5a131fc6ac6c80f05065cac46605e169da3ddfe73b94c",
+    "s25": "4ed98bf2d9d237fc80769d9520d20ef87865a01298e70c566624d8412f020937",
+    "s3": "a37e4f17cfa5318f2229db2eabe7a7b80adf7bb6fcb474e3d262981478abba8e",
+    "s4": "fb6bae83cab6ff2e0a33bf64f8a01d35db72cb3113a73e4659d22617724629c9",
+    "s5": "349ee19ab8c71fbc5e62c4cfa2fd4c32d34af2e2f3e9ced2db0580bfd0e74815",
+    "s6": "301b59df6e0fdccf6650e206628516f0e967dbf4e1b58a616e3d6999015f18cc",
+    "s7": "aede0bed1a72c26f45a72032497a3a58f24022a1a5e8cd4f8f6e08aada09aab3",
+    "s8": "7b9b1e94e523da3024a014b4d3d8532114544257c92fcfe64893085d2166840f",
+    "s9": "b85d6764b003c3933d1609383c69602e5f4b2d502c8200fe4bab51f3e9085466"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T06:12:24.223777+00:00"
+}
