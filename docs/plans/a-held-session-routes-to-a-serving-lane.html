@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="a-held-dispatch-waits-its-fair-turn">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>A Held Session Routes To A Serving Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -184,7 +184,7 @@
     </p>
 
     <h2 id="s6">§6 — A backend&#x27;s lane family and the zero-slot re-ask each have one owner</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> The review of §4's reflex node (106/120, reuse 12) found two duplications. First, the rule mapping a backend to its lane family (the local marker for the local backend, otherwise its resolved dialect, falling back to its launch kind) is now stated in <code>reckon/crew/recovery_review_dispatch.py</code> (<code>_review_lane_family</code>), in <code>reckon/crew/dispatch_picker.py</code> (<code>_lane_backend_names</code>) and inline in <code>reckon/crew/picker/snapshot.py</code>, so a change to that rule must be made in each place. Second, <code>_reroute_held_review</code> restates the steps of <code>dispatch_picker._reask_off_zero_slot_lane</code>: ask once with the zero-slot lane excluded and record both asks. It shares that function's answer summary only by convention.</p><p><strong>Deliverable.</strong> One function in <code>reckon/crew/dispatch_picker.py</code> maps a backend to its lane family, and the other places call it. The reflex's retry and the dispatch re-ask share one helper for the excluded-lane ask and its recorded pair, while each keeps its own trigger: a recorded hold for the reflex, a fresh selection for dispatch. No behaviour changes.</p><p><strong>Done when</strong> no other module derives a lane family. A grep of <code>reckon/</code> for <code>dialect_for(</code> used to build a lane name finds only the owner. The test files that import any of the three modules give the same pass and fail ids at head as at base. Negative control: a test that pins the owner's mapping for a local backend, a dialect backend and a backend without a dialect fails when the owner returns the backend name unchanged. Write paths: <code>reckon/crew/dispatch_picker.py</code>, <code>reckon/crew/recovery_review_dispatch.py</code>, <code>reckon/crew/picker/snapshot.py</code> and <code>tests/test_a_lane_family_has_one_owner.py</code>.</p>
 
     <h2 id="s7">§7 — A resume runs under the policy its run was dispatched with</h2>
@@ -201,10 +201,11 @@
     <pre class="r-fu-prompt">/reckon-build a-held-session-routes-to-a-serving-lane §2</pre>
     <p class="r-fu-outcome"><p>§2, §3, §4 and §5 landed on 2026-10-15 (§2 <code>0249aeaa5</code>, §3 <code>101c2ff40</code>, §4 <code>7722ccd7d</code>). The review's reuse follow-ons are §6, carried by f-hsrs-002.</p></p>
     </article>
-<article class="r-fu" data-id="f-hsrs-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build a-held-session-routes-to-a-serving-lane §6" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-hsrs-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build a-held-session-routes-to-a-serving-lane §6" data-resolved-at="2026-10-15T15:13:06+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Give a backend&#x27;s lane family and the zero-slot re-ask one owner each</h4>
     <div class="r-fu-body"><p>A behaviour-preserving consolidation that §4's review found. Small, independent of the other plans.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-held-session-routes-to-a-serving-lane §6</pre>
+    <p class="r-fu-outcome"><p>§6 landed as <code>674dd6891</code>. §7 is in flight under f-hsrs-003.</p></p>
     </article>
 <article class="r-fu" data-id="f-hsrs-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build a-held-session-routes-to-a-serving-lane §7" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Resume a run under the policy it was dispatched with</h4>
@@ -260,6 +261,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261015T124952061408-a-pick-probe-uses-the-dispatch-inputs" data-who="reckon-build" data-when="2026-10-15T13:37:22.451Z">
     <div class="r-comment-body"><p>crew pick now takes --section, --write-path, --negative-control and --estimated-hours, builds the probed TaskNode with them (mirroring crew dispatch), and names any of them the probe left out under omitted_inputs; a pick and a dry-run dispatch render the same node state (new test 6 passed at head), and the 61-file importer gate shows zero added failures over base (2 fails at base and head alike in test_congested_local_lane_still_reaches_the_picker.py).</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-15T15:15:00Z">
+    <div class="r-comment-body"><p>§6 landed. A backend's lane family has one owner, <code>dispatch_picker.lane_family</code>, and the zero-slot excluded-lane ask has one helper, with behaviour unchanged. Merged as <code>674dd6891</code>. Gate: 371 passed at head against 365 at base over the 45 test files that import the three modules, with no failures. Review: 107/120. <a href="/reckon/evidence/archive/a-held-session-routes-to-a-serving-lane-landed.html#s6">evidence</a></p></div>
 </div>
 </section>
 </main>
