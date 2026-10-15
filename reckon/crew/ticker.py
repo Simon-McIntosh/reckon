@@ -1065,6 +1065,15 @@ SETTLE_CAP = 120.0
 # ``complete -> recorded``, is not one of these words.
 LIVE_PANE_WORDS = frozenset({"working", "waiting", "queued"})
 
+# The pane words of a run whose work has finished. A run the pane draws in one
+# of these has stopped producing, so a later row that moves it into a live word
+# is a producer re-reading a rewritten record rather than work resuming. The
+# departure hold measures a round trip out of these words as it measures one out
+# of the queued word: a run that leaves the word the pane shows and returns to
+# it inside the settle window is the rewrite alone, and the pane draws neither
+# half.
+FINISHED_PANE_WORDS = frozenset({"delivered", "landed"})
+
 
 def _arrival_resolution(event: Mapping[str, Any]) -> Mapping[str, Any]:
     """A resolving row rewritten to carry the arrival's own left side.
@@ -1349,12 +1358,23 @@ class RowPolicy:
         pane would draw and must never make a hidden row visible. A row that
         asks the coordinator for something is never held: that news is the row's
         own, whatever word the run left.
+
+        The hold covers a departure into a settled state or the dropped word,
+        the withdrawal it was written for, and a departure out of a finished
+        word. A run the pane drew as delivered or landed is one whose worker
+        holds a written record, and a producer that re-reads it as working is
+        reading a manifest the worker rewrote mid-turn — not resumed work. Both
+        halves of that pair cancel, so neither reaches the pane.
         """
         shown = self._shown.get(run_id) if run_id else None
         word = _pane_word(event)
         if not run_id or shown in (None, word) or self._actionable(event):
             return False
-        if str(event.get("to_state") or "") not in SETTLED_STATES and word != "dropped":
+        if (
+            str(event.get("to_state") or "") not in SETTLED_STATES
+            and word != "dropped"
+            and shown not in FINISHED_PANE_WORDS
+        ):
             return False
         self._departures[run_id] = _Departure(now + SETTLE_WINDOW, event, shown)
         return True
