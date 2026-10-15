@@ -1,0 +1,76 @@
+<article class="landed-report" data-run-id="r-20261015T125110840273-the-review-reflex-asks-before-it-requeues">
+  <h3 id="the-review-reflex-asks-before-it-requeues-heading">The review reflex's retry asks the route question before it re-queues</h3>
+
+  <p id="the-review-reflex-asks-before-it-requeues-what">
+    §4's last sentence was unbuilt: the review reflex composed an automatic review onto the local lane
+    <em>deterministically</em>, so a local lane whose router grants this session no worker held the review,
+    queued it, and the next sweep composed the same review onto the same lane again — the loop the plan
+    records as a review re-queued twice on the local lane 17 minutes after the first hold.
+  </p>
+
+  <p id="the-review-reflex-asks-before-it-requeues-change">
+    <code>reckon/crew/recovery_review_dispatch.py</code> now carries two additions. <code>_zero_slot_held_lane</code>
+    reads the lane a recorded <em>hold</em> names (status <code>lane-paused</code>/<code>awaiting-lane</code>) and
+    asks that lane's own published admission, through <code>dispatch_plan._dispatch_lane_allowance</code>, whether
+    it grants the session no worker — the same reader §2 gave the picker, and the check that tells a zero-slot
+    hold from a paused gate, which records the same status. <code>_reroute_held_review</code> then asks the route
+    question once with that lane left out of the offering (the picker's own <code>_config_without_lane</code>),
+    and the answer is the retry's: a <code>route</code> carries the review onto the lane the answer named; a
+    <code>hold</code> or <code>refuse</code> is reported as <code>awaiting-lane</code> rather than stepped over;
+    a <code>fallback</code> (a timeout, an unreadable input) is not an answer at all and keeps the existing path.
+    Both asks are written to the run's <code>REVIEW_DISPATCH_FIELD</code> record, so a reader sees the lane that
+    refused the review beside the answer the second ask produced.
+  </p>
+
+  <p id="the-review-reflex-asks-before-it-requeues-eligibility">
+    The question is asked only when the reflex has another lane it may offer. That test is
+    <code>_review_lane_candidates</code>, the same list the compose itself draws from, so
+    <code>review_excluded_backends</code> — minus the backends a lift has opened — is what decides it. A fleet
+    whose only other lane is review-excluded therefore asks nothing and re-queues on the local lane exactly as
+    before, which is why the un-lifted arm of the measure is a preserved behaviour rather than a new branch.
+  </p>
+
+  <table id="the-review-reflex-asks-before-it-requeues-arms">
+    <thead>
+      <tr><th>arm</th><th>state</th><th>observed</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>lifted</td>
+        <td>local lane open lane-wide, <code>admission.sessions[session].worker_slots</code> 0; codex serving
+          with an uncapped lift on its budget group</td>
+        <td>retry dispatched onto codex; the route question asked <strong>once</strong>, with local absent from the
+          offered backends; both asks recorded</td>
+      </tr>
+      <tr>
+        <td>un-lifted</td>
+        <td>same, with no lift and <code>review_excluded_backends: [codex]</code></td>
+        <td>the question is not asked; the retry re-queues on the local lane and records no asks</td>
+      </tr>
+      <tr>
+        <td>declined</td>
+        <td>lifted, and the answer holds</td>
+        <td>recorded <code>awaiting-lane</code>, nothing composed, both asks recorded — the answer is not overridden</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="the-review-reflex-asks-before-it-requeues-negative-control">
+    Negative control, <code>negative-control.log</code> (<code>EXIT=1</code>): with
+    <code>_reroute_held_review</code> returning <code>None</code> — the retry re-queuing on the refusing lane
+    without asking, the declared mutation — the lifted and declined arms fail
+    (<code>report["dispatched"] is False</code>, and the record carries
+    <code>error: lane-paused</code> on backend <code>alpha</code>, i.e. the local lane), while the un-lifted arm
+    still passes, which is what makes the failure the mutation and not a broken fixture. The mutated tree is
+    <code>/tmp/reflex-gate/mutated</code>, archived from this node's revision and patched there.
+  </p>
+
+  <p id="the-review-reflex-asks-before-it-requeues-gate">
+    Gate: the reflex test files that exercise the composed-review dispatch and lane selection were run at base
+    and at head with <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q</code>,
+    each to a log under the run directory ending in <code>EXIT=</code> — <code>gate-head.log</code> at the head
+    revision in this worktree, <code>gate-base.log</code> at <code>bd37b85bb</code> in a scratch tree under
+    <code>/tmp/reflex-gate/base</code>, each log naming the module under test as imported and the working
+    directory it resolved from.
+  </p>
+</article>
