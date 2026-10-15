@@ -32,6 +32,7 @@ from __future__ import annotations
 import importlib
 import json
 import os
+import socket
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -131,6 +132,7 @@ def _write_run(
     manifest_age_seconds: float,
     attempt_start_age_seconds: float | None,
     wait_declaration: bool = False,
+    launcher_host: str | None = FOREIGN_HOST,
 ) -> dict:
     """Write one run's manifest, attempt record, worker record, stream and pointer.
 
@@ -199,7 +201,7 @@ def _write_run(
         "attempt": 2,
         "attempt_kind": "resume",
         "pid": DEAD_PID,
-        "launcher_host": FOREIGN_HOST,
+        "launcher_host": launcher_host,
         "process_alive": None,
         "manifest_path": str(manifest),
         "log_path": str(stream),
@@ -293,7 +295,7 @@ def test_a_run_with_no_recorded_attempt_start_reads_as_today() -> None:
     assert row["manifest_status"] == "blocked", row["manifest_status"]
 
 
-@pytest.mark.parametrize("status", ["blocked", "waiting", "in-progress"])
+@pytest.mark.parametrize("status", ["blocked", "waiting"])
 def test_every_non_terminal_word_the_reset_leaves_reads_working(status: str) -> None:
     """The rule covers blocked, waiting and in-progress, not blocked alone.
 
@@ -312,7 +314,53 @@ def test_every_non_terminal_word_the_reset_leaves_reads_working(status: str) -> 
     row = _classify(pointer)
 
     assert row["classification"] == "running", row["detail"]
-    assert row["manifest_status"] is None, row["manifest_status"]
+    assert row["manifest_present"] is False, row
+
+
+def test_a_word_that_already_means_no_verdict_is_left_alone() -> None:
+    """An ``in-progress`` word carries no verdict to withdraw.
+
+    It is the word the run reads as while it works, so the reading is already
+    the attempt's own, and dropping it would read a resumed launch as a run
+    abandoned without a manifest.
+    """
+    run_id = 'run-superseded-progress'
+    pointer = _write_run(
+        run_id=run_id,
+        status='in-progress',
+        manifest_age_seconds=STALE_SECONDS,
+        attempt_start_age_seconds=ATTEMPT_STARTED_SECONDS,
+    )
+
+    row = _classify(pointer)
+
+    assert row['classification'] == 'running', row['detail']
+    assert row['manifest_present'] is True, row['manifest_present']
+
+
+def test_a_resumed_run_naming_the_predecessors_dead_pid_reads_working() -> None:
+    """The pointer's dead pid belongs to the attempt the resume replaced.
+
+    The run is read here, so the process table answers for the pid the pointer
+    still carries — and that pid is attempt 1's, so its absence is that
+    attempt's end and not this one's. The attempt record dates attempt 2 after
+    the manifest, so attempt 1's ``blocked`` word is not this attempt's status
+    and the run must not read blocked.
+    """
+    run_id = 'run-dead-predecessor-pid'
+    pointer = _write_run(
+        run_id=run_id,
+        status='blocked',
+        manifest_age_seconds=STALE_SECONDS,
+        attempt_start_age_seconds=ATTEMPT_STARTED_SECONDS,
+        launcher_host=socket.gethostname(),
+    )
+
+    row = _classify(pointer)
+
+    assert row['classification'] == 'running', row['detail']
+    assert row['recovery_classification'] != 'blocked', row
+    assert row['manifest_present'] is False, row
 
 
 def test_a_superseded_blocked_run_derives_no_blocked_duty(
