@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 11,
+  "call_sites": [
+    "reckon/crew/obligations.py:167",
+    "reckon/crew/recovery_watch.py:306",
+    "reckon/crew/directory.py:71",
+    "reckon/crew/promotion_release.py:849",
+    "reckon/crew/resumption.py:1750",
+    "reckon/crew/recovery_review_acceptance.py:434",
+    "reckon/crew/recovery_review_dispatch.py:1617",
+    "reckon/crew_run_commands.py:190",
+    "reckon/serve.py:1050",
+    "reckon/mcp_views.py:1867",
+    "reckon/crew/promotion_checks.py:463"
+  ],
+  "completed_at": "2026-10-15T22:45:14.586Z",
+  "dispatched_at": "2026-10-15T22:30:48Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": "281",
+      "severity": "follow-on",
+      "text": "the manifest-vs-attempt owner was extended in a file outside the node's declared write paths (plan section 34 and prompt.txt:69-72 grant only recovery_classification.py, the test and the evidence anchors), so the node's landing needs the coordinator to widen section 34's write paths or revert the hunk, as the manifest's follow_ons already states."
+    },
+    {
+      "file": "tests/test_a_resumed_run_is_not_read_by_its_old_status.py",
+      "line": "278",
+      "severity": "follow-on",
+      "text": "test_a_run_with_no_recorded_attempt_start_reads_as_today does not isolate its claimed condition: _write_run (:175) always writes a worker record dated 30 s before now, so the run does have an attempt clock and the assertion at :294 passes because the manifest is newer than that launch, not because no clock exists; the \"no recorded attempt start reads as today\" clause is therefore not causally covered."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "47",
+      "severity": "follow-on",
+      "text": "the guard docstring states it \"adds the two facts a state reading needs\" but then enumerates three facts at :50, :57 and :62, so the count contradicts the text below it."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "314",
+      "severity": "follow-on",
+      "text": "the reasoning that the pointer's liveness belongs to the replaced attempt is written twice near-verbatim (:297-303 and :314-322), so a reader meets one fact stated as if it were two."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 11 production call site(s)",
+    "diff": "Read commit by commit against base 050a6556c; 49dae5a6e adds the guard (line 26) and the manifest-clearing stanza (line 291), 6e08e1332 defers to the exit record, fc3b1a332 extracts _manifest_predates_the_current_attempt / _manifest_written_before / _worker_launch_seconds into recovery_liveness.py:254-316 and makes _worker_launched_after_manifest delegate, and 54435b9d5 restates the rule's facts in the guard docstring; the fragment is a 3-line evidence anchor.",
+    "done_when": "The done_when names three readings and a base/head gate over the importing test files; tests/test_a_resumed_run_is_not_read_by_its_old_status.py:251/274/294 assert the blocked-predating->working, blocked-rewritten->blocked and no-clock->as-today readings, and the manifest records base 1 failed/456 passed and head 1 failed/464 passed with the same single failure id; the in-progress word is deliberately left alone (:337), so \"every non-terminal word the reset leaves\" is asserted for blocked and waiting only.",
+    "goal": "The node goal is that a run whose manifest predates its current attempt is read by that attempt's liveness, not the old status word; reckon/crew/recovery_classification.py:26 defines _manifest_is_the_predecessor_attempts_report and :291 applies it, clearing the manifest word, liveness and wait declaration so a resumed run is read from its own attempt.",
+    "manifest": "Read; it reads status complete, names commits 49dae5a6e, 6e08e1332, fc3b1a332 and 54435b9d5, records the base arm at 1 failed/456 passed and the head arm at 1 failed/464 passed with the same single failure, the negative control at 5 failed/3 passed, and points at gate-base.log, gate-head.log and negative-control.log; follow_ons names the recovery_liveness.py scope extension.",
+    "write_paths": "Read from the dispatch fence (prompt.txt:69-72): declared paths are reckon/crew/recovery_classification.py, tests/test_a_resumed_run_is_not_read_by_its_old_status.py, the evidence fragment and the figure directory; the diff touches all but the figure directory, and additionally reckon/crew/recovery_liveness.py, which is outside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_resumed_run_is_not_read_by_its_old_status.py:251 compares the classifier's output to the literal \"running\" and negative-control.log shows the first case red when the guard is disabled, but the no-clock clause at :294 is not isolated.",
+    "evidence": "the manifest records the two gate logs' own summary lines (base \"1 failed, 456 passed\", head \"1 failed, 464 passed\") with a zero added-failure delta, and negative-control.log's last line (\"5 failed, 3 passed\") shows five failures the head arm does not carry.",
+    "fit": "reckon/crew/recovery_classification.py:47 says \"the two facts\" then enumerates three, and the pointer-liveness reasoning is written twice near-verbatim at :297 and :314.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:291 clears the predating manifest's word, so the blocked fixture at tests/test_a_resumed_run_is_not_read_by_its_old_status.py:251 reads running rather than its predecessor's blocked.",
+    "reuse": "the fork the prior review found is resolved: _manifest_written_before and _manifest_predates_the_current_attempt now live in the owner reckon/crew/recovery_liveness.py:266/281 and _worker_launched_after_manifest:302 delegates to them, so one owner answers the question.",
+    "scope_discipline": "the diff edits reckon/crew/recovery_liveness.py, which is outside the write paths declared at prompt.txt:69-72 and in plan section 34."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a run whose manifest predates its current attempt is read by that attempt's liveness, not the old status word; reckon/crew/recovery_classification.py:26 defines _manifest_is_the_predecessor_attempts_report and :291 applies it, clearing the manifest word, liveness and wait declaration so a resumed run is read from its own attempt.\nVERDICT done_when: The done_when names three readings and a base/head gate over the importing test files; tests/test_a_resumed_run_is_not_read_by_its_old_status.py:251/274/294 assert the blocked-predating->working, blocked-rewritten->blocked and no-clock->as-today readings, and the manifest records base 1 failed/456 passed and head 1 failed/464 passed with the same single failure id; the in-progress word is deliberately left alone (:337), so \"every non-terminal word the reset leaves\" is asserted for blocked and waiting only.\nVERDICT write_paths: Read from the dispatch fence (prompt.txt:69-72): declared paths are reckon/crew/recovery_classification.py, tests/test_a_resumed_run_is_not_read_by_its_old_status.py, the evidence fragment and the figure directory; the diff touches all but the figure directory, and additionally reckon/crew/recovery_liveness.py, which is outside the grant.\nVERDICT manifest: Read; it reads status complete, names commits 49dae5a6e, 6e08e1332, fc3b1a332 and 54435b9d5, records the base arm at 1 failed/456 passed and the head arm at 1 failed/464 passed with the same single failure, the negative control at 5 failed/3 passed, and points at gate-base.log, gate-head.log and negative-control.log; follow_ons names the recovery_liveness.py scope extension.\nVERDICT diff: Read commit by commit against base 050a6556c; 49dae5a6e adds the guard (line 26) and the manifest-clearing stanza (line 291), 6e08e1332 defers to the exit record, fc3b1a332 extracts _manifest_predates_the_current_attempt / _manifest_written_before / _worker_launch_seconds into recovery_liveness.py:254-316 and makes _worker_launched_after_manifest delegate, and 54435b9d5 restates the rule's facts in the guard docstring; the fragment is a 3-line evidence anchor.\nCALL_SITES: reckon/crew/obligations.py:167, reckon/crew/recovery_watch.py:306, reckon/crew/directory.py:71, reckon/crew/promotion_release.py:849, reckon/crew/resumption.py:1750, reckon/crew/recovery_review_acceptance.py:434, reckon/crew/recovery_review_dispatch.py:1617, reckon/crew_run_commands.py:190, reckon/serve.py:1050, reckon/mcp_views.py:1867, reckon/crew/promotion_checks.py:463\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:291 clears the predating manifest's word, so the blocked fixture at tests/test_a_resumed_run_is_not_read_by_its_old_status.py:251 reads running rather than its predecessor's blocked.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest records the two gate logs' own summary lines (base \"1 failed, 456 passed\", head \"1 failed, 464 passed\") with a zero added-failure delta, and negative-control.log's last line (\"5 failed, 3 passed\") shows five failures the head arm does not carry.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: the diff edits reckon/crew/recovery_liveness.py, which is outside the write paths declared at prompt.txt:69-72 and in plan section 34.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_resumed_run_is_not_read_by_its_old_status.py:251 compares the classifier's output to the literal \"running\" and negative-control.log shows the first case red when the guard is disabled, but the no-clock clause at :294 is not isolated.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/recovery_classification.py:47 says \"the two facts\" then enumerates three, and the pointer-liveness reasoning is written twice near-verbatim at :297 and :314.\nSCORE reuse: 19\nJUSTIFICATION reuse: the fork the prior review found is resolved: _manifest_written_before and _manifest_predates_the_current_attempt now live in the owner reckon/crew/recovery_liveness.py:266/281 and _worker_launched_after_manifest:302 delegates to them, so one owner answers the question.\nFINDING reckon/crew/recovery_liveness.py:281 follow-on: the manifest-vs-attempt owner was extended in a file outside the node's declared write paths (plan section 34 and prompt.txt:69-72 grant only recovery_classification.py, the test and the evidence anchors), so the node's landing needs the coordinator to widen section 34's write paths or revert the hunk, as the manifest's follow_ons already states.\nFINDING tests/test_a_resumed_run_is_not_read_by_its_old_status.py:278 follow-on: test_a_run_with_no_recorded_attempt_start_reads_as_today does not isolate its claimed condition: _write_run (:175) always writes a worker record dated 30 s before now, so the run does have an attempt clock and the assertion at :294 passes because the manifest is newer than that launch, not because no clock exists; the \"no recorded attempt start reads as today\" clause is therefore not causally covered.\nFINDING reckon/crew/recovery_classification.py:47 follow-on: the guard docstring states it \"adds the two facts a state reading needs\" but then enumerates three facts at :50, :57 and :62, so the count contradicts the text below it.\nFINDING reckon/crew/recovery_classification.py:314 follow-on: the reasoning that the pointer's liveness belongs to the replaced attempt is written twice near-verbatim (:297-303 and :314-322), so a reader meets one fact stated as if it were two.",
+  "review_run_id": "r-20261015T222957309954-review-of-a-resumed-run-is-not-read-by-its-old-status-54435b9d5f4c",
+  "reviewed_base_sha": "050a6556c702065b64ae6b52367a8116f86ae802",
+  "reviewed_head_sha": "54435b9d5f4cca2b1b15a82d994c0e1fba134b64",
+  "reviewed_run_id": "r-20261015T204939476969-a-resumed-run-is-not-read-by-its-old-status",
+  "reviewer_run_id": "r-20261015T222957309954-review-of-a-resumed-run-is-not-read-by-its-old-status-54435b9d5f4c",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 12
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T204939476969-a-resumed-run-is-not-read-by-its-old-status/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/a-resumed-run-is-not-read-by-its-old-status",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T22:43:08.895352+00:00",
+  "total": 99
+}
