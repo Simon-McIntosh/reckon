@@ -1,0 +1,50 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:104",
+    "reckon/hooks/coordinator_obligations.py:725",
+    "reckon/hooks/coordinator_obligations.py:1174"
+  ],
+  "completed_at": "2026-10-15T22:45:18Z",
+  "dispatched_at": "2026-10-15T22:40:49Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites",
+    "diff": "the single gained commit d3a10fa0dd34 against parent 240abaea20ac moves two imports in reckon/hooks/coordinator_obligations.py:171 and :680 and adds the isolated bootstrap test at tests/test_a_duration_override_is_read_one_way.py:111.",
+    "done_when": "the source gate in prompt.txt:95 requires base/head importer coverage; base-gate-resumed.log ends 78 passed and EXIT=0, head-gate-bootstrap.log ends 99 passed and EXIT=0, and bootstrap-negative-control-replay.log fails the new test under the parent hook.",
+    "goal": "the source goal in prompt.txt:30 requires one bounded duration reader; reckon/hooks/coordinator_obligations.py:171 and :680 now load that existing reader only after the hook's interpreter bootstrap.",
+    "manifest": "the source manifest.md records complete, the answering commit d3a10fa0dd34, the reproduction and negative-control logs, and completed baseline_suite and after_suite records with empty failure_ids.",
+    "write_paths": "the source prompt.txt:68-81 grants reckon/hooks/coordinator_obligations.py and tests/test_a_duration_override_is_read_one_way.py, exactly the two paths changed by d3a10fa0dd34."
+  },
+  "justifications": {
+    "durability": "tests/test_a_duration_override_is_read_one_way.py:138 would fail if the missing-interpreter hook exited successfully, and :139 fails when the old pre-bootstrap import is restored, as the recorded negative control shows.",
+    "evidence": "tests/test_a_duration_override_is_read_one_way.py:139 fails under the parent hook in bootstrap-negative-control-replay.log, while the manifest's completed base and head logs show 78 and 99 passing tests with no failure ids.",
+    "fit": "reckon/hooks/coordinator_obligations.py:171 and :680 use the module's existing local-import pattern after bootstrap at :104, and the added test name at tests/test_a_duration_override_is_read_one_way.py:111 carries no forbidden label.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:104 now runs interpreter selection before the two lazy duration imports at :171 and :680, preserving the source goal's single reader.",
+    "reuse": "the capability search found tests/test_hook_scripts_correct_their_interpreter.py:183 checking a missing interpreter with PYTHONPATH, while tests/test_a_duration_override_is_read_one_way.py:124 adds isolated -I coverage that catches the early package import; both production callers still use reckon/env_duration.py.",
+    "scope_discipline": "reckon/hooks/coordinator_obligations.py:171 and tests/test_a_duration_override_is_read_one_way.py:111 are the only changed paths, and both are in the source prompt's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal in prompt.txt:30 requires one bounded duration reader; reckon/hooks/coordinator_obligations.py:171 and :680 now load that existing reader only after the hook's interpreter bootstrap.\nVERDICT done_when: the source gate in prompt.txt:95 requires base/head importer coverage; base-gate-resumed.log ends 78 passed and EXIT=0, head-gate-bootstrap.log ends 99 passed and EXIT=0, and bootstrap-negative-control-replay.log fails the new test under the parent hook.\nVERDICT write_paths: the source prompt.txt:68-81 grants reckon/hooks/coordinator_obligations.py and tests/test_a_duration_override_is_read_one_way.py, exactly the two paths changed by d3a10fa0dd34.\nVERDICT manifest: the source manifest.md records complete, the answering commit d3a10fa0dd34, the reproduction and negative-control logs, and completed baseline_suite and after_suite records with empty failure_ids.\nVERDICT diff: the single gained commit d3a10fa0dd34 against parent 240abaea20ac moves two imports in reckon/hooks/coordinator_obligations.py:171 and :680 and adds the isolated bootstrap test at tests/test_a_duration_override_is_read_one_way.py:111.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:104, reckon/hooks/coordinator_obligations.py:725, reckon/hooks/coordinator_obligations.py:1174\nREVIEWED_BASE_SHA: 240abaea20ac32665a25f00310a316ae5f1f4d6b\nREVIEWED_HEAD_SHA: d3a10fa0dd34dedec3ae8aa621225970e932620c\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:104 now runs interpreter selection before the two lazy duration imports at :171 and :680, preserving the source goal's single reader.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_a_duration_override_is_read_one_way.py:139 fails under the parent hook in bootstrap-negative-control-replay.log, while the manifest's completed base and head logs show 78 and 99 passing tests with no failure ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: reckon/hooks/coordinator_obligations.py:171 and tests/test_a_duration_override_is_read_one_way.py:111 are the only changed paths, and both are in the source prompt's declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_duration_override_is_read_one_way.py:138 would fail if the missing-interpreter hook exited successfully, and :139 fails when the old pre-bootstrap import is restored, as the recorded negative control shows.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/hooks/coordinator_obligations.py:171 and :680 use the module's existing local-import pattern after bootstrap at :104, and the added test name at tests/test_a_duration_override_is_read_one_way.py:111 carries no forbidden label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found tests/test_hook_scripts_correct_their_interpreter.py:183 checking a missing interpreter with PYTHONPATH, while tests/test_a_duration_override_is_read_one_way.py:124 adds isolated -I coverage that catches the early package import; both production callers still use reckon/env_duration.py.\n",
+  "review_run_id": "r-20261015T224000797016-review-of-a-duration-override-is-read-one-way-d3a10fa0dd34",
+  "reviewed_base_sha": "240abaea20ac32665a25f00310a316ae5f1f4d6b",
+  "reviewed_head_sha": "d3a10fa0dd34dedec3ae8aa621225970e932620c",
+  "reviewed_run_id": "r-20261015T213815138937-a-duration-override-is-read-one-way",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T22:43:12Z",
+  "total": 118
+}
