@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:3183",
+    "reckon/crew_follow_commands.py:1443",
+    "reckon/crew/runs.py:1792",
+    "reckon/crew/recovery_watch.py:2268",
+    "reckon/hooks/coordinator_obligations.py:726",
+    "reckon/hooks/coordinator_obligations.py:1175",
+    "reckon/serve.py:452",
+    "reckon/serve.py:557",
+    "reckon/serve.py:4374"
+  ],
+  "completed_at": "2026-10-15T22:28:13Z",
+  "dispatched_at": "2026-10-15T22:21:04Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "98",
+      "severity": "blocking",
+      "text": "blocking: importing reckon.env_duration before ensure_interpreter at line 106 defeats the stdlib-only bootstrap path; a bare hook under a Python without reckon installed fails before it can re-execute in the checkout interpreter."
+    },
+    {
+      "file": "tests/test_a_duration_override_is_read_one_way.py",
+      "line": "94",
+      "severity": "follow-on",
+      "text": "follow-on: the expected default is taken from the same production constant passed by each getter to read_duration_override, so changing that constant moves both sides together and does not guard the plan's no-default-changes requirement; the same weakness occurs at lines 99-101."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read 384a3fee and 240abaea against ba53ae64; the first adds the parser, ten call-site migrations and 20 test cases, while the second changes two stop-budget fixtures to a positive value.",
+    "done_when": "\u00a731 requires parser and site-bound tests, a census, base/head importer gates and a bound-removal control; the manifest names ten migrated sites and the recorded gate logs show base 78 passed, head 98 passed, and control 13 failed.",
+    "goal": "\u00a731 requires one bounded duration reader and migrated duration overrides; reckon/env_duration.py:7 supplies the reader and the first commit routes ten getters through it, but reckon/hooks/coordinator_obligations.py:98 imports it before hook bootstrap.",
+    "manifest": "the source manifest at r-20261015T213815138937-a-duration-override-is-read-one-way/manifest.md reports complete, names commits 384a3fee and 240abaea, and records both suite arms and the negative-control log.",
+    "write_paths": "the source manifest declares the shared reader, migrated modules and test paths; the nine paths in the two-commit diff are all in that list."
+  },
+  "justifications": {
+    "durability": "tests/test_a_duration_override_is_read_one_way.py:29 fails for wrong fallback or rejected valid values, :34 fails if exclusive zero is accepted, :94 fails when site bounds are removed as the control confirms, and :99-104 fails for inverted lease or grace zero rules, but :94 and :99-101 cannot detect a changed production default.",
+    "evidence": "the source run's base-gate-resumed.log and head-gate-resumed.log finish with EXIT=0 and 78/98 passing cases, while negative-control.log ends EXIT=1 with 13 failing cases when the lower-bound check is removed.",
+    "fit": "reckon/env_duration.py:7 follows the compact helper idiom and introduces no forbidden name, but reckon/hooks/coordinator_obligations.py:98 breaks the hook's bootstrap-first import ordering.",
+    "goal_fidelity": "reckon/env_duration.py:7 implements the required bounds for the migrated getters, but reckon/hooks/coordinator_obligations.py:98 can prevent a bare hook from reaching its interpreter bootstrap.",
+    "reuse": "the capability search found reckon/crew/session_host.py:154 parsing an injected mapping with a different seam, so reckon/env_duration.py:7 supplies the process-environment reader without duplicating that owner.",
+    "scope_discipline": "the diff from ba53ae64 to 240abaea touches only the nine paths declared by the source manifest, including the two fixture repairs in tests/test_a_stop_during_a_reload_says_so.py:25 and tests/test_stop_hook_reads_the_snapshot.py:304."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a731 requires one bounded duration reader and migrated duration overrides; reckon/env_duration.py:7 supplies the reader and the first commit routes ten getters through it, but reckon/hooks/coordinator_obligations.py:98 imports it before hook bootstrap.\nVERDICT done_when: \u00a731 requires parser and site-bound tests, a census, base/head importer gates and a bound-removal control; the manifest names ten migrated sites and the recorded gate logs show base 78 passed, head 98 passed, and control 13 failed.\nVERDICT write_paths: the source manifest declares the shared reader, migrated modules and test paths; the nine paths in the two-commit diff are all in that list.\nVERDICT manifest: the source manifest at r-20261015T213815138937-a-duration-override-is-read-one-way/manifest.md reports complete, names commits 384a3fee and 240abaea, and records both suite arms and the negative-control log.\nVERDICT diff: read 384a3fee and 240abaea against ba53ae64; the first adds the parser, ten call-site migrations and 20 test cases, while the second changes two stop-budget fixtures to a positive value.\nCALL_SITES: reckon/crew/dispatch_launch.py:3183, reckon/crew_follow_commands.py:1443, reckon/crew/runs.py:1792, reckon/crew/recovery_watch.py:2268, reckon/hooks/coordinator_obligations.py:726, reckon/hooks/coordinator_obligations.py:1175, reckon/serve.py:452, reckon/serve.py:557, reckon/serve.py:4374\nREVIEWED_BASE_SHA: ba53ae640b199ac64e3fe2bbea0eb79c96911867\nREVIEWED_HEAD_SHA: 240abaea20ac32665a25f00310a316ae5f1f4d6b\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/env_duration.py:7 implements the required bounds for the migrated getters, but reckon/hooks/coordinator_obligations.py:98 can prevent a bare hook from reaching its interpreter bootstrap.\nSCORE evidence: 18\nJUSTIFICATION evidence: the source run's base-gate-resumed.log and head-gate-resumed.log finish with EXIT=0 and 78/98 passing cases, while negative-control.log ends EXIT=1 with 13 failing cases when the lower-bound check is removed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff from ba53ae64 to 240abaea touches only the nine paths declared by the source manifest, including the two fixture repairs in tests/test_a_stop_during_a_reload_says_so.py:25 and tests/test_stop_hook_reads_the_snapshot.py:304.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_duration_override_is_read_one_way.py:29 fails for wrong fallback or rejected valid values, :34 fails if exclusive zero is accepted, :94 fails when site bounds are removed as the control confirms, and :99-104 fails for inverted lease or grace zero rules, but :94 and :99-101 cannot detect a changed production default.\nSCORE fit: 14\nJUSTIFICATION fit: reckon/env_duration.py:7 follows the compact helper idiom and introduces no forbidden name, but reckon/hooks/coordinator_obligations.py:98 breaks the hook's bootstrap-first import ordering.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found reckon/crew/session_host.py:154 parsing an injected mapping with a different seam, so reckon/env_duration.py:7 supplies the process-environment reader without duplicating that owner.\nFINDING reckon/hooks/coordinator_obligations.py:98 blocking: importing reckon.env_duration before ensure_interpreter at line 106 defeats the stdlib-only bootstrap path; a bare hook under a Python without reckon installed fails before it can re-execute in the checkout interpreter.\nFINDING tests/test_a_duration_override_is_read_one_way.py:94 follow-on: the expected default is taken from the same production constant passed by each getter to read_duration_override, so changing that constant moves both sides together and does not guard the plan's no-default-changes requirement; the same weakness occurs at lines 99-101.\n",
+  "review_run_id": "r-20261015T222015606681-review-of-a-duration-override-is-read-one-way-240abaea20ac",
+  "reviewed_base_sha": "ba53ae640b199ac64e3fe2bbea0eb79c96911867",
+  "reviewed_head_sha": "240abaea20ac32665a25f00310a316ae5f1f4d6b",
+  "reviewed_run_id": "r-20261015T213815138937-a-duration-override-is-read-one-way",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 14,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T22:25:07.141405+00:00",
+  "total": 104
+}
