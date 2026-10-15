@@ -459,6 +459,29 @@ FOLLOWER_SETTLE_EVENT = "follower-settle"
 FOLLOWER_SETTLE_GRACE_SECONDS = 120.0
 
 
+# A caller that runs a follower of its own may name the grace for that follower
+# through this variable. It exists for the caller that drives a real follower end
+# to end and cannot wait two minutes for a drain it arranged itself. Unset, the
+# constant above is the grace, so production and every ordinary child keep it.
+FOLLOWER_SETTLE_GRACE_ENV = "RECKON_FOLLOWER_SETTLE_GRACE"
+
+
+def _settle_grace_default() -> float:
+    """The grace a follower uses when its caller names none.
+
+    A value the variable cannot parse is the constant rather than an error: the
+    grace bounds how long a pane is held open, and a follower that refused to run
+    because its environment carried a typo would take the pane down with it.
+    """
+    raw = os.environ.get(FOLLOWER_SETTLE_GRACE_ENV, "").strip()
+    if not raw:
+        return FOLLOWER_SETTLE_GRACE_SECONDS
+    try:
+        return float(raw)
+    except ValueError:
+        return FOLLOWER_SETTLE_GRACE_SECONDS
+
+
 # How often a follower allowed to settle samples its session's population while
 # the population is live. The scan is a live-pointer read and the wait pass is
 # fast, so it is throttled rather than paid on every pass. It is also the cap
@@ -1278,7 +1301,7 @@ def _follow_watch_lines(
     producer_reload_window: float | None = None,
     reloaded_in_place: bool = False,
     settle: bool = False,
-    settle_interval: float = FOLLOWER_SETTLE_GRACE_SECONDS,
+    settle_interval: float | None = None,
 ):
     """Yield this follower's transitions for as long as its session lives.
 
@@ -1376,6 +1399,13 @@ def _follow_watch_lines(
     def _is_live(name: str | None) -> bool:
         return _population_has_live_work(project, session=name)
 
+    # Resolved once per arming: an explicit interval from a caller that drives
+    # this generator itself, otherwise the module's grace, which a caller that
+    # runs a follower as a child may name through its environment.
+    grace = (
+        _settle_grace_default() if settle_interval is None else float(settle_interval)
+    )
+
     def _check_settle() -> None:
         """End this arming when the work this pane carries has drained.
 
@@ -1387,7 +1417,7 @@ def _follow_watch_lines(
         leaves the session with no unfinished run for as long as the dispatch
         adopting a queued request takes to build the admitted run's worktree
         and publish its pointer, so the pane ends only once its population has
-        held nothing unfinished for ``settle_interval`` -- the grace. A run
+        held nothing unfinished for the grace. A run
         that appears inside the grace, an admitted run above all, clears the
         emptiness and keeps the pane.
         """
@@ -1401,7 +1431,7 @@ def _follow_watch_lines(
         # so a caller that shortens the grace shortens the hold and the poll
         # together, while the cap keeps an empty population noticed soon after
         # it drains.
-        cadence = min(float(settle_interval), FOLLOWER_SETTLE_SAMPLE_SECONDS)
+        cadence = min(grace, FOLLOWER_SETTLE_SAMPLE_SECONDS)
         if settle_sampled_at is not None and moment - settle_sampled_at < cadence:
             return
         settle_sampled_at = moment
@@ -1418,7 +1448,7 @@ def _follow_watch_lines(
             return
         if settle_empty_since is None:
             settle_empty_since = moment
-        if moment - settle_empty_since >= float(settle_interval):
+        if moment - settle_empty_since >= grace:
             settled = True
 
     def _check_consumer() -> None:

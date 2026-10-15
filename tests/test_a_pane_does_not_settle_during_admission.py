@@ -86,6 +86,9 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
+    # The grace these cases drive is the module's own, so a caller's override
+    # in the environment this file happens to run under cannot shorten it.
+    monkeypatch.delenv(follow_commands.FOLLOWER_SETTLE_GRACE_ENV, raising=False)
     return config_home
 
 

@@ -54,6 +54,12 @@ SETTLE_BOUND = 20.0
 STOP_BOUND = 15.0
 RESTART_BOUND = 20.0
 
+# The grace handed to a real child below. The production grace bounds an
+# admission handover and is far longer than a case here can wait, so the child
+# is given a short one through the environment, and every bound above therefore
+# measures the follower rather than the grace.
+CHILD_SETTLE_GRACE_SECONDS = "0.5"
+
 SETTLE_LINE = f"no live work in {SESSION} since"
 
 
@@ -529,6 +535,10 @@ def _child_env(home: Path, tmp_path: Path) -> dict[str, str]:
     env["RECKON_HOME"] = str(home)
     env["PYTHONPATH"] = str(REPO_ROOT)
     env["XDG_RUNTIME_DIR"] = str(tmp_path / "run")
+    # Named here rather than inherited: the filter above drops every RECKON_
+    # variable, and a child left on the production grace would hold a pane far
+    # past every bound this file waits on.
+    env[follow_commands.FOLLOWER_SETTLE_GRACE_ENV] = CHILD_SETTLE_GRACE_SECONDS
     return env
 
 
