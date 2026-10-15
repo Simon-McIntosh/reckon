@@ -8,12 +8,17 @@ pids. A registration written on another host names a pid issued by a kernel this
 host cannot query, so its absence here was read as death and the session was
 dropped from publication. This module pins the repair: a registration carries
 the host it was written on, a registration naming another host is never put to
-this host's process table, and its liveness is the one fact that crosses the
-shared home -- the advisory lock the follower holds for as long as it delivers.
+this host's process table, and its verdict is the one fact that crosses the
+shared home -- the lease the follower renews beside its registration.
+
+The lock the earlier repair relied on does not travel: on this home the
+filesystem is GPFS and ``flock`` is node-local, so a follower's held lock reads
+free from every other node. The lease is a whole record published by a rename,
+so it crosses where the lock does not.
 
 The fixture synthesises the fleet under a temporary configuration home and
-drives the producer's sweeps explicitly. A foreign registration is written by
-holding its lock here and stamping another host into the record, which is the
+drives the producer's sweeps explicitly. A foreign registration is written
+without holding its lock here and with a lease renewed beside it, which is the
 state a reader on the producer's host meets; the second consumer is the review
 reflex, which reads the same ``follower_state`` the producer's snapshot
 selection does. The real configuration home is asserted untouched.
@@ -32,6 +37,7 @@ from typing import Any
 import pytest
 
 from reckon.crew import (
+    follower_registration,
     obligation_snapshot,
     recovery_watch,
     runs,
@@ -79,37 +85,43 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path]:
 
 @contextlib.contextmanager
 def _foreign_registration(
-    project: str, session: str, *, host: str = FOREIGN_HOST, pid: int = DEAD_LOCAL_PID
+    project: str,
+    session: str,
+    *,
+    host: str = FOREIGN_HOST,
+    pid: int = DEAD_LOCAL_PID,
+    renewed_seconds_ago: float = 0.0,
 ) -> Iterator[dict[str, Any]]:
-    """Hold a registration whose record names another host, as a follower there wrote it.
+    """Write a registration naming another host, with a lease renewed beside it.
 
-    The lock is held by this process for the block, which is the fact the
-    producer's host reads across the shared home; the pid is a dead one so a
-    passing read cannot be the local table answering.
+    The advisory lock is deliberately left free, which is the state a reader on
+    the producer's host meets: ``flock`` is node-local on this home, so the lock
+    a follower holds on its own node reads free here. The pid is a dead one so a
+    passing read cannot be this host's table answering. The lease is the fact
+    that crosses, and ``renewed_seconds_ago`` moves it past the window to the
+    state of a follower that has gone.
     """
-    import fcntl
+    import time
 
     path = runs.follower_lock_path(project, session)
     path.parent.mkdir(parents=True, exist_ok=True)
-    handle = path.open("a+b")
-    fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-    record = {
-        "project": project,
-        "session": session,
-        "pid": pid,
-        "pid_start_time": "0",
-        "parent_pid": pid,
-        "delivery": "stream",
-        "scope": {},
-        "started_at": "2026-10-14T00:00:00Z",
-        "host": host,
-    }
-    runs._write_watch_record(handle, record)
-    try:
-        yield record
-    finally:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-        handle.close()
+    with path.open("a+b") as handle:
+        record = {
+            "project": project,
+            "session": session,
+            "pid": pid,
+            "pid_start_time": "0",
+            "parent_pid": pid,
+            "delivery": "stream",
+            "scope": {},
+            "started_at": "2026-10-14T00:00:00Z",
+            "host": host,
+        }
+        runs._write_watch_record(handle, record)
+    follower_registration.renew_follower_lease(
+        project, session, now=time.time() - renewed_seconds_ago
+    )
+    yield record
 
 
 def _write_pointer(
@@ -271,41 +283,46 @@ def test_a_registration_records_the_host_it_was_written_on(
     assert watch_unit._seat_host(record) == runs._seat_host(record)
 
 
-def test_a_foreign_registration_is_judged_by_its_lock_not_this_hosts_table(
+def test_a_foreign_registration_is_judged_by_its_lease_not_its_lock(
     fleet: dict[str, Path],
 ) -> None:
-    """A pid this host cannot see is unknown, not dead; the lock decides.
+    """A pid this host cannot see is unknown, and a free lock is not death.
 
-    The record names a pid no process holds, so a judgement that consulted the
-    local table would read it dead. The held lock is the fact that crosses the
-    shared home, so the registration reads live; when the lock is released the
-    same record reads gone.
+    The record names a pid no process holds and carries no held lock, so a
+    judgement that consulted either the local table or the node-local lock would
+    read it gone. The lease the follower renews beside the registration is the
+    fact that crosses the shared home, so a fresh lease reads registered, live
+    and not released; a renewal past the lease window reads gone.
     """
     assert runs.follower_state(PROJECT, SESSION_FOREIGN)["registered"] is False
 
     with _foreign_registration(PROJECT, SESSION_FOREIGN):
-        held = runs.follower_state(PROJECT, SESSION_FOREIGN)
-        assert held["foreign"] is True
-        assert held["host"] == FOREIGN_HOST
+        fresh = runs.follower_state(PROJECT, SESSION_FOREIGN)
+        assert fresh["foreign"] is True
+        assert fresh["host"] == FOREIGN_HOST
         # The row's host judgement is the seat judgement, not a second one.
-        assert held["host"] == watch_unit._seat_host(held["follower"])
-        assert held["foreign"] is watch_unit._seat_names_a_foreign_host(
-            held["follower"]
+        assert fresh["host"] == watch_unit._seat_host(fresh["follower"])
+        assert fresh["foreign"] is watch_unit._seat_names_a_foreign_host(
+            fresh["follower"]
         )
-        assert held["live"] is True, held
+        assert fresh["registered"] is True, fresh
+        assert fresh["live"] is True, fresh
+        assert fresh["released"] is False, fresh
         # The producer's selection and the reflex's guard read this one value.
         rows = {row["session"]: row for row in runs.list_followers(PROJECT)}
+        assert rows[SESSION_FOREIGN]["registered"] is True
         assert rows[SESSION_FOREIGN]["live"] is True
-        assert (
-            watch_unit.watch_state(PROJECT, session=SESSION_FOREIGN)["session_attached"]
-            is True
-        )
+        state = watch_unit.watch_state(PROJECT, session=SESSION_FOREIGN)
+        assert state["session_attached"] is True
+        assert state["session_follower_released"] is False
 
-    gone = runs.follower_state(PROJECT, SESSION_FOREIGN)
-    assert gone["foreign"] is True
-    assert gone["registered"] is False
-    assert gone["released"] is True
-    assert gone["live"] is False, gone
+    # The lease ages past the producer's own window with no renewal behind it.
+    with _foreign_registration(PROJECT, SESSION_FOREIGN, renewed_seconds_ago=100000.0):
+        gone = runs.follower_state(PROJECT, SESSION_FOREIGN)
+        assert gone["foreign"] is True
+        assert gone["registered"] is False, gone
+        assert gone["released"] is True, gone
+        assert gone["live"] is False, gone
 
 
 def test_the_real_crew_home_is_untouched(fleet: dict[str, Path]) -> None:

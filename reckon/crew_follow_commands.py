@@ -1503,6 +1503,10 @@ def _follow_watch_lines(
     # The place this arming last wrote, so a poll that changes nothing does not
     # rewrite it. Declared beside the writer that owns it.
     written_place: tuple[Any, ...] | None = None
+    # When this follower last wrote its own delivery lease, so the throttling in
+    # the renewal below is decided in memory rather than by re-reading the file
+    # on every wait pass.
+    lease_renewed_at: float | None = None
 
     def _record_checkpoint(
         stream_path: Path,
@@ -1586,9 +1590,33 @@ def _follow_watch_lines(
         registration of a producer that has already exited into the lease. A
         failure to write must never end the pane: the renewal is best-effort and
         a missed one merely ages the lease.
+
+        The same pass renews this session's own delivery lease, beside its
+        registration. A reader on another host cannot take the registration's
+        advisory lock — flock is node-local on a shared home — so the lease is
+        the only fact it has by which to judge whether this follower still
+        delivers. It is renewed only while this follower holds the registration,
+        and throttled to half the producer's interval so a tight poll loop does
+        not rewrite it on every tick.
         """
         try:
             runs.renew_producer_lease(project)
+        except OSError:
+            return
+        nonlocal lease_renewed_at
+        if session is None or registration is None or not registration.held:
+            return
+        try:
+            moment = time.time()
+            if (
+                lease_renewed_at is not None
+                and moment - lease_renewed_at < runs.producer_lease_seconds() / 2
+            ):
+                return
+            from reckon.crew import follower_registration
+
+            follower_registration.renew_follower_lease(project, session, now=moment)
+            lease_renewed_at = moment
         except OSError:
             return
 
