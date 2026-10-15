@@ -1,14 +1,12 @@
 """A held settle row is never drawn after the run has left the halt behind.
 
 ``RowPolicy`` holds a printing coordinator row for the settle window so a chain
-written seconds apart prints once, as its latest row. A row that is not a
-coordinator row supersedes nothing, which keeps the terminal echo from
-swallowing a completion — but it also left the held row standing when a
-redispatch or a resume moved the run back to a live word inside the window. The
-policy's memory of the state still read the word the pane showed, because a held
-row is not remembered until it is released, so the return looked like a
-re-derivation and was dropped; the hold then expired and the pane drew
-``working -> halted`` for a run that was already working again.
+written seconds apart prints once, as its latest row. A held settle row is
+resolved by a later row that moves its run on to a live pane word: a return to
+the word the pane already shows drops the held row and the return together, and
+a move to another live word prints the held row at once, ahead of the move. A
+later row into a settled word supersedes nothing, so the terminal echo still
+leaves a held completion standing.
 
 The rows below drive ``PaneRowPath`` for the pane's own session, as the follower
 does, and render every row it releases through one ``Ticker`` in order. Each
@@ -23,10 +21,10 @@ from typing import Any
 
 from reckon.crew import ticker
 
-SESSION = "s-fast-read"
-RUN = "r-20261015T091903690374-fast-read"
-PROJECT = "nova"
-NODE = "fast-read"
+SESSION = "s-own"
+RUN = "r-example-run"
+PROJECT = "example"
+NODE = "example"
 
 START = ("dispatched", "working")
 STOP = ("working", "stopped")
@@ -82,12 +80,12 @@ def _texts(rows: list[tuple[dict, str]]) -> list[str]:
 
 
 def test_a_return_inside_the_window_leaves_no_halt_on_the_pane() -> None:
-    """The fast-read redispatch: the pane shows the start and the block alone.
+    """A redispatch back to working inside the window shows the start and block.
 
-    ``working -> stopped`` is held at 09:19:38 and ``stopped -> working`` lands
-    12 s later, inside the settle window. The halt and its return are one round
-    trip, so neither draws, and the run's block an hour on is drawn from the
-    word the pane still shows.
+    ``working -> stopped`` is held, and ``stopped -> working`` lands 12 s later,
+    inside the settle window. The halt and its return are one round trip, so
+    neither draws, and the run's block an hour on is drawn from the word the
+    pane still shows.
     """
     pane = _Pane()
     released: list[tuple[dict, str]] = []
