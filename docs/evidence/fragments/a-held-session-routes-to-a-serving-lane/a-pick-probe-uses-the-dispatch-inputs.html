@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-held-session-routes-to-a-serving-lane">
+  <meta name="plan-evidence-for" content="reckon:a-held-session-routes-to-a-serving-lane">
+  <meta name="plan-verifies" content="reckon:a-held-session-routes-to-a-serving-lane#s3">
+  <meta name="plan-recorded-at" content="2026-10-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A pick probe uses the inputs a dispatch would | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-pick-probe-uses-the-dispatch-inputs-landing" data-node="a-pick-probe-uses-the-dispatch-inputs" data-reckon="landed" data-when="2026-10-15">
+  <h2>A pick carries the node fields a dispatch hands the picker</h2>
+  <p><code>reckon crew pick</code> now takes <code>--section</code>, <code>--write-path</code>, <code>--negative-control</code> and <code>--estimated-hours</code> — the node fields <code>crew dispatch</code> already hands the picker — and builds the probed <code>TaskNode</code> with them, so the node state Jev weighs from a pick is the state a dry-run dispatch would render; its answer names every one of those fields the probe left out under <code>omitted_inputs</code>. The new <code>tests/test_a_pick_probe_uses_the_dispatch_inputs.py</code> renders the node state from a pick and from a dry-run dispatch over the same fields and finds them equal (6 passed at head). The gate over the 61 test files importing <code>crew_dispatch_commands</code> reads 780 passed, 1 skipped, 2 failed at <code>37437c85</code>; the same two (<code>test_congested_local_lane_still_reaches_the_picker.py::test_congested_local_lane_routing[alpha]</code> and <code>[explicit]</code>) fail at base <code>15adacba8</code>, so zero failures are added. Negative control: dropping the four fields from the probed node reddens the equality test and the field-carrying test. <code>ruff check</code> and <code>ruff format --check</code> are clean on the changed Python files at both base and head.</p>
+</article>
+</body>
+</html>
