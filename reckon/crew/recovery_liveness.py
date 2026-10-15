@@ -251,31 +251,69 @@ def _worker_record_liveness(record: Mapping[str, Any]) -> bool | None:
     return runs.record_process_alive(data, process_alive)
 
 
-def _worker_launched_after_manifest(record: Mapping[str, Any], manifest: Path) -> bool:
-    """Whether the run's current worker started after the manifest was written.
-
-    A resumed attempt reuses its run directory, so the manifest beside the
-    pointer may be the verdict a previous turn left. Its own launch time is the
-    fact that separates the two: a worker that started after the manifest was
-    last written cannot have written it, so a terminal status the file still
-    carries belongs to the superseded attempt rather than to the worker running
-    now. Unreadable evidence answers False — the reading never invents a launch
-    it did not observe.
-    """
+def _worker_launch_seconds(record: Mapping[str, Any]) -> float | None:
+    """The instant the run's current worker record says it was launched."""
     data = _worker_record(record)
     if data is None:
-        return False
+        return None
     raw = str(data.get("launched_at") or "").strip()
     if not raw:
-        return False
+        return None
     launched = parse_utc(raw)
-    if launched is None:
+    return launched.timestamp() if launched is not None else None
+
+
+def _manifest_written_before(manifest: Path, started_seconds: float | None) -> bool:
+    """Whether the manifest's last write precedes the instant given.
+
+    Unreadable evidence answers False on both sides — a manifest the reader
+    cannot date, or an attempt nothing dates, never invents a comparison.
+    """
+    if started_seconds is None:
         return False
     try:
         written = manifest.stat().st_mtime
     except OSError:
         return False
-    return launched.timestamp() > written
+    return written < started_seconds
+
+
+def _manifest_predates_the_current_attempt(
+    record: Mapping[str, Any], manifest: Path
+) -> bool:
+    """Whether the manifest was last written before the current attempt began.
+
+    The single owner of that question. A manifest last written before the
+    current attempt began cannot be that attempt's report, whether the run is
+    being read for promotion or for its state. Two records can date the current
+    attempt and either is authoritative when it is the only one present: the
+    worker record's launch, which the supervisor writes when it spawns the
+    attempt, and the attempt record's start, which the resume writes before the
+    supervisor can spawn anything. The worker's launch is read first because a
+    worker that started after the manifest cannot have written it, and the
+    attempt's start answers for the window before that worker registers.
+    """
+    started = _worker_launch_seconds(record)
+    if started is None:
+        started = _attempt_started_seconds(record)
+    return _manifest_written_before(manifest, started)
+
+
+def _worker_launched_after_manifest(record: Mapping[str, Any], manifest: Path) -> bool:
+    """Whether the run's current worker started after the manifest was written.
+
+    A resumed attempt reuses its run directory, so the manifest beside the
+    pointer may be the judgement an earlier turn left. Its own launch time is
+    the fact that separates the two: a worker that started after the manifest
+    was last written cannot have written it, so a terminal status the file still
+    carries belongs to the superseded attempt rather than to the worker running
+    now. Unreadable evidence answers False — the reading never invents a launch
+    it did not observe. This is the same comparison
+    :func:`_manifest_predates_the_current_attempt` answers with the attempt
+    clock added, restricted here to the worker's own launch because a promotion
+    defers only on a worker it can see.
+    """
+    return _manifest_written_before(manifest, _worker_launch_seconds(record))
 
 
 def _int_or_none(value: Any) -> int | None:

@@ -23,6 +23,66 @@ from reckon.crew.reports import (
 )
 
 
+def _manifest_is_the_predecessor_attempts_report(
+    record: Mapping[str, Any],
+    manifest: Path,
+    *,
+    manifest_status: str,
+    alive: bool | None,
+    worker_alive: bool | None,
+    now_seconds: float,
+) -> bool:
+    """Whether the manifest beside the pointer is an earlier attempt's report.
+
+    ``crew resume`` reuses a run's directory and the manifest a previous turn
+    left, and the reset before a resume clears only the supervisor's done words:
+    a ``blocked``, ``waiting`` or ``in-progress`` status stays on the file. Read
+    from that word alone the resumed attempt is drawn as its predecessor's
+    outcome — a live attempt shown blocked, an obligation raised to resolve a
+    blocker the resume already resolved.
+
+    The comparison itself has one owner,
+    :func:`reckon.crew.recovery_liveness._manifest_predates_the_current_attempt`,
+    which dates the attempt from the worker's launch or the attempt record's
+    start. This reads it, and adds the three facts a state reading needs and a
+    promotion reading does not.
+
+    The first is that the run has published the attempt the manifest would have
+    to belong to. The resume window is what makes a manifest ambiguous, and the
+    record that opens it lives in the run directory: a run whose attempt record
+    names no current attempt has nothing newer for its manifest to predate, and
+    is read from its pointer alone exactly as before. Outside that window the
+    manifest stands untouched, whatever a liveness reading says about it.
+
+    The second is that the manifest offers no progress word. A run that reports
+    itself working has already said it has no verdict, so there is nothing to
+    withdraw, and dropping that word would take away the one thing that keeps a
+    resumed launch from reading as a run abandoned without a manifest.
+
+    The third is that the attempt is live or moving, because the word only
+    stops describing the run while something is there to replace it. A
+    proven-live worker, a live worker record, or an attempt still inside the
+    quiet window a fresh dispatch gets — read through
+    :func:`reckon.crew.recovery_liveness._run_stream_quiet_seconds`, which caps
+    the stream's silence at the attempt clock — is live or moving. An attempt
+    quiet past the window is left to the readings that name an end, so this
+    never revives a run nothing holds. The pointer's own pid is deliberately not
+    consulted: inside the resume window it is its predecessor's, so its death is
+    not this attempt's.
+    """
+    if _current_attempt_number(record) is None:
+        return False
+    if manifest_status in NON_TERMINAL_MANIFEST_STATUSES:
+        return False
+    if not _manifest_predates_the_current_attempt(record, manifest):
+        return False
+    if alive is True or worker_alive is True:
+        return True
+    return (
+        _run_stream_quiet_seconds(record, now_seconds=now_seconds)
+        <= LOG_STALE_AFTER_SECONDS
+    )
+
 
 def classify_pointer(
     record: Mapping[str, Any],
@@ -180,6 +240,19 @@ def classify_pointer(
     ended_exit = exit_record if exit_record is not None and alive is not True else None
     if ended_exit is not None:
         alive = False
+    # A manifest a previous attempt wrote is not this attempt's report; while the
+    # current attempt lives or moves the run is read from that liveness rather
+    # than from the old status word. Computed here, after the exit record has
+    # narrowed liveness, so a run whose attempt recorded its own end is never
+    # revived by the guard.
+    manifest_predates_attempt = _manifest_is_the_predecessor_attempts_report(
+        record,
+        manifest,
+        manifest_status=manifest_status,
+        alive=alive,
+        worker_alive=worker_alive,
+        now_seconds=moment,
+    )
     # The liveliest stream the run has, taken through the shared reader, so a
     # resumed or lane-changed run is aged against what it is writing now rather
     # than the first file the pointer named. Absent a non-empty stream the
@@ -215,6 +288,32 @@ def classify_pointer(
         manifest_commits = []
         manifest_blockers = []
         needs_help = None
+    if manifest_predates_attempt:
+        # The manifest is the predecessor attempt's report, so this attempt has
+        # delivered no verdict yet. Its word is dropped, so every reading below
+        # classifies from the current attempt's liveness rather than from an
+        # outcome that attempt never reached, and raises no blocked duty.
+        #
+        # The pointer's own liveness goes with it. Inside the resume window the
+        # pid it carries belongs to the attempt before this one, so a table that
+        # reports it gone is reporting the predecessor's end, not this attempt's;
+        # read as this attempt's it falls to the arm that names an abandoned run
+        # for a run whose attempt has only just started. Liveness is therefore
+        # left unknown here and the attempt is read from its own clock, exactly
+        # as a run on another host is. An attempt that recorded an end of its own
+        # never reaches this point: the deferral that gates it stands down for
+        # any attempt with a worker or exit record of its own.
+        manifest_present = False
+        manifest_data = {}
+        manifest_digest = None
+        manifest_status = ""
+        manifest_reported_status = ""
+        manifest_commits = []
+        manifest_blockers = []
+        needs_help = None
+        # Liveness follows the word, for the reason the block above states.
+        alive = None
+        worker_alive = None
     # A provider refusal makes an otherwise-abandoned run a block: the process
     # is gone but the stop is triageable (a named backend, limit and reset) and
     # resumable once the limit lifts. Detected from the same stream observe
@@ -275,13 +374,19 @@ def classify_pointer(
         else _admission_refusal(record, memo=memo)
     )
     terminal = phase in ("complete", "failed")
-    wait = _manifest_wait(
-        manifest_data,
-        manifest,
-        now_seconds=moment,
-        stale_after_seconds=stale_after_seconds,
-        stream_mtime=_run_stream_mtime(record),
-        previous_lift=record.get("auto_resume"),
+    # A manifest that is not this attempt's report declares no wait for it: the
+    # declaration belongs to the attempt that wrote it, which has ended.
+    wait = (
+        _manifest_wait(
+            manifest_data,
+            manifest,
+            now_seconds=moment,
+            stale_after_seconds=stale_after_seconds,
+            stream_mtime=_run_stream_mtime(record),
+            previous_lift=record.get("auto_resume"),
+        )
+        if manifest_present
+        else None
     )
     if wait is not None and not wait["valid"]:
         # An incomplete wait declaration is a reading failure carried on the
@@ -1427,6 +1532,8 @@ from .recovery_liveness import (  # noqa: E402
     STRANDED_LAUNCH_BOUND_SECONDS,
     _PRE_SPAWN_PHASES,
     _absence_of_a_verdict_is_transient,
+    _current_attempt_number,
+    _manifest_predates_the_current_attempt,
     _carries_orientation_write,
     _exit_record_end_phrase,
     _exit_record_is_launch_failure,
@@ -1445,6 +1552,7 @@ from .recovery_liveness import (  # noqa: E402
     _run_chain_manifest_freshness,
     _run_exit_record,
     _run_stream_mtime,
+    _run_stream_quiet_seconds,
     _stranded_launch,
     _wait_observation_defect,
     _worker_launched_after_manifest,
