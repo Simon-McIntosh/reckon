@@ -82,7 +82,9 @@ def test_a_head_log_in_neither_format_is_unmeasured() -> None:
 
 def test_a_pair_split_across_formats_is_unmeasured() -> None:
     """A ctest name and a pytest node id name different things, so no difference."""
-    pytest_log = "FAILED tests/test_gate.py::test_alpha - AssertionError: boom\n1 failed\n"
+    pytest_log = (
+        "FAILED tests/test_gate.py::test_alpha - AssertionError: boom\n1 failed\n"
+    )
 
     assert _count(BASE_CTEST_GREEN, pytest_log) == (None, [])
 

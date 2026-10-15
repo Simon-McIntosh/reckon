@@ -1281,9 +1281,7 @@ _CTEST_ENTRY_RE = re.compile(r"^\s*\d+\s*-\s*(.+?)\s+\(([^)]*)\)\s*$")
 # green ctest log has no failure block, so its format is recognised from the
 # run summary ctest always prints; without one the extractor cannot tell a
 # green ctest log from a log that records nothing.
-_CTEST_SUMMARY_RE = re.compile(
-    r"tests passed,|tests failed out of|Total Test time"
-)
+_CTEST_SUMMARY_RE = re.compile(r"tests passed,|tests failed out of|Total Test time")
 
 # The lines a log carries when it is a pytest run, with or without failures. A
 # green pytest log has no ``FAILED`` line, so its format is recognised from the
