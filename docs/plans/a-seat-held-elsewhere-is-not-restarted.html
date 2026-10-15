@@ -25,7 +25,7 @@
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="64">
+<meta name="plan-version" content="65">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -324,6 +324,9 @@
 </div>
 <div class="r-comment" data-section="s15" data-id="c-close-s15" data-who="reckon-build" data-when="2026-10-15T17:40:00Z">
     <div class="r-comment-body"><p>§15 landed. The follower lease is written through the repository's atomic JSON writer, with bytes and mode unchanged. Merged as <code>025c3b5b4</code>. Gate: 124 passed at head against 120 at base, with no failures. Review: 112/120. <a href="/reckon/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s15">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261015T165405320126-the-follower-lease-uses-the-store-writer" data-who="reckon-build" data-when="2026-10-15T17:19:08.013Z">
+    <div class="r-comment-body"><p>the follower lease is published through reckon._store.write_json_atomically with indent=None and mode=0o644; the private temporary-and-rename writer run_paths._write_json_atomically is removed. Measure: tests/test_the_follower_lease_uses_the_store_writer.py 4 passed, head arm 124 passed / base arm 120 passed, EXIT=0 both; negative control (truncate-then-write in place) fails the concurrent-reader case, EXIT=1</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
