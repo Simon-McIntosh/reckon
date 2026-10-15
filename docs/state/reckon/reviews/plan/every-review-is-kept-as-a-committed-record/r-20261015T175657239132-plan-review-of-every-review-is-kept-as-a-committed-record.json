@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T18:08:53.622Z",
+  "dispatched_at": "2026-10-15T17:58:00Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:163",
+      "id": "done_when-1",
+      "reason": "a worker obeying \u00a716 must either edit a \u00a714 test file it has no write scope for, or ship a head arm with added failures in a landed file, and neither satisfies the plan as written.",
+      "text": "\u00a716's done-when requires \"It finds store_committed_review refused the same way\", but \u00a714's landed test test_a_promoted_claimless_record_is_committed_and_still_reported (tests/test_a_claimless_finding_is_not_a_finding.py:211) drives a claimless record through crew.complete promotion and asserts the committed file exists and holds [PLACEHOLDER] at lines 273-274, and tests (1) and (2) in the same file store a claimless record through store_review via _store (line 57); all six tests pass at base (6 passed), so \u00a716's new refusals red them, which contradicts the done-when's clause \"give the same pass and fail ids at head as at base, apart from the new file\"",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:162",
+      "id": "reasoning-1",
+      "reason": "the three sites are enumerated explicitly and govern the implementation, so a worker builds all three; the framing sentence is imprecise but not load-bearing.",
+      "text": "the Deliverable asserts the claimless refusal is applied \"wherever a record's status is already validated\", but store_committed_review performs no status validation (it checks project, review run id, subject and review material only \u2014 review.py:2636-2660), so the sentence describes two sites where the plan then lists three, misstating the code the mechanism rests on",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "b7f4adddd7bf7dd239b59ed1b7e991af87890de671fc7373085e3e57cc340033",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 136,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T175657239132-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "fada171059d4ab432ff299561d6937989532b883",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited imas-efit record reproduces exactly: run r-20261015T171352888862-review-of-containment-frac-reachable-ff20d27d6c7b sits at docs/state/imas-efit/reviews/run/r-20261015T162752320759-containment-frac-reachable/, status parsed, holding the one finding {\"message\": \u2026, \"path\": \"efit/wall_containment.py:105\", \"severity\": \"follow-on\"}, and FINDING_CLAIM_FIELDS is (\"text\",\"summary\",\"detail\",\"title\") at reckon/crew/review.py:156.",
+    "done_when": "a finding \u2014 \u00a716's done-when requires store_committed_review to refuse a claimless record, but tests/test_a_claimless_finding_is_not_a_finding.py (landed by \u00a714) asserts a claimless record is stored and committed, and that file is outside \u00a716's write scope, so the \"same pass and fail ids at head as at base, apart from the new file\" clause cannot hold.",
+    "evidence_paths": "pass \u2014 the new test lands at tests/test_a_claimless_review_is_refused_at_store.py in-repo, and the negative-control log goes \"under the run directory\", a durable crew run path, not a scratchpad.",
+    "naming": "pass \u2014 the test filename is mechanism-named (test_a_claimless_review_is_refused_at_store.py) and \u00a716 introduces no plan labels, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 the Deliverable's framing \"refused wherever a record's status is already validated\" describes store_review and check-manifest only, yet the enumeration adds store_committed_review, which validates no status (review_status_refusal is called only at review.py:2264 and reports.py:1665), so the stated principle rests on a claim about the code its own three-site list contradicts.",
+    "single_goal": "pass \u2014 \u00a716 carries one deliverable (one claimless predicate applied at the three named points) with one test file and one gate.",
+    "wiring": "pass \u2014 \u00a716 declares no depends-on/informs/gates and is stated independent in f-erkc-017; every symbol it names (store_review, store_committed_review, _reviewer_store_records, _review_record_status_findings, finding_claim) resolves, and the \u00a714 machinery it builds on has landed, so no dependency it needs is missing."
+  },
+  "section_digests": {
+    "_document": "7986812063e3ef6eaa59808063e3eef5c63281d497d9e197e0be369f749fd70c",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "bb85d80dcb9e0286d21a8ca6acd3af79e736c64c84b5ac85569fc6ce2c73863b",
+    "s13": "18a2d10f1e3c66be8277b7b4ef2922db7611cded7589553da5347b9a1ee5cd0f",
+    "s14": "90fd381b5f80417031410428331e779266feb4e517d89e5237d29cbe1c5e4700",
+    "s15": "72f678eb5f0bc62870da1cc4637f6db55365548aa9b52f46884cc0b3551a6ae7",
+    "s16": "0c68dec6e41c0aad4655780aa0f1bc1ead7ac906dad9f58a34a229457ca79acc",
+    "s17": "86a993485a8a8461fd1e5e336bf8623e585cd4540daa1e5b5e78af2a0c172ce5",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "85877b77c395ca8a1482bef5887cfc72cbf6109174dba2c01265aa015a906d73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T18:08:58.360488+00:00"
+}
