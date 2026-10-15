@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/runs.py:2195",
+    "reckon/crew/runs.py:706",
+    "reckon/crew/runs.py:2832"
+  ],
+  "completed_at": "2026-10-15T07:03:06.116Z",
+  "dispatched_at": "2026-10-15T06:20:22Z",
+  "findings": [
+    {
+      "file": "tests/test_a_reload_republishes_no_unmoved_run.py",
+      "line": "217",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares the appended to_state against moved_state, which the test derives through the same production recovery._watch_snapshot the sweep itself uses, so both sides move together and cannot catch a state-derivation regression; the event and from_state assertions beside it (lines 215-216) guard the scenario independently."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 719723e9e; one commit 0f4538989 changes four files, all inside the declared scope, adding the skip at reckon/crew/runs.py:2129 and the scenario test.",
+    "done_when": "the done-when names tests/test_a_reload_republishes_no_unmoved_run.py writing a stream naming one run complete and another working, moving the second and finding no row for the first, a transition for the second and a baseline for a third the stream never named; that file encodes that scenario at line 154.",
+    "goal": "the node goal is that the first sweep of _publish_watch_transitions appends no row for a live run whose state equals the state the stream last published for it; reckon/crew/runs.py:2129 skips exactly that run.",
+    "manifest": "read; it records 155 passed (EXIT=0) at head against 154 passed (EXIT=0) at base with zero added failures, names the three logs under the run directory and reports the negative control at 1 failed (EXIT=1).",
+    "write_paths": "read the manifest's declared paths; every path in the diff is inside them - reckon/crew/runs.py, the two test files and the landing fragment under docs/evidence/fragments/the-monitor-shows-the-work-it-watches/."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reload_republishes_no_unmoved_run.py:211 reddens when the base sweep appends a baseline for the unchanged run, which the negative-control log reproduces on base runs.py (1 failed, EXIT=1).",
+    "evidence": "the gate exercises the done-when's own scenario at tests/test_a_reload_republishes_no_unmoved_run.py:154 and its result is recorded in the manifest's baseline_suite and after_suite arrays, 154 then 155 passed, each naming its log.",
+    "fit": "the added branch and comments at reckon/crew/runs.py:2123-2133 follow the surrounding style and name no plan label, ticket or version.",
+    "goal_fidelity": "reckon/crew/runs.py:2126-2133 skips a run whose seeded state equals its current state, which is the deliverable exactly, and leaves the moved-run transition and unseen-run baseline unchanged.",
+    "reuse": "the change adds no definition, and the first-sweep baseline carrying a run's own state from=None is a claim the fleet fold at reckon/crew/recovery_watch.py:1532 cannot make because it words an arrival dispatched, so the branch cannot adopt the owner.",
+    "scope_discipline": "every path in the diff is inside the manifest's declared write paths, with no incidental edit beyond the fix, the updated case and the landing fragment."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 719723e9ef033687319f78c758087f3bde207fab\nreviewed_head_sha: 0f45389894e3cb5005dec0be8dc41da8e2f72a60\nVERDICT goal: the node goal is that the first sweep of _publish_watch_transitions appends no row for a live run whose state equals the state the stream last published for it; reckon/crew/runs.py:2129 skips exactly that run.\nVERDICT done_when: the done-when names tests/test_a_reload_republishes_no_unmoved_run.py writing a stream naming one run complete and another working, moving the second and finding no row for the first, a transition for the second and a baseline for a third the stream never named; that file encodes that scenario at tests/test_a_reload_republishes_no_unmoved_run.py:154.\nVERDICT write_paths: read the manifest's declared paths; every path in the diff is inside them - reckon/crew/runs.py, the two test files and the landing fragment under docs/evidence/fragments/the-monitor-shows-the-work-it-watches/.\nVERDICT manifest: read; it records 155 passed (EXIT=0) at head against 154 passed (EXIT=0) at base with zero added failures, names gate-head.log, gate-base.log and negative-control.log under the run directory, and reports the negative control at 1 failed (EXIT=1).\nVERDICT diff: read commit by commit against 719723e9e; one commit 0f4538989 changes four files, all inside the declared scope, adding the skip at reckon/crew/runs.py:2129 and the scenario test.\nCALL_SITES: reckon/crew/runs.py:2195, reckon/crew/runs.py:706, reckon/crew/runs.py:2832\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2126-2133 skips a run whose seeded state equals its current state, which is SS25's deliverable exactly, and leaves the moved-run transition and unseen-run baseline unchanged.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate exercises the done-when's own scenario at tests/test_a_reload_republishes_no_unmoved_run.py:154 and its result is recorded in the manifest's baseline_suite and after_suite arrays, 154 then 155 passed, each naming its log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared write paths, with no incidental edit beyond the fix, the updated case and the landing fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_reload_republishes_no_unmoved_run.py:211 reddens when the base sweep appends a baseline for the unchanged run, which the negative-control log reproduces on base runs.py (1 failed, EXIT=1).\nSCORE fit: 20\nJUSTIFICATION fit: the added branch and comments at reckon/crew/runs.py:2123-2133 follow the surrounding style and name no plan label, ticket or version.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change adds no definition, and the first-sweep baseline carrying a run's own state from=None is a claim the fleet fold at reckon/crew/recovery_watch.py:1532 cannot make because it words an arrival dispatched, so the branch cannot adopt the owner.\nFINDING tests/test_a_reload_republishes_no_unmoved_run.py:217 follow-on: the assertion compares the appended to_state against moved_state, which the test derives through the same production recovery._watch_snapshot the sweep itself uses, so both sides move together and the assertion cannot catch a state-derivation regression; the event and from_state assertions beside it (lines 215-216) guard the scenario independently.\n",
+  "review_run": "r-20261015T070456131605-review-of-a-reload-republishes-no-unmoved-run-0f45389894e3",
+  "review_run_id": "r-20261015T070456131605-review-of-a-reload-republishes-no-unmoved-run-0f45389894e3",
+  "reviewed_base_sha": "719723e9ef033687319f78c758087f3bde207fab",
+  "reviewed_head_sha": "0f45389894e3cb5005dec0be8dc41da8e2f72a60",
+  "reviewed_run_id": "r-20261015T061918202296-a-reload-republishes-no-unmoved-run",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T07:18:10.976143+00:00",
+  "total": 115
+}
