@@ -25,7 +25,7 @@
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="49">
+<meta name="plan-version" content="51">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -267,6 +267,12 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-15T16:30:00Z">
     <div class="r-comment-body"><p>§8 landed. A follower on another node is now judged by a lease it renews, not by a lock that GPFS does not share across nodes. The producer can therefore see followers on other nodes, publish their sessions' snapshots and dispatch their review reflex. Merged as <code>bbaee1634</code>. Gate: 358 passed at head against 351 at base, with one timing flake that passed on re-run. Review: 104/120. The duplicated atomic writer is §15. The coordinator still owes a live check: a snapshot appearing for a session whose follower is on another node, once the seated producer reloads. <a href="/reckon/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s8">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261015T160838216530-review-of-a-follower-on-another-node-renews-a-lease-9651d949e00b" data-who="reckon-build" data-when="2026-10-15T16:23:33.428Z">
+    <div class="r-comment-body"><p>review of r-20261015T152637789069-a-follower-on-another-node-renews-a-lease stored as a parsed record at head 9651d949e00b: six dimension scores totalling 104, one follow-on finding on reckon/crew/run_paths.py:60 duplicating the repository's atomic JSON publisher</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261015T152637789069-a-follower-on-another-node-renews-a-lease" data-who="reckon-build" data-when="2026-10-15T16:07:58.609Z">
+    <div class="r-comment-body"><p>a follower registration naming another host is judged by a lease it renews beside its registration, not by its node-local advisory lock; the lease (follower_registration.follower_lease_path / renew_follower_lease, published as a whole record by run_paths._write_json_atomically) decides registered, live and released for a foreign registration, while a same-host registration keeps its lock and process probes.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">

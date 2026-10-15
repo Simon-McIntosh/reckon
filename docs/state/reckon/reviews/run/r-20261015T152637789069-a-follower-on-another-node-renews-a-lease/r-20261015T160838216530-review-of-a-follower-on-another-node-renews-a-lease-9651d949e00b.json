@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_removed_flag_migration.py::test_the_deprecation_announcement_reaches_stderr_and_not_the_stream"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/watch_unit.py:169",
+    "reckon/crew/watch_unit.py:205",
+    "reckon/crew/dispatch_watch.py:713",
+    "reckon/crew/dispatch.py:1431",
+    "reckon/crew/recovery_watch.py:2639",
+    "reckon/crew/session_host.py:418",
+    "reckon/crew/runs.py:2931",
+    "reckon/crew_follow_commands.py:1618"
+  ],
+  "completed_at": "2026-10-15T16:23:33.428Z",
+  "dispatched_at": "2026-10-15T16:09:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/run_paths.py",
+      "line": "60",
+      "severity": "follow-on",
+      "text": "_write_json_atomically re-implements the repository's own atomic JSON publisher reckon/_store.py:521 (write_json_atomically, wrapping write_atomically at :470), whose docstring states it is \"the one place a file is published through a sibling temporary ... rather than keeping a private temporary-and-rename beside it\"; run_paths.py already imports _config_home from reckon._store, so the private sibling-and-rename could have imported the owner rather than restating it. The behaviour is correct, so this does not hold the node, but it forks a capability the repository already owns."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against f2ac7cc28be5409beae3b2c8b13fda58c83c9148: 449159c4b changes follower_registration.py (the lease path, renew_follower_lease, _follower_lease_renewed_at and the foreign branch of _follower_liveness), run_paths.py (the atomic writer and retrying reader), crew_follow_commands.py (the renewal on the wait pass) and the two test files, and 9651d949e adds the one-line evidence fragment.",
+    "done_when": "the done_when's cases are all asserted in tests/test_a_follower_on_another_node_renews_a_lease.py (a fresh-lease foreign registration reads registered/live/not-released and is published, :152-163; a stale lease reads gone and unpublished, :165-189; a missing lease reads gone, :192; a same-host free lock still reads gone, :204; a reader polling through a renewal never sees it empty, :274; a renewal leaves a same-node lock verdict live, :277-294) and each arm's result is recorded, not claimed, in the run's gate-head/gate-base chunk logs (all EXIT=0) and negative-control.log (EXIT=1).",
+    "goal": "the node goal is \u00a78's lease judgement \u2014 a follower registration naming another host is judged by a lease it renews beside its registration, not by its node-local advisory lock; reckon/crew/follower_registration.py:610-616 reads that renewal and sets registered and live from lease_fresh for a foreign record, and :669-670 make released follow.",
+    "manifest": "read; status complete; commits 449159c4b and 9651d949e; it records the four-chunk base/head gate (EXIT=0 with one head chunk rerun), the negative control, the one flaky test under retry_failures/follow_ons, measurement_module and measurement_cwd, and names the rewritten test in tests/test_a_snapshot_is_published_for_every_host.py.",
+    "write_paths": "the source manifest declares reckon/crew/follower_registration.py, reckon/crew_follow_commands.py, reckon/crew/run_paths.py, tests/test_a_snapshot_is_published_for_every_host.py, tests/test_a_follower_on_another_node_renews_a_lease.py, the evidence fragment and a figures directory; git diff --name-status f2ac7cc28..9651d949e lists exactly those six files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_follower_on_another_node_renews_a_lease.py:152 asserts registered is True against a literal, and negative-control.log shows it reading False when the foreign branch is judged by its lock again, so the gate names the regression it catches.",
+    "evidence": "the six done-when cases are asserted in tests/test_a_follower_on_another_node_renews_a_lease.py:132-295 and the gate result is recorded in the run's gate-head-chunk*.log (EXIT=0) and gate-base-chunk*.log (EXIT=0) with negative-control.log EXIT=1.",
+    "fit": "the additions follow the module's idiom (follower_registration.py:87 follower_lease_path beside follower_lock_path; :99 renew_follower_lease mirrors the docstring style) and carry no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/follower_registration.py:610-616 judges a foreign registration by the lease renewal and sets registered and live from lease_fresh, and :618 keeps a same-host registration on its lock, which is the \u00a78 deliverable.",
+    "reuse": "reckon/crew/run_paths.py:60 _write_json_atomically re-implements the repository's own atomic JSON publisher reckon/_store.py:521 write_json_atomically (which wraps write_atomically at :470 and documents itself as the one place a file is published through a sibling temporary) instead of importing it, so the addition duplicates a capability the repository already owns.",
+    "scope_discipline": "git diff --name-status f2ac7cc28..9651d949e lists exactly the five declared code/test paths plus the declared evidence fragment, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \u00a78's lease judgement \u2014 a follower registration naming another host is judged by a lease it renews beside its registration, not by its node-local advisory lock; reckon/crew/follower_registration.py:610-616 reads that renewal and sets registered and live from lease_fresh for a foreign record, and :669-670 make released follow.\nVERDICT done_when: the done_when's cases are all asserted in tests/test_a_follower_on_another_node_renews_a_lease.py (a fresh-lease foreign registration reads registered/live/not-released and is published, :152-163; a stale lease reads gone and unpublished, :165-189; a missing lease reads gone, :192; a same-host free lock still reads gone, :204; a reader polling through a renewal never sees it empty, :274; a renewal leaves a same-node lock verdict live, :277-294) and each arm's result is recorded, not claimed, in the run's gate-head/gate-base chunk logs (all EXIT=0) and negative-control.log (EXIT=1).\nVERDICT write_paths: the source manifest declares reckon/crew/follower_registration.py, reckon/crew_follow_commands.py, reckon/crew/run_paths.py, tests/test_a_snapshot_is_published_for_every_host.py, tests/test_a_follower_on_another_node_renews_a_lease.py, the evidence fragment and a figures directory; git diff --name-status f2ac7cc28..9651d949e lists exactly those six files and nothing else.\nVERDICT manifest: read; status complete; commits 449159c4b and 9651d949e; it records the four-chunk base/head gate (EXIT=0 with one head chunk rerun), the negative control, the one flaky test under retry_failures/follow_ons, measurement_module and measurement_cwd, and names the rewritten test in tests/test_a_snapshot_is_published_for_every_host.py.\nVERDICT diff: read commit by commit against f2ac7cc28be5409beae3b2c8b13fda58c83c9148: 449159c4b changes follower_registration.py (the lease path, renew_follower_lease, _follower_lease_renewed_at and the foreign branch of _follower_liveness), run_paths.py (the atomic writer and retrying reader), crew_follow_commands.py (the renewal on the wait pass) and the two test files, and 9651d949e adds the one-line evidence fragment.\nCALL_SITES: reckon/crew/watch_unit.py:169, reckon/crew/watch_unit.py:205, reckon/crew/dispatch_watch.py:713, reckon/crew/dispatch.py:1431, reckon/crew/recovery_watch.py:2639, reckon/crew/session_host.py:418, reckon/crew/runs.py:2931, reckon/crew_follow_commands.py:1618\nSCORE goal_fidelity: 20\nSCORE evidence: 20\nSCORE scope_discipline: 20\nSCORE durability: 20\nSCORE fit: 19\nSCORE reuse: 5\nJUSTIFICATION goal_fidelity: reckon/crew/follower_registration.py:610-616 judges a foreign registration by the lease renewal and sets registered and live from lease_fresh, and :618 keeps a same-host registration on its lock, which is the \u00a78 deliverable.\nJUSTIFICATION evidence: the six done-when cases are asserted in tests/test_a_follower_on_another_node_renews_a_lease.py:132-295 and the gate result is recorded in the run's gate-head-chunk*.log (EXIT=0) and gate-base-chunk*.log (EXIT=0) with negative-control.log EXIT=1.\nJUSTIFICATION scope_discipline: git diff --name-status f2ac7cc28..9651d949e lists exactly the five declared code/test paths plus the declared evidence fragment, and nothing else.\nJUSTIFICATION durability: tests/test_a_follower_on_another_node_renews_a_lease.py:152 asserts registered is True against a literal, and negative-control.log shows it reading False when the foreign branch is judged by its lock again, so the gate names the regression it catches.\nJUSTIFICATION fit: the additions follow the module's idiom (follower_registration.py:87 follower_lease_path beside follower_lock_path; :99 renew_follower_lease mirrors the docstring style) and carry no plan, ticket or version label.\nJUSTIFICATION reuse: reckon/crew/run_paths.py:60 _write_json_atomically re-implements the repository's own atomic JSON publisher reckon/_store.py:521 write_json_atomically (which wraps write_atomically at :470 and documents itself as the one place a file is published through a sibling temporary) instead of importing it, so the addition duplicates a capability the repository already owns.\nFINDING reckon/crew/run_paths.py:60 follow-on: _write_json_atomically re-implements the repository's own atomic JSON publisher reckon/_store.py:521 (write_json_atomically, wrapping write_atomically at :470), whose docstring states it is \"the one place a file is published through a sibling temporary ... rather than keeping a private temporary-and-rename beside it\"; run_paths.py already imports _config_home from reckon._store, so the private sibling-and-rename could have imported the owner rather than restating it. The behaviour is correct, so this does not hold the node, but it forks a capability the repository already owns.\n",
+  "review_run_id": "r-20261015T160838216530-review-of-a-follower-on-another-node-renews-a-lease-9651d949e00b",
+  "reviewed_base_sha": "f2ac7cc28be5409beae3b2c8b13fda58c83c9148",
+  "reviewed_head_sha": "9651d949e00b0ddb302d385032e3f88297c24c4b",
+  "reviewed_run_id": "r-20261015T152637789069-a-follower-on-another-node-renews-a-lease",
+  "role": "review",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T16:23:04.024775+00:00",
+  "total": 104
+}
