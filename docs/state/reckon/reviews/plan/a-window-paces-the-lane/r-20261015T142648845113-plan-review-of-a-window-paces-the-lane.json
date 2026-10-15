@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T14:33:51.138Z",
+  "dispatched_at": "2026-10-15T14:27:33Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:2112",
+      "id": "wiring-1",
+      "reason": "a coordinator dispatching from the plan's followups is sent to landed work and is given no pointer to \u00a719, so the plan's forward wiring misdirects the next node and leaves the section it authored undispatched.",
+      "text": "the open followup `f-20261008T0700-pace-lift` recommends `/reckon-build a-window-paces-the-lane \u00a710`, but \u00a710 is declared `done`, while the only section left `implementable` is \u00a719 and no followup names it",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "00e88d54d85a3511b6ad3e7e3c44c2dea49c7035b99387bf2b167c2debd5614f",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 235,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T142648845113-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "e071489602fbefc152f252c36a7de371a72b6112",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every path \u00a719 cites resolves: `reckon/crew/picker/replay.py` (composition at `:41`, hand-off at `:79`), `snapshot.budget_view` (`reckon/crew/picker/snapshot.py:614`) and \u00a718; the new test file is the section's own deliverable and does not yet exist, which is correct for an `implementable` section.",
+    "done_when": "pass \u2014 \u00a719's done-when points the config home at a temporary directory, grants a session-A lift on a group read at 95%, replays an A and a B dispatch, requires A not held and B held at the reserve ceiling, and names a negative control that reproduces the defect (restore the session-less view, A must then read held).",
+    "evidence_paths": "pass \u2014 \u00a719 writes its control under the run directory, a durable per-run path, not a session scratchpad or node-local temporary directory.",
+    "naming": "pass \u2014 \u00a719 introduces no plan label, stage name, ticket number or version tag into a code path or symbol; the new symbol is the descriptive test filename `tests/test_a_replayed_pick_reads_its_own_session.py`.",
+    "reasoning": "pass \u2014 all three checks hold: the stated cause matches the cited code (replay.py:41 composes one session-less view and :79 hands it to `pick()`, which would otherwise compose per `request.session`); the mechanism (compose one view per distinct session and pass it as `budget_snapshot`) produces the done-when's A-not-held / B-held outcome; and the mechanism runs on a named production caller, `replay()` reached from `reckon/crew_dispatch_commands.py:791`.",
+    "single_goal": "pass \u2014 \u00a719 carries one deliverable: the replay judges each dispatch against the budget view for that dispatch's own session.",
+    "wiring": "a finding \u2014 the plan-level `plan-informs` target resolves (`background-agent-fitness-and-dispatch-scope.html` exists) and \u00a719's prerequisite \u00a718 is landed, but the document's forward wiring is stale: its one open plan-work followup points at a section that is already done and nothing points at \u00a719."
+  },
+  "section_digests": {
+    "_document": "162e5367771991c25884c65ce4fea8cc112b50b8bfafd5c21a4a70b5a20412e5",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "cff30d466dd7580b4623ab4ba85a967692183d1c1fbf0a887b817140c3fe2bf9",
+    "s11": "4f344761a1c7f9eeda684c28b5399f6cc6c50a6961808244c50f4f385a8dfb83",
+    "s12": "d332f915a715e0ce7c1efdd5027285714154977800a9ec70d7b055bf5762609f",
+    "s13": "627916281462553dd6f077d4f3ad0d176f2e5177a66b12b43e0c6d7b6788b3d7",
+    "s14": "5c54d28fac7106fc49f1eb45cc396fb761556bbd5ae16f469c6cf14cdd342fc8",
+    "s15": "5acca22c78776d5b829195bb01b2c5d660f4787c61cd3b04e511e66046bc7cf0",
+    "s16": "3dcf3315f6ba2812e050e78dff00ef7816e3e4ecc36a672d2a94915c9b63b57e",
+    "s17": "389b1f5c6e5ccd170eda4e87d4a50ed8785e7e0ef0485ef2c7e8597176c84370",
+    "s18": "3acd44306ea9cc8f5c0a20e3aeb4221a43ab0edf6ddcb9f12448519ae3b2e7bb",
+    "s19": "4a84b14941d424d93f96d9c90164a3c964ba50a4257edf6ec9082fa198fe2314",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T14:37:25.530238+00:00"
+}
