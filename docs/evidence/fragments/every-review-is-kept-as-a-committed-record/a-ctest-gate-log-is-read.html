@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="A ctest gate log is read, and a log in neither format is unmeasured">
+  <meta name="plan-summary" content="added_failures_from_gate_logs now reads a ctest gate log's 'The following tests FAILED:' block, including entries marked Not Run, keyed by test name, and treats each arm's format from the summary it always prints. A base ctest log with no failures against a head ctest log listing unit/marching_squares (Not Run) and unit/leg_extraction (Failed) gives (2, ['unit/leg_extraction', 'unit/marching_squares']); both arms listing the same failure give 0; a head log in neither format gives (None, []). The negative control removes the ctest reader and the two-failure case gives (0, []) with EXIT=1.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A ctest gate log is read | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A ctest gate log is read, and a log in neither format is unmeasured</h1>
+
+    <section id="a-ctest-gate-log-is-read-landing">
+      <h2>Landing</h2>
+      <p><code>added_failures_from_gate_logs</code> in <code>reckon/crew/review.py</code>
+        read pytest <code>FAILED</code> lines alone, so a ctest gate log yielded no ids
+        on either arm and stored a measured <code>(0, [])</code> for a run that had
+        added two failing tests. It now reads a ctest log's
+        <code>The following tests FAILED:</code> block, including entries marked
+        <code>Not Run</code>, keyed by test name, recognising each arm's format from the
+        summary it always prints; the two arms are compared only within one format, and
+        a log in neither format, or a pair split across the two, returns
+        <code>(None, [])</code>. New tests in
+        <code>tests/test_a_ctest_gate_log_is_read.py</code>; gate logs and the negative
+        control are under the run directory.</p>
+    </section>
+  </main>
+</body>
+</html>
