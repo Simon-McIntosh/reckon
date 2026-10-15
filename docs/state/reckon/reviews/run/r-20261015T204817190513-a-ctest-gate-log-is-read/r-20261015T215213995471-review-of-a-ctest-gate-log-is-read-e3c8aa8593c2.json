@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/review.py:2138",
+    "reckon/crew/review.py:2307",
+    "reckon/crew/review.py:3499"
+  ],
+  "completed_at": "2026-10-15T22:08:14.906Z",
+  "dispatched_at": "2026-10-15T21:52:58Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "line": "1268",
+      "severity": "follow-on",
+      "text": "follow-on: `_control_failure_ids` and `reckon/crew/promotion_evidence.py:1138 _head_arm_log_failure_ids` still read a gate log through `review._pytest_failure_ids` alone, so a ctest gate at promotion yields no head ids and `_zero_added_against_a_red_base` (reckon/crew/promotion_evidence.py:1161) admits such a run against any red base \u2014 the same measured-zero the reviewed change closes for the review extractor; this node's declared scope ended at review.py, so the promotion readers remain single-format."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read all three commits against base 050a6556c; 4bb8481af adds `_ctest_failure_ids` (review.py:1537), `_gate_log_format` (review.py:1565), the ctest and pytest summary regexes (review.py:1277-1293), a MULTILINE flag on `_GATE_FAILURE_RE` (review.py:1271) and the format dispatch at review.py:2092-2100, plus tests/test_a_ctest_gate_log_is_read.py; c84fb7055 is a ruff format pass; e3c8aa859 adds the evidence fragment.",
+    "done_when": "The done_when at prompt.txt:89-90 names a base ctest log with no failures against a head ctest log listing `unit/marching_squares` as Not Run and `unit/leg_extraction` as Failed giving `(2, ['unit/leg_extraction', 'unit/marching_squares'])`, both arms sharing a failure giving 0, and a head log in neither format giving `(None, [])`; tests/test_a_ctest_gate_log_is_read.py:57,67,75,83,98 assert exactly those, and the run's gate logs record both arms (base 912 passed/2 failed, head 747 passed/2 failed) with the same two ids.",
+    "goal": "The node goal is to make `added_failures_from_gate_logs` read a ctest failure block and report an unrecognised log as unmeasured; reckon/crew/review.py:1537 adds `_ctest_failure_ids` and :1565 `_gate_log_format`, and :2092-2096 dispatch on the arm's format and return `(None, [])` for a log in neither, so the goal is met.",
+    "manifest": "Read; it reads `status: complete`, names commits 4bb8481af, c84fb7055 and e3c8aa859, records the base arm at 912 passed/2 failed and the head arm at 747 passed/2 failed with the same two failure ids and 0 added, and points at gate-base/, gate-head/ and negative-control.log.",
+    "write_paths": "Read from the dispatch fence at prompt.txt:69-72; the declared paths are reckon/crew/review.py, tests/test_a_ctest_gate_log_is_read.py, docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-ctest-gate-log-is-read.html and a figures directory, and the diff touches the first three and nothing outside them."
+  },
+  "justifications": {
+    "durability": "every added assertion compares a literal (`(2, [...])`, `(0, [])`, `(None, [])`) against the extractor's own output, and negative-control.log shows three failing ids under the ctest-reader-removed mutation that the head arm does not fail.",
+    "evidence": "tests/test_a_ctest_gate_log_is_read.py:57 asserts the literal `(2, [...])` for the Not Run case, and the run's own gate logs under gate-base/ and gate-head/ record the same two failure ids at both arms, giving a zero added-failure delta.",
+    "fit": "reckon/crew/review.py:1277-1293 follows the module's regex-constant-plus-prose-comment idiom and the new names (`_ctest_failure_ids`, `_gate_log_format`) state mechanism with no plan label.",
+    "goal_fidelity": "reckon/crew/review.py:2098-2100 dispatches to `_ctest_failure_ids` for a ctest arm and :2095 returns `(None, [])` for a log in neither format, which is the goal exactly.",
+    "reuse": "a search over reckon/crew for reading a gate log's failing ids found `_control_failure_ids` (reckon/crew/promotion_checks.py:1268) and `_head_arm_log_failure_ids` (reckon/crew/promotion_evidence.py:1138), both delegating to `review._pytest_failure_ids`; the new `_ctest_failure_ids` lives in that owner module and is dispatched only by `added_failures_from_gate_logs`, so it extends the owner rather than forking it.",
+    "scope_discipline": "every path in 4bb8481af, c84fb7055 and e3c8aa859 (reckon/crew/review.py, tests/test_a_ctest_gate_log_is_read.py, docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-ctest-gate-log-is-read.html) is inside the fence at prompt.txt:69-72."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to make `added_failures_from_gate_logs` read a ctest failure block and report an unrecognised log as unmeasured; reckon/crew/review.py:1537 adds `_ctest_failure_ids` and :1565 `_gate_log_format`, and :2092-2096 dispatch on the arm's format and return `(None, [])` for a log in neither, so the goal is met.\nVERDICT done_when: The done_when at prompt.txt:89-90 names a base ctest log with no failures against a head ctest log listing `unit/marching_squares` as Not Run and `unit/leg_extraction` as Failed giving `(2, ['unit/leg_extraction', 'unit/marching_squares'])`, both arms sharing a failure giving 0, and a head log in neither format giving `(None, [])`; tests/test_a_ctest_gate_log_is_read.py:57,67,75,83,98 assert exactly those, and the run's gate logs record both arms (base 912 passed/2 failed, head 747 passed/2 failed) with the same two ids.\nVERDICT write_paths: Read from the dispatch fence at prompt.txt:69-72; the declared paths are reckon/crew/review.py, tests/test_a_ctest_gate_log_is_read.py, docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-ctest-gate-log-is-read.html and a figures directory, and the diff touches the first three and nothing outside them.\nVERDICT manifest: Read; it reads `status: complete`, names commits 4bb8481af, c84fb7055 and e3c8aa859, records the base arm at 912 passed/2 failed and the head arm at 747 passed/2 failed with the same two failure ids and 0 added, and points at gate-base/, gate-head/ and negative-control.log.\nVERDICT diff: Read all three commits against base 050a6556c; 4bb8481af adds `_ctest_failure_ids` (review.py:1537), `_gate_log_format` (review.py:1565), the ctest and pytest summary regexes (review.py:1277-1293), a MULTILINE flag on `_GATE_FAILURE_RE` (review.py:1271) and the format dispatch at review.py:2092-2100, plus tests/test_a_ctest_gate_log_is_read.py; c84fb7055 is a ruff format pass; e3c8aa859 adds the evidence fragment.\nCALL_SITES: reckon/crew/review.py:2138, reckon/crew/review.py:2307, reckon/crew/review.py:3499\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:2098-2100 dispatches to `_ctest_failure_ids` for a ctest arm and :2095 returns `(None, [])` for a log in neither format, which is the goal exactly.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_ctest_gate_log_is_read.py:57 asserts the literal `(2, [...])` for the Not Run case, and the run's own gate logs under gate-base/ and gate-head/ record the same two failure ids at both arms, giving a zero added-failure delta.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 4bb8481af, c84fb7055 and e3c8aa859 (reckon/crew/review.py, tests/test_a_ctest_gate_log_is_read.py, docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-ctest-gate-log-is-read.html) is inside the fence at prompt.txt:69-72.\nSCORE durability: 19\nJUSTIFICATION durability: every added assertion compares a literal (`(2, [...])`, `(0, [])`, `(None, [])`) against the extractor's own output, and negative-control.log shows three failing ids under the ctest-reader-removed mutation that the head arm does not fail.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/review.py:1277-1293 follows the module's regex-constant-plus-prose-comment idiom and the new names (`_ctest_failure_ids`, `_gate_log_format`) state mechanism with no plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search over reckon/crew for reading a gate log's failing ids found `_control_failure_ids` (reckon/crew/promotion_checks.py:1268) and `_head_arm_log_failure_ids` (reckon/crew/promotion_evidence.py:1138), both delegating to `review._pytest_failure_ids`; the new `_ctest_failure_ids` lives in that owner module and is dispatched only by `added_failures_from_gate_logs`, so it extends the owner rather than forking it.\nFINDING reckon/crew/promotion_checks.py:1268 follow-on: `_control_failure_ids` and `reckon/crew/promotion_evidence.py:1138 _head_arm_log_failure_ids` still read a gate log through `review._pytest_failure_ids` alone, so a ctest gate at promotion yields no head ids and `_zero_added_against_a_red_base` (reckon/crew/promotion_evidence.py:1161) admits such a run against any red base \u2014 the same measured-zero the reviewed change closes for the review extractor; this node's declared scope ended at review.py, so the promotion readers remain single-format.",
+  "review_run_id": "r-20261015T215213995471-review-of-a-ctest-gate-log-is-read-e3c8aa8593c2",
+  "reviewed_base_sha": "050a6556c702065b64ae6b52367a8116f86ae802",
+  "reviewed_head_sha": "e3c8aa8593c2972f3823d0af2d2ab6679af8dcac",
+  "reviewed_run_id": "r-20261015T204817190513-a-ctest-gate-log-is-read",
+  "reviewer_run_id": "r-20261015T215213995471-review-of-a-ctest-gate-log-is-read-e3c8aa8593c2",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T204817190513-a-ctest-gate-log-is-read/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/a-ctest-gate-log-is-read",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T22:08:00+00:00",
+  "total": 114
+}
