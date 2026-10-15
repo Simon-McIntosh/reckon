@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/review.py:store_review",
+    "reckon/crew/reports.py:_review_record_status_findings",
+    "reckon/crew/review.py:_note_malformed_record"
+  ],
+  "completed_at": "2026-10-15T20:36:57.872Z",
+  "dispatched_at": "2026-10-15T20:23:46Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "2256",
+      "severity": "follow-on",
+      "text": "store_review's docstring documents the status refusal but not the claim refusal it now also raises through review_status_refusal, so a caller reading it would not learn that a claimless record is rejected."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read d05743ad, a229c682, 0f46d0e2, 9156e386 against f3600a84; claimless_findings now yields (index, finding) and review_status_refusal adds the claim refusal.",
+    "done_when": "the plan done-when names the store refusal, the check-manifest refusal, the text variant passing both, and the head/base id comparison; the manifest records base 1165/0 and head 1169/0 with empty failure_ids.",
+    "goal": "reckon/crew/review.py:575 review_status_refusal refuses a claimless record; reached from store_review (reckon/crew/review.py:2284) and check-manifest's reviewer-store check (reckon/crew/reports.py:1664).",
+    "manifest": "read; base 1165 passed/0 failed over 1169 head passed/0 failed, negative control 3 failed/1 passed EXIT=1.",
+    "write_paths": "the manifest declares eight paths (six fenced plus two granted by resume); the diff's seven files all sit inside that set."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows the mutation reddening tests/test_a_claimless_review_is_refused_at_store.py:101 and :113.",
+    "evidence": "the base and head arms ran the importing-test files to EXIT=0 and recorded failure_ids [], as the manifest's baseline_suite/after_suite show.",
+    "fit": "the refusal follows the existing message idiom in reckon/crew/review.py:575 and carries no plan identifiers, but store_review's docstring at :2256 is stale.",
+    "goal_fidelity": "reckon/crew/review.py:284 via review_status_refusal refuses a claimless record naming index 0 and the keys, so both callers reject it.",
+    "reuse": "the change extends the claimless_findings owner at reckon/crew/review.py:186 and reuses review_status_refusal at :575 rather than adding a second predicate.",
+    "scope_discipline": "every changed path in the diff is inside the manifest's declared set."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to refuse a run review record whose finding states no claim at store_review and at check-manifest's reviewer-store check; reckon/crew/review.py:575 review_status_refusal now returns a refusal naming each claimless entry's index, keys and the accepted fields, reached from store_review at reckon/crew/review.py:2284 and reports._review_record_status_findings at reckon/crew/reports.py:1664.\nVERDICT done_when: the plan's done-when names the store refusal (message naming index 0, the keys message/path/severity and the four accepted fields), the check-manifest refusal, the text variant passing both, and the head/base id comparison; the manifest records base 1165 passed/0 failed and head 1169 passed/0 failed with empty failure_ids, and the new file's four cases pass.\nVERDICT write_paths: the manifest declares eight paths (the six fenced plus tests/test_review_gate_reads_the_hot_set.py and tests/test_review_lifecycle.py granted by the resume advice); the diff touches seven files and every one sits inside that set, the figure directory being unused because the done-when names no artifact.\nVERDICT manifest: read; it records base 1165 passed/0 failed over 12 chunks and head 1169 passed/0 failed over 13 chunks, a negative control at 3 failed/1 passed EXIT=1, and lint 3 base to 2 head.\nVERDICT diff: read the four commits d05743ad, a229c682, 0f46d0e2 and 9156e386 against base f3600a84; review.py extends claimless_findings to yield (index, finding) and adds the claim refusal to review_status_refusal, reports.py updates its docstring, and the tests change fixture records to carry a text claim and add the refusal file.\nCALL_SITES: reckon/crew/review.py:store_review, reckon/crew/reports.py:_review_record_status_findings, reckon/crew/review.py:_note_malformed_record\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:284 via review_status_refusal refuses a claimless record with a message naming index 0 and the keys, so both the store (reckon/crew/review.py:2284) and check-manifest (reckon/crew/reports.py:1664) reject it as the goal states.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate ran the importing-test arms at base and head to logs ending EXIT=0 and recorded failure_ids [] on both, as the manifest's baseline_suite/after_suite show, though it returns per-file chunks rather than the single-new-test result the done-when phrasing could invite.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path in the diff (reckon/crew/review.py, reckon/crew/reports.py, tests/test_a_claimless_finding_is_not_a_finding.py, tests/test_a_claimless_review_is_refused_at_store.py, tests/test_review_gate_reads_the_hot_set.py, tests/test_review_lifecycle.py and the fragment) is inside the manifest's declared eight-path manifest scope, two of them granted by resume rather than the original fence.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control at negative-control.log reinstates the mutation (claimless_findings returns no entries) and tests/test_a_claimless_review_is_refused_at_store.py:101 and :113 redden, so the guards fail on exactly the regression they defend against.\nSCORE fit: 17\nJUSTIFICATION fit: the refusal reuses the existing message idiom in reckon/crew/review.py:575 and introduces no plan or ticket identifiers, but store_review's docstring at reckon/crew/review.py:2256 still describes only the status refusal it no longer solely raises.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing claimless_findings owner (reckon/crew/review.py:186) to carry an index instead of adding a second predicate, and review_status_refusal (reckon/crew/review.py:575) is the one shared refusal both callers already use.\nFINDING reckon/crew/review.py:2256 follow-on: store_review's docstring documents the status refusal but not the claim refusal it now also raises through review_status_refusal, so a caller reading the docstring would not learn that a claimless record is rejected.\n",
+  "review_run_id": "r-20261015T202313712616-review-of-a-claimless-review-is-refused-at-store-9156e3866b53",
+  "reviewed_base_sha": "f3600a844a5ddc1a8d49fe5c0e146b9dd970303f",
+  "reviewed_head_sha": "9156e3866b5357b90b4c201060d901a95fbbb843",
+  "reviewed_run_id": "r-20261015T183541384225-a-claimless-review-is-refused-at-store",
+  "reviewer_run_id": "r-20261015T202313712616-review-of-a-claimless-review-is-refused-at-store-9156e3866b53",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T183541384225-a-claimless-review-is-refused-at-store/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/a-claimless-review-is-refused-at-store",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T20:31:27.079663+00:00",
+  "total": 112
+}
