@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1618"
+  ],
+  "completed_at": "2026-10-15T17:35:59.869Z",
+  "dispatched_at": "2026-10-15T17:17:37Z",
+  "findings": [
+    {
+      "file": "logs/head.txt",
+      "line": "7",
+      "severity": "follow-on",
+      "text": "follow-on: the file the manifest's after_suite names as the head gate log holds an interrupted re-run -- it ends at forty-six progress dots with no summary line and no EXIT= line -- so the head arm's stated result of 124 passed EXIT=0 is corroborated only in the run's stream, not in the record the manifest points at."
+    },
+    {
+      "file": "tests/test_the_follower_lease_uses_the_store_writer.py",
+      "line": "83",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares calls[0][\"path\"] against follower_registration.follower_lease_path(PROJECT, SESSION), so both sides call the same production function and the assertion cannot fail on a regression in that function."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read both commits against base f9750453; 32564db deletes run_paths._write_json_atomically and reroutes the lease call, a092b34 adds the evidence fragment, and nothing else changed.",
+    "done_when": "the plan's done-when requires run_paths.py to keep no private temporary-and-rename writer, with the earlier lease tests in tests/test_a_follower_on_another_node_renews_a_lease.py passing unchanged; the manifest records that gate, tests/test_the_follower_lease_uses_the_store_writer.py:43 asserts the removal, and the named negative control is logged at EXIT=1.",
+    "goal": "the node goal is to route the follower lease write through the repository atomic JSON writer in reckon/_store.py, and reckon/crew/follower_registration.py:110 now calls write_json_atomically imported from reckon._store with the private writer deleted.",
+    "manifest": "read; it records status complete, commits 32564db and a092b34, the head arm 124 passed and the base arm 120 passed both at EXIT=0, and the negative control with its log paths.",
+    "write_paths": "the manifest declares five paths, and every path the diff touches -- reckon/crew/run_paths.py, reckon/crew/follower_registration.py, tests/test_the_follower_lease_uses_the_store_writer.py and docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/the-follower-lease-uses-the-store-writer.html -- is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_follower_lease_uses_the_store_writer.py:60 fails if the lease is written indented or at another mode, and the concurrent-reader case at line 90 is shown to fire by the negative control.",
+    "evidence": "the base arm (logs/base.txt, 120 passed EXIT=0) and the negative control (logs/negative-control.txt, EXIT=1) are complete, but logs/head.txt no longer carries the head arm's summary line.",
+    "fit": "reckon/crew/follower_registration.py:17 imports the store writer directly rather than through the local re-export, and the call passes indent and mode explicitly where reckon/_store.py:526-528 defaults differ.",
+    "goal_fidelity": "reckon/crew/follower_registration.py:110 routes the lease through reckon/_store.py:521 write_json_atomically with indent=None and mode=0o644, which is the plan deliverable exactly.",
+    "reuse": "the landed change consolidates onto the existing owner reckon/_store.py:521 write_json_atomically and deletes the duplicate run_paths._write_json_atomically, so no capability is forked.",
+    "scope_discipline": "the diff touches only reckon/crew/run_paths.py, reckon/crew/follower_registration.py, tests/test_the_follower_lease_uses_the_store_writer.py and the declared evidence fragment, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to route the follower lease write through the repository atomic JSON writer in reckon/_store.py, and reckon/crew/follower_registration.py:110 now calls write_json_atomically imported from reckon._store with the private writer deleted.\nVERDICT done_when: the plan's done-when requires run_paths.py to keep no private temporary-and-rename writer, with the earlier lease tests in tests/test_a_follower_on_another_node_renews_a_lease.py passing unchanged; the manifest records that gate, tests/test_the_follower_lease_uses_the_store_writer.py:43 asserts the removal, and the named negative control is logged at EXIT=1.\nVERDICT write_paths: the manifest declares five paths, and every path the diff touches -- reckon/crew/run_paths.py, reckon/crew/follower_registration.py, tests/test_the_follower_lease_uses_the_store_writer.py and docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/the-follower-lease-uses-the-store-writer.html -- is inside them.\nVERDICT manifest: read; it records status complete, commits 32564db and a092b34, the head arm 124 passed and the base arm 120 passed both at EXIT=0, and the negative control with its log paths.\nVERDICT diff: read both commits against base f9750453; 32564db deletes run_paths._write_json_atomically and reroutes the lease call, a092b34 adds the evidence fragment, and nothing else changed.\nCALL_SITES: reckon/crew_follow_commands.py:1618\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/follower_registration.py:110 routes the lease through reckon/_store.py:521 write_json_atomically with indent=None and mode=0o644, which is the plan deliverable exactly.\nSCORE evidence: 15\nJUSTIFICATION evidence: the base arm (logs/base.txt, 120 passed EXIT=0) and the negative control (logs/negative-control.txt, EXIT=1) are complete, but logs/head.txt no longer carries the head arm's summary line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/run_paths.py, reckon/crew/follower_registration.py, tests/test_the_follower_lease_uses_the_store_writer.py and the declared evidence fragment, all inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_follower_lease_uses_the_store_writer.py:60 fails if the lease is written indented or at another mode, and the concurrent-reader case at line 90 is shown to fire by the negative control.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/follower_registration.py:17 imports the store writer directly rather than through the local re-export, and the call passes indent and mode explicitly where reckon/_store.py:526-528 defaults differ.\nSCORE reuse: 20\nJUSTIFICATION reuse: the landed change consolidates onto the existing owner reckon/_store.py:521 write_json_atomically and deletes the duplicate run_paths._write_json_atomically, so no capability is forked.\nFINDING logs/head.txt:7 follow-on: the file the manifest's after_suite names as the head gate log holds an interrupted re-run -- it ends at forty-six progress dots with no summary line and no EXIT= line -- so the head arm's stated result of 124 passed EXIT=0 is corroborated only in the run's stream, not in the record the manifest points at.\nFINDING tests/test_the_follower_lease_uses_the_store_writer.py:83 follow-on: the assertion compares calls[0][\"path\"] against follower_registration.follower_lease_path(PROJECT, SESSION), so both sides call the same production function and the assertion cannot fail on a regression in that function.",
+  "review_run_id": "r-20261015T171654194987-review-of-the-follower-lease-uses-the-store-writer-a092b3412659",
+  "reviewed_base_sha": "f9750453628b1fe25ced67547fa3d1a46117fac3",
+  "reviewed_head_sha": "a092b34126592d3d0f9db366837f68918414b890",
+  "reviewed_run_id": "r-20261015T165405320126-the-follower-lease-uses-the-store-writer",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T17:37:27.029350+00:00",
+  "total": 112
+}
