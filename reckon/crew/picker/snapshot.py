@@ -815,11 +815,26 @@ def candidates(
         gate = _dispatch_lane_gate(backend)
         if gate["state"] in {"paused", "unreadable"}:
             reasons.append("lane-gate: " + gate["state"])
+        # The session's own worker figure is read for every lane whose router
+        # publishes a document, not only the local one: a metered lane's router
+        # grants or withholds the session's workers exactly as the local one
+        # does, and a route that lands on a lane granting this session nothing
+        # is the case the guidance and the re-ask below exist to catch. The
+        # figure is read through the one allowance helper the dispatch path
+        # reads, so there is no second reader of it.
         slots, congestion, _ = (
             _lane(backend, request.session, lane_documents)
-            if local
+            if local or backend.get("lane_document")
             else (None, None, {})
         )
+        # A lift in force on the lane's budget group is a fact of the lane's
+        # account, so it rides beside the router's occupancy and is read from
+        # the same group allowance the candidate's budget facts come from.
+        lane_lift = (
+            group_allowance.get("lift") if isinstance(group_allowance, Mapping) else None
+        )
+        if lane_lift:
+            congestion = {**(congestion or {}), "lift": lane_lift}
         # Already-excluded candidates need no repository census or serving probe.
         context_block = None
         if not reasons:

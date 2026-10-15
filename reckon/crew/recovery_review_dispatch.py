@@ -1076,20 +1076,48 @@ def _review_backend_excluded(name: str, config: Mapping[str, Any]) -> bool:
     return False
 
 
+def _lifted_backends(config: Mapping[str, Any]) -> set[str]:
+    """Backends whose declared budget group is under a lift in force now.
+
+    A lift is granted to spend a window faster than its configured pace, so a
+    lane under one is a lane the fleet means to use: an exclusion written to
+    keep a review off a lane it has been refused for is not meant to withhold
+    the very lane the operator has opened, so the exclusion is read against the
+    lifted set rather than the configured one. The lift is resolved through the
+    one resolver the pace path reads, so expiry is judged in one place and this
+    reader cannot disagree with the dispatch about whether a lift still stands.
+    """
+    from reckon.crew import budget_group, budget_lift
+
+    moment = datetime.now(UTC)
+    groups = budget_group.declared_groups(config)
+    lifted: set[str] = set()
+    for group, members in groups.items():
+        block = budget_lift.effective_budget(
+            config, group=str(group), readings=None, now=moment
+        )
+        if block.get("lift_id"):
+            lifted.update(str(member) for member in members)
+    return lifted
+
+
 def _review_excluded_backends(config: Mapping[str, Any]) -> set[str]:
     """Backends the flight configuration removes from review routing.
 
     Read as a rule about which lanes may carry a review rather than a
     preference: it is consulted before any ordering, so a fallback cannot walk
-    around it.
+    around it. A lane under a lift in force is not excluded: a lifted lane is
+    one the fleet means to spend, and its options are offered to a review with
+    the guidance to prefer the lane's cheaper models.
     """
     raw = config.get(REVIEW_EXCLUDED_BACKENDS_KEY)
     names = {str(name).strip() for name in raw or () if str(name).strip()}
-    return names | {
+    excluded = names | {
         str(name)
         for name in config.get("backends") or {}
         if _review_backend_excluded(str(name), config)
     }
+    return excluded - _lifted_backends(config)
 
 
 def _review_in_harness_backends(config: Mapping[str, Any]) -> set[str]:
@@ -1151,7 +1179,7 @@ def _ordered_review_lanes(
     for preferred in (owning, local):
         if (
             preferred
-            and not _review_backend_excluded(preferred, config)
+            and preferred not in excluded
             and preferred not in in_harness
             and preferred not in ordered
         ):

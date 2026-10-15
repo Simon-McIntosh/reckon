@@ -293,6 +293,7 @@ def dispatch_picker_selection(
     authority: Mapping[str, Any] | None = None,
     authority_error: str | None = None,
     stage_ms: dict[str, float | None] | None = None,
+    _allow_reask: bool = True,
 ) -> dict[str, Any]:
     """Ask the picker without letting its latency or failure stop dispatch.
 
@@ -465,7 +466,18 @@ def dispatch_picker_selection(
         selection = {**result["selection"], "stage_ms": dict(stages)}
         if authority_error:
             selection["authority_error"] = authority_error
-        return selection
+        return _reask_off_zero_slot_lane(
+            selection,
+            node=node,
+            config=config,
+            project=project,
+            repo=repo,
+            session=session,
+            comment=comment,
+            authority=authority,
+            authority_error=authority_error,
+            allow=_allow_reask,
+        )
     error = result.get("error") or "picker returned no selection"
     reason = error
     if error == "timeout":
@@ -484,6 +496,149 @@ def dispatch_picker_selection(
         authority_error=authority_error,
         stage_ms=stages,
     )
+
+
+# The specification levels a route must not be swallowed by at a lane granting
+# the session no worker. A node whose design is fixed and only the
+# implementation remains (exact), and one whose implementation is derived from a
+# settled design (guided), are the well-defined work the lead's rule sends to a
+# lane with room. An open node must also choose its design, so a hold for the
+# local lane is a legitimate answer for it and is left alone.
+_ZERO_SLOT_REASK_ROLES = ("implement", "test")
+_ZERO_SLOT_REASK_SPEC_LEVELS = ("exact", "guided")
+
+
+def _zero_slot_lane(selection: Mapping[str, Any], config: Mapping[str, Any]) -> str:
+    """The lane a route landed on that grants this session no worker, or ``""``.
+
+    The figure is the one the state offered Jev, read back from the candidate it
+    chose: the session's own worker slots as the lane's router published them.
+    Zero or below is the router granting no room; a null figure is no published
+    reading, which is unknown rather than a hold, so neither a refusal nor an
+    unknown figure triggers a re-ask.
+    """
+    if str(selection.get("action") or "") != "route":
+        return ""
+    backend = str(selection.get("backend") or "")
+    if not backend:
+        return ""
+    for row in selection.get("offered") or ():
+        if not isinstance(row, Mapping) or str(row.get("backend")) != backend:
+            continue
+        slots = row.get("worker_slots")
+        if isinstance(slots, bool) or not isinstance(slots, (int, float)):
+            return ""
+        if slots > 0:
+            return ""
+        return str(row.get("family") or row.get("lane") or backend)
+    return ""
+
+
+def _lane_backend_names(config: Mapping[str, Any], lane: str) -> set[str]:
+    """The configured backends belonging to one lane, read as the state reads it.
+
+    A candidate's lane is the local marker or the backend's resolved dialect,
+    so the same derivation is used here rather than a backend's declared
+    ``lane`` key, which a configuration need not set and which would leave a
+    metered lane's backends behind unexcluded.
+    """
+    from reckon import _backends
+
+    names: set[str] = set()
+    for name, backend in (config.get("backends") or {}).items():
+        if not isinstance(backend, Mapping):
+            continue
+        local = str(name) == config.get("local_backend")
+        try:
+            family = "local" if local else _backends.dialect_for(backend).name
+        except _backends.BackendError:
+            family = str(backend.get("launch") or name)
+        if family == lane:
+            names.add(str(name))
+    return names
+
+
+def _config_without_lane(config: Mapping[str, Any], lane: str) -> dict[str, Any]:
+    """The configuration with one lane's backends removed from the offering."""
+    excluded = _lane_backend_names(config, lane)
+    return {
+        **config,
+        "backends": {
+            name: backend
+            for name, backend in (config.get("backends") or {}).items()
+            if str(name) not in excluded
+        },
+    }
+
+
+def _ask_summary(selection: Mapping[str, Any]) -> dict[str, Any]:
+    """One recorded ask, compact enough to keep both beside each other."""
+    return {
+        "action": selection.get("action"),
+        "backend": selection.get("backend"),
+        "lane": selection.get("family"),
+        "model": selection.get("model"),
+        "confidence": selection.get("confidence"),
+        "probabilities": dict(selection.get("probabilities") or {}),
+        "offered": [
+            row.get("backend") for row in selection.get("offered") or () if isinstance(row, Mapping)
+        ],
+    }
+
+
+def _reask_off_zero_slot_lane(
+    selection: Mapping[str, Any],
+    *,
+    node: Any,
+    config: Mapping[str, Any],
+    project: str,
+    repo: Path,
+    session: str,
+    comment: str,
+    authority: Mapping[str, Any] | None,
+    authority_error: str | None,
+    allow: bool,
+) -> dict[str, Any]:
+    """Re-ask Jev once with a zero-slot lane excluded, for well-defined work.
+
+    A route that lands on a lane whose router grants this session no worker is
+    the case that queued well-defined work behind a full lane while another lane
+    had room. Jev is asked a second time with that lane left out of the
+    offering, so the answer it gives with the lane's pressure in view is not the
+    only thing it was able to say; the second answer stands, and both asks are
+    recorded on the selection so the decision is visible. A node that may choose
+    its own design, one already at the re-ask, and a hold or refusal are left
+    exactly as the first ask answered them.
+    """
+    if not allow:
+        return dict(selection)
+    lane = _zero_slot_lane(selection, config)
+    if not lane:
+        return dict(selection)
+    role = str(getattr(node, "role", "") or "")
+    if role not in _ZERO_SLOT_REASK_ROLES:
+        return dict(selection)
+    spec_level = str(getattr(node, "spec_level", "") or "")
+    if spec_level not in _ZERO_SLOT_REASK_SPEC_LEVELS:
+        return dict(selection)
+    second = dispatch_picker_selection(
+        node=node,
+        config=_config_without_lane(config, lane),
+        project=project,
+        repo=repo,
+        session=session,
+        comment=comment,
+        authority=authority,
+        authority_error=authority_error,
+        _allow_reask=False,
+    )
+    return {
+        **second,
+        "action": second.get("action") or "refuse",
+        "excluded_zero_slot_lane": lane,
+        "reissued": True,
+        "asks": [_ask_summary(selection), _ask_summary(second)],
+    }
 
 
 def _write_existing_pointer(run_id: str, record: Mapping[str, Any]) -> bool:
