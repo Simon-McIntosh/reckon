@@ -129,10 +129,11 @@ def _resolve_lane_config(pointer: Mapping[str, Any]) -> Mapping[str, Any]:
     from reckon import flight as flight_module
     from reckon.crew_dispatch_commands import _resolved_flight
 
-    options = dict(pointer.get("dispatch_options") or {})
-    overrides = tuple(options.get("overrides") or ())
     config = _resolved_flight(
-        flight_module, str(pointer["project"]), pointer.get("repo"), overrides
+        flight_module,
+        str(pointer["project"]),
+        pointer.get("repo"),
+        runs.recorded_dispatch_overrides(pointer),
     )
     if pointer.get("local"):
         config = flight_module.select_local_backend(config)

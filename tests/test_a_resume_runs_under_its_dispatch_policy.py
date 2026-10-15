@@ -17,7 +17,8 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew, crew_run_commands
+from reckon import crew
+from reckon.crew import runs
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
@@ -183,13 +184,13 @@ def test_both_move_commands_read_the_overrides_through_one_helper(
 ) -> None:
     """The recorded-overrides reading is one helper, called by both commands."""
     calls: list[dict] = []
-    real = crew_run_commands._recorded_dispatch_overrides
+    real = runs.recorded_dispatch_overrides
 
     def spy(record: dict):
         calls.append(record)
         return real(record)
 
-    monkeypatch.setattr(crew_run_commands, "_recorded_dispatch_overrides", spy)
+    monkeypatch.setattr(runs, "recorded_dispatch_overrides", spy)
     _capture_resolution(monkeypatch)
     _record_run(config_home, "r-one-helper", overrides=[OVERRIDE])
     runner = CliRunner()
