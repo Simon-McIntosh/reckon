@@ -25,7 +25,7 @@
   <title>A Held Session Routes To A Serving Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -287,7 +287,10 @@
     <div class="r-comment-body"><p>§7 landed. <code>crew resume</code>, with or without <code>--backend</code>, now resolves its flight config with the run's recorded overrides, through the helper <code>crew redispatch</code> also uses. Merged as <code>b17625681</code>. Gate: 298 passed at head against 295 at base over the 8 importing test files, with no failures. Review: 105/120. The third copy of the reading, in <code>queue_admission</code>, is §8. <a href="/reckon/evidence/archive/a-held-session-routes-to-a-serving-lane-landed.html#s7">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261015T150930088765-a-resume-runs-under-its-dispatch-policy" data-who="reckon-build" data-when="2026-10-15T15:39:34.473Z">
-    <div class="r-comment-body"><p>crew_resume now resolves its flight config through the run&#x27;s recorded dispatch_options.overrides using one shared helper (_recorded_dispatch_overrides) that crew_redispatch also calls, so a run dispatched with --set backends.alpha.model=overridden-model resolves that value on crew resume --backend, plain crew resume --print-only and crew redispatch --print-only, and a run with no recorded overrides resolves the base value on all three; new test 3 passed at head, 2 failed / 1 passed under the empty-override negative control, gate 295 passed at base and 298 at head with zero added failures.</p></div>
+    <div class="r-comment-body"><p>crew_resume now resolves its flight config through the run's recorded dispatch_options.overrides using one shared helper (_recorded_dispatch_overrides) that crew_redispatch also calls, so a run dispatched with --set backends.alpha.model=overridden-model resolves that value on crew resume --backend, plain crew resume --print-only and crew redispatch --print-only, and a run with no recorded overrides resolves the base value on all three; new test 3 passed at head, 2 failed / 1 passed under the empty-override negative control, gate 295 passed at base and 298 at head with zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261015T154055797301-review-of-a-resume-runs-under-its-dispatch-policy-d3391487555c" data-who="reckon-build" data-when="2026-10-15T15:49:12.154Z">
+    <div class="r-comment-body"><p>reviewed run r-20261015T150930088765-a-resume-runs-under-its-dispatch-policy at base 71ff4fb9..head d33914875: scores goal_fidelity 20, evidence 14, scope_discipline 20, durability 18, fit 19, reuse 14 (total 105); two follow-on findings — the recorded ruff logs predate the fix commit and show findings the head no longer has, and reckon/crew/queue_admission.py:132 still inlines the dispatch_options.overrides read the new helper owns; the landed change resolves crew resume&#x27;s flight config through the one helper crew redispatch calls and its new test reddens under the declared empty-override control.</p></div>
 </div>
 </section>
 </main>

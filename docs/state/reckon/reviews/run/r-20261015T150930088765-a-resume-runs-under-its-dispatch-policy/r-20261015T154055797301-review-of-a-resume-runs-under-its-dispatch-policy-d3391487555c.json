@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "71ff4fb9d5f67f61bcf8ab99b33cc4bf4b416639",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1307 crew_resume",
+    "reckon/crew_run_commands.py:1424 crew_redispatch",
+    "reckon/crew/dispatch_sessions.py:1416 change_lane",
+    "reckon/crew/dispatch_sessions.py:1008 resume_plan",
+    "reckon/crew/resumption.py:1056 _resume"
+  ],
+  "completed_at": "2026-10-15T15:49:12.154Z",
+  "dispatched_at": "2026-10-15T15:41:26Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T150930088765-a-resume-runs-under-its-dispatch-policy/logs/ruff-check.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded ruff-check.log and ruff-format.log are stamped 17:19:44, before the fix commit 38d3dfeb7 at 17:21:52, and show I001, E402 and W292 in the new test file plus a format diff, so they evidence the opposite of the done_when's no-added-findings clause; this review re-ran ruff check and format --check on the committed blob at head and both pass (only the pre-existing RET501 at reckon/crew_run_commands.py:1050 remains at base), so the head is clean but the stored log is not its evidence and carries no revision header."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "132",
+      "severity": "follow-on",
+      "text": "follow-on: _resolve_lane_config reads (pointer.get(\"dispatch_options\") or {}).get(\"overrides\") and resolves the flight config, the same capability the new _recorded_dispatch_overrides now owns, so two copies of the reading remain; the file is outside this node's declared write paths, so consolidation is a follow-on rather than a defect in the landed change."
+    }
+  ],
+  "head_log_revision": "38d3dfeb7a05737be6dcbe709d035aac580aa127",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 71ff4fb9; 38d3dfeb7 adds _recorded_dispatch_overrides and swaps crew_resume's empty override tuple for it while crew_redispatch calls the same helper, plus the new test file; d33914875 adds only the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_resume_runs_under_its_dispatch_policy.py on a temp config home (3 passed at head) and a base/head suite delta (295 passed at base, 298 at head, 0 added failures) with a logged negative control; its third clause, that ruff check and ruff format --check add no findings on the changed Python files against base, is evidenced only by logs/ruff-check.log and logs/ruff-format.log stamped 17:19:44, before the fix commit, showing three findings in the new test file that the head no longer has.",
+    "goal": "the node goal is to resolve crew resume's flight config from the run's recorded dispatch overrides through the reading crew redispatch uses; reckon/crew_run_commands.py:21 declares _recorded_dispatch_overrides and :1307 calls it in crew_resume, the same helper :1424 crew_redispatch calls.",
+    "manifest": "read; status complete; two commits 38d3dfeb7 and d33914875; it records the base and head arms with their logs, the negative control with its log, measurement_module and measurement_cwd, and the new test's 3 passed, and states no ruff result.",
+    "write_paths": "the manifest declares reckon/crew_run_commands.py, tests/test_a_resume_runs_under_its_dispatch_policy.py, the evidence fragment and a figures dir; git diff --stat 71ff4fb9..d33914875 lists the first three and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_resume_runs_under_its_dispatch_policy.py:131 reddens under the declared empty-override mutation (2 failed, 1 passed, EXIT=1) and asserts resolved values from flight config rather than the input, while :198 guards the one-helper requirement only by call count.",
+    "evidence": "the pytest clause and the base/head delta are recorded and negative-controlled, but logs/ruff-check.log and logs/ruff-format.log predate commit 38d3dfeb7 and show three findings in tests/test_a_resume_runs_under_its_dispatch_policy.py that head no longer has, so the done_when's ruff clause has no log evidencing the landed state.",
+    "fit": "the helper at reckon/crew_run_commands.py:21 follows the module's Mapping-typed private-function style and carries no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew_run_commands.py:21 _recorded_dispatch_overrides now feeds both crew_resume (:1307) and crew_redispatch (:1424), so a resume resolves the same recorded overrides a redispatch does.",
+    "reuse": "the helper consolidates the two inline readings of dispatch_options.overrides into one owner for its file, but reckon/crew/queue_admission.py:132 still inlines the same reading for a queued run, unconsolidated and outside this node's declared write scope.",
+    "scope_discipline": "git diff --stat 71ff4fb9..d33914875 lists only reckon/crew_run_commands.py, tests/test_a_resume_runs_under_its_dispatch_policy.py and the declared evidence fragment."
+  },
+  "node": "review-of-a-resume-runs-under-its-dispatch-policy-d3391487555c",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to resolve crew resume's flight config from the run's recorded dispatch overrides through the reading crew redispatch uses; reckon/crew_run_commands.py:21 declares _recorded_dispatch_overrides and :1307 calls it in crew_resume, the same helper :1424 crew_redispatch calls.\nVERDICT done_when: the done_when names tests/test_a_resume_runs_under_its_dispatch_policy.py on a temp config home (3 passed at head) and a base/head suite delta (295 passed at base, 298 at head, 0 added failures) with a logged negative control; its third clause, that ruff check and ruff format --check add no findings on the changed Python files against base, is evidenced only by logs/ruff-check.log and logs/ruff-format.log stamped 17:19:44, before the fix commit, showing three findings in the new test file that the head no longer has.\nVERDICT write_paths: the manifest declares reckon/crew_run_commands.py, tests/test_a_resume_runs_under_its_dispatch_policy.py, the evidence fragment and a figures dir; git diff --stat 71ff4fb9..d33914875 lists the first three and nothing outside them.\nVERDICT manifest: read; status complete; two commits 38d3dfeb7 and d33914875; it records the base and head arms with their logs, the negative control with its log, measurement_module and measurement_cwd, and the new test's 3 passed, and states no ruff result.\nVERDICT diff: read commit by commit against 71ff4fb9; 38d3dfeb7 adds _recorded_dispatch_overrides and swaps crew_resume's empty override tuple for it while crew_redispatch calls the same helper, plus the new test file; d33914875 adds only the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:1307 crew_resume, reckon/crew_run_commands.py:1424 crew_redispatch, reckon/crew/dispatch_sessions.py:1416 change_lane, reckon/crew/dispatch_sessions.py:1008 resume_plan, reckon/crew/resumption.py:1056 _resume\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:21 _recorded_dispatch_overrides now feeds both crew_resume (:1307) and crew_redispatch (:1424), so a resume resolves the same recorded overrides a redispatch does.\nSCORE evidence: 14\nJUSTIFICATION evidence: the pytest clause and the base/head delta are recorded and negative-controlled, but logs/ruff-check.log and logs/ruff-format.log predate commit 38d3dfeb7 and show three findings in tests/test_a_resume_runs_under_its_dispatch_policy.py that head no longer has, so the done_when's ruff clause has no log evidencing the landed state.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 71ff4fb9..d33914875 lists only reckon/crew_run_commands.py, tests/test_a_resume_runs_under_its_dispatch_policy.py and the declared evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_resume_runs_under_its_dispatch_policy.py:131 reddens under the declared empty-override mutation (2 failed, 1 passed, EXIT=1) and asserts resolved values from flight config rather than the input, while :198 guards the one-helper requirement only by call count.\nSCORE fit: 19\nJUSTIFICATION fit: the helper at reckon/crew_run_commands.py:21 follows the module's Mapping-typed private-function style and carries no plan, ticket or version label.\nSCORE reuse: 14\nJUSTIFICATION reuse: the helper consolidates the two inline readings of dispatch_options.overrides into one owner for its file, but reckon/crew/queue_admission.py:132 still inlines the same reading for a queued run, unconsolidated and outside this node's declared write scope.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T150930088765-a-resume-runs-under-its-dispatch-policy/logs/ruff-check.log:1 follow-on: the recorded ruff-check.log and ruff-format.log are stamped 17:19:44, before the fix commit 38d3dfeb7 at 17:21:52, and show I001, E402 and W292 in the new test file plus a format diff, so they evidence the opposite of the done_when's no-added-findings clause; this review re-ran ruff check and format --check on the committed blob at head and both pass (only the pre-existing RET501 at reckon/crew_run_commands.py:1050 remains at base), so the head is clean but the stored log is not its evidence and carries no revision header.\nFINDING reckon/crew/queue_admission.py:132 follow-on: _resolve_lane_config reads (pointer.get(\"dispatch_options\") or {}).get(\"overrides\") and resolves the flight config, the same capability the new _recorded_dispatch_overrides now owns, so two copies of the reading remain; the file is outside this node's declared write paths, so consolidation is a follow-on rather than a defect in the landed change.\n",
+  "review_run_id": "r-20261015T154055797301-review-of-a-resume-runs-under-its-dispatch-policy-d3391487555c",
+  "reviewed_base_sha": "71ff4fb9d5f67f61bcf8ab99b33cc4bf4b416639",
+  "reviewed_head_sha": "d3391487555c3ad817d1fd90cf69a79be538dbcb",
+  "reviewed_run_id": "r-20261015T150930088765-a-resume-runs-under-its-dispatch-policy",
+  "reviewer": null,
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T15:46:57.727864+00:00",
+  "total": 105
+}
