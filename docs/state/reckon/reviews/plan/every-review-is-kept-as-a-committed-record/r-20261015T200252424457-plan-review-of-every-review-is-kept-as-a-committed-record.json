@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T20:24:19.118Z",
+  "dispatched_at": "2026-10-15T20:15:30Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/every-review-is-kept-as-a-committed-record/r-20261015T200252424457-plan-review-of-every-review-is-kept-as-a-committed-record/plan.html:171",
+      "id": "wiring-1",
+      "reason": "the plan declares work its own dispatch machinery cannot reach, so \u00a718 goes unbuilt until a reader spots the declaration; it also needs its write scope reconciled before dispatch, since \u00a716 and \u00a718 both write `reckon/crew/review.py` and cannot run concurrently.",
+      "text": "\u00a718 is declared implementable in `plan-section-declarations` (snapshot line 23) and carries `data-status=\"implementable\"`, but no followup and no gate dispatches it: the only open followups are f-erkc-013 (which covers \u00a79's figures) and f-erkc-017, whose body and prompt name only \u00a716 and \u00a717, so a dispatcher reading the plan's own build chain would never reach \u00a718",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f8c75e0e545d39e3a163ec8fbe36f4bfdb95155878fb401fae61d6a111abc9c3",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 140,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T200252424457-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "b093b74495e84318f5acc29e2cd2a13c7e53e055",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited host record `~/.config/reckon/crew/reviews/imas-efit/r-20261015T184215313488-cspr-outline-reuse-gate.json`, `added_failures_from_gate_logs` and `_pytest_failure_ids` in `reckon/crew/review.py`, and `tests/test_review_node_id_canonical_form.py` all resolve.",
+    "done_when": "pass \u2014 \u00a718's done-when gives concrete counts and ids and names a negative control (with the ctest reader removed the two-failure case gives `(0, [])`), a state only the new reader changes.",
+    "evidence_paths": "pass \u2014 \u00a718's control log lives under the run directory and its write paths are repository source and test files.",
+    "naming": "pass \u2014 \u00a718 adds no plan labels, ticket numbers or changelog prose, and its identifiers describe the mechanism rather than a tracker entry.",
+    "reasoning": "pass \u2014 the stated root cause reproduces (review.py:1993-1996 subtracts two `_pytest_failure_ids` sets, `_GATE_FAILURE_RE` at review.py:1251 matches only `FAILED`/`ERROR`-prefixed lines so a ctest log yields the empty set on both sides, and the cited record holds `added_failure_count` 0 with `added_failure_ids` []); the described mechanism yields a nonzero added count for a ctest pair, and the path runs in production through `annotate_added_failures` at review.py:2199, as the stored record itself shows.",
+    "single_goal": "pass \u2014 \u00a718 carries one deliverable: the ctest arm of the added-failure extractor.",
+    "wiring": "a finding \u2014 \u00a718 is declared implementable in `plan-section-declarations` but no followup and no gate dispatches it, unlike \u00a79, \u00a716 and \u00a717."
+  },
+  "section_digests": {
+    "_document": "bf3dc4c437d91d925e564aa8acff3f64d675d8b45c21972198929af8820553c4",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "bb85d80dcb9e0286d21a8ca6acd3af79e736c64c84b5ac85569fc6ce2c73863b",
+    "s13": "18a2d10f1e3c66be8277b7b4ef2922db7611cded7589553da5347b9a1ee5cd0f",
+    "s14": "90fd381b5f80417031410428331e779266feb4e517d89e5237d29cbe1c5e4700",
+    "s15": "72f678eb5f0bc62870da1cc4637f6db55365548aa9b52f46884cc0b3551a6ae7",
+    "s16": "7a5788c2a3fa1a2f0029d46feab7c3ed8a6b2a35c6ca9788fbe9911d5ab9cb56",
+    "s17": "86a993485a8a8461fd1e5e336bf8623e585cd4540daa1e5b5e78af2a0c172ce5",
+    "s18": "c89ae3a282a47cc0790b201cd56e732fc633876a1f1bd4dea1ae9521bd21574a",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "85877b77c395ca8a1482bef5887cfc72cbf6109174dba2c01265aa015a906d73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T20:24:24.996956+00:00"
+}
