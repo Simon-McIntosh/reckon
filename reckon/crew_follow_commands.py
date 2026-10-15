@@ -449,10 +449,45 @@ FOLLOWER_END_EVENT = "follower-end"
 FOLLOWER_SETTLE_EVENT = "follower-settle"
 
 
-# How often a follower allowed to settle samples its session's population. The
-# scan is a live-pointer read and the wait pass is fast, so it is throttled to
-# this cadence rather than paid on every pass.
-FOLLOWER_SETTLE_INTERVAL_SECONDS = 1.0
+# How long a follower's population must hold no unfinished run before the pane
+# settles. A dispatch asks its session's host for a follower before it
+# publishes the run's pointer, and an admission handover -- the queued
+# request's pointer removed, the admitted run's pointer not yet written --
+# lasts as long as the dispatch that builds the admitted run's worktree. The
+# grace bounds that handover, so a run admitted inside it keeps the pane
+# rather than being drawn on a follower that has already left.
+FOLLOWER_SETTLE_GRACE_SECONDS = 120.0
+
+
+# A caller that runs a follower of its own may name the grace for that follower
+# through this variable. It exists for the caller that drives a real follower end
+# to end and cannot wait two minutes for a drain it arranged itself. Unset, the
+# constant above is the grace, so production and every ordinary child keep it.
+FOLLOWER_SETTLE_GRACE_ENV = "RECKON_FOLLOWER_SETTLE_GRACE"
+
+
+def _settle_grace_default() -> float:
+    """The grace a follower uses when its caller names none.
+
+    A value the variable cannot parse is the constant rather than an error: the
+    grace bounds how long a pane is held open, and a follower that refused to run
+    because its environment carried a typo would take the pane down with it.
+    """
+    raw = os.environ.get(FOLLOWER_SETTLE_GRACE_ENV, "").strip()
+    if not raw:
+        return FOLLOWER_SETTLE_GRACE_SECONDS
+    try:
+        return float(raw)
+    except ValueError:
+        return FOLLOWER_SETTLE_GRACE_SECONDS
+
+
+# How often a follower allowed to settle samples its session's population while
+# the population is live. The scan is a live-pointer read and the wait pass is
+# fast, so it is throttled rather than paid on every pass. It is also the cap
+# on the sampling cadence, so an empty population is noticed soon after it
+# drains and the grace measures the emptiness rather than the poll.
+FOLLOWER_SETTLE_SAMPLE_SECONDS = 1.0
 
 
 FOLLOWER_RESUME_EVENT = "follower-resume"
@@ -1266,7 +1301,7 @@ def _follow_watch_lines(
     producer_reload_window: float | None = None,
     reloaded_in_place: bool = False,
     settle: bool = False,
-    settle_interval: float = FOLLOWER_SETTLE_INTERVAL_SECONDS,
+    settle_interval: float | None = None,
 ):
     """Yield this follower's transitions for as long as its session lives.
 
@@ -1346,11 +1381,15 @@ def _follow_watch_lines(
     # remains, printing one idle line. ``saw_live`` is the hinge -- a dispatch
     # asks the host for this follower before it publishes the run's pointer, so
     # a follower that settled on its first empty reading would leave before its
-    # own run appeared. Only a fleet this follower has actually seen go empty
-    # settles.
+    # own run appeared. A population that stays empty for the grace settles;
+    # one that refills inside it, an admitted run above all, does not.
     settled = False
     saw_live = False
     last_live_at: float | None = None
+    # When the population was first seen empty, so the grace is measured
+    # against the drain rather than against the poll that happened to notice
+    # it. Cleared by any sighting of unfinished work.
+    settle_empty_since: float | None = None
     settle_sampled_at: float | None = None
     # The sessions whose work this pane carries: its own, plus each one it was
     # asked to observe. A run of any other session is work this follower never
@@ -1360,21 +1399,40 @@ def _follow_watch_lines(
     def _is_live(name: str | None) -> bool:
         return _population_has_live_work(project, session=name)
 
+    # Resolved once per arming: an explicit interval from a caller that drives
+    # this generator itself, otherwise the module's grace, which a caller that
+    # runs a follower as a child may name through its environment.
+    grace = (
+        _settle_grace_default() if settle_interval is None else float(settle_interval)
+    )
+
     def _check_settle() -> None:
         """End this arming when the work this pane carries has drained.
 
         The judgement is ``_population_has_live_work``'s, not one derived here:
         the same call a producer stop is reported against. It is sampled on a
         cadence because a settle costs a live-pointer scan.
+
+        One empty reading does not settle the pane. An admission handover
+        leaves the session with no unfinished run for as long as the dispatch
+        adopting a queued request takes to build the admitted run's worktree
+        and publish its pointer, so the pane ends only once its population has
+        held nothing unfinished for the grace. A run
+        that appears inside the grace, an admitted run above all, clears the
+        emptiness and keeps the pane.
         """
-        nonlocal settled, saw_live, last_live_at, settle_sampled_at
+        nonlocal settled, saw_live, last_live_at, settle_empty_since
+        nonlocal settle_sampled_at
         if not settle or settled:
             return
         moment = clock()
-        if (
-            settle_sampled_at is not None
-            and moment - settle_sampled_at < settle_interval
-        ):
+        # The wait pass is fast, so the population is sampled on a cadence
+        # rather than on every pass. The grace bounds that cadence from above,
+        # so a caller that shortens the grace shortens the hold and the poll
+        # together, while the cap keeps an empty population noticed soon after
+        # it drains.
+        cadence = min(grace, FOLLOWER_SETTLE_SAMPLE_SECONDS)
+        if settle_sampled_at is not None and moment - settle_sampled_at < cadence:
             return
         settle_sampled_at = moment
         # The population is the pane's own session plus the sessions it was
@@ -1384,8 +1442,13 @@ def _follow_watch_lines(
         if any(_is_live(name) for name in settle_populations):
             saw_live = True
             last_live_at = time.time()
+            settle_empty_since = None
             return
-        if saw_live:
+        if not saw_live:
+            return
+        if settle_empty_since is None:
+            settle_empty_since = moment
+        if moment - settle_empty_since >= grace:
             settled = True
 
     def _check_consumer() -> None:

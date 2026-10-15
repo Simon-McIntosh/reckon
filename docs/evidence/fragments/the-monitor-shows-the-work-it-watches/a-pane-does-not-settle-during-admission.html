@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s26">
+  <title>Pane settle grace landing</title>
+</head>
+<body>
+<article id="a-pane-does-not-settle-during-admission-landing" data-node="a-pane-does-not-settle-during-admission" data-reckon="landed"></article>
+
+<section>
+  <h3>What changed</h3>
+  <p>The follower's settle judgement ended on its first reading of an empty
+  population, so an admission handover — the queued request's pointer deleted,
+  the admitted run's worktree built, its pointer written only after that — read
+  as the work being finished and the pane left before the admitted run started.
+  The hold is now a bound on that handover: the pane settles only once its
+  population has held no unfinished run for <code>FOLLOWER_SETTLE_GRACE_SECONDS</code>
+  (120 s), replacing the one-second hold. A request still queued is unfinished
+  work in its own right, so a session waiting its turn never settles the pane.</p>
+
+  <figure>
+    <img src="/reckon/figures/the-monitor-shows-the-work-it-watches/a-pane-does-not-settle-during-admission/settle-grace.svg"
+         alt="Two timelines against the fake clock a case advances by hand. Left: a queued request runs to 5 s, a 4.5 s handover holds no pointer, and the admitted run appears at 9.5 s; the pane draws the admitted run and does not settle, while a one-second hold would have settled the pane inside the handover at 6 s. Right: an idle population drains at 5 s and settles once 120 s later.">
+    <figcaption>The grace is measured from the drain, not from the poll. A
+    one-second hold ends the pane inside the handover (left); the two-minute
+    grace carries it across (left) and still settles an idle population once
+    (right).</figcaption>
+  </figure>
+
+  <h3>Gate — the node's own change, at base and at head</h3>
+  <p>Both arms run the test files that import <code>reckon/crew_follow_commands.py</code> —
+  24 at base <code>7dd3203a</code>, 25 at head once this node's own case file exists —
+  with <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest</code>, each to a
+  log under the run directory ending in <code>EXIT=</code>.</p>
+  <table>
+    <thead><tr><th>arm</th><th>result</th><th><code>EXIT=</code></th></tr></thead>
+    <tbody>
+      <tr><td>base <code>7dd3203a</code></td><td>2 failed, 251 passed</td><td>1</td></tr>
+      <tr><td>head <code>451f7c9ca</code></td><td>257 passed, 0 failed</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p>Both base failures are pre-existing and neither reproduces at head — a
+  contended arm-lock bound and a deprecation message, which flake in opposite
+  directions under a full-arm load. <strong>No failure is absent at base and
+  present at head.</strong></p>
+
+  <h3>The real-follower case, and the seam it needed</h3>
+  <p>An earlier head arm showed one failure this change did cause:
+  <code>test_the_real_follower_settles_when_the_host_advertises_it</code> spawns a
+  <em>real</em> follower child through <code>crew follow</code>, and that child took
+  the production grace of 120 s while the case waits <code>SETTLE_BOUND = 20.0</code> s.
+  Shortening the grace for that child was the repair rather than raising the bound,
+  because the two minutes is the deliverable and a bound that outran it would gut the
+  assertion.</p>
+  <p>The grace therefore resolves per arming: an explicit <code>settle_interval</code>
+  argument, then <code>RECKON_FOLLOWER_SETTLE_GRACE</code>, then the constant. The case
+  names a short grace in the child environment it already builds, so its bound measures
+  the follower rather than the grace. Production and every ordinary child take the
+  constant unchanged, and a value the variable cannot parse falls back to it rather
+  than stopping the follower — a follower that refused to run would take the pane with
+  it.</p>
+
+  <h3>Negative control</h3>
+  <p>With <code>FOLLOWER_SETTLE_GRACE_SECONDS</code> restored to the one-second
+  hold, the handover case fails — the pane settled while an admitted run was
+  still being placed — and the arm exits non-zero. Log:
+  <code>negative_control.log</code>, ending <code>EXIT=1</code>.</p>
+
+  <h3>Lint</h3>
+  <p><code>ruff check</code> and <code>ruff format --check</code> add no findings and
+  no formatting diff on the changed Python files against base;
+  <code>reckon/crew_follow_commands.py</code> carries the same two pre-existing
+  findings and the same 14-line formatting diff at both arms, and both test files
+  are clean.</p>
+</section>
+</body>
+</html>
