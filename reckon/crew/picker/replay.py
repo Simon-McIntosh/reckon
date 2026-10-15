@@ -38,19 +38,32 @@ def replay(
     rows = []
     availability_cache = {}
     snapshot_started = time.perf_counter()
-    budget_snapshot = snapshot.budget_view(project, config, repo, records)
+    # A session-scoped lift releases one session's reserves and no other's, so
+    # each dispatch is judged against the view composed for its own session.
+    # One view serves every dispatch sharing a session; a record naming none
+    # reads the session-less view a caller naming no session composes.
+    views: dict[str, dict[str, Any]] = {}
+    for session in _distinct_sessions(recent):
+        views[session] = snapshot.budget_view(
+            project, config, repo, records, session=session
+        )
     shared_inputs = snapshot.routing.shared_verdict_inputs(project, repo)
     snapshot_latency_ms = (time.perf_counter() - snapshot_started) * 1000
+    # The reported view is the one the newest dispatch was judged against: the
+    # single view a one-session replay composes, unchanged from before. A replay
+    # spanning several sessions composes one per session and reports the first
+    # in dispatch order.
+    budget_snapshot = next(iter(views.values()))
     snapshotter = partial(
         snapshot.candidates,
         availability_cache=availability_cache,
-        budget_snapshot=budget_snapshot,
         verdict_inputs=shared_inputs,
     )
     # One docs-tree scan serves every row's plan lookup in this replay.
     with resource_scan_scope():
         for record in recent:
             definition = record.get("node_definition") or {}
+            session = str(record.get("session") or "")
             node = TaskNode(
                 id=str(record.get("node") or record["run_id"]),
                 goal=str(definition.get("goal") or ""),
@@ -67,7 +80,7 @@ def replay(
                 capability=definition.get("capability") or {},
                 estimated_context=int(definition.get("estimated_context") or 0),
                 comment=str(definition.get("comment") or ""),
-                session=str(record.get("session") or ""),
+                session=session,
             )
             selection = pick(
                 request,
@@ -76,7 +89,7 @@ def replay(
                 records=records,
                 snapshotter=snapshotter,
                 verdict_inputs=shared_inputs,
-                budget_snapshot=budget_snapshot,
+                budget_snapshot=views[session],
             )
             rows.append(
                 {
@@ -97,6 +110,25 @@ def replay(
         "rows": rows,
         "summary": _summary(rows, availability_cache, count, snapshot_latency_ms),
     }
+
+
+def _distinct_sessions(records: list[dict[str, Any]]) -> list[str]:
+    """Each session a replayed set names, once, in dispatch order.
+
+    A record naming no session contributes the session-less view, spelled as the
+    empty string the same way a caller naming no session does. Order follows the
+    replayed rows, which arrive newest first, so the first entry is the session
+    the reported view is composed for.
+    """
+
+    sessions: list[str] = []
+    seen: set[str] = set()
+    for record in records:
+        session = str(record.get("session") or "")
+        if session not in seen:
+            seen.add(session)
+            sessions.append(session)
+    return sessions
 
 
 def _summary(
