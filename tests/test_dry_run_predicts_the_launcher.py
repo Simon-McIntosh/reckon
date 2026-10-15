@@ -14,7 +14,9 @@ the prediction applies, with the same exception and the same message.
 
 from __future__ import annotations
 
+import json
 import os
+import time
 from datetime import timedelta
 from pathlib import Path
 
@@ -22,11 +24,11 @@ import pytest
 
 from reckon import crew, ledger
 from reckon.crew.dispatch import BudgetHold, resume_plan
-from reckon.crew.node import CrewError
-from reckon.crew.resumption import _launcher_refusal, sweep
+from reckon.crew.node import LOG_STALE_AFTER_SECONDS, CrewError
+from reckon.crew.resumption import _launcher_refusal, _observed_end_refusal, sweep
 from reckon.crew.runs import _write_json, pointer_path
 from tests.test_budget import _known
-from tests.test_crew_recover import PROJECT, _refused_run, _stated_reset
+from tests.test_crew_recover import PROJECT, _absent_pid, _refused_run, _stated_reset
 
 # The pid a launcher stand-in reports, so a spied launch is recognisable without
 # being executed. Liveness is never faked: a test needing a live process records
@@ -182,3 +184,55 @@ def test_every_guard_the_launcher_applies_is_a_guard_the_prediction_applies(
         assert mirror is not None, f"the prediction missed the {guard!r} guard"
         assert type(mirror) is type(launcher_exc)
         assert str(mirror) == str(launcher_exc)
+
+
+def _run_on_another_host(tmp_path: Path, run_id: str) -> dict:
+    """A run dispatched elsewhere whose stream is still being written.
+
+    The record names another launching host and a pid this machine will never
+    issue, so no process-table answer is available here and the run's own
+    stream is the only evidence about whether its worker is still writing. The
+    assistant turn appended to that stream is what a worker in its first turn
+    leaves behind.
+    """
+    record = _refused_run(tmp_path, run_id)
+    record["launcher_host"] = "a-different-node"
+    record["pid"] = _absent_pid()
+    with Path(record["log_path"]).open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps({"type": "assistant", "text": "still writing"}) + "\n")
+    _write_json(pointer_path(run_id), record)
+    return record
+
+
+def test_the_prediction_reads_a_run_on_another_host_by_its_stream(
+    home: Path, tmp_path: Path
+) -> None:
+    """A worker this host cannot look up is decided by the stream it is writing.
+
+    A run dispatched on another machine carries a pid this process table cannot
+    answer for, so its liveness is unknown here rather than proven gone. The
+    launcher settles that unknown from the run's own stream: an assistant turn
+    written inside the stall window is a worker producing output right now, and
+    a resume would start a second worker beside it. The dry run must report
+    that same refusal, or it predicts a launch the launcher makes.
+    """
+    run_id = "r-20260917T140000000000-node-elsewhere"
+    record = _run_on_another_host(tmp_path, run_id)
+
+    mirror = _launcher_refusal(crew.read_pointer(run_id), config=None)
+    launcher_exc = _observed_end_refusal(crew.read_pointer(run_id))
+
+    assert isinstance(launcher_exc, CrewError), (
+        "the fixture must show a worker writing on the other host"
+    )
+    assert mirror is not None, "the prediction offered a launch the launcher refuses"
+    assert type(mirror) is type(launcher_exc)
+    assert str(mirror) == str(launcher_exc)
+
+    # Past the stall window the same stream shows a worker that wrote and
+    # stopped, so both doors proceed.
+    quiet = time.time() - (LOG_STALE_AFTER_SECONDS + 600)
+    os.utime(record["log_path"], (quiet, quiet))
+
+    assert _observed_end_refusal(crew.read_pointer(run_id)) is None
+    assert _launcher_refusal(crew.read_pointer(run_id), config=None) is None
