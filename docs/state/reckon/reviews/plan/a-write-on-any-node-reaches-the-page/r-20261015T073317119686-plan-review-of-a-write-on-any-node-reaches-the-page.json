@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T07:41:19.055Z",
+  "dispatched_at": "2026-10-15T07:33:54Z",
+  "findings": [
+    {
+      "anchor": "reckon/serve.py:1291",
+      "id": "duplicate_owner-1",
+      "reason": "extending `_head_identity` (adding `.git/index` to its tuple) is the honest change, and a parallel git-ref stat reader drifts from the worktree-aware owner the fleet's own workers depend on.",
+      "text": "the plan proposes to read \"the stat identity of the repository's `.git/index`, `HEAD` and current branch ref,\" but `_head_identity` (serve.py:1291) already reads exactly HEAD and the reference file it names, through `_common_git_directory` (serve.py:1270) so a linked worktree resolves correctly, and returns a tuple documented to \"change exactly when the resolved commit changes\"; `_file_identity` (serve.py:1262) is the existing single-file stat-identity helper the plan's slow \"stat identity of every file\" signal would re-invent; `_dir_identity` (metadata_index.py:563) is the existing per-directory helper the plan does cite",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/serve.py:2782",
+      "id": "duplicate_owner-2",
+      "reason": "as written the central mechanism does not exist; the plan must either route stream notification through `_FleetChangeWatch` (a cross-thread fan-out it does not describe) or run the detector once per stream (N detectors), and its \"no second invalidation path\" claim is false either way.",
+      "text": "the plan says the detector \"wakes every open `/_changes/` stream for that tree\" and that there is \"one entry point and one event shape, and no second invalidation path,\" but the stream handler builds its own `_ProjectChangeWatch(docs_dir)` per stream (serve.py:2782) and blocks on `watch.wait(self.connection)`; the process-wide `_FleetChangeWatch` (serve.py:225) has no channel to those streams and `_invalidate_tree_views` (serve.py:1771) does not wake them, so second-stream detection is a second change-detection owner the plan neither extends nor names",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/metadata_index.py:215",
+      "id": "reuse_search-1",
+      "reason": "the plan should name these owners as the signals to call rather than re-looping the same covered set, or state why each owner cannot serve, so the new detector does not fork the covered-file walk the discovery signature already drives.",
+      "text": "the plan's fast dir-stamp signal is already implemented by `_reuse_covered` (metadata_index.py:215), which loads the persisted stamps and compares `_dir_identity` to decide whether an entry \"was added or removed\" since the build; its slow covered-file signal already exists as `_walk_discovery_signature` (serve.py:1659), which stats every file `_covered_files` (metadata_index.py:477) returns, and as `file_memo.file_signature` (file_memo.py:30); the plan cites none of these, only the lower-level helpers they compose",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/metadata_index.py:189",
+      "id": "reuse_search-2",
+      "reason": "the plan must state why the cheaper push detector is preferable to the owner's existing revalidate path (per-request rehash of every covered file), or the /_index route's freshness is solved more cheaply than the plan assumes.",
+      "text": "the plan leaves `index_rows(revalidate=True)` \"untouched\" without saying why, though the owner documents `revalidate` as the mechanism for \"a caller without a watch \u2026 [that] would otherwise answer from the first build it made for the life of its process and never see a later edit,\" which is precisely the cross-node served case",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "46d62d3027df71228c8ed313551b12a9bf14b6121c877b3d105096d078b7b845",
+  "plan_slug": "a-write-on-any-node-reaches-the-page",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T073317119686-plan-review-of-a-write-on-any-node-reaches-the-page",
+  "reviewed_blob_sha": "27a21bc3b18576057182d6f2226433babca44199",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no new module is proposed; the detector lives inside the existing `_FleetChangeWatch` and reaches the tree views through the single existing `_invalidate_tree_views`, so the behaviour is hidden behind an interface it does not enlarge. (Its \"one entry point\" claim does not hold for open streams \u2014 see the duplicate_owner finding below.)",
+    "duplicate_owner": "a finding \u2014 the plan re-derives git-file stat identity the repo already owns, and it assumes a stream-wake channel that ignores the second change-detection owner in the same file.",
+    "interface_budget": "pass \u2014 public_definitions 1724, cli_options 350, mcp_views 34, refusal_families 23; the section adds no public definition, CLI option, MCP view or refusal family, and it states in its own text why the two environment variables cannot be absorbed (\"the reuse window governs discovery walks and not these signals\").",
+    "reuse_search": "a finding \u2014 the plan searched and cites the metadata index owners it extends (`_load_dir_stamps`, `_dir_identity`, `_SERVED_SIGNATURE_TTL_S`, `invalidate_tree`), but the git/file stat identities and the freshness trigger it proposes already have owners it does not cite: `_head_identity` and `_file_identity` for stat identity, `_reuse_covered` and `_walk_discovery_signature` for the dir-stamp and covered-file walks, and `index_rows(revalidate=True)` for a watchless reader.",
+    "thin_wrapper": "pass \u2014 the detector is not a wrapper over the revalidate machinery; it adds a push trigger (poll-and-push for streams) rather than forwarding to an existing reader; the extension-not-wrapper justification therefore does not arise."
+  },
+  "section_digests": {
+    "_document": "375c8a0250252dfd8391140955e2378dc5d099cc39e269da05940553993894d2",
+    "s1": "58a6ee92b653b4651357b52cc08c1e80b329e4482143b6bc8ae18570764bcd52",
+    "s2": "32415c9b777377a15e3c69834e5d5056a22e9b812824683f47b73766353b6676"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T07:42:15.901694+00:00"
+}
