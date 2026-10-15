@@ -661,6 +661,18 @@ def _parse_ready_node(statement: str) -> dict[str, Any]:
     return {"name": name.strip(), "group": group.strip(), "score": value}
 
 
+#: The node fields a dispatch hands the picker that a pick probe may also name.
+#: A probe that leaves one out weighs a different node than a dispatch would, so
+#: the pick's answer names every one it omitted rather than silently reporting
+#: the thinner node as the dispatch's own.
+_PROBE_INPUT_FIELDS = ("write_paths", "negative_control", "estimated_hours", "section")
+
+
+def _omitted_probe_inputs(*, supplied: Mapping[str, bool]) -> list[str]:
+    """Return the probe input fields the caller did not supply, in a fixed order."""
+    return [name for name in _PROBE_INPUT_FIELDS if not supplied.get(name)]
+
+
 @crew.command(name="pick")
 @click.option(
     "--project", default=None, help="Project whose flight and ledger are read."
@@ -671,6 +683,32 @@ def _parse_ready_node(statement: str) -> dict[str, Any]:
 )
 @click.option("--goal", default=None)
 @click.option("--done-when", default=None)
+@click.option("--section", default="", help="Plan section the node implements.")
+@click.option(
+    "--write-path",
+    "write_paths",
+    multiple=True,
+    help="Exclusive write path; repeat for each.",
+)
+@click.option(
+    "--negative-control",
+    "negative_control",
+    default="",
+    help=(
+        "The mutation this node's checks must fail against, declared when its "
+        "write paths include a test file; `none: <reason>` for a check that "
+        "admits no applicable mutation."
+    ),
+)
+@click.option(
+    "--estimated-hours",
+    type=click.FloatRange(min=0.0, min_open=True),
+    default=None,
+    help=(
+        "Neutral worker-hours for this node; otherwise the plan estimate is "
+        "labelled as fallback."
+    ),
+)
 @click.option("--comment", default="", help="Orchestrator context, passed verbatim.")
 @click.option("--estimated-context", type=click.IntRange(min=0), default=0)
 @click.option(
@@ -693,6 +731,10 @@ def crew_pick(
     spec_level,
     goal,
     done_when,
+    section,
+    write_paths,
+    negative_control,
+    estimated_hours,
     comment,
     estimated_context,
     capability,
@@ -762,6 +804,10 @@ def crew_pick(
                 spec_level=spec_level,
                 goal=goal,
                 done_when=done_when,
+                section=section,
+                negative_control=negative_control or "",
+                write_paths=list(write_paths),
+                estimated_hours=estimated_hours,
             )
             payload = pick(
                 PickRequest(
@@ -770,6 +816,18 @@ def crew_pick(
                 config,
                 repo=repo,
             ).as_dict()
+            # A hold can come from what the probe lacked rather than from the
+            # lane: a pick handed no write path weighs a node with no test to
+            # fail its control, so the answer names every field a dispatch would
+            # have supplied and this probe did not.
+            payload["omitted_inputs"] = _omitted_probe_inputs(
+                supplied={
+                    "write_paths": bool(write_paths),
+                    "negative_control": bool(negative_control),
+                    "estimated_hours": estimated_hours is not None,
+                    "section": bool(section),
+                },
+            )
     except (ValueError, OSError) as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(payload, pretty)
