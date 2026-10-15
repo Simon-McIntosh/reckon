@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="165">
-<meta name="plan-modified" content="2026-10-14">
+<meta name="plan-version" content="166">
+<meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
   <main class="plan-doc">
@@ -549,6 +549,9 @@
 </div>
 <div class="r-comment" data-section="s24" data-id="c-run-r-20261013T220745912794-the-state-render-times-its-reads" data-who="reckon-build" data-when="2026-10-13T23:04:00.614Z">
     <div class="r-comment-body"><p>landing: a read-time counter in reckon/crew/picker/lane_context.py times each read the picker's state render makes and appends one named entry per read to &lt;crew_home&gt;/state-read-timings.jsonl beside pick-timings.jsonl, through the single crew-home log writer _append_crew_log_line in reckon/crew/picker/__init__.py that _record_pick_timings now shares; the reads timed individually are local_lane_load, list_live, _cached_run_time_profile and the template_load in prompts.py, and prompts.render starts the recorder for the state template unless RECKON_STATE_READ_TIMINGS is falsey, changing no decision and no rendered prompt. Measure: new test 2 passed EXIT=0 at 0230ad4c3; importing-test gate (pytest -n 10 over 34 picker/lane/jev/hold files) 306 passed EXIT=0 at head 0230ad4c3 and 306 passed EXIT=0 at base f59c6695e, no added failure; negative control EXIT=1 failing test_the_render_times_each_read_once_and_names_it on the missing entry.</p></div>
+</div>
+<div class="r-comment" data-section="s25" data-id="c-s25-dispatch-fallback-owner" data-who="reckon-build" data-when="2026-10-16T00:40:00Z">
+    <div class="r-comment-body"><p>Measured 2026-10-16 from the reckon ledger and <code>pick-timings.jsonl</code> for 14–15 October: 35 of 50 implementation dispatches that named no lane fell back on the 5 s deadline, so Jev chose only 15. In those dispatches' picks the state render this section studies is small (p50 ~100 ms, p90 ~0.5 s). The time goes to the capability step (p50 1.3 s, p90 6.5 s) and the snapshot step (p90 5.6 s). The capability step's cost is a slug resolve that parses every sibling plan in full, profiled at 17.1 s for one resolve. That is now owned by <a href="/reckon/plans/a-read-answers-inside-its-deadline#s14">a-read-answers-inside-its-deadline §14</a>. This section stays deferred for the render's own tail. Re-measure the fallback rate after §14 lands, before reading anything here as the dispatch bottleneck.</p></div>
 </div>
 </section>
 </main>
