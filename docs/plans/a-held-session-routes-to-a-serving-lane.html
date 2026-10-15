@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-held-session-routes-to-a-serving-lane">
   <meta name="plan-title" content="A Held Session Routes To A Serving Lane">
   <meta name="plan-summary" content="Jev routed well-defined work to a local lane that then held the session at zero slots while codex had room; read the session&#x27;s admission before routing.">
-  <meta name="plan-status" content="in-progress">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.5">
   <meta name="plan-capability-version" content="1.0">
@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="a-held-dispatch-waits-its-fair-turn">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;}">
   <title>A Held Session Routes To A Serving Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -194,7 +194,7 @@
 <p><strong>Done when</strong> a test, with the config home pointed at a temporary directory, records a run dispatched with an override that changes a resolved flight value. Both <code>crew resume --backend</code> and a plain <code>crew resume --print-only</code> resolve the overridden value, and <code>crew redispatch --print-only</code> resolves the same one. A run with no recorded overrides resolves the base value on all three. The test files that import <code>reckon/crew_run_commands.py</code> give the same pass and fail ids at head as at base, apart from the new file. Negative control: with <code>crew_resume</code> passing an empty override tuple again, the resume cases read the base value; the control is logged under the run directory. Write paths: <code>reckon/crew_run_commands.py</code> and <code>tests/test_a_resume_runs_under_its_dispatch_policy.py</code>.</p>
 
     <h2 id="s8">§8 — A queued run&#x27;s admission reads its overrides through the same helper</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> §7 gave <code>crew resume</code> and <code>crew redispatch</code> one reading of a run's recorded overrides, <code>_recorded_dispatch_overrides</code> in <code>reckon/crew_run_commands.py</code>. Its review found a third copy. <code>_resolve_lane_config</code> in <code>reckon/crew/queue_admission.py</code> reads the overrides by hand. A queued run's lane change never reaches it, because its callers pass a config already resolved. The admission pass does reach it, for a queued run's own launch, session-allowance and gate checks. It reads <code>(pointer.get("dispatch_options") or {}).get("overrides")</code> by hand. The copies agree today, but nothing keeps them in step.</p>
 <p><strong>Deliverable.</strong> One owner reads a run's recorded overrides: a public <code>recorded_dispatch_overrides</code> in <code>reckon/crew/runs.py</code>, beside <code>read_pointer</code>. Both modules can import it without a cycle, since <code>queue_admission.py</code> already imports <code>runs</code>. <code>crew_run_commands.py</code> drops its private <code>_recorded_dispatch_overrides</code> and calls the owner. <code>_resolve_lane_config</code> in <code>queue_admission.py</code> drops its hand read and calls the owner. Behaviour is unchanged.</p>
 <p><strong>Done when</strong> no module in <code>reckon/</code> reads <code>dispatch_options</code> overrides except the owner. A test pins the owner for a record with overrides, a record with <code>dispatch_options</code> but no overrides, and a record with neither. A second test patches <code>runs.recorded_dispatch_overrides</code> to return a sentinel override. It finds that the config <code>_resolve_lane_config</code> resolves for the admission pass carries the sentinel, as do the configs <code>crew resume</code> and <code>crew redispatch</code> resolve, so every reader is proved to go through the owner. The test files that import <code>reckon/crew/runs.py</code>, <code>reckon/crew/queue_admission.py</code> or <code>reckon/crew_run_commands.py</code> give the same pass and fail ids at head as at base, apart from the new file. Negative control: with <code>_resolve_lane_config</code>'s hand read restored, the second test's admission case fails; the control is logged under the run directory. The landed resume-policy test <code>tests/test_a_resume_runs_under_its_dispatch_policy.py</code> reads and patches <code>crew_run_commands._recorded_dispatch_overrides</code> by name. It is repointed at <code>runs.recorded_dispatch_overrides</code> and keeps its assertions, and it is the one importer whose source changes. Write paths: <code>reckon/crew/runs.py</code>, <code>reckon/crew_run_commands.py</code>, <code>reckon/crew/queue_admission.py</code>, <code>tests/test_a_resume_runs_under_its_dispatch_policy.py</code> and <code>tests/test_a_run_s_overrides_have_one_reader.py</code>.</p>
@@ -219,10 +219,11 @@
     <pre class="r-fu-prompt">/reckon-build a-held-session-routes-to-a-serving-lane §7</pre>
     <p class="r-fu-outcome"><p>§7 landed as <code>b17625681</code>. Its review's consolidation follow-on is §8, carried by f-hsrs-004.</p></p>
     </article>
-<article class="r-fu" data-id="f-hsrs-004" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build a-held-session-routes-to-a-serving-lane §8" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-hsrs-004" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build a-held-session-routes-to-a-serving-lane §8" data-resolved-at="2026-10-15T17:28:21+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Give a run&#x27;s recorded overrides one reader</h4>
     <div class="r-fu-body"><p>§8 is a small consolidation. It is independent of the other plans.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-held-session-routes-to-a-serving-lane §8</pre>
+    <p class="r-fu-outcome"><p>§8 landed as <code>3bc3e3a13</code>. All eight sections are done. Done — no followup.</p></p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -291,6 +292,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261015T154055797301-review-of-a-resume-runs-under-its-dispatch-policy-d3391487555c" data-who="reckon-build" data-when="2026-10-15T15:49:12.154Z">
     <div class="r-comment-body"><p>reviewed run r-20261015T150930088765-a-resume-runs-under-its-dispatch-policy at base 71ff4fb9..head d33914875: scores goal_fidelity 20, evidence 14, scope_discipline 20, durability 18, fit 19, reuse 14 (total 105); two follow-on findings — the recorded ruff logs predate the fix commit and show findings the head no longer has, and reckon/crew/queue_admission.py:132 still inlines the dispatch_options.overrides read the new helper owns; the landed change resolves crew resume's flight config through the one helper crew redispatch calls and its new test reddens under the declared empty-override control.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-15T17:32:00Z">
+    <div class="r-comment-body"><p>§8 landed. A run's recorded overrides have one reader, <code>runs.recorded_dispatch_overrides</code>, which resume, redispatch and the admission pass all call. Merged as <code>3bc3e3a13</code>. Gate: 837 passed at head against 835 at base, with the same single error in each. Review: 115/120. Every section of this plan has now landed. <a href="/reckon/evidence/archive/a-held-session-routes-to-a-serving-lane-landed.html#s8">evidence</a></p></div>
 </div>
 </section>
 </main>
