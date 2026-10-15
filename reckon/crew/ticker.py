@@ -1056,10 +1056,13 @@ START_KINDS: frozenset[tuple[Any, Any]] = frozenset(
 SETTLE_WINDOW = 20.0
 SETTLE_CAP = 120.0
 
-# The pane words of a run that is still being worked on. A held settle row says
-# the run has stopped; once a later row shows the run in one of these words, the
-# held row is stale and is never released. A settled destination, such as the
-# terminal echo ``complete -> recorded``, is not one of them.
+# The pane words of a run that is still being worked on. A later row that moves
+# a run into one of these words resolves the run's held settle row on that row
+# instead of leaving it to its window: a return to the word the pane shows drops
+# the held row with the return, and a move to another live word prints the held
+# row at once, ahead of the move. A held row is never released stale after the
+# run has moved on. A settled destination, such as the terminal echo
+# ``complete -> recorded``, is not one of these words.
 LIVE_PANE_WORDS = frozenset({"working", "waiting", "queued"})
 
 
