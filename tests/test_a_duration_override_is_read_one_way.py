@@ -1,5 +1,9 @@
 """Duration overrides have explicit, shared bounds at their call sites."""
 
+import os
+import subprocess
+from pathlib import Path
+
 import pytest
 
 from reckon import crew_follow_commands, serve
@@ -102,3 +106,34 @@ def test_zero_lease_uses_default_and_zero_stop_grace_is_accepted(monkeypatch):
     )
     monkeypatch.setenv(dispatch_launch.STOP_GRACE_ENV, "0")
     assert dispatch_launch._stop_grace_seconds() == 0.0
+
+
+def test_hook_bootstrap_precedes_duration_import(tmp_path):
+    hooks = tmp_path / "checkout" / "reckon" / "hooks"
+    hooks.mkdir(parents=True)
+    source = Path(__file__).resolve().parents[1] / "reckon" / "hooks"
+    for name in ("coordinator_obligations.py", "interpreter_bootstrap.py"):
+        (hooks / name).write_bytes((source / name).read_bytes())
+
+    environment = os.environ.copy()
+    environment.pop("PYTHONPATH", None)
+    environment.pop("RECKON_HOOK_REEXEC_ATTEMPT", None)
+    environment["RECKON_HOME"] = str(tmp_path / "home")
+    result = subprocess.run(
+        [
+            "/usr/bin/python3",
+            "-I",
+            str(hooks / "coordinator_obligations.py"),
+            "--hook",
+            "prompt",
+        ],
+        input="{}",
+        text=True,
+        capture_output=True,
+        env=environment,
+        check=False,
+        timeout=15,
+    )
+
+    assert result.returncode != 0
+    assert "checkout interpreter is missing" in result.stdout + result.stderr
