@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own two gate arms on its manifest: baseline_suite at 15adacba85355fba461917bf2733ca462e046709 reads 596 passed, 0 failed, completed true (logs/base-ticker-suite.log) and after_suite at 65c84f7fcd47706d69744eb756dc1d139b275d6a reads 601 passed, 0 failed, completed true (logs/head-ticker-suite.log); the head set minus the base set is zero added failing tests. The one commit gained since the prior review, f2bc280e1, is comment-only and adds no test, so added_failure_count stays 0 with no ids.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1221",
+    "reckon/crew_follow_commands.py:2101",
+    "reckon/crew_follow_commands.py:2186",
+    "reckon/crew_follow_commands.py:2201",
+    "reckon/crew_follow_commands.py:2224",
+    "reckon/crew_follow_commands.py:2234",
+    "reckon/crew/recovery_watch.py:2143"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-15T12:51:38Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call sites reaching the module: reckon/crew_follow_commands.py:1221, 2101, 2186, 2201, 2224 and 2234 call PaneRowPath.feed/flush, and reckon/crew/recovery_watch.py:2143 calls Ticker.render; the gained comment touches none of them at runtime.",
+    "diff": "read the single gained commit f2bc280e1 against base 65c84f7f: it rewrites only the comment above LIVE_PANE_WORDS (reckon/crew/ticker.py:1059-1065, +7/-4) to state both halves of the settle rule, and I checked the wording against the branch at reckon/crew/ticker.py:1517-1542; no code moves.",
+    "done_when": "the done_when at docs/plans/the-monitor-shows-the-work-it-watches.html:364 names the node test, the importer suite with no added failures, ruff clean and the negative control; the gained commit is comment-only so those clauses are unchanged, and the node tests and ruff were re-run at f2bc280e1 (logs/comment-fix-node-tests.log reads 9 passed EXIT=0 with RUFF_CHECK_EXIT=0 and RUFF_FORMAT_EXIT=0), so the comment clause the prior review found unmet at 65c84f7fc is now met.",
+    "goal": "the source node's goal is \u00a730's deliverable \u2014 every released run row renders to a non-empty line through one predicate, same_word_row_is_news, that RowPolicy (reckon/crew/ticker.py:1617) and Ticker.render (reckon/crew/ticker.py:2300) both read; the gained commit changes only the LIVE_PANE_WORDS comment at reckon/crew/ticker.py:1059-1065 and moves no released-row behaviour, completing the documentation the node done_when also requires.",
+    "manifest": "read; it records status complete, commits 0ad4470fc, 65c84f7fc and f2bc280e1, the after_suite arm at 65c84f7fc reading 601 passed EXIT=0 against the base arm at 15adacba reading 596 passed EXIT=0, a negative_control_log whose log reddens two node tests under the declared mutation, and a comment-fix log (logs/comment-fix-node-tests.log) re-running the node tests at f2bc280e1.",
+    "write_paths": "the source manifest declares four fenced paths (reckon/crew/ticker.py, tests/test_a_released_run_row_is_never_blank.py, one evidence fragment under docs/evidence/fragments/the-monitor-shows-the-work-it-watches/ and a figures directory) and \u00a730 names ticker.py and the test; git show --name-only over 65c84f7f..f2bc280e1 lists only reckon/crew/ticker.py, inside that scope."
+  },
+  "justifications": {
+    "durability": "the increment adds no assertion and a comment regression is caught by no check, so none of its durability rests on this diff; the node's durable guards (the negative control reddening two cases) live in the already-reviewed commits.",
+    "evidence": "logs/comment-fix-node-tests.log records the node tests 9 passed EXIT=0 at f2bc280e1 with ruff clean (RUFF_CHECK_EXIT=0), but the 36-file suite arm of record (logs/head-ticker-suite.log) was run at 65c84f7f, one commit behind the reviewed head, and no check can assert a comment.",
+    "fit": "the comment at reckon/crew/ticker.py:1059-1065 keeps the file's module-level block-comment idiom and mechanism language, carries no plan, sprint or ticket identifier, and the commit has a conventional subject with a body and no attribution trailer.",
+    "goal_fidelity": "the commit does exactly what its subject states \u2014 reckon/crew/ticker.py:1059-1065 now describes the branch at :1517-1542 \u2014 and completes the node done_when's comment clause, though it moves no released-row behaviour.",
+    "reuse": "the increment adds no definition, so there is nothing to fork or duplicate.",
+    "scope_discipline": "git show --name-only over 65c84f7f..f2bc280e1 lists only reckon/crew/ticker.py and the diff touches only its comment, inside the declared write paths."
+  },
+  "node": "review-of-a-released-run-row-is-never-blank-f2bc280e1a18",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is \u00a730's deliverable \u2014 every released run row renders to a non-empty line through one predicate, same_word_row_is_news, that RowPolicy (reckon/crew/ticker.py:1617) and Ticker.render (reckon/crew/ticker.py:2300) both read; the gained commit changes only the LIVE_PANE_WORDS comment at reckon/crew/ticker.py:1059-1065 and moves no released-row behaviour, completing the documentation the node done_when also requires.\nVERDICT done_when: the done_when at docs/plans/the-monitor-shows-the-work-it-watches.html:364 names the node test, the importer suite with no added failures, ruff clean and the negative control; the gained commit is comment-only so those clauses are unchanged, and the node tests and ruff were re-run at f2bc280e1 (logs/comment-fix-node-tests.log reads 9 passed EXIT=0 with RUFF_CHECK_EXIT=0 and RUFF_FORMAT_EXIT=0), so the comment clause the prior review found unmet at 65c84f7fc is now met.\nVERDICT write_paths: the source manifest declares four fenced paths (reckon/crew/ticker.py, tests/test_a_released_run_row_is_never_blank.py, one evidence fragment under docs/evidence/fragments/the-monitor-shows-the-work-it-watches/ and a figures directory) and \u00a730 names ticker.py and the test; git show --name-only over 65c84f7f..f2bc280e1 lists only reckon/crew/ticker.py, inside that scope.\nVERDICT manifest: read; it records status complete, commits 0ad4470fc, 65c84f7fc and f2bc280e1, the after_suite arm at 65c84f7fc reading 601 passed EXIT=0 against the base arm at 15adacba reading 596 passed EXIT=0, a negative_control_log whose log reddens two node tests under the declared mutation, and a comment-fix log (logs/comment-fix-node-tests.log) re-running the node tests at f2bc280e1.\nVERDICT diff: read the single gained commit f2bc280e1 against base 65c84f7f: it rewrites only the comment above LIVE_PANE_WORDS (reckon/crew/ticker.py:1059-1065, +7/-4) to state both halves of the settle rule, and I checked the wording against the branch at reckon/crew/ticker.py:1517-1542; no code moves.\nCALL_SITES: reckon/crew_follow_commands.py:1221, reckon/crew_follow_commands.py:2101, reckon/crew_follow_commands.py:2186, reckon/crew_follow_commands.py:2201, reckon/crew_follow_commands.py:2224, reckon/crew_follow_commands.py:2234, reckon/crew/recovery_watch.py:2143\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the commit does exactly what its subject states \u2014 reckon/crew/ticker.py:1059-1065 now describes the branch at :1517-1542 \u2014 and completes the node done_when's comment clause, though it moves no released-row behaviour.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/comment-fix-node-tests.log records the node tests 9 passed EXIT=0 at f2bc280e1 with ruff clean (RUFF_CHECK_EXIT=0), but the 36-file suite arm of record (logs/head-ticker-suite.log) was run at 65c84f7f, one commit behind the reviewed head, and no check can assert a comment.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --name-only over 65c84f7f..f2bc280e1 lists only reckon/crew/ticker.py and the diff touches only its comment, inside the declared write paths.\nSCORE durability: 14\nJUSTIFICATION durability: the increment adds no assertion and a comment regression is caught by no check, so none of its durability rests on this diff; the node's durable guards (the negative control reddening two cases) live in the already-reviewed commits.\nSCORE fit: 20\nJUSTIFICATION fit: the comment at reckon/crew/ticker.py:1059-1065 keeps the file's module-level block-comment idiom and mechanism language, carries no plan, sprint or ticket identifier, and the commit has a conventional subject with a body and no attribution trailer.\nSCORE reuse: 20\nJUSTIFICATION reuse: the increment adds no definition, so there is nothing to fork or duplicate.",
+  "review_run_id": "legacy-3c7c75edcabd",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "65c84f7fcd47706d69744eb756dc1d139b275d6a",
+  "reviewed_head_sha": "f2bc280e1a18e36ff73e9a5d4359ba2db21b8595",
+  "reviewed_run_id": "r-20261015T125032724695-a-released-run-row-is-never-blank",
+  "reviewer_run_id": "r-20261015T135552209721-review-of-a-released-run-row-is-never-blank-f2bc280e1a18",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T14:02:00+00:00",
+  "total": 108
+}
