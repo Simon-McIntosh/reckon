@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
   <title>Every Review Is Kept As A Committed Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="133">
-<meta name="plan-modified" content="2026-10-08">
+<meta name="plan-version" content="134">
+<meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
   <main class="plan-doc">
@@ -156,6 +156,18 @@
   <p class="landed-summary">A plan review delivered beside its report directory, rather than in it, is refused at promotion with both directories named; every other plan review and every run review promotes as before. <a href="/reckon/evidence/archive/every-review-is-kept-as-a-committed-record-landed.html#s15">full record</a></p>
 </section>
 
+    <h2 id="s16">§16 — A review whose findings state no claim is refused at store time</h2>
+<section data-reckon="section" data-id="s16" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> On 2026-10-15 an imas-efit coordinator found that a local review, run <code>r-20261015T171352888862-review-of-containment-frac-reachable-ff20d27d6c7b</code>, had stored its only finding as <code>{"message": …, "path": "efit/wall_containment.py:105", "severity": "follow-on"}</code>. The record was stored with status <code>parsed</code>, at <code>docs/state/imas-efit/reviews/run/r-20261015T162752320759-containment-frac-reachable/</code>. <code>message</code> is not among <code>FINDING_CLAIM_FIELDS</code> in <code>reckon/crew/review.py</code> (<code>text</code>, <code>summary</code>, <code>detail</code>, <code>title</code>). So <code>finding_claim</code> returns <code>None</code>, and under §14 the repair reader leaves the finding out. The review's only finding was silently dropped, and the coordinator caught it only by reading the record by hand. §14 made such an entry harmless to read. Nothing yet stops it being stored.</p>
+<p><strong>Deliverable.</strong> <code>store_review</code> refuses a run review whose <code>findings</code> list holds an entry that states no claim through <code>finding_claim</code>. The refusal names the entry's index and keys and the accepted claim fields, so the reviewing worker rewrites the record and stores it again, rather than leaving a record whose finding repair will drop. An empty findings list and a list whose every entry states a claim are stored as today. <code>FINDING_CLAIM_FIELDS</code> is not widened, because the parser writes <code>text</code> and one spelling is the contract.</p>
+<p><strong>Done when</strong> a test, with the crew home pointed at a temporary directory, stores a run review whose finding is <code>{"message": …, "path": …, "severity": "follow-on"}</code>. It finds the store refused with a message naming index 0, the keys <code>message</code>, <code>path</code> and <code>severity</code>, and the four accepted fields, and that nothing is written. The same record with <code>text</code> in place of <code>message</code> stores as <code>parsed</code>. The test files that import <code>reckon/crew/review.py</code> give the same pass and fail ids at head as at base, apart from the new file. Any landed test that stores a claimless finding on purpose is named in the manifest. Negative control: with the refusal removed, the claimless record is stored; the control is logged under the run directory. Write paths: <code>reckon/crew/review.py</code> and <code>tests/test_a_claimless_review_is_refused_at_store.py</code>.</p>
+
+    <h2 id="s17">§17 — An unreadable review record&#x27;s duty names what is wrong with it</h2>
+<section data-reckon="section" data-id="s17" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> In the same imas-efit incident, the obligation for an unreadable review record told the coordinator to "read it again once its writer finishes, or remove the unfinished file", at age 0 s. <code>_unreadable_record_items</code> in <code>reckon/crew/obligation_snapshot.py</code> gives every unreadable record that one remedy, which fits a file caught mid-write. The record here was complete, with a finding that stated no claim. Waiting on a writer that had already finished would never have changed it, and removing it would have lost the review.</p>
+<p><strong>Deliverable.</strong> The duty tells the two cases apart from the finding the reader already produces. A record that does not parse, or is truncated, keeps today's mid-write remedy. A record that parses but holds entries stating no claim says how many such entries it holds and which fields a claim may use. Its remedy is to rewrite or resume the reviewing run, not to wait.</p>
+<p><strong>Done when</strong> a test, with the crew home pointed at a temporary directory, derives the duty for a truncated record and finds today's remedy. For a complete record holding one claimless finding, it finds a line naming one claimless finding and the claim fields, and containing neither "writer finishes" nor "remove". The test files that import <code>reckon/crew/obligation_snapshot.py</code> give the same pass and fail ids at head as at base, apart from the new file. Negative control: with the single remedy restored, the claimless case says "writer finishes"; the control is logged under the run directory. Write paths: <code>reckon/crew/obligation_snapshot.py</code> and <code>tests/test_an_unreadable_review_duty_names_its_fault.py</code>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="review-store" data-choice="committed" data-by="e4e34290, on the lead&#x27;s delegation" data-when="2026-10-06">
@@ -272,7 +284,12 @@
     <h4 class="r-fu-title">Build §15: a misdelivered plan review cannot promote</h4>
     <div class="r-fu-body"><p>Reported by nova-2c. One node in <code>promotion.py</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §15</pre>
-    <p class="r-fu-outcome">§15 landed: f0708fbca, restored by 8e36e5c12 after a peer commit dropped it; population 863 -> 866 passed, 0 added; review 115/120. The chain continues on f-erkc-013 (§9's dated figures).</p>
+    <p class="r-fu-outcome">§15 landed: f0708fbca, restored by 8e36e5c12 after a peer commit dropped it; population 863 -&gt; 866 passed, 0 added; review 115/120. The chain continues on f-erkc-013 (§9's dated figures).</p>
+    </article>
+<article class="r-fu" data-id="f-erkc-017" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build every-review-is-kept-as-a-committed-record §16" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Refuse a claimless review at store time and name its fault in the duty</h4>
+    <div class="r-fu-body"><p>Reported by an imas-efit coordinator on 2026-10-15. §16 is independent. §17 writes <code>obligation_snapshot.py</code>, which a seat-plan section is also editing, so it runs after that lands.</p></div>
+    <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §16 §17</pre>
     </article>
 </section>
 
