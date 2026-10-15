@@ -804,7 +804,9 @@ def dispatch(
             picker_inputs,
             picker_budget,
             picker_input_errors,
-        ) = build_picker_inputs(project, config, repo_root, ledger_root=ledger_root)
+        ) = build_picker_inputs(
+            project, config, repo_root, ledger_root=ledger_root, session=session
+        )
         picker_selection = dispatch_picker_selection(
             node=node,
             config=config,

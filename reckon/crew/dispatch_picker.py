@@ -161,11 +161,12 @@ def _picker_budget_snapshot(
     config: Mapping[str, Any],
     repo_root: Path,
     records: list[dict[str, Any]] | None,
+    session: str = "",
 ) -> Mapping[str, Any]:
     from reckon.crew.picker import snapshot as picker_snapshot
 
     return picker_snapshot.budget_view(
-        project, dict(config), repo_root, records, cached_only=True
+        project, dict(config), repo_root, records, cached_only=True, session=session
     )
 
 
@@ -194,6 +195,7 @@ def build_picker_inputs(
     ledger_root: Path | None = None,
     stage_ms: dict[str, float | None] | None = None,
     running: dict[str, str | None] | None = None,
+    session: str = "",
 ) -> tuple[
     list[dict[str, Any]] | None,
     Mapping[str, Any] | None,
@@ -222,6 +224,12 @@ def build_picker_inputs(
     are stashed for the pick that follows on this thread, whose caller built
     these inputs outside its own bound and would otherwise carry no record of
     what they cost.
+
+    ``session`` is the dispatching session the budget snapshot is composed for.
+    A session-scoped lift releases the reserves only for the session it names,
+    so the caller that holds the session hands it here and the snapshot reads the
+    figures the picker will judge against. No session leaves the snapshot as a
+    sessionless preflight composed it.
     """
     input_errors: dict[str, str] = {}
     repo_root = Path(repo)
@@ -271,7 +279,9 @@ def build_picker_inputs(
         "budget-snapshot",
         lambda: _picker_input(
             "budget_snapshot",
-            lambda: _picker_budget_snapshot(project, config, repo_root, records),
+            lambda: _picker_budget_snapshot(
+                project, config, repo_root, records, session
+            ),
             input_errors,
         ),
     )
@@ -398,6 +408,7 @@ def dispatch_picker_selection(
                     repo,
                     stage_ms=stages,
                     running=running,
+                    session=session,
                 )
 
             # The estimate is the same deterministic measurement the context-fit
@@ -685,6 +696,7 @@ def _record_shadow_picker_selection(spec_path: Path) -> None:
                 spec["config"],
                 repo,
                 ledger_root=Path(spec["ledger_root"]),
+                session=spec["session"],
             )
             # The deferred shadow pick holds no dispatcher-resolved authority,
             # so it resolves the same one and passes it, reporting a resolution
