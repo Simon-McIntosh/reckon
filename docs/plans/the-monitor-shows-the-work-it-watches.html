@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="131">
+<meta name="plan-version" content="132">
 <meta name="plan-modified" content="2026-10-15">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -698,6 +698,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261015T123104557924-review-of-a-halt-the-run-left-is-not-drawn-911f020313ca" data-who="reckon-build" data-when="2026-10-15T12:45:42.403Z">
     <div class="r-comment-body"><p>an independent review of r-20261015T113314443143-a-halt-the-run-left-is-not-drawn is stored for base d31cd5907738b4408995862abfc13580eb3aca80 .. head 911f020313ca24afdb746b56e94def8a45cd6c84 (the commits gained since its first review), scoring all six dimensions 0..20 (goal_fidelity 18, evidence 16, scope_discipline 20, durability 18, fit 16, reuse 20; total 108) with one follow-on finding and no blocking finding</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261015T113314443143-a-halt-the-run-left-is-not-drawn" data-who="reckon-build" data-when="2026-10-15T12:29:53.995Z">
+    <div class="r-comment-body"><p>§29 landed in reckon/crew/ticker.py — a held settle row is now resolved on the later row that moves its run on to a live pane word (working/waiting/queued): a return to the word the pane already shows drops the held row and the return together, another live word prints the held halt at once ahead of it, and a later row into a settled word still supersedes nothing. Measure: tests/test_a_halt_the_run_left_is_not_drawn.py 4 passed at head, and the fast-read replay releases exactly the start plus the block drawn working → halted (2 rows) at head against 3 rows at base including the stale working → stopped.</p></div>
 </div>
 </section>
 </main>

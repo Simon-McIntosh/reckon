@@ -1,0 +1,483 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "344805c9613487e59bcc8001ffc0302a55f8ae50",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 3649648,
+      "input_tokens_cumulative": 3649648,
+      "output_tokens": 6763,
+      "output_tokens_cumulative": 6763,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 19,
+    "files": 2,
+    "removed": 23
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 1790,
+        "name": "__init__",
+        "path": "reckon/crew/ticker.py"
+      },
+      "run_function": {
+        "line": 1135,
+        "name": "__init__",
+        "path": "reckon/crew/ticker.py"
+      },
+      "window_line": 1138
+    },
+    {
+      "existing_function": {
+        "line": 1135,
+        "name": "__init__",
+        "path": "reckon/crew/ticker.py"
+      },
+      "run_function": {
+        "line": 1790,
+        "name": "__init__",
+        "path": "reckon/crew/ticker.py"
+      },
+      "window_line": 1795
+    },
+    {
+      "existing_function": {
+        "line": 1843,
+        "name": "reseed",
+        "path": "reckon/crew/ticker.py"
+      },
+      "run_function": {
+        "line": 1790,
+        "name": "__init__",
+        "path": "reckon/crew/ticker.py"
+      },
+      "window_line": 1809
+    },
+    {
+      "existing_function": {
+        "line": 1790,
+        "name": "__init__",
+        "path": "reckon/crew/ticker.py"
+      },
+      "run_function": {
+        "line": 1843,
+        "name": "reseed",
+        "path": "reckon/crew/ticker.py"
+      },
+      "window_line": 1856
+    },
+    {
+      "existing_function": {
+        "line": 108,
+        "name": "test_a_return_after_the_window_draws_both_halves_as_before",
+        "path": "tests/test_a_halt_the_run_left_is_not_drawn.py"
+      },
+      "run_function": {
+        "line": 82,
+        "name": "test_a_return_inside_the_window_leaves_no_halt_on_the_pane",
+        "path": "tests/test_a_halt_the_run_left_is_not_drawn.py"
+      },
+      "window_line": 90
+    },
+    {
+      "existing_function": {
+        "line": 82,
+        "name": "test_a_return_inside_the_window_leaves_no_halt_on_the_pane",
+        "path": "tests/test_a_halt_the_run_left_is_not_drawn.py"
+      },
+      "run_function": {
+        "line": 108,
+        "name": "test_a_return_after_the_window_draws_both_halves_as_before",
+        "path": "tests/test_a_halt_the_run_left_is_not_drawn.py"
+      },
+      "window_line": 115
+    }
+  ],
+  "commit_list_shortfall": {
+    "declared": 2,
+    "kind": "presented_commits_subset_of_manifest",
+    "message": "run 'r-20261015T113314443143-a-halt-the-run-left-is-not-drawn' has a passing gate presenting 1 commit(s) of the 2 its manifest declares; missing: d31cd5907738b4408995862abfc13580eb3aca80. The out-of-scope boundary check runs against the presented commits, so an incomplete presentation narrows it. This is a report, not a refusal — present the full list, or the boundary check may not cover the node's work",
+    "missing": [
+      "d31cd5907738b4408995862abfc13580eb3aca80"
+    ],
+    "presented": 1
+  },
+  "commit_resolution": null,
+  "commits": [
+    "911f020313ca24afdb746b56e94def8a45cd6c84"
+  ],
+  "completed_at": "2026-10-15T12:29:53.995Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-15T11:35:25Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_halt_the_run_left_is_not_drawn.py tests/test_a_live_run_never_reads_dead.py tests/test_a_reload_waits_for_a_clean_tree.py tests/test_an_admitted_request_continues_its_row.py tests/test_crew_dispatch_guard.py tests/test_fleet_counter_launch_failure.py tests/test_follower_names_a_lift.py tests/test_recovery_state_typing.py tests/test_zone_guards_read_tzinfo.py tests/test_every_module_fits_a_worker_window.py -> 79 passed in 197.49s, EXIT=0 at head d31cd59. After the source-hygiene edits, PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_halt_the_run_left_is_not_drawn.py -> 4 passed in 0.75s, EXIT=0 at head 911f020; ruff check and ruff format --check also passed on both files (log halt-run-left-hygiene.log).",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T113314443143-a-halt-the-run-left-is-not-drawn/logs/head-gate.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.7419354838709677,
+    "plan": "the-monitor-shows-the-work-it-watches",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane": "clive",
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-15T12:33:38.885607+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-15T11:33:38Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 21,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 4,
+    "headroom": 7,
+    "mean_context": 140000,
+    "observed_at": "2026-10-15T11:33:40Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 21,
+      "aggregate_tokens_per_second": 249.433,
+      "detail": "",
+      "mean_tokens_per_second": 47.968,
+      "observed_at": "2026-10-15T11:33:40Z",
+      "runs": 5.2,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-15T12:29:53.995Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T113314443143-a-halt-the-run-left-is-not-drawn/manifest.md",
+  "member": "disposable-r-20261015T113314443143-a-halt-the-run-left-is-not-drawn",
+  "model_key": "flash",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_a_halt_the_run_left_is_not_drawn.py::test_a_move_to_another_live_word_draws_the_halt_at_once",
+      "tests/test_a_halt_the_run_left_is_not_drawn.py::test_a_return_inside_the_window_leaves_no_halt_on_the_pane"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_a_reload_waits_for_a_clean_tree.py::test_committing_the_edit_lets_the_reload_proceed"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_a_halt_the_run_left_is_not_drawn.py::test_a_move_to_another_live_word_draws_the_halt_at_once",
+      "tests/test_a_halt_the_run_left_is_not_drawn.py::test_a_return_inside_the_window_leaves_no_halt_on_the_pane"
+    ],
+    "declaration": "let a later row that is not a coordinator row supersede nothing again - the first case must release a row whose destination is stopped",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T113314443143-a-halt-the-run-left-is-not-drawn/logs/negative-control-mutated.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T113314443143-a-halt-the-run-left-is-not-drawn/logs/negative-control-mutated.log",
+    "test_paths": [
+      "tests/test_a_halt_the_run_left_is_not_drawn.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "a-halt-the-run-left-is-not-drawn",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 759,
+          "cached_input_tokens": 263710,
+          "input_tokens": 264471,
+          "output_tokens": 274,
+          "reasoning_output_tokens": 58,
+          "total_tokens": 264745,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "2df2b70e-e96e-4fa2-9e1b-c80f582a9f1c",
+      "session_id": "health-review-1010"
+    },
+    "done_when": "tests/test_a_halt_the_run_left_is_not_drawn.py passes at head, driving PaneRowPath for the run's own session with an injected clock and rendering each released row in order through one Ticker: the fast-read rows (dispatched -> working; working -> stopped classified stopped 8 s later; stopped -> working 12 s after that; a flush past the settle window; working -> blocked classified blocked an hour later; a flush past its 300 s noise window) release exactly the start and the block, the block drawn working -> halted; with the return 40 s after the stop they release the start, working -> halted, halted -> working and the block; with stopped -> waiting 12 s after the stop they release working -> halted and then halted -> waiting as the second row arrives; a held working -> complete followed by complete -> recorded inside the window still releases the completion; each run is logged under the run directory with the literal command, its revision and an EXIT= line; the negative control is logged the same way with the runner's FAILED line and a non-zero EXIT; the test files that import reckon/crew/ticker.py show no added failure at head against base; tests/test_every_module_fits_a_worker_window.py passes; ruff format --check and ruff check pass on every changed path",
+    "estimated_hours": null,
+    "goal": "release no held settle row after a later row has moved its run on to a live pane word",
+    "id": "a-halt-the-run-left-is-not-drawn",
+    "images": [],
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-15T11:33:38Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 21,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 4,
+      "headroom": 7,
+      "mean_context": 140000,
+      "observed_at": "2026-10-15T11:33:40Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 21,
+        "aggregate_tokens_per_second": 249.433,
+        "detail": "",
+        "mean_tokens_per_second": 47.968,
+        "observed_at": "2026-10-15T11:33:40Z",
+        "runs": 5.2,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T113314443143-a-halt-the-run-left-is-not-drawn/manifest.md",
+    "negative_control": "let a later row that is not a coordinator row supersede nothing again - the first case must release a row whose destination is stopped",
+    "plan": "the-monitor-shows-the-work-it-watches",
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§29",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/ticker.py",
+      "tests/test_a_halt_the_run_left_is_not_drawn.py",
+      "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-halt-the-run-left-is-not-drawn.html",
+      "docs/figures/the-monitor-shows-the-work-it-watches/a-halt-the-run-left-is-not-drawn"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 3357624.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "lift_id": null,
+    "member": null,
+    "node": "a-halt-the-run-left-is-not-drawn",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-15T11:34:43.181957+00:00",
+    "score": 0.6625,
+    "session": null,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout in pick:snapshot",
+    "family": null,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 5003.475,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {
+      "budget-snapshot": 737.533,
+      "context-estimate": 33.609,
+      "records": 1058.331,
+      "verdict-inputs": 636.903
+    }
+  },
+  "plan": "the-monitor-shows-the-work-it-watches",
+  "plan_impl_at_dispatch": 0.7419354838709677,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "911f020313ca24afdb746b56e94def8a45cd6c84",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "d31cd5907738b4408995862abfc13580eb3aca80",
+    "reviewed_head_sha": "911f020313ca24afdb746b56e94def8a45cd6c84",
+    "scores": {
+      "durability": 18,
+      "evidence": 16,
+      "fit": 16,
+      "goal_fidelity": 18,
+      "reuse": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 108
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "shadow",
+  "run_id": "r-20261015T113314443143-a-halt-the-run-left-is-not-drawn",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§29",
+  "session": "health-review-1010",
+  "session_harness": "claude",
+  "session_id": "0963001c-f653-4919-a1b4-6daa03fbed7b",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 4,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 12142661,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 167.874,
+    "generated_tokens": 44165,
+    "generation_seconds": 100.277,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 74.2,
+    "machine_seconds": 67.597,
+    "peak_input_tokens": 170874,
+    "tokens_per_second": 440.43,
+    "wall_tokens_per_second": 263.08
+  },
+  "time_budget": "60m",
+  "tool_steps": 72.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 3268,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-10-15T12:29:58Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-15T12:26:13Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261015T113314443143-a-halt-the-run-left-is-not-drawn",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 7887,
+    "worker_pid": 1119089
+  },
+  "worker_seconds": 3194,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
