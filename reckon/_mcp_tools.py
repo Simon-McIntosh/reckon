@@ -18,6 +18,15 @@ _STORAGE_SLOW_HINT = (
     "not be resubmitted."
 )
 
+# The hint a timed-out write still in flight gets. Its body may yet land, so a
+# blind retry could duplicate the write; the caller reads the resource back to
+# see what the abandoned body produced and resubmits only the missing part.
+_INFLIGHT_WRITE_HINT = (
+    "The write is still in flight and may yet land, so do not retry it blindly. "
+    "Read the resource back to see what the write produced, then resubmit only "
+    "what is missing."
+)
+
 
 class ReadPlanArgs(BaseModel):
     project: str | None = Field(None, description="Project key, or * for mounts")
@@ -130,9 +139,11 @@ class StorageSlowResult(BaseModel):
     ``None`` when the deadline passed before the path resolved, and ``label``
     then names the tool that held it. ``landed`` is present only for a write:
     it records whether the abandoned body reached its file, so a timed-out
-    write that did land is not retried blindly. ``landed`` is ``None`` when the
-    filesystem would not answer within the landing check's own deadline, which
-    is an unknown state rather than a negative one.
+    write that did land is not retried blindly. ``landed`` is ``False`` only
+    when the body has finished and the file is unchanged; it is ``None`` when
+    the body is still running at the end of the landing grace, or when the
+    filesystem would not answer within the landing check's own deadline — in
+    either case an unknown state rather than a negative one.
 
     What the abandoned body was doing when the deadline expired is ``cause``. A
     body that wanted the CPU reads ``computing``: it either burned thread CPU
@@ -181,8 +192,8 @@ class StorageSlowResult(BaseModel):
                 True: " The write did reach its file; do not resubmit it.",
                 False: " The write did not reach its file.",
                 None: (
-                    " Whether the write reached its file could not be determined, "
-                    "so its landed state is unknown rather than false."
+                    " The write is still in flight and may yet land, so whether "
+                    "it reached its file is unknown rather than false."
                 ),
             }[landed]
         cpu_fragment = _timing_fragment(cpu_seconds, run_seconds)
@@ -198,6 +209,10 @@ class StorageSlowResult(BaseModel):
         else:
             activity = "It was waiting on storage when the deadline expired"
             hint = _STORAGE_SLOW_HINT
+        if kind == "write" and landed is None:
+            # A write whose body is still running is not a failed write: it may
+            # yet reach its file, so the retry hint would invite a duplicate.
+            hint = _INFLIGHT_WRITE_HINT
         return cls(
             kind=kind,
             label=label,

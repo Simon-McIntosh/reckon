@@ -197,12 +197,20 @@ def _file_fingerprint(path: str | None) -> tuple[int, int] | None:
     return (stat.st_mtime_ns, stat.st_size)
 
 
-def _landing_state(path: str, before: tuple[int, int] | None) -> bool:
+def _landing_state(
+    path: str, before: tuple[int, int] | None, body_future: Any
+) -> bool | None:
     """Report whether an abandoned write reached its file within a short grace.
 
     The grace exists because a body can complete just after the deadline: the
     thread is still running, and reporting ``landed=False`` for a write that
-    actually landed would invite a blind retry that duplicates it.
+    actually landed would invite a blind retry that duplicates it. When the
+    grace ends with the file unchanged, the abandoned body's own future decides
+    the answer: if it has finished — returned or raised — the file is unchanged
+    because the write never touched it, so the result is ``False``; if it is
+    still running, the write may yet land and the result is ``None``, unknown.
+    ``body_future`` is the future ``_InflightBody`` already holds, so no second
+    record of whether the body ended is kept.
 
     This is synchronous and calls ``os.stat`` directly, so it runs on a worker
     thread. A stat issued against the mount that has just stalled the write is
@@ -214,24 +222,30 @@ def _landing_state(path: str, before: tuple[int, int] | None) -> bool:
     while True:
         if _file_fingerprint(path) != before:
             return True
-        if time.monotonic() >= stop:
+        if body_future.done():
             return False
+        if time.monotonic() >= stop:
+            return None
         time.sleep(LANDING_POLL_SECONDS)
 
 
-async def _bounded_landing(path: str, before: tuple[int, int] | None) -> bool | None:
+async def _bounded_landing(
+    path: str, before: tuple[int, int] | None, body_future: Any
+) -> bool | None:
     """Answer the landing question off the loop, or None if the fs will not.
 
     The check gets its own deadline, slightly longer than its grace so a
     healthy filesystem always answers, and reports ``None`` — unknown, not
-    false — when even that expires. A caller must not read unknown as "did not
-    land" and resubmit a write that may well have succeeded.
+    false — when even that expires. ``None`` is also reported when the body is
+    still running at the end of the grace: either way the landing state is
+    unknown, and a caller must not read unknown as "did not land" and resubmit
+    a write that may well have succeeded.
     """
 
     limit = _landing_grace_seconds() + LANDING_STAT_MARGIN_SECONDS
     try:
         return await asyncio.wait_for(
-            asyncio.to_thread(_landing_state, path, before), limit
+            asyncio.to_thread(_landing_state, path, before, body_future), limit
         )
     except TimeoutError:
         return None
@@ -377,7 +391,7 @@ async def _await_body(
             landed = (
                 None
                 if before is _UNSET
-                else await _bounded_landing(waiting["path"], before)
+                else await _bounded_landing(waiting["path"], before, inflight.future)
             )
         return StorageSlowResult.for_call(
             kind=kind,
