@@ -106,6 +106,25 @@ _SNAPSHOT_KEYS = ("computed_at", "stream_offset", "producer", _FINDINGS)
 # findings rather than trusting an echo.
 _UNREADABLE_RECORD_KIND = "unreadable-review-record"
 
+# A review record the reader cannot use is one of two faults, and the duty
+# names which so the reader acts rather than waiting. A record met mid-write
+# does not parse, and its remedy is to read it again or drop the unfinished
+# file. A record that parses but holds findings stating no claim is complete
+# and will never change however long a writer is waited on, so its remedy
+# rewrites the record or resumes the reviewing run. The reader reports the
+# second fault as this message, and the count it carries is how many entries it
+# found claimless.
+_CLAIMLESS_RECORD_ERROR = re.compile(
+    r"(?P<count>\d+) finding\(s\) in this record state no claim"
+)
+
+# The fields a stored finding may state its claim under, in the order the
+# review reader reads them. Mirrored from
+# ``reckon.crew.review.FINDING_CLAIM_FIELDS`` because that module is imported
+# lazily and a snapshot is rendered on a prompt hook's path; a test asserts the
+# two agree so this cannot drift.
+FINDING_CLAIM_FIELDS: tuple[str, ...] = ("text", "summary", "detail", "title")
+
 
 def _config_home() -> Path:
     """Resolve the config home the way the rest of the tool resolves it.
@@ -479,11 +498,6 @@ def watch_reload_state(project: str) -> tuple[str | None, dict[str, Any] | None]
     ) else None
 
 
-def watch_reload_started_at(project: str) -> str | None:
-    """The instant the project's watch seat recorded for its reload, or None."""
-    return watch_reload_state(project)[0]
-
-
 def reload_in_progress(
     document: Mapping[str, Any] | None,
     *,
@@ -567,14 +581,36 @@ def _row_with_age(row: Any, instant: datetime) -> Any:
     return measured
 
 
+def _unreadable_record_remedy(finding: Mapping[str, Any]) -> str:
+    """The remedy one unreadable review record's duty carries.
+
+    The reader distinguishes the two faults in what it reports: a record it
+    could not parse was met mid-write, so the remedy reads it again once its
+    writer finishes or drops the unfinished file; a record that parses but
+    holds entries stating no claim is complete, so the remedy rewrites it or
+    resumes the reviewing run, naming how many entries are claimless and the
+    fields a claim may use. Waiting on a writer that already finished would
+    never change the second fault, and its file parsed, so nothing is waited
+    on.
+    """
+    match = _CLAIMLESS_RECORD_ERROR.search(str(finding.get("error") or ""))
+    if match is None:
+        return "read it again once its writer finishes, or remove the unfinished file"
+    return (
+        f"{match.group('count')} claimless finding(s) in this record: rewrite "
+        "the record or resume the reviewing run, stating each finding's claim "
+        f"under one of {', '.join(FINDING_CLAIM_FIELDS)}"
+    )
+
+
 def _unreadable_record_items(findings: Any) -> list[dict[str, Any]]:
     """One duty-shaped row per finding, naming the path it could not read.
 
     The row is built in the shape every duty carries, because the checklist
     renders one line per duty: the path is the row's identity, the file's own
-    name is its node, and the remedy tells the reader what to do with a file
-    caught mid-write. A finding naming no path is not renderable and is left
-    out rather than shown as an empty row.
+    name is its node, and the remedy names the fault the reader reported, told
+    apart by :func:`_unreadable_record_remedy`. A finding naming no path is not
+    renderable and is left out rather than shown as an empty row.
     """
     rows: list[dict[str, Any]] = []
     if not isinstance(findings, list):
@@ -591,10 +627,7 @@ def _unreadable_record_items(findings: Any) -> list[dict[str, Any]]:
                 "run_id": path,
                 "node": Path(path).name,
                 "age_seconds": 0,
-                "next_command": (
-                    "read it again once its writer finishes, or remove the "
-                    "unfinished file"
-                ),
+                "next_command": _unreadable_record_remedy(finding),
             }
         )
     return rows
