@@ -25,7 +25,7 @@
   <title>A Held Session Routes To A Serving Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -295,6 +295,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-15T17:32:00Z">
     <div class="r-comment-body"><p>§8 landed. A run's recorded overrides have one reader, <code>runs.recorded_dispatch_overrides</code>, which resume, redispatch and the admission pass all call. Merged as <code>3bc3e3a13</code>. Gate: 837 passed at head against 835 at base, with the same single error in each. Review: 115/120. Every section of this plan has now landed. <a href="/reckon/evidence/archive/a-held-session-routes-to-a-serving-lane-landed.html#s8">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261015T162611840986-a-run-s-overrides-have-one-reader" data-who="reckon-build" data-when="2026-10-15T17:12:40.654Z">
+    <div class="r-comment-body"><p>landing: runs.recorded_dispatch_overrides in reckon/crew/runs.py, beside read_pointer, is now the one reader of a run&#x27;s recorded dispatch_options.overrides; crew_run_commands drops its private _recorded_dispatch_overrides and _resolve_lane_config drops its hand read, both calling the owner, so the queued-admission pass, crew resume and crew redispatch resolve through one reading with behaviour unchanged. Gate: head arm 837 passed / 2 skipped / 1 error, base arm 835 passed / 2 skipped / 1 error, the one error the same conftest leaked-producer teardown at both arms, no head failure absent at base. Negative control: with _resolve_lane_config&#x27;s hand read restored the sentinel test&#x27;s admission case fails (base-model != sentinel-model), EXIT=1.</p></div>
 </div>
 </section>
 </main>
