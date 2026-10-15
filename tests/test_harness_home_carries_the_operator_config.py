@@ -45,6 +45,8 @@ CLAUDE_SETTINGS = {
     "hooks": {
         "Stop": [{"hooks": [{"type": "command", "command": STOP_COMMAND}]}],
     },
+    "attribution": {"commit": "", "pr": ""},
+    "includeCoAuthoredBy": False,
     "env": {"ANTHROPIC_AUTH_TOKEN": "operator-secret"},
     "permissions": {"allow": ["Bash(rm:*)"]},
     "model": "operator-model",
@@ -142,7 +144,7 @@ def test_the_shipped_defaults_declare_both_dialects():
     """The shipped layer names each dialect's operator-home files."""
     shipped = flight.shipped_harness_home_files()
     assert shipped["claude"] == [
-        {"path": "settings.json", "keys": ["hooks"]},
+        {"path": "settings.json", "keys": ["hooks", "attribution", "includeCoAuthoredBy"]},
         {"path": "CLAUDE.md"},
     ]
     assert shipped["codex"] == [
@@ -155,7 +157,7 @@ def test_the_shipped_defaults_declare_both_dialects():
 def test_a_backend_entry_replaces_its_dialect_default():
     """A backend's own declaration wins over the shipped per-dialect default."""
     assert flight.harness_home_files("claude") == [
-        {"path": "settings.json", "keys": ["hooks"]},
+        {"path": "settings.json", "keys": ["hooks", "attribution", "includeCoAuthoredBy"]},
         {"path": "CLAUDE.md"},
     ]
     override = {"harness_home_files": [{"path": "AGENTS.md"}]}
@@ -167,7 +169,7 @@ def test_a_backend_entry_replaces_its_dialect_default():
 def test_a_claude_run_home_carries_the_operator_settings_and_instructions(
     tmp_path: Path,
 ):
-    """settings.json holds only the hooks key; CLAUDE.md holds the operator text."""
+    """settings.json holds the hooks and attribution keys only; CLAUDE.md holds the operator text."""
     home = _operator_home(tmp_path)
     run = tmp_path / "run"
     run.mkdir()
@@ -178,9 +180,13 @@ def test_a_claude_run_home_carries_the_operator_settings_and_instructions(
     assert harness == run / "harness"
 
     seeded = json.loads((harness / "settings.json").read_text())
-    assert set(seeded) == {"hooks"}
+    assert set(seeded) == {"hooks", "attribution", "includeCoAuthoredBy"}
     assert seeded["hooks"] == CLAUDE_SETTINGS["hooks"]
     assert STOP_COMMAND in json.dumps(seeded["hooks"])
+    # The operator's attribution choice reaches the worker, so a worker commit
+    # carries no co-author trailer the operator turned off.
+    assert seeded["attribution"] == {"commit": "", "pr": ""}
+    assert seeded["includeCoAuthoredBy"] is False
 
     copied = harness / "CLAUDE.md"
     assert copied.read_text() == "# operator guidance\n"

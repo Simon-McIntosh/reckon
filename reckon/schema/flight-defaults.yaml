@@ -30,7 +30,9 @@ backends:
 # harness home carries the operator's hooks, instruction files and harness
 # configuration rather than a bare directory. Keyed by dialect because what a
 # worker loads is decided by its harness, not its model: the claude-shaped
-# harness reads CLAUDE.md and a settings.json holding its hooks, while a codex
+# harness reads CLAUDE.md and a settings.json holding its hooks and the
+# operator's commit and pull-request attribution (so a worker's commits carry no
+# trailer the operator has turned off), while a codex
 # harness reads AGENTS.md, its config.toml and its rules/ directory and never
 # CLAUDE.md. Each entry names a path relative to the operator's harness home
 # (``~/.claude`` for claude, ``~/.codex`` for codex) and an optional ``keys``
@@ -40,7 +42,7 @@ backends:
 harness_home_files:
   claude:
     - path: settings.json
-      keys: [hooks]
+      keys: [hooks, attribution, includeCoAuthoredBy]
     - path: CLAUDE.md
   codex:
     - path: AGENTS.md
