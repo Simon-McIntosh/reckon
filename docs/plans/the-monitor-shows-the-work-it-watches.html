@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="185">
+<meta name="plan-version" content="186">
 <meta name="plan-modified" content="2026-10-16">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -178,13 +178,18 @@
     peer's run from the observing session's runtime. The sweep a follower runs must act only on the
     owning session's runs. <code>_sweep_lapsed_holds</code>, now in <code>reckon/crew_follow_commands.py</code>, calls
     <code>sweep</code> in <code>reckon/crew/resumption.py</code> with the project alone; pass the
-    owning session and filter the candidate runs by it. Confirmed on main on 2026-10-16:
+    owning session and filter the candidate runs by it, in both of the sweep's passes: the resume
+    pass over <code>list_live</code>, and the review-reflex pass,
+    <code>dispatch_awaiting_reviews(project=..., config=..., launcher=...)</code> in
+    <code>resumption.py</code>, which already accepts <code>session=</code>
+    (<code>recovery_review_acceptance.py</code>) and is called today without it. Confirmed on main on 2026-10-16:
     the call is still <code>sweep(project, dry_run=dry_run)</code>. The same sweep also
     launches the review reflex, so an observing follower can review a peer's run as well as
     resume it. No watcher sweep of unfollowed sessions exists yet; the producer's loop is
     <code>watch</code> in <code>reckon/crew/runs.py</code>. The path map in
-    <a href="/reckon/plans/the-monitor-under-measurement#s4">the measurement plan &sect;4</a> names
-    the exact lines.</p>
+    <a href="/reckon/plans/the-monitor-under-measurement#s4">the measurement plan &sect;4</a> is
+    stale: its <code>reckon/cli.py</code> line numbers predate the split of that file, and the
+    sweep's definition and cadence call are now in <code>reckon/crew_follow_commands.py</code>.</p>
     <p>A run whose session has no follower then has no sweeper. The decision below is locked on
     the measurement in <a href="/reckon/plans/the-monitor-under-measurement#s7">the measurement plan
     &sect;7</a>: the project watcher sweeps a session once it has had no live follower for ten
@@ -194,11 +199,15 @@
     <p><strong>Done when</strong> <code>tests/test_follow_sweep_is_session_scoped.py</code> runs a
     sweep through a follower for one session over a fixture where both that session and an observed
     session each own one run whose hold has lapsed. Only the owning session's run is resumed, asserted
-    through a stub launcher that records its calls. Three further cases run through the watcher's
+    through a stub launcher that records its calls. A second fixture gives each session one run
+    in the scoring state with a composed review brief; the same follower sweep dispatches the
+    review for the owning session's run only, and the observed session's run is not reviewed. Three further cases run through the watcher's
     tick: a session unattended for eleven minutes is swept and its resumed run records the watcher
     as writer, a session unattended for nine minutes is not swept, and a session whose pointer names
     another host is not swept. The negative control is executed and logged:
-    calling the sweep without the session resumes both and the test fails. The write paths are
+    calling the sweep without the session resumes both and the test fails. A second control
+    calls the review-reflex pass without the session, and the observed session's scoring run is
+    then reviewed and the test fails. The write paths are
     <code>reckon/crew_follow_commands.py</code>, <code>reckon/crew/resumption.py</code>,
     <code>reckon/crew/runs.py</code> (the watcher's sweep of unfollowed sessions) and that test.</p>
 
