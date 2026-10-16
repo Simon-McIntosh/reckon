@@ -447,6 +447,11 @@ base revision rather than against the head with the change reverted.</p>
 </article>
   </section>
 
+  <section id="s25">
+    <h2>§25 — the pick&#x27;s state render is slow because it rebuilds a run-time profile</h2>
+    <p>Run <code>r-20261016T055657532716-pick-state-render-slow-read</code> (codex gpt-6-sol, picked by Jev at 0.74), commit <code>06cfdc898</code>, merged at <code>466144a71</code>. <a href="/reckon/research/the-pick-state-render-is-slow-because.html">The research document</a> joins 6,555 counter reads to 1,254 pick renders between 2026-10-14 00:22Z and 2026-10-16 05:55Z. <code>_cached_run_time_profile</code> takes 99.5% of read time in the 169 renders over 2 s and 41.0% in the 716 under 0.1 s, a contrast margin of 58.5 points. Its calls have a median of 5.7 ms and a 90th percentile of 413 ms, and 164 of the slow renders hold one call over 2 s. A replay capping the read at 20 ms lowers the render p90 from 2,708 ms to 118 ms, and the share of picks over the 5 s bound from 15.3% to 8.9%. Gate: <code>reckon audit-doc</code> 0 errors. Independent review <code>r-20261016T061029334683</code> totals 101; its one follow-on, figures unguarded against later counter changes, is exempted because the document is a dated measurement. The fix is §27.</p>
+  </section>
+
 </main>
 </body>
 </html>
