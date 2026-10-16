@@ -3116,69 +3116,40 @@ WATCHER_SWEEP_GRACE_SECONDS = 600.0
 WATCHER_SWEEP_WRITER: Mapping[str, str] = {"kind": "other", "key": "watcher"}
 
 
-def _pointer_activity_seconds(
-    pointer: Mapping[str, Any], *, now_seconds: float
-) -> float | None:
-    """Seconds since one live pointer last showed activity on this host.
-
-    A pointer's file mtime moves on every write the fleet makes to it, which is
-    when the run was dispatched and when its phase last changed; the stamps
-    beside it record the same moments and survive a file whose mtime the
-    filesystem did not carry. Any one of them dates the session's own last act,
-    which is what a session that never armed a follower has instead of a
-    heartbeat. ``None`` means the record carries no time at all.
-    """
-    moments: list[float] = []
-    run_id = str(pointer.get("run_id") or "")
-    if run_id:
-        with suppress(OSError):
-            moments.append(pointer_path(run_id).stat().st_mtime)
-    for key in ("created_at", "started_at", "recorded_at"):
-        moment = parse_utc(str(pointer.get(key) or ""))
-        if moment is not None:
-            moments.append(moment.timestamp())
-    if not moments:
-        return None
-    return now_seconds - max(moments)
-
-
-def _follower_last_seen_seconds(
+def _unattended_seconds(
     project: str,
     session: str,
     *,
     now_seconds: float,
     pointers: Iterable[Mapping[str, Any]] = (),
 ) -> float | None:
-    """Seconds since this session last had a live follower, or None if never.
+    """Seconds since this session was last attended, or None if nothing dates it.
 
-    The follower's own lease is the heartbeat a present follower renews on its
-    wait pass, and the registration file's mtime is when it attached, which is
-    the only evidence a follower that died before its first renewal leaves. With
-    neither file the session never armed a follower at all, so the grace window
-    is measured from the session's own last act instead: without that, a session
-    whose follower has not registered yet reads as unattended since forever and
-    is swept within seconds of its first dispatch. ``None`` means neither a
-    follower nor a dated pointer exists, and the session has nothing to wait
-    out.
+    One rule for both moments a session's attendance can be read from. A
+    follower is seen by the lease it renews on its wait pass, or by the
+    registration file it left behind -- a release keeps that file, so its stamp
+    dates the release rather than anything the session has done since. The
+    session itself is seen through its own live pointers, read on the same clock
+    the stall reading uses: the run's stream, then its pointer, then its
+    creation. The session is unattended only while its newest evidence is old,
+    so the answer is the smallest age across both, and a fresh dispatch on a
+    session whose follower registered long ago or was released is not swept
+    within seconds. ``None`` means nothing dates the session at all.
     """
+    ages: list[float] = []
     lock_path = follower_lock_path(project, session)
-    moments: list[float] = []
     lease = _follower_lease_renewed_at(lock_path)
     if lease is not None:
-        moments.append(lease)
+        ages.append(now_seconds - lease)
     with suppress(OSError):
-        moments.append(lock_path.stat().st_mtime)
-    if not moments:
-        acts = [
-            act
-            for pointer in pointers
-            if (act := _pointer_activity_seconds(pointer, now_seconds=now_seconds))
-            is not None
-        ]
-        if not acts:
-            return None
-        return min(acts)
-    return now_seconds - max(moments)
+        ages.append(now_seconds - lock_path.stat().st_mtime)
+    ages.extend(
+        float(_stream_quiet_seconds(pointer, now_seconds=now_seconds))
+        for pointer in pointers
+    )
+    if not ages:
+        return None
+    return min(ages)
 
 
 def sweep_unfollowed_sessions(
@@ -3198,10 +3169,11 @@ def sweep_unfollowed_sessions(
     gap on its tick. It sweeps a session only when every one of its live runs
     was launched on this host -- a resume restarts a process on the host it runs
     on, so another host's pointers are left for that host -- and only once the
-    session has had no live follower for ``WATCHER_SWEEP_GRACE_SECONDS``. A
-    session that never armed a follower is measured from its own newest pointer
-    instead, so a dispatch whose follower has not registered yet is not swept
-    the moment it appears.
+    session has been unattended for ``WATCHER_SWEEP_GRACE_SECONDS``, where
+    unattended is read from the later of the last time a follower was seen and
+    the session's own newest pointer activity. A dispatch whose follower has not
+    registered yet, or one made after a follower was released, is therefore not
+    swept the moment it appears.
 
     The watcher holds no follower registration, so it passes the session to
     ``sweep`` explicitly; without that the review reflex reads no filter and
@@ -3237,14 +3209,14 @@ def sweep_unfollowed_sessions(
         if _follower_liveness(follower_lock_path(project, session)).get("live"):
             skipped.append({"session": session, "reason": "follower-live"})
             continue
-        unattended = _follower_last_seen_seconds(
+        unattended = _unattended_seconds(
             project, session, now_seconds=now_seconds, pointers=pointers
         )
         if unattended is not None and unattended < WATCHER_SWEEP_GRACE_SECONDS:
             skipped.append(
                 {
                     "session": session,
-                    "reason": "follower-rearm-within-grace",
+                    "reason": "attended-within-grace",
                     "unattended_seconds": unattended,
                 }
             )

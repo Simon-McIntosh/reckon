@@ -7,20 +7,25 @@ finished run is never reviewed by the reflex. The project watcher fills that gap
 on each pass it makes, and the two loops a watcher reaches the fleet through --
 the single-event ``runs.watch`` a hand-run watch takes and the streaming ticker
 a registered producer runs -- both call the one sweep. Each loop is driven here
-over the same six-session fleet, and each must sweep the same two sessions and
-leave the same four alone:
+over the same eight-session fleet, and each must sweep the same three sessions
+and leave the same five alone:
 
-* the eleven-minute session has had no follower for longer than the grace
-  window, and is swept;
+* the eleven-minute session has had no follower and no run activity for longer
+  than the grace window, and is swept;
 * the nine-minute session is still inside it, and is not;
 * the third session's pointer names another host, which sweeps its own runs;
 * the fourth has a live registration, held the way
   ``follower_registration`` judges one, so it is not swept whatever its ages
-  say -- its lease is stale and its registration file is eleven minutes old;
-* the fifth never armed a follower at all and dispatched two minutes ago, so
-  the grace window is measured from its own newest pointer and it is not swept;
+  say -- its lease is unwritten, its registration file is eleven minutes old
+  and its own run is as old as the swept session's;
+* the fifth never armed a follower at all and dispatched two minutes ago, so it
+  is not swept: the grace window is measured from its own newest pointer;
 * the sixth never armed a follower either and dispatched eleven minutes ago, so
-  it is swept.
+  it is swept;
+* the seventh and eighth carry a registration released two hours ago -- the
+  file a release leaves behind -- with the seventh dispatching two minutes ago
+  and the eighth eleven, so the released stamp does not sweep the session that
+  has just acted and does sweep the one that has not.
 """
 
 from __future__ import annotations
@@ -64,9 +69,12 @@ ELSEWHERE_SESSION = "session-elsewhere"
 ATTENDED_SESSION = "session-attended"
 FRESH_SESSION = "session-fresh-dispatch"
 STALE_SESSION = "session-stale-dispatch"
+RELEASED_FRESH_SESSION = "session-released-fresh"
+RELEASED_STALE_SESSION = "session-released-stale"
 FOREIGN_HOST = "another-login-node"
 LONG_AGO = 11 * 60
 WITHIN_GRACE = 2 * 60
+RELEASED_AGE = 2 * 60 * 60
 REFUSED_STREAM = (
     Path(__file__).resolve().parent
     / "fixtures"
@@ -84,19 +92,37 @@ def _ago(seconds: float) -> str:
     return datetime.fromtimestamp(time.time() - seconds, tz=UTC).isoformat()
 
 
+def _age_run(run_id: str, *, seconds: float) -> None:
+    """Move every file a run left behind to ``seconds`` before now.
+
+    The run's evidence is aged together -- stream, pointer and manifest -- so
+    the one clock that reads them (stream, then pointer, then creation) answers
+    with the same age whichever branch it takes.
+    """
+    when = time.time() - seconds
+    directory = run_dir(run_id)
+    if directory.is_dir():
+        for path in [directory, *directory.rglob("*")]:
+            with suppress(OSError):
+                os.utime(path, (when, when))
+    pointer = pointer_path(run_id)
+    with suppress(OSError):
+        os.utime(pointer, (when, when))
+
+
 def _lapsed_run(
     run_id: str,
     *,
     repo: Path,
     session: str,
     launcher_host: str | None = None,
-    dispatched_seconds_ago: float | None = None,
+    idle_seconds_ago: float | None = None,
 ) -> None:
     """A pointer for a run a provider refusal stopped, owned by one session.
 
-    ``dispatched_seconds_ago`` dates the run's own last act -- both the stamp it
-    carries and the pointer file's mtime -- which is what a session with no
-    registration of its own is measured by.
+    ``idle_seconds_ago`` dates the run's own last act -- the stamp it carries
+    and the stream, pointer and manifest it left -- which is what a session is
+    measured by when its follower has not been seen recently.
     """
     directory = run_dir(run_id)
     directory.mkdir(parents=True, exist_ok=True)
@@ -108,8 +134,8 @@ def _lapsed_run(
     manifest.write_text("node: node-a\nstatus: blocked\n", encoding="utf-8")
     dispatched_at = (
         "2026-09-03T09:00:00Z"
-        if dispatched_seconds_ago is None
-        else _ago(dispatched_seconds_ago)
+        if idle_seconds_ago is None
+        else _ago(idle_seconds_ago)
     )
     record = {
         "run_id": run_id,
@@ -137,9 +163,8 @@ def _lapsed_run(
     }
     path = pointer_path(run_id)
     _write_json(path, record)
-    if dispatched_seconds_ago is not None:
-        when = time.time() - dispatched_seconds_ago
-        os.utime(path, (when, when))
+    if idle_seconds_ago is not None:
+        _age_run(run_id, seconds=idle_seconds_ago)
 
 
 def _hold_a_live_registration(
@@ -170,6 +195,31 @@ def _hold_a_live_registration(
     when = time.time() - age_seconds
     os.utime(path, (when, when))
     return handle
+
+
+def _release_a_registration(project: str, session: str, *, age_seconds: float) -> None:
+    """Leave the file a released registration keeps, stamped in the past.
+
+    A release drops the advisory lock and keeps the file, so the registration
+    reads ``released`` and its mtime is the only stamp beside it -- the stamp a
+    session that arms a follower again after a release would otherwise be
+    measured by.
+    """
+    path = follower_lock_path(project, session)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        _write_watch_record(
+            handle,
+            {
+                "project": project,
+                "session": session,
+                "pid": _absent_pid(),
+                "delivery": "stream",
+                "started_at": _ago(age_seconds),
+            },
+        )
+    when = time.time() - age_seconds
+    os.utime(path, (when, when))
 
 
 def _stub_review_dispatch(monkeypatch: pytest.MonkeyPatch) -> list[str]:
@@ -203,15 +253,20 @@ def _stub_spawn(monkeypatch: pytest.MonkeyPatch) -> list[str]:
 
 
 def _arrange(config_home, repo, monkeypatch: pytest.MonkeyPatch) -> tuple:
-    """Six sessions: two past the grace window, four that are not.
+    """Eight sessions: three past the grace window, five that are not.
 
     The unattended session holds a lapsed hold to resume and a finished run to
-    review, and so does the session nobody ever registered; the re-arming
-    session holds a scoring run the same pass must leave alone, the third names
-    another host, the fourth is attended by a live registration, and the fifth
-    dispatched too recently for its own grace window to have run out. Each of
-    the four left alone holds a lapsed run, so a sweep that wrongly took one
-    would show up as a launch.
+    review; so does the session nobody ever registered, and the session whose
+    registration was released. The re-arming session holds a run the same pass
+    must leave alone, the third names another host, the fourth is attended by a
+    live registration, and the fifth and sixth dispatched too recently for the
+    grace window to have run out -- one with no registration at all and one
+    with a registration released two hours ago. Each session left alone holds a
+    lapsed run, so a sweep that wrongly took one would show up as a launch. The
+    fourth is left alone by its live registration and nothing else: its lease is
+    unwritten, its registration file is eleven minutes old and its own run is as
+    old as the swept session's, so a pass that stopped asking about liveness
+    would sweep it.
     """
     offered = _stub_review_dispatch(monkeypatch)
     launched = _stub_spawn(monkeypatch)
@@ -223,23 +278,33 @@ def _arrange(config_home, repo, monkeypatch: pytest.MonkeyPatch) -> tuple:
     _lapsed_run(
         "r-foreign", repo=repo, session=ELSEWHERE_SESSION, launcher_host=FOREIGN_HOST
     )
-    _lapsed_run("r-attended", repo=repo, session=ATTENDED_SESSION)
+    _lapsed_run("r-attended", repo=repo, session=ATTENDED_SESSION, idle_seconds_ago=LONG_AGO)
     _lapsed_run(
-        "r-fresh",
+        "r-fresh", repo=repo, session=FRESH_SESSION, idle_seconds_ago=WITHIN_GRACE
+    )
+    _lapsed_run("r-stale", repo=repo, session=STALE_SESSION, idle_seconds_ago=LONG_AGO)
+    _lapsed_run(
+        "r-released-fresh",
         repo=repo,
-        session=FRESH_SESSION,
-        dispatched_seconds_ago=WITHIN_GRACE,
+        session=RELEASED_FRESH_SESSION,
+        idle_seconds_ago=WITHIN_GRACE,
     )
     _lapsed_run(
-        "r-stale",
+        "r-released-stale",
         repo=repo,
-        session=STALE_SESSION,
-        dispatched_seconds_ago=LONG_AGO,
+        session=RELEASED_STALE_SESSION,
+        idle_seconds_ago=LONG_AGO,
     )
     now_seconds = time.time()
     renew_follower_lease(PROJECT, SWEPT_SESSION, now=now_seconds - LONG_AGO)
     renew_follower_lease(PROJECT, LATE_SESSION, now=now_seconds - 9 * 60)
     held = _hold_a_live_registration(PROJECT, ATTENDED_SESSION, age_seconds=LONG_AGO)
+    _release_a_registration(PROJECT, RELEASED_FRESH_SESSION, age_seconds=RELEASED_AGE)
+    _release_a_registration(PROJECT, RELEASED_STALE_SESSION, age_seconds=RELEASED_AGE)
+    # The swept session's own evidence is as old as its lapsed lease, so the
+    # pass has nothing recent of its own to read it as attended by.
+    _age_run("r-lapsed", seconds=LONG_AGO)
+    _age_run("r-scoring", seconds=LONG_AGO)
     return offered, launched, held
 
 
@@ -276,6 +341,12 @@ def test_the_watcher_sweeps_only_the_sessions_nobody_follows(
     # so it is the liveness predicate and not an age that leaves it alone.
     attended = runs.follower_state(PROJECT, ATTENDED_SESSION)
     assert attended["live"], attended
+    # The other premise: the two released sessions really do carry the file a
+    # release leaves, two hours old, so it is the session's own freshness and
+    # not the registration that separates the two cases below.
+    released = runs.follower_state(PROJECT, RELEASED_FRESH_SESSION)
+    assert released["released"] and not released["registered"], released
+    assert released["live"] is False, released
 
     if driver == "single-event":
         event = _sweep_through_watch(PROJECT)
@@ -284,9 +355,11 @@ def test_the_watcher_sweeps_only_the_sessions_nobody_follows(
         events = _sweep_through_ticker(PROJECT)
         assert events, "the tick published no row for a fleet holding live runs"
 
-    # The two sessions past the grace window were resumed, and no other run of
-    # the four sessions left alone was touched.
-    assert sorted(launched) == ["r-lapsed", "r-stale"], launched
+    # The three sessions past the grace window were resumed -- including the one
+    # whose registration was released two hours ago and whose own newest run is
+    # eleven minutes old -- and none of the runs of the five sessions left alone
+    # was touched.
+    assert sorted(launched) == ["r-lapsed", "r-released-stale", "r-stale"], launched
     # The reflex reviews a session's runs only for the session handed to it: the
     # unattended session's scoring run is offered, and the re-arming session's
     # is not.
