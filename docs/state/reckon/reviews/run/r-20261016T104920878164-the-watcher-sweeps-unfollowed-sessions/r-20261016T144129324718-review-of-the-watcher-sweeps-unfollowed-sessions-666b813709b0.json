@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "both arms named by the reviewed run's baseline_suite and after_suite ran to their summary line and report zero failures and no failure ids (gate/third-base/base-chunk_00.log, gate/third-head/head-chunk_00.log), and the wider nine-chunk arms in gate/base-suite-third.txt and gate/head-suite-third.txt carry failures=none on every chunk, so the change adds no failing test. The base arm's ninth chunk is a collection abort rather than a pass: it is recorded EXIT=5 failures=none at gate/base-suite-third.txt:13, and re-running that chunk's five present files without the absent new-test path in the list gives 75 passed, EXIT=0, against the head arm's 77 passed in the same chunk (75 plus the two new tests), so no added failure is hidden by the gap.",
+  "base_log_revision": "cb279180626633e95276ce8bc8efc7fbacf54f37",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/runs.py:3286",
+    "reckon/crew/recovery_watch.py:2411"
+  ],
+  "completed_at": "2026-10-16T14:55:05.702Z",
+  "dispatched_at": "2026-10-16T14:42:05Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T104920878164-the-watcher-sweeps-unfollowed-sessions/gate/run-parity-third.sh",
+      "line": "30",
+      "severity": "follow-on",
+      "text": "follow-on: the parity index derives `failures=none` from a grep for `^FAILED|^ERROR`, so a chunk whose collection aborts is recorded as a clean pass and counted as one; base chunk_08 ran with the absent new test path in its file list, exited 5 with \"no tests ran\", and its five present files -- which collect 75 passing tests when the absent path is removed -- were never measured at base, so the instrument reports a green arm over a chunk that collected nothing and the manifest's parity figure is wrong."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T104920878164-the-watcher-sweeps-unfollowed-sessions/manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: the baseline_suite note states the base arm \"covers 85 of the 86 files\", but one absent path aborts the whole ninth chunk rather than only that file, so the base arm covers 80 files and the parity claim is weaker than the record states."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T104920878164-the-watcher-sweeps-unfollowed-sessions/manifest.md",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "follow-on: the after_suite `command` carries the angle-bracket placeholder `<the ten files listed in the chunk file named on that line>` where the record contract requires the literal command that ran with absolute paths and no placeholder, so the field names no command a reader can re-run."
+    }
+  ],
+  "head_log_revision": "666b813709b0bbdf7c057379cde04f82cbcd9e83",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read bc4f2ccf..666b8137 commit by commit; the increment is 056935c8b (reckon/crew/runs.py +34/-54, tests/test_the_watcher_sweeps_unfollowed_sessions.py +141/-92) and 666b81370 (test file formatting only, 4 lines), deleting `_pointer_activity_seconds` and `_follower_last_seen_seconds` in favour of `_unattended_seconds` and reshaping the test fleet from six sessions to eight.",
+    "done_when": "the done_when names tests/test_the_watcher_sweeps_unfollowed_sessions.py, a head/base parity over the tests importing reckon/crew/runs.py, and a ruff delta on the changed files; the manifest records the gate at gate/watcher-sweep-third.log (2 passed, EXIT=0, revision 666b81370), both parity arms and the ruff delta, but the parity arms are not sound as recorded (see the finding on the parity index).",
+    "goal": "the node goal is that the project watcher sweep each session with no live follower for ten minutes, passing that session explicitly; the increment at reckon/crew/runs.py:3119 replaces `_follower_last_seen_seconds` with `_unattended_seconds`, reading a session's attendance on one clock -- the follower's lease and registration file together with every live pointer's stream age -- so a session that dispatched after its follower was released is no longer swept.",
+    "manifest": "read manifest.md; status complete, it records the gate command and its 2-passed / EXIT=0 result at revision 666b81370, four negative controls with their logs, both parity arms and the ruff delta, and it discloses that the node's declared negative control turned out non-discriminating and was replaced.",
+    "write_paths": "the declared write paths are reckon/crew/runs.py, tests/test_the_watcher_sweeps_unfollowed_sessions.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-watcher-sweeps-unfollowed-sessions.html and docs/figures/the-monitor-shows-the-work-it-watches/the-watcher-sweeps-unfollowed-sessions; the increment touches only runs.py and the test file, both inside them."
+  },
+  "justifications": {
+    "durability": "negative-control-four.log reinstates the registration-only clock and the launch-list assertion at tests/test_the_watcher_sweeps_unfollowed_sessions.py:358 reddens at 2 failed / EXIT=1 on it.",
+    "evidence": "the parity index at gate/base-suite-third.txt:13 records base chunk_08 as EXIT=5 failures=none, so a chunk that collected nothing scores as a clean pass and the base arm's coverage is overstated by five files.",
+    "fit": "reckon/crew/runs.py:3206 renames the skip reason to `attended-within-grace` and the new helper follows the module's own idiom, though the renamed payload field has no consumer and is a visible vocabulary change.",
+    "goal_fidelity": "reckon/crew/runs.py:3147 reads each live pointer's stream age alongside the follower's lease, so a fresh dispatch on a released session is held out of the sweep as the goal's re-arm window intends.",
+    "reuse": "reckon/crew/runs.py:3147 reads the existing `_stream_quiet_seconds` owner (reckon/crew/runs.py:3035) instead of forking a second clock, and the deletion of `_pointer_activity_seconds` removes the duplicate the previous increment had introduced.",
+    "scope_discipline": "the increment's only two paths, reckon/crew/runs.py and tests/test_the_watcher_sweeps_unfollowed_sessions.py, are both inside the four declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the project watcher sweep each session with no live follower for ten minutes, passing that session explicitly; the increment at reckon/crew/runs.py:3119 replaces `_follower_last_seen_seconds` with `_unattended_seconds`, reading a session's attendance on one clock -- the follower's lease and registration file together with every live pointer's stream age -- so a session that dispatched after its follower was released is no longer swept.\nVERDICT done_when: the done_when names tests/test_the_watcher_sweeps_unfollowed_sessions.py, a head/base parity over the tests importing reckon/crew/runs.py, and a ruff delta on the changed files; the manifest records the gate at gate/watcher-sweep-third.log (2 passed, EXIT=0, revision 666b81370), both parity arms and the ruff delta, but the parity arms are not sound as recorded (see the finding on the parity index).\nVERDICT write_paths: the declared write paths are reckon/crew/runs.py, tests/test_the_watcher_sweeps_unfollowed_sessions.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-watcher-sweeps-unfollowed-sessions.html and docs/figures/the-monitor-shows-the-work-it-watches/the-watcher-sweeps-unfollowed-sessions; the increment touches only runs.py and the test file, both inside them.\nVERDICT manifest: read manifest.md; status complete, it records the gate command and its 2-passed / EXIT=0 result at revision 666b81370, four negative controls with their logs, both parity arms and the ruff delta, and it discloses that the node's declared negative control turned out non-discriminating and was replaced.\nVERDICT diff: read bc4f2ccf..666b8137 commit by commit; the increment is 056935c8b (reckon/crew/runs.py +34/-54, tests/test_the_watcher_sweeps_unfollowed_sessions.py +141/-92) and 666b81370 (test file formatting only, 4 lines), deleting `_pointer_activity_seconds` and `_follower_last_seen_seconds` in favour of `_unattended_seconds` and reshaping the test fleet from six sessions to eight.\nCALL_SITES: reckon/crew/runs.py:3286, reckon/crew/recovery_watch.py:2411\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:3147 reads each live pointer's stream age alongside the follower's lease, so a fresh dispatch on a released session is held out of the sweep as the goal's re-arm window intends.\nSCORE evidence: 13\nJUSTIFICATION evidence: the parity index at gate/base-suite-third.txt:13 records base chunk_08 as EXIT=5 failures=none, so a chunk that collected nothing scores as a clean pass and the base arm's coverage is overstated by five files.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the increment's only two paths, reckon/crew/runs.py and tests/test_the_watcher_sweeps_unfollowed_sessions.py, are both inside the four declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control-four.log reinstates the registration-only clock and the launch-list assertion at tests/test_the_watcher_sweeps_unfollowed_sessions.py:358 reddens at 2 failed / EXIT=1 on it.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/runs.py:3206 renames the skip reason to `attended-within-grace` and the new helper follows the module's own idiom, though the renamed payload field has no consumer and is a visible vocabulary change.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/runs.py:3147 reads the existing `_stream_quiet_seconds` owner (reckon/crew/runs.py:3035) instead of forking a second clock, and the deletion of `_pointer_activity_seconds` removes the duplicate the previous increment had introduced.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T104920878164-the-watcher-sweeps-unfollowed-sessions/gate/run-parity-third.sh:30 follow-on: the parity index derives `failures=none` from a grep for `^FAILED|^ERROR`, so a chunk whose collection aborts is recorded as a clean pass and counted as one; base chunk_08 ran with the absent new test path in its file list, exited 5 with \"no tests ran\", and its five present files -- which collect 75 passing tests when the absent path is removed -- were never measured at base, so the instrument reports a green arm over a chunk that collected nothing and the manifest's parity figure is wrong.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T104920878164-the-watcher-sweeps-unfollowed-sessions/manifest.md:17 follow-on: the baseline_suite note states the base arm \"covers 85 of the 86 files\", but one absent path aborts the whole ninth chunk rather than only that file, so the base arm covers 80 files and the parity claim is weaker than the record states.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T104920878164-the-watcher-sweeps-unfollowed-sessions/manifest.md:18 follow-on: the after_suite `command` carries the angle-bracket placeholder `<the ten files listed in the chunk file named on that line>` where the record contract requires the literal command that ran with absolute paths and no placeholder, so the field names no command a reader can re-run.\n",
+  "review_run_id": "r-20261016T144129324718-review-of-the-watcher-sweeps-unfollowed-sessions-666b813709b0",
+  "reviewed_base_sha": "bc4f2ccf173f3e3909b543f5f382e341e3906430",
+  "reviewed_head_sha": "666b813709b0bbdf7c057379cde04f82cbcd9e83",
+  "reviewed_run_id": "r-20261016T104920878164-the-watcher-sweeps-unfollowed-sessions",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T14:59:15.967281+00:00",
+  "total": 107
+}
