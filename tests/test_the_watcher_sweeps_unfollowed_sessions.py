@@ -7,26 +7,44 @@ finished run is never reviewed by the reflex. The project watcher fills that gap
 on each pass it makes, and the two loops a watcher reaches the fleet through --
 the single-event ``runs.watch`` a hand-run watch takes and the streaming ticker
 a registered producer runs -- both call the one sweep. Each loop is driven here
-over the same three-session fleet: a session unattended past the grace window is
-swept, with the session passed to ``sweep`` explicitly, and a session inside the
-window or owned by another host is left alone.
+over the same six-session fleet, and each must sweep the same two sessions and
+leave the same four alone:
+
+* the eleven-minute session has had no follower for longer than the grace
+  window, and is swept;
+* the nine-minute session is still inside it, and is not;
+* the third session's pointer names another host, which sweeps its own runs;
+* the fourth has a live registration, held the way
+  ``follower_registration`` judges one, so it is not swept whatever its ages
+  say -- its lease is stale and its registration file is eleven minutes old;
+* the fifth never armed a follower at all and dispatched two minutes ago, so
+  the grace window is measured from its own newest pointer and it is not swept;
+* the sixth never armed a follower either and dispatched eleven minutes ago, so
+  it is swept.
 """
 
 from __future__ import annotations
 
+import fcntl
+import os
 import socket
 import time
 from contextlib import suppress
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import IO
 
 import pytest
 
 from reckon.crew import runs
-from reckon.crew.follower_registration import renew_follower_lease
+from reckon.crew.follower_registration import (
+    _write_watch_record,
+    follower_lock_path,
+    renew_follower_lease,
+)
 from reckon.crew.recovery_watch import watch_ticker
 from reckon.crew.resumption import writer_sweep_status
 from reckon.crew.runs import (
-    WATCHER_SWEEP_GRACE_SECONDS,
     WATCHER_SWEEP_WRITER,
     _write_json,
     pointer_path,
@@ -43,7 +61,12 @@ PROJECT = "sample"
 SWEPT_SESSION = "session-unfollowed"
 LATE_SESSION = "session-rearming"
 ELSEWHERE_SESSION = "session-elsewhere"
+ATTENDED_SESSION = "session-attended"
+FRESH_SESSION = "session-fresh-dispatch"
+STALE_SESSION = "session-stale-dispatch"
 FOREIGN_HOST = "another-login-node"
+LONG_AGO = 11 * 60
+WITHIN_GRACE = 2 * 60
 REFUSED_STREAM = (
     Path(__file__).resolve().parent
     / "fixtures"
@@ -56,19 +79,38 @@ class _LoopEndedError(Exception):
     """Raised from a fake sleeper to end a watch loop after its pass."""
 
 
+def _ago(seconds: float) -> str:
+    """An ISO-8601 UTC instant ``seconds`` before now."""
+    return datetime.fromtimestamp(time.time() - seconds, tz=UTC).isoformat()
+
+
 def _lapsed_run(
-    run_id: str, *, repo: Path, session: str, launcher_host: str | None = None
+    run_id: str,
+    *,
+    repo: Path,
+    session: str,
+    launcher_host: str | None = None,
+    dispatched_seconds_ago: float | None = None,
 ) -> None:
-    """A pointer for a run a provider refusal stopped, owned by one session."""
+    """A pointer for a run a provider refusal stopped, owned by one session.
+
+    ``dispatched_seconds_ago`` dates the run's own last act -- both the stamp it
+    carries and the pointer file's mtime -- which is what a session with no
+    registration of its own is measured by.
+    """
     directory = run_dir(run_id)
     directory.mkdir(parents=True, exist_ok=True)
     stream = directory / "stream.jsonl"
     stream.write_bytes(REFUSED_STREAM.read_bytes())
     tree = directory / "tree"
-    tree = directory / "tree"
     tree.mkdir(parents=True, exist_ok=True)
     manifest = directory / "manifest.md"
     manifest.write_text("node: node-a\nstatus: blocked\n", encoding="utf-8")
+    dispatched_at = (
+        "2026-09-03T09:00:00Z"
+        if dispatched_seconds_ago is None
+        else _ago(dispatched_seconds_ago)
+    )
     record = {
         "run_id": run_id,
         "project": PROJECT,
@@ -79,7 +121,7 @@ def _lapsed_run(
         "backend": "alpha",
         "role": "implement",
         "session": session,
-        "created_at": "2026-09-03T09:00:00Z",
+        "created_at": dispatched_at,
         "log_path": str(stream),
         "manifest_path": str(manifest),
         "phase": "working",
@@ -93,7 +135,41 @@ def _lapsed_run(
             "write_paths": ["reckon/one.py"],
         },
     }
-    _write_json(pointer_path(run_id), record)
+    path = pointer_path(run_id)
+    _write_json(path, record)
+    if dispatched_seconds_ago is not None:
+        when = time.time() - dispatched_seconds_ago
+        os.utime(path, (when, when))
+
+
+def _hold_a_live_registration(
+    project: str, session: str, *, age_seconds: float
+) -> IO[bytes]:
+    """Register a follower that reads live, with an aged file behind it.
+
+    The advisory lock is held for as long as the returned handle is open, and
+    the process it names is this one, so ``follower_registration`` judges the
+    registration live. Its lease is left unwritten and the registration file's
+    mtime is moved into the past, so every age beside it says the opposite.
+    """
+    path = follower_lock_path(project, session)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handle = path.open("a+b")
+    _write_watch_record(
+        handle,
+        {
+            "project": project,
+            "session": session,
+            "pid": os.getpid(),
+            "parent_pid": os.getpid(),
+            "delivery": "stream",
+            "started_at": _ago(age_seconds),
+        },
+    )
+    fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+    when = time.time() - age_seconds
+    os.utime(path, (when, when))
+    return handle
 
 
 def _stub_review_dispatch(monkeypatch: pytest.MonkeyPatch) -> list[str]:
@@ -126,12 +202,16 @@ def _stub_spawn(monkeypatch: pytest.MonkeyPatch) -> list[str]:
     return launched
 
 
-def _arrange(config_home, repo, monkeypatch: pytest.MonkeyPatch) -> list[str]:
-    """Three sessions: one unattended past the grace window, two that are not.
+def _arrange(config_home, repo, monkeypatch: pytest.MonkeyPatch) -> tuple:
+    """Six sessions: two past the grace window, four that are not.
 
-    The swept session holds a lapsed hold to resume and a finished run to
-    review; the re-arming session holds a scoring run that the same pass must
-    leave alone; the third names another host, which sweeps its own runs.
+    The unattended session holds a lapsed hold to resume and a finished run to
+    review, and so does the session nobody ever registered; the re-arming
+    session holds a scoring run the same pass must leave alone, the third names
+    another host, the fourth is attended by a live registration, and the fifth
+    dispatched too recently for its own grace window to have run out. Each of
+    the four left alone holds a lapsed run, so a sweep that wrongly took one
+    would show up as a launch.
     """
     offered = _stub_review_dispatch(monkeypatch)
     launched = _stub_spawn(monkeypatch)
@@ -139,20 +219,28 @@ def _arrange(config_home, repo, monkeypatch: pytest.MonkeyPatch) -> list[str]:
     _scoring_pointer(
         config_home, repo, "r-scoring", backend=OWNING_BACKEND, session=SWEPT_SESSION
     )
-    _scoring_pointer(
-        config_home,
-        repo,
-        "r-late-scoring",
-        backend=OWNING_BACKEND,
-        session=LATE_SESSION,
-    )
+    _lapsed_run("r-late-scoring", repo=repo, session=LATE_SESSION)
     _lapsed_run(
         "r-foreign", repo=repo, session=ELSEWHERE_SESSION, launcher_host=FOREIGN_HOST
     )
+    _lapsed_run("r-attended", repo=repo, session=ATTENDED_SESSION)
+    _lapsed_run(
+        "r-fresh",
+        repo=repo,
+        session=FRESH_SESSION,
+        dispatched_seconds_ago=WITHIN_GRACE,
+    )
+    _lapsed_run(
+        "r-stale",
+        repo=repo,
+        session=STALE_SESSION,
+        dispatched_seconds_ago=LONG_AGO,
+    )
     now_seconds = time.time()
-    renew_follower_lease(PROJECT, SWEPT_SESSION, now=now_seconds - 11 * 60)
+    renew_follower_lease(PROJECT, SWEPT_SESSION, now=now_seconds - LONG_AGO)
     renew_follower_lease(PROJECT, LATE_SESSION, now=now_seconds - 9 * 60)
-    return offered, launched
+    held = _hold_a_live_registration(PROJECT, ATTENDED_SESSION, age_seconds=LONG_AGO)
+    return offered, launched, held
 
 
 def _end(_interval: float) -> None:
@@ -176,43 +264,39 @@ def _sweep_through_ticker(project: str) -> list[dict]:
     return events
 
 
-def _assert_only_the_unattended_session_was_swept(
-    offered: list[str], launched: list[str]
+@pytest.mark.parametrize("driver", ["single-event", "streaming"])
+def test_the_watcher_sweeps_only_the_sessions_nobody_follows(
+    isolated_project, monkeypatch: pytest.MonkeyPatch, driver: str
 ) -> None:
-    """The eleven-minute session was swept; the other two were left alone."""
-    assert launched == ["r-lapsed"], launched
+    """Either watcher sweeps the two unattended sessions and leaves the rest."""
+    config_home, repo = isolated_project
+    offered, launched, held = _arrange(config_home, repo, monkeypatch)
+    assert not held.closed, "the attended session's registration was released"
+    # The premise of the case: the attended registration really does read live,
+    # so it is the liveness predicate and not an age that leaves it alone.
+    attended = runs.follower_state(PROJECT, ATTENDED_SESSION)
+    assert attended["live"], attended
+
+    if driver == "single-event":
+        event = _sweep_through_watch(PROJECT)
+        assert event.get("project") == PROJECT, event
+    else:
+        events = _sweep_through_ticker(PROJECT)
+        assert events, "the tick published no row for a fleet holding live runs"
+
+    # The two sessions past the grace window were resumed, and no other run of
+    # the four sessions left alone was touched.
+    assert sorted(launched) == ["r-lapsed", "r-stale"], launched
+    # The reflex reviews a session's runs only for the session handed to it: the
+    # unattended session's scoring run is offered, and the re-arming session's
+    # is not.
     assert offered == ["r-scoring"], offered
     written = writer_sweep_status(PROJECT, WATCHER_SWEEP_WRITER)
     assert written is not None, "the watcher's sweep wrote no writer record"
     assert written["key"] == "watcher"
-    assert written["resumed"] == 1, written
-    # One run was considered: only the unattended session's were handed to the
-    # sweep at all, and the other two sessions' runs are outside that count.
+    # The status is keyed by writer rather than accumulated across the sessions
+    # one pass sweeps, so it carries the last session handed to the sweep -- one
+    # run considered, and one lapsed hold resumed out of it. What each session
+    # contributed is on ``launched`` above.
     assert written["checked"] == 1, written
-
-
-def test_the_single_event_watcher_sweeps_the_unattended_session(
-    isolated_project, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """One pass of ``runs.watch`` sweeps the eleven-minute session alone."""
-    config_home, repo = isolated_project
-    offered, launched = _arrange(config_home, repo, monkeypatch)
-
-    event = _sweep_through_watch(PROJECT)
-
-    _assert_only_the_unattended_session_was_swept(offered, launched)
-    assert event.get("project") == PROJECT, event
-    assert WATCHER_SWEEP_GRACE_SECONDS == 600.0
-
-
-def test_the_following_loop_sweeps_the_unattended_session(
-    isolated_project, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """One tick of the streaming producer sweeps the same session, alone."""
-    config_home, repo = isolated_project
-    offered, launched = _arrange(config_home, repo, monkeypatch)
-
-    events = _sweep_through_ticker(PROJECT)
-
-    _assert_only_the_unattended_session_was_swept(offered, launched)
-    assert events, "the tick published no row for a fleet holding live runs"
+    assert written["resumed"] == 1, written
