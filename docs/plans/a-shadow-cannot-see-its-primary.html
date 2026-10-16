@@ -26,7 +26,7 @@
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="13">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -289,6 +289,12 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-16T20:36:00Z">
     <div class="r-comment-body"><p>§3 landed: a shadow's worktree session is <code>shadow-&lt;candidate&gt;-&lt;component&gt;</code>, so neither its path nor its prompt names the primary, and every pre-change naming still resolves (commit <code>d079e008</code>). 751 passed against base with no added failure; the negative control fails two ids; review scores 17–20. <a href="/reckon/evidence/archive/a-shadow-cannot-see-its-primary-landed.html#s3">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261016T195237375210-a-shadow-worktree-hides-its-primary" data-who="reckon-build" data-when="2026-10-16T20:20:45.397Z">
+    <div class="r-comment-body"><p>§3 — shadow_worktree_session now builds the worktree session from the candidate backend and recorded component alone, so a shadow's worktree path and composed prompt name no primary run id; _shadow_worktree_records still resolves the pre-change namings. Measure: head gate over the files importing routing.py is 751 passed / 1 skipped / 0 failed, base arm 744 passed / 1 skipped / 2 scaffolding errors (no added failure id); negative control EXIT=1 with 2 failing ids.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261016T202202658563-review-of-a-shadow-worktree-hides-its-primary-d079e008637f" data-who="reckon-build" data-when="2026-10-16T20:32:20.408Z">
+    <div class="r-comment-body"><p>§3 — independent review of r-20261016T195237375210 (a-shadow-worktree-hides-its-primary) at head d079e008, base aa2110776: goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 19, reuse 20 (total 113); three follow-on findings, no blocking finding; added failures against the reviewed run&#x27;s own base arm: 0.</p></div>
 </div>
 </section>
 </main>
