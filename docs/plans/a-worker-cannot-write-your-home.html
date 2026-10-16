@@ -26,7 +26,7 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.99">
-<meta name="plan-version" content="131">
+<meta name="plan-version" content="132">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -1958,6 +1958,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261014T071732161678-review-of-shims-ignore-the-job-python-path-16c7aef12c9a" data-who="reckon-build" data-when="2026-10-14T07:31:32.967Z">
     <div class="r-comment-body"><p>independent review of r-20261014T053146521230-shims-ignore-the-job-python-path at head 16c7aef12 over base 426f7fc74; the two gained commits resolve both findings the prior review (98/120, reuse 8) raised — caller_environment/CALLER_PATH_ENV now have one owner in reckon/shim_lookup.py and the shim bootstraps no longer re-append the caller's PYTHONPATH nor import a caller sitecustomize — scoring goal_fidelity 20, evidence 19, scope_discipline 19, durability 19, fit 18, reuse 20, total 115/120, with one follow-on finding that the node's manifest still lists only the nine original orientation_write_paths.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-s9-blast-radius" data-who="reckon-build" data-when="2026-10-16T12:10:00Z">
+    <div class="r-comment-body"><p><strong>Measured blast radius</strong> (from the causing session's evidence): 648 run-id entries under the scratch root before the <code>rm</code>, 40 after, so 609 deleted. Of the 609, three belonged to non-terminal runs: the nova <code>fine-grid-convergence</code> run and the two blocked imas-codex <code>shc-*</code> runs. Those are the three the coordinator recreated. The rest were leftover scratch of finished runs. nova found no impact on its run, because its jobs read from GPFS and make their own temporary directories on the compute node. The evidence is in <code>~/.config/reckon/crew/reports/reckon/study/jev-wave-suite-delta/incident/</code>: <code>scratch-before.txt</code>, <code>scratch-after.txt</code>, <code>scratch-deleted.txt</code> and the pre-deletion root listing.</p><p>Contributing cause: the worker's brief told it to use <code>git worktree add</code>, which its fence refuses because the main repository's <code>.git</code> is read-only. Refused there, it improvised an extract-and-clean path in the shared root. The causing run was promoted as failed (work-rejected) with the incident in its outcome.</p></div>
 </div>
 </section>
 </main>
