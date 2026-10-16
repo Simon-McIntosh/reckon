@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s19">
+  <title>A fresh process reuses the plan parse | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-fresh-process-reuses-the-plan-parse-landing" data-node="a-fresh-process-reuses-the-plan-parse" data-reckon="landed" data-when="2026-10-16">
+  <h2>A fresh process reads discovery from the persisted parse</h2>
+  <p>The metadata index now carries each covered document's discovery state — the parsed <code>&lt;meta&gt;</code> record, its readiness tuple and its section declarations — beside the row and the content digest it already persisted. A discovery read asks the index for the docs tree and receives, per file, the parse recorded for it, so the tree is parsed once and a restarted server or a fresh MCP process reuses that parse instead of building the soup again. Only a file whose bytes moved is parsed, and the parse the reading process made is written back under its new digest.</p>
+  <p>Two guards keep the answer current. An entry whose recorded digest no longer matches the file's is left out of the returned map rather than handed back, so the caller parses the file it cannot vouch for; and a store that cannot be read — absent, truncated, written by another schema — falls back to a full build rather than to the entries it could partly parse. The reused parse is also handed to the shared per-file memo, so the roadmap's authored-section read, which would otherwise parse each plan a second time, reuses it.</p>
+  <p>Measured as the number of body parses a fresh process makes while answering discovery over a temporary tree of 24 plans, counted in a child process so its in-memory memo starts empty: the first read parses 24, a second process parses 0, a one-file edit makes the next process parse exactly 1 and return that plan's new status, and the process after it parses 0 again. With the store bypassed the same fresh process parses all 24. Time and memory are read from the <code>reckon.metadata-index</code> store; the temporary tree is written by the test and removed with its <code>tmp_path</code>.</p>
+  <table>
+    <thead><tr><th>Case</th><th>Base</th><th>Here</th></tr></thead>
+    <tbody>
+      <tr><td>cold process, unchanged tree (24 plans)</td><td>24</td><td>0</td></tr>
+      <tr><td>cold process after one file changed</td><td>24</td><td>1</td></tr>
+      <tr><td>cold process, store bypassed (negative control)</td><td>24</td><td>24</td></tr>
+    </tbody>
+  </table>
+  <p>The negative control is the case that gives the measure its meaning: with the persisted store bypassed the new-process read parses every plan and <code>EXIT=1</code> is read from the run, so a reading of zero cannot be produced by a test that never parsed anything.</p>
+</article>
+</body>
+</html>
