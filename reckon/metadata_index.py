@@ -69,7 +69,7 @@ ROW_FIELDS = (
 _SCHEMA = "reckon.metadata-index"
 #: Bumped when an entry gains a field, so an index written by the previous
 #: shape is rebuilt rather than reused with the new field absent.
-_VERSION = 4
+_VERSION = 5
 _FIGURE_DIR = "figures"
 _FIGURE_SUFFIXES = (".png", ".svg", ".gif")
 #: The types discovery keeps in an inventory, so the index answers with the
@@ -91,6 +91,11 @@ class IndexBuild:
     reused: int = 0
     added: int = 0
     removed: int = 0
+    #: One discovery state per covered file, keyed by docs-relative path: the
+    #: parsed ``<meta>`` record and the readiness state a discovery read needs
+    #: beyond it. Persisted with the entry so a fresh process reuses it without
+    #: parsing, and rebuilt only for a file whose bytes changed.
+    discovery: dict[str, dict] = field(default_factory=dict)
     #: Each visited directory's stat identity, keyed by its docs-relative path.
     #: A later read compares these to decide whether the tree's *shape* — the
     #: set of directories and the files in them — still matches the persisted
@@ -377,6 +382,8 @@ def build_index(
             entries.append(entry)
             if "fields" in entry:
                 build.rows.append(dict(entry["fields"]))
+            if isinstance(entry.get("discovery"), Mapping):
+                build.discovery[relative] = entry["discovery"]
             if isinstance(entry.get("plan"), Mapping):
                 build.plans.append({"path": relative, **entry["plan"]})
             continue
@@ -390,13 +397,18 @@ def build_index(
             build.added += 1
         else:
             build.rebuilt.append(relative)
-        fields, plan = _row_for(path, relative, docs_dir, project, signature, stamp)
+        fields, plan, discovery = _row_for(
+            path, relative, docs_dir, project, signature, stamp
+        )
         entry = {"path": relative, "digest": digest}
         if fields is None:
             entry["skip"] = True
         else:
             entry["fields"] = fields
             build.rows.append(fields)
+            if discovery is not None:
+                entry["discovery"] = discovery
+                build.discovery[relative] = discovery
             if plan is not None:
                 # A plan the build could not read keeps no record, so the next
                 # call reads it again rather than reusing a row that never had
@@ -418,11 +430,20 @@ def _row_is_complete(entry: Mapping) -> bool:
     A plan row is written without its plan record when the build could not read
     the file, so the row is rebuilt on the next call: a drain then reports the
     inventory unknown, as it does for a plan it cannot read, instead of
-    answering from a row whose figures were never derived.
+    answering from a row whose figures were never derived. An entry for a
+    document discovery inventories must also carry its discovery state — the
+    parsed head record and readiness — so a reader serving a discovery read from
+    the index never reuses an entry written before that state was kept.
     """
 
     fields = entry.get("fields")
-    if not isinstance(fields, Mapping) or fields.get("type") != "plan":
+    if not isinstance(fields, Mapping):
+        return True
+    if fields.get("type") in _INDEX_TYPES and not isinstance(
+        entry.get("discovery"), Mapping
+    ):
+        return False
+    if fields.get("type") != "plan":
         return True
     return isinstance(entry.get("plan"), Mapping)
 
@@ -615,16 +636,19 @@ def _row_for(
     project: str,
     signature: list[int],
     stamp: StampFn,
-) -> tuple[dict | None, dict | None]:
-    """Return one file's (row, plan record), each None when it has none.
+) -> tuple[dict | None, dict | None, dict | None]:
+    """Return one file's (row, plan record, discovery state), each None if absent.
 
     The plan record holds the figures a row cannot take from a ``<meta>`` head
     — the open-followup and implementable-section counts — and is present only
-    for a plan the resource walk can identify.
+    for a plan the resource walk can identify. The discovery state is the full
+    ``<meta>`` record and readiness a discovery read needs, present only for a
+    document discovery inventories; it is what lets a fresh process answer a
+    discovery read from the persisted index without parsing the file again.
     """
 
     if path.suffix in _FIGURE_SUFFIXES:
-        return _figure_row(path, docs_dir, project, signature, stamp), None
+        return _figure_row(path, docs_dir, project, signature, stamp), None, None
     return _resource_row(path, docs_dir, project, signature, stamp)
 
 
@@ -634,13 +658,13 @@ def _resource_row(
     project: str,
     signature: list[int],
     stamp: StampFn,
-) -> tuple[dict | None, dict | None]:
+) -> tuple[dict | None, dict | None, dict | None]:
     try:
         resource = resources.identify_resource(docs_dir, path, project)
     except resources.ResourceCollision:
-        return None, None
+        return None, None, None
     if resource is None or resource.type not in _INDEX_TYPES:
-        return None, None
+        return None, None, None
     rec = _plan_html.parse_meta(path)
     href = str(
         (
@@ -665,7 +689,15 @@ def _resource_row(
         "height": None,
     }
     plan = _plan_record(path, resource.archived) if resource.type == "plan" else None
-    return row, plan
+    discovery = {"meta": rec, "state": None, "readiness": None}
+    try:
+        state, text = _plan_html.read_state_and_text_file(path)
+    except ValueError:
+        pass
+    else:
+        discovery["state"] = state
+        discovery["readiness"] = readiness_from_state(state, text)
+    return row, plan, discovery
 
 
 def _plan_record(path: Path, archived: bool) -> dict:
@@ -713,6 +745,121 @@ def _plan_record(path: Path, archived: bool) -> dict:
         "implementable_sections": plan_executable_remainder(state),
         "unreadable": False,
     }
+
+
+def readiness_from_state(state: Mapping, text: str) -> list:
+    """Return the readiness a discovery row carries, from a parsed state.
+
+    The named gates, the decision rows, the followups and the section
+    declarations — the body state a roadmap explains readiness from, beyond a
+    document's ``<meta>`` head. The gate list is drawn only when the document
+    declares a gates section, matching the direct read.
+    """
+
+    has_gates = 'data-reckon="gates"' in text or "data-reckon='gates'" in text
+    gates = list(state.get("gates") or []) if has_gates else []
+    decisions = state.get("decisions") or {}
+    decision_rows = [
+        {"key": key, **(decision if isinstance(decision, dict) else {})}
+        for key, decision in decisions.items()
+    ]
+    followups = list(state.get("followups") or [])
+    declarations = (
+        state.get("section_declarations")
+        if isinstance(state.get("section_declarations"), dict)
+        else {}
+    )
+    return [gates, decision_rows, followups, declarations]
+
+
+def discovery_state(docs_dir: Path, project: str) -> dict[str, dict]:
+    """Return each file's persisted discovery state whose bytes are unchanged.
+
+    A discovery read needs, per file, the ``<meta>`` record and the parsed
+    semantic state its inventory row carries. Both are parsed once, when the
+    file's bytes first appear, and kept in the persisted metadata index beside
+    its row and digest. This returns them, keyed by docs-relative path, for
+    every file whose digest still matches the one recorded with it — so a fresh
+    process answers a discovery read without parsing the tree it has already
+    parsed.
+
+    An entry whose digest moved is left out, and the caller parses that file and
+    hands it to :func:`record_discovery`; an absent or unusable store is
+    re-derived by a full build rather than read as a stale answer. A file the
+    store does not cover is left out too, so the caller parses it rather than
+    inventing an entry.
+
+    The store is read afresh on every call rather than served from the in-process
+    index cache: a caller that edits a plan and reads discovery again in the same
+    process reports nothing to a change watch, so that cache still holds a parse
+    of the file as it was. The digest check is what makes an entry current, and it
+    runs only over the persisted entries.
+    """
+
+    key = _cache_key(docs_dir, project, False)
+    known = _load_persisted(docs_dir, project)
+    if not known:
+        built = _build_and_cache(key, docs_dir, project, repo_dir=None)
+        return {relative: dict(entry) for relative, entry in built.discovery.items()}
+    fresh: dict[str, dict] = {}
+    for relative, entry in known.items():
+        discovery = entry.get("discovery")
+        if not isinstance(discovery, Mapping):
+            continue
+        try:
+            digest = _content_digest(docs_dir / relative)
+        except OSError:
+            continue
+        if entry.get("digest") == digest:
+            fresh[relative] = dict(discovery)
+    return fresh
+
+
+def record_discovery(docs_dir: Path, project: str, relative: str) -> None:
+    """Write a file the caller has just read into the persisted index.
+
+    A discovery read parses a file whose persisted entry its digest no longer
+    matches, and this puts the parse that read made back under the file's new
+    digest, so the next process reuses it instead of parsing it again. The
+    caller has already read the file, so the entry is derived from the shared
+    per-file parse rather than a second read. A path the store does not cover,
+    or one whose digest already matches, is left alone: the file set and the
+    directory stamps are the full build's to record.
+    """
+
+    docs_dir = Path(docs_dir)
+    path = docs_dir / relative
+    known = _load_persisted(docs_dir, project)
+    if relative not in known:
+        return
+    try:
+        digest = _content_digest(path)
+        if known[relative].get("digest") == digest:
+            return
+        signature = list(file_signature(path))
+    except OSError:
+        return
+    fields, plan, discovery = _row_for(
+        path,
+        relative,
+        docs_dir,
+        project,
+        signature,
+        _make_stamp(None, None, None),
+    )
+    entry: dict = {"path": relative, "digest": digest}
+    if fields is None:
+        entry["skip"] = True
+    else:
+        entry["fields"] = fields
+        if discovery is not None:
+            entry["discovery"] = discovery
+        if plan is not None and not plan["unreadable"]:
+            entry["plan"] = plan
+    known[relative] = entry
+    _store_persisted(
+        docs_dir, project, list(known.values()), _load_dir_stamps(docs_dir, project)
+    )
 
 
 def _unreadable_record(archived: bool) -> dict:
@@ -914,5 +1061,5 @@ def _store_persisted(
         write_json_atomically(
             _index_path(docs_dir, project), payload, fsync=False, ensure_ascii=False
         )
-    except OSError as exc:
+    except (OSError, TypeError, ValueError) as exc:
         LOGGER.warning("Could not persist the metadata index for %s: %s", project, exc)
