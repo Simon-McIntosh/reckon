@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T15:03:48.835Z",
+  "dispatched_at": "2026-10-16T14:54:56Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:135",
+      "id": "reasoning-1",
+      "reason": "the node's action is unchanged (it still runs on an exclusive node); only the justification is wrong, and the real reason a fresh measurement is needed is that \u00a77's quiet figures predate the \u00a78\u2013\u00a717 fixes, which the sentence already implies.",
+      "text": "the done-when's premise \"Every figure since then was taken on the loaded shared fleet node, so this measurement, on an exclusive node, decides whether those fixes meet the targets\" is contradicted by the plan's own evidence: \u00a77 (line 140, and its record c-run-r-20261012T225207500362, 2026-10-12T23:41Z) measured roadmap, audit and discovery \"on one quiet node against one frozen corpus copy\", dated after \u00a76's first measurement (c-run-r-20261012T210514131486, 2026-10-12T22:04Z), so not every figure since that measurement was taken under load",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:135",
+      "id": "done_when-1",
+      "reason": "the node as written cannot produce its done-when on one job of that partition, so the section must say the arms run concurrently or say how the work is chunked under the one-hour cap, and the deliverable already forbids opening a second `srun` step.",
+      "text": "\u00a76 requires \"both arms run on an exclusive `all_debug` node in the same window\" and the deliverable has the worker \"run both arms in place there without opening another `srun` step\", but `all_debug` carries a one-hour `PartitionTimeLimit` (`sinfo`: all_debug 1:00:00) and the plan's own head medians \u2014 cold roadmap 90.7 s, cold audit 158.6 s, cold discovery 68.5 s, five times each, plus the warm runs \u2014 put a single sequential job's measurements at roughly an hour (about 32 min per arm, about 64 min for both), so the job would be killed or pend before both arms complete",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:135",
+      "id": "evidence_paths-1",
+      "reason": "the head is the promoted code at run time and the base is named in the same sentence, so a reader can infer both; requiring the revision would harden the record without changing what the node measures.",
+      "text": "the done-when requires each log to name the host it ran on and copies the pinned corpus revision into the run directory, but requires no code revision in the log FIELDS, unlike the sibling measurement sections \u00a79 (\"names its revision, its corpus and its literal command\") and \u00a718 (same), so the head arm's medians cannot be tied to the commit they were taken at once further fixes land on main",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "585a187d2c0b6afe85610e79504e83284a9741624a7f4081f730a9a55e590094",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 108,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T145414565963-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "8e048d2b9a6a1f6b2b42855645d034672256610e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the profiler \u00a76 names resolves at `health-tool-latency/scripts/profile_reads.py` under the health-review directory \u00a71 gives in full, and the \u00a71 figures the medians are recorded beside are present in the plan.",
+    "done_when": "a finding \u2014 the done-when requires both arms on one exclusive `all_debug` node with five runs of each read, a workload the plan's own medians put at or over that partition's one-hour limit.",
+    "evidence_paths": "a finding \u2014 the done-when requires each log to name the host and the pinned corpus revision but not the code revision measured, so the head arm's figures cannot be tied to the commit they were taken at.",
+    "naming": "pass \u2014 \u00a76 adds no symbol, filename or comment, and its prose references work by section number, which is plan content, not a code label or ticket.",
+    "reasoning": "a finding \u2014 the stated reason a fresh quiet-node measurement is needed, that \"every figure since then was taken on the loaded shared fleet node\", is contradicted by \u00a77's own quiet-node measurement, dated after \u00a76's first measurement.",
+    "single_goal": "pass \u2014 \u00a76 has one deliverable, a measurement of the three reads that attributes any missed target; it carries no second outcome.",
+    "wiring": "pass \u2014 \u00a76's prerequisites (\u00a72\u2013\u00a75, \u00a78, \u00a710, \u00a711, \u00a712, \u00a713, \u00a714, \u00a716 and \u00a717) are each declared done in `plan-section-declarations`, and the one open followup that routes it, `f-araiid-remeasure`, recommends `/reckon-build a-read-answers-inside-its-deadline \u00a76`, which matches the section's `implementable` status."
+  },
+  "section_digests": {
+    "_document": "27e04b7ec4c7a4424eb7839ff032567efe8f2c9f504c5f09139c14dd3ec284e3",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "2e817fe7ecf921a2962e8bfb1caaedca46275f377f0e54bcea9c967019c4f074",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T15:08:07.968779+00:00"
+}
