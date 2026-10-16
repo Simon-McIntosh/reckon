@@ -1,0 +1,101 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own suite arms. The reviewed manifest records no baseline_suite or after_suite JSON, so neither arm retires an id. The head gate log gate-head.log runs to its summary line with 63 passed and zero failures, so added_failure_count is 0 whatever an absent base arm would contribute; the against-the-base comparison the done_when names is therefore not established by an arm and rests on the head log alone.",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch_picker.py:492 selection = pick(...) - the dispatch path, whose default snapshotter is snapshot.candidates (exclusion applied at reckon/crew/picker/snapshot.py:1013-1046)",
+    "reckon/crew/picker/replay.py:96 pick(..., snapshotter=snapshotter) - the replay path, whose snapshotter is a partial of snapshot.candidates"
+  ],
+  "completed_at": "2026-10-16T17:30:34.028Z",
+  "dispatched_at": "2026-10-16T17:19:37Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the change is not merged: the run is closed as a negative result because both named routes already honour the exclusion; the real sites are routing s30",
+      "recorded_at": "2026-10-16T17:32:07.226155+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the change is not merged: the run is closed as a negative result because both named routes already honour the exclusion; the real sites are routing s30",
+      "recorded_at": "2026-10-16T17:32:17.108160+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the change is not merged: the run is closed as a negative result because both named routes already honour the exclusion; the real sites are routing s30",
+      "recorded_at": "2026-10-16T17:32:27.730408+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "the change is not merged: the run is closed as a negative result because both named routes already honour the exclusion; the real sites are routing s30",
+      "recorded_at": "2026-10-16T17:32:40.611618+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/picker/__init__.py",
+      "line": "295",
+      "severity": "follow-on",
+      "text": "follow-on: the guard re-implements the review-lane exclusion filter owned by reckon/crew/picker/snapshot.py:1013-1046 at a second site instead of extending it; both production callers of pick() (reckon/crew/dispatch_picker.py:492, reckon/crew/picker/replay.py:96) supply that scan, so the boundary re-check is unreachable by the recorded defect and adds a parallel copy of the filter to keep in step."
+    },
+    {
+      "file": "reckon/crew/picker/__init__.py",
+      "line": "323",
+      "severity": "follow-on",
+      "text": "follow-on: the reason literal 'review-excluded-backend' is duplicated from reckon/crew/picker/snapshot.py:1046 with no shared constant, so the two excluded-lists the pick can emit can drift in vocabulary without any test noticing."
+    },
+    {
+      "file": "tests/test_a_review_avoids_an_excluded_lane.py",
+      "line": "100",
+      "severity": "follow-on",
+      "text": "follow-on: the assertions exercise withhold_excluded_review_lanes directly and no case drives pick(), so the wiring at reckon/crew/picker/__init__.py:443 is not guarded -- removing that call leaves every assertion in the file green."
+    },
+    {
+      "file": "tests/test_a_review_avoids_an_excluded_lane.py",
+      "line": "121",
+      "severity": "follow-on",
+      "text": "follow-on: the reflex and explicit-lane cases assert unchanged code (_ordered_review_lanes and routing.resolve_role_override) and so pin pre-existing behaviour rather than the added function; they are useful negatives but provide no durability for this change."
+    }
+  ],
+  "head_log_revision": "fd4efcec3",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s): reckon/crew/dispatch_picker.py:492 (dispatch) and reckon/crew/picker/replay.py:96 (replay), both reaching the change through pick() at reckon/crew/picker/__init__.py:443; both supply the default candidate scan, which already applies the exclusion at reckon/crew/picker/snapshot.py:1013-1046.",
+    "diff": "read commit by commit against c36688c8; the single gained commit fd4efcec3 adds withhold_excluded_review_lanes at reckon/crew/picker/__init__.py:295, its call in pick() at :443 and the test file tests/test_a_review_avoids_an_excluded_lane.py (136 lines) - 176 added lines, every path inside the declared write paths.",
+    "done_when": "the done_when's base-reproduction arm cannot be produced: both routes already exclude at base (reckon/crew/picker/snapshot.py:1013-1046, reckon/crew/recovery_review_dispatch.py:1191-1219), which the worker's evidence records; the head arm is met only at helper level (tests/test_a_review_avoids_an_excluded_lane.py:100-138 call withhold_excluded_review_lanes and _ordered_review_lanes directly) rather than through a dispatch, and no base arm log is recorded.",
+    "goal": "the goal is that every route dispatching a review honour review_excluded_backends unless the caller names the lane; reckon/crew/picker/__init__.py:443 enforces it at the pick boundary and test_a_lane_the_caller_names_is_still_resolved pins the explicit-lane exemption, but the routes that carried the recorded failures are not in the diff.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T164309282092-a-review-avoids-an-excluded-lane/manifest.md; status complete, one commit fd4efcec3, the tests field records the gate at 63 passed, negative-control-picker.log and negative-control-reflex.log are both named, but no baseline_suite or after_suite arm is recorded.",
+    "write_paths": "the fence named reckon/crew/dispatch_picker.py, reckon/crew/picker/__init__.py, reckon/crew/recovery_review_dispatch.py and tests/test_a_review_avoids_an_excluded_lane.py; the gained commit touches only reckon/crew/picker/__init__.py and tests/test_a_review_avoids_an_excluded_lane.py, both inside the fence."
+  },
+  "justifications": {
+    "durability": "the helper's filter reddens under negative-control-picker.log and the reflex ordering under negative-control-reflex.log, but no assertion calls pick(), so deleting the call at reckon/crew/picker/__init__.py:443 leaves tests/test_a_review_avoids_an_excluded_lane.py:100-104 green.",
+    "evidence": "gate-head.log (63 passed), negative-control-picker.log and negative-control-reflex.log (each EXIT=1) are recorded, but the gate exercises helpers at tests/test_a_review_avoids_an_excluded_lane.py:70 and :117 rather than the done_when's end-to-end routes, and no baseline arm is recorded.",
+    "fit": "withhold_excluded_review_lanes at reckon/crew/picker/__init__.py:295 follows the module's docstring style and introduces no plan label, but it re-states the reason literal owned by reckon/crew/picker/snapshot.py:1046 with no shared constant.",
+    "goal_fidelity": "reckon/crew/picker/__init__.py:443 removes an excluded lane from the pick's offered set, satisfying the picker clause of the Deliverable, but the routes that carried the recorded failures are unchanged at the reviewed head.",
+    "reuse": "the addition reuses recovery._review_excluded_backends at reckon/crew/picker/__init__.py:314 yet duplicates the candidate-filter mechanism owned by reckon/crew/picker/snapshot.py:1013-1046 rather than extending it.",
+    "scope_discipline": "commit fd4efcec3 touches only reckon/crew/picker/__init__.py and tests/test_a_review_avoids_an_excluded_lane.py, both named in the fence, and adds nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every route dispatching a review honour review_excluded_backends unless the caller names the lane; the landed change adds withhold_excluded_review_lanes at reckon/crew/picker/__init__.py:295 and calls it from pick() at :443, so the pick's offered set now omits a withdrawn lane at the pick's own boundary, but the routes that actually carried the recorded failures (the reflex's printed next action and the caller of queue_admission's rebind) are untouched.\nVERDICT done_when: the done_when asks the node to reproduce both routes at base and resolve them to the local backend at head; reckon/crew/picker/snapshot.py:1013-1046 and reckon/crew/recovery_review_dispatch.py:1191-1219 already exclude at base, so the base reproduction cannot be produced, and the gate (gate-head.log, 63 passed) exercises the helper and the ordering directly rather than driving either route end to end.\nVERDICT write_paths: the fence named reckon/crew/dispatch_picker.py, reckon/crew/picker/__init__.py, reckon/crew/recovery_review_dispatch.py and tests/test_a_review_avoids_an_excluded_lane.py; the single commit fd4efcec3 touches reckon/crew/picker/__init__.py and tests/test_a_review_avoids_an_excluded_lane.py, both inside the fence.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T164309282092-a-review-avoids-an-excluded-lane/manifest.md; status complete, one commit fd4efcec3, the gate (gate-head.log, 63 passed) and both controls (negative-control-picker.log, negative-control-reflex.log, each EXIT=1) are recorded, but no baseline_suite/after_suite arm is recorded, so no against-the-base comparison exists.\nVERDICT diff: read commit by commit against c36688c8; the single commit fd4efcec3 adds withhold_excluded_review_lanes and its call in reckon/crew/picker/__init__.py (+40) and the new test file tests/test_a_review_avoids_an_excluded_lane.py (+136), 176 added lines, all inside the declared write paths.\nCALL_SITES: reckon/crew/dispatch_picker.py:492 (the dispatch path, calling pick()) and reckon/crew/picker/replay.py:96 (the replay path, calling pick()), both of which supply snapshot.candidates or a partial of it, so the scan at reckon/crew/picker/snapshot.py:1013-1046 already applies the exclusion before the new guard runs\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: the Deliverable's picker clause holds at reckon/crew/picker/__init__.py:443 and the reflex clause already held at reckon/crew/recovery_review_dispatch.py:1191-1219, but the routes that carried the recorded failures are unchanged, so 'every route' is not established.\nSCORE evidence: 12\nJUSTIFICATION evidence: negative-control-picker.log and negative-control-reflex.log each redden one case at EXIT=1 and gate-head.log records 63 passed, but the gate calls helpers at tests/test_a_review_avoids_an_excluded_lane.py:70 and :117 rather than the done_when's end-to-end routes, and no base arm is recorded.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: commit fd4efcec3 touches only reckon/crew/picker/__init__.py and tests/test_a_review_avoids_an_excluded_lane.py, both named in the fence, and adds no out-of-goal change.\nSCORE durability: 13\nJUSTIFICATION durability: the helper's filter and the reflex ordering redden under their controls, but no assertion calls pick(), so deleting the call at reckon/crew/picker/__init__.py:443 leaves tests/test_a_review_avoids_an_excluded_lane.py:100-104 green.\nSCORE fit: 15\nJUSTIFICATION fit: withhold_excluded_review_lanes at reckon/crew/picker/__init__.py:295 follows the module's docstring style and names no plan label, but it re-states the reason literal 'review-excluded-backend' owned by reckon/crew/picker/snapshot.py:1046 with no shared constant.\nSCORE reuse: 10\nJUSTIFICATION reuse: it reuses the exclusion-set owner recovery._review_excluded_backends at reckon/crew/picker/__init__.py:314 but duplicates, rather than extends, the candidate-filter mechanism owned by reckon/crew/picker/snapshot.py:1013-1046.\nFINDING reckon/crew/picker/__init__.py:295 follow-on: the guard re-implements the review-lane exclusion filter owned by reckon/crew/picker/snapshot.py:1013-1046 at a second site instead of extending it; both production callers of pick() (reckon/crew/dispatch_picker.py:492, reckon/crew/picker/replay.py:96) supply that scan, so the boundary re-check is unreachable by the recorded defect and adds a parallel copy of the filter to keep in step.\nFINDING reckon/crew/picker/__init__.py:323 follow-on: the reason literal 'review-excluded-backend' is duplicated from reckon/crew/picker/snapshot.py:1046 with no shared constant, so the two excluded-lists the pick can emit can drift in vocabulary without any test noticing.\nFINDING tests/test_a_review_avoids_an_excluded_lane.py:100 follow-on: the assertions exercise withhold_excluded_review_lanes directly and no case drives pick(), so the wiring at reckon/crew/picker/__init__.py:443 is not guarded -- removing that call leaves every assertion in the file green.\nFINDING tests/test_a_review_avoids_an_excluded_lane.py:121 follow-on: the reflex and explicit-lane cases assert unchanged code (_ordered_review_lanes and routing.resolve_role_override) and so pin pre-existing behaviour rather than the added function; they are useful negatives but provide no durability for this change.",
+  "review_run_id": "r-20261016T171907819625-review-of-a-review-avoids-an-excluded-lane-fd4efcec3e3b",
+  "reviewed_base_sha": "c36688c828f59a7c584258c54d8d4629e9ab5f74",
+  "reviewed_head_sha": "fd4efcec3e3ba57b4f7cace31e8a9c386afec066",
+  "reviewed_run_id": "r-20261016T164309282092-a-review-avoids-an-excluded-lane",
+  "role": "review",
+  "rubric": "node",
+  "scores": {
+    "durability": 13,
+    "evidence": 12,
+    "fit": 15,
+    "goal_fidelity": 13,
+    "reuse": 10,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T17:28:44.114374+00:00",
+  "total": 82
+}
