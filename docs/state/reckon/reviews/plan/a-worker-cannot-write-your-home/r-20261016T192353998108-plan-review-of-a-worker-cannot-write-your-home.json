@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T19:40:40.842Z",
+  "dispatched_at": "2026-10-16T19:24:58Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:1516",
+      "id": "reasoning-1",
+      "reason": "sealing one exposed root while the identical grant exposes its sibling leaves a worker able to destroy the plan's own review evidence, so the fix must seal both roots, not the reports root alone.",
+      "text": "\u00a710 seals only the reports root, but `_fence_write_roots` in reckon/crew/dispatch_admission.py passes `review_store_directory=review_store_root()` into the same `delivery_write_roots` call, so every fenced launch also gets the whole of `~/.config/reckon/crew/reviews` writable; the deleting run's own worker.json argv binds `/home/ITER/mcintos/.config/reckon/crew/reviews` writable beside `.../crew/reports`, so any worker can still `rm -rf` the store of every project's review records",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:1516",
+      "id": "done_when-1",
+      "reason": "a done-when clause that cannot fail gives a node dispatched at \u00a710 no falsifier that review records survive the change, and hides the omitted root behind a check that always passes.",
+      "text": "\u00a710's done-when asserts that \"a run review whose delivery path lies under the review store ... still write their records\", but the section seals only the reports root, which never touches `crew/reviews`, so that clause holds however the code behaves and is no control for the seal",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "09fe16ce9329bf81616a6d0cd006443e0e1d02685d455407e29f598d6b6d1d27",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 139,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T192353998108-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "22dc40791cce9f1cc56fbdc3bc8e8e3369b21ca5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a710's cited modules (reckon/_backends.py, reckon/_worker_fence.py, reckon/crew/dispatch_admission.py) and symbols (delivery_write_roots, reports_dir) resolve, and the read-deadline \u00a76/\u00a718/\u00a719 it names exist in docs/plans/a-read-answers-inside-its-deadline.html.",
+    "done_when": "a finding \u2014 \u00a710's done-when carries a clause (\"a run review whose delivery path lies under the review store ... still write their records\") that cannot fail under the change the same section makes.",
+    "evidence_paths": "pass \u2014 \u00a710's negative control is logged under the run directory (crew/runs/<run>), a durable path that survives the run, not a session scratchpad.",
+    "naming": "pass \u2014 \u00a710's new test file and the symbols it names are named by mechanism, carrying no plan labels, ticket numbers, version tags or changelog prose.",
+    "reasoning": "a finding \u2014 the stated root cause is incomplete: the grant that hands the reports root also hands the whole review store writable, so sealing only the reports root leaves the sibling root equally exposed.",
+    "single_goal": "pass \u2014 \u00a710 carries one deliverable, sealing the shared delivery roots that the fence's write grant exposes, with the review-still-delivers cases as the same seal's correctness check.",
+    "wiring": "pass \u2014 plan-informs names new-work-gets-a-new-worker and worker-death-is-recorded (both exist under docs/plans), and the single gate this plan provides is recorded on the-boundary-check-reads-two-trees, whose \u00a73 evidence requirement is met; no declared relationship points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "94f33494f6c8d622c3c493e812ffec3ee38e76c0ca5624eee2052b51711c211a",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "a5fc67757ec080a7d7095a79fefb3a9ad53304b3e0d0a67d152775e7fa148f05",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T19:42:17.733428+00:00"
+}
