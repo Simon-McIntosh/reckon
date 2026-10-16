@@ -821,6 +821,13 @@ def dispatch(
     orchestrator_assessment = dict(
         (dispatch_options or {}).get("orchestrator_assessment") or {}
     )
+    # A plan review composes under one node id, plan-review-of-<slug>, for every
+    # revision of the plan, so an earlier review of the same plan is a different
+    # piece of work rather than a previous attempt of this one. The compose marks
+    # such a dispatch fresh; the marker rides the dispatch options onto the
+    # queued record the admission pass replays, so a review held by the lane and
+    # launched later records a first attempt too.
+    fresh_review = bool((dispatch_options or {}).get("fresh_review"))
     deferred_shadow_selection = (
         picker_selection is None
         and resolved_route != "picker"
@@ -1461,7 +1468,7 @@ def dispatch(
                     )
                 )
             attempt = int(primary.get("attempt") or 1)
-        elif prior_node_runs:
+        elif prior_node_runs and not fresh_review:
             previous = prior_node_runs[-1]
             previous_lineage = previous.get("lineage") or {}
             previous_attempt = previous.get("attempt") or previous_lineage.get(

@@ -1771,6 +1771,25 @@ def _discard_composed_plan_review(
     return dict(report)
 
 
+def _composed_review_options(
+    record: Mapping[str, Any], *, allow_unreconciled_runs: bool
+) -> dict[str, Any]:
+    """The dispatch options a composed review launches under.
+
+    A plan review composes under one node id, ``plan-review-of-<slug>``, for
+    every revision of the plan, so an earlier review of the same plan is not a
+    previous attempt of this one. Marking a plan review's compose ``fresh_review``
+    tells ``dispatch()`` to record a first attempt rather than a redispatch. The
+    marker rides these options onto the queued record the admission pass replays,
+    so a review the lane holds and later launches records a first attempt too. A
+    run review keys on the head it read, so it carries no such marker.
+    """
+    options: dict[str, Any] = {"allow_unreconciled_runs": allow_unreconciled_runs}
+    if record.get("subject") == "plan":
+        options["fresh_review"] = True
+    return options
+
+
 def _dispatch_composed_review(
     record: Mapping[str, Any],
     fields: Mapping[str, Any],
@@ -1999,7 +2018,9 @@ def _dispatch_composed_review(
             # unreconciled waiver from these options. Passing the waiver here
             # alone would be lost with the request: the relaunch would then
             # refuse the review for the very run it exists to reconcile.
-            dispatch_options={"allow_unreconciled_runs": allow_unreconciled_runs},
+            dispatch_options=_composed_review_options(
+                record, allow_unreconciled_runs=allow_unreconciled_runs
+            ),
         )
     except BudgetHold as exc:
         reason = f"the {backend} lane is unavailable: {exc}"
