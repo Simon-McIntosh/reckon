@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_resume_anchors_the_run_harness_home.py::test_a_resume_reaches_the_home_the_dispatch_composed[codex]"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": "1a26b890fe14d6a082fe55f23fbc9c3ac0f0b685",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-16T22:08:05.317Z",
+  "dispatched_at": "2026-10-16T22:00:43Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the measured candidate bc0a246b (tree 2ea7c2e0) is not the tree that landed at 502b4f306 (tree a6916380), so the \"no failing test id is added\" conclusion does not cover the two commits merged after this node was dispatched, one of which (fc9035400) edits the host-line test"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/manifest.md",
+      "line": "8",
+      "severity": "follow-on",
+      "text": "follow-on: the \"load-only\" verdict for the candidate-only id rests on one under-load failure at the candidate and five solo passes per revision, so it is consistent with a candidate-introduced race and should not be read as proof that the merge adds no failure"
+    }
+  ],
+  "head_log_revision": "bc0a246bc38052072ded0ab51bcb82d6c5f941f9",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the reviewed run's tree is unchanged from its base, so reviewed_base_sha == reviewed_head_sha == 1a26b890fe14d6a082fe55f23fbc9c3ac0f0b685; the measurement compares base 1a26b890fe14d6a082fe55f23fbc9c3ac0f0b685 against candidate bc0a246bc38052072ded0ab51bcb82d6c5f941f9, whose tree (2ea7c2e0) is not the tree that landed at 502b4f306 (a6916380).",
+    "done_when": "the done-when names two arm logs under the run directory, each proving reckon.__file__ lies under its own checkout and ending in EXIT=, plus five alone runs per side for every candidate-only id; both logs (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/arm-base.log, /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/arm-cand.log) and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/alone-runs.log carry those and the manifest names the one added id with a verdict.",
+    "goal": "the node's goal is to measure the importer population of the fence reports seal at base 1a26b890f and merge candidate bc0a246b on an exclusive node; it lands no product code and its deliverable is the measurement recorded at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/manifest.md:11.",
+    "manifest": "read manifest.md; status complete, it records base 1 failed/1111 passed and candidate 2 failed/1118 passed with log paths, the alone counts 5/5 at each revision, baseline_suite and after_suite revisions and failure ids, and failure_attribution for the added id and the aborted first job.",
+    "write_paths": "the declared write path is the reports directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-worker-cannot-write-your-home/fence-reports-seal-population-at-merge; the run committed nothing (manifest.md:7-8) and no path under reckon/ or tests/ changed."
+  },
+  "justifications": {
+    "durability": "no test guards a re-measurement, and the load-only verdict for the single candidate-only id at manifest.md:19 rests on five solo passes per revision (alone-runs.log) against a single under-load failure, which does not exclude a candidate-introduced race.",
+    "evidence": "each arm log proves reckon.__file__ under its own checkout and ends in EXIT=, and the failure extractor was shown to see something known present (a synthetic FAILED line in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/alone-runs.log), though the base arm ran 97 files where the done-when says 98 because one population file exists only at the candidate.",
+    "fit": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/population-arms.sh follows the run-dir measurement idiom, names no plan or stage label, and cross-checks its own FAILED-id extraction against pytest's summary count at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/compose_manifest.py:58.",
+    "goal_fidelity": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/arm-base.log and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/arm-cand.log carry the two-revision population result the goal names, base 1 failed/1111 passed and candidate 2 failed/1118 passed, measured on one exclusive all_debug job at 98dci4-clu-3143.",
+    "reuse": "search over reckon/ found reckon/crew/standing_suite.py:135 population_declarations and :246 run as the owner of running a declared test population, but it runs one tree and does not serve a two-revision parity, so the node's own two-arm runner in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/population-arms.sh adds a capability the repository does not own rather than extending it.",
+    "scope_discipline": "manifest.md:7-8 records commits none and changed_paths none, every write is a delivery write under the run directory, and git diff --stat 1a26b890fe14d6a082fe55f23fbc9c3ac0f0b685 bc0a246b shows only the delivered change, reckon/_worker_fence.py and the new test file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure the importer population of the fence reports seal at base 1a26b890f and merge candidate bc0a246b on an exclusive node; it lands no product code and its deliverable is the measurement recorded at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/manifest.md:11.\nVERDICT done_when: the done-when names two arm logs under the run directory, each proving reckon.__file__ lies under its own checkout and ending in EXIT=, plus five alone runs per side for every candidate-only id; both logs (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/arm-base.log, /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/arm-cand.log) and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/alone-runs.log carry those and the manifest names the one added id with a verdict.\nVERDICT write_paths: the declared write path is the reports directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-worker-cannot-write-your-home/fence-reports-seal-population-at-merge; the run committed nothing (manifest.md:7-8) and no path under reckon/ or tests/ changed.\nVERDICT manifest: read manifest.md; status complete, it records base 1 failed/1111 passed and candidate 2 failed/1118 passed with log paths, the alone counts 5/5 at each revision, baseline_suite and after_suite revisions and failure ids, and failure_attribution for the added id and the aborted first job.\nVERDICT diff: the reviewed run's tree is unchanged from its base, so reviewed_base_sha == reviewed_head_sha == 1a26b890fe14d6a082fe55f23fbc9c3ac0f0b685; the measurement compares base 1a26b890fe14d6a082fe55f23fbc9c3ac0f0b685 against candidate bc0a246bc38052072ded0ab51bcb82d6c5f941f9, whose tree (2ea7c2e0) is not the tree that landed at 502b4f306 (a6916380).\nCALL_SITES: none\nreviewed_base_sha: 1a26b890fe14d6a082fe55f23fbc9c3ac0f0b685\nreviewed_head_sha: 1a26b890fe14d6a082fe55f23fbc9c3ac0f0b685\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/arm-base.log and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/arm-cand.log carry the two-revision population result the goal names, base 1 failed/1111 passed and candidate 2 failed/1118 passed, measured on one exclusive all_debug job at 98dci4-clu-3143.\nSCORE evidence: 18\nJUSTIFICATION evidence: each arm log proves reckon.__file__ under its own checkout and ends in EXIT=, and the failure extractor was shown to see something known present (a synthetic FAILED line in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/alone-runs.log), though the base arm ran 97 files where the done-when says 98 because one population file exists only at the candidate.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: manifest.md:7-8 records commits none and changed_paths none, every write is a delivery write under the run directory, and git diff --stat 1a26b890fe14d6a082fe55f23fbc9c3ac0f0b685 bc0a246b shows only the delivered change, reckon/_worker_fence.py and the new test file.\nSCORE durability: 14\nJUSTIFICATION durability: no test guards a re-measurement, and the load-only verdict for the single candidate-only id at manifest.md:19 rests on five solo passes per revision (alone-runs.log) against a single under-load failure, which does not exclude a candidate-introduced race.\nSCORE fit: 18\nJUSTIFICATION fit: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/population-arms.sh follows the run-dir measurement idiom, names no plan or stage label, and cross-checks its own FAILED-id extraction against pytest's summary count at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/compose_manifest.py:58.\nSCORE reuse: 17\nJUSTIFICATION reuse: search over reckon/ found reckon/crew/standing_suite.py:135 population_declarations and :246 run as the owner of running a declared test population, but it runs one tree and does not serve a two-revision parity, so the node's own two-arm runner in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/population-arms.sh adds a capability the repository does not own rather than extending it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/manifest.md:11 follow-on: the measured candidate bc0a246b (tree 2ea7c2e0) is not the tree that landed at 502b4f306 (tree a6916380), so the \"no failing test id is added\" conclusion does not cover the two commits merged after this node was dispatched, one of which (fc9035400) edits the host-line test\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge/manifest.md:8 follow-on: the \"load-only\" verdict for the candidate-only id rests on one under-load failure at the candidate and five solo passes per revision, so it is consistent with a candidate-introduced race and should not be read as proof that the merge adds no failure\n",
+  "review_run_id": "r-20261016T220011535719-review-of-fence-reports-seal-population-at-merge-1a26b890fe14",
+  "reviewed_base_sha": "1a26b890fe14d6a082fe55f23fbc9c3ac0f0b685",
+  "reviewed_head_sha": "1a26b890fe14d6a082fe55f23fbc9c3ac0f0b685",
+  "reviewed_run_id": "r-20261016T212841719818-fence-reports-seal-population-at-merge",
+  "role": "review",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T22:12:57.009079+00:00",
+  "total": 105
+}
