@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T11:41:26.973Z",
+  "dispatched_at": "2026-10-16T11:30:39Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/jev-learns-from-its-routes.html:394",
+      "id": "wiring-1",
+      "reason": "a coordinator dispatching from f-jlr-003 will never build \u00a713, the same omission an earlier review acted on for \u00a78 and \u00a79.",
+      "text": "the plan's only open followup f-jlr-003 gives a build order for \u00a73, \u00a74, \u00a76, \u00a77, \u00a78, \u00a79, \u00a710 and \u00a711 and names no invocation for \u00a713, which this revision declares implementable, so the newest section has no driving dispatch",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/jev-learns-from-its-routes.html:24",
+      "id": "wiring-2",
+      "reason": "\u00a76 is already done, so no live ordering hazard exists and the map's silence does not misroute a dispatch; the edge would only record the relationship.",
+      "text": "`plan-section-depends-on` adds no edge for s13 although \u00a713's deliverable builds on \u00a76's rollout-receipt mechanism and shares \u00a76's three write paths (reckon/crew/promotion_checks.py, promotion.py, rollout.py)",
+      "type": "wiring",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/jev-learns-from-its-routes.html:366",
+      "id": "reasoning-1",
+      "reason": "the root cause, the mechanism, the done-when and the negative control do not rest on the attempt count; the run's recorded 76 s / 18 s and the T1 end were confirmed against stream.jsonl directly.",
+      "text": "the Why states the run spent \"twenty resumes\" and that the directory holds \"resume-1.jsonl to resume-20.jsonl\", but the directory holds only resume-1.jsonl through resume-18.jsonl plus a single lane-change-2.jsonl (twenty attempts, nineteen codex sessions), and the done-when tells the worker to copy that shape",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "e1115a4d39a7ef47a5c57d83e5ca277d80efc0ff6e4dd5ea25daefcbd651e4c5",
+  "plan_slug": "jev-learns-from-its-routes",
+  "plan_version": 36,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T112931464702-plan-review-of-jev-learns-from-its-routes",
+  "reviewed_blob_sha": "ba177a1946d74a68d907266c72e72743e26b7cd3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited run r-20261015T160647356198-fast-map-production resolves, \u00a76/\u00a77 exist, the href to lane-and-model-routing \u00a725 and the depends-on reference to lane-and-model-routing \u00a727 both resolve (docs/plans/lane-and-model-routing.html:154,162); the evidence-archive links resolve.",
+    "done_when": "pass \u2014 \u00a713's done-when fixes completed_at at T3 and names the red direction (under the negative control completed_at must read T1), so the gate can fail.",
+    "evidence_paths": "pass \u2014 \u00a713's gate is a repository test and its figures go to the worker manifest; the test writes nothing outside a temporary crew home.",
+    "naming": "pass \u2014 \u00a713 introduces no plan label, ticket number or version tag, and its test file is named for the mechanism.",
+    "reasoning": "a finding \u2014 \u00a713's cited root cause and mechanism are correct, but the attempt count in its cited evidence does not match the run directory it names.",
+    "single_goal": "pass \u2014 \u00a713 carries one deliverable, a run's timing spanning all its attempts.",
+    "wiring": "a finding \u2014 s13 is declared implementable, but `plan-section-depends-on` carries no s13 edge and the only open followup f-jlr-003 names no invocation for \u00a713."
+  },
+  "section_digests": {
+    "_document": "fc9fd8032fff9bcd4a5bdbd9e6178f9eae56d7961a6a5ea1d878958fe74fc3e6",
+    "s1": "a8d94897c0a90e9cd66d3e5c67d6aca0aeb94d26a49bd944098a8d70a151ca34",
+    "s10": "0d42b606fb481de5ba3425ebbe60d11d1d0fa95c234be3787770a652d68b4bd7",
+    "s11": "403c9ebb80e8d39b6f9944fe5bd76edc62c59efc805c7b8906df46c317cc323c",
+    "s12": "48cbcffdbd3a8bcb2e95999c3339cec0f3210970c7b25ac4014ce6f18c6407a0",
+    "s13": "39d852b73e1d4700e81a4bd66cbe09d4555ca96d01411656200e6e0d451b169a",
+    "s2": "cc35fef7cc2d6ce0af14220bc78602ca25e960978e3dd3efb5979ca5e3c14917",
+    "s3": "807cb056a055ab721cde0a5a171037e4f1dfecdb1d6a1d5d2c4e5babde307811",
+    "s4": "828939c295d01d9b6fa0e90760eeee37626b612fb8414928adedddbb83f7238b",
+    "s5": "6cff1e7bf68d8874d67225b968adb4aeea6828a4800ac65b4676edd703eb6a52",
+    "s6": "52a8aac92b5fb5f13ab9b1a64209356dd2469cac4df0bd6b230fe7d1a711d131",
+    "s7": "54c7b27c70ed529203f4484e6ad6fcca22fb6679577180b9364a8e92bd5fc7a7",
+    "s8": "652e49cdb77f02dc989a56ae626a1a124b80a5633e0c0f60319d4d4456a875d4",
+    "s9": "4a7f10635f6026036ecc6293a36261d0f1a5a77b026b7cd40d60ed92de631a92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T11:43:08.848464+00:00"
+}
