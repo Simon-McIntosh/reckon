@@ -134,8 +134,7 @@ def _commit_prior_row(
     # Positive control: the precondition is present where dispatch() reads it, so
     # a first-attempt result cannot pass on a seeding that silently did nothing.
     assert any(
-        str(row.get("node") or "") == node_id
-        for row in ledger.runs(PROJECT, root=repo)
+        str(row.get("node") or "") == node_id for row in ledger.runs(PROJECT, root=repo)
     ), f"the prior run of {node_id} is not committed where dispatch() reads it"
 
 
@@ -150,7 +149,11 @@ def _prepare_worktree(tmp_path: Path, head: str):
 
 def _compose_plan_review(repo: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     head = subprocess.run(
-        ["git", "rev-parse", "HEAD"], cwd=repo, check=True, capture_output=True, text=True
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
     ).stdout.strip()
     monkeypatch.setattr(
         dispatch_module, "_create_worktree", _prepare_worktree(tmp_path, head)
