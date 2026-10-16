@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "075698488873d0e8822346513499fc316197c7b4",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:374",
+    "reckon/crew/recovery_stream.py:57"
+  ],
+  "completed_at": "2026-10-16T14:25:52.078Z",
+  "dispatched_at": "2026-10-16T14:14:14Z",
+  "findings": [
+    {
+      "file": "tests/test_a_run_spans_all_its_attempts.py",
+      "line": "436",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion FIRST_CODEX_SESSION in credited is a membership test against the same fixture constant the test wrote into the codex stream, so it is satisfied by any code that credits that stream's session including the deleted _codex_session_of_stream re-introduced; it guards the observation premise and the no-session regression the negative control exercises, but not this commit's own change, so a straight revert of the commit is invisible to it."
+    }
+  ],
+  "head_log_revision": "706bc2840030c34d81e4398157a155c448cbd1e3",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit 706bc2840 against base 0756984, one commit, three files, +106/-22, all inside the declared scope; the production change deletes _codex_session_of_stream and reads observation.session_id at reckon/crew/promotion_checks.py:192.",
+    "done_when": "the done_when names tests/test_a_run_spans_all_its_attempts.py and the gate log records 5 passed at EXIT=0 with base-arm 63 and head-arm 64 both at EXIT=0 (0 added failures), the new credited-session assertion reddens in the negative-control log, and both arm commands pass --basetemp under the run's own TMPDIR.",
+    "goal": "the node's goal is to credit a codex attempt with the session its observation already read, and reckon/crew/promotion_checks.py:192 sets stream_session = observation.session_id while _codex_session_of_stream is absent from the reviewed head, so the goal is met.",
+    "manifest": "read; it records the gate at 5 passed EXIT=0, base-arm 63 and head-arm 64 both EXIT=0 with 0 added failures, names its gate, base, head and negative-control logs, and documents that the negative control credits the attempt with no session.",
+    "write_paths": "read the four paths declared at prompt.txt of the source run; the diff touches reckon/crew/promotion_checks.py, tests/test_a_run_spans_all_its_attempts.py and docs/evidence/fragments/jev-learns-from-its-routes/codex-session-from-the-observation.html, all inside them, and the declared figure directory is unused."
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_spans_all_its_attempts.py:436 reddens only when no session is credited (as negative-control.log shows), so reverting this commit to the deleted helper leaves all five tests green and the refactor's own regression is unguarded.",
+    "evidence": "head-arm.log records 64 passed at EXIT=0 against base-arm.log's 63 at EXIT=0 (0 added failures) and negative-control.log records EXIT=1 with the new assertion at tests/test_a_run_spans_all_its_attempts.py:436 reddening, though the arm set is a fixed nine-file list rather than derived from importers.",
+    "fit": "the comment at reckon/crew/promotion_checks.py:186-191 states the mechanism (the session observe_log just read from this same stream) in the module's existing idiom, and the commit carries a conventional subject and a body with no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/promotion_checks.py:192 credits the attempt with observation.session_id and the duplicate reader _codex_session_of_stream is gone from the reviewed head, exactly the deliverable \u00a714 states.",
+    "reuse": "the change deletes a duplicate reader and reuses the existing owner _backends.observe_log's session_id at reckon/crew/promotion_checks.py:192 rather than adding a definition, so no capability is forked.",
+    "scope_discipline": "every path in the diff is inside the four declared write paths and the change carries nothing the goal does not imply, but the evidence fragment at docs/evidence/fragments/jev-learns-from-its-routes/codex-session-from-the-observation.html is a single paragraph with no defect/change structure and no figure."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to credit a codex attempt with the session its observation already read, and reckon/crew/promotion_checks.py:192 sets stream_session = observation.session_id while _codex_session_of_stream is absent from the reviewed head, so the goal is met.\nVERDICT done_when: the done_when names tests/test_a_run_spans_all_its_attempts.py and the gate log records 5 passed at EXIT=0 with base-arm 63 and head-arm 64 both at EXIT=0 (0 added failures), the new credited-session assertion reddens in the negative-control log, and both arm commands pass --basetemp under the run's own TMPDIR.\nVERDICT write_paths: read the four paths declared at prompt.txt of the source run; the diff touches reckon/crew/promotion_checks.py, tests/test_a_run_spans_all_its_attempts.py and docs/evidence/fragments/jev-learns-from-its-routes/codex-session-from-the-observation.html, all inside them, and the declared figure directory is unused.\nVERDICT manifest: read; it records the gate at 5 passed EXIT=0, base-arm 63 and head-arm 64 both EXIT=0 with 0 added failures, names its gate, base, head and negative-control logs, and documents that the negative control credits the attempt with no session.\nVERDICT diff: read commit 706bc2840 against base 0756984, one commit, three files, +106/-22, all inside the declared scope; the production change deletes _codex_session_of_stream and reads observation.session_id at reckon/crew/promotion_checks.py:192.\nCALL_SITES: reckon/crew/promotion_checks.py:374, reckon/crew/recovery_stream.py:57\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_checks.py:192 credits the attempt with observation.session_id and the duplicate reader _codex_session_of_stream is gone from the reviewed head, exactly the deliverable \u00a714 states.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-arm.log records 64 passed at EXIT=0 against base-arm.log's 63 at EXIT=0 (0 added failures) and negative-control.log records EXIT=1 with the new assertion at tests/test_a_run_spans_all_its_attempts.py:436 reddening, though the arm set is a fixed nine-file list rather than derived from importers.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff is inside the four declared write paths and the change carries nothing the goal does not imply, but the evidence fragment at docs/evidence/fragments/jev-learns-from-its-routes/codex-session-from-the-observation.html is a single paragraph with no defect/change structure and no figure.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_run_spans_all_its_attempts.py:436 reddens only when no session is credited (as negative-control.log shows), so reverting this commit to the deleted helper leaves all five tests green and the refactor's own regression is unguarded.\nSCORE fit: 16\nJUSTIFICATION fit: the comment at reckon/crew/promotion_checks.py:186-191 states the mechanism (the session observe_log just read from this same stream) in the module's existing idiom, and the commit carries a conventional subject and a body with no plan or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change deletes a duplicate reader and reuses the existing owner _backends.observe_log's session_id at reckon/crew/promotion_checks.py:192 rather than adding a definition, so no capability is forked.\nFINDING tests/test_a_run_spans_all_its_attempts.py:436 follow-on: the assertion FIRST_CODEX_SESSION in credited is a membership test against the same fixture constant the test wrote into the codex stream, so it is satisfied by any code that credits that stream's session including the deleted _codex_session_of_stream re-introduced; it guards the observation premise and the no-session regression the negative control exercises, but not this commit's own change, so a straight revert of the commit is invisible to it.",
+  "review_run_id": "r-20261016T141326523037-review-of-codex-session-from-the-observation-706bc2840030",
+  "reviewed_base_sha": "075698488873d0e8822346513499fc316197c7b4",
+  "reviewed_head_sha": "706bc2840030c34d81e4398157a155c448cbd1e3",
+  "reviewed_run_id": "r-20261016T135224460143-codex-session-from-the-observation",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T14:23:34.404254+00:00",
+  "total": 104
+}
