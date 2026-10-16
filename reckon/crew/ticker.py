@@ -1029,15 +1029,22 @@ ARRIVAL_WINDOW = 90.0
 # already-running run, an echo and a replay are still held, so nothing arrives
 # for work that is not this pane's.
 #
-# A run reaches ``working`` from ``dispatched`` on a fresh launch and from
-# ``starting`` on a resumed or relaunched attempt: both rows announce the same
-# news — the run began doing the work — so both are starts. ``START_KIND`` is the
-# fresh-launch pair a reader names when it means the canonical start; the set is
-# what the policy tests a row against.
+# A run reaches ``working`` from ``dispatched`` on a fresh launch, from
+# ``starting`` on a relaunched attempt, and from any stop state the pane drew as
+# ``halted`` when an attempt is resumed. All announce the same news — the run
+# began doing the work — so all are starts. ``START_KIND`` is the fresh-launch
+# pair a reader names when it means the canonical start; ``RowPolicy`` reads the
+# set when it decides whether a row is a start. The stop states are read from
+# the pane's own vocabulary rather than listed here, so every state the pane
+# draws ``halted`` — ``blocked``, ``exited-unfinished``, ``stalled``,
+# ``abandoned`` and the rest — pairs with ``working`` and a new one is a start
+# the moment it is drawn. The states the pane draws ``delivered`` or ``landed``
+# are excluded, because a producer re-reading a rewritten manifest as working
+# (`delivered -> working`) is not resumed work and stays held.
 START_KIND: tuple[Any, Any] = ("dispatched", "working")
 START_KINDS: frozenset[tuple[Any, Any]] = frozenset(
     {START_KIND, ("starting", "working")}
-)
+) | frozenset((state, "working") for state in PANE_STATES["halted"])
 
 # ── The settle hold ───────────────────────────────────────────────────────────
 #
@@ -1290,9 +1297,10 @@ class RowPolicy:
         peer session's start is work this reader does not own, and the pane's
         silence about it is what keeps another session's history off this one's
         line. A pane with no named session owns no run, so no start qualifies.
-        Both start pairs qualify — a fresh launch's ``dispatched -> working`` and
-        a resumed attempt's ``starting -> working`` — because both announce the
-        same news, that the run began.
+        Every start pair qualifies — a fresh launch's ``dispatched -> working``,
+        a relaunched attempt's ``starting -> working`` and a resume's move out of
+        any stop state into ``working`` — because each announces the same news,
+        that the run began.
         """
         if self._own_session is None:
             return False
