@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite: both record completed=true, exit_status=0 and failure_count=0 across their chunk logs (suite-base-chunk*.log, suite-head-chunk*.log), so head adds no failing id over base.",
+  "backend": "local",
+  "base_log_revision": "dcdde9a8e7cb0a5e0da3ff4cf8de450bb42275d5",
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/mcp.py:2825",
+    "reckon/doccheck.py:709",
+    "reckon/doccheck.py:423",
+    "reckon/_store.py:2067",
+    "reckon/_store.py:2107",
+    "reckon/mcp_discovery.py:157",
+    "reckon/serve.py:2194",
+    "reckon/roadmap.py:2534",
+    "reckon/serve.py:2173"
+  ],
+  "completed_at": "2026-10-16T03:52:28.193Z",
+  "dispatched_at": "2026-10-16T03:41:57Z",
+  "findings": [
+    {
+      "file": "reckon/resources.py",
+      "line": "536",
+      "severity": "follow-on",
+      "text": "follow-on: the dropped record (_SCAN_DROPPED) is one list for the whole scope while the scan cache at reckon/resources.py:512 is keyed by (docs_dir, project), so a strict caller inside a scope spanning more than one docs tree raises ResourceCollision with another tree's message, and a consumer computing invalid_path.relative_to(docs_dir) on that foreign path would raise ValueError; not reachable in the audit today (single docs_dir) but the record should be keyed like the cache."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T025139354260-the-audit-shares-the-scan/ruff-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the log header names rev 56563975b8b2 but its test-file findings (I001 :23, ISC004 :148, W292 :196) and format hunks do not exist at that rev, where the 191-line file passes ruff check and format; the receipt does not correspond to the revision it records."
+    }
+  ],
+  "head_log_revision": "56563975b8b2fd9237d3968ef31c86b813e76878",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read the single commit 56563975b by line against base dcdde9a8e; it adds _audit_read and the scope wrap in reckon/mcp.py, _SCAN_DROPPED and the strict-raise-from-record in reckon/resources.py, a new 191-line test file and a 23-line evidence fragment.",
+    "done_when": "the done_when names tests/test_the_audit_shares_the_scan.py counting walks for one audit read and finding the audit's findings equal at head to base; the file asserts len(counted_walks)==1 at tests/test_the_audit_shares_the_scan.py:125 and _findings(result)==expected golden rows at :194, and the manifest records the run with a declared negative control.",
+    "goal": "the node goal is to make the audit read its resources through one shared resource scan instead of its own tree walk; reckon/mcp.py:2476 now takes the audit's plans from iter_resources inside the resource_scan_scope opened at reckon/mcp.py:2373, and the removed sorted(docs_dir.rglob('*.html')) + identify_resource loop no longer exists.",
+    "manifest": "read the reviewed run's manifest.md; it records status complete, the 5-passed gate at head-newtest.log, six suite chunks (165/125/65 per arm) at zero failures, and two negative-control logs.",
+    "write_paths": "read the manifest's declared paths reckon/mcp.py, reckon/resources.py, tests/test_the_audit_shares_the_scan.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-audit-shares-the-scan.html; the commit touches exactly those four and the docs/figures/ path is unused."
+  },
+  "justifications": {
+    "durability": "tests/test_the_audit_shares_the_scan.py:125 fails on 9 walks under the declared own-walk mutation, so the walk-count guard is independent; the strict-raise-from-record path at reckon/resources.py:536 is only indirectly guarded by the findings-equality test.",
+    "evidence": "tests/test_the_audit_shares_the_scan.py passed 5/5 when I re-ran it at head 56563975b, but the cited receipt at .../r-20261016T025139354260-the-audit-shares-the-scan/ruff-head.log:1 names rev 56563975b8b2 yet reports three findings in the head test file that do not exist at that rev.",
+    "fit": "the new _audit_read split at reckon/mcp.py:2386 and _SCAN_DROPPED at reckon/resources.py:467 follow the module's underscore-private idiom and introduce no name the naming rules forbid.",
+    "goal_fidelity": "reckon/mcp.py:2476 takes the audit's plans from iter_resources inside the scope opened at reckon/mcp.py:2373, replacing the audit's own rglob walk exactly as the goal states.",
+    "reuse": "the change extends the existing owner reckon/resources.py:473 resource_scan_scope and reuses iter_resources rather than adding a second discovery path; my search over reckon/ found no other resource-walk owner to fork.",
+    "scope_discipline": "every path in the commit (reckon/mcp.py, reckon/resources.py, the test file, the evidence fragment) is among the five declared write paths, with nothing the goal does not imply."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the audit read its resources through one shared resource scan instead of its own tree walk; reckon/mcp.py:2476 now takes the audit's plans from iter_resources inside the resource_scan_scope opened at reckon/mcp.py:2373, and the removed sorted(docs_dir.rglob('*.html')) + identify_resource loop no longer exists.\nVERDICT done_when: the done_when names tests/test_the_audit_shares_the_scan.py counting walks for one audit read and finding the audit's findings equal at head to base; the file asserts len(counted_walks)==1 at tests/test_the_audit_shares_the_scan.py:125 and _findings(result)==expected golden rows at :194, and the manifest records the run with a declared negative control.\nVERDICT write_paths: read the manifest's declared paths reckon/mcp.py, reckon/resources.py, tests/test_the_audit_shares_the_scan.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-audit-shares-the-scan.html; the commit touches exactly those four and the docs/figures/ path is unused.\nVERDICT manifest: read the reviewed run's manifest.md; it records status complete, the 5-passed gate at head-newtest.log, six suite chunks (165/125/65 per arm) at zero failures, and two negative-control logs.\nVERDICT diff: read the single commit 56563975b by line against base dcdde9a8e; it adds _audit_read and the scope wrap in reckon/mcp.py, _SCAN_DROPPED and the strict-raise-from-record in reckon/resources.py, a new 191-line test file and a 23-line evidence fragment.\nCALL_SITES: reckon/mcp.py:2825, reckon/doccheck.py:709, reckon/doccheck.py:423, reckon/_store.py:2067, reckon/_store.py:2107, reckon/mcp_discovery.py:157, reckon/serve.py:2194, reckon/roadmap.py:2534, reckon/serve.py:2173\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:2476 takes the audit's plans from iter_resources inside the scope opened at reckon/mcp.py:2373, replacing the audit's own rglob walk exactly as the goal states.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_the_audit_shares_the_scan.py passed 5/5 when I re-ran it at head 56563975b, but the cited receipt at .../r-20261016T025139354260-the-audit-shares-the-scan/ruff-head.log:1 names rev 56563975b8b2 yet reports three findings in the head test file that do not exist at that rev.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the commit (reckon/mcp.py, reckon/resources.py, the test file, the evidence fragment) is among the five declared write paths, with nothing the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_audit_shares_the_scan.py:125 fails on 9 walks under the declared own-walk mutation, so the walk-count guard is independent; the strict-raise-from-record path at reckon/resources.py:536 is only indirectly guarded by the findings-equality test.\nSCORE fit: 18\nJUSTIFICATION fit: the new _audit_read split at reckon/mcp.py:2386 and _SCAN_DROPPED at reckon/resources.py:467 follow the module's underscore-private idiom and introduce no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner reckon/resources.py:473 resource_scan_scope and reuses iter_resources rather than adding a second discovery path; my search over reckon/ found no other resource-walk owner to fork.\nFINDING reckon/resources.py:536 follow-on: the dropped record (_SCAN_DROPPED) is one list for the whole scope while the scan cache at reckon/resources.py:512 is keyed by (docs_dir, project), so a strict caller inside a scope spanning more than one docs tree raises ResourceCollision with another tree's message, and a consumer computing invalid_path.relative_to(docs_dir) on that foreign path would raise ValueError; not reachable in the audit today (single docs_dir) but the record should be keyed like the cache.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T025139354260-the-audit-shares-the-scan/ruff-head.log:1 follow-on: the log header names rev 56563975b8b2 but its test-file findings (I001 :23, ISC004 :148, W292 :196) and format hunks do not exist at that rev, where the 191-line file passes ruff check and format; the receipt does not correspond to the revision it records.\n",
+  "review_run_id": "r-20261016T034115530793-review-of-the-audit-shares-the-scan-56563975b8b2",
+  "reviewed_base_sha": "dcdde9a8e7cb0a5e0da3ff4cf8de450bb42275d5",
+  "reviewed_head_sha": "56563975b8b2fd9237d3968ef31c86b813e76878",
+  "reviewed_run_id": "r-20261016T025139354260-the-audit-shares-the-scan",
+  "reviewer_run_id": "r-20261016T034115530793-review-of-the-audit-shares-the-scan-56563975b8b2",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T03:51:19.479157+00:00",
+  "total": 108
+}
