@@ -30,6 +30,11 @@
     <p>Run <code>r-20261016T061954014694-orchestrator-assessment-reaches-jev</code> (clive, picked by Jev at 0.62), commit <code>93a919cc9</code>, merged at <code>613aadd29</code>. <code>reckon crew dispatch --assess KEY=VALUE</code> validates against the capability requirement vocabulary, refuses unknown keys and values by name, and renders <code>node.orchestrator_assessment</code> beside the declared <code>node.capability</code>. Every run records <code>node_definition.capability</code> from its section routing, explicit routes included. Gate: 6 passed; the negative control reddens the explicit-route record test. <code>verify-gate</code> replayed the gate green at the integrated head. Independent review <code>r-20261016T065945475838</code> totals 97. Its follow-ons: the assessment is spliced after <code>build_state</code> (now §11), and replay omits the assessment (§8).</p>
   </section>
 
+  <section id="s8">
+    <h2>§8 — a replayed pick carries the orchestrator&#x27;s assessment</h2>
+    <p>Run <code>r-20261016T074527305349-replay-carries-the-assessment</code> (clive, picked by Jev at 0.93), commits <code>e4f821246</code>, <code>6087a3c91</code> and <code>f1b77a668</code>, merged at <code>2d6347284</code>. <code>replay</code> passes the recorded <code>node_definition.orchestrator_assessment</code> into the rebuilt <code>PickRequest</code>. Gate: 2 passed, plus the four replay and picker test files that import the module, with 0 added failures. The negative control, which removes the argument, reddens the first assertion. Independent review <code>r-20261016T080820643630</code> totals 117, with one follow-on: the expected value is the fixture's own constant.</p>
+  </section>
+
 </main>
 </body>
 </html>
