@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/picker/lane_context.py:_cached_run_time_profile",
+    "reckon/crew/picker/lane_context.py:run_time_profile",
+    "reckon/crew/picker/lane_context.py:_profile_stamp",
+    "reckon/ledger.py:index_stamp"
+  ],
+  "completed_at": "2026-10-16T06:24:38.765Z",
+  "dispatched_at": "2026-10-16T06:11:44Z",
+  "findings": [
+    {
+      "file": "docs/research/the-pick-state-render-is-slow-because.html",
+      "line": "47",
+      "severity": "follow-on",
+      "text": "follow-on: the document's figures are unguarded - no test or check reddens if the same counter's row format changes and the shares, the 2 s/0.1 s populations or the 20 ms-cap counterfactual go stale, so a number a reader cites can drift from the log it came from without a signal."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 0c6976ce2a; one commit (06cfdc898), three files, +1406 lines (evidence fragment +3, research document +78, ECDF SVG +1325), all inside the declared scope.",
+    "done_when": "the done_when names reckon audit-doc with 0 errors plus content clauses; audit-doc.log records \"OK\" and EXIT=0, and every content clause is present (per-read median, 90th percentile and share of render time at :39-45, the read dominating renders over 2 s at :47, the under-0.1 s control beside the slow shares at :50-56, the log paths and pick window at :30, and the fix's expected effect on the render 90th percentile and the over-5 s share at :74), with the figures recorded in analysis.log.",
+    "goal": "the node's goal is to name the read that makes the pick's state render slow, with its cause and a proposed fix; docs/research/the-pick-state-render-is-slow-because.html:47 names the run-time profile read at 99.538% of read time in the slow tail, :67 attributes it to the ledger-backed cache miss in reckon/crew/picker/lane_context.py:570, and :71-74 proposes moving recomputation off the pick, so the goal is delivered as stated.",
+    "manifest": "read; it records head 06cfdc898363a57fe038c1dff32576c6b68186d4 over base 0c6976ce2af65aed6475ccd6ad52f7bf4972e333, the audit-doc gate OK EXIT=0, the analysis.log metrics, and leaves baseline_suite/after_suite empty because the node's paths reach no test path.",
+    "write_paths": "the manifest declares docs/research/the-pick-state-render-is-slow-because.html, docs/figures/the-pick-state-render-is-slow-because, docs/evidence/fragments/lane-and-model-routing/pick-state-render-slow-read.html and docs/figures/lane-and-model-routing/pick-state-render-slow-read; all three paths in the diff are inside them."
+  },
+  "justifications": {
+    "durability": "no test or check fails if the document's figures regress; audit-doc (via audit-doc.log) asserts only the SPA render contract for docs/research/the-pick-state-render-is-slow-because.html, so the shares at :47 and the counterfactual at :74 drift silently if the counter's row format changes.",
+    "evidence": "audit-doc.log records OK EXIT=0 for the document's render contract, but audit-doc asserts render structure only, and the done_when's numeric clauses rest on analysis.log whose metrics reconcile with the tables at docs/research/the-pick-state-render-is-slow-because.html:39-56.",
+    "fit": "the page follows the research-doc meta idiom (docs/research/the-pick-state-render-is-slow-because.html:4-13) and its figure obeys the data-ink rules, and no path, symbol or comment carries a plan, version or stage label.",
+    "goal_fidelity": "docs/research/the-pick-state-render-is-slow-because.html:47 names _cached_run_time_profile at 99.538% of read time in the slow tail and :67 explains the miss path in reckon/crew/picker/lane_context.py:570, exactly as the goal asks.",
+    "reuse": "the diff adds no definition, so nothing forks a capability the repository owns; the only code it references is the existing owner reckon/crew/picker/lane_context.py:_cached_run_time_profile, which it cites rather than duplicates.",
+    "scope_discipline": "every path in the diff (the research document, its ECDF figure and the evidence fragment) is inside the write paths declared in the manifest, and the node adds no code the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to name the read that makes the pick's state render slow, with its cause and a proposed fix; docs/research/the-pick-state-render-is-slow-because.html:47 names the run-time profile read at 99.538% of read time in the slow tail, :67 attributes it to the ledger-backed cache miss in reckon/crew/picker/lane_context.py:570, and :71-74 proposes moving recomputation off the pick, so the goal is delivered as stated.\nVERDICT done_when: the done_when names reckon audit-doc with 0 errors plus content clauses; audit-doc.log records \"OK\" and EXIT=0, and every content clause is present (per-read median, 90th percentile and share of render time at :39-45, the read dominating renders over 2 s at :47, the under-0.1 s control beside the slow shares at :50-56, the log paths and pick window at :30, and the fix's expected effect on the render 90th percentile and the over-5 s share at :74), with the figures recorded in analysis.log.\nVERDICT write_paths: the manifest declares docs/research/the-pick-state-render-is-slow-because.html, docs/figures/the-pick-state-render-is-slow-because, docs/evidence/fragments/lane-and-model-routing/pick-state-render-slow-read.html and docs/figures/lane-and-model-routing/pick-state-render-slow-read; all three paths in the diff are inside them.\nVERDICT manifest: read; it records head 06cfdc898363a57fe038c1dff32576c6b68186d4 over base 0c6976ce2af65aed6475ccd6ad52f7bf4972e333, the audit-doc gate OK EXIT=0, the analysis.log metrics, and leaves baseline_suite/after_suite empty because the node's paths reach no test path.\nVERDICT diff: read commit by commit against base 0c6976ce2a; one commit (06cfdc898), three files, +1406 lines (evidence fragment +3, research document +78, ECDF SVG +1325), all inside the declared scope.\nCALL_SITES: reckon/crew/picker/lane_context.py:_cached_run_time_profile, reckon/crew/picker/lane_context.py:run_time_profile, reckon/crew/picker/lane_context.py:_profile_stamp, reckon/ledger.py:index_stamp\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/research/the-pick-state-render-is-slow-because.html:47 names _cached_run_time_profile at 99.538% of read time in the slow tail and :67 explains the miss path in reckon/crew/picker/lane_context.py:570, exactly as the goal asks.\nSCORE evidence: 15\nJUSTIFICATION evidence: audit-doc.log records OK EXIT=0 for the document's render contract, but audit-doc asserts render structure only, and the done_when's numeric clauses rest on analysis.log whose metrics reconcile with the tables at docs/research/the-pick-state-render-is-slow-because.html:39-56.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (the research document, its ECDF figure and the evidence fragment) is inside the write paths declared in the manifest, and the node adds no code the goal does not imply.\nSCORE durability: 10\nJUSTIFICATION durability: no test or check fails if the document's figures regress; audit-doc (via audit-doc.log) asserts only the SPA render contract for docs/research/the-pick-state-render-is-slow-because.html, so the shares at :47 and the counterfactual at :74 drift silently if the counter's row format changes.\nSCORE fit: 18\nJUSTIFICATION fit: the page follows the research-doc meta idiom (docs/research/the-pick-state-render-is-slow-because.html:4-13) and its figure obeys the data-ink rules, and no path, symbol or comment carries a plan, version or stage label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, so nothing forks a capability the repository owns; the only code it references is the existing owner reckon/crew/picker/lane_context.py:_cached_run_time_profile, which it cites rather than duplicates.\nreviewed_base_sha: 0c6976ce2af65aed6475ccd6ad52f7bf4972e333\nreviewed_head_sha: 06cfdc898363a57fe038c1dff32576c6b68186d4\nFINDING docs/research/the-pick-state-render-is-slow-because.html:47 follow-on: the document's figures are unguarded - no test or check reddens if the same counter's row format changes and the shares, the 2 s/0.1 s populations or the 20 ms-cap counterfactual go stale, so a number a reader cites can drift from the log it came from without a signal.\n",
+  "review_run_id": "r-20261016T061029334683-review-of-pick-state-render-slow-read-06cfdc898363",
+  "reviewed_base_sha": "0c6976ce2af65aed6475ccd6ad52f7bf4972e333",
+  "reviewed_head_sha": "06cfdc898363a57fe038c1dff32576c6b68186d4",
+  "reviewed_run_id": "r-20261016T055657532716-pick-state-render-slow-read",
+  "scores": {
+    "durability": 10,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "subject": "review",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T06:22:49.483610+00:00",
+  "total": 101
+}
