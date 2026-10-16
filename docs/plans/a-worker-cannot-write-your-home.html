@@ -26,7 +26,7 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.99">
-<meta name="plan-version" content="137">
+<meta name="plan-version" content="138">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -1968,6 +1968,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-16T14:05:00Z">
     <div class="r-comment-body"><p>§9 landed. The fence seals the shared scratch root read-only and re-binds each run's own scratch directory writable, so a worker can no longer delete another run's <code>TMPDIR</code> (<code>86e937e47</code>, merged as <code>5cc2e41fc</code>). Gate: 3 passed, including an executed fenced <code>rm</code> refused on a sibling. The control is red. Importers: 223 passed at both base and head. Review: 115. Admitted runs get the seal once the admit service restarts. <a href="/reckon/evidence/archive/a-worker-cannot-write-your-home-landed.html#s9-scratch-root-sealed">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261016T131016859512-a-worker-cannot-remove-another-runs-scratch" data-who="reckon-build" data-when="2026-10-16T13:37:38.710Z">
+    <div class="r-comment-body"><p>The fence now seals the worker scratch root read-only and re-binds only the run&#x27;s own scratch directory writable — fence_argv appends the shared root to the protected set (via worker_scratch_seal_root) while _fence_write_roots hands the run&#x27;s own scratch directory as a writable root — proved by a new test (3 passed) whose executed fenced rm -rf of a sibling&#x27;s scratch exits non-zero with the sibling present while the same run writes and deletes a file in its own scratch, a negative control that restores the sibling delegation to a successful rm (EXIT=1, 1 failing id), and 223 importer tests passing identically at base and head with 0 added failures.</p></div>
 </div>
 </section>
 </main>
