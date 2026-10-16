@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="lane-and-model-routing">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;jev-learns-from-its-routes#s2&quot;, &quot;jev-learns-from-its-routes#s5&quot;], &quot;s4&quot;: [&quot;jev-learns-from-its-routes#s3&quot;], &quot;s8&quot;: [&quot;jev-learns-from-its-routes#s2&quot;], &quot;s9&quot;: [&quot;jev-learns-from-its-routes#s4&quot;, &quot;jev-learns-from-its-routes#s5&quot;, &quot;lane-and-model-routing#s27&quot;], &quot;s10&quot;: [&quot;jev-learns-from-its-routes#s5&quot;, &quot;jev-learns-from-its-routes#s6&quot;], &quot;s11&quot;: [&quot;jev-learns-from-its-routes#s2&quot;, &quot;jev-learns-from-its-routes#s9&quot;, &quot;jev-learns-from-its-routes#s12&quot;], &quot;s12&quot;: [&quot;jev-learns-from-its-routes#s3&quot;], &quot;s13&quot;: [&quot;jev-learns-from-its-routes#s6&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
   <title>Jev Learns From Its Routes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="49">
+<meta name="plan-version" content="50">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -374,7 +374,7 @@
 <p><strong>Why.</strong> §4's review (<code>r-20261016T120756937620</code>) found that <code>moved_off</code> is counted only for moved rows whose recorded requirement matches the request's, while <code>moved_in</code> counts every moved row in the 14-day window. A move made at a different requirement therefore raises the receiving candidate's <code>moved_in</code> with no matching <code>moved_off</code> on the candidate Jev chose. <code>types.py</code>'s comment says both are read at the request's requirement.</p><p><strong>Deliverable.</strong> When the request names a requirement, <code>moved_in</code> counts only moved rows recorded at that requirement, as <code>moved_off</code> does. When it names none, both count every moved row.</p><p><strong>Write paths.</strong> <code>reckon/crew/picker/snapshot.py</code> and <code>tests/test_a_move_counts_against_the_pick.py</code>.</p><p><strong>Done when</strong> a test with two moved rows, one recorded at the request's requirement and one at another, gives the receiving candidate <code>moved_in</code> of one and the chosen candidate <code>moved_off</code> of one. A request naming no requirement gives two and two. The negative control drops the requirement filter on <code>moved_in</code>, and the first case must then read two. The test files importing <code>snapshot.py</code> show no added failure against the base revision.</p>
 
     <h2 id="s16">§16 — The ceiling case shows the ceiling firing</h2>
-<section data-reckon="section" data-id="s16" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s16" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> §9's review (<code>r-20261016T131939416938</code>) found that the ceiling case in <code>tests/test_one_staleness_rule.py</code> asserts that a re-aged 95% account-surface reading raises no <code>budget-ceiling</code> reason, but nothing shows the ceiling firing on a fresh 95% reading. The string appears in no other test, so the assertion would pass vacuously if the ceiling stopped firing altogether.</p><p><strong>Deliverable.</strong> The ceiling case first shows the fresh reading excluded with a <code>budget-ceiling</code> reason, then the re-aged reading not excluded. No product code changes.</p><p><strong>Write paths.</strong> <code>tests/test_one_staleness_rule.py</code>.</p><p><strong>Done when</strong> the case asserts a <code>budget-ceiling</code> reason on the fresh 95% reading and none after the 10-minute re-age, and passes on main. The negative control disables the ceiling check in a scratch copy of <code>reckon/crew/picker/snapshot.py</code>, and the fresh-reading assertion must then fail.</p>
 
     <h2 id="s17">§17 — An unknown refresh-interval unit is refused</h2>
@@ -417,6 +417,11 @@
     <h4 class="r-fu-title">Build §13 now; §9 after §4; §11 after §9</h4>
     <div class="r-fu-body"><p>§13 writes the promotion and rollout modules, which no open section shares, so it can run beside §4. §9 writes <code>lane_context.py</code> and <code>prompts.py</code> and follows §4. §11 writes <code>prompts.py</code> and <code>picker/__init__.py</code> and follows §9.</p></div>
     <pre class="r-fu-prompt">/reckon-build jev-learns-from-its-routes §13</pre>
+    </article>
+<article class="r-fu" data-id="f-jlr-005" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-written-by="reckon-b9" data-written-at="2026-10-16" data-recommends-skill="/reckon-build jev-learns-from-its-routes §14" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §14, §15 and §17 together</h4>
+    <div class="r-fu-body"><p>§14 (<code>promotion_checks.py</code>), §15 (<code>snapshot.py</code>) and §17 (<code>paid_lanes.py</code>) write disjoint files, and their shared-file predecessors have all landed, so the three run together. §16 closed with no node because the ceiling's firing is already guarded elsewhere.</p></div>
+    <pre class="r-fu-prompt">/reckon-build jev-learns-from-its-routes §14</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -539,6 +544,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261016T131939416938-review-of-a-reserved-account-reading-ages-dfe0a84dbd9e" data-who="reckon-build" data-when="2026-10-16T13:31:28.989Z">
     <div class="r-comment-body"><p>The landed change makes an account-surface budget reading age past the flight's shelf life from its probe by removing the never-stale exemption in lane_context._budget_block and judging it in the same branch as a ledger reading, while a document reading keeps the document's own shelf life. Both surfaces (the candidate flag and return_times) derive through the one rule, so a cached, re-aged account figure can no longer hold a lane fresh. The change is confined to its declared write paths, the glossary is corrected, and the superseded account-surface case in tests/test_picker_return_time.py:181-197 is flipped to stale at 120 minutes. Reviewed base 91b6d66ed2dc652de4286ca67e4c1a2accdbd8d4, reviewed head dfe0a84dbd9ee6522742c987fa92b3f329577d47.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-close-s16" data-who="reckon-build" data-when="2026-10-16T13:55:00Z">
+    <div class="r-comment-body"><p>§16 closed with no node. Content review <code>r-20261016T133958674266</code> (reasoning-1) found that the ceiling's firing is already guarded: <code>tests/test_picker_pressure.py</code> asserts that a fresh reading at or above the ceiling is excluded with a <code>budget-ceiling</code> reason, and <code>tests/test_picker.py</code> exercises the same reason. The follow-on from §9's review rested on the premise that no other test asserted it, which is false. The ceiling case in <code>test_one_staleness_rule.py</code> therefore guards nothing vacuous.</p></div>
 </div>
 </section>
 </main>
