@@ -1,11 +1,15 @@
-"""The audit's validation loop reads each plan through the stat-keyed memo
+"""The audit's validation loop reads each plan through the shared parse
 
 The audit parses every plan's HTML to validate it, and it used to call
-``_plan_html.from_html`` on freshly read bytes once per plan per read, so an
-unchanged corpus was re-read and re-parsed on every warm audit. These tests
-hold the loop to the shared file memo: an unchanged file is parsed once and
-reused, a rewrite is re-parsed, and a caller mutating the returned state cannot
-poison the next reader.
+``_audit_plan_state``'s own ``_plan_html.from_html`` on freshly read text once
+per plan per read, a soup built beside the memoised shared parse the rest of
+the read already reaches. These tests hold the loop to that shared parse: an
+unchanged file is parsed once and reused, a rewrite is re-parsed, and a caller
+mutating the returned state cannot poison the next reader.
+
+Each parse is one ``_plan_html.read_state`` call, the point where the soup is
+built, so the instrument counts that rather than any one route to it. A route
+that builds a soup of its own beside the shared parse raises the count.
 
 Hermetic fixture mirrors tests/test_mcp_audit.py.
 """
@@ -75,27 +79,27 @@ def _valid_state(slug: str, title: str | None = None) -> dict:
     }
 
 
-def _count_from_html(monkeypatch) -> dict[str, int]:
-    """Wrap ``_plan_html.from_html`` so a test can count parses."""
+def _count_parses(monkeypatch) -> dict[str, int]:
+    """Wrap ``_plan_html.read_state`` so a test can count soups built."""
     counts = {"n": 0}
-    real = plan_html_module.from_html
+    real = plan_html_module.read_state
 
-    def wrapper(text: str):
+    def wrapper(text: str) -> dict:
         counts["n"] += 1
         return real(text)
 
-    monkeypatch.setattr(plan_html_module, "from_html", wrapper)
+    monkeypatch.setattr(plan_html_module, "read_state", wrapper)
     return counts
 
 
-# ── the audit loop goes through the memo ─────────────────────────────────
+# ── the audit loop goes through the shared parse ─────────────────────────
 
 
 def test_second_audit_reuses_the_parse(setup, monkeypatch):
     docs_dir, _, project = setup
     _make_plan_html(docs_dir, "alpha", _valid_state("alpha"))
     _make_plan_html(docs_dir, "beta", _valid_state("beta"))
-    counts = _count_from_html(monkeypatch)
+    counts = _count_parses(monkeypatch)
 
     first = mcp_module._audit(project)
     assert first["checked"] == 2
@@ -110,7 +114,7 @@ def test_changed_plan_is_reparsed_by_the_audit(setup, monkeypatch):
     docs_dir, _, project = setup
     alpha = _make_plan_html(docs_dir, "alpha", _valid_state("alpha"))
     _make_plan_html(docs_dir, "beta", _valid_state("beta"))
-    counts = _count_from_html(monkeypatch)
+    counts = _count_parses(monkeypatch)
 
     mcp_module._audit(project)
     assert counts["n"] == 2
@@ -129,10 +133,10 @@ def test_unreadable_plan_is_still_reported(setup, monkeypatch):
     docs_dir, _, project = setup
     _make_plan_html(docs_dir, "alpha", _valid_state("alpha"))
 
-    def boom(text: str):
+    def boom(path: Path) -> dict:
         raise ValueError("bad document")
 
-    monkeypatch.setattr(plan_html_module, "from_html", boom)
+    monkeypatch.setattr(plan_html_module, "read_state_file", boom)
     file_memo_module.clear()
     result = mcp_module._audit(project)
     assert any(
@@ -141,13 +145,13 @@ def test_unreadable_plan_is_still_reported(setup, monkeypatch):
     )
 
 
-# ── the memoised read itself ──────────────────────────────────────────────
+# ── the memoised shared parse itself ─────────────────────────────────────
 
 
 def test_helper_parses_unchanged_file_once(setup, monkeypatch):
     docs_dir, _, _ = setup
     path = _make_plan_html(docs_dir, "alpha", _valid_state("alpha"))
-    counts = _count_from_html(monkeypatch)
+    counts = _count_parses(monkeypatch)
 
     mcp = mcp_module._audit_plan_state(path)
     mcp_again = mcp_module._audit_plan_state(path)
@@ -159,7 +163,7 @@ def test_helper_parses_unchanged_file_once(setup, monkeypatch):
 def test_helper_reparses_after_a_size_change(setup, monkeypatch):
     docs_dir, _, _ = setup
     path = _make_plan_html(docs_dir, "alpha", _valid_state("alpha"))
-    counts = _count_from_html(monkeypatch)
+    counts = _count_parses(monkeypatch)
 
     assert mcp_module._audit_plan_state(path).title == "Alpha"
     path.write_text(
@@ -167,6 +171,10 @@ def test_helper_reparses_after_a_size_change(setup, monkeypatch):
             docs_dir, "alpha", _valid_state("alpha", "A longer title")
         ).read_text(),
     )
+    assert mcp_module._audit_plan_state(path).title == "A longer title"
+    assert counts["n"] == 2
+    # One parse for each version, and the next unchanged read is served from
+    # the memo rather than parsed again.
     assert mcp_module._audit_plan_state(path).title == "A longer title"
     assert counts["n"] == 2
 
