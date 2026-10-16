@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="the-pick-state-render-is-slow-because">
+  <meta name="plan-title" content="Why the pick's state render is slow">
+  <meta name="plan-summary" content="Timed reads identify the run-time profile as the source of the state render's slow tail.">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-informs" content="lane-and-model-routing">
+  <meta name="plan-source" content="fleet pick and state-read timing logs, 2026-10-14 to 2026-10-16">
+  <meta name="plan-source-quality" content="primary">
+  <title>Why the pick's state render is slow | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Research input</p>
+      <h1>Why the pick's state render is slow</h1>
+      <p class="lead">The run-time profile read accounts for 99.5% of timed read duration in state renders over two seconds; the same read accounts for 41.0% in renders under 0.1 seconds.</p>
+    </header>
+
+    <section id="method">
+      <h2>Window and attribution</h2>
+      <p>The counter ran for more than a working day before this analysis. I read <code>/home/ITER/mcintos/.config/reckon/crew/state-read-timings.jsonl</code> and <code>/home/ITER/mcintos/.config/reckon/crew/pick-timings.jsonl</code> from <strong>2026-10-14 00:22:00 UTC through 2026-10-16 05:55:00 UTC</strong>. The interval contains 6,785 timed-read rows and 2,723 completed pick windows. Read durations are individual calls; render durations are the enclosing <code>state_render_ms</code> stage.</p>
+      <p>Each read row records its finish time and duration. I subtracted the duration to obtain its start, then joined both timestamps to one pick's conservative state-stage window. The lower bound is <code>started_at + snapshot_ms + capability_ms</code>; the upper bound is <code>started_at + latency_ms − questions_render_ms − jev_ms</code>. The context estimate is measured inside the snapshot, so it is not added again. This window encloses the render while allowing untimed setup and composition. A row was accepted only when exactly one pick window contained it. A pick was retained only when its accepted rows included exactly one <code>local_lane_load</code>, <code>list_live</code> and <code>template_load</code> marker. Thus the attribution does not silently assign overlapping picks to one another.</p>
+      <p>Of the 6,785 rows, 6,607 had one candidate window, 110 had none and 68 had multiple; 1,254 picks formed complete, unique read groups containing 6,555 rows. The other picks cannot be treated as zero-read renders: some had no counter rows or no complete unambiguous group. All figures below use only those 1,254 groups. The <code>ms</code> and <code>at</code> fields contain no project, cache-hit flag or pick identifier, so the window join is the strongest attribution these logs permit.</p>
+    </section>
+
+    <section id="finding">
+      <h2>The slow read</h2>
+      <p>Across the joined picks, <code>_cached_run_time_profile</code> is the dominant read. It was called 2,793 times in 1,254 renders; its median call was 5.687 ms, but its 90th percentile was 413.024 ms. The slowest calls reach seconds. The three other named reads have much smaller tails. Percentages of render time divide each read's summed duration by the summed render duration for that population. They do not total 100% because prompt composition and other work are outside these four timers.</p>
+      <table>
+        <caption>Timed calls in all 1,254 attributed state renders</caption>
+        <thead><tr><th scope="col">Read</th><th scope="col">Calls</th><th scope="col">Median [ms]</th><th scope="col">90th percentile [ms]</th><th scope="col">Share of render time</th></tr></thead>
+        <tbody>
+          <tr><th scope="row"><code>_cached_run_time_profile</code></th><td>2,793</td><td>5.687</td><td>413.024</td><td>92.894%</td></tr>
+          <tr><th scope="row"><code>list_live</code></th><td>1,254</td><td>11.808</td><td>20.895</td><td>1.950%</td></tr>
+          <tr><th scope="row"><code>local_lane_load</code></th><td>1,254</td><td>0.347</td><td>2.163</td><td>0.238%</td></tr>
+          <tr><th scope="row"><code>template_load</code></th><td>1,254</td><td>3.804</td><td>7.972</td><td>0.703%</td></tr>
+        </tbody>
+      </table>
+      <p>Among <strong>169 renders over 2 seconds</strong>, the profile read takes <strong>98.976% of render time</strong> and <strong>99.538% of timed read duration</strong>. Every one of these renders spends over 90% of its time in that read; 164 contain an individual profile call over 2 seconds. None contains another named read over 2 seconds. The render median is 3.799 s and its 90th percentile is 5.920 s.</p>
+      <table>
+        <caption>The contrasting fast population: 716 renders under 0.1 seconds</caption>
+        <thead><tr><th scope="col">Read</th><th scope="col">Slow share of render time</th><th scope="col">Fast share of render time</th><th scope="col">Slow share of read time</th><th scope="col">Fast share of read time</th></tr></thead>
+        <tbody>
+          <tr><th scope="row"><code>_cached_run_time_profile</code></th><td>98.976%</td><td>22.527%</td><td>99.538%</td><td>41.024%</td></tr>
+          <tr><th scope="row"><code>list_live</code></th><td>0.294%</td><td>23.058%</td><td>0.295%</td><td>41.991%</td></tr>
+          <tr><th scope="row"><code>local_lane_load</code></th><td>0.016%</td><td>1.649%</td><td>0.016%</td><td>3.003%</td></tr>
+          <tr><th scope="row"><code>template_load</code></th><td>0.149%</td><td>7.678%</td><td>0.150%</td><td>13.982%</td></tr>
+        </tbody>
+      </table>
+      <p>The control clears a <strong>58.5 percentage-point margin in read-time share</strong> for the dominant read (99.538% versus 41.024%); the render-time-share margin is 76.4 points. A uniform attribution across fast and slow renders would fail this control. In fast renders the profile call's 90th percentile is 8.429 ms; in slow renders it is 4,883.091 ms.</p>
+      <figure>
+        <img src="/reckon/figures/the-pick-state-render-is-slow-because/read-duration-ecdf.svg" alt="Cumulative distributions of run-time profile read duration on a logarithmic millisecond axis. Fast renders cluster below ten milliseconds; slow renders have a long seconds-scale tail.">
+        <figcaption>Each line contains the individual <code>_cached_run_time_profile</code> calls joined to the stated pick population, not one average per pick. The seconds-scale tail appears in slow renders and is absent from the fast control.</figcaption>
+      </figure>
+    </section>
+
+    <section id="cause">
+      <h2>Cause and limit of the evidence</h2>
+      <p><code>reckon/crew/picker/lane_context.py</code> calls <code>_cached_run_time_profile</code> for foreign projects with live local workers. Its persisted cache key includes the project's ledger aggregate, runs directory, SQLite index and calendar day. A changed source key or absent cache entry invokes <code>run_time_profile</code>, which calls <code>ledger.runs</code> over a 14-day window. That path checks split run-file metadata before reading its index; on this shared filesystem, a single project can have hundreds or thousands of files (3,846 in reckon's runs directory and 1,228 in imas-codex's at inspection). A new dispatch process cannot reuse the preceding process's in-memory memo. Frequent run promotions invalidate the shared profile and put that ledger work back in the render's synchronous path.</p>
+      <p>This is the code path that explains a 5 ms common case beside multi-second calls and why the profile read alone dominates the slow renders. The counter did not record whether a particular call missed its cache, which project it read, or the time spent in metadata checks versus parsing. Those details remain an instrument gap; the timing result identifies the expensive read, and the code identifies the plausible slow path rather than proving that every slow call took it.</p>
+    </section>
+
+    <section id="proposal">
+      <h2>Proposed follow-on and expected effect</h2>
+      <p>Move profile recomputation off the pick's critical path. Publish a small, validated profile snapshot when a project's ledger changes; let the pick read that snapshot with its source stamp and age. If the source has moved, serve a bounded last-good snapshot with its age disclosed, or report an unknown return time when it is too old. The render should never rebuild a foreign ledger profile synchronously. The follow-on must verify that changed ledger data eventually refreshes the snapshot and that stale or absent data is labelled, so the picker does not mistake an old figure for a current one.</p>
+      <p>An illustrative replay capped every profile call at <strong>20 ms</strong> while leaving every other measured duration unchanged. For the 1,254 joined picks, the render's 90th percentile falls from <strong>2,708 ms to 118 ms</strong>; the share of picks whose own elapsed time exceeds the dispatcher's 5 s bound falls from <strong>192/1,254 (15.31%) to 112/1,254 (8.93%)</strong>, a 6.38-point reduction. A 50 ms cap gives a 144 ms render 90th percentile and the same 8.93% over-bound share. These are conditional estimates of removing synchronous profile stalls, not post-fix measurements. The dispatcher also performs work before <code>pick()</code>; this log cannot predict its actual fallback rate from the pick duration alone.</p>
+    </section>
+  </main>
+</body>
+</html>
