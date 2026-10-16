@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="A ctest id names its test, not its index">
+  <meta name="plan-summary" content="canonical_node_id drops a leading ctest index so a manifest id copied from a run summary (157 - XPOINT_BASELINE/ITER/imas/corsica) compares equal to the name the gate-log reader takes from a log's failure block. A red, completed baseline_suite naming the indexed id covers a head ctest log failing only that test, so _zero_added_against_a_red_base is true; a base naming an unrelated id refuses. Negative control: with the index left in place the red-base case is false and two tests fail, EXIT=1.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-16">
+  <meta name="plan-verdict" content="passed">
+  <title>A ctest id names its test | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A ctest id names its test, not its index</h1>
+    <section id="a-ctest-id-names-its-test-landing">
+      <h2>Landing</h2>
+      <p><code>canonical_node_id</code> in <code>reckon/crew/review.py</code> left a
+        ctest summary id's leading index in place, so a manifest's
+        <code>baseline_suite.failure_ids</code> copied verbatim from a run summary
+        (<code>157 - XPOINT_BASELINE/ITER/imas/corsica</code>) did not compare equal to
+        the name the gate-log reader takes from a log's failure block, and
+        <code>_zero_added_against_a_red_base</code> refused a genuine zero-added delta
+        against a red base. It now drops a leading ctest index before reducing the path;
+        the index is a position in one run's list, not the test's identity, and a pytest
+        node id never opens that way. New tests in
+        <code>tests/test_a_ctest_id_names_its_test.py</code>; gate logs and the negative
+        control are under the run directory.</p>
+    </section>
+  </main>
+</body>
+</html>
