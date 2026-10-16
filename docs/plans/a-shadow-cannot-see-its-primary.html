@@ -26,7 +26,7 @@
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -299,6 +299,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-16T23:58:00Z">
     <div class="r-comment-body"><p>§4 landed: a shadow's fence hides its primary's run directory, review records and worktree on launch, resume and lane change, with the paths resolved by the same function the contamination scan reads (commits <code>a0fbb86d9</code>, <code>856de5076</code>). The bwrap stub reads the primary's records as empty, the importers show no added failure, and the negative control fails. <a href="/reckon/evidence/archive/a-shadow-cannot-see-its-primary-landed.html#s4">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261016T230836611924-a-fence-hides-the-primary" data-who="reckon-build" data-when="2026-10-16T23:37:42.801Z">
+    <div class="r-comment-body"><p>A shadow&#x27;s launch, resume and lane change now mask the primary&#x27;s run directory, its review record files and its worktree — an empty tmpfs over each directory and /dev/null over each review record, resolved in the crew layer from the primary&#x27;s committed row through promotion_scope._primary_read_surfaces and passed to launch_plan as a plain path sequence (head gate 86 passed, zero added failures against base 9c93c6e55).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-16T20:36:00Z">
     <div class="r-comment-body"><p>§3 landed: a shadow's worktree session is <code>shadow-&lt;candidate&gt;-&lt;component&gt;</code>, so neither its path nor its prompt names the primary, and every pre-change naming still resolves (commit <code>d079e008</code>). 751 passed against base with no added failure; the negative control fails two ids; review scores 17–20. <a href="/reckon/evidence/archive/a-shadow-cannot-see-its-primary-landed.html#s3">evidence</a></p></div>
