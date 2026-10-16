@@ -116,6 +116,20 @@ _GLOSSARY: dict[str, str] = {
         "rather than as a match. These counts are the history at this node's "
         "difficulty, not a calibrated ranking."
     ),
+    "moved_in": (
+        "A candidate's gate history over the runs a coordinator moved onto it "
+        "from another lane: a run Jev routed elsewhere, whose lineage records a "
+        "lane change onto this candidate. It uses the same passed, failed, "
+        "not-run and unknown counts as outcomes, but those runs are kept out of "
+        "outcomes and outcomes_at_requirement, because their outcome is the "
+        "outcome of the pick they were chosen for, not of this lane's own picks."
+    ),
+    "moved_off": (
+        "How many of this candidate's own picks a coordinator moved away to "
+        "another lane, counted at this node's requirement. A high moved_off "
+        "means coordinators overrode the choice this candidate was picked for, "
+        "so the lane never ran the nodes it was chosen for."
+    ),
     "context": (
         "A candidate's context block. window_tokens is the input window that "
         "gates the lane; estimated_tokens is this node's deterministic input "
@@ -191,9 +205,15 @@ def _candidate_state(candidate: Any) -> dict[str, Any]:
         # The block is rendered only when the request named a requirement to
         # read history at; a pick that named none carries no such block, so the
         # state keeps its shape for every pick that does not condition on
-        # difficulty.
+        # difficulty. The move figures travel with the block for the same reason:
+        # a move is counted at the request's requirement, so the two are stated
+        # together or neither is.
         **(
-            {"outcomes_at_requirement": candidate.outcomes_at_requirement}
+            {
+                "outcomes_at_requirement": candidate.outcomes_at_requirement,
+                "moved_in": getattr(candidate, "moved_in", None),
+                "moved_off": getattr(candidate, "moved_off", None),
+            }
             if getattr(candidate, "outcomes_at_requirement", None)
             else {}
         ),

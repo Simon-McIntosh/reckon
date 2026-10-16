@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+</head>
+<body>
+  <section data-reckon="evidence" id="a-move-counts-against-the-pick">
+    <h2 id="a-move-counts-against-the-pick-title">A coordinator's move off Jev's pick counts against the pick</h2>
+    <p id="a-move-counts-against-the-pick-landing">
+      A row whose lineage records a lane change away from the backend its
+      <code>picker_selection</code> chose is a move: its outcome is kept out of
+      the receiving candidate's <code>outcomes</code> and
+      <code>outcomes_at_requirement</code> and tallied under that candidate's
+      <code>moved_in</code>, while the candidate Jev chose gains
+      <code>moved_off</code>. With the three fixture rows (a Jev-routed clive run
+      that passed, a clive pick a coordinator moved to codex that failed, and a
+      Jev-routed codex run that passed), the clive candidate reads 1 passed with
+      <code>moved_off</code> 1 and the codex candidate reads 1 passed with
+      <code>moved_in</code> 1 failed. A row with a lane change but no pick counts
+      under its final lane as before. Gate
+      <code>tests/test_a_move_counts_against_the_pick.py</code> 5 passed;
+      negative control (lineage ignored) 3 failed (EXIT=1).
+    </p>
+  </section>
+</body>
+</html>
