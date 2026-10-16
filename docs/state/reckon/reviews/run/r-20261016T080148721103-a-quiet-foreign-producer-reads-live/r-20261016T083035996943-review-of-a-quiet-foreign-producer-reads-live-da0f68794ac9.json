@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "7dac5dbf2b8267200208a8019e60e413e4e47a98",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:freshness_reading",
+    "reckon/hooks/coordinator_obligations.py:_prompt",
+    "reckon/hooks/coordinator_obligations.py:_stop",
+    "reckon/crew/recovery_watch.py:_watch_registration"
+  ],
+  "completed_at": "2026-10-16T08:39:36Z",
+  "dispatched_at": "2026-10-16T08:31:33Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the coordinator measured it at da0f68794: ruff check adds 0 findings on watch_unit.py and obligation_snapshot.py against base 7dac5dbf2 (0 and 0 either side), ruff format --check is clean on both at base and head, and the new test file passes both",
+      "recorded_at": "2026-10-16T08:39:10.863739+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T080148721103-a-quiet-foreign-producer-reads-live/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when requires Ruff check and format comparisons against base, but neither the tests field nor a named gate log records those results, leaving that style measure unverified from the durable run artifacts."
+    }
+  ],
+  "head_log_revision": "da0f68794ac97a4bc4981046b0cd29fb6bd6261f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read sole commit da0f68794ac97a4bc4981046b0cd29fb6bd6261f against base 7dac5dbf2b8267200208a8019e60e413e4e47a98; its three-file diff adds a lease-backed foreign-seat reader, uses the seat stamp for remote snapshots, and adds five test cases.",
+    "done_when": "the plan's section 19 names the quiet-seat, stale-lease, old-snapshot, negative-control, importer and style gates; tests/test_a_quiet_foreign_producer_reads_live.py:111-174 asserts the behavioral cases, and the manifest names the pytest logs, though it does not record the required Ruff result.",
+    "goal": "the source prompt's goal is a live quiet foreign seat with its own code stamp; reckon/crew/watch_unit.py:148-168 accepts a matching fresh host lease and reckon/crew/obligation_snapshot.py:433-439 reads that seat stamp.",
+    "manifest": "the source manifest records head-target.log as 5 passed, negative-control.log as 1 failed, baseline-direct-imports.log as 111 passed and head-direct-imports.log as 116 passed; those summaries and EXIT lines are present in the named logs.",
+    "write_paths": "the source prompt declares reckon/crew/watch_unit.py, reckon/crew/obligation_snapshot.py, tests/test_a_quiet_foreign_producer_reads_live.py and optional document paths; all three paths in the commit diff are declared."
+  },
+  "justifications": {
+    "durability": "tests/test_a_quiet_foreign_producer_reads_live.py:117 fails when the lease branch is removed, lines 132-134 fail if stale or wrong-host leases revive a seat, and lines 162-174 fail if the snapshot stamp replaces the seat stamp or the hook reports the wrong remedy.",
+    "evidence": "head-target.log ends 5 passed EXIT=0, negative-control.log fails the lease regression, and the completed baseline-direct-imports.log and head-direct-imports.log show 111 versus 116 passes, but manifest.md:15-16 records no Ruff gate result.",
+    "fit": "reckon/crew/watch_unit.py:143-176 keeps the existing host-only and boolean readers as wrappers around the new tuple reader, and reckon/crew/obligation_snapshot.py:340-348 keeps its deferred-import boundary.",
+    "goal_fidelity": "reckon/crew/watch_unit.py:162-168 returns the seat host only for a matching holder or fresh stream, and reckon/crew/obligation_snapshot.py:433-439 compares the checkout stamp with the live seat's stamp.",
+    "reuse": "a capability search found the lease reading in reckon/crew/runs.py:2570-2572 and the foreign-seat owner in reckon/crew/watch_unit.py:143; the new reader extends that owner and its snapshot wrapper delegates to it.",
+    "scope_discipline": "the diff changes only reckon/crew/watch_unit.py, reckon/crew/obligation_snapshot.py and tests/test_a_quiet_foreign_producer_reads_live.py, all inside the source prompt's write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source prompt's goal is a live quiet foreign seat with its own code stamp; reckon/crew/watch_unit.py:148-168 accepts a matching fresh host lease and reckon/crew/obligation_snapshot.py:433-439 reads that seat stamp.\nVERDICT done_when: the plan's section 19 names the quiet-seat, stale-lease, old-snapshot, negative-control, importer and style gates; tests/test_a_quiet_foreign_producer_reads_live.py:111-174 asserts the behavioral cases, and the manifest names the pytest logs, though it does not record the required Ruff result.\nVERDICT write_paths: the source prompt declares reckon/crew/watch_unit.py, reckon/crew/obligation_snapshot.py, tests/test_a_quiet_foreign_producer_reads_live.py and optional document paths; all three paths in the commit diff are declared.\nVERDICT manifest: the source manifest records head-target.log as 5 passed, negative-control.log as 1 failed, baseline-direct-imports.log as 111 passed and head-direct-imports.log as 116 passed; those summaries and EXIT lines are present in the named logs.\nVERDICT diff: read sole commit da0f68794ac97a4bc4981046b0cd29fb6bd6261f against base 7dac5dbf2b8267200208a8019e60e413e4e47a98; its three-file diff adds a lease-backed foreign-seat reader, uses the seat stamp for remote snapshots, and adds five test cases.\nCALL_SITES: reckon/crew/obligation_snapshot.py:freshness_reading, reckon/hooks/coordinator_obligations.py:_prompt, reckon/hooks/coordinator_obligations.py:_stop, reckon/crew/recovery_watch.py:_watch_registration\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/watch_unit.py:162-168 returns the seat host only for a matching holder or fresh stream, and reckon/crew/obligation_snapshot.py:433-439 compares the checkout stamp with the live seat's stamp.\nSCORE evidence: 17\nJUSTIFICATION evidence: head-target.log ends 5 passed EXIT=0, negative-control.log fails the lease regression, and the completed baseline-direct-imports.log and head-direct-imports.log show 111 versus 116 passes, but manifest.md:15-16 records no Ruff gate result.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff changes only reckon/crew/watch_unit.py, reckon/crew/obligation_snapshot.py and tests/test_a_quiet_foreign_producer_reads_live.py, all inside the source prompt's write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_quiet_foreign_producer_reads_live.py:117 fails when the lease branch is removed, lines 132-134 fail if stale or wrong-host leases revive a seat, and lines 162-174 fail if the snapshot stamp replaces the seat stamp or the hook reports the wrong remedy.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/watch_unit.py:143-176 keeps the existing host-only and boolean readers as wrappers around the new tuple reader, and reckon/crew/obligation_snapshot.py:340-348 keeps its deferred-import boundary.\nSCORE reuse: 20\nJUSTIFICATION reuse: a capability search found the lease reading in reckon/crew/runs.py:2570-2572 and the foreign-seat owner in reckon/crew/watch_unit.py:143; the new reader extends that owner and its snapshot wrapper delegates to it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T080148721103-a-quiet-foreign-producer-reads-live/manifest.md:15 follow-on: the done_when requires Ruff check and format comparisons against base, but neither the tests field nor a named gate log records those results, leaving that style measure unverified from the durable run artifacts.\nreviewed_base_sha: 7dac5dbf2b8267200208a8019e60e413e4e47a98\nreviewed_head_sha: da0f68794ac97a4bc4981046b0cd29fb6bd6261f\n",
+  "review_run_id": "r-20261016T083035996943-review-of-a-quiet-foreign-producer-reads-live-da0f68794ac9",
+  "reviewed_base_sha": "7dac5dbf2b8267200208a8019e60e413e4e47a98",
+  "reviewed_head_sha": "da0f68794ac97a4bc4981046b0cd29fb6bd6261f",
+  "reviewed_run_id": "r-20261016T080148721103-a-quiet-foreign-producer-reads-live",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T08:36:02.864199+00:00",
+  "total": 114
+}
