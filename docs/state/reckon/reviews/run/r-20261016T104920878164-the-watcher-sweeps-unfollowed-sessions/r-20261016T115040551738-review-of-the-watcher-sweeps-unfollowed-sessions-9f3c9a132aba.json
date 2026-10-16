@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite/after_suite: target-base.log (cb2791806) and target-head.log (372ef575b) both record 0 failures at EXIT=0, so no id was added; the 2 failures in head-part_00.log sit on a separate wider arm the manifest names and attributes to xdist parallel load.",
+  "base_log_revision": "cb279180626633e95276ce8bc8efc7fbacf54f37",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3267"
+  ],
+  "completed_at": "2026-10-16T12:10:24.533Z",
+  "dispatched_at": "2026-10-16T11:51:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "3263",
+      "severity": "blocking",
+      "text": "blocking: the sweep is wired only into `watch`, which `reckon crew watch` reaches only with --once/--exit-on-empty (reckon/crew_follow_commands.py:3267); the fleet's default following producer is watch_ticker (reckon/crew/recovery_watch.py:2238, reached at reckon/crew_follow_commands.py:3236), so \u00a737's deliverable -- the sweep that resumes an unfollowed session's lapsed hold and reviews its finished run -- does not take effect in production."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "3262",
+      "severity": "follow-on",
+      "text": "follow-on: the call `with suppress(CrewError): sweep_unfollowed_sessions(project)` inside watch() is guarded by no assertion; the test calls sweep_unfollowed_sessions() directly, so deleting the wiring at reckon/crew/runs.py:3262-3263 reddens no test."
+    },
+    {
+      "file": "tests/test_the_watcher_sweeps_unfollowed_sessions.py",
+      "line": "172",
+      "severity": "follow-on",
+      "text": "follow-on: `assert WATCHER_SWEEP_GRACE_SECONDS == 600.0` compares the module constant against a literal restating it, so the two sides move together and it can fail only if the constant is edited; the grace boundary is already asserted by the eleven/nine-minute arms at lines 150-155."
+    },
+    {
+      "file": "tests/test_the_watcher_sweeps_unfollowed_sessions.py",
+      "line": "146",
+      "severity": "follow-on",
+      "text": "follow-on: the test drives sweep_unfollowed_sessions() directly rather than the watcher's tick the done_when names, so it proves the helper and not its wiring into any loop."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "3157",
+      "severity": "follow-on",
+      "text": "follow-on: a session with no follower registration at all (follower_lock_path absent) yields None from _follower_last_seen_seconds and is therefore swept with no grace at all, diverging from the plan's ten-minute window and untested by the three-session fixture."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "2411",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed worktree carries an uncommitted change wiring runs.sweep_unfollowed_sessions into watch_ticker, outside the node's two commits and its covered paths; it is a peer's in-flight work, recorded so its presence is not mistaken for the node's landing."
+    }
+  ],
+  "head_log_revision": "372ef575bac47db1fc4c7ad956ae2544b7c2e9cb",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site: reckon/crew_follow_commands.py:3267, the only entry that reaches runs.watch; the fleet producer path reckon/crew_follow_commands.py:3236 -> watch_follow -> watch_ticker does not reach the change.",
+    "diff": "read cb2791806..9f3c9a132 commit by commit; 372ef575b adds the helper, the constants and the sweep call in runs.py plus the test, 9f3c9a132 adds the evidence fragment; the reviewed worktree also carries an uncommitted change to reckon/crew/recovery_watch.py:2411 (present in neither commit) wiring the sweep into watch_ticker.",
+    "done_when": "the done_when names tests/test_the_watcher_sweeps_unfollowed_sessions.py and a head/base parity over the tests importing reckon/crew/runs.py; the manifest records the test green (1 passed, EXIT=0) and target-head.log 618 passed / target-base.log 617 passed at EXIT=0, but the parity arms cover a targeted 68/67-file subset rather than the full importer set, the wider head-part_00.log arm carries 2 failures, and the test drives sweep_unfollowed_sessions() directly (tests/test_the_watcher_sweeps_unfollowed_sessions.py:146) rather than the watcher's tick the done_when names.",
+    "goal": "the node goal is that the project watcher sweep each session with no live follower for ten minutes and pass that session explicitly; the landed change adds `sweep_unfollowed_sessions` at reckon/crew/runs.py:3124 and calls it from `watch` at reckon/crew/runs.py:3263, which does exactly that, but only in the loop `reckon crew watch` reaches with --once/--exit-on-empty (reckon/crew_follow_commands.py:3267), not the following producer watch_ticker (reckon/crew/recovery_watch.py:2238) the fleet runs, so the goal's effect does not reach production.",
+    "manifest": "read manifest.md; status blocked (repaired from complete, per status-repair.json, because the producer loop is unswept), it names the test command and its result, the negative control, and an honest follow-on naming recovery_watch.watch_ticker as the unreached producer.",
+    "write_paths": "the manifest declares reckon/crew/runs.py, tests/test_the_watcher_sweeps_unfollowed_sessions.py, the \u00a737 evidence fragment and the \u00a737 figures directory; git diff cb2791806..9f3c9a132 changes exactly reckon/crew/runs.py (+124), the test file (+172) and the fragment (+15), all inside them."
+  },
+  "justifications": {
+    "durability": "negative-control.log reddens tests/test_the_watcher_sweeps_unfollowed_sessions.py:164 when the session is dropped from the sweep call, but the watch() wiring at reckon/crew/runs.py:3262 is asserted by no test.",
+    "evidence": "the manifest's target-head.log records 618 passed and target-base.log 617 passed at EXIT=0, but over a targeted 68/67-file subset rather than the full runs.py importer set, and head-part_00.log shows 2 failures on a wider arm.",
+    "fit": "the module-level constants at reckon/crew/runs.py:3110-3116 and the private-import block follow runs.py's existing idiom, and no symbol carries a plan or version label.",
+    "goal_fidelity": "reckon/crew/runs.py:3263 wires the sweep into `watch`, reached only through reckon/crew_follow_commands.py:3267's single-event branch, while the fleet's producer watch_ticker at reckon/crew/recovery_watch.py:2238 is untouched.",
+    "reuse": "sweep_unfollowed_sessions extends existing owners -- runs.list_live at reckon/crew/runs.py:720, follower_registration.follower_state at follower_registration.py:710, recovery_liveness._record_is_known_foreign at recovery_liveness.py:986 and resumption.sweep -- and a search over reckon/ for \"unfollowed\" and orphan-sweep found no pre-existing sweep of unfollowed sessions.",
+    "scope_discipline": "git diff cb2791806..9f3c9a132 touches only reckon/crew/runs.py, tests/test_the_watcher_sweeps_unfollowed_sessions.py and the \u00a737 fragment, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the project watcher sweep each session with no live follower for ten minutes and pass that session explicitly; the landed change adds `sweep_unfollowed_sessions` at reckon/crew/runs.py:3124 and calls it from `watch` at reckon/crew/runs.py:3263, which does exactly that, but only in the loop `reckon crew watch` reaches with --once/--exit-on-empty (reckon/crew_follow_commands.py:3267), not the following producer watch_ticker (reckon/crew/recovery_watch.py:2238) the fleet runs, so the goal's effect does not reach production.\nVERDICT done_when: the done_when names tests/test_the_watcher_sweeps_unfollowed_sessions.py and a head/base parity over the tests importing reckon/crew/runs.py; the manifest records the test green (1 passed, EXIT=0) and target-head.log 618 passed / target-base.log 617 passed at EXIT=0, but the parity arms cover a targeted 68/67-file subset rather than the full importer set, the wider head-part_00.log arm carries 2 failures, and the test drives sweep_unfollowed_sessions() directly (tests/test_the_watcher_sweeps_unfollowed_sessions.py:146) rather than the watcher's tick the done_when names.\nVERDICT write_paths: the manifest declares reckon/crew/runs.py, tests/test_the_watcher_sweeps_unfollowed_sessions.py, the \u00a737 evidence fragment and the \u00a737 figures directory; git diff cb2791806..9f3c9a132 changes exactly reckon/crew/runs.py (+124), the test file (+172) and the fragment (+15), all inside them.\nVERDICT manifest: read manifest.md; status blocked (repaired from complete, per status-repair.json, because the producer loop is unswept), it names the test command and its result, the negative control, and an honest follow-on naming recovery_watch.watch_ticker as the unreached producer.\nVERDICT diff: read cb2791806..9f3c9a132 commit by commit; 372ef575b adds the helper, the constants and the sweep call in runs.py plus the test, 9f3c9a132 adds the evidence fragment; the reviewed worktree also carries an uncommitted change to reckon/crew/recovery_watch.py:2411 (present in neither commit) wiring the sweep into watch_ticker.\nCALL_SITES: reckon/crew_follow_commands.py:3267\nSCORE goal_fidelity: 9\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:3263 wires the sweep into `watch`, reached only through reckon/crew_follow_commands.py:3267's single-event branch, while the fleet's producer watch_ticker at reckon/crew/recovery_watch.py:2238 is untouched.\nSCORE evidence: 11\nJUSTIFICATION evidence: the manifest's target-head.log records 618 passed and target-base.log 617 passed at EXIT=0, but over a targeted 68/67-file subset rather than the full runs.py importer set, and head-part_00.log shows 2 failures on a wider arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff cb2791806..9f3c9a132 touches only reckon/crew/runs.py, tests/test_the_watcher_sweeps_unfollowed_sessions.py and the \u00a737 fragment, all inside the manifest's declared write paths.\nSCORE durability: 13\nJUSTIFICATION durability: negative-control.log reddens tests/test_the_watcher_sweeps_unfollowed_sessions.py:164 when the session is dropped from the sweep call, but the watch() wiring at reckon/crew/runs.py:3262 is asserted by no test.\nSCORE fit: 18\nJUSTIFICATION fit: the module-level constants at reckon/crew/runs.py:3110-3116 and the private-import block follow runs.py's existing idiom, and no symbol carries a plan or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: sweep_unfollowed_sessions extends existing owners -- runs.list_live at reckon/crew/runs.py:720, follower_registration.follower_state at follower_registration.py:710, recovery_liveness._record_is_known_foreign at recovery_liveness.py:986 and resumption.sweep -- and a search over reckon/ for \"unfollowed\" and orphan-sweep found no pre-existing sweep of unfollowed sessions.\nFINDING reckon/crew/runs.py:3263 blocking: the sweep is wired only into `watch`, which `reckon crew watch` reaches only with --once/--exit-on-empty (reckon/crew_follow_commands.py:3267); the fleet's default following producer is watch_ticker (reckon/crew/recovery_watch.py:2238, reached at reckon/crew_follow_commands.py:3236), so \u00a737's deliverable -- the sweep that resumes an unfollowed session's lapsed hold and reviews its finished run -- does not take effect in production.\nFINDING reckon/crew/runs.py:3262 follow-on: the call `with suppress(CrewError): sweep_unfollowed_sessions(project)` inside watch() is guarded by no assertion; the test calls sweep_unfollowed_sessions() directly, so deleting the wiring at reckon/crew/runs.py:3262-3263 reddens no test.\nFINDING tests/test_the_watcher_sweeps_unfollowed_sessions.py:172 follow-on: `assert WATCHER_SWEEP_GRACE_SECONDS == 600.0` compares the module constant against a literal restating it, so the two sides move together and it can fail only if the constant is edited; the grace boundary is already asserted by the eleven/nine-minute arms at lines 150-155.\nFINDING tests/test_the_watcher_sweeps_unfollowed_sessions.py:146 follow-on: the test drives sweep_unfollowed_sessions() directly rather than the watcher's tick the done_when names, so it proves the helper and not its wiring into any loop.\nFINDING reckon/crew/runs.py:3157 follow-on: a session with no follower registration at all (follower_lock_path absent) yields None from _follower_last_seen_seconds and is therefore swept with no grace at all, diverging from the plan's ten-minute window and untested by the three-session fixture.\nFINDING reckon/crew/recovery_watch.py:2411 follow-on: the reviewed worktree carries an uncommitted change wiring runs.sweep_unfollowed_sessions into watch_ticker, outside the node's two commits and its covered paths; it is a peer's in-flight work, recorded so its presence is not mistaken for the node's landing.\n",
+  "review_run_id": "r-20261016T115040551738-review-of-the-watcher-sweeps-unfollowed-sessions-9f3c9a132aba",
+  "reviewed_base_sha": "cb279180626633e95276ce8bc8efc7fbacf54f37",
+  "reviewed_head_sha": "9f3c9a132aba7dcbb06a033fef737bd0cb7e9ded",
+  "reviewed_run_id": "r-20261016T104920878164-the-watcher-sweeps-unfollowed-sessions",
+  "role": "review",
+  "scores": {
+    "durability": 13,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 9,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T12:05:47.259157+00:00",
+  "total": 91
+}

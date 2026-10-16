@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="205">
+<meta name="plan-version" content="206">
 <meta name="plan-modified" content="2026-10-16">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -902,6 +902,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s38" data-id="c-run-r-20261016T071456871190-a-resume-is-drawn-working-again" data-who="reckon-build" data-when="2026-10-16T08:07:50.290Z">
     <div class="r-comment-body"><p>widened ticker.START_KINDS to pair every stop state the pane draws halted (blocked, stalled, exited-unfinished, abandoned, …) with working, so a run resumed out of a stop draws a working row; tests/test_a_resume_is_drawn_working_again.py passes 5/5 at head and fails 3/5 at base</p></div>
+</div>
+<div class="r-comment" data-section="s37" data-id="c-run-r-20261016T115040551738-review-of-the-watcher-sweeps-unfollowed-sessions-9f3c9a132aba" data-who="reckon-build" data-when="2026-10-16T12:10:24.533Z">
+    <div class="r-comment-body"><p>reviewed run r-20261016T104920878164-the-watcher-sweeps-unfollowed-sessions at head 9f3c9a132aba7dcbb06a033fef737bd0cb7e9ded (diff base cb279180626633e95276ce8bc8efc7fbacf54f37): scores goal_fidelity 9, evidence 11, scope_discipline 20, durability 13, fit 18, reuse 20 (total 91), 6 findings (1 blocking: the sweep is wired only into runs.watch, not the fleet producer recovery_watch.watch_ticker that §37 now requires; 5 follow-on).</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
