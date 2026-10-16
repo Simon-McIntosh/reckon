@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-launch-code-change-reloads-the-producer">
+  <meta name="plan-title" content="A change to the launch code reloads the producer — node evidence">
+  <meta name="plan-summary" content="Node evidence for a-worker-cannot-write-your-home §11: one package-wide code stamp, read by both the producer and the follower, advances on a change to any reckon module including the launch modules outside the CLI set.">
+  <meta name="plan-evidence-for" content="a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="a-worker-cannot-write-your-home#s11">
+  <meta name="plan-recorded-at" content="2026-10-17">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-commits" content="c41684d2">
+  <meta name="plan-artifacts" content="reckon/crew/obligation_snapshot.py,reckon/crew/follower_registration.py,tests/test_a_launch_code_change_reloads_the_producer.py">
+  <title>A change to the launch code reloads the producer — node evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>&sect;11 &mdash; A change to the launch code reloads the producer</h1>
+  </header>
+
+  <section id="a-launch-code-change-reloads-the-producer">
+    <h2>Landing</h2>
+    <ul>
+      <li><code>reckon.crew.obligation_snapshot.code_stamp</code> hashes every <code>*.py</code> module under the package, not only the CLI modules and <code>reckon/crew</code>; the stat-keyed digest memo is shared by both callers.</li>
+      <li><code>source_code_stamp</code> and <code>follower_code_stamp</code> are the one implementation, so the set cannot drift; the producer reloads on a change to <code>reckon/_worker_fence.py</code>, <code>reckon/_backends.py</code> or <code>reckon/nested_launch.py</code>.</li>
+      <li>Head gate: 59 passed, exit&nbsp;0. Importer population: see the manifest's <code>after_suite</code>.</li>
+      <li>Negative control: the same test against a copy of the base tree fails on the first change, stamp <code>f307320c&hellip;</code> unchanged; see <code>negative-control.log</code>.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>
