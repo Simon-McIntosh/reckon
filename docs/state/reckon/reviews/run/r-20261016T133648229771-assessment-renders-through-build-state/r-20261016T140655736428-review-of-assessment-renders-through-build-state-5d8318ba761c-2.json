@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite records and the arm logs they cite: logs/base-importing-suite.log reports '3 failed, 473 passed, 1 error', its failing ids being the two tests/test_congested_local_lane_still_reaches_the_picker.py::test_congested_local_lane_routing cases and tests/test_promotion_records_the_pick.py::test_promotion_waits_from_the_pick_start_not_the_run_start; logs/head-importing-suite.log reports '2 failed, 476 passed, 1 error' over the same 63 files, its failing ids being only the two congested-lane cases, so head-minus-base is empty. Both arms ran to their summary line and report nonzero pass counts (473 and 476), so the zero is an absence the instrument saw rather than an unread log.",
+  "base_log_revision": "911f12a39f7b59efc69ddb5186f0b4b7d0b61d7d",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:409 pick's prompts.render call",
+    "reckon/crew/picker/prompts.py:421 _render_state's build_state call",
+    "reckon/crew/picker/prompts.py:441 render",
+    "reckon/crew/picker/replay.py:91 replay's pick call carrying orchestrator_assessment at :87",
+    "reckon/crew/dispatch_picker.py:493 PickRequest construction with the assessment"
+  ],
+  "completed_at": "2026-10-16T14:18:37.482Z",
+  "dispatched_at": "2026-10-16T14:08:00Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/jev-learns-from-its-routes/assessment-renders-through-build-state.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the node wrote 66 lines of evidence prose although its brief states \"Your done-when names no artifact, so this node writes no figure and no evidence prose\"; the fragment sits inside the declared write paths and the landing contract asks for a fragment an unsmall node, so the delivery is defensible and the brief is internally inconsistent, but a coordinator reading the brief as binding would count this file as out of contract."
+    }
+  ],
+  "head_log_revision": "9b96726b55bf5a096c2a2821f8f4561564e24f4a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 911f12a39; 69ba4d69 gives build_state the orchestrator_assessment parameter, deletes _state_beside_assessment from reckon/crew/picker/__init__.py (44 removed, 7 added) and hoists the template encoder to module-level prompts.encode, 9b96726 rewrites the byte-identity assertion to drive a real pick and compare the state the pick records, and 5d8318ba adds the evidence fragment \u2014 165 insertions, 46 deletions, four files, none outside the declared scope.",
+    "done_when": "the done_when asks for tests/test_orchestrator_assessment_reaches_jev.py to pass with the assessment under node byte-identical to prompts.encode of build_state's mapping, picker/__init__.py to stop calling htmlsafe_json_dumps, \u00a72's assertions still to pass, and the importing test files to show no added failure against base; the manifest records gate 8 passed EXIT=0, negative control 2 failed EXIT=1, and 2 failed/476 passed at head against 3 failed/473 passed at base, and I re-ran the named file myself at the reviewed head for 8 passed in 37.05s.",
+    "goal": "the node's goal is to render the orchestrator assessment through build_state as the state's one source; reckon/crew/picker/prompts.py:303-307 places orchestrator_assessment inside node_state directly after capability and reckon/crew/picker/__init__.py:428-432 hands request.orchestrator_assessment to prompts.render, so the reading is a field of the one mapping rather than a re-encode of the rendered text.",
+    "manifest": "read; it records the three commits, the four changed paths, the gate with its log and result, the base and head importing arms with their logs and failure ids, the negative control log with its failing ids and EXIT=1, the ruff head-against-base comparison, and one landing line, under status complete.",
+    "write_paths": "the manifest declares reckon/crew/picker/prompts.py, reckon/crew/picker/__init__.py, tests/test_orchestrator_assessment_reaches_jev.py and the docs/evidence and docs/figures fragment paths; git show --stat over 911f12a39..5d8318ba names exactly the first three plus docs/evidence/fragments/jev-learns-from-its-routes/assessment-renders-through-build-state.html, every path inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_orchestrator_assessment_reaches_jev.py:439 asserts the pick-recorded state equals prompts.encode of the mapping the picker itself built, and logs/negative-control-splice.log shows restoring the post-render splice reddens that id and test_no_post_render_encoder_remains_in_the_picker while neither reddens at head.",
+    "evidence": "logs/head-targeted.log reports \"8 passed in 32.57s\" with EXIT=0 over tests/test_orchestrator_assessment_reaches_jev.py and I re-ran that file at the reviewed head for 8 passed, though the log's own revision header names 69ba4d69 (working tree, test file updated) rather than 5d8318ba.",
+    "fit": "the conditional key uses the repository's established conditional-unpacking idiom (reckon/budget.py:729, reckon/crew/promotion_scope.py:1321) and no added symbol, file or comment carries a plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/picker/prompts.py:303 adds orchestrator_assessment to node_state beside capability and reckon/crew/picker/__init__.py:432 passes it into prompts.render, so the assessment is built by build_state and encoded once, which is the goal verbatim.",
+    "reuse": "reckon/crew/picker/prompts.py:150 turns encode into the one serialiser for every prompt template, the diff removing the second encoder path rather than adding one, and a search of reckon/crew/picker found no other state serialiser to fork.",
+    "scope_discipline": "git show --stat 911f12a39..5d8318ba touches only reckon/crew/picker/prompts.py, reckon/crew/picker/__init__.py, tests/test_orchestrator_assessment_reaches_jev.py and the declared evidence fragment, carrying no product-source change the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to render the orchestrator assessment through build_state as the state's one source; reckon/crew/picker/prompts.py:303-307 places orchestrator_assessment inside node_state directly after capability and reckon/crew/picker/__init__.py:428-432 hands request.orchestrator_assessment to prompts.render, so the reading is a field of the one mapping rather than a re-encode of the rendered text.\nVERDICT done_when: the done_when asks for tests/test_orchestrator_assessment_reaches_jev.py to pass with the assessment under node byte-identical to prompts.encode of build_state's mapping, picker/__init__.py to stop calling htmlsafe_json_dumps, \u00a72's assertions still to pass, and the importing test files to show no added failure against base; the manifest records gate 8 passed EXIT=0, negative control 2 failed EXIT=1, and 2 failed/476 passed at head against 3 failed/473 passed at base, and I re-ran the named file myself at the reviewed head for 8 passed in 37.05s.\nVERDICT write_paths: the manifest declares reckon/crew/picker/prompts.py, reckon/crew/picker/__init__.py, tests/test_orchestrator_assessment_reaches_jev.py and the docs/evidence and docs/figures fragment paths; git show --stat over 911f12a39..5d8318ba names exactly the first three plus docs/evidence/fragments/jev-learns-from-its-routes/assessment-renders-through-build-state.html, every path inside the declared set.\nVERDICT manifest: read; it records the three commits, the four changed paths, the gate with its log and result, the base and head importing arms with their logs and failure ids, the negative control log with its failing ids and EXIT=1, the ruff head-against-base comparison, and one landing line, under status complete.\nVERDICT diff: read commit by commit against 911f12a39; 69ba4d69 gives build_state the orchestrator_assessment parameter, deletes _state_beside_assessment from reckon/crew/picker/__init__.py (44 removed, 7 added) and hoists the template encoder to module-level prompts.encode, 9b96726 rewrites the byte-identity assertion to drive a real pick and compare the state the pick records, and 5d8318ba adds the evidence fragment \u2014 165 insertions, 46 deletions, four files, none outside the declared scope.\nCALL_SITES: reckon/crew/picker/__init__.py:409 pick's prompts.render call, reckon/crew/picker/prompts.py:421 _render_state's build_state call, reckon/crew/picker/prompts.py:441 render, reckon/crew/picker/replay.py:91 replay's pick call carrying orchestrator_assessment at :87, reckon/crew/dispatch_picker.py:493 PickRequest construction with the assessment\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/picker/prompts.py:303 adds orchestrator_assessment to node_state beside capability and reckon/crew/picker/__init__.py:432 passes it into prompts.render, so the assessment is built by build_state and encoded once, which is the goal verbatim.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head-targeted.log reports \"8 passed in 32.57s\" with EXIT=0 over tests/test_orchestrator_assessment_reaches_jev.py and I re-ran that file at the reviewed head for 8 passed, though the log's own revision header names 69ba4d69 (working tree, test file updated) rather than 5d8318ba.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git show --stat 911f12a39..5d8318ba touches only reckon/crew/picker/prompts.py, reckon/crew/picker/__init__.py, tests/test_orchestrator_assessment_reaches_jev.py and the declared evidence fragment, carrying no product-source change the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_orchestrator_assessment_reaches_jev.py:439 asserts the pick-recorded state equals prompts.encode of the mapping the picker itself built, and logs/negative-control-splice.log shows restoring the post-render splice reddens that id and test_no_post_render_encoder_remains_in_the_picker while neither reddens at head.\nSCORE fit: 19\nJUSTIFICATION fit: the conditional key uses the repository's established conditional-unpacking idiom (reckon/budget.py:729, reckon/crew/promotion_scope.py:1321) and no added symbol, file or comment carries a plan, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/picker/prompts.py:150 turns encode into the one serialiser for every prompt template, the diff removing the second encoder path rather than adding one, and a search of reckon/crew/picker found no other state serialiser to fork.\nFINDING docs/evidence/fragments/jev-learns-from-its-routes/assessment-renders-through-build-state.html:1 follow-on: the node wrote 66 lines of evidence prose although its brief states \"Your done-when names no artifact, so this node writes no figure and no evidence prose\"; the fragment sits inside the declared write paths and the landing contract asks for a fragment an unsmall node, so the delivery is defensible and the brief is internally inconsistent, but a coordinator reading the brief as binding would count this file as out of contract.",
+  "review_run_id": "r-20261016T140655736428-review-of-assessment-renders-through-build-state-5d8318ba761c-2",
+  "reviewed_base_sha": "911f12a39f7b59efc69ddb5186f0b4b7d0b61d7d",
+  "reviewed_head_sha": "5d8318ba761c69989c7e4596b12c5616a927be0f",
+  "reviewed_run_id": "r-20261016T133648229771-assessment-renders-through-build-state",
+  "role": "review",
+  "rubric": "node",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T14:16:12.195008+00:00",
+  "total": 114
+}
