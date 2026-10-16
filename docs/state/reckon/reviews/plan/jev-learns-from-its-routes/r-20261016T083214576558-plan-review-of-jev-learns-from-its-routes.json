@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T08:48:07.924Z",
+  "dispatched_at": "2026-10-16T08:33:07Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/jev-learns-from-its-routes.html:24",
+      "id": "wiring-1",
+      "reason": "by the plan's own convention (it added s10\u2190\u00a76 for the shared paid_lanes.py and s9\u2190{\u00a75,\u00a727} for the shared lane_context.py/prompts.py), every pair of sections writing one file is edge-ordered; the four prompts.py writers are only half-ordered, so \u00a73, \u00a74 and \u00a79 can be dispatched concurrently onto one file and collide on merge, which the map exists to prevent.",
+      "text": "the `plan-section-depends-on` map leaves writer pairs on `reckon/crew/picker/prompts.py` unordered: \u00a73 (writes prompts.py, path at line 182) is unordered against \u00a79 (writes prompts.py, line 350), and \u00a74 (writes prompts.py, line 217). The map declares s3\u2190{s2,s5}, s4\u2190{s3}, s9\u2190{s5,lane-and-model-routing#s27}, s11\u2190{s2,s9,s12}, so the only prompts.py orderings present are \u00a73\u2192\u00a74 and \u00a79\u2192\u00a711; \u00a73\u2194\u00a79, \u00a74\u2194\u00a79 and \u00a74\u2194\u00a711 have no edge either way",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5c82fec2d7f7869356f158283f890ab3673e7f98e04394e6fa003fae121e2b95",
+  "plan_slug": "jev-learns-from-its-routes",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T083214576558-plan-review-of-jev-learns-from-its-routes",
+  "reviewed_blob_sha": "fcf5e5d8d9035618b12bbcaf40cfa6922e24c4a9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `lane-and-model-routing` \u00a725 and \u00a727 resolve in docs/plans/lane-and-model-routing.html, the evidence-archive anchors #s2/#s5/#s8 resolve in docs/evidence/archive/jev-learns-from-its-routes-landed.html, the cited run `r-20261016T074119831873-outcomes-at-requirement` exists as a live pointer, and the code anchors \u00a712 names resolve (`pick()` and `_declared_difficulty` in reckon/crew/picker/__init__.py).",
+    "done_when": "pass \u2014 every implementable section names a designated negative control that inverts the mechanism and asserts the measure then fails (\u00a712's restores the snapshot-before-capability order and requires the block absent), and each done-when names a concrete assertion that can fail.",
+    "evidence_paths": "pass \u2014 gates and test files are named under the repository and the crew report tree; no section routes evidence to a session scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 the changed units introduce no plan labels, stage names, ticket numbers or version tags into code; the symbols named (`capability_ms`, `snapshot_ms`, `outcomes_at_requirement`, `node.capability`) are mechanism names.",
+    "reasoning": "pass \u2014 \u00a712's stated root cause matches the code (pick() calls the snapshotter at reckon/crew/picker/__init__.py:396 before `_declared_difficulty` at :419, and live dispatch at reckon/crew/dispatch_picker.py:494 builds the `PickRequest` with no capability, so the snapshot sees none), the mechanism produces its done-when (the block is built by the scan \u00a73 extends, keyed on the request's requirement), and the caller the fix rests on \u2014 `pick()` \u2014 is named and is the live dispatch path.",
+    "single_goal": "pass \u2014 \u00a712 carries one deliverable (a live pick resolves the declared capability before building candidates and hands the snapshotter a request carrying it); the timing-key clause is a constraint on that change, not a second goal.",
+    "wiring": "a finding \u2014 the `plan-section-depends-on` map does not fully serialise the four sections that write `reckon/crew/picker/prompts.py` (\u00a73, \u00a74, \u00a79, \u00a711), leaving three writer pairs unordered."
+  },
+  "section_digests": {
+    "_document": "c4406952abd1ef098b4f8889a31547901fc14764117322de16d69e33fe78405a",
+    "s1": "a8d94897c0a90e9cd66d3e5c67d6aca0aeb94d26a49bd944098a8d70a151ca34",
+    "s10": "0d42b606fb481de5ba3425ebbe60d11d1d0fa95c234be3787770a652d68b4bd7",
+    "s11": "403c9ebb80e8d39b6f9944fe5bd76edc62c59efc805c7b8906df46c317cc323c",
+    "s12": "48cbcffdbd3a8bcb2e95999c3339cec0f3210970c7b25ac4014ce6f18c6407a0",
+    "s2": "cc35fef7cc2d6ce0af14220bc78602ca25e960978e3dd3efb5979ca5e3c14917",
+    "s3": "807cb056a055ab721cde0a5a171037e4f1dfecdb1d6a1d5d2c4e5babde307811",
+    "s4": "828939c295d01d9b6fa0e90760eeee37626b612fb8414928adedddbb83f7238b",
+    "s5": "6cff1e7bf68d8874d67225b968adb4aeea6828a4800ac65b4676edd703eb6a52",
+    "s6": "52a8aac92b5fb5f13ab9b1a64209356dd2469cac4df0bd6b230fe7d1a711d131",
+    "s7": "54c7b27c70ed529203f4484e6ad6fcca22fb6679577180b9364a8e92bd5fc7a7",
+    "s8": "652e49cdb77f02dc989a56ae626a1a124b80a5633e0c0f60319d4d4456a875d4",
+    "s9": "4a7f10635f6026036ecc6293a36261d0f1a5a77b026b7cd40d60ed92de631a92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T09:02:09.336473+00:00"
+}
