@@ -26,7 +26,7 @@
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -287,6 +287,9 @@
 <div class="r-comment" data-section="s5" data-id="c-s5-scope-locked" data-who="reckon-build" data-when="2026-10-16T19:50:00Z">
     <div class="r-comment-body"><p>The lead locked <code>shadow-isolation-scope</code> as <code>paired-dispatch</code> on 2026-10-16. §5 stays deferred until it is rewritten as the paired-dispatch build: a dispatch-time pairing that starts the primary and the shadow from one base, with each arm's records and worktree masked from the other through the §4 fence.</p></div>
 </div>
+<div class="r-comment" data-section="s5" data-id="c-s5-claim-not-pointer" data-who="reckon-build" data-when="2026-10-16T23:10:00Z">
+    <div class="r-comment-body"><p>Wording to fix before §5 dispatches: a shadow lineage publishes no launch <em>claim</em>, not no launch pointer. <code>dispatch.py:2046</code> writes a shadow's full live pointer unconditionally at the end of its dispatch. Only the pre-launch scope claim (<code>_publish_launch_claim</code>) and the scope-conflict check under <code>if not shadow_lineage</code> are skipped. So a shadow's pointer is absent while the paired dispatch composes the other arm's masks, which is why §5 pre-allocates. It is present from the shadow's launch until its promotion, which is what §6's hold reads. Content review <code>r-20261016T230013574043</code>, finding <code>reasoning-1</code>, read the old wording as no pointer at all and was declined on this evidence.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-s4-resolution-layer" data-who="reckon-build" data-when="2026-10-16T19:52:00Z">
     <div class="r-comment-body"><p>Content review <code>r-20261016T193510730111</code>, finding <code>reasoning-1</code>: §4 puts the resolution of the primary's paths in two layers. One sentence has <code>launch_plan</code> gain the paths to hide. The other has the launch look up the primary's ledger row, but <code>launch_plan</code> in <code>reckon/_backends.py</code> takes no project or ledger. The fix, to be written into §4 before it dispatches: each crew-layer caller (dispatch, session launch, resume) looks up the primary's row from the lineage and calls <code>promotion_scope._primary_read_targets</code>. It passes the resolved paths to <code>launch_plan</code> as a plain list of paths to hide, and <code>launch_plan</code> hands them to <code>fence_argv</code>. <code>_backends.py</code> gains no ledger parameter and no crew import.</p></div>
 </div>
@@ -309,7 +312,7 @@
     <div class="r-comment-body"><p>§2 landed: a shadow's reads of its primary's run directory, review records or worktree mark the row contaminated, and a contaminated row is stored, paired and reported uncontrolled with its reason (commits <code>08de78b03</code>–<code>8416d616a</code>). 26 focused tests pass, importers show no added failure, and the negative control fails as declared. <a href="/reckon/evidence/archive/a-shadow-cannot-see-its-primary-landed.html#s2">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261016T194959330083-shadow-reads-make-the-pair-uncontrolled" data-who="reckon-build" data-when="2026-10-16T22:41:02Z">
-    <div class="r-comment-body"><p>08de78b03 fix(crew): mark a shadow that reads its primary uncontrolled -- a shadow&#x27;s read of its primary&#x27;s run directory, review record or worktree now marks the row contaminated and the pair uncontrolled, in both stream dialects, with the scan running when the primary cites no commit.</p></div>
+    <div class="r-comment-body"><p>08de78b03 fix(crew): mark a shadow that reads its primary uncontrolled -- a shadow's read of its primary's run directory, review record or worktree now marks the row contaminated and the pair uncontrolled, in both stream dialects, with the scan running when the primary cites no commit.</p></div>
 </div>
 </section>
 </main>
