@@ -2,7 +2,7 @@
 """The project watcher sweeps a session nobody is following.
 
 Once a follower's sweep acts only on the session it serves, a run whose session
-armed no follower has no sweeper: its lapsed hold is never resumed and its
+armed no follower has no sweeps: its lapsed hold is never resumed and its
 finished run is never reviewed by the reflex. The project watcher fills that gap
 on each pass it makes, and the two loops a watcher reaches the fleet through --
 the single-event ``runs.watch`` a hand-run watch takes and the streaming ticker
@@ -32,18 +32,26 @@ and leave the same five alone:
   file a release leaves behind -- with the seventh dispatching two minutes ago
   and the eighth eleven, so the released stamp does not sweep the session that
   has just acted and does sweep the one that has not.
+
+The tick itself runs in this process, which holds no follower registration of
+its own -- the attended session's registration is held by a separate helper
+process, as a live follower's is. That is the production watcher's own state,
+and it is what makes the confinement observable: ``_sweeping_session`` reads
+the session a sweep is confined to from the registration *this* process wrote,
+so a registration here would make a dropped session read as that session's and
+hide the difference a dropped session makes.
 """
 
 from __future__ import annotations
 
-import fcntl
 import os
 import socket
+import subprocess
+import sys
 import time
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import IO
 
 import pytest
 
@@ -87,6 +95,14 @@ REFUSED_STREAM = (
     / "backends"
     / "codex-usage-limit.jsonl"
 )
+SOURCE_ROOT = Path(__file__).resolve().parents[1]
+# The registration helper holds its advisory lock until the case releases it --
+# on the pipe it reads, or when the case's finally terminates it -- so this is
+# only a safety ceiling for a helper whose reader has somehow gone, not the
+# lifetime the lock is held for. A short bound here would let a slow lane end
+# the helper mid-case, drop the lock, and make the liveness premise flaky.
+_REGISTRATION_HOLD_CEILING_SECONDS = 900
+_HELPER_READY_SECONDS = 15.0
 
 
 class _LoopEndedError(Exception):
@@ -173,32 +189,95 @@ def _lapsed_run(
 
 def _hold_a_live_registration(
     project: str, session: str, *, age_seconds: float
-) -> IO[bytes]:
-    """Register a follower that reads live, with an aged file behind it.
+) -> subprocess.Popen[bytes]:
+    """Register a follower from a separate process and hold its lock there.
 
-    The advisory lock is held for as long as the returned handle is open, and
-    the process it names is this one, so ``follower_registration`` judges the
-    registration live. Its lease is left unwritten and the registration file's
-    mtime is moved into the past, so every age beside it says the opposite.
+    The process that runs the watcher's tick must hold no registration of its
+    own, exactly as the production watcher does. ``_sweeping_session`` resolves
+    the session a sweep is confined to from the registration *this* process
+    wrote, so a registration held here would make a dropped session read as
+    that session's -- and a pass that read no filter would then look confined.
+    So a helper process writes the registration, takes its advisory lock the
+    way a live follower does, and keeps both for the life of the case: the
+    attended session still reads live while the tick's own process holds
+    nothing. Its lease is left unwritten and the registration file's mtime is
+    moved into the past, so every age beside it says the opposite of its
+    liveness.
+
+    The helper's output is a socket, not a pipe, because
+    ``follower_registration`` judges a follower a wake-up only where its lines
+    are read as they are written: a pipe into a captured test process resolves
+    to nothing that delivers and the registration reads expired. A socket
+    reads ``stream``, which delivers.
+
+    The helper holds the lock until the case tells it to release, rather than
+    for a fixed span: it waits on the pipe the case hands it as stdin and exits
+    when the case closes that end, which the case's ``finally`` does by
+    terminating it. A span would let a slow lane end the helper mid-case and
+    drop the lock, making the liveness premise flaky. The wait is also bounded
+    by a safety ceiling, so a crashed case whose pipe somehow survives does not
+    leave the helper holding a lock forever.
     """
-    path = follower_lock_path(project, session)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    handle = path.open("a+b")
-    _write_watch_record(
-        handle,
-        {
-            "project": project,
-            "session": session,
-            "pid": os.getpid(),
-            "parent_pid": os.getpid(),
-            "delivery": "stream",
-            "started_at": _ago(age_seconds),
-        },
+    started_at = _ago(age_seconds)
+    script = (
+        "import fcntl, os, select, sys\n"
+        "from reckon.crew.follower_registration import (\n"
+        "    follower_lock_path, _write_watch_record,\n"
+        ")\n"
+        f"path = follower_lock_path({project!r}, {session!r})\n"
+        "path.parent.mkdir(parents=True, exist_ok=True)\n"
+        'handle = path.open("a+b")\n'
+        "_write_watch_record(handle, {\n"
+        f"    'project': {project!r},\n"
+        f"    'session': {session!r},\n"
+        "    'pid': os.getpid(),\n"
+        "    'parent_pid': os.getpid(),\n"
+        "    'delivery': 'stream',\n"
+        f"    'started_at': {started_at!r},\n"
+        "})\n"
+        "fcntl.flock(handle.fileno(), fcntl.LOCK_EX)\n"
+        'os.write(1, b"ready\\n")\n'
+        # Hold the lock until the case closes this pipe (EOF, which select
+        # reports as readable), bounded by a generous ceiling as a last resort.
+        "select.select([sys.stdin], [], [], "
+        f"{_REGISTRATION_HOLD_CEILING_SECONDS})\n"
     )
-    fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+    parent, child = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
+    process = subprocess.Popen(
+        [sys.executable, "-c", script],
+        cwd=SOURCE_ROOT,
+        env={**os.environ, "PYTHONPATH": str(SOURCE_ROOT)},
+        stdin=subprocess.PIPE,
+        stdout=child,
+        stderr=subprocess.PIPE,
+    )
+    child.close()
+    assert _helper_armed(parent, process), "the registration helper never armed"
+    # Age the registration file, so the stamp beside it says the opposite of
+    # the liveness its held lock reports.
     when = time.time() - age_seconds
-    os.utime(path, (when, when))
-    return handle
+    os.utime(follower_lock_path(project, session), (when, when))
+    return process
+
+
+def _helper_armed(parent: socket.socket, process: subprocess.Popen[bytes]) -> bool:
+    """Wait until the helper reports its registration is locked, or it dies."""
+    parent.settimeout(0.05)
+    buffer = b""
+    deadline = time.monotonic() + _HELPER_READY_SECONDS
+    while time.monotonic() < deadline:
+        try:
+            chunk = parent.recv(64)
+        except TimeoutError:
+            if process.poll() is not None:
+                return False
+            continue
+        if not chunk:
+            return False
+        buffer += chunk
+        if b"\n" in buffer:
+            return buffer.strip() == b"ready"
+    return False
 
 
 def _release_a_registration(project: str, session: str, *, age_seconds: float) -> None:
@@ -271,7 +350,9 @@ def _arrange(config_home, repo, monkeypatch: pytest.MonkeyPatch) -> tuple:
     fourth is left alone by its live registration and nothing else: its lease is
     unwritten, its registration file is eleven minutes old and its own run is as
     old as the swept session's, so a pass that stopped asking about liveness
-    would sweep it.
+    would sweep it. Its registration is held by a helper process, not this one,
+    so the tick's process carries no registration to be read as a sweep's
+    session.
     """
     offered = _stub_review_dispatch(monkeypatch)
     launched = _stub_spawn(monkeypatch)
@@ -315,7 +396,7 @@ def _arrange(config_home, repo, monkeypatch: pytest.MonkeyPatch) -> tuple:
     now_seconds = time.time()
     renew_follower_lease(PROJECT, SWEPT_SESSION, now=now_seconds - LONG_AGO)
     renew_follower_lease(PROJECT, LATE_SESSION, now=now_seconds - 9 * 60)
-    held = _hold_a_live_registration(PROJECT, ATTENDED_SESSION, age_seconds=LONG_AGO)
+    helper = _hold_a_live_registration(PROJECT, ATTENDED_SESSION, age_seconds=LONG_AGO)
     _release_a_registration(PROJECT, RELEASED_FRESH_SESSION, age_seconds=RELEASED_AGE)
     _release_a_registration(PROJECT, RELEASED_STALE_SESSION, age_seconds=RELEASED_AGE)
     # The swept session's own evidence is as old as its lapsed lease, so the
@@ -326,7 +407,7 @@ def _arrange(config_home, repo, monkeypatch: pytest.MonkeyPatch) -> tuple:
     # liveness its registration reports is the only thing holding it out of
     # the pass and not the grace window its own run would otherwise open.
     _age_run("r-attended-review", seconds=LONG_AGO)
-    return offered, launched, held
+    return offered, launched, helper
 
 
 def _end(_interval: float) -> None:
@@ -357,42 +438,57 @@ def test_the_watcher_sweeps_only_the_sessions_nobody_follows(
     """Either watcher sweeps the two unattended sessions and leaves the rest."""
     config_home, repo = isolated_project
     offered, launched, held = _arrange(config_home, repo, monkeypatch)
-    assert not held.closed, "the attended session's registration was released"
-    # The premise of the case: the attended registration really does read live,
-    # so it is the liveness predicate and not an age that leaves it alone.
-    attended = runs.follower_state(PROJECT, ATTENDED_SESSION)
-    assert attended["live"], attended
-    # The other premise: the two released sessions really do carry the file a
-    # release leaves, two hours old, so it is the session's own freshness and
-    # not the registration that separates the two cases below.
-    released = runs.follower_state(PROJECT, RELEASED_FRESH_SESSION)
-    assert released["released"] and not released["registered"], released
-    assert released["live"] is False, released
+    try:
+        assert held.poll() is None, "the attended session's helper exited"
+        # The premise of the case: the attended registration really does read
+        # live, so it is the liveness predicate and not an age that leaves it
+        # alone.
+        attended = runs.follower_state(PROJECT, ATTENDED_SESSION)
+        assert attended["live"], attended
+        # The tick's process holds no follower registration of its own, as the
+        # production watcher does: no follower row names this process, so a
+        # pass that read no filter reads no filter here rather than resolving a
+        # session of its own.
+        own = [
+            row
+            for row in runs.list_followers(PROJECT)
+            if (row.get("follower") or {}).get("pid") == os.getpid()
+        ]
+        assert own == [], own
+        # The other premise: the two released sessions really do carry the file
+        # a release leaves, two hours old, so it is the session's own freshness
+        # and not the registration that separates the two cases below.
+        released = runs.follower_state(PROJECT, RELEASED_FRESH_SESSION)
+        assert released["released"] and not released["registered"], released
+        assert released["live"] is False, released
 
-    if driver == "single-event":
-        event = _sweep_through_watch(PROJECT)
-        assert event.get("project") == PROJECT, event
-    else:
-        events = _sweep_through_ticker(PROJECT)
-        assert events, "the tick published no row for a fleet holding live runs"
+        if driver == "single-event":
+            event = _sweep_through_watch(PROJECT)
+            assert event.get("project") == PROJECT, event
+        else:
+            events = _sweep_through_ticker(PROJECT)
+            assert events, "the tick published no row for a fleet holding live runs"
 
-    # The reflex reviews a session's runs only for the session handed to it: the
-    # unattended session's finished run is offered, and the re-arming session's
-    # is not -- its work is finished and its review is composed too, so the
-    # session the sweep was given is the only thing that separates them, and a
-    # pass that read no filter would offer both.
-    assert offered == ["r-scoring"], offered
-    # The three sessions past the grace window were resumed -- including the one
-    # whose registration was released two hours ago and whose own newest run is
-    # eleven minutes old -- and none of the runs of the five sessions left alone
-    # was touched.
-    assert sorted(launched) == ["r-lapsed", "r-released-stale", "r-stale"], launched
-    written = writer_sweep_status(PROJECT, WATCHER_SWEEP_WRITER)
-    assert written is not None, "the watcher's sweep wrote no writer record"
-    assert written["key"] == "watcher"
-    # The status is keyed by writer rather than accumulated across the sessions
-    # one pass sweeps, so it carries the last session handed to the sweep -- one
-    # run considered, and one lapsed hold resumed out of it. What each session
-    # contributed is on ``launched`` above.
-    assert written["checked"] == 1, written
-    assert written["resumed"] == 1, written
+        # The reflex reviews a session's runs only for the session handed to
+        # it: the unattended session's finished run is offered, and the
+        # re-arming session's is not -- its work is finished and its review is
+        # composed too, so the session the sweep was given is the only thing
+        # that separates them, and a pass that read no filter would offer both.
+        assert offered == ["r-scoring"], offered
+        # The three sessions past the grace window were resumed -- including
+        # the one whose registration was released two hours ago and whose own
+        # newest run is eleven minutes old -- and none of the runs of the five
+        # sessions left alone was touched.
+        assert sorted(launched) == ["r-lapsed", "r-released-stale", "r-stale"], launched
+        written = writer_sweep_status(PROJECT, WATCHER_SWEEP_WRITER)
+        assert written is not None, "the watcher's sweep wrote no writer record"
+        assert written["key"] == "watcher"
+        # The status is keyed by writer rather than accumulated across the
+        # sessions one pass sweeps, so it carries the last session handed to
+        # the sweep -- one run considered, and one lapsed hold resumed out of
+        # it. What each session contributed is on ``launched`` above.
+        assert written["checked"] == 1, written
+        assert written["resumed"] == 1, written
+    finally:
+        held.terminate()
+        held.wait(timeout=5)
