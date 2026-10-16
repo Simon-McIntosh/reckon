@@ -1,0 +1,78 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T23:13:15.124Z",
+  "dispatched_at": "2026-10-16T23:04:55Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:196",
+      "id": "reasoning-1",
+      "reason": "a coordinator copying the heading into a dispatch brief would task a node with a git-process reduction its own evidence shows is unnecessary, and the section's Why omits the whole-ledger fallback that \u00a724's \u226410 s cold target must still absorb, so the mechanism as written is not the cost the evidence reports.",
+      "text": "\u00a721 is titled \"Held-worktree records are found without a git process per record\" and its Why concludes \"Inside `_held_worktree_records` the time is matching\", but the node it cites (`r-20261016T223039066944`) established that base spawns exactly one git process (the `_registered_worktrees` registry read) and that the remaining profile spawns belong to `recovery_review_subject._reviewed_run_head`/`_resolve_commit`, siblings of `_held_worktree_records` inside `_fleet`, i.e. \u00a723's cost; that node's own accounting puts the section's cost in `ledger.runs`' whole-ledger fallback, 2,693 per-run-file reads and `_names_worktree` over 58,620 pairs \u2014 and \u00a721 names only the matching, never the fallback that the cited evidence lists as a co-equal or dominant cost",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:196",
+      "id": "done_when-1",
+      "reason": "the measure as written does not pin the property the deliverable asserts, so the negative control (a base-tree copy failing the count) can be satisfied by a change that leaves the matching loop intact.",
+      "text": "\u00a721's done-when measures only \"the path resolutions made for retained paths during one `_held_worktree_records` call\", bounded at one per record, but `record_names_worktree` (routing.py:1035-1038) resolves a path only for a record carrying a `worktree_retention`; a record naming a tree by node id alone resolves nothing, so a node that memoises each retained-path resolution and keeps the O(records\u00d7trees) `_holding_record` loop over `(*rows, *records)` can pass the count bound while costing the product the deliverable (\"proportional to records plus trees, not their product\") exists to remove",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:208",
+      "id": "done_when-2",
+      "reason": "without a miss-clause the node can report an unmet freshness bound with no next step, leaving the plan's stated goal (\"to stay inside the 120 s freshness window\") unmet and unforwarded, whereas the same miss under \u00a76's clause would file the repair.",
+      "text": "\u00a724 states two head bounds (first call \u226410 s node-local, second call <30 s GPFS) and a control that fires only when base *meets* the second bound, but gives no consequence for the case where the head arm *misses* a bound \u2014 which \u00a720 may show is likely if the lag is filesystem-dominated, since \u00a721\u2013\u00a723 cut compute, not file reads; \u00a76's own done-when supplies the missing pattern (\"a missed target ... the repair is proposed as a new section\") and \u00a724 omits it",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c32d822030e137201607fa3a3240fff91894e5f65cd79158d1b3198be093e7ee",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 153,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T230419141614-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "f4c7efedd096671e3bbe141a68aee53200c71954",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `obligation_snapshot.fleet_state` (obligation_snapshot.py:826), `FLOOR_TICK_SECONDS` (line 55), `FRESHNESS_WATER`/`FRESHNESS_WINDOW_SECONDS` (line 51, 120.0), `_held_worktree_records` (obligations.py:519), `record_names_worktree` (routing.py:1023), and the blocked run `r-20261016T223039066944` with its `negative-control/fleet_state_subprocess_callers.log` all resolve.",
+    "done_when": "a finding \u2014 \u00a721's done-when counts retained-path resolutions only, so a node can satisfy it while leaving the records\u00d7trees matching loop the deliverable forbids.",
+    "evidence_paths": "pass \u2014 \u00a720/\u00a724 write to `docs/evidence/fragments/a-read-answers-inside-its-deadline/*.html` and the run directory, both durable; \u00a721\u2013\u00a723's run-directory control log was already adjudicated under `evidence_paths-1` and is not re-raised.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol, file or comment; the sections cite commits and run ids as evidence in the plan document, which is their proper store.",
+    "reasoning": "a finding \u2014 \u00a721's heading and its Why's root-cause claim (\"the time is matching\") name a cause the section's own cited evidence does not support: the blocked run shows base already spawns one git process and puts the largest inside-`_held_worktree_records` cost in `ledger.runs`' whole-ledger fallback, which \u00a721 never names.",
+    "single_goal": "pass \u2014 \u00a720 is one lag-split investigation, \u00a721 one matching repair, \u00a724 one freshness measurement; each carries one deliverable.",
+    "wiring": "pass \u2014 s21\u2013s23's in-sequence repair of a shared `obligation_snapshot`/`obligations.py` path and s24's use of s20's two corpus copies are declared in the section prose and followup `f-araiid-020`; `data-links` carry no depends-on/gates edges, but no edge resolving to a non-existent node is declared."
+  },
+  "section_digests": {
+    "_document": "d4ddda961784c7a505897dfa112dcf8d73378167d498be05466e8103832740db",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "f6e2a8c3d1c90f4194ec9891635cef181cf62c62a5dbb39efd4c9832ac5d1e9b",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s20": "81e1ff125ddfc6955aa9bfbaae255b04b8bd03b75e9a4bbaec4a6e2de4790a39",
+    "s21": "d7dfba946ef03d0135f660457b58db0719ba3f977fdfc2cf02b6a47b5319fe9e",
+    "s22": "6266f82976abf2a572694b2f91bf0143ff9a02ea484166e79b8197bde4e1a5e6",
+    "s23": "19ab14ea99e986a9e91a521cccdf725d2ca25f3119b1b53c489aa0fb3cc24dd1",
+    "s24": "a2ce37fcf727436377e00332ab9c965dd37d5c0edb57c0aa9c60a00ec60d9dbe",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T23:16:39.585127+00:00"
+}
