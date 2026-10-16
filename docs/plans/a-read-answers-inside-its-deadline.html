@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="128">
+<meta name="plan-version" content="129">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -480,6 +480,9 @@
 </div>
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261016T103721056795-a-slug-uniqueness-is-one-lookup" data-who="reckon-build" data-when="2026-10-16T11:37:05.072Z">
     <div class="r-comment-body"><p>A slug's uniqueness is answered from one held index of its canonical root directory instead of identifying every sibling per resolve; 20 resolves over 24 plans make at most 24 identify_resource calls (the negative control, scanning every sibling, makes 480 and fails the bound of 24), a tree where two files claim one slug is still refused naming both, and warm roadmap over the docs tree at the pinned revision is 2.575 s at head against 19.889 s at base.</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261016T180739914515-the-obligations-pass-is-profiled" data-who="reckon-build" data-when="2026-10-16T18:52:46.905Z">
+    <div class="r-comment-body"><p>One obligations pass is profiled at base and head over one pinned crew state. Timed medians n=5: head 81852a885 20.15 s, base 32d1537ca (2026-10-08, last commit on the pass&#x27;s files before the 10-12..16 commits, inside the healthy 5-23 s lag window) 22.38 s — head is not slower, so the production 60.3 s lag is not a code regression between these revisions over this corpus. Profiled fleet_state medians: head 27.42 s, base 27.56 s; sweep minus fleet_state (session slicing and writes) is 0.135 s at head for 5 sessions and ~1.18 s at base for 70, so the pass is a fixed per-sweep cost. The 80 percent clause is answered against the pass&#x27;s composition because the base-to-head difference is non-positive: held-worktree records 14.261 s (52.0 percent of head fleet_state, 1 call, 11 subprocess.run at 6.186 s) plus JSON decoding 8.535 s (31.1 percent, 262359 json.loads, raw_decode self 7.662 s) is 83.1 percent, with the review-resolution cluster ~5.0 s (8-9 calls per reader) and the ledger scan (load 5.395, runs 4.914, _index_payload 4.516 s) named after it; the two dominant costs are equal at base, so no commit in the window added them, and the head-only entries belong to the 2026-10-12..16 commits (234fda360, f5c9157f8, 7962c482e, d0ccc51c3, 7b915b6e7). Declared negative control holds: head plus a 2 s sleep wrapper around fleet_state recovers +2.000 s in both profile runs as the paired wrapper-minus-inner difference at ncalls=1 each (38.632-36.632; 30.205-28.205), which cancels between-run variance. Repair is proposed as four sections with done-whens bounding the pass: enumerate held-worktree records without per-record subprocesses (at most 2 subprocess calls and timed median at most 10 s over the pinned corpus), decode each document once (below 5000 json.loads and median at most 10 s), resolve review heads and the ledger index once per sweep (call counts no more than live runs plus readers opened, median at most 10 s), and hold the instrument (wrong --tree aborts non-zero; every preamble names its extraction).</p></div>
 </div>
 </section>
 </main>
