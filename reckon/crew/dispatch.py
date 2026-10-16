@@ -821,9 +821,9 @@ def dispatch(
     orchestrator_assessment = dict(
         (dispatch_options or {}).get("orchestrator_assessment") or {}
     )
-    # A plan review composes under one node id, plan-review-of-<slug>, for every
-    # revision of the plan, so an earlier review of the same plan is a different
-    # piece of work rather than a previous attempt of this one. The compose marks
+    # A plan review composes under one node id for every revision of the plan,
+    # so an earlier review of the same plan is a different piece of work rather
+    # than a previous attempt of this one. The compose marks
     # such a dispatch fresh; the marker rides the dispatch options onto the
     # queued record the admission pass replays, so a review held by the lane and
     # launched later records a first attempt too.

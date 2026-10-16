@@ -1776,9 +1776,9 @@ def _composed_review_options(
 ) -> dict[str, Any]:
     """The dispatch options a composed review launches under.
 
-    A plan review composes under one node id, ``plan-review-of-<slug>``, for
-    every revision of the plan, so an earlier review of the same plan is not a
-    previous attempt of this one. Marking a plan review's compose ``fresh_review``
+    A plan review composes under one node id for every revision of the plan, so
+    an earlier review of the same plan is not a previous attempt of this one.
+    Marking a plan review's compose ``fresh_review``
     tells ``dispatch()`` to record a first attempt rather than a redispatch. The
     marker rides these options onto the queued record the admission pass replays,
     so a review the lane holds and later launches records a first attempt too. A
