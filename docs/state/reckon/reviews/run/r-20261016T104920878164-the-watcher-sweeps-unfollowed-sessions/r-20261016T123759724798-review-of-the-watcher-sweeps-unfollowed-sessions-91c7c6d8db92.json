@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[crash]"
+  ],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite (base-part_00.log, revision cb2791806, 66 passed, EXIT=0, zero failing ids) and after_suite (head-part_00.log, 1 failed / 65 passed, EXIT=1), the two logs those blocks name; the store's own reader annotates the same one id. The wider 86-file head arm spanned nine chunk logs and carried a second failure, tests/test_follower_freshness.py::test_failed_reexec_reports_once_and_keeps_the_registration, which sits in head-part_04.log and not in the after_suite log_path, so it is not part of the count; both failures are attributed (the follower-freshness case reads checkout_trust.tracked_reckon_tree_is_dirty and the chunk arm ran with recovery_watch.py modified but uncommitted, so the dirty tree defers the reloader; probe-revert.log passes with recovery_watch.py reverted to base), and gate/head-recheck.log re-runs both at the committed head 91c7c6d8 and records 5 passed, EXIT=0.",
+  "base_log_revision": "cb279180626633e95276ce8bc8efc7fbacf54f37",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3236",
+    "reckon/crew/recovery_watch.py:2411"
+  ],
+  "completed_at": "2026-10-16T12:56:28.092Z",
+  "dispatched_at": "2026-10-16T12:38:33Z",
+  "findings": [
+    {
+      "file": "tests/test_the_watcher_sweeps_unfollowed_sessions.py",
+      "line": "68",
+      "severity": "follow-on",
+      "text": "follow-on: the commit adds a second `tree = directory / \"tree\"` assignment immediately after the first (line 67), a copy artefact that leaves a dead store; harmless at runtime but it is noise the diff introduced."
+    },
+    {
+      "file": "tests/test_the_watcher_sweeps_unfollowed_sessions.py",
+      "line": "205",
+      "severity": "follow-on",
+      "text": "follow-on: `assert WATCHER_SWEEP_GRACE_SECONDS == 600.0` compares the module constant against a literal that restates it, so the two sides move together and it can redden only if the constant is edited; the grace boundary is already asserted behaviourally by the eleven/nine-minute arms in `_arrange` (tests/test_the_watcher_sweeps_unfollowed_sessions.py:153-154)."
+    }
+  ],
+  "head_log_revision": "91c7c6d8db926c533dd12ec0f43dbe35ff70a4fe",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call sites: reckon/crew_follow_commands.py:3236 runs `watch_follow(project, transitions=True)`, which yields from watch_ticker (reckon/crew/recovery_watch.py:2522), reaching the new sweep at reckon/crew/recovery_watch.py:2411; the single-event path reckon/crew/runs.py:3263 is unchanged by this increment.",
+    "diff": "read 9f3c9a132..91c7c6d8 commit by commit; the increment is the single commit 91c7c6d8, +29 lines in reckon/crew/recovery_watch.py (WATCHER_SWEEP_INTERVAL_SECONDS, a `swept_at = 0.0` before the tick loop, and a rate-limited best-effort call to runs.sweep_unfollowed_sessions at the tick's reconciliation point) and +136/-45 in the test file (both loops now driven through their real entry points over one three-session fleet).",
+    "done_when": "the node done_when names tests/test_the_watcher_sweeps_unfollowed_sessions.py and a head/base parity over the tests importing reckon/crew/runs.py; the manifest records the test green (2 passed, EXIT=0, watcher-pair.log) and the parity arms (86-file head, 85-file base), and the increment's tests now drive both loop entry points rather than calling sweep_unfollowed_sessions directly.",
+    "goal": "the node goal is that the project watcher sweeps each session with no live follower for the grace window and passes that session explicitly; the increment wires the sweep into the fleet's streaming producer watch_ticker at reckon/crew/recovery_watch.py:2411, the loop `crew watch` reaches through watch_follow(transitions=True) at reckon/crew_follow_commands.py:3236, closing the prior review's blocking gap that the sweep reached only the single-event watch.",
+    "manifest": "read manifest.md; status complete, it records the test command and result, two negative controls, a two-arm parity run with the two added head failures attributed, and a post-commit recheck naming the log.",
+    "write_paths": "the manifest declares reckon/crew/runs.py, reckon/crew/recovery_watch.py, tests/test_the_watcher_sweeps_unfollowed_sessions.py, the \u00a737 evidence fragment and the \u00a737 figures directory; the increment's diff touches exactly reckon/crew/recovery_watch.py and tests/test_the_watcher_sweeps_unfollowed_sessions.py, both inside them."
+  },
+  "justifications": {
+    "durability": "negative-control-two.log removes the sweep call from watch_ticker alone and test_the_following_loop_sweeps_the_unattended_session fails with launched == [], 1 failed / 1 passed / EXIT=1, so the new wiring is guarded; negative-control.log drops the explicit session and both cases fail.",
+    "evidence": "the manifest's watcher-pair.log records 2 passed at EXIT=0 for tests/test_the_watcher_sweeps_unfollowed_sessions.py and base/head parity logs are on disk, but the head arm's named after_suite log adds one failing id (attributed to xdist load) and the wider arm a second (a dirty tree), neither of which the full arm re-verifies green, only a recheck of those ids.",
+    "fit": "the WATCHER_SWEEP_INTERVAL_SECONDS comment beside IDLE_POLL_INTERVAL_CAP_SECONDS at reckon/crew/recovery_watch.py:2221 and the best-effort try/except follow the module's idiom, and no symbol carries a plan or version label; the duplicated `tree = directory / \"tree\"` at tests/test_the_watcher_sweeps_unfollowed_sessions.py:68 is the one rough edge.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:2411 calls runs.sweep_unfollowed_sessions(project) inside watch_ticker, the producer the fleet runs, so the sweep now takes effect in production rather than only in the single-event watch.",
+    "reuse": "the increment adds no sweep of its own: it calls the existing runs.sweep_unfollowed_sessions (reckon/crew/runs.py:3142) from a second loop, and a search over reckon/ for a rate-limit cadence found only IDLE_POLL_INTERVAL_CAP_SECONDS, a sibling constant rather than a reusable owner.",
+    "scope_discipline": "git diff 9f3c9a132..91c7c6d8 changes only reckon/crew/recovery_watch.py and tests/test_the_watcher_sweeps_unfollowed_sessions.py, both among the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the project watcher sweeps each session with no live follower for the grace window and passes that session explicitly; the increment wires the sweep into the fleet's streaming producer watch_ticker at reckon/crew/recovery_watch.py:2411, the loop `crew watch` reaches through watch_follow(transitions=True) at reckon/crew_follow_commands.py:3236, closing the prior review's blocking gap that the sweep reached only the single-event watch.\nVERDICT done_when: the node done_when names tests/test_the_watcher_sweeps_unfollowed_sessions.py and a head/base parity over the tests importing reckon/crew/runs.py; the manifest records the test green (2 passed, EXIT=0, watcher-pair.log) and the parity arms (86-file head, 85-file base), and the increment's tests now drive both loop entry points rather than calling sweep_unfollowed_sessions directly.\nVERDICT write_paths: the manifest declares reckon/crew/runs.py, reckon/crew/recovery_watch.py, tests/test_the_watcher_sweeps_unfollowed_sessions.py, the \u00a737 evidence fragment and the \u00a737 figures directory; the increment's diff touches exactly reckon/crew/recovery_watch.py and tests/test_the_watcher_sweeps_unfollowed_sessions.py, both inside them.\nVERDICT manifest: read manifest.md; status complete, it records the test command and result, two negative controls, a two-arm parity run with the two added head failures attributed, and a post-commit recheck naming the log.\nVERDICT diff: read 9f3c9a132..91c7c6d8 commit by commit; the increment is the single commit 91c7c6d8, +29 lines in reckon/crew/recovery_watch.py (WATCHER_SWEEP_INTERVAL_SECONDS, a `swept_at = 0.0` before the tick loop, and a rate-limited best-effort call to runs.sweep_unfollowed_sessions at the tick's reconciliation point) and +136/-45 in the test file (both loops now driven through their real entry points over one three-session fleet).\nCALL_SITES: reckon/crew_follow_commands.py:3236, reckon/crew/recovery_watch.py:2411\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:2411 calls runs.sweep_unfollowed_sessions(project) inside watch_ticker, the producer the fleet runs, so the sweep now takes effect in production rather than only in the single-event watch.\nSCORE evidence: 16\nJUSTIFICATION evidence: the manifest's watcher-pair.log records 2 passed at EXIT=0 for tests/test_the_watcher_sweeps_unfollowed_sessions.py and base/head parity logs are on disk, but the head arm's named after_suite log adds one failing id (attributed to xdist load) and the wider arm a second (a dirty tree), neither re-verified green by the full arm, only by a recheck of those ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 9f3c9a132..91c7c6d8 changes only reckon/crew/recovery_watch.py and tests/test_the_watcher_sweeps_unfollowed_sessions.py, both among the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control-two.log removes the sweep call from watch_ticker alone and test_the_following_loop_sweeps_the_unattended_session fails with launched == [], 1 failed / 1 passed / EXIT=1, so the new wiring is guarded.\nSCORE fit: 16\nJUSTIFICATION fit: the WATCHER_SWEEP_INTERVAL_SECONDS comment beside IDLE_POLL_INTERVAL_CAP_SECONDS at reckon/crew/recovery_watch.py:2221 and the best-effort try/except follow the module's idiom, and no symbol carries a plan or version label; the duplicated `tree = directory / \"tree\"` at tests/test_the_watcher_sweeps_unfollowed_sessions.py:68 is the one rough edge.\nSCORE reuse: 19\nJUSTIFICATION reuse: the increment adds no sweep of its own and calls the existing runs.sweep_unfollowed_sessions (reckon/crew/runs.py:3142) from a second loop; a search over reckon/ for a rate-limit cadence found only IDLE_POLL_INTERVAL_CAP_SECONDS, a sibling constant rather than a reusable owner.\nFINDING tests/test_the_watcher_sweeps_unfollowed_sessions.py:68 follow-on: the commit adds a second `tree = directory / \"tree\"` assignment immediately after the first (line 67), a copy artefact that leaves a dead store.\nFINDING tests/test_the_watcher_sweeps_unfollowed_sessions.py:205 follow-on: `assert WATCHER_SWEEP_GRACE_SECONDS == 600.0` compares a module constant against a literal that restates it, so the two sides move together; the grace boundary is already asserted behaviourally by the eleven/nine-minute arms at lines 153-154.\n",
+  "review_run_id": "r-20261016T123759724798-review-of-the-watcher-sweeps-unfollowed-sessions-91c7c6d8db92",
+  "reviewed_base_sha": "9f3c9a132aba7dcbb06a033fef737bd0cb7e9ded",
+  "reviewed_head_sha": "91c7c6d8db926c533dd12ec0f43dbe35ff70a4fe",
+  "reviewed_run_id": "r-20261016T104920878164-the-watcher-sweeps-unfollowed-sessions",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T12:52:00.000000+00:00",
+  "total": 108
+}
