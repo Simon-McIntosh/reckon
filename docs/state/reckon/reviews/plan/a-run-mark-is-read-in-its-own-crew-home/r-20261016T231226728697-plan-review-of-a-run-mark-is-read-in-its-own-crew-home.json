@@ -1,0 +1,30 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T23:23:25.335Z",
+  "dispatched_at": "2026-10-16T23:13:00Z",
+  "findings": [],
+  "plan_fingerprint": "7f3eaa06fdc3fe12a8fb436e89d0a5c2044010d06677a8f987d4c1de6c254f99",
+  "plan_slug": "a-run-mark-is-read-in-its-own-crew-home",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T231226728697-plan-review-of-a-run-mark-is-read-in-its-own-crew-home",
+  "reviewed_blob_sha": "bbffc752f1bd9c4326d808e6e5cd03c9202db462",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves at the named module (`_processes_owning_run` at `process_signal.py:148`; `local_liveness` at `recovery_liveness.py:1001`; `_env_scan_run_pid` at `:1091`), the cited test file exists, run `r-20261016T212841719818` resolves in the ledger (`docs/state/reckon/runs/r-20261016T212841719818-fence-reports-seal-population-at-merge.json` and its review record, which itself names the failing test and `r-resume-codex`), and `a-run-has-one-live-writer` is present with \u00a72 heading \"A worker never outlives its supervisor\".",
+    "done_when": "pass \u2014 \u00a71's done-when (snapshot line 34) is measurable (three concrete assertions on a named new test) and names a declared negative control: \"with the crew-home comparison removed, the test names the second home's child and fails\", a mutation of the code under test that flips the asserted outcome, plus a ruff floor.",
+    "evidence_paths": "pass \u2014 the only evidence location named is \"the run directory\", a durable path under the crew home (not a session scratchpad or node-local temporary directory); the run's own record confirms run directories are the durable home for a node's logs.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag is carried into code; the proposed test filename is a mechanism sentence (a run mark is read in its own crew home) that reads without the plan, and the plan body's plan references (`a-run-has-one-live-writer \u00a72`) live in plan prose, which the tracker owns, not in code.",
+    "reasoning": "pass \u2014 (1) the stated root cause matches the cited evidence: the review record for `r-20261016T212841719818` states the mechanism verbatim \u2014 \"`local_liveness` falls back to `_env_scan_run_pid`, which names any process of this user carrying `RECKON_RUN_ID=r-resume-codex`, and nine test files share `r-resume-*` ids, so another test's live child is read as this run's worker under `-n 10`\" \u2014 and I confirmed nine test files carry `r-resume-*` ids; (2) the mechanism produces the measure: `_processes_owning_run` is the sole matcher behind both doors (`recovery_liveness.py:1113` for liveness, `process_signal.py:300` inside `_run_process_pids` for stop), so narrowing it there narrows both, and the third done-when clause (a child with no `RECKON_HOME` matches only a default-home caller) follows from treating an absent variable as the default home on both sides; (3) it runs on the real production path with the callers named, and the narrowing does not strand a legitimate worker \u2014 `tests/test_resume_refuses_a_live_worker.py::_marked_worker` spawns its env-marked child with `env={**os.environ, RECKON_RUN_ID: run_id}`, inheriting the caller's `RECKON_HOME`, so that existing live-worker case still matches after the change and no other test reaches the matcher directly.",
+    "single_goal": "pass \u2014 one section, one deliverable (narrow the single matcher), one pair of write paths (`reckon/crew/process_signal.py` and the new test); the ruff and coordinator-population clauses are conditions on that same deliverable, not a second one.",
+    "wiring": "pass \u2014 the plan declares `plan-standalone` with a one-sentence reason (snapshot line 12), which `reckon/_schema.py:290-338` accepts in place of `depends-on`/`blocks`/`informs`/`plan-after`/gate for an implementable plan; the one plan it references, `a-run-has-one-live-writer`, is `plan-status: done`, so no dependency edge is owed and none is missing."
+  },
+  "section_digests": {
+    "_document": "40c223e122141aaad1c7ab22cae8e33a116eff433615b56d0541fe1781a07af4",
+    "s1": "2ab23e10b5d27a87bce149dff090e3231ec699d002ccea31d2987b732578387c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T23:27:58.898909+00:00"
+}
