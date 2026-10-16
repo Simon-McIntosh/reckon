@@ -2093,6 +2093,7 @@ def launch_plan(
     fence_home: str | Path | None = None,
     fence_config: Mapping[str, Any] | None = None,
     fence_waiver: str | None = None,
+    masked_paths: Iterable[str | Path] = (),
 ) -> LaunchPlan:
     """Translate one backend plus one node's prompt into a runnable invocation.
 
@@ -2219,6 +2220,7 @@ def launch_plan(
             home=fence_home,
             read_write_binds=credential_binds,
             config=fence_config,
+            masked_paths=masked_paths,
         )
     return LaunchPlan(
         backend=backend_name,

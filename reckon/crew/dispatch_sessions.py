@@ -58,6 +58,71 @@ from reckon.crew.runs import (
 )
 
 
+def _shadow_mask_paths(
+    lineage: Mapping[str, Any] | None, primary: Mapping[str, Any] | None, project: str
+) -> tuple[str, ...]:
+    """The primary's readable surfaces a shadow launch must not see.
+
+    A shadow is re-run at its primary's base so the two arms can be compared,
+    which is only meaningful when the shadow never read the primary's records:
+    its run directory, its review record files and its worktree hold its
+    reasoning and its numbers rather than its landed code. The surfaces are
+    resolved through ``promotion_scope._primary_read_surfaces``, the same
+    function the contamination scan reads them from, so the launch fence and
+    the scan cannot disagree about what a shadow could have read. The empty
+    tuple is returned for a run whose lineage is not a shadow, or when the
+    primary's row is not in hand — there is then nothing to mask.
+    """
+    if not (isinstance(lineage, Mapping) and lineage.get("kind") == "shadow"):
+        return ()
+    if not isinstance(primary, Mapping) or not project:
+        return ()
+    from reckon.crew.promotion_scope import _primary_read_surfaces
+
+    run_directory, review_records, worktree = _primary_read_surfaces(primary, project)
+    return tuple(path for path in (run_directory, worktree, *review_records) if path)
+
+
+def _shadow_primary_row(
+    lineage: Mapping[str, Any] | None, record: Mapping[str, Any]
+) -> Mapping[str, Any] | None:
+    """The committed ledger row a shadow's lineage names, or ``None``.
+
+    A shadow is dispatched against a promoted primary, so its row is in the
+    ledger the run records into, and the line the launch resolver reads is the
+    one ``_shadow_stream_contamination`` reads at promotion: the lineage's
+    ``primary_run_id`` matched against the committed rows of the run's own
+    project. A run whose lineage is not a shadow, or whose primary is not
+    found, resolves no row and so composes no masks.
+    """
+    if not (isinstance(lineage, Mapping) and lineage.get("kind") == "shadow"):
+        return None
+    primary_run_id = str(lineage.get("primary_run_id") or "")
+    project = str(record.get("project") or "")
+    if not primary_run_id or not project:
+        return None
+    from reckon import ledger
+
+    try:
+        rows = ledger.runs(project)
+    except (OSError, ValueError, KeyError):
+        return None
+    return next(
+        (row for row in rows if str(row.get("run_id") or "") == primary_run_id),
+        None,
+    )
+
+
+def _shadow_masks_for_record(record: Mapping[str, Any]) -> tuple[str, ...]:
+    """The surfaces to mask for a launching run record, resolved from its lineage."""
+    lineage = record.get("lineage")
+    return _shadow_mask_paths(
+        lineage if isinstance(lineage, Mapping) else None,
+        _shadow_primary_row(lineage if isinstance(lineage, Mapping) else None, record),
+        str(record.get("project") or ""),
+    )
+
+
 def _pace_readings(record: Mapping[str, Any]) -> list[Mapping[str, Any]] | None:
     """The run's own pace-row clocks as one lift reading, or ``None``.
 
@@ -1153,6 +1218,7 @@ def resume_plan(
             images=(record.get("node") or {}).get("images") or (),
             fence=FENCE_WORKERS,
             fence_config=config,
+            masked_paths=_shadow_masks_for_record(record),
         )
     )
     # A resume runs where a dispatch runs. A placement-declaring backend's
@@ -1606,6 +1672,7 @@ def change_lane(
                 images=(record.get("node") or {}).get("images") or (),
                 fence=FENCE_WORKERS,
                 fence_config=config,
+                masked_paths=_shadow_masks_for_record(record),
             )
         )
         target_plan = _worker_runtime_plan(
