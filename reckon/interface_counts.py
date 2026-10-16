@@ -273,6 +273,22 @@ def _staged_writes(definition_nodes):
             for kind in ast.walk(handler.type)
         )
 
+    def exclusive_create_source(node):
+        """The path an O_CREAT|O_EXCL open exclusively creates, else None.
+
+        One spelling of the exclusive-create test, shared by the caller scan
+        that builds ``exclusive_creators`` and the handler scan that builds
+        ``not_created``.
+        """
+        if (
+            isinstance(node, ast.Call)
+            and call_name(node.func) == "os.open"
+            and len(node.args) >= 2
+            and any(call_name(flag) == "os.O_EXCL" for flag in ast.walk(node.args[1]))
+        ):
+            return source_name(node.args[0])
+        return None
+
     def bind_arguments(callee, called, call):
         parameters = [*functions[callee].args.posonlyargs, *functions[callee].args.args]
         if (
@@ -308,15 +324,12 @@ def _staged_writes(definition_nodes):
             ]
         }
         created = {
-            source_name(call.args[0])
+            source
             for attempt in (node for node in bodies[name] if isinstance(node, ast.Try))
             if any(catches_file_exists(handler) for handler in attempt.handlers)
             for statement in attempt.body
             for call in ast.walk(statement)
-            if isinstance(call, ast.Call)
-            and call_name(call.func) == "os.open"
-            and len(call.args) >= 2
-            and any(call_name(flag) == "os.O_EXCL" for flag in ast.walk(call.args[1]))
+            if (source := exclusive_create_source(call)) is not None
         }
         if parameters & created:
             exclusive_creators[name] = parameters & created
@@ -372,15 +385,10 @@ def _staged_writes(definition_nodes):
         not_created = {}
         for attempt in (node for node in body if isinstance(node, ast.Try)):
             exclusive = {
-                source_name(call.args[0])
+                source
                 for statement in attempt.body
                 for call in ast.walk(statement)
-                if isinstance(call, ast.Call)
-                and call_name(call.func) == "os.open"
-                and len(call.args) >= 2
-                and any(
-                    call_name(flag) == "os.O_EXCL" for flag in ast.walk(call.args[1])
-                )
+                if (source := exclusive_create_source(call)) is not None
             }
             for handler in attempt.handlers:
                 if not catches_file_exists(handler):
