@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_jev_prompt_carries_what_it_weighs.py::test_rendered_state_is_one_json_object",
+    "tests/test_picker_return_time.py::test_representative_nine_candidate_state_is_bounded"
+  ],
+  "added_failures_note": "Derived from the reviewed run's own suite arms at the reviewed head. baseline_suite (gate-armed-base.log) never reaches its summary line (exit_status 137, completed false), so it retires no id and every head failure counts as added; after_suite (gate-armed-head.log) completes at 4 failed / 452 passed at revision df84976d8 with the four ids recorded. The commits gained since the earlier review (0cc090ae) retire two of those four: repair-head.log runs the two named guards green (2 passed, EXIT=0) and repair-outofscope.log, run at the reviewed head cbb15ee1a439, shows exactly 2 failures, the two field-set contracts in files outside the node's scope. So added_failure_count at the reviewed head is 2, not the 4 the stale after_suite arm records.",
+  "base_log_revision": "75aa6abd1a5a199d22bca35953ac4c37e52da47a",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:409 prompts.render(...) - the pick path that renders the candidate state Jev weighs",
+    "reckon/crew/picker/__init__.py:472 prompts.render(\"questions.jinja\", candidates=offered) - the question payload Jev answers",
+    "reckon/crew/picker/prompts.py:337 build_state -> _candidate_state(candidate) at prompts.py:195, fed by the snapshot that sets Candidate.moved_in/moved_off"
+  ],
+  "completed_at": "2026-10-16T16:26:59.603Z",
+  "dispatched_at": "2026-10-16T16:12:24Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the follow_ons line still calls tests/test_picker_return_time.py::test_representative_nine_candidate_state_is_bounded 'a size bound', but repair-outofscope.log run at the reviewed head shows its failure is the field-set contract 'assert set(payload[\"candidates\"][\"clive\"]) == CANDIDATE_KEYS' at tests/test_picker_return_time.py:274 (the length bound above it passes), so the recurrence is the same expected-key-set contract as the other follow-on, not a size bound, and a coordinator sizing the remaining work from this line will look for a bound to move that does not exist. This is the same misattribution the earlier review recorded at manifest.md:21 and the repair round did not correct it."
+    },
+    {
+      "file": "manifest.md",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: after_suite names revision df84976d8a72f722e1ab8d1daa0755ac28e6195b while the reviewed head is cbb15ee1a4399f603e9177498707237266be676e, so the record's armed suite arm describes the pre-repair revision and carries the two ids the repair has since retired; a reader deriving added failures from after_suite alone counts 4 ids at the head when the head shows 0 production regressions and 2 out-of-scope field-set failures (repair-outofscope.log), and no armed suite was re-run at the repaired revision to replace it."
+    },
+    {
+      "file": "repair-negative-control.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the negative-control log's header names rev=0cc090aedd214fdf7e2897b93c2f921a3b490555 with a garbled tree field ('tree= (?PYTHONPATH=...'), yet its body shows the reverted bound 'assert len(rendered) <= 1500 * 5' under the repaired comment that mentions '1500 * 6' at tests/test_picker.py:264, so the header names the answering commit while the body is the tree with that commit undone and the reader cannot reconcile the arm from its own header."
+    }
+  ],
+  "head_log_revision": "df84976d8a72f722e1ab8d1daa0755ac28e6195b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against df84976d8; 0cc090ae changes only tests/test_picker.py (character bound 1500 * 5 -> 1500 * 6 at line 264 and 'moved_in'/'moved_off' added to the expected candidate key set at lines 283-284) and tests/test_picker_pressure.py (token bound 2200 -> 2400 and its print string at line 480), and cbb15ee1 changes only the evidence fragment; nothing outside the scope the resume advice extended.",
+    "done_when": "the done-when's final clause - 'test files importing prompts.py show no added failure against the base revision' - is still unmet at the reviewed head: repair-outofscope.log run at cbb15ee1 shows 2 failures, and the repair's own gate (repair-head.log, 2 passed; repair-negative-control.log, 2 failed EXIT=1) asserts only the two named representative-state guards, not the no-added-failure clause, though the scope note permits the two out-of-scope failures to be reported under follow_ons rather than fixed.",
+    "goal": "the goal is to render every candidate's moved_in and moved_off whether or not the request names a requirement; the production rendering is at reckon/crew/picker/prompts.py:230-232 (hoisted out of the outcomes_at_requirement block), and the gained commits make the representative-state guards agree with it - the expected candidate key set at tests/test_picker.py:283-284 gains the two names and the two size ceilings rise - so the node's deliverable now holds end to end.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T151623426039-moves-render-for-every-pick/manifest.md; status complete, three commits listed, the repair gate recorded (2 passed), the repair control recorded (EXIT=1), and both suite arms carrying literal commands and logs, but after_suite names revision df84976d8 rather than the reviewed head cbb15ee1 and the follow_ons line at manifest.md:21 misattributes the remaining failures as size bounds.",
+    "write_paths": "the original fence named reckon/crew/picker/prompts.py, reckon/crew/picker/types.py, tests/test_a_move_counts_against_the_pick.py, tests/test_picker_helpers_have_one_owner.py, the evidence fragment and its figure directory; the repair round's resume advice added tests/test_picker.py and tests/test_picker_pressure.py, and the gained commits touch only those two plus the fragment, every path inside the extended scope."
+  },
+  "justifications": {
+    "durability": "the added guard that survives review is the expected candidate key set at tests/test_picker.py:283-284, which reddens if 'moved_in'/'moved_off' stop being rendered on every candidate; the token-bound edit at tests/test_picker_pressure.py:480 only relaxes a ceiling and adds no assertion, so a regression that silently grows the state is caught only by the char bound at tests/test_picker.py:264.",
+    "evidence": "the repair gate is recorded, not merely claimed - repair-head.log shows the two named guards pass (2 passed, EXIT=0) and repair-negative-control.log shows them red with the answering change reverted (2 failed, EXIT=1) - but the done-when's no-added-failure clause is unmet at the reviewed head, where repair-outofscope.log shows 2 failures, and the armed suite arm the record carries is at the superseded revision df84976d8.",
+    "fit": "the gained edits follow the surrounding test idiom - a bound with a comment stating why it moved and the mechanism it guards, e.g. tests/test_picker.py:262-264 - and introduce no name, plan label or version suffix the naming rules forbid.",
+    "goal_fidelity": "the gained commits complete the node's goal by making the representative-state guards agree with the two move figures rendered on every candidate at reckon/crew/picker/prompts.py:230-232, so the character and token ceilings the two guards assert now measure the mandated content.",
+    "reuse": "the gained commits add no definition and no capability; they amend two existing guards and the evidence fragment, leaving the single owner of candidate rendering, _candidate_state at reckon/crew/picker/prompts.py:195, unchanged, so nothing is forked.",
+    "scope_discipline": "the repair round's resume advice extended the write scope to tests/test_picker.py and tests/test_picker_pressure.py, and `git diff` over df84976d8..cbb15ee1 names only those two files plus the evidence fragment, all inside that scope, with no production file touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to render every candidate's moved_in and moved_off whether or not the request names a requirement; the production rendering at reckon/crew/picker/prompts.py:230-232 stands, and the gained commits make the representative-state guards agree with it at tests/test_picker.py:283-284, so the deliverable holds end to end.\nVERDICT done_when: the done-when's final clause is still unmet at the reviewed head - repair-outofscope.log run at cbb15ee1 shows 2 failures in files importing prompts.py, and the repair's gate (repair-head.log 2 passed, repair-negative-control.log EXIT=1) asserts only the two named guards - though the scope note permits the two out-of-scope failures to be recorded under follow_ons.\nVERDICT write_paths: the original fence did not include tests/test_picker.py or tests/test_picker_pressure.py; the repair round's resume advice extended the scope to add both, and the gained commits touch only those two plus the evidence fragment, all inside the extended scope.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T151623426039-moves-render-for-every-pick/manifest.md; status complete, three commits, repair gate and control recorded, but after_suite names df84976d8 rather than the reviewed head cbb15ee1 and follow_ons at manifest.md:16 misattributes the outstanding failures as size bounds.\nVERDICT diff: read commit by commit against df84976d8; 0cc090ae raises the character bound to 1500 * 6 and adds 'moved_in'/'moved_off' to the expected key set in tests/test_picker.py, raises the token bound to 2400 in tests/test_picker_pressure.py, and cbb15ee1 documents both in the evidence fragment, with nothing outside the extended scope.\nCALL_SITES: reckon/crew/picker/__init__.py:409 prompts.render (the pick path), reckon/crew/picker/__init__.py:472 prompts.render(\"questions.jinja\") (the question payload), reckon/crew/picker/prompts.py:337 build_state->_candidate_state\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the gained commits make the representative-state guards agree with the two move figures rendered on every candidate at reckon/crew/picker/prompts.py:230-232, completing the node's deliverable.\nSCORE evidence: 13\nJUSTIFICATION evidence: the repair gate and control are recorded (repair-head.log 2 passed, repair-negative-control.log EXIT=1) but the done-when's no-added-failure clause is unmet at cbb15ee1 (repair-outofscope.log, 2 failed) and the armed suite arm the record carries is at the superseded revision df84976d8.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the resume advice extended the scope to tests/test_picker.py and tests/test_picker_pressure.py and the gained commits touch only those two plus the evidence fragment, all inside it.\nSCORE durability: 16\nJUSTIFICATION durability: the expected candidate key set at tests/test_picker.py:283-284 reddens if 'moved_in'/'moved_off' stop rendering, but the token bound at tests/test_picker_pressure.py:480 only relaxes a ceiling and adds no assertion.\nSCORE fit: 18\nJUSTIFICATION fit: the gained edits follow the surrounding test idiom at tests/test_picker.py:262-264 and introduce no forbidden name or plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commits add no definition and extend nothing new, leaving the single owner _candidate_state at reckon/crew/picker/prompts.py:195 unchanged.\nFINDING manifest.md:21 follow-on: the follow_ons line calls tests/test_picker_return_time.py::test_representative_nine_candidate_state_is_bounded 'a size bound' while repair-outofscope.log shows its failure is the field-set contract at tests/test_picker_return_time.py:274, so a coordinator looks for a bound to move that does not exist.\nFINDING manifest.md:16 follow-on: after_suite names revision df84976d8 while the reviewed head is cbb15ee1, so the record's armed suite arm describes the pre-repair revision and carries the two ids the repair retired, with no armed suite re-run at the repaired revision.\nFINDING repair-negative-control.log:2 follow-on: the control log's header names rev=0cc090ae with a garbled tree field while its body shows the reverted bound 1500 * 5 under the repaired comment mentioning 1500 * 6, so the header and body name different revisions.\nREVIEWED_BASE_SHA: df84976d8a72f722e1ab8d1daa0755ac28e6195b\nREVIEWED_HEAD_SHA: cbb15ee1a4399f603e9177498707237266be676e",
+  "review_run_id": "r-20261016T161100486051-review-of-moves-render-for-every-pick-cbb15ee1a439",
+  "reviewed_base_sha": "df84976d8a72f722e1ab8d1daa0755ac28e6195b",
+  "reviewed_head_sha": "cbb15ee1a4399f603e9177498707237266be676e",
+  "reviewed_run_id": "r-20261016T151623426039-moves-render-for-every-pick",
+  "role": "review",
+  "rubric": "node",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T16:20:00.000000+00:00",
+  "total": 105
+}
