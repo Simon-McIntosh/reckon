@@ -25,7 +25,7 @@
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="101">
+<meta name="plan-version" content="102">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -451,6 +451,9 @@
 </div>
 <div class="r-comment" data-section="s21" data-id="c-close-s21" data-who="reckon-build" data-when="2026-10-16T15:00:00Z">
     <div class="r-comment-body"><p>§21 landed. The detector's exclusive-create test is one predicate, and the inline-rename branch of the delegated move-aside exemption has a case (<code>6944c8f2a</code>, merged as <code>39759eb0b</code>). Gate: 120 passed. The control is red. Review: 113. <a href="/reckon/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s21-one-predicate">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261016T141359477766-the-move-aside-exemption-has-one-predicate" data-who="reckon-build" data-when="2026-10-16T14:37:38.272Z">
+    <div class="r-comment-body"><p>The staged-write detector spells its exclusive-create test once, as one local predicate exclusive_create_source (reckon/interface_counts.py:276) that both the exclusive_creators scan (line 332) and the not_created map (line 391) call, with no behaviour change and the inventory set unchanged, and tests/test_staged_write_inventory.py gains a case for the inline-rename branch of the move-aside exemption; measure: the seven test files importing reckon/interface_counts.py give 120 passed at head against 119 passed at base, the delta exactly the new case, and with the callers_not_staging subtraction removed from the inline check the new case fails and claim_next_attempt is reported as a staged write.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
