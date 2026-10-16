@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite gate logs; baseline_suite (6583d7b7f) failure_ids are tests/test_one_sprint_item_slug.py::test_consumers_share_the_one_reader and tests/test_server_listens_before_it_watches.py::test_mounts_answer_before_the_watch_is_armed, after_suite (3b931679b) failure_ids are the first of those alone, so the head-minus-base set is empty; the ids were read from the suite/base and suite/head chunk logs the manifest names as directories",
+  "base_log_revision": "3b931679b3c14b7b5d977a72714b64821845e42a",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:2004",
+    "reckon/serve.py:2274",
+    "reckon/doccheck.py:280"
+  ],
+  "completed_at": "2026-10-16T12:33:30.919Z",
+  "dispatched_at": "2026-10-16T12:16:20Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "1693",
+      "severity": "follow-on",
+      "text": "follow-on: _run_git_head duplicates the subprocess plumbing of _run_git - the same 10 s timeout, the same OSError and TimeoutExpired catches and two near-identical warning formats - instead of extending the existing owner at reckon/serve.py:1528, so a later change to the timeout or the failure contract in _run_git would silently not reach a HEAD lookup."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "1716",
+      "severity": "follow-on",
+      "text": "follow-on: the outside classification rests on the English substring not-a-git-repository in git's stderr, a message git ships for translation, so under a non-C locale a genuinely outside root would classify as failed and never be remembered, quietly restoring the one-failed-spawn-per-plan cost this node removed."
+    }
+  ],
+  "head_log_revision": "78be026928dcdba5c3c98ac713b3bc9c8408ffb9",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s): reckon/serve.py:2004 (_served_index_rows), reckon/serve.py:2274 (_discover_plans_uncached), reckon/doccheck.py:280 (_plan_last_committed, reached from derived_plan_age at reckon/doccheck.py:311)",
+    "diff": "read commit by commit against 3b931679b; 52431d7f1 splits HEAD resolution into _run_git_head and remembers only git's own not-a-repository answer, and 78be02692 records the rule and its gate in the landing fragment.",
+    "done_when": "the done_when names tests/test_a_tree_outside_git_asks_once.py, bounds a twelve-plan no-.git audit at one git process and requires the in-repository tree to read the same ages as base; the gate at head reports 5 passed EXIT=0 and the manifest records the run, the arms and a red negative control.",
+    "goal": "the node's goal is that a docs root git reports as outside any repository is remembered so later age and HEAD lookups spawn no git, and reckon/serve.py:1726 _git_head consults the new _run_git_head and remembers the root only on the outside outcome at reckon/serve.py:1752.",
+    "manifest": "read; it records the gate command with its 5-passed result, a base-versus-head spawn probe, the base and head suite arms with their failure ids, a failure_attribution for the differing id, and an unrepaired finding stated rather than absorbed.",
+    "write_paths": "the manifest declares four write paths and the diff touches only reckon/serve.py, tests/test_a_tree_outside_git_asks_once.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-tree-outside-git-asks-once.html, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_tree_outside_git_asks_once.py:188 and :248 assert the outside memo stays empty after a timed-out lookup and that the root is asked again, which redden with the unconditional remember restored, and the manifest's negative_control_repair.log shows those two cases at 2 failed EXIT=1.",
+    "evidence": "tests/test_a_tree_outside_git_asks_once.py:148 bounds the no-repository audit's spawn count at one and the manifest records 5 passed with the negative-control log at 2 failed EXIT=1, but the manifest's broad head-versus-base regression arm is run at the pre-repair head 3b931679b rather than the reviewed head, leaving the merged-revision claim unmeasured.",
+    "fit": "the three-outcome tuple at reckon/serve.py:1677 follows the module's _GIT_HEAD_MEMO and _file_identity idiom and introduces no name the naming rules forbid, though its bare head/outside/failed tags are string literals with no named constants.",
+    "goal_fidelity": "reckon/serve.py:1752 remembers the root only for the outside outcome and reckon/serve.py:1745 still short-circuits a remembered root before any spawn, so an outside root resolves once and later lookups cost no process.",
+    "reuse": "reckon/serve.py:1677 _run_git_head re-implements the bounded-spawn, TimeoutExpired/OSError catch and failure-warning scaffolding of the module's existing git owner _run_git at reckon/serve.py:1528 rather than extending it, so that plumbing now lives in two places.",
+    "scope_discipline": "every path in the diff (reckon/serve.py, tests/test_a_tree_outside_git_asks_once.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/a-tree-outside-git-asks-once.html) is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a docs root git reports as outside any repository is remembered so later age and HEAD lookups spawn no git, and reckon/serve.py:1726 _git_head consults the new _run_git_head and remembers the root only on the outside outcome at reckon/serve.py:1752.\nVERDICT done_when: the done_when names tests/test_a_tree_outside_git_asks_once.py, bounds a twelve-plan no-.git audit at one git process and requires the in-repository tree to read the same ages as base; the gate at head reports 5 passed EXIT=0 and the manifest records the run, the arms and a red negative control.\nVERDICT write_paths: the manifest declares four write paths and the diff touches only reckon/serve.py, tests/test_a_tree_outside_git_asks_once.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-tree-outside-git-asks-once.html, all inside them.\nVERDICT manifest: read; it records the gate command with its 5-passed result, a base-versus-head spawn probe, the base and head suite arms with their failure ids, a failure_attribution for the differing id, and an unrepaired finding stated rather than absorbed.\nVERDICT diff: read commit by commit against 3b931679b; 52431d7f1 splits HEAD resolution into _run_git_head and remembers only git's own not-a-repository answer, and 78be02692 records the rule and its gate in the landing fragment.\nCALL_SITES: reckon/serve.py:2004, reckon/serve.py:2274, reckon/doccheck.py:280\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/serve.py:1752 remembers the root only for the outside outcome and reckon/serve.py:1745 still short-circuits a remembered root before any spawn, so an outside root resolves once and later lookups cost no process.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_a_tree_outside_git_asks_once.py:148 bounds the no-repository audit's spawn count at one and the manifest records 5 passed with the negative-control log at 2 failed EXIT=1, but the manifest's broad head-versus-base regression arm is run at the pre-repair head 3b931679b rather than the reviewed head, leaving the merged-revision claim unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/serve.py, tests/test_a_tree_outside_git_asks_once.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/a-tree-outside-git-asks-once.html) is inside the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_tree_outside_git_asks_once.py:188 and :248 assert the outside memo stays empty after a timed-out lookup and that the root is asked again, which redden with the unconditional remember restored, and the manifest's negative_control_repair.log shows those two cases at 2 failed EXIT=1.\nSCORE fit: 17\nJUSTIFICATION fit: the three-outcome tuple at reckon/serve.py:1677 follows the module's _GIT_HEAD_MEMO and _file_identity idiom and introduces no name the naming rules forbid, though its bare head/outside/failed tags are string literals with no named constants.\nSCORE reuse: 11\nJUSTIFICATION reuse: reckon/serve.py:1677 _run_git_head re-implements the bounded-spawn, TimeoutExpired/OSError catch and failure-warning scaffolding of the module's existing git owner _run_git at reckon/serve.py:1528 rather than extending it, so that plumbing now lives in two places.\nFINDING reckon/serve.py:1693 follow-on: _run_git_head duplicates the subprocess plumbing of _run_git - the same 10 s timeout, the same OSError and TimeoutExpired catches and two near-identical warning formats - instead of extending the existing owner at reckon/serve.py:1528, so a later change to the timeout or the failure contract in _run_git would silently not reach a HEAD lookup.\nFINDING reckon/serve.py:1716 follow-on: the outside classification rests on the English substring not-a-git-repository in git's stderr, a message git ships for translation, so under a non-C locale a genuinely outside root would classify as failed and never be remembered, quietly restoring the one-failed-spawn-per-plan cost this node removed.\nREVIEWED_BASE_SHA: 3b931679b3c14b7b5d977a72714b64821845e42a\nREVIEWED_HEAD_SHA: 78be026928dcdba5c3c98ac713b3bc9c8408ffb9\n",
+  "review_run_id": "r-20261016T121549242269-review-of-a-tree-outside-git-asks-once-78be026928dc",
+  "reviewed_base_sha": "3b931679b3c14b7b5d977a72714b64821845e42a",
+  "reviewed_head_sha": "78be026928dcdba5c3c98ac713b3bc9c8408ffb9",
+  "reviewed_run_id": "r-20261016T104537692352-a-tree-outside-git-asks-once",
+  "role": "review",
+  "rubric": "node",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 11,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T12:35:00+00:00",
+  "total": 101
+}
