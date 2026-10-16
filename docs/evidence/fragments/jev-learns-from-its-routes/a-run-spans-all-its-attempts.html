@@ -74,10 +74,16 @@
     run home is the single receipt that measures the rest of the run.
   </p>
   <p id="a-run-spans-all-its-attempts-delta">
-    <strong>Delta.</strong> The test files importing
+    <strong>Delta.</strong> The 83 test files importing
     <code>promotion_checks.py</code>, <code>promotion.py</code> or
-    <code>rollout.py</code> were run at the base revision and at this change
-    with no added failure.
+    <code>rollout.py</code> run 733 passed and 0 failed at this change and the
+    same 733 passed and 0 failed at the base revision
+    <code>130812151</code> — <strong>no added failure</strong>. Both arms ran
+    the same command at eight workers with a per-test bound, each with its
+    pytest basetemp under the run's own scratch: a basetemp inside the worktree
+    makes every test that builds a fixture repository refuse to nest a
+    worktrees root, which reads as 74 failures and is an artifact of where the
+    run was pointed, not of the code.
   </p>
 </section>
 </main>
