@@ -2248,7 +2248,10 @@ def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
     # figure the parsed read refuses to produce.
     if _document_carries_records(text):
         try:
-            parsed_state = read_state(text)
+            # Derive the figure from the shared parse so this reader builds no
+            # soup of its own: the file's parse is memoised on its stat identity
+            # and reused by every other reader that asks for the same document.
+            parsed_state = read_state_file(path)
         except ValueError:
             parsed_state = None
         derived, source = (
