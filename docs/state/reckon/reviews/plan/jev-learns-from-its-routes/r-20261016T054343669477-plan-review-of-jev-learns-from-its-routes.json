@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T06:00:37.854Z",
+  "dispatched_at": "2026-10-16T05:45:39Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/jev-learns-from-its-routes.html:281",
+      "id": "reasoning-1",
+      "reason": "the section cannot be implemented as written without naming (and adding to the write paths) the run-home-aware locator, or the deliverable is unreachable for the fenced runs it is about.",
+      "text": "\u00a76 says the receipt is read \"through the same receipt reader `_apply_receipt_to_throughput` is fed from\", but that reader is `rollout.read_rollout_receipt`, whose locator `_locate_rollout` (reckon/crew/rollout.py:173) globs only `CLIENT_SESSIONS_DIR` (`~/.codex/sessions`, rollout.py:37) and never the run's own harness home; the plan's own \u00a76 premise is that under a fenced run \"the rollout lives in that run's own harness home\", and the sibling locator `_codex_rollout_candidates` (reckon/crew/paid_lanes.py:945) reaches that home by globbing `crew_runs.runs_dir()/<run_id>/codex-home/sessions` precisely because the plain receipt reader does not \u2014 so with the named reader the receipt is unreadable at promotion and the node hits its own `blocked` branch, never delivering the figure",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/jev-learns-from-its-routes.html:281",
+      "id": "reasoning-2",
+      "reason": "the change alters the meaning of the field between lanes, so the very incomparability \u00a76's Why names is not removed; the plan must either take wall (`generation_seconds + machine_seconds`) or state that codex `worker_seconds` is a tool-wait measure and reconcile clive.",
+      "text": "\u00a76 sets `worker_seconds` to the receipt's `machine_seconds`, but in the receipt `machine_seconds` is the merged tool-wait span and `generation_seconds` is `wall \u2212 machine` (`_bounded_tool_span`, reckon/crew/rollout.py:368), so `machine_seconds` is not the run's wall time; \u00a76's own Why states \"A codex run's `worker_seconds` is the run's wall time\", \u00a71's table calls it a \"wall-clock stand-in\", and clive's `worker_seconds` is the stream event span (wall) \u2014 so copying `machine_seconds` makes a codex `worker_seconds` a tool-wait figure against clive's wall figure",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/jev-learns-from-its-routes.html:24",
+      "id": "wiring-1",
+      "reason": "the graph is the machine surface a scheduler uses for readiness and conflict, and with `s4 \u2192 s3` missing a roadmap reads \u00a74 ready before the block it deletes from exists, and \u00a73/\u00a75 declared ready together would write `snapshot.py` concurrently.",
+      "text": "`plan-section-depends-on` carries one edge, `{\"s3\": [\"jev-learns-from-its-routes#s2\"]}`, while \u00a74's deliverable reads \u00a73's block (\"at the request's requirement when \u00a73's block is present\") and \u00a73 states \"\u00a74 and \u00a75 also write `snapshot.py`, so the three run one at a time, \u00a75 first\" \u2014 none of the `s5 \u2192 s3`, `s3 \u2192 s4`, `s5 \u2192 s4` orderings appear in the graph the roadmap reads",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/jev-learns-from-its-routes.html:295",
+      "id": "done_when-1",
+      "reason": "the plan need not change; a test can inject the locator or a run-home path, and the finding is a note on the gate's mechanics rather than a defect in what \u00a76 declares.",
+      "text": "\u00a76's done-when promotes a fixture receipt, but the receipt reader's only locator is `CLIENT_SESSIONS_DIR` under `~/.codex`, so satisfying the measure as written places test fixtures in a home directory outside the repository under test, which the repo's own rule forbids (a test must not read or write state outside the repository)",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "544f59d21f33338400396b044005edc02a6adc593f0a25019866d7dd14836d21",
+  "plan_slug": "jev-learns-from-its-routes",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T054343669477-plan-review-of-jev-learns-from-its-routes",
+  "reviewed_blob_sha": "6f56a6fe15a70191efd02fa10990fee6472ed32a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_candidates_scan`, `_declared_difficulty`, `cached_stream_timestamp_bounds`, `_apply_receipt_to_throughput`, `_terminal_stream_data`, `questions.jinja`, `types.py`, `lane-and-model-routing.html` all resolve; the extensionless plan href resolves as `.html`.",
+    "done_when": "a finding \u2014 \u00a76's done-when has a valid negative control, but the fixture path it needs pushes the test at the receipt locator, which searches a home directory outside the repository under test (deviation from the repo's test-isolation rule, not a reachable-defect).",
+    "evidence_paths": "pass \u2014 no gate or evidence path is declared into a session scratchpad or node-local temporary directory; each section names source and test files that outlive the run.",
+    "naming": "pass \u2014 `outcomes_at_requirement`, `moved_off`, `moved_in`, `rollout_receipt`, `paired_arms`, `orchestrator_assessment` are mechanism names carrying no plan label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 \u00a76's mechanism takes `worker_seconds` from the receipt, but the reader it names cannot locate a fenced run's rollout, and the field it copies (`machine_seconds`) is a different physical quantity from the wall-clock worker time every other source records.",
+    "single_goal": "pass \u2014 \u00a73 delivers the `outcomes_at_requirement` block and \u00a76 delivers codex worker time from the receipt, each one deliverable.",
+    "wiring": "a finding \u2014 `plan-section-depends-on` records only `s3 \u2192 s2`, omitting the `s4 \u2192 s3` edge \u00a74 declares and the `s5 \u2192 s3 \u2192 s4` serialization \u00a73/\u00a74 state in prose."
+  },
+  "section_digests": {
+    "_document": "bafd56c94e4a722e44647d81c01252a7cf558e781ab2e4346aac7f590726e02f",
+    "s1": "cb7c1c70fa397641ce06c9fe8b724b705b99ea013101ce6dd8a1ca183106d869",
+    "s2": "cc35fef7cc2d6ce0af14220bc78602ca25e960978e3dd3efb5979ca5e3c14917",
+    "s3": "8179a37e4b295ca4d07095c460b0db5cfa2464f0511c156fc51e08c807ba7fc0",
+    "s4": "828939c295d01d9b6fa0e90760eeee37626b612fb8414928adedddbb83f7238b",
+    "s5": "6cff1e7bf68d8874d67225b968adb4aeea6828a4800ac65b4676edd703eb6a52",
+    "s6": "53f3985a9e51660338ed6f513d576b48f5e68d1fcefca5338672e0ae74f5112d",
+    "s7": "7c5ab37c4bc1961ab68b2ec5026a848b7c6f8c6a4c26ca2b70b6fbad0f54351a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T06:02:18.091484+00:00"
+}
