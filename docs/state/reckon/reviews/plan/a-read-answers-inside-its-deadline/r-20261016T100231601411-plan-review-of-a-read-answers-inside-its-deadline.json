@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T10:23:13.988Z",
+  "dispatched_at": "2026-10-16T10:03:34Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:128",
+      "id": "reasoning-1",
+      "reason": "as written \u00a76 cannot obtain the quiet node its absolute thresholds (warm roadmap <= 2 s, warm audit <= 3 s, cold roadmap < 30 s) are measured against, so the next dispatch either blocks on its own precondition or reports a load-contaminated pass/fail; naming the partition in the done-when (as \u00a77 does) is the fix.",
+      "text": "\u00a76 requires the measurement run \"on a compute node with no other reckon worker on it\", but neither the deliverable nor the done-when names a partition, and the dispatch host submits a separate partition job with RECKON_ALLOW_NESTED_LAUNCH=1 only \"when the done-when names one\"; \u00a77 obtained its exclusive node by naming `all_debug` explicitly, and the plan's own record (c-s6-second-measurement-1016) shows the second \u00a76 measurement ran on the shared fleet node under load and had to caveat its figures",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ed92c09252ae7da3acdb68f0de435cf4819df178e47d2ca09cac87a87c6260e4",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 87,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T100231601411-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "c8db63c94d426702b67cf66896155d908f8a5378",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `doccheck.derived_plan_age` (doccheck.py:290), `doccheck._plan_last_committed` (doccheck.py:265), `serve._git_last_committed` (serve.py:1850), `serve._git_head` (serve.py:1645), `serve._run_git` (serve.py:1528), commit `c597bb999` (ancestor of HEAD, \"count plan age from the last commit\"), the `audit_latest`/report path `reads-remeasured-at-head/report.md`, and `health-tool-latency/scripts/profile_reads.py` all resolve; the \u00a717 call chain is real \u2014 `mcp.py:2660` calls `doccheck.audit_lifecycle`, whose `derived_plan_age` call is at doccheck.py:712.",
+    "done_when": "pass \u2014 \u00a76 declares a negative control (the base revision measured the same way in the same session, which must exceed the deadline), and \u00a717's control (\"with the failure not remembered, the no-repository case starts one spawn per plan and the test fails\") falsifies the no-repo arm it measures.",
+    "evidence_paths": "pass \u2014 both write evidence \"under the run directory\" (a durable path under the run's own log/report directory), never a node-local scratch path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the symbols or the new test filename `tests/test_a_tree_outside_git_asks_once.py`; the commit subject cited in \u00a717's Why is plan prose, not code.",
+    "reasoning": "a finding \u2014 \u00a76 requires \"a compute node with no other reckon worker on it\" but the section and its done-when name no allocation, so under the dispatch host contract the condition cannot be obtained; the plan's own second measurement failed this way.",
+    "single_goal": "pass \u2014 \u00a76 is one measurement deliverable; \u00a717 is one memo deliverable.",
+    "wiring": "pass \u2014 \u00a76's deliverable list now names \u00a716/\u00a717 (the two live implementable sections), matching the only open route f-araiid-013; \u00a717 declares no cross-section relationship that points at a wrong node, and its write paths (`reckon/serve.py`) do not collide with \u00a716 (`reckon/resources.py`)."
+  },
+  "section_digests": {
+    "_document": "094396fd5944d7985cb38f9f4bdedc00f68ebc224f5e264f359c3645d6923705",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "64530dc6c8659e6a33230828800f2b15c0203104fb6395632de659f7a4d4a9d4",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T10:31:40.821378+00:00"
+}
