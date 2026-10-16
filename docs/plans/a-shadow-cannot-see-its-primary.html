@@ -26,7 +26,7 @@
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -89,8 +89,10 @@
     <ul>
       <li><code>promotion_scope._primary_read_targets</code> also returns the primary's run directory (through
         <code>runs.run_dir</code>), its review record paths (through <code>review.review_path</code>) and its
-        worktree when its row names one. This is the one place a primary's readable paths are resolved; §4's fence
-        reads the same function.</li>
+        worktree when its row names one. It takes the primary's ledger row, which
+        <code>_shadow_stream_contamination</code> already looks up from the lineage's
+        <code>primary_run_id</code>. That lookup and this function are the one place a primary's readable paths are
+        resolved, and §4's fence calls the same pair.</li>
       <li><code>ledger.shadow_primary_read</code> returns a new reason for each of those kinds:
         <code>primary_run_directory_read</code>, <code>primary_review_read</code> and
         <code>primary_worktree_read</code>. They are written to the existing <code>shadow_contaminated</code> field.
@@ -103,7 +105,8 @@
     </ul>
     <p>
       <strong>Write paths.</strong> <code>reckon/ledger.py</code>, <code>reckon/capabilities.py</code>,
-      <code>reckon/crew/promotion_scope.py</code> and <code>tests/test_crew_shadow_contamination.py</code>.
+      <code>reckon/crew/promotion_scope.py</code>, <code>tests/test_crew_shadow_contamination.py</code> and one
+      committed fixture, <code>tests/fixtures/shadow_contamination/xpoint-cell-owner-calls.jsonl</code>.
     </p>
     <p>
       <strong>Done when</strong> <code>tests/test_crew_shadow_contamination.py</code> shows the following, with tool
@@ -115,7 +118,8 @@
       <li>A row with <code>shadow_contaminated</code> set has <code>shadow_controlled</code> false, and
         <code>pair_shadow_arms</code> reports the pair uncontrolled with the contamination reason.</li>
       <li>The existing tests in that file pass unchanged.</li>
-      <li>The retained stream of <code>r-20261016T165229949973-xpoint-cell-owner</code> still yields
+      <li>The committed fixture holds the tool-call records of <code>r-20261016T165229949973-xpoint-cell-owner</code>'s
+        stream, copied from its run directory so the control survives <code>crew gc</code>. It still yields
         <code>primary_changed_path_read</code>, and its run-directory calls yield
         <code>primary_run_directory_read</code> when scanned on their own.</li>
       <li>The negative control lets the control predicate ignore <code>shadow_contaminated</code>, and the
@@ -153,8 +157,9 @@
       <strong>Deliverable.</strong> When the launched run is a shadow, <code>fence_argv</code> in
       <code>reckon/_worker_fence.py</code> masks the primary's records. Today <code>fence_argv</code> is composed
       only by <code>launch_plan</code> in <code>reckon/_backends.py</code>, which receives no lineage. So
-      <code>launch_plan</code> gains the paths to hide, resolved by <code>promotion_scope._primary_read_targets</code>, the function §2
-      extends, from the run's lineage. Each caller that launches a run passes that lineage: first launch in
+      <code>launch_plan</code> gains the paths to hide. The launch looks up the primary's ledger row by the lineage's
+      <code>primary_run_id</code>, as <code>_shadow_stream_contamination</code> does, and passes that row to
+      <code>promotion_scope._primary_read_targets</code>, the function §2 extends. Each caller that launches a run passes that lineage: first launch in
       <code>reckon/crew/dispatch.py</code>, session launch in <code>reckon/crew/dispatch_sessions.py</code>, and
       resume in <code>reckon/crew/resumption.py</code>. It mounts an empty tmpfs over the primary's
       run directory, and over the primary's worktree when that still exists. It binds <code>/dev/null</code> over
@@ -235,6 +240,11 @@
     <pre class="r-fu-prompt">/reckon-build a-shadow-cannot-see-its-primary §2</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s1" data-id="c-incident-reports-root-deleted" data-who="reckon-build" data-when="2026-10-16T19:40:00Z">
+    <div class="r-comment-body"><p>Incident, 2026-10-16. The content re-review of this plan, run <code>r-20261016T190754696739-plan-review-of-a-shadow-cannot-see-its-primary</code>, deleted the whole <code>~/.config/reckon/crew/reports/reckon</code> tree at 19:18:11Z. The deletion is line 9658 of its stream: <code>rm -rf /home/ITER/mcintos/.config/reckon/crew/reports/reckon 2&gt;/dev/null</code>, described as removing a mistyped directory it had written at line 9603. Its worker fence bound the whole <code>crew/reports</code> and <code>crew/reviews</code> roots writable. The stream, prompt, brief, manifest and worker record are preserved under <code>~/.cache/reckon-incident-reports-root-20261016/</code>, and the session reckon-0e is filing the fence fix and the backup request. The review's <code>report.md</code> survived. Its two findings were read and acted on: §4 now looks up the primary's row before resolving its paths, and §2's positive control reads a committed fixture. Its sidecar was deleted, so the review could not be stored, and the plan needs a new content review before §2 to §4 dispatch. This session is holding its dispatches, reviews included, until the fence no longer grants those roots.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
