@@ -1526,10 +1526,27 @@ def _store_git_creation_cache(
 
 
 def _run_git(
-    args: list[str], repo_dir: Path, *, operation: str
+    args: list[str],
+    repo_dir: Path,
+    *,
+    operation: str,
+    report_failure: bool = False,
 ) -> subprocess.CompletedProcess[str] | None:
-    """Run one bounded Git query and make every failure observable."""
+    """Run one bounded Git query and make every failure observable.
 
+    The spawn runs in the C locale whatever the caller's environment asks for,
+    so a caller that has to read git's own message — to tell git's verdict
+    about the tree apart from a failure — matches one text wherever the server
+    runs.
+
+    A non-zero exit returns ``None``, as it always has. A caller that needs the
+    exit code and the stderr to classify that exit sets ``report_failure`` and
+    receives the completed process instead. A timeout and a spawn error are
+    answers about the machine rather than about the repository and stay
+    ``None`` for every caller, so neither can be mistaken for git's verdict.
+    """
+
+    environment = {**os.environ, "LC_ALL": "C"}
     try:
         result = subprocess.run(
             args,
@@ -1537,6 +1554,8 @@ def _run_git(
             text=True,
             cwd=repo_dir,
             timeout=10,
+            env=environment,
+            check=False,
         )
     except subprocess.TimeoutExpired:
         LOGGER.warning("Git %s timed out after 10 seconds in %s", operation, repo_dir)
@@ -1554,7 +1573,7 @@ def _run_git(
             repo_dir,
             suffix,
         )
-        return None
+        return result if report_failure else None
     return result
 
 
@@ -1642,13 +1661,61 @@ def _head_identity(repo_dir: Path) -> tuple | None:
     return (_file_identity(head_path), head_text, ref_name, ref_identity)
 
 
+#: Roots git has answered as outside any repository, keyed by path to the
+#: directory stamp at which that answer was given. A docs tree served from an
+#: archive, an extraction or a mount without its repository pays one failed
+#: spawn to learn that, then every later age and HEAD lookup returns no commit
+#: without starting git again.
+_GIT_OUTSIDE_MEMO: dict[str, tuple[int, int, int]] = {}
+
+
+def _root_outside_repository(repo_dir: Path) -> bool:
+    """True when this root was confirmed outside any repository at its stamp.
+
+    The stamp is the directory's own identity, so a ``.git`` later created at
+    the root moves it and the next lookup resolves afresh rather than reusing
+    a remembered answer.
+    """
+
+    stamp = _file_identity(repo_dir)
+    if stamp is None:
+        return False
+    return _GIT_OUTSIDE_MEMO.get(str(repo_dir)) == stamp
+
+
+def _remember_root_outside_repository(repo_dir: Path) -> None:
+    """Record a root as outside any repository, keyed by its directory stamp."""
+
+    if _git_directory(repo_dir) is not None:
+        return
+    stamp = _file_identity(repo_dir)
+    if stamp is not None:
+        _GIT_OUTSIDE_MEMO[str(repo_dir)] = stamp
+
+
+def _git_says_outside_repository(result: subprocess.CompletedProcess[str]) -> bool:
+    """True when a failed exit is git's own answer that no repository is here.
+
+    The message is matched as the C locale spells it, which every spawn asks
+    for, so the answer does not depend on the operator's language and a
+    translated message cannot be read as a different failure.
+    """
+
+    return "not a git repository" in (result.stderr or "").lower()
+
+
 def _git_head(repo_dir: Path) -> str | None:
     """The repository's HEAD commit, resolved once per commit.
 
     The sha is memoised on the identity of ``HEAD`` and the ref it names, so
     repeated lookups against an unchanged checkout reuse the first answer and
     start no git process. A new commit changes that identity, and the next
-    lookup resolves afresh.
+    lookup resolves afresh. When git answers that the root is under no
+    repository at all, that answer is remembered, so a tree outside any
+    repository resolves once and every later age and HEAD lookup returns no
+    commit without spawning again. Any other failure — a timeout, a spawn
+    error, or an exit saying something else — is not an answer about the tree
+    and is never remembered.
     """
 
     key = str(repo_dir)
@@ -1657,8 +1724,17 @@ def _git_head(repo_dir: Path) -> str | None:
         memo = _GIT_HEAD_MEMO.get(key)
         if memo is not None and memo[0] == identity:
             return memo[1]
-    result = _run_git(["git", "rev-parse", "HEAD"], repo_dir, operation="HEAD lookup")
-    if result is None:
+    elif _root_outside_repository(repo_dir):
+        return None
+    result = _run_git(
+        ["git", "rev-parse", "HEAD"],
+        repo_dir,
+        operation="HEAD lookup",
+        report_failure=True,
+    )
+    if result is None or result.returncode != 0:
+        if result is not None and _git_says_outside_repository(result):
+            _remember_root_outside_repository(repo_dir)
         return None
     head = result.stdout.strip()
     if not head:
