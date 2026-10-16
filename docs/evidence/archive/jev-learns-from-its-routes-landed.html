@@ -65,6 +65,11 @@
     <p>Run <code>r-20261016T112409473679-a-move-counts-against-the-pick</code> (clive, picked by Jev at 0.46), commit <code>faa09d078</code>, merged at <code>da7f8f65c</code>. A row whose lineage moves it off the backend its <code>picker_selection</code> chose is removed from the receiving candidate's <code>outcomes</code> and <code>outcomes_at_requirement</code> and counted as that candidate's <code>moved_in</code>. The candidate Jev chose gains <code>moved_off</code>. A lane change with no picker selection counts under its final lane as before. Gate: 5 passed; over the 25 files importing <code>snapshot.py</code>, 206 passed at head against 201 at base, so 0 failures added. The negative control, which ignores lineage, reddens three tests. Independent review <code>r-20261016T120756937620</code> totals 117. Its follow-on: <code>moved_in</code> is not filtered by requirement, while <code>moved_off</code> is.</p>
   </section>
 
+  <section id="s13">
+    <h2>§13 — a run&#x27;s timing spans all its attempts</h2>
+    <p>Run <code>r-20261016T114648332347-a-run-spans-all-its-attempts</code> (clive, picked by Jev at 0.49), commits <code>0bdce50f7</code> and <code>960f6107f</code>, merged at <code>dc369bb30</code>. A promoted run's end is now the latest attempt's end, with its source named. Its <code>worker_seconds</code> sums each attempt's span, and each codex session is read once through its rollout receipt under the run home. For nova's primary <code>r-20261015T160647356198-fast-map-production</code>, the change gives <code>completed_at</code> 2026-10-16T03:11:49Z and <code>worker_seconds</code> 39,789, where the recorded figures were 16:08:25Z the day before and 18. Gate: 4 passed; the negative control, reading only the first timestamped stream, puts the end at T1. Over the 733 tests importing the promotion and rollout modules, both arms pass, so 0 failures were added. That figure replaces a first head arm whose temporary directory sat inside the worktree. Independent review totals 96 at <code>0bdce50f7</code>, and the re-review totals 112 at <code>960f6107f</code>. Open follow-on from the first review: <code>_codex_session_of_stream</code> re-reads the codex thread id that <code>observation.session_id</code> already holds a line earlier, so it should be deleted in favour of that reading.</p>
+  </section>
+
 </main>
 </body>
 </html>
