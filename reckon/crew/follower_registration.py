@@ -127,8 +127,8 @@ def _producer_lease_seconds() -> float:
     return producer_lease_seconds()
 
 
-def _follower_lease_renewed_at(lock_path: Path) -> float | None:
-    """The instant a registration's lease last renewed, or None if it has not.
+def _follower_lease_record(lock_path: Path) -> dict[str, Any] | None:
+    """Read a lease's validated renewal time and optional host.
 
     The lease is published by a rename, so one read sees a whole record. A
     reader that finds it missing or unparseable reads once more before judging
@@ -141,7 +141,17 @@ def _follower_lease_renewed_at(lock_path: Path) -> float | None:
     value = record.get("renewed_at")
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
-    return float(value)
+    validated: dict[str, Any] = {"renewed_at": float(value)}
+    host = record.get("host")
+    if isinstance(host, str) and host:
+        validated["host"] = host
+    return validated
+
+
+def _follower_lease_renewed_at(lock_path: Path) -> float | None:
+    """The instant a registration's lease last renewed, or None if it has not."""
+    record = _follower_lease_record(lock_path)
+    return None if record is None else record["renewed_at"]
 
 
 def _pipe_reader_pids(inode: int, *, exclude: int) -> list[int]:
@@ -572,19 +582,15 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
     host = _seat_host(record)
     lease_renewed_at: float | None = None
     if not host:
-        lease = _read_json_file(path.with_suffix(".lease"))
-        if lease is not None:
-            renewed = lease.get("renewed_at")
+        lease = _follower_lease_record(path)
+        if (
+            lease is not None
+            and time.time() - lease["renewed_at"] <= _producer_lease_seconds()
+        ):
             lease_host = lease.get("host")
-            if (
-                isinstance(renewed, (int, float))
-                and not isinstance(renewed, bool)
-                and isinstance(lease_host, str)
-                and lease_host
-                and time.time() - renewed <= _producer_lease_seconds()
-            ):
+            if lease_host is not None:
                 host = lease_host
-                lease_renewed_at = float(renewed)
+                lease_renewed_at = lease["renewed_at"]
     foreign = bool(host) and host != socket.gethostname()
     if foreign:
         # A pid is issued by one kernel, so a registration written on another

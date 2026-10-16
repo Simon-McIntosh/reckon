@@ -10,16 +10,6 @@ import pytest
 from reckon.crew import follower_registration as followers
 
 
-@pytest.fixture
-def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    real_home = Path.home() / ".config" / "reckon"
-    before = sorted(real_home.iterdir()) if real_home.exists() else []
-    monkeypatch.setenv("RECKON_HOME", str(tmp_path))
-    yield tmp_path
-    after = sorted(real_home.iterdir()) if real_home.exists() else []
-    assert after == before
-
-
 @pytest.mark.parametrize(
     ("host", "age", "live"),
     [
@@ -30,7 +20,11 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     ],
 )
 def test_hostless_registration_uses_only_a_fresh_named_foreign_lease(
-    home: Path, monkeypatch: pytest.MonkeyPatch, host: str | None, age: int, live: bool
+    isolated_reckon_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    host: str | None,
+    age: int,
+    live: bool,
 ) -> None:
     monkeypatch.setenv("RECKON_PRODUCER_LEASE_SECONDS", "600")
     project, session = "hostless-fixture", "session"
@@ -47,7 +41,7 @@ def test_hostless_registration_uses_only_a_fresh_named_foreign_lease(
                 "started_at": "2026-10-15T00:00:00Z",
             },
         )
-    assert path.is_relative_to(home)
+    assert path.is_relative_to(isolated_reckon_home)
     lease = {"renewed_at": time.time() - age}
     if host is not None:
         lease["host"] = socket.gethostname() if host == "local" else "another-host"
@@ -58,8 +52,12 @@ def test_hostless_registration_uses_only_a_fresh_named_foreign_lease(
     assert state["released"] is not live, state
 
 
-def test_renewal_records_the_host(home: Path) -> None:
+def test_renewal_records_the_host(isolated_reckon_home: Path) -> None:
+    real_home = Path.home() / ".config" / "reckon"
+    before = sorted(real_home.iterdir()) if real_home.exists() else []
     followers.renew_follower_lease("hostless-fixture", "session")
     lease = followers.follower_lease_path("hostless-fixture", "session")
-    assert lease.is_relative_to(home)
+    assert lease.is_relative_to(isolated_reckon_home)
     assert json.loads(lease.read_text(encoding="utf-8"))["host"] == socket.gethostname()
+    after = sorted(real_home.iterdir()) if real_home.exists() else []
+    assert after == before
