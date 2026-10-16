@@ -204,6 +204,42 @@ def _recorded_requirement(
     return (reasoning, risk)
 
 
+def _picked_backend_away(
+    row: Mapping[str, Any],
+) -> tuple[str, str | None] | None:
+    """The backend Jev picked for a row its lineage then moved to another lane.
+
+    A row is a move when Jev rendered a pick for it -- ``picker_selection`` names
+    the backend Jev chose -- and the row's lineage records a lane change away
+    from that backend, so the run landed on a lane Jev did not pick and its
+    ``backend`` is no longer the chosen one. The chosen backend and its model are
+    returned so the move can be credited against the candidate Jev chose; a row
+    with no pick, or one whose lineage never moved it off its pick, is not a row.
+    A row with a lane change but no pick (an explicit route that was later moved)
+    has no pick to count against and is not a move.
+    """
+
+    selection = row.get("picker_selection")
+    if not isinstance(selection, Mapping):
+        return None
+    chosen = selection.get("backend")
+    if not isinstance(chosen, str) or not chosen:
+        return None
+    if row.get("backend") == chosen:
+        return None
+    lineage = row.get("lineage")
+    if not isinstance(lineage, Mapping):
+        return None
+    changes = lineage.get("lanes")
+    if not isinstance(changes, (list, tuple)) or not changes:
+        return None
+    for change in changes:
+        if isinstance(change, Mapping) and change.get("from_backend") == chosen:
+            model = selection.get("model")
+            return chosen, model if isinstance(model, str) else None
+    return None
+
+
 def _request_requirement(request: PickRequest) -> tuple[str | None, str | None] | None:
     """The (reasoning, risk) the request names, or None when it names none."""
 
@@ -223,6 +259,8 @@ def _candidates_scan(
     dict[tuple[str, str | None], dict[str, int]],
     dict[str, list[float]],
     dict[tuple[str, str | None], dict[str, Any]] | None,
+    dict[tuple[str, str | None], Counter[str]] | None,
+    dict[tuple[str, str | None], int] | None,
 ]:
     """One pass over the ledger rows: every candidate's outcomes and peaks.
 
@@ -240,7 +278,17 @@ def _candidates_scan(
     neither. The block's review-total and wall-time medians are read over the
     matched rows in the same walk, so no figure here costs a second pass. A
     request that names no requirement has no difficulty to read history at, so
-    the third value is None and no block is built.
+    the at-requirement block is None and none is built.
+
+    A coordinator's move is read in the same walk. A row whose lineage records a
+    lane change away from the backend its ``picker_selection`` chose -- a move --
+    is kept out of the receiving candidate's pooled counts and out of its
+    at-requirement block, and its gate is tallied under the receiving candidate's
+    ``moved_in``. The candidate Jev chose gains one ``moved_off`` for such a
+    pick. A move is counted at the request's requirement, so both move figures
+    are None when the request names no requirement. A row with a lane change but
+    no pick (an explicit route that was later moved) is not a move and counts
+    under its final lane as before.
     """
 
     cutoff = now - timedelta(days=14)
@@ -248,6 +296,12 @@ def _candidates_scan(
     counts: dict[tuple[str, str | None], Counter[str]] = {}
     peaks: dict[str, list[float]] = {}
     at_requirement: dict[tuple[str, str | None], dict[str, Any]] | None = (
+        {} if request_requirement is not None else None
+    )
+    moved_in: dict[tuple[str, str | None], Counter[str]] | None = (
+        {} if request_requirement is not None else None
+    )
+    moved_off: dict[tuple[str, str | None], int] | None = (
         {} if request_requirement is not None else None
     )
     for row in records:
@@ -271,7 +325,22 @@ def _candidates_scan(
             continue
         model = (row.get("agent") or {}).get("model")
         key = (backend, model)
-        counts.setdefault(key, Counter())[str(row.get("gate") or "unknown")] += 1
+        gate = str(row.get("gate") or "unknown")
+        if moved_in is not None and moved_off is not None:
+            away = _picked_backend_away(row)
+            if away is not None:
+                # The move's outcome belongs to the pick Jev made, not to the
+                # lane it landed on: keep it out of the receiving candidate's
+                # pooled and at-requirement counts, tally it under moved_in, and
+                # credit the candidate Jev chose with moved_off. Counted at the
+                # request's requirement, so a moved row records the requirement
+                # the pick was made at.
+                moved_in.setdefault(key, Counter())[gate] += 1
+                recorded = _recorded_requirement(row)
+                if recorded is not None and recorded == request_requirement:
+                    moved_off[away] = moved_off.get(away, 0) + 1
+                continue
+        counts.setdefault(key, Counter())[gate] += 1
         if at_requirement is None:
             continue
         entry = at_requirement.setdefault(
@@ -283,7 +352,7 @@ def _candidates_scan(
             continue
         if recorded != request_requirement:
             continue
-        entry["counts"][str(row.get("gate") or "unknown")] += 1
+        entry["counts"][gate] += 1
         review = row.get("review")
         total = review.get("total") if isinstance(review, Mapping) else None
         if isinstance(total, (int, float)) and not isinstance(total, bool):
@@ -291,7 +360,7 @@ def _candidates_scan(
         wall = row.get("wall_seconds")
         if isinstance(wall, (int, float)) and not isinstance(wall, bool):
             entry["walls"].append(float(wall))
-    return counts, peaks, at_requirement
+    return counts, peaks, at_requirement, moved_in, moved_off
 
 
 def _outcome_counts(counts: Counter[str]) -> dict[str, int]:
@@ -919,9 +988,13 @@ def candidates(
     # One pass over the rows yields every backend's outcome counts and peak
     # utilisation, and one document cache is threaded through the loop so each
     # lane document is parsed once per pick.
-    outcome_counts, peak_values, requirement_counts = _candidates_scan(
-        rows, request, now=now
-    )
+    (
+        outcome_counts,
+        peak_values,
+        requirement_counts,
+        moved_in_counts,
+        moved_off_counts,
+    ) = _candidates_scan(rows, request, now=now)
     lane_utilisation = {
         name: _peak_summary(peak_values.get(name, []))
         for name in config.get("backends", {})
@@ -1120,6 +1193,16 @@ def candidates(
                     None
                     if requirement_counts is None
                     else _requirement_block(requirement_counts.get((name, model)))
+                ),
+                moved_in=(
+                    None
+                    if moved_in_counts is None
+                    else _outcome_counts(moved_in_counts.get((name, model), Counter()))
+                ),
+                moved_off=(
+                    None
+                    if moved_off_counts is None
+                    else moved_off_counts.get((name, model), 0)
                 ),
                 reasons=reasons,
                 budget_reason=budget_reason,

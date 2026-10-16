@@ -45,6 +45,14 @@ class Candidate:
     # the review-total and wall-time medians over those rows. A separate block
     # from ``outcomes``, which stays pooled across every difficulty.
     outcomes_at_requirement: dict[str, Any] | None = None
+    # A candidate's moves off and onto it. ``moved_in`` is the same gate
+    # vocabulary over the rows a coordinator moved away from another pick and
+    # onto this candidate, kept out of ``outcomes`` and
+    # ``outcomes_at_requirement``; ``moved_off`` is how many of this candidate's
+    # own picks a coordinator moved away. Both are null when the request names
+    # no requirement, and are read at the request's requirement when one is.
+    moved_in: dict[str, int] | None = None
+    moved_off: int | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
