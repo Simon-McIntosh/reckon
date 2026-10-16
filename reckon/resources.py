@@ -460,12 +460,15 @@ _SCAN_SCOPE: ContextVar[dict[tuple, list[Resource]] | None] = ContextVar(
 )
 
 #: Every file the in-scope scan dropped as an invalid resource, as
-#: ``(path, collision message)`` in walk order. A caller that needs the scan's
+#: ``(docs_dir, project) -> [(path, collision message)]`` in walk order — keyed
+#: as the scan cache is, because one scope can span several docs trees and a
+#: reader must not take another tree's drop. A caller that needs the scan's
 #: strict raise — a reader that would fail rather than skip a file whose
-#: location conflicts with its declared type — reads the record instead of
-#: walking the tree a second time, so the whole read still walks once.
-_SCAN_DROPPED: ContextVar[list[tuple[Path, str]] | None] = ContextVar(
-    "reckon_resource_scan_dropped", default=None
+#: location conflicts with its declared type — reads its own tree's record
+#: instead of walking the tree a second time, so the whole read still walks
+#: once.
+_SCAN_DROPPED: ContextVar[dict[tuple[str, str], list[tuple[Path, str]]] | None] = (
+    ContextVar("reckon_resource_scan_dropped", default=None)
 )
 
 
@@ -483,16 +486,17 @@ def resource_scan_scope() -> Iterator[list[tuple[Path, str]]]:
     or moved inside it stays invisible until the scope exits. Nested scopes
     share the outermost one.
 
-    The scope yields the record of files the scan dropped as invalid, so a
-    reader that must surface them can, and a strict caller inside the scope
-    still raises on the first of them.
+    The scope yields the record of files the scan dropped as invalid, keyed by
+    docs tree as the scan cache is, so a reader that must surface them takes
+    only its own tree's drops, and a strict caller inside the scope still
+    raises on the first of them.
     """
 
     if _SCAN_SCOPE.get() is not None:
-        yield _SCAN_DROPPED.get() or []
+        yield _SCAN_DROPPED.get() or {}
         return
     token = _SCAN_SCOPE.set({})
-    dropped: list[tuple[Path, str]] = []
+    dropped: dict[tuple[str, str], list[tuple[Path, str]]] = {}
     dropped_token = _SCAN_DROPPED.set(dropped)
     try:
         yield dropped
@@ -536,8 +540,8 @@ def iter_resources(
     if not ignore_invalid:
         # A strict caller raises on an invalid file rather than skipping it.
         # The shared scan already dropped and recorded those files, so the
-        # raise is taken from its record instead of a second walk.
-        dropped = _SCAN_DROPPED.get() or []
+        # raise is taken from this tree's record instead of a second walk.
+        dropped = (_SCAN_DROPPED.get() or {}).get(key, [])
         if dropped:
             raise ResourceCollision(dropped[0][1])
     return [
@@ -565,7 +569,9 @@ def _scan_resources(
         except ResourceCollision as exc:
             dropped = _SCAN_DROPPED.get()
             if dropped is not None:
-                dropped.append((path, str(exc)))
+                dropped.setdefault((str(docs_dir), project), []).append(
+                    (path, str(exc))
+                )
             if not ignore_invalid:
                 raise
             continue

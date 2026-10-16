@@ -28,7 +28,12 @@ from pathlib import Path
 import pytest
 
 from reckon import file_memo, mcp, metadata_index, resources
-from reckon.resources import ResourceCollision, identify_resource
+from reckon.resources import (
+    ResourceCollision,
+    identify_resource,
+    iter_resources,
+    resource_scan_scope,
+)
 
 PROJECT = "sample"
 
@@ -47,7 +52,7 @@ def _plan(slug: str, *, doc_type: str = "plan") -> str:
     )
 
 
-def _corpus(tmp_path: Path, *, invalid: bool) -> Path:
+def _corpus(tmp_path: Path, *, invalid: bool, invalid_name: str = "bad.html") -> Path:
     """Two live plans, and — when ``invalid`` — a file whose location type
     conflicts with its declared ``reckon-type``."""
     docs = tmp_path / PROJECT / "docs"
@@ -67,8 +72,8 @@ def _corpus(tmp_path: Path, *, invalid: bool) -> Path:
     for slug in ("alpha", "beta"):
         (docs / "plans" / f"{slug}.html").write_text(_plan(slug), encoding="utf-8")
     if invalid:
-        (docs / "plans" / "bad.html").write_text(
-            _plan("bad", doc_type="research"), encoding="utf-8"
+        (docs / "plans" / invalid_name).write_text(
+            _plan(Path(invalid_name).stem, doc_type="research"), encoding="utf-8"
         )
     return docs
 
@@ -189,3 +194,36 @@ def test_the_audit_findings_are_unchanged_for_the_corpus(
         )
     assert _findings(result) == sorted(expected)
     assert result["checked"] == 2
+
+
+def test_a_scope_over_two_docs_trees_keeps_their_drops_apart(tmp_path: Path) -> None:
+    """One scope can span several docs trees, and each read sees its own drop.
+
+    The resource cache is keyed by ``(docs_dir, project)`` because a read such
+    as promotion resolves resources across more than one docs tree at once. The
+    record of files the scan dropped as invalid must be keyed the same way: a
+    single record shared by the scope would let a strict read of the second tree
+    raise on the first tree's file — naming a path that tree does not contain,
+    so a consumer taking ``relative_to(docs_dir)`` of it would raise too.
+    """
+    first = _corpus(tmp_path / "first", invalid=True, invalid_name="alpha_bad.html")
+    second = _corpus(tmp_path / "second", invalid=True, invalid_name="beta_bad.html")
+
+    with resource_scan_scope() as dropped:
+        for tree in (first, second):
+            assert [
+                r.slug for r in iter_resources(tree, PROJECT, ignore_invalid=True)
+            ] == [
+                "alpha",
+                "beta",
+            ]
+        seen = {}
+        for tree in (first, second):
+            with pytest.raises(ResourceCollision) as excinfo:
+                iter_resources(tree, PROJECT, ignore_invalid=False)
+            seen[tree] = str(excinfo.value)
+        assert "plans/alpha_bad.html" in seen[first]
+        assert "beta_bad.html" not in seen[first]
+        assert "plans/beta_bad.html" in seen[second]
+        assert "alpha_bad.html" not in seen[second]
+        assert set(dropped) == {(str(first), PROJECT), (str(second), PROJECT)}

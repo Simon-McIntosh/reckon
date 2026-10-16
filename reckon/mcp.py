@@ -2391,7 +2391,7 @@ def _audit_read(
     limit: int | None = None,
     path: str | None = None,
     check_links: bool = False,
-    dropped: list[tuple[Path, str]] | None = None,
+    dropped: dict[tuple[str, str], list[tuple[Path, str]]] | None = None,
 ) -> dict[str, Any]:
     """Audit every plan in a project against the PlanState schema (the WARN half
     of reject-write-warn-doctor) and recompute the index rollups.
@@ -2514,7 +2514,7 @@ def _audit_read(
 
     invalid_resources = [
         (str(invalid_path.relative_to(docs_dir)), message)
-        for invalid_path, message in (dropped or [])
+        for invalid_path, message in (dropped or {}).get((str(docs_dir), project), [])
     ]
 
     findings: list[dict[str, Any]] = []
