@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T14:03:44.802Z",
+  "dispatched_at": "2026-10-16T13:52:20Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-suite-tests-behaviour.html:133",
+      "id": "done_when-1",
+      "reason": "the section must add docs/state/reckon/suite-runs/ to its write paths or drop \"committed\", or the node cannot satisfy its own measure and stops on a scope refusal rather than on a defect.",
+      "text": "\u00a77's done-when requires \"the measurement's committed row under docs/state/reckon/suite-runs/\" while its declared write paths are only tests/conftest.py, tests/spa_browser_harness.py, reckon/crew/standing_suite.py, docs/state/reckon/flight.yaml and tests/test_browser_population_is_its_own_row.py, so a node granted exactly those paths is fenced out of committing the row its own done-when demands",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4e436d954229ac6c089e8895557b634c3229291ac85fa8df2ad91ccd5c75663e",
+  "plan_slug": "the-suite-tests-behaviour",
+  "plan_version": 58,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T135131988234-plan-review-of-the-suite-tests-behaviour",
+  "reviewed_blob_sha": "81433ee62ccd6637f01913a5852d3745e49b3c78",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 resolving extensionless hrefs as `<path>.html` per the house convention, the-suite-is-green-at-head resolves; the cited symbols and files exist at the snapshot (installed_browser_or_skip at tests/spa_browser_harness.py:539, module_reaches_the_browser_harness and pytest_collection_modifyitems at tests/conftest.py:59/1148, record_from_log at reckon/crew/standing_suite.py:306, review_populations at reckon/flight.py:930).",
+    "done_when": "a finding \u2014 \u00a77's done-when requires a committed artifact on a path its declared write paths omit (docs/state/reckon/suite-runs/), and the negative control it names is genuine (removing the marker exclusion makes a marked test appear, so the exclusion assertion fails).",
+    "evidence_paths": "pass \u2014 the quiet-node measurement, its two arms and the committed row all sit on durable paths (the run directory and the git-tracked docs/state/reckon/suite-runs/), not a scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 the section carries no plan labels, stage names, ticket numbers or version tags into the source it names; the gate id g-tstb-browser-row and the comment id c-hold-s2-1010 appear only as plan-document references, not as symbols or comments in the code paths \u00a77 writes (tests/conftest.py, tests/spa_browser_harness.py, reckon/crew/standing_suite.py).",
+    "reasoning": "pass \u2014 the \u00a77 preamble matches comment c-hold-s2-1010 (head 866.8 s against base 190.3 s; 32 of 33 failures Timeout (>20.0s); base arm at 60 s), the collection hook that applies the marker exists in tests/conftest.py and is what the redefined population rests on, and the row-writing mechanism runs on the real path: `reckon crew suite run` records one row per declared population (reckon/crew_run_commands.py:1101-1109), with \u00a77 stating the project layer declares no browser population until \u00a79 supplies it.",
+    "single_goal": "pass \u2014 \u00a77 carries one deliverable: the browser population marked at collection, excluded from the standing-suite command, and recorded as its own row; the measurement and its row are the same deliverable's evidence, not a second one.",
+    "wiring": "pass \u2014 the \u00a72\u2194\u00a77 ordering is recorded by gate g-tstb-browser-row (data-section=\"s2\", data-gated-sections=\"s2\", required-evidence \"the-suite-tests-behaviour#s7\"), which matches \u00a77's \"\u00a72's completion is gated on this section's evidence\"; every path and anchor \u00a77 cites resolves (tests/conftest.py, tests/spa_browser_harness.py, reckon/crew/standing_suite.py, docs/state/reckon/flight.yaml, tests/test_browser_population_is_its_own_row.py, record_from_log at standing_suite.py:306, comment c-hold-s2-1010, the-suite-is-green-at-head)."
+  },
+  "section_digests": {
+    "_document": "30239abe7f7f8c3daf98f163a0df086a153904d1a7c52d9dc97c14fbd014f7eb",
+    "s1": "1d6184c53af837617ac7ee370d7b6d622f0b187f5ac5e8f8d90a1dda6a98b5b2",
+    "s2": "0a2190864603950ade3af9b2de4b53b463e747cc8dc4c1f6e9175cdd5a4ee623",
+    "s3": "b54ea6f02bf0468b0b6f22c4317ef1f30b269045ffcaa9c19ae6abd2d175e96b",
+    "s4": "0bbb53f80bd6f9eb08c166f5e54fdde7bd5678c29b455fd39e15555bcbc17e35",
+    "s5": "ab2721f7547c999de436c1bb3551c6fe1aff3bbe51e9d92c2f44f5f91ce4123d",
+    "s6": "2ab2547ce36adce1b8926643bbc4604f1d6d1695d52434c1e8849e50f80c4b9d",
+    "s7": "4c8e690806aa3b185babb88e73645542132c23d38d287e765386bc63e2a4e3f4",
+    "s8": "62593f92e5fae32f09b44fa99f06a95716d5b469914f43bc6d0a97c03d6c2831",
+    "s9": "34da0984e7531a8bd80734f0ffd4f3407cbaea01df800914f72836bc46648719"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T14:08:11.833945+00:00"
+}
