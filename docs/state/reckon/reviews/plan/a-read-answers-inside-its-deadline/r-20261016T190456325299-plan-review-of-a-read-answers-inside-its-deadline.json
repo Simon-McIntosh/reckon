@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T19:11:28.824Z",
+  "dispatched_at": "2026-10-16T19:05:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:135",
+      "id": "done_when-1",
+      "reason": "a done-when that conditions completion on a control the closing record calls void cannot be read as satisfied, so either the control must be re-taken or the done-when amended; a later reader taking the text literally would think \u00a76 never completed.",
+      "text": "\u00a76's done-when conditions completion on its negative control, \"the base revision measured the same way in the same session, which must exceed the deadline for the comparison to count\", with \"Both arms run on an exclusive `all_debug` node in the same window\"; the closing record (c-close-s6, line 368) states \"The base arm imported the head tree and is void\", so the in-session control does not exist and a 2026-10-12 figure from a different job is substituted \u2014 \u00a76 is closed against the very condition its done-when sets",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:135",
+      "id": "done_when-2",
+      "reason": "the plan closes \u00a76 on an attribution weaker than the one its done-when names, so either the introducing commit must be identified or the clause must be relaxed; the cause predates the measured range, which is itself worth stating so a future reader does not hunt for a commit that does not exist.",
+      "text": "\u00a76's done-when requires every missed target be attributed \"with the commits that introduced them\", but \u00a719's Why names only functions (`_discover_plans_uncached`, `read_state`, `_read_readiness_uncached`) and attributes the excess to the `_DISC_CACHE` design, naming no commit; the run's own `missed-target-attribution.log` header and script state the commits \"are looked up separately\", and its `read-path-commits.txt` lists the whole `d249200c7..81852a885` range rather than a per-function introducer",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c219f494e710951130b3c7a27b04cc17ead9de7eeda9cc7710aa9fc7c049313e",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 128,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T190456325299-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "8488c9b9fbd2168fe641bf98f06878162696291b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the dumps path, the c-close-s6 archive anchor `#s6-quiet-node-remeasure`, and every symbol \u00a719 names (`_DISC_CACHE`, `_discover_plans_uncached`, `_read_readiness_uncached`, `discover_plans`, `read_state`, schema `reckon.metadata-index`) resolve in the live tree.",
+    "done_when": "a finding \u2014 \u00a76 is declared done while the same-session negative control its own done-when requires is recorded void, and the required function-to-commit attribution was not produced.",
+    "evidence_paths": "pass \u2014 \u00a719's attributing dumps sit at `.../reads-remeasured-on-a-quiet-node/profiles/head/`, which exists under the report tree, not a node-local scratch path.",
+    "naming": "pass \u2014 \u00a719 carries no plan label, ticket number or version tag into code; symbolic names are the modules' own.",
+    "reasoning": "pass \u2014 \u00a719's stated cause (discovery re-parses every plan because `_DISC_CACHE` is memory-only) is exactly what the kept profiles show, its mechanism is capable of its done-when, and the caller (`discover_plans` \u2192 `_discover_plans_uncached`, reached by the cold roadmap) is named. Its figures reconcile with the logs: head cold roadmap 43.971 s (min\u2013max 43.499\u201358.950, n=3), warm roadmap 1.563 s, warm audit 2.471 s; `discover_plans` cum 38.2\u201353.8 s, `read_state` 31.44 s over 399 calls, `_read_readiness_uncached` 19.65 s, `soupsieve.iselect` 36,571 calls.",
+    "single_goal": "pass \u2014 \u00a719 carries one deliverable (persist the parsed discovery and readiness state across processes) with one measure.",
+    "wiring": "pass \u2014 \u00a719 draws its premise from \u00a76's 2026-10-16 quiet-node measurement and the \u00a78\u2013\u00a717 fixes, and the dispatch is carried by f-araiid-019 (open, recommends \u00a719); every section it names exists."
+  },
+  "section_digests": {
+    "_document": "ad7fc49262aab7b5663c83b5378f2e62811896b490bd02f25112205eb7195f29",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "91dffc09d91a434274ad716c193f8b77f5424ffa7e92a44e61c694f9f2e0f615",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T19:13:35.929679+00:00"
+}
