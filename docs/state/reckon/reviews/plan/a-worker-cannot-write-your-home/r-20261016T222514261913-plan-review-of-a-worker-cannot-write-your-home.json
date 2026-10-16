@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T22:30:57.857Z",
+  "dispatched_at": "2026-10-16T22:25:52Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-worker-cannot-write-your-home.html:1524",
+      "id": "wiring-1",
+      "reason": "the plan must either add the design-review node/dependency or record the chosen shape, which changes both the node graph and the section's declared status.",
+      "text": "s12's deliverable hands the choice between its two repair shapes to \"the design review\", but the plan defines no design-review node, wires no `depends-on` or `gates` relationship for it, and declares s12 `implementable` (line 26), so a node dispatched at s12 has no stated authority to pick a shape and no artifact to build against",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-cannot-write-your-home.html:1524",
+      "id": "reasoning-1",
+      "reason": "without the caller named, the one place the grant is widened is left to search, and this plan has previously acted on the same class of finding for \u00a79.",
+      "text": "s12 relies on the mechanism \"a run review declares those two paths. Neither exists when the review is dispatched, so the fence grants their parent directory\" but names no caller that composes those declared paths into the fence roots, where \u00a79 and \u00a710 both name `_fence_write_roots` in `reckon/crew/dispatch_admission.py` and `delivery_write_roots` in `reckon/_backends.py` explicitly",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0dd8befd072a8ee70fe5e513b3c01de1e4f107794dd2b21dc5a7ed8250bb2abe",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 150,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T222514261913-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "720ef283dbb431a187103eb58ff5ce871f9e16d5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `c-s10-review-store-gap` resolves in the comments container; `review_path` (reckon/crew/review.py:2005) confirms the `<store>/<project>/<reviewed-run-id>.json` + `.at-<sha>` layout s12 describes; `crew(view=\"live\")` does carry `review_present` (reckon/crew/recovery_classification.py:1501).",
+    "done_when": "pass \u2014 s12's done-when is measurable through the production dispatch path and names a negative control (\"with the grant widened back to the parent directory, the sibling removal succeeds and the test fails\").",
+    "evidence_paths": "pass \u2014 the negative control and gates are logged under the run directory, a durable path, matching \u00a79 and \u00a710.",
+    "naming": "pass \u2014 s12 and the new document comment introduce no plan labels, ticket numbers or version tags into symbols or comments; `\u00a712` is a section header, not a symbol.",
+    "reasoning": "a finding \u2014 s12 relies on a mechanism without naming the production caller it must change.",
+    "single_goal": "pass \u2014 s12 names one deliverable (a run review's fence grants nothing writable that holds another run's record); its two shapes are alternatives under one verdict, not two goals.",
+    "wiring": "a finding \u2014 s12's deliverable defers the repair's shape to \"the design review\", but the plan defines no design-review node and wires no dependency for it, while declaring s12 `implementable` (plan-section-declarations, line 26)."
+  },
+  "section_digests": {
+    "_document": "675850e692c53fb3212fb53b4ef23c0602170c1625b9b315f019b301d3fea4a7",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "c5c7fe720643fd4e73b5f1c9fff30c26f8357f46808e3b91eb33b5271d3a19bc",
+    "s11": "f2f305292dacd47d88930479053d919c6bce05b3f863e60a502ce40a2b1c1239",
+    "s12": "c38ffeb2949893891d5f1c7d5e9445118294bc6289a1d09e53396a436f4401df",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T22:35:54.733835+00:00"
+}
