@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:_dispatch_composed_review",
+    "reckon/crew/queue_admission.py:_launch_queued"
+  ],
+  "completed_at": "2026-10-16T18:39:59.448Z",
+  "dispatched_at": "2026-10-16T18:29:22Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "discarded-run-test-at-base-and-head",
+      "recorded_at": "2026-10-16T18:42:08.272295+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T173730201094-a-new-plan-review-is-a-first-attempt/manifest.md",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when requires the importer test files to give the same pass and fail ids at head as at base; the base arm (gate/base-arm.log) carries no EXIT line and its text is in neither gate-log format, so the comparison the done_when names was not made and the recorded gate does not assert it."
+    },
+    {
+      "file": "tests/test_a_new_plan_review_is_a_first_attempt.py",
+      "line": "245",
+      "severity": "follow-on",
+      "text": "follow-on: this assertion reads back the dispatch options the test's own hold() copied verbatim from the compose-supplied kwargs, so it re-asserts line 240 through a test-authored copy and would hold without any production code reading the marker on the queued route; the independent guard is the admit_once assertions at :259-:261."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read every change from base 6906a79e to head a8cca7e1b; e320fa63c adds the fresh_review marker and the three-case test, 85f76fcfc formats the test, a8cca7e1b rewrites two docstrings so the prefix stays defined once; all additions, nothing removed, nothing outside scope.",
+    "done_when": "the done_when names two composed reviews, a held-then-admitted review, an impl redispatch, and same head/base pass-and-fail ids for the importer files; tests/test_a_new_plan_review_is_a_first_attempt.py covers the first three and passes (gate-head.log 8 passed at a8cca7e1b), but the base arm was never completed so the head-vs-base id comparison is unmet.",
+    "goal": "the goal is that a composed plan review dispatches as a first attempt by either route while an own-id node re-dispatched stays a redispatch; reckon/crew/recovery_review_dispatch.py:1788 sets fresh_review only for a plan subject and reckon/crew/dispatch.py:1471 suppresses the prior-run branch on it, while a second own-id dispatch still records attempt 2 kind redispatch.",
+    "manifest": "read source-run manifest.md; it records the a8cca7e1b focused gate (8 passed) and the negative control (2 failed, EXIT=1), and names the incomplete base arm in follow_ons rather than in test_logs.",
+    "write_paths": "read the declared paths in the manifest; the diff touches only reckon/crew/dispatch.py, reckon/crew/recovery_review_dispatch.py and tests/test_a_new_plan_review_is_a_first_attempt.py, all inside them, and queue_admission.py needed no change."
+  },
+  "justifications": {
+    "durability": "tests/test_a_new_plan_review_is_a_first_attempt.py:184 asserts launched[\"attempt\"]==1 and the declared control reddens it with \"assert 2 == 1\" when the marker is stripped, but the assertion at :245 reads back the test's own copy of the options.",
+    "evidence": "gate-head.log records 8 passed at a8cca7e1b and negative-control.log shows 2 failed with EXIT=1, but gate/base-arm.log carries no EXIT line and is in neither gate-log format, so the done_when's head-vs-base importer id comparison was not made.",
+    "fit": "the marker rides the existing dispatch_options plumbing at reckon/crew/dispatch.py:830 and the prefix stays defined once at reckon/crew/recovery_vocabulary.py:137.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:1788 marks a plan compose fresh and reckon/crew/dispatch.py:1471 gates the redispatch branch on `not fresh_review`, so both the direct and the queued-replay routes record attempt 1.",
+    "reuse": "no owner assembles review dispatch options; a capability search over reckon/crew found only placement.reservation_options, queue_admission.carried_options and summary._option_values, so _composed_review_options is the first such owner.",
+    "scope_discipline": "every path in the diff is inside the declared write paths and the two permitted paths that needed no change (queue_admission.py, the fragment/figure) were left alone."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a composed plan review dispatches as a first attempt by either route while an own-id node re-dispatched stays a redispatch; reckon/crew/recovery_review_dispatch.py:1788 sets fresh_review only for a plan subject and reckon/crew/dispatch.py:1471 suppresses the prior-run branch on it, while a second own-id dispatch still records attempt 2 kind redispatch.\nVERDICT done_when: the done_when names two composed reviews, a held-then-admitted review, an impl redispatch, and same head/base pass-and-fail ids for the importer files; tests/test_a_new_plan_review_is_a_first_attempt.py covers the first three and passes (gate-head.log 8 passed at a8cca7e1b), but the base arm was never completed so the head-vs-base id comparison is unmet.\nVERDICT write_paths: read the declared paths in the manifest; the diff touches only reckon/crew/dispatch.py, reckon/crew/recovery_review_dispatch.py and tests/test_a_new_plan_review_is_a_first_attempt.py, all inside them, and queue_admission.py needed no change.\nVERDICT manifest: read source-run manifest.md; it records the a8cca7e1b focused gate (8 passed) and the negative control (2 failed, EXIT=1), and names the incomplete base arm in follow_ons rather than in test_logs.\nVERDICT diff: read every change from base 6906a79e to head a8cca7e1b; e320fa63c adds the fresh_review marker and the three-case test, 85f76fcfc formats the test, a8cca7e1b rewrites two docstrings so the prefix stays defined once; all additions, nothing removed, nothing outside scope.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:_dispatch_composed_review, reckon/crew/queue_admission.py:_launch_queued\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:1788 marks a plan compose fresh and reckon/crew/dispatch.py:1471 gates the redispatch branch on `not fresh_review`, so both the direct and the queued-replay routes record attempt 1.\nSCORE evidence: 12\nJUSTIFICATION evidence: gate-head.log records 8 passed at a8cca7e1b and negative-control.log shows 2 failed with EXIT=1, but gate/base-arm.log carries no EXIT line and is in neither gate-log format, so the done_when's head-vs-base importer id comparison was not made.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths and the two permitted paths that needed no change (queue_admission.py, the fragment/figure) were left alone.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_new_plan_review_is_a_first_attempt.py:184 asserts launched[\"attempt\"]==1 and the declared control reddens it with \"assert 2 == 1\" when the marker is stripped, but the assertion at :245 reads back the test's own copy of the options.\nSCORE fit: 19\nJUSTIFICATION fit: the marker rides the existing dispatch_options plumbing at reckon/crew/dispatch.py:830 and the prefix stays defined once at reckon/crew/recovery_vocabulary.py:137.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner assembles review dispatch options; a capability search over reckon/crew found only placement.reservation_options, queue_admission.carried_options and summary._option_values, so _composed_review_options is the first such owner.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T173730201094-a-new-plan-review-is-a-first-attempt/manifest.md:16 follow-on: the done_when requires the importer test files to give the same pass and fail ids at head as at base; the base arm (gate/base-arm.log) carries no EXIT line and its text is in neither gate-log format, so the comparison the done_when names was not made and the recorded gate does not assert it.\nFINDING tests/test_a_new_plan_review_is_a_first_attempt.py:245 follow-on: this assertion reads back the dispatch options the test's own hold() copied verbatim from the compose-supplied kwargs, so it re-asserts line 240 through a test-authored copy and would hold without any production code reading the marker on the queued route; the independent guard is the admit_once assertions at :259-:261.\n",
+  "review_run_id": "r-20261016T182852523722-review-of-a-new-plan-review-is-a-first-attempt-a8cca7e1b3ea",
+  "reviewed_base_sha": "6906a79eab8371dc58aa69ff9c8de7a4dcc3da49",
+  "reviewed_head_sha": "a8cca7e1b3ea9a68430a3c8e8b6b002a3d46c8a2",
+  "reviewed_run_id": "r-20261016T173730201094-a-new-plan-review-is-a-first-attempt",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T18:39:19.612327+00:00",
+  "total": 108
+}
