@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="jev-learns-from-its-routes">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;a-shadow-cannot-see-its-primary#s2&quot;, &quot;a-shadow-cannot-see-its-primary#s3&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;a-shadow-cannot-see-its-primary#s2&quot;, &quot;a-shadow-cannot-see-its-primary#s3&quot;], &quot;s5&quot;: [&quot;a-shadow-cannot-see-its-primary#s4&quot;], &quot;s6&quot;: [&quot;a-shadow-cannot-see-its-primary#s5&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -156,12 +156,15 @@
     <p>
       <strong>Deliverable.</strong> When the launched run is a shadow, <code>fence_argv</code> in
       <code>reckon/_worker_fence.py</code> masks the primary's records. Today <code>fence_argv</code> is composed
-      only by <code>launch_plan</code> in <code>reckon/_backends.py</code>, which receives no lineage. So
-      <code>launch_plan</code> gains the paths to hide. The launch looks up the primary's ledger row by the lineage's
-      <code>primary_run_id</code>, as <code>_shadow_stream_contamination</code> does, and passes that row to
-      <code>promotion_scope._primary_read_targets</code>, the function §2 extends. Each caller that launches a run passes that lineage: first launch in
-      <code>reckon/crew/dispatch.py</code>, session launch in <code>reckon/crew/dispatch_sessions.py</code>, and
-      resume in <code>reckon/crew/resumption.py</code>. It mounts an empty tmpfs over the primary's
+      only by <code>launch_plan</code> in <code>reckon/_backends.py</code>, which receives no lineage, project or
+      ledger. The paths are resolved in the crew layer and handed down. Each caller that launches a run reads the
+      lineage. For a shadow, it looks up the primary's ledger row by the lineage's <code>primary_run_id</code>, as
+      <code>_shadow_stream_contamination</code> does, and passes that row to
+      <code>promotion_scope._primary_read_targets</code>, the function §2 extends. The callers are first launch in
+      <code>reckon/crew/dispatch.py</code>, session launch in <code>reckon/crew/dispatch_sessions.py</code> and
+      resume in <code>reckon/crew/resumption.py</code>. Each passes the resolved paths to <code>launch_plan</code>
+      as a plain sequence of paths to hide, and <code>launch_plan</code> hands them to <code>fence_argv</code>.
+      <code>_backends.py</code> gains no ledger parameter and no crew import. The fence mounts an empty tmpfs over the primary's
       run directory, and over the primary's worktree when that still exists. It binds <code>/dev/null</code> over
       each of the primary's review record files present at launch. The masks are composed from the shadow's
       lineage, so they apply on launch, resume and redispatch alike. Each mask comes before any writable grant that
@@ -183,30 +186,61 @@
       --check</code> is clean on the written paths.
     </p>
 
-    <h2 id="s5">§5 — How far a shadow's isolation reaches beyond reckon's records</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
+    <h2 id="s5">§5 — A paired dispatch launches both arms from one base</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p>
-      §3 and §4 remove the shadow's cheap routes to its primary. A shadow dispatched after its primary has landed
-      can still find the result in the project's main checkout or in git history: the worktree shares the main
-      repository's object store, and main contains the merge. That is the channel the xpoint-cell-owner shadow
-      actually copied from. §2 detects it after the fact and refuses to call the pair controlled, but it does not
-      stop the run from spending its budget on a contaminated attempt. The three ways forward differ in cost and
-      in what they ask of the coordinator. They are held as the decision <code>shadow-isolation-scope</code>.
-      This section stays deferred until it is locked, and is then rewritten as the chosen option's build.
+      <strong>Why.</strong> §3 and §4 remove the shadow's cheap routes to its primary. A shadow dispatched after its
+      primary has landed can still find the result in the project's main checkout or in git history, because main
+      holds the merge. That is the channel the xpoint-cell-owner shadow copied from. The lead locked
+      <code>shadow-isolation-scope</code> as <code>paired-dispatch</code>: both arms start from one base before
+      either lands, so there is no landed result to find. Masking the main checkout was rejected because
+      <code>git show main:&lt;path&gt;</code> stays open and tools that read the checkout would break. Detection alone
+      was rejected because it spends a run on every breach. <code>crew shadow</code> keeps working for a promoted
+      primary.
     </p>
-    <ul>
-      <li><strong>Detection only.</strong> Keep §2–§4 and accept that a shadow of a landed primary may be breached.
-        This costs nothing more. A breached pair is reported as uncontrolled, but its run is spent.</li>
-      <li><strong>Mask the main checkout.</strong> The fence also hides the main checkout's working tree from a
-        shadow, keeping its <code>.venv</code> and <code>.git</code>. That stops the copy nova's shadow made, but
-        not <code>git show main:&lt;path&gt;</code>. It may also break any tool the worker starts that reads the main
-        checkout, such as the reckon MCP server reading plans through the mounts.</li>
-      <li><strong>Launch both arms together.</strong> A paired dispatch starts the primary and the shadow from one
-        base at the same time, before either lands, and the fence hides each arm's records and worktree from the
-        other. Nothing has landed for either arm to read. nova's lead asked for paired arms on deep nodes, and nova
-        reports that this suits its workflow. It needs a dispatch-time pairing, because <code>crew shadow</code>
-        today requires a promoted primary to copy the configuration from.</li>
-    </ul>
+    <p>
+      <strong>Deliverable.</strong> <code>reckon crew dispatch</code> gains <code>--pair-backend &lt;backend&gt;</code>.
+      One call dispatches the node twice at one base revision. The primary arm is routed as any dispatch is. The
+      shadow arm runs on the named backend and is configured from the primary arm's resolved agent through
+      <code>_shadow_dispatch_config</code> in <code>reckon/crew/dispatch.py</code>, as <code>crew shadow</code>
+      configures one today. Both run ids are allocated before either arm launches. The shadow arm's record carries
+      the existing shadow lineage, <code>kind: "shadow"</code> with <code>primary_run_id</code> and
+      <code>worktree_component</code>, so §2's scan, the control predicate and <code>pair_shadow_arms</code> read it
+      unchanged. The primary arm's record names its partner as <code>paired_shadow_run_id</code>. Its configuration
+      comparison is built from the primary's live dispatch, not from a committed ledger row, so
+      <code>shadow_source</code>'s refusal of an uncommitted primary does not apply.
+    </p>
+    <p>
+      Each arm's fence hides the other. The shadow arm gets §4's masks of its primary, resolved from its lineage.
+      The primary arm gets the same masks of its shadow: the launching caller resolves the shadow's run directory,
+      review records and worktree through <code>promotion_scope._primary_read_targets</code>, reading the shadow's
+      live pointer, which carries the same <code>run_id</code> and <code>worktree</code> fields as a ledger row. It
+      passes them to <code>launch_plan</code> as §4 does. A resume or redispatch of either arm composes the same
+      masks from the arm's own record.
+    </p>
+    <p>
+      <strong>Write paths.</strong> <code>reckon/crew/dispatch.py</code>, <code>reckon/crew_dispatch_commands.py</code>,
+      <code>reckon/crew/promotion_scope.py</code> and <code>tests/test_a_paired_dispatch_hides_each_arm.py</code>.
+    </p>
+    <p>
+      <strong>Done when</strong> a paired dry run reports two arms at one base revision, the shadow arm's lineage
+      naming the primary arm's run id and the primary arm's record naming the shadow's. A fenced stub launch of each
+      arm (<code>bwrap</code> on this host) lists its partner's run directory as empty and can still write its own run
+      directory and worktree. The primary arm's composed masks name the shadow's run directory, and an unpaired
+      dispatch composes none. A dispatch without <code>--pair-backend</code> resolves exactly as it does at base.
+      Negative control: dropping the primary arm's masks makes its empty-listing assertion fail, logged under the
+      run directory. The test files importing <code>reckon/crew/dispatch.py</code> show no added failure id against
+      the base revision. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the changed
+      Python files.
+    </p>
+    <h2 id="s6">§6 — A paired arm does not land before its partner finishes</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §5 starts both arms before either lands, but they finish at different times. If the first arm to finish were promoted, main would hold its result while the second arm was still working, and the second arm could copy it from the main checkout as the xpoint-cell-owner shadow did.</p>
+<p><strong>Deliverable.</strong> <code>reckon crew complete</code> refuses to promote a paired arm while its partner is non-terminal. The refusal names the partner's run id and phase. It is one <code>_require_*</code> check in <code>reckon/crew/promotion_checks.py</code>, run with the others through <code>_require_independently</code>, beside <code>_require_worker_stopped_before_promotion</code>. A run is paired when its lineage is a shadow lineage naming a live primary, or when its record names a <code>paired_shadow_run_id</code>. Once the partner is terminal, either arm promotes as it does today. A shadow of an already-promoted primary, dispatched through <code>crew shadow</code>, is not held.</p>
+<p><strong>Residual.</strong> Both worktrees share the repository's object store, so an arm could still reach its partner's commits through git. §2's scan reports a read of the partner's worktree or commit as contamination, so such a pair reads as uncontrolled rather than passing silently.</p>
+<p><strong>Write paths.</strong> <code>reckon/crew/promotion_checks.py</code> and <code>tests/test_a_paired_arm_waits_for_its_partner.py</code>.</p>
+<p><strong>Done when</strong> promoting a paired arm whose partner's pointer is <code>working</code> is refused, naming the partner, and nothing is merged. The same promotion succeeds once the partner's pointer is terminal. A shadow of a promoted primary, and an unpaired run, promote unchanged. Negative control: with the check removed from the composed list, the working-partner promotion is not refused and the test fails, logged under the run directory. The test files importing <code>reckon/crew/promotion_checks.py</code> show no added failure id against the base revision. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the changed Python files.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="shadow-isolation-scope" data-choice="paired-dispatch" data-by="lead" data-when="2026-10-16T19:33:38+00:00">
