@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/review.py:1546",
+    "reckon/crew/review.py:1796",
+    "reckon/crew/promotion_checks.py:1323",
+    "reckon/crew/promotion_checks.py:1357",
+    "reckon/crew/promotion_evidence.py:1211"
+  ],
+  "completed_at": "2026-10-16T09:33:13.810Z",
+  "dispatched_at": "2026-10-16T09:19:05Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T081526999909-a-ctest-id-names-its-test/ruff.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the run directory's ruff.log records `ruff check` failing with I001 and EXIT_check=1 at an intermediate revision while the run's `tests` line and head_new_test.log claim ruff clean, and the manifest lists no retry_failure for it, so a reader opening the log meets a contradiction the record does not explain; the landed revision is clean (re-ran ruff, 0 findings) so nothing in the change is defective."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read the single commit 56c127b2f against base 2332d8645; it adds `_CTEST_INDEX_RE` (reckon/crew/review.py:1281) and one `.sub` line (reckon/crew/review.py:1514) in canonical_node_id, the 105-line tests/test_a_ctest_id_names_its_test.py, and the 37-line evidence fragment, +156/-1, all inside the fence.",
+    "done_when": "The done_when at prompt.txt:98 requires the new test to assert canonical_node_id('157 - XPOINT_BASELINE/ITER/imas/corsica') equal to 'XPOINT_BASELINE/ITER/imas/corsica' with tests/test_review_node_id_canonical_form.py unchanged, `_zero_added_against_a_red_base` true for a red completed baseline naming the indexed id beside a completed after_suite and a head ctest log failing only that test, identical head/base importer pass-fail ids, and ruff clean; tests/test_a_ctest_id_names_its_test.py:74,87,101 assert the three cases, the canonical-form file is untouched by the diff, I re-ran both files (17 passed), the manifest records base and head 918-outcome sets identical (0 added) with the same 3 pre-existing failure ids, and I re-ran ruff with 0 findings, so the gate asserts the measure.",
+    "goal": "The node goal is to make canonical_node_id drop a leading ctest index so a manifest's ctest id matches the gate-log reader's; at 56c127b2f reckon/crew/review.py:1514 applies `_CTEST_INDEX_RE.sub(\"\", path, count=1)` (regex defined at review.py:1281) before the path is reduced, so canonical_node_id('157 - XPOINT_BASELINE/ITER/imas/corsica') returns 'XPOINT_BASELINE/ITER/imas/corsica' and the goal is met.",
+    "manifest": "Read; it reads `status: complete`, names commit 56c127b2f, records tests/test_a_ctest_id_names_its_test.py 3 passed EXIT=0, ruff clean, measurement_module and measurement_cwd for the base scratch arm, a base and head 918-outcome pair identical (failure_count 3 both sides), and negative_control_log under the run directory.",
+    "write_paths": "Read from the dispatch fence at prompt.txt:69-72; the declared paths are reckon/crew/review.py, tests/test_a_ctest_id_names_its_test.py, docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-ctest-id-names-its-test.html and a figures directory, and the diff at 56c127b2f touches the first three and nothing else."
+  },
+  "justifications": {
+    "durability": "negative_control.log shows the mutation at reckon/crew/review.py:1514 reddening tests/test_a_ctest_id_names_its_test.py:74 and :87 with EXIT=1, so the guards fail exactly on the reverted line.",
+    "evidence": "the manifest records base and head 918-outcome sets that are byte-identical (0 added; base.failids and head.failids equal) and I re-ran the named tests and ruff clean, so the done_when's measure is recorded rather than claimed.",
+    "fit": "reckon/crew/review.py:1281-1287 follows the module's regex-constant-plus-prose-comment idiom and `_CTEST_INDEX_RE` names the mechanism with no plan label.",
+    "goal_fidelity": "56c127b2f reckon/crew/review.py:1514 drops a leading ctest index inside canonical_node_id, which is exactly what the goal states.",
+    "reuse": "a search over reckon/crew for a mechanism stripping a ctest index found only `_ctest_failure_ids`/`_CTEST_ENTRY_RE` (reckon/crew/review.py:1556,1280), which parse a log line and not a bare id, so `_CTEST_INDEX_RE` extends the single canonicalizer canonical_node_id rather than forking it.",
+    "scope_discipline": "every path in 56c127b2f (reckon/crew/review.py, tests/test_a_ctest_id_names_its_test.py, docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-ctest-id-names-its-test.html) is inside the fence at prompt.txt:69-72."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to make canonical_node_id drop a leading ctest index so a manifest's ctest id matches the gate-log reader's; at 56c127b2f reckon/crew/review.py:1514 applies `_CTEST_INDEX_RE.sub(\"\", path, count=1)` (regex defined at review.py:1281) before the path is reduced, so canonical_node_id('157 - XPOINT_BASELINE/ITER/imas/corsica') returns 'XPOINT_BASELINE/ITER/imas/corsica' and the goal is met.\nVERDICT done_when: The done_when at prompt.txt:98 requires the new test to assert canonical_node_id('157 - XPOINT_BASELINE/ITER/imas/corsica') equal to 'XPOINT_BASELINE/ITER/imas/corsica' with tests/test_review_node_id_canonical_form.py unchanged, `_zero_added_against_a_red_base` true for a red completed baseline naming the indexed id beside a completed after_suite and a head ctest log failing only that test, identical head/base importer pass-fail ids, and ruff clean; tests/test_a_ctest_id_names_its_test.py:74,87,101 assert the three cases, the canonical-form file is untouched by the diff, I re-ran both files (17 passed), the manifest records base and head 918-outcome sets identical (0 added) with the same 3 pre-existing failure ids, and I re-ran ruff with 0 findings, so the gate asserts the measure.\nVERDICT write_paths: Read from the dispatch fence at prompt.txt:69-72; the declared paths are reckon/crew/review.py, tests/test_a_ctest_id_names_its_test.py, docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-ctest-id-names-its-test.html and a figures directory, and the diff at 56c127b2f touches the first three and nothing else.\nVERDICT manifest: Read; it reads `status: complete`, names commit 56c127b2f, records tests/test_a_ctest_id_names_its_test.py 3 passed EXIT=0, ruff clean, measurement_module and measurement_cwd for the base scratch arm, a base and head 918-outcome pair identical (failure_count 3 both sides), and negative_control_log under the run directory.\nVERDICT diff: Read the single commit 56c127b2f against base 2332d8645; it adds `_CTEST_INDEX_RE` (reckon/crew/review.py:1281) and one `.sub` line (reckon/crew/review.py:1514) in canonical_node_id, the 105-line tests/test_a_ctest_id_names_its_test.py, and the 37-line evidence fragment, +156/-1, all inside the fence.\nCALL_SITES: reckon/crew/review.py:1546 (_pytest_failure_ids), reckon/crew/review.py:1796 (_retires_id), reckon/crew/promotion_checks.py:1323 (_baseline_suite_failure_ids), reckon/crew/promotion_checks.py:1357 (_head_suite_failure_ids), reckon/crew/promotion_evidence.py:1211 (_zero_added_against_a_red_base)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: 56c127b2f reckon/crew/review.py:1514 drops a leading ctest index inside canonical_node_id, which is exactly what the goal states.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest records base and head 918-outcome sets that are byte-identical (0 added; base.failids and head.failids equal) and I re-ran the named tests and ruff clean, so the done_when's measure is recorded rather than claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 56c127b2f (reckon/crew/review.py, tests/test_a_ctest_id_names_its_test.py, docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-ctest-id-names-its-test.html) is inside the fence at prompt.txt:69-72.\nSCORE durability: 20\nJUSTIFICATION durability: negative_control.log shows the mutation at reckon/crew/review.py:1514 reddening tests/test_a_ctest_id_names_its_test.py:74 and :87 with EXIT=1, so the guards fail exactly on the reverted line.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/review.py:1281-1287 follows the module's regex-constant-plus-prose-comment idiom and `_CTEST_INDEX_RE` names the mechanism with no plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search over reckon/crew for a mechanism stripping a ctest index found only `_ctest_failure_ids`/`_CTEST_ENTRY_RE` (reckon/crew/review.py:1556,1280), which parse a log line and not a bare id, so `_CTEST_INDEX_RE` extends the single canonicalizer canonical_node_id rather than forking it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T081526999909-a-ctest-id-names-its-test/ruff.log:2 follow-on: the run directory's ruff.log records `ruff check` failing with I001 and EXIT_check=1 at an intermediate revision while the run's `tests` line and head_new_test.log claim ruff clean, and the manifest lists no retry_failure for it, so a reader opening the log meets a contradiction the record does not explain; the landed revision is clean (re-ran ruff, 0 findings) so nothing in the change is defective.",
+  "review_run_id": "r-20261016T091729788095-review-of-a-ctest-id-names-its-test-56c127b2f0e3",
+  "reviewed_base_sha": "2332d8645e45a0b009adfbe0c7c14b988d3d65ed",
+  "reviewed_head_sha": "56c127b2f0e3b4450e9f53191d16792a98f542d6",
+  "reviewed_run_id": "r-20261016T081526999909-a-ctest-id-names-its-test",
+  "reviewer_run_id": "r-20261016T091729788095-review-of-a-ctest-id-names-its-test-56c127b2f0e3",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T081526999909-a-ctest-id-names-its-test/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/a-ctest-id-names-its-test",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T09:30:28.088360+00:00",
+  "total": 118
+}
