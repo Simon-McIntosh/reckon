@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-shadow-cannot-see-its-primary">
+  <meta name="plan-title" content="A Shadow Cannot See Its Primary">
+  <meta name="plan-summary" content="A pair is reported controlled only when the shadow never read its primary&#x27;s records, worktree or landed result, and the fence hides those records.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.75">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="unattended-execution">
+  <meta name="plan-after" content="jev-learns-from-its-routes">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;a-shadow-cannot-see-its-primary#s3&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;deferred&quot;}">
+  <title>A Shadow Cannot See Its Primary | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: a pair reckon reported as controlled had copied its answer</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>
+      <code>reckon crew shadow</code> re-runs a promoted node at its original base on a second backend, so the two
+      arms can be compared as a matched pair. That is the lead's test of Jev's lane against codex. The pair is
+      reported as controlled by <code>ledger.shadow_controlled</code>, which reads only the shadow's recorded
+      configuration: it is controlled when nothing but the backend, its model and its launch differ. Nothing
+      checks what the shadow could read.
+    </p>
+    <p>
+      On 2026-10-16 nova ran a clive shadow, <code>r-20261016T165229949973-xpoint-cell-owner</code>, of the promoted
+      codex primary <code>r-20261016T145650209779-xpoint-cell-owner</code>, with no configuration override. Its stream
+      shows three channels to the primary's result:
+    </p>
+    <ul>
+      <li><strong>Reckon's records of the primary.</strong> 138 references to the primary's run directory under
+        <code>~/.config/reckon/crew/runs/</code>, and 10 to its review records under
+        <code>~/.config/reckon/crew/reviews/nova/</code>.</li>
+      <li><strong>The project's main checkout.</strong> The shadow ran <code>git log --oneline 4e852a31e..HEAD</code>
+        in <code>/home/ITER/mcintos/Code/nova</code>. It then copied the primary's 37 prototype files from that
+        checkout into its own worktree with <code>cp -n</code>. The primary had already landed, so main held its
+        result.</li>
+      <li><strong>Its own name.</strong> The shadow's worktree path is
+        <code>shadow-r-20261016T145650209779-xpoint-cell-owner-clive-…</code>, so the primary's run id is in the
+        first line of its prompt.</li>
+    </ul>
+    <p>
+      The shadow's first real commit was <code>chore(equilibrium): adopt the node's existing X-point owner
+      prototype</code>. It then blocked at the decision the primary had reached, quoting the primary's numbers. The
+      configuration predicate called the pair controlled, so outcome evidence would have credited clive with a
+      diagnosis it copied. nova recorded the shadow as <code>correct-refusal</code> and is holding further shadow
+      arms until this plan lands.
+    </p>
+    <p>
+      The fix has two halves. Detection (§2) makes every report honest whatever channel a shadow used, so it comes
+      first. Prevention (§3, §4) removes the cheap channels: the primary's name and reckon's records of it. The main
+      checkout and git history still hold a landed primary's result. Closing those is a design choice with real
+      costs, held as the decision in §5.
+    </p>
+
+    <h2 id="s2">§2 — A shadow's reads of its primary make the pair uncontrolled</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="2" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      <strong>Deliverable.</strong> When a shadow run is promoted, reckon scans its stream for tool inputs that name a
+      path outside the shadow's own reach. That means the primary's run directory, any of the primary's review
+      records, the primary's worktree, or the project's main checkout outside its <code>.venv</code>. Reckon records
+      the result on the shadow's ledger row as <code>lineage.isolation</code>. The record holds a verdict,
+      <code>clean</code> or <code>breached</code>, and for a breach each kind of path read with its count and
+      first example. <code>ledger.shadow_controlled</code> returns false unless the isolation verdict is
+      <code>clean</code>. The paired report in <code>reckon/capabilities.py</code> (<code>pair_shadow_arms</code>)
+      names the reason a pair is uncontrolled, whether configuration or isolation. A row with no isolation
+      record reads as <code>isolation unmeasured</code> and is not controlled. That follows the existing rule that
+      lineage with no recorded configuration is not controlled, because a pair whose isolation was never measured
+      cannot be claimed as matched.
+    </p>
+    <p>
+      The scan reads both stream dialects through the backend module's existing stream reader
+      (<code>reckon/_backends.py</code>), so a codex shadow is scanned like a claude one. The main checkout is the
+      project's repository root as reckon resolves it for dispatch. The instrument is deliberately conservative:
+      the worker contract already says to work only in its own worktree, so any main-checkout read outside
+      <code>.venv</code> breaches isolation. The breach names the path, so a reader can judge a benign one.
+    </p>
+    <p>
+      <strong>Write paths.</strong> <code>reckon/ledger.py</code>, <code>reckon/capabilities.py</code>, the shadow
+      branch of promotion in <code>reckon/crew/promotion.py</code> (beside <code>_write_shadow_patch</code>), one new
+      module <code>reckon/crew/shadow_isolation.py</code> holding the scan unless the design review names an owner
+      to extend, and <code>tests/test_a_shadow_reads_nothing_of_its_primary.py</code>.
+    </p>
+    <p>
+      <strong>Done when</strong> tests with synthetic streams in both dialects show the following. A shadow whose
+      stream reads only its own worktree and run home is <code>clean</code> and controlled. Reading the primary's
+      run directory, a primary review record, the primary's worktree or the main checkout each gives
+      <code>breached</code> with that kind named, and the pair is not controlled. A read of the main checkout's
+      <code>.venv</code> stays clean. A row without <code>lineage.isolation</code> reports
+      <code>isolation unmeasured</code> and is not controlled. Run on the retained stream of
+      <code>r-20261016T165229949973-xpoint-cell-owner</code>, the scan reports <code>breached</code>, naming the
+      primary's run directory, its review records and the main checkout. That run is the positive control. The
+      negative control makes <code>shadow_controlled</code> ignore isolation, and the breached pair must then read
+      as controlled and fail its test. The test files importing <code>ledger.py</code>,
+      <code>capabilities.py</code> and <code>promotion.py</code> show no added failure against the base revision.
+      <code>ruff format --check</code> is clean on the written paths.
+    </p>
+
+    <h2 id="s3">§3 — A shadow's worktree path and prompt do not name its primary</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p>
+      <strong>Deliverable.</strong> <code>shadow_worktree_session</code> in <code>reckon/crew/routing.py</code> names a
+      new shadow's worktree session from its candidate backend and its recorded unique component, without the
+      primary's run id. Records written before the change still resolve to their existing paths through
+      <code>_shadow_worktree_records</code>, so gc and promotion find old shadow worktrees. Nothing in a shadow's
+      composed prompt names the primary's run id.
+    </p>
+    <p>
+      <strong>Write paths.</strong> <code>reckon/crew/routing.py</code>, the shadow branch of
+      <code>reckon/crew/dispatch.py</code> if the component is composed there, and
+      <code>tests/test_a_shadow_worktree_hides_its_primary.py</code>.
+    </p>
+    <p>
+      <strong>Done when</strong> a shadow dry run's worktree path and composed prompt contain no occurrence of the
+      primary run id. A ledger row in the old naming, with and without a worktree component, still resolves to its
+      original worktree path. The negative control restores the primary id in the session stem, and the dry-run
+      assertion must then fail. The test files importing <code>routing.py</code> show no added failure against the
+      base revision.
+    </p>
+
+    <h2 id="s4">§4 — The fence hides a primary's records from its shadow</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      <strong>Deliverable.</strong> When the launched run is a shadow, <code>fence_argv</code> in
+      <code>reckon/_worker_fence.py</code> masks the primary's records. It mounts an empty tmpfs over the primary's
+      run directory, and over the primary's worktree when that still exists. It binds <code>/dev/null</code> over
+      each of the primary's review record files present at launch. The masks are composed from the shadow's
+      lineage, so they apply on launch, resume and redispatch alike. Each mask comes before any writable grant that
+      contains it, following the existing ordering rule in <code>fence_argv</code>, and the shadow's own run
+      directory and worktree stay writable.
+    </p>
+    <p>
+      <strong>Write paths.</strong> <code>reckon/_worker_fence.py</code>, the launch composition in
+      <code>reckon/crew/dispatch_launch.py</code> that passes the shadow's lineage to the fence, and
+      <code>tests/test_a_fence_hides_the_primary.py</code>.
+    </p>
+    <p>
+      <strong>Done when</strong> a fenced stub launch of a shadow (<code>bwrap</code> on this host) lists the
+      primary's run directory as empty, and reads each of the primary's review records as empty. The same stub can
+      still write its own run directory and worktree. A non-shadow launch composes no masks. The negative control
+      drops the masks for a shadow, and the empty-listing assertion must then fail. The test files importing
+      <code>_worker_fence.py</code> show no added failure against the base revision. <code>ruff format
+      --check</code> is clean on the written paths.
+    </p>
+
+    <h2 id="s5">§5 — How far a shadow's isolation reaches beyond reckon's records</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="2" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
+    <p>
+      §3 and §4 remove the shadow's cheap routes to its primary. A shadow dispatched after its primary has landed
+      can still find the result in the project's main checkout or in git history: the worktree shares the main
+      repository's object store, and main contains the merge. That is the channel the xpoint-cell-owner shadow
+      actually copied from. §2 detects it after the fact and refuses to call the pair controlled, but it does not
+      stop the run from spending its budget on a contaminated attempt. The three ways forward differ in cost and
+      in what they ask of the coordinator. They are held as the decision <code>shadow-isolation-scope</code>.
+      This section stays deferred until it is locked, and is then rewritten as the chosen option's build.
+    </p>
+    <ul>
+      <li><strong>Detection only.</strong> Keep §2–§4 and accept that a shadow of a landed primary may be breached.
+        This costs nothing more. A breached pair is reported as uncontrolled, but its run is spent.</li>
+      <li><strong>Mask the main checkout.</strong> The fence also hides the main checkout's working tree from a
+        shadow, keeping its <code>.venv</code> and <code>.git</code>. That stops the copy nova's shadow made, but
+        not <code>git show main:&lt;path&gt;</code>. It may also break any tool the worker starts that reads the main
+        checkout, such as the reckon MCP server reading plans through the mounts.</li>
+      <li><strong>Launch both arms together.</strong> A paired dispatch starts the primary and the shadow from one
+        base at the same time, before either lands, and the fence hides each arm's records and worktree from the
+        other. Nothing has landed for either arm to read. nova's lead asked for paired arms on deep nodes, and nova
+        reports that this suits its workflow. It needs a dispatch-time pairing, because <code>crew shadow</code>
+        today requires a promoted primary to copy the configuration from.</li>
+    </ul>
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<div class="r-dec" data-key="shadow-isolation-scope" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Beyond detection and hiding reckon&#x27;s records, how should a shadow be kept from its primary&#x27;s landed result?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="paired-dispatch">Launch both arms together from one base (recommended)</button>
+      <button class="r-opt" data-value="mask-checkout">Mask the main checkout from a shadow</button>
+      <button class="r-opt" data-value="detect-only">Detection only</button>
+      </p>
+    <p class="r-dec-rat">Recommended: a paired dispatch removes the landed result rather than hiding it, and it matches how nova&#x27;s lead wants deep nodes run. Masking the checkout leaves git history open and risks breaking tools that read the checkout. Detection alone keeps every report honest but spends a run on each breach.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ascp-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-create" data-written-at="2026-10-16" data-recommends-skill="/reckon-build a-shadow-cannot-see-its-primary §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2 and §3 together; §4 after §3; decide §5</h4>
+    <div class="r-fu-body"><p>§2 (ledger, capabilities, promotion) and §3 (routing) write disjoint files and run together. §4 composes its masks from the shadow lineage §3 settles, so it follows §3. nova is holding all shadow arms until §2 and §4 land; tell nova-2c when they do. The lead decides <code>shadow-isolation-scope</code> before §5 is built.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-shadow-cannot-see-its-primary §2</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
