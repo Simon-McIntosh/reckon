@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T01:18:11.312Z",
+  "dispatched_at": "2026-10-16T01:12:05Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:171",
+      "id": "reasoning-1",
+      "reason": "without naming the pin in \u00a714's done-when or ordering \u00a715 before \u00a714, the \u00a714 node repeats a documented failure; the same Why also names \u00a76's re-measure, whose done-when compares only medians and no roadmap output, so that half of the claim is unsupported.",
+      "text": "\u00a715's Why establishes that \u00a714's \"inventory, roadmap and discovery outputs ... equal at base and head\" check is meaningless without a pinned seed, yet \u00a714's done-when (line 167) asserts that equality with no seed pin, and f-araiid-011 runs \u00a714 first (before \u00a715's ordering fix exists), so a \u00a714 node re-attempting its repair meets the same hash-seed divergence its review recorded (reader dumps differing on 97 fields) and cannot satisfy its declared measure as written",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "58dca395177909f521422318588ac27a0e1bd0c5fe9cbada8bb071df58c62da6",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 63,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T011116678637-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "e2a2ce4a493206bb011db55aedc0b2d19d9d7646",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `decision_blockers_report` (reckon/roadmap.py:3135), `roadmap.decision_blockers` (3739) and `roadmap.wiring_findings` (3760) all resolve, and the hash-order cause is confirmed in code (`_scope_slugs` returns `set(plans)`, reckon/roadmap.py:1962, seeding the dict whose iteration order drives `decision_blockers_report.extend`, 3393).",
+    "done_when": "pass \u2014 \u00a715's done-when (two PYTHONHASHSEED subprocesses over one fixed tree, JSON byte-identical) can fail, and it names a negative control (order key removed, the two seeds then diverge).",
+    "evidence_paths": "pass \u2014 \u00a715 logs its negative control under the run directory, not a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 \u00a715 introduces no plan labels, section ids, ticket numbers or version tags into code; `decision_blockers`, `wiring_findings` and `PYTHONHASHSEED` name the mechanism.",
+    "reasoning": "a finding \u2014 \u00a715's Why states that \u00a714's base/head output equality \"needs a pinned seed to mean anything\", but \u00a714's own done-when carries no seed pin and \u00a714 is dispatched before \u00a715.",
+    "single_goal": "pass \u2014 \u00a715 carries one deliverable (a stable order for the roadmap's hash-ordered lists) with its own test file.",
+    "wiring": "pass \u2014 every implementable section is routed: f-araiid-010 names \u00a714, f-araiid-011 names \u00a712/\u00a713/\u00a76, f-araiid-012 names \u00a715, and no followup points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "a1dfec5e3743ad020f7085cd8fbc14be5472daec1d0ec4e5655d495245f377b5",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "cf4a58d18c9de3add0ff9e30c34b78e0135543d18af30ed1b649523aca1438c0",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "09715132c4434894308c5c7b40f548cbb60a199ff939d2f90ed6908ff62ef22f",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T01:20:34.072088+00:00"
+}
