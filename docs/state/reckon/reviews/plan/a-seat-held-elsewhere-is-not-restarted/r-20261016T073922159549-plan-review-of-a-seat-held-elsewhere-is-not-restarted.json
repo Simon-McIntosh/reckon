@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T07:56:24.790Z",
+  "dispatched_at": "2026-10-16T07:40:05Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-seat-held-elsewhere-is-not-restarted.html:207",
+      "id": "done_when-1",
+      "reason": "the second case's expected hook line (\"names the snapshot's age and the follower arming command, and contains none of \u2026 'producer reloading'\") already fails if the stamp comparison is reverted to the snapshot's own stamp, so the gate catches the omission without a second control.",
+      "text": "\u00a719 changes two mechanisms (the host-lease liveness reading in watch_unit.live_foreign_seat_host and the seat-stamp comparison in obligation_snapshot.freshness_reading) but declares a single negative control that falsifies only the lease reading; the stamp comparison is exercised by a positive case but by no declared mutation",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "e4a7efcf6d7b91bcc15b576b140971e4af3c00662e972bfdee3993238b7ba1a2",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 85,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T073922159549-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "fc7c5760f3f41ef4b99ed7ffa8137edc2b1d26d6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol and module resolves: watch_unit.live_foreign_seat_host (watch_unit.py:143) and seat_names_a_live_foreign_producer (:170), obligation_snapshot.freshness_reading (:393) and reload_in_progress (:501), runs.producer_live (runs.py:2531) and producer_lease_seconds (:1716), watch_unit.watch_host_lease (:27), and host_lease.HostLease with LEASE_STALE_SECONDS=30.0 (host_lease.py:15,61); the seat record's own \"code_stamp\" field is written at runs.py:2805.",
+    "done_when": "a finding \u2014 the node declares one negative control (the host-lease reading) while its second mechanism, the seat-stamp comparison, carries none (plan.html:207).",
+    "evidence_paths": "pass \u2014 the negative control is logged under the run directory, a durable path a later reader can open, consistent with the plan's other sections.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the symbols or the new test file test_a_quiet_foreign_producer_reads_live.py.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited code and the mechanism produces the done-when on the real path. Verified: freshness_reading consults watch_unit.live_foreign_seat_host when the recorded producer is not live on this host (obligation_snapshot.py:418,427-430), and that function judges a foreign seat live only from the stream (watch_unit.py:165-167), so a project with no transitions past the 15-minute DEFAULT_WATCH_STALL_WINDOW (node.py:51) reads as no producer \u2014 while producer_live reads a fresh host-lease holder on another host as live before the stream (runs.py:2570-2573), the disagreement the section names. The first case is produced: a missing snapshot with a live foreign host yields NO_FOLLOWER, whose line names the host and the follower arming command and contains no \"--ensure\" (obligation_snapshot.py:418-419; coordinator_obligations.py:764-787). The second case is produced: with the seat's recorded stamp equal to the checkout's, the changed comparison does not report producer-stale-code, the 20-hour age yields STALE_SNAPSHOT, reload_in_progress returns false for that state (obligation_snapshot.py:526), and not_fresh_line names the snapshot's age with the follower arming remedy while producer_lease_is_live holds (obligation_snapshot.py:432-436; coordinator_obligations.py:757-763,776-781). The third clause holds too: a seat stamp other than the checkout's is producer-stale-code, which reload_in_progress reads as a reload (obligation_snapshot.py:524-525) and the hook prints as \"producer reloading\" (coordinator_obligations.py:941-956). The caller is named: freshness_reading, reached by the prompt and stop hook paths (coordinator_obligations.py:922,1168).",
+    "single_goal": "pass \u2014 both changes serve one verdict, the hook line a coordinator reads for a live-but-quiet producer on another node; the seat-stamp change is a direct consequence of the lease change within that same line (a 20-hour-old snapshot otherwise reads producer-stale-code and is served as \"producer reloading\"), so one verdict closes both.",
+    "wiring": "pass \u2014 the open followup f-sheinr-007 names \u00a718 \u00a719 and both sections are data-status=\"implementable\"; \u00a719's write paths (reckon/crew/watch_unit.py, reckon/crew/obligation_snapshot.py) do not collide with \u00a718's (reckon/crew/follower_registration.py), so no gate is required and none is missing (plan.html:247-251)."
+  },
+  "section_digests": {
+    "_document": "dbb9ed267807e9c2b79c317f76f8bb8f99ada6fc4d521da33e6e471ae57f8d69",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s10": "fd9ced512f1fc6a0610cb111ec8c734e3c55a84ea11034055f5f1c9e60e0c649",
+    "s11": "9d7552bb9a0f7179067d09a67e819e7194fbbac1e34cf450bb6dd2631508389d",
+    "s12": "41b7e2f138ff584e94cdef995cae4ab65e47e6e0efb43dc6d30b0045664f611d",
+    "s13": "441358f17906d8fa159ba5911fc62cfb32cabff650e9ae63b1300701b43f7b6d",
+    "s14": "15dd48418b8a42e818c6a6c93d4914efb531dc5439e368a148fd7168b3a89faa",
+    "s15": "707b8d39391cbd7e59f3dbd9cc4748c655d8870e48f237e84889148855f5b9e7",
+    "s16": "e185fa1e0f4aa25f213b2df34164fcfb48751f19156d05a48ec1118841ee463d",
+    "s17": "73a4699a4193793731da87cf3a489de8f9e91df7e596e68dad4897797177cb9e",
+    "s18": "8999758c87844624774b694fe81fcd076a62c6ef3bccc2334956bdae4b71957d",
+    "s19": "05cfac9a876e27aee75692ed6d7d2815bd728a33a3afadca32fcaaec730bcfc5",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "96d5fc1c72a25970cab856a7dde0a3cab839fd87c83786b7b49ffc4c1dabb1ab",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad",
+    "s7": "d3e16f60d17ef3ee4666f9cd189aa6cd8e26f038173b65ee34b68f3f2cd822e7",
+    "s8": "b41130ef26282f759c1b7be0de0136701972d055ed7878e2f2d9cd21c96b4f63",
+    "s9": "a2cb7135c4bd3f1439c3ec948d6146c2f5b7527da59b1bbd4c7ce4c141ec3055"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T07:58:22.493946+00:00"
+}
