@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T09:22:10.976Z",
+  "dispatched_at": "2026-10-16T09:09:19Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:243",
+      "id": "wiring-1",
+      "reason": "a coordinator scanning open followups would re-dispatch a completed \u00a712 and would find two different followups claiming the \u00a76 re-measure; f-araiid-011 must be resolved so f-araiid-013 is the sole open route.",
+      "text": "f-araiid-011 stays `data-status=\"open\"` and recommends `/reckon-build ... \u00a712`, yet \u00a712, \u00a713 and \u00a714 are all declared `done` (lines 158, 162, 166) and its only live clause (\"\u00a76 is re-measured once \u00a712, \u00a713 and \u00a714 have all landed\") has moved to f-araiid-013, so the open-followup set routes finished work",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:128",
+      "id": "wiring-2",
+      "reason": "a \u00a76 node dispatched on today's text would measure ahead of the \u00a716/\u00a717 fixes and record the warm regression as the head result; this is the same stale-list defect a prior review raised for \u00a714.",
+      "text": "\u00a76's deliverable runs its measurement \"after \u00a72 to \u00a75 and the read fixes \u00a78, \u00a710, \u00a711, \u00a712, \u00a713 and \u00a714 are promoted\", omitting \u00a716 and \u00a717, the two sections filed (f-araiid-013) to repair the warm-read regression that \u00a76's own re-measure is meant to report on",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:179",
+      "id": "anchors_resolve-1",
+      "reason": "the chain's substance is right and \u00a717's write paths already put the fix in serve.py, so a worker reaches the function after one grep; only the module qualifier is wrong.",
+      "text": "\u00a717 states \"It calls `serve._plan_last_committed`, then `_git_last_committed`, then `_git_head`, then `_run_git`\", but `_plan_last_committed` is defined in `reckon/doccheck.py:265`, not `reckon/serve.py`, so the qualified anchor resolves in no module",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "d614768c5f7291c961636e5d1fe79749bc780efa0b73935c2405f66e76c5e9fb",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 85,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T090723875940-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "d982f940cd0c5fde32b0c436f41eb10c2b1eb19e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a717's `serve._plan_last_committed` names a function that lives in `reckon/doccheck.py`, not `serve`.",
+    "done_when": "pass \u2014 s16 and s17 each name a countable measure (identify_resource calls bounded by plan count; git subprocesses at most one) and a declared negative control (scan every sibling again; do not remember the failure) that can falsify it.",
+    "evidence_paths": "pass \u2014 s16 cites the head-arm report at a durable path under ~/.config/reckon/crew/reports, and both sections' logs go under the run directory, not a session scratchpad.",
+    "naming": "pass \u2014 `tests/test_a_slug_uniqueness_is_one_lookup.py` and `tests/test_a_tree_outside_git_asks_once.py` carry no plan labels, ticket numbers or version tags, and the Why prose states mechanism, not a changelog.",
+    "reasoning": "pass \u2014 s16's root cause (`_canonical_identity_is_unique` per-resolve sibling scan) and s17's (uncached failed git spawns for a repo-less tree) each match the cited profile diff, and each section's mechanism can produce its own done-when with the caller named (`_resolve_canonical`; `audit_lifecycle` -> `derived_plan_age`).",
+    "single_goal": "pass \u2014 s16 carries one deliverable (one index for the slug-uniqueness check) and s17 one (a remembered repo-less docs root); each lands on a single verdict.",
+    "wiring": "a finding \u2014 f-araiid-011 is still `open` after \u00a712, \u00a713 and \u00a714 all landed, and \u00a76's deliverable names the fixes \u00a716 and \u00a717 nowhere."
+  },
+  "section_digests": {
+    "_document": "094396fd5944d7985cb38f9f4bdedc00f68ebc224f5e264f359c3645d6923705",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "b4f6192228c9474a0a91c2962830c4ac62263f84ab8480cbb34b923bfffa4d23",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "09715132c4434894308c5c7b40f548cbb60a199ff939d2f90ed6908ff62ef22f",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T09:58:55.647042+00:00"
+}
