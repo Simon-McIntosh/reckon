@@ -259,8 +259,8 @@ def _candidates_scan(
     dict[tuple[str, str | None], dict[str, int]],
     dict[str, list[float]],
     dict[tuple[str, str | None], dict[str, Any]] | None,
-    dict[tuple[str, str | None], Counter[str]] | None,
-    dict[tuple[str, str | None], int] | None,
+    dict[tuple[str, str | None], Counter[str]],
+    dict[tuple[str, str | None], int],
 ]:
     """One pass over the ledger rows: every candidate's outcomes and peaks.
 
@@ -285,10 +285,13 @@ def _candidates_scan(
     is kept out of the receiving candidate's pooled counts and out of its
     at-requirement block, and its gate is tallied under the receiving candidate's
     ``moved_in``. The candidate Jev chose gains one ``moved_off`` for such a
-    pick. A move is counted at the request's requirement, so both move figures
-    are None when the request names no requirement. A row with a lane change but
-    no pick (an explicit route that was later moved) is not a move and counts
-    under its final lane as before.
+    pick. Both move figures are counted at one difficulty: a moved row recorded
+    at a requirement other than the request's counts in neither ``moved_in`` nor
+    ``moved_off``, so the receiving candidate's ``moved_in`` always has a
+    matching ``moved_off`` on the candidate Jev chose. A request that names no
+    requirement has no difficulty to read at, so both figures count every moved
+    row. A row with a lane change but no pick (an explicit route that was later
+    moved) is not a move and counts under its final lane as before.
     """
 
     cutoff = now - timedelta(days=14)
@@ -298,12 +301,8 @@ def _candidates_scan(
     at_requirement: dict[tuple[str, str | None], dict[str, Any]] | None = (
         {} if request_requirement is not None else None
     )
-    moved_in: dict[tuple[str, str | None], Counter[str]] | None = (
-        {} if request_requirement is not None else None
-    )
-    moved_off: dict[tuple[str, str | None], int] | None = (
-        {} if request_requirement is not None else None
-    )
+    moved_in: dict[tuple[str, str | None], Counter[str]] = {}
+    moved_off: dict[tuple[str, str | None], int] = {}
     for row in records:
         stamp = parse_utc(
             str(row.get("completed_at") or row.get("dispatched_at") or "")
@@ -326,20 +325,20 @@ def _candidates_scan(
         model = (row.get("agent") or {}).get("model")
         key = (backend, model)
         gate = str(row.get("gate") or "unknown")
-        if moved_in is not None and moved_off is not None:
-            away = _picked_backend_away(row)
-            if away is not None:
-                # The move's outcome belongs to the pick Jev made, not to the
-                # lane it landed on: keep it out of the receiving candidate's
-                # pooled and at-requirement counts, tally it under moved_in, and
-                # credit the candidate Jev chose with moved_off. Counted at the
-                # request's requirement, so a moved row records the requirement
-                # the pick was made at.
+        away = _picked_backend_away(row)
+        if away is not None:
+            # The move's outcome belongs to the pick Jev made, not to the lane
+            # it landed on: keep it out of the receiving candidate's pooled and
+            # at-requirement counts and tally it under moved_in. Both move
+            # figures are counted at the request's requirement: a moved row
+            # recorded at another requirement counts in neither, so the pair
+            # reads at one difficulty, and a request naming no requirement
+            # counts every move.
+            recorded = _recorded_requirement(row)
+            if request_requirement is None or recorded == request_requirement:
                 moved_in.setdefault(key, Counter())[gate] += 1
-                recorded = _recorded_requirement(row)
-                if recorded is not None and recorded == request_requirement:
-                    moved_off[away] = moved_off.get(away, 0) + 1
-                continue
+                moved_off[away] = moved_off.get(away, 0) + 1
+            continue
         counts.setdefault(key, Counter())[gate] += 1
         if at_requirement is None:
             continue
@@ -1194,16 +1193,8 @@ def candidates(
                     if requirement_counts is None
                     else _requirement_block(requirement_counts.get((name, model)))
                 ),
-                moved_in=(
-                    None
-                    if moved_in_counts is None
-                    else _outcome_counts(moved_in_counts.get((name, model), Counter()))
-                ),
-                moved_off=(
-                    None
-                    if moved_off_counts is None
-                    else moved_off_counts.get((name, model), 0)
-                ),
+                moved_in=_outcome_counts(moved_in_counts.get((name, model), Counter())),
+                moved_off=moved_off_counts.get((name, model), 0),
                 reasons=reasons,
                 budget_reason=budget_reason,
                 budget_source=budget_source,

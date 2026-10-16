@@ -9,8 +9,9 @@ candidate's ``outcomes`` and ``outcomes_at_requirement`` and tallied under that
 candidate's ``moved_in``, while the candidate Jev chose gains ``moved_off``, one
 per such pick. A row with a lane change but no pick (an explicit route that was
 later moved) has no pick to count against and counts under its final lane as
-before. The move is counted at the request's requirement, so both figures are
-read at the difficulty the pick was made at.
+before. Both move figures are counted at the request's requirement: a moved row
+recorded at another requirement counts in neither, and a request naming no
+requirement counts every move.
 """
 
 from __future__ import annotations
@@ -36,9 +37,12 @@ CONFIG = {
 }
 
 _DEEP_CRITICAL = {"reasoning": "deep", "risk": "critical"}
+_SHALLOW_LOW = {"reasoning": "standard", "risk": "low"}
 
 
-def _request() -> PickRequest:
+def _request(requirements: dict[str, str] | None = _DEEP_CRITICAL) -> PickRequest:
+    """A request naming no requirement is one whose capability names none."""
+
     return PickRequest(
         project="reckon",
         node=TaskNode(
@@ -51,7 +55,7 @@ def _request() -> PickRequest:
             write_paths=[],
         ),
         session="s",
-        capability={"requirements": dict(_DEEP_CRITICAL)},
+        capability={} if requirements is None else {"requirements": dict(requirements)},
     )
 
 
@@ -295,3 +299,75 @@ def test_ignoring_lineage_leaves_the_move_counted_for_the_lane(picker_env, monke
         "not-run": 0,
         "unknown": 0,
     }
+
+
+def test_a_move_at_another_requirement_counts_in_neither_figure(picker_env):
+    """Both moved_in and moved_off are read at the request's requirement, so a
+    move recorded at another requirement raises neither: the receiving
+    candidate's moved_in keeps only the at-requirement move and the chosen
+    candidate's moved_off matches it."""
+
+    rows = [
+        # A clive pick a coordinator moved to codex, at the request's requirement.
+        _row(
+            backend="codex",
+            model="m-codex",
+            gate="failed",
+            requirement=_DEEP_CRITICAL,
+            picker_selection=_selection("clive", "m-clive"),
+            lineage=_lineage("clive", "codex"),
+        ),
+        # A clive pick moved to codex at a different requirement.
+        _row(
+            backend="codex",
+            model="m-codex",
+            gate="passed",
+            requirement=_SHALLOW_LOW,
+            picker_selection=_selection("clive", "m-clive"),
+            lineage=_lineage("clive", "codex"),
+        ),
+    ]
+    by_name = _by_backend(_candidates(rows, picker_env))
+
+    assert by_name["codex"].moved_in == {
+        "passed": 0,
+        "failed": 1,
+        "not-run": 0,
+        "unknown": 0,
+    }
+    assert by_name["clive"].moved_off == 1
+
+
+def test_a_request_naming_no_requirement_counts_every_move(picker_env):
+    """A request with no requirement has no difficulty to read at, so both
+    moved_in and moved_off count every moved row."""
+
+    rows = [
+        _row(
+            backend="codex",
+            model="m-codex",
+            gate="failed",
+            requirement=_DEEP_CRITICAL,
+            picker_selection=_selection("clive", "m-clive"),
+            lineage=_lineage("clive", "codex"),
+        ),
+        _row(
+            backend="codex",
+            model="m-codex",
+            gate="passed",
+            requirement=_SHALLOW_LOW,
+            picker_selection=_selection("clive", "m-clive"),
+            lineage=_lineage("clive", "codex"),
+        ),
+    ]
+    by_name = _by_backend(
+        _candidates(rows, picker_env, request=_request(requirements=None))
+    )
+
+    assert by_name["codex"].moved_in == {
+        "passed": 1,
+        "failed": 1,
+        "not-run": 0,
+        "unknown": 0,
+    }
+    assert by_name["clive"].moved_off == 2
