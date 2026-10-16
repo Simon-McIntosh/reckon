@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "6906a79eab8371dc58aa69ff9c8de7a4dcc3da49",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-16T21:07:30.638Z",
+  "dispatched_at": "2026-10-16T20:52:40Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "head-sweep-names-its-failure",
+      "recorded_at": "2026-10-16T21:08:28.667584+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T201537573290-head-sweep-names-its-failure/head-sweep-job.sh",
+      "line": "81",
+      "severity": "blocking",
+      "text": "blocking: the dispatch-importer pattern requires the \"importlib.\" prefix and so misses the bare import_module(\"reckon.crew.dispatch\") form, which 8 test files use at head a8cca7e1b (tests/test_host_facts.py:26, tests/test_dispatch_reads_the_resolved_session.py:18, tests/test_worker_path_carries_shims.py:28, tests/test_shim_never_resolves_to_a_shim.py:42, tests/test_session_resumes_only_its_own_task.py:34, tests/test_fleet_migrate_stand_up.py:210, tests/test_the_host_line_allows_a_separate_partition_job.py:25, tests/test_a_stop_during_a_reload_says_so.py:112); the done_when requires the full set of test files importing reckon/crew/dispatch.py, so the sweep ran 206 of at least 214 importers and the recorded \"no head failing ids\" is not established over the set the done_when names."
+    }
+  ],
+  "head_log_revision": "a8cca7e1b3ea9a68430a3c8e8b6b002a3d46c8a2",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read the reviewed worktree at 71d09c178; the run landed no commit (changed_paths [], git status clean), so the diff against its base 71d09c178 is empty and there is no landed code to review.",
+    "done_when": "the done_when requires a log naming revision, host and literal command, proof that reckon.__file__ lies under the extracted head tree, pytest's own summary line for the full uncapped sweep of the test files importing reckon/crew/dispatch.py or reckon/crew/recovery_review_dispatch.py, an alone-arm per head failing id, and no change under reckon/ or tests/; head-sweep.log carries the header, TREE_PROBE lines, the summary and EXIT=0, and the worktree is unchanged, but the sweep is not full (8 importers omitted) and no alone-arm was owed as no id failed.",
+    "goal": "the node's goal is to name the failing tests of the dispatch importer sweep at head a8cca7e1b3e on an exclusive node; the manifest and head-sweep.log name no head failing id over the swept files (2114 passed, 2 skipped, EXIT=0), but the swept set omits 8 files that import reckon/crew/dispatch.py, so it is not the full importer set the goal and done_when name.",
+    "manifest": "read the source manifest.md; it records status complete, the head sweep (2114 passed, 2 skipped, EXIT=0), after_suite failure_ids [] and baseline_suite from the sibling run's base_sweep.log (1 failed), names head-sweep.log, and asserts the 206 files importing dispatch.py or recovery_review_dispatch.py produce zero failing ids.",
+    "write_paths": "the declared write path is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-plan-is-reviewed-before-it-is-built/head-sweep-names-its-failure; the node wrote report.md there and its manifest, job script, importer list and logs under its own run directory, and changed nothing under reckon/ or tests/ (worktree clean at 71d09c178, changed_paths [])."
+  },
+  "justifications": {
+    "durability": "the sweep's only self-check is the TREE_PROBE import-resolution assertion at head-sweep-job.sh:60, and no assertion guards the importer instrument's exhaustiveness, the hole at head-sweep-job.sh:81 that let 8 importers go unswept.",
+    "evidence": "head-sweep.log records its revision, host, literal command, TREE_PROBE lines, the summary \"2114 passed, 2 skipped, 1 warning in 515.25s\" and EXIT=0, but the done_when's \"full uncapped sweep of the test files importing reckon/crew/dispatch.py\" is unmet because head-sweep-importer-list.txt omits 8 importers.",
+    "fit": "the node adds no source symbol and no forbidden name, and its artefact names (head-sweep-job.sh, head-sweep-importer-list.txt, report.md) describe what they carry without plan labels or ticket numbers.",
+    "goal_fidelity": "the goal is met as scoped (head-sweep.log reports no head failing id over 206 files) but the importer set at head-sweep-importer-list.txt is incomplete, so head-sweep-job.sh:81 does not name the failures of the whole dispatch importer sweep.",
+    "reuse": "the run adds no definition, so it forks nothing; it reuses the repository's own virtualenv and existing test files rather than introducing a second mechanism.",
+    "scope_discipline": "the run changed nothing under reckon/ or tests/ (worktree clean at 71d09c178) and wrote only report.md under its declared report path plus its manifest, job script and logs under its own run directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to name the failing tests of the dispatch importer sweep at head a8cca7e1b3e on an exclusive node; the manifest and head-sweep.log name no head failing id over the swept files (2114 passed, 2 skipped, EXIT=0), but the swept set omits 8 files that import reckon/crew/dispatch.py, so it is not the full importer set the goal and done_when name.\nVERDICT done_when: the done_when requires a log naming revision, host and literal command, proof that reckon.__file__ lies under the extracted head tree, pytest's own summary line for the full uncapped sweep of the test files importing reckon/crew/dispatch.py or reckon/crew/recovery_review_dispatch.py, an alone-arm per head failing id, and no change under reckon/ or tests/; head-sweep.log carries the header, TREE_PROBE lines, the summary and EXIT=0, and the worktree is unchanged, but the sweep is not full (8 importers omitted) and no alone-arm was owed as no id failed.\nVERDICT write_paths: the declared write path is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-plan-is-reviewed-before-it-is-built/head-sweep-names-its-failure; the node wrote report.md there and its manifest, job script, importer list and logs under its own run directory, and changed nothing under reckon/ or tests/ (worktree clean at 71d09c178, changed_paths []).\nVERDICT manifest: read the source manifest.md; it records status complete, the head sweep (2114 passed, 2 skipped, EXIT=0), after_suite failure_ids [] and baseline_suite from the sibling run's base_sweep.log (1 failed), names head-sweep.log, and asserts the 206 files importing dispatch.py or recovery_review_dispatch.py produce zero failing ids.\nVERDICT diff: read the reviewed worktree at 71d09c178; the run landed no commit (changed_paths [], git status clean), so the diff against its base 71d09c178 is empty and there is no landed code to review.\nCALL_SITES: none\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the goal is met as scoped (head-sweep.log reports no head failing id over 206 files) but the importer set at head-sweep-importer-list.txt is incomplete, so head-sweep-job.sh:81 does not name the failures of the whole dispatch importer sweep.\nSCORE evidence: 12\nJUSTIFICATION evidence: head-sweep.log records its revision, host, literal command, TREE_PROBE lines, the summary \"2114 passed, 2 skipped, 1 warning in 515.25s\" and EXIT=0, but the done_when's \"full uncapped sweep of the test files importing reckon/crew/dispatch.py\" is unmet because head-sweep-importer-list.txt omits 8 importers.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the run changed nothing under reckon/ or tests/ (worktree clean at 71d09c178) and wrote only report.md under its declared report path plus its manifest, job script and logs under its own run directory.\nSCORE durability: 10\nJUSTIFICATION durability: the sweep's only self-check is the TREE_PROBE import-resolution assertion at head-sweep-job.sh:60, and no assertion guards the importer instrument's exhaustiveness, the hole at head-sweep-job.sh:81 that let 8 importers go unswept.\nSCORE fit: 19\nJUSTIFICATION fit: the node adds no source symbol and no forbidden name, and its artefact names (head-sweep-job.sh, head-sweep-importer-list.txt, report.md) describe what they carry without plan labels or ticket numbers.\nSCORE reuse: 20\nJUSTIFICATION reuse: the run adds no definition, so it forks nothing; it reuses the repository's own virtualenv and existing test files rather than introducing a second mechanism.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T201537573290-head-sweep-names-its-failure/head-sweep-job.sh:81 blocking: the dispatch-importer pattern requires the \"importlib.\" prefix and so misses the bare import_module(\"reckon.crew.dispatch\") form, which 8 test files use at head a8cca7e1b (tests/test_host_facts.py:26, tests/test_dispatch_reads_the_resolved_session.py:18, tests/test_worker_path_carries_shims.py:28, tests/test_shim_never_resolves_to_a_shim.py:42, tests/test_session_resumes_only_its_own_task.py:34, tests/test_fleet_migrate_stand_up.py:210, tests/test_the_host_line_allows_a_separate_partition_job.py:25, tests/test_a_stop_during_a_reload_says_so.py:112); the done_when requires the full set of test files importing reckon/crew/dispatch.py, so the sweep ran 206 of at least 214 importers and the recorded \"no head failing ids\" is not established over the set the done_when names.",
+  "review_run_id": "r-20261016T205210276701-review-of-head-sweep-names-its-failure-71d09c178286",
+  "reviewed_base_sha": "71d09c178286c3e73052b348dac6204e5f1bedd7",
+  "reviewed_head_sha": "71d09c178286c3e73052b348dac6204e5f1bedd7",
+  "reviewed_run_id": "r-20261016T201537573290-head-sweep-names-its-failure",
+  "role": "review",
+  "scores": {
+    "durability": 10,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T21:03:19.322474+00:00",
+  "total": 95
+}
