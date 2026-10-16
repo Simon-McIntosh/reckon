@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="200">
+<meta name="plan-version" content="203">
 <meta name="plan-modified" content="2026-10-16">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -482,16 +482,22 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches §36</pre>
     <p class="r-fu-outcome"><p>§36 landed, merged as <code>44e9cbc0c</code> (review 108/120).</p></p>
     </article>
-<article class="r-fu" data-id="f-tmstwiw-009-037" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build the-monitor-shows-the-work-it-watches §9" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tmstwiw-009-037" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build the-monitor-shows-the-work-it-watches §9" data-resolved-at="2026-10-16T10:05:18+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build §9, then §37: a sweep acts only on the session it names</h4>
     <div class="r-fu-body"><p>An observing follower's sweep still resumes other sessions' lapsed runs. §9 gives <code>sweep</code> an explicit session for both of its passes. §37 then has the watcher sweep sessions nobody follows, using that session. Build §9 first.</p></div>
-    <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches §9</pre>
+    <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches §37</pre>
+    <p class="r-fu-outcome"><p>§9 landed as <code>a3595832e</code> and gate <code>g-tmstwiw-37</code> is passed. §37 is routed by f-tmstwiw-037.</p></p>
     </article>
 <article class="r-fu" data-id="f-tmstwiw-038" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build the-monitor-shows-the-work-it-watches §38" data-resolved-at="2026-10-16T08:34:13+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Draw a run resumed out of a stop as working again</h4>
     <div class="r-fu-body"><p>A resumed run stays drawn red <code>halted</code> until it delivers, because <code>blocked → working</code> is neither a start nor a coordinator row in the ticker. Build §38.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches §38</pre>
     <p class="r-fu-outcome"><p>§38 landed, merged as <code>33087aa5c</code> (review 111/120).</p></p>
+    </article>
+<article class="r-fu" data-id="f-tmstwiw-037" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build the-monitor-shows-the-work-it-watches §37" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §37 — the watcher sweeps a session nobody is following</h4>
+    <div class="r-fu-body"><p>§9 gave <code>sweep</code> an explicit session for both passes. §37 has the project watcher sweep a session that has had no live follower for ten minutes, passing that session explicitly.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches §37</pre>
     </article>
 </section>
   <section data-reckon="decisions" id="decisions" class="r-decisions">
@@ -679,7 +685,7 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>review of run r-20261016T061853259370-a-sweep-acts-on-the-session-it-names at head efb24468ccf7e0386dd53a9539a715b1eb779936 (base f13ae18cb740c056d88bd723f6969e0ead5fc609): goal met, gate recorded and re-confirmed, two follow-on findings (shared helper placed outside the declared write_paths; the base/after suite command carries an unsubstituted chunk placeholder), no blocking finding; scores goal_fidelity 19, evidence 17, scope_discipline 17, durability 19, fit 18, reuse 19.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261016T061853259370-a-sweep-acts-on-the-session-it-names" data-who="reckon-build" data-when="2026-10-16T08:24:28.638Z">
-    <div class="r-comment-body"><p>sweep takes the session it sweeps and gives it to both passes, the follower&#x27;s cadence passes the session it serves, and the signature adaptation both that call site and the dispatch picker need is now one accepts_keyword helper; the new tests/test_follow_sweep_is_session_scoped.py runs 5 passed, the follower&#x27;s own cadence call is covered (its control fails when the session is dropped there), and the 63 test files importing resumption.py or crew_follow_commands.py carry the same failure ids at head as at base.</p></div>
+    <div class="r-comment-body"><p>sweep takes the session it sweeps and gives it to both passes, the follower's cadence passes the session it serves, and the signature adaptation both that call site and the dispatch picker need is now one accepts_keyword helper; the new tests/test_follow_sweep_is_session_scoped.py runs 5 passed, the follower's own cadence call is covered (its control fails when the session is dropped there), and the 63 test files importing resumption.py or crew_follow_commands.py carry the same failure ids at head as at base.</p></div>
 </div>
 <div class="r-comment" data-section="s19" data-id="c-run-r-20261013T210336658012-review-of-a-crashed-producer-is-restarted-04bc460463bc" data-who="reckon-build" data-when="2026-10-13T21:18:17.453Z">
     <div class="r-comment-body"><p>Stored the review for reviewed run r-20261013T204153072372-a-crashed-producer-is-restarted at reviewed base aaab0bca / reviewed head 04bc460463; 6 dimensions scored (goal_fidelity 19, evidence 16, scope_discipline 18, durability 18, fit 17, reuse 14, total 102); 4 follow-on findings, no blocking findings.</p></div>
@@ -903,7 +909,7 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 <div class="r-gate" data-id="g-tmstwiw-37" data-section="s37" data-gated-sections="s37" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">§9 has landed: sweep takes an explicit session and passes it to both its resume pass and its review-reflex pass</h4>
     <p class="r-gate-required-evidence">the-monitor-shows-the-work-it-watches#s9</p>
-    <a class="r-gate-evidence" href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s9 — sweep takes an explicit session for both passes, merged as a3595832e">Evidence</a>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s9">Evidence</a>
 </div>
 </section>
 </main>
