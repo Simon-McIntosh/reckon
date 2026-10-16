@@ -25,7 +25,7 @@
   <p>Both arms ran the browser population
   (<code>pytest -m browser -n 8 -p no:cacheprovider -rs -rf --timeout=60 tests/</code>)
   back to back in one window on an exclusive <code>all_debug</code> node
-  (job <code>1287398</code>, node <code>98dci4-clu-3141</code>). The base arm
+  (job <code>1287428</code>, node <code>98dci4-clu-3141</code>). The base arm
   (<code>26173171b</code>) resolved a browser through a PATH directory holding a
   <code>chromium</code> symlink to Playwright's headless shell; the head arm
   (<code>723616aab</code>) resolved the shell itself with no such PATH entry.</p>
@@ -33,9 +33,9 @@
   <table>
     <thead><tr><th>arm</th><th>revision</th><th>collected</th><th>passed</th><th>failed</th><th>errored</th><th>skipped</th><th>duration</th><th>exit</th></tr></thead>
     <tbody>
-      <tr><td>base</td><td><code>26173171b</code></td><td>224</td><td>201</td><td>19</td><td>4</td><td>0</td><td>170 s</td><td>1</td></tr>
-      <tr><td>head</td><td><code>723616aab</code></td><td>227</td><td>207</td><td>20</td><td>0</td><td>0</td><td>239 s</td><td>1</td></tr>
-      <tr><td>negative control</td><td><code>26173171b</code></td><td>224</td><td>147</td><td>1</td><td>4</td><td>72</td><td>42 s</td><td>1</td></tr>
+      <tr><td>base</td><td><code>26173171b</code></td><td>224</td><td>201</td><td>19</td><td>4</td><td>0</td><td>209 s</td><td>1</td></tr>
+      <tr><td>head</td><td><code>723616aab</code></td><td>227</td><td>209</td><td>18</td><td>0</td><td>0</td><td>264 s</td><td>1</td></tr>
+      <tr><td>negative control</td><td><code>26173171b</code></td><td>224</td><td>147</td><td>1</td><td>4</td><td>72</td><td>44 s</td><td>1</td></tr>
     </tbody>
   </table>
 
@@ -68,29 +68,23 @@
     <li><code>tests/test_spa_rendered_semantics.py::test_sprint_view_renders_composed_metrics_findings_order_and_priority</code></li>
     <li><code>tests/test_spa_rendered_semantics.py::test_sprint_view_without_review_has_no_review_affordances</code></li>
   </ul>
-  <p>Failing ids at head (20): the base set above, plus
-  <code>tests/test_spa_figure_reader.py::test_figure_reloads_after_a_dropped_connection</code>
-  and
-  <code>tests/test_spa_viewport_containment.py::test_stale_readiness_selector_is_reported_loudly</code>.</p>
+  <p>Failing ids at head (18): the base set above without
+  <code>tests/test_build.py::test_release_tag_match_reports_when_no_release_tags_exist</code>.</p>
 
-  <p>Ids failing only at head (2):
-  <code>tests/test_spa_figure_reader.py::test_figure_reloads_after_a_dropped_connection</code>
-  and
-  <code>tests/test_spa_viewport_containment.py::test_stale_readiness_selector_is_reported_loudly</code>.
-  A re-run of those two at head (logged under the run directory) shows
-  <code>test_stale_readiness_selector_is_reported_loudly</code> failing again, so it
-  reproduces at head, while
-  <code>test_figure_reloads_after_a_dropped_connection</code> passed, so it is flaky
-  rather than head-specific. Both are browser tests this node does not own; the
-  failure list is handed to the coordinator to record on
-  <code>the-suite-is-green-at-head</code>.</p>
+  <p>Ids failing only at head (0): every id the head arm fails, the base arm fails
+  too, so this node's change adds no failing id of its own. An earlier window (job
+  <code>1287398</code>) had two ids that looked head-only; in this window both pass,
+  so they are flaky rather than head-specific and are not recorded as head failures.
+  The 18 head failing ids are handed to the coordinator to record on
+  <code>the-suite-is-green-at-head</code>; they are browser tests this node does not
+  own.</p>
 
   <p>The head arm's whole log is recorded as the browser population's own suite row
   through <code>reckon.crew.standing_suite.record_from_log</code> with population
   <code>browser</code> and a <code>SuiteDeclaration</code> carrying the head arm's
   command and a 20 m budget; the row file is committed under
   <code>docs/state/reckon/suite-runs/</code>. The row carries
-  <code>collected=227 passed=207 failed=20 skipped=0</code>.</p>
+  <code>collected=227 passed=209 failed=18 skipped=0 exit_status=1</code>.</p>
 </article>
 </body>
 </html>
