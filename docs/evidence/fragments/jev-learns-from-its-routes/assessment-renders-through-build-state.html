@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:jev-learns-from-its-routes">
+  <meta name="plan-verifies" content="reckon:jev-learns-from-its-routes#s11">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-16">
+</head>
+<body>
+<main class="plan-doc">
+<section data-reckon="evidence" id="assessment-renders-through-build-state">
+  <h2 id="assessment-renders-through-build-state-title">The assessment renders through build_state, the state's one source</h2>
+  <p id="assessment-renders-through-build-state-why">
+    The coordinator's difficulty reading was spliced into the rendered state
+    string after <code>build_state</code> had run, in
+    <code>reckon/crew/picker/__init__.py</code>, and encoded there with
+    <code>htmlsafe_json_dumps</code>, whose separators and escaping differ from
+    the template's encoder. The state Jev weighed was therefore assembled by two
+    encoders, the second of them operating on text rather than on the mapping.
+  </p>
+  <p id="assessment-renders-through-build-state-what-changed">
+    <code>build_state</code> now takes <code>orchestrator_assessment</code> and
+    places it beside the declared <code>capability</code>, inside
+    <code>node</code>, so the whole state is built once and serialised once. The
+    post-render splice is deleted, and the encoder the templates use is hoisted
+    to module level as <code>prompts.encode</code>. A pick that supplied no
+    reading carries no <code>orchestrator_assessment</code> key, so the node
+    block keeps its shape.
+  </p>
+  <p id="assessment-renders-through-build-state-measure">
+    Gate <code>tests/test_orchestrator_assessment_reaches_jev.py</code> 8 passed
+    (EXIT=0), of which the six pre-existing assertions are §2's. The
+    byte-identity check drives a real pick, captures the mapping the picker
+    built, and requires the state the pick records to equal
+    <code>encode</code> of that mapping. Against the base revision
+    <code>911f12a39</code>, the 63 test files importing
+    <code>picker/prompts.py</code> or <code>picker/__init__.py</code> report 3
+    failed / 473 passed / 1 error; at this head they report 2 failed / 476
+    passed / 1 error, the same two live-lane-reader failures present in both
+    arms, so no failure is added.
+  </p>
+  <p id="assessment-renders-through-build-state-negative-control">
+    Negative control (restoring the post-render splice) 2 failed / 6 passed,
+    EXIT=1: <code>test_rendered_state_is_build_states_mapping_encoded_once</code>
+    and <code>test_no_post_render_encoder_remains_in_the_picker</code> fail,
+    neither of which fails at the head. The first version of that check read the
+    state from <code>prompts.render</code> in isolation and stayed green under
+    the restored splice, because the splice runs after the render — the
+    assertion was moved to the state the pick actually records before it could
+    show the refusal.
+  </p>
+  <p id="assessment-renders-through-build-state-note">
+    Measured with each arm's own pytest basetemp under the run's <code>TMPDIR</code>;
+    the base arm ran from a scratch extraction of the base revision and the
+    negative control from a scratch extraction of this head with the declared
+    mutation applied.
+  </p>
+</section>
+</main>
+</body>
+</html>
