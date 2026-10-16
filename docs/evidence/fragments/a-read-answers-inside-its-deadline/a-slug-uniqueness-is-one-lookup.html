@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s16">
+  <meta name="plan-recorded-at" content="2026-10-16">
+  <meta name="plan-verdict" content="passed">
+  <title>A slug's uniqueness is one lookup | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-slug-uniqueness-is-one-lookup-landing" data-node="a-slug-uniqueness-is-one-lookup" data-reckon="landed" data-when="2026-10-16">
+  <h2>A slug's uniqueness is checked against one held index of its root</h2>
+  <p><code>_canonical_identity_is_unique</code> answered whether a sibling claims the same identity by listing its root directory and identifying every file there on each named resolve, so a read resolving many slugs re-identified the whole plan population per resolve. It now reads one identity index of that directory — each sibling's type, slug and archived flag — keyed on the directory's listing and each sibling's stamp, held for the read and rebuilt only when an entry moves or a sibling is written. A read of 20 resolves over 24 plans identifies at most 24 siblings (was 480 under the declared mutation, which fails the bounded-count case); a tree where two files claim one slug is still refused naming both; warm roadmap over the docs tree at the pinned revision is 2.575&nbsp;s at head against 19.889&nbsp;s at base. Write paths: <code>reckon/resources.py</code>, <code>tests/test_a_slug_uniqueness_is_one_lookup.py</code>.</p>
+</article>
+</body>
+</html>
