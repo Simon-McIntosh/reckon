@@ -1140,6 +1140,37 @@ def worker_scratch_seal_root(
     return None
 
 
+def shared_store_seal_roots() -> list[Path]:
+    """Return the shared delivery stores the fence seals read-only.
+
+    Two roots hold artifacts every run shares: the reports root
+    (:func:`reckon.crew.runs.reports_dir`) and the review store
+    (:func:`reckon.crew.review.review_store_root`). The fence dev-binds ``/``
+    dev-writable and overlays only the declared protected paths read-only, so a
+    worker handed either root writable could write — and delete — every other
+    project's and every other run's reports and reviews. One run's cleanup did
+    exactly that on 2026-10-16, removing the reports root whole.
+
+    Both roots are sealed like the worker scratch root: overlaid read-only
+    among the protected paths, with only the run's *declared* paths beneath them
+    re-bound writable by the ordinary grant that follows. A store root that does
+    not exist is left out — there is no inode to seal, and a composition invents
+    neither the reports root nor the review store.
+
+    A root that already lies inside another protected path is still returned
+    here; :func:`protected_read_only_binds` drops the redundant overlay, and the
+    seal it stands for is still in force through the path that carries it.
+    """
+    from reckon.crew.review import review_store_root
+    from reckon.crew.runs import reports_dir
+
+    return [
+        candidate
+        for candidate in (reports_dir(), review_store_root())
+        if candidate.exists()
+    ]
+
+
 def fence_argv(
     argv: Sequence[str],
     *,
@@ -1193,6 +1224,13 @@ def fence_argv(
     see :func:`worker_scratch_seal_root`. A sibling run's scratch stays readable
     but read-only, and ``/tmp`` outside the root is untouched.
 
+    The two shared delivery stores — the reports root and the review store — are
+    sealed the same way: overlaid read-only among the protected paths, with only
+    the run's declared paths beneath them re-bound writable by the ordinary
+    grant that follows, and each sealed store root skipped by that grant so the
+    whole store is never re-opened; see :func:`shared_store_seal_roots`. A
+    worker can still read every report.
+
     Every root the caller hands is created before the argv is composed, because
     bubblewrap binds a writable root by *source* path and refuses that root the
     same way when it cannot find it. A root this function adds itself — the
@@ -1224,6 +1262,18 @@ def fence_argv(
             ) from exc
         protected = [*protected, scratch_seal]
 
+    # The two shared delivery stores — the reports root and the review store —
+    # are sealed read-only and only the run's declared paths beneath them are
+    # re-bound writable by the grant loop below, so a worker can write and
+    # delete only what it declared; see :func:`shared_store_seal_roots`. Handing
+    # either root writable would re-open every other project's and run's
+    # reports and reviews through the seal, so each sealed store root is skipped
+    # by the grant loop. A store root is not created here: one that does not
+    # exist has nothing to seal and is not a directory the fence should invent.
+    store_seals = shared_store_seal_roots()
+    store_seal_keys = {str(resolved_destination(path)) for path in store_seals}
+    protected = [*protected, *store_seals]
+
     binds = protected_read_only_binds(
         protected,
         required=_declared_paths(config, PROTECTED_PATHS_KEY, home),
@@ -1247,7 +1297,7 @@ def fence_argv(
     for root in roots:
         target = resolved_destination(root)
         key = str(target)
-        if key in granted or not _within_any(target, sealed):
+        if key in granted or key in store_seal_keys or not _within_any(target, sealed):
             continue
         granted.add(key)
         fenced += ["--bind", key, key]

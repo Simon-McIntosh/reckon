@@ -64,7 +64,7 @@ import urllib.request
 from collections import OrderedDict
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -289,6 +289,15 @@ def fenced_write_roots(
     path is resolved against the worktree when it is not absolute, because a
     relative declaration names a file in the worker's own checkout; a path
     naming a file is granted through its parent directory.
+
+    The two shared delivery stores — the reports root and the review store — are
+    deliberately *not* handed as writable roots. The fence seals both read-only
+    and re-binds only the run's declared paths beneath them, so a grant of the
+    whole store root would re-open, through the seal, every other project's and
+    every other run's reports and reviews; see
+    :func:`reckon._worker_fence.shared_store_seal_roots`. A run that delivers
+    into either store still gets the exact directory it declared, from the
+    declared-path grant below.
     """
     roots = delivery_write_roots(
         run_directory=run_directory,
@@ -296,6 +305,9 @@ def fenced_write_roots(
         manifest_path=manifest_path,
         review_store_directory=review_store_directory,
     )
+    roots.discard(Path(reports_directory).expanduser().resolve())
+    if review_store_directory:
+        roots.discard(Path(review_store_directory).expanduser().resolve())
     if str(backend.get("sandbox") or READ_ONLY) == WORKSPACE_WRITE:
         roots.add(Path(repository).expanduser().resolve())
     for declared in declared_write_paths:
@@ -671,7 +683,7 @@ def _epoch_to_iso(value: Any) -> str | None:
         return None
     try:
         return (
-            datetime.fromtimestamp(seconds, tz=timezone.utc)
+            datetime.fromtimestamp(seconds, tz=UTC)
             .isoformat(timespec="seconds")
             .replace("+00:00", "Z")
         )
