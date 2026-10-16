@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f13ae18cb740c056d88bd723f6969e0ead5fc609",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:110",
+    "reckon/crew_follow_commands.py:1705",
+    "reckon/crew_run_commands.py:42",
+    "reckon/mcp.py:2171",
+    "reckon/crew/recovery_review_acceptance.py:397"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-16T06:20:08Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the shared keyword-acceptance helper lives in reckon/crew/runs.py, an existing module both sites import, as the folded reuse finding asked; the path is accepted at promotion",
+      "recorded_at": "2026-10-16T08:48:29.074821+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "a manifest-record placeholder; each chunk log names its literal command and ends with EXIT=",
+      "recorded_at": "2026-10-16T08:49:19.556927+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "32",
+      "severity": "follow-on",
+      "text": "follow-on: the shared helper was placed in reckon/crew/runs.py, a module outside the node's declared write_paths recorded on the run; the coordinator should record the scope extension at promotion so this run does not read as a scope breach."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T061853259370-a-sweep-acts-on-the-session-it-names/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite.command and after_suite.command carry an unsubstituted '<one chunk of about ten of the 63 gate files>' placeholder rather than the literal per-chunk command the logs record, so the manifest's gate command is not a literal command as the contract requires."
+    }
+  ],
+  "head_log_revision": "efb24468ccf7e0386dd53a9539a715b1eb779936",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read both commits against base f13ae18cb; six files, 350 insertions and 19 deletions, the production change being the session parameter and resume-pass filter in resumption.py, the forwarding in crew_follow_commands.py, and the shared accepts_keyword helper used by both call sites.",
+    "done_when": "the done_when names tests/test_follow_sweep_is_session_scoped.py plus the 63 gate files importing resumption.py or crew_follow_commands.py; the manifest records the new file at 5 passed and both arms at 1008 passed / 0 failed across fourteen EXIT=0 head/base logs and 93 picker-importer passes each arm, and I re-ran the named file at efb24468c (5 passed).",
+    "goal": "the goal is for sweep to take the session it sweeps so both its passes act only on it; reckon/crew/resumption.py:1704 filters the resume pass on pointer['session'] and resumption.py:1905 forwards session= into dispatch_awaiting_reviews, and reckon/crew_follow_commands.py:1705-1708 hands the follower's own session to the sweep it arms.",
+    "manifest": "read; it reports status complete, commits 62f79c62b and efb24468c, the new file at 5 passed, both arms at 1008 passed / 0 failed, ruff 3 findings at head equal to 3 at base, and names every gate and negative-control log.",
+    "write_paths": "the node's declared write paths are reckon/crew_follow_commands.py, reckon/crew/resumption.py, tests/test_follow_sweep_is_session_scoped.py and the evidence fragment; the diff additionally carries reckon/crew/dispatch_picker.py (explicitly accepted by the coordinator's resume advice) and reckon/crew/runs.py (chosen as the 'existing module both can import' that same advice names), so the source diff is authorised but runs.py is not in the recorded write_paths."
+  },
+  "justifications": {
+    "durability": "negative-control.log:32,95,137 redden the resume, reflex and cadence arms at EXIT=1, so each new assertion names a reinstated regression that fails it; the forwarding assertion at tests/test_follow_sweep_is_session_scoped.py:212 compares the recorded call to the same constant the test passed in, but it still reddens if session= is dropped at reckon/crew_follow_commands.py:110.",
+    "evidence": "gate-head-1.log:1 names efb24468c and gate-base-1.log:1 names f13ae18cb, both tails read 89 passed / EXIT=0, and I re-ran the named file green, but the manifest's baseline_suite.command and after_suite.command still carry a '<one chunk of about ten of the 63 gate files>' placeholder rather than the literal command.",
+    "fit": "the added names (accepts_keyword, the session parameter) read as mechanism, the deferred imports at reckon/crew_follow_commands.py:108 match the module idiom, and no plan or ticket label appears in the diff.",
+    "goal_fidelity": "reckon/crew/resumption.py:1704 filters the resume pass on pointer['session'] and resumption.py:1905 forwards session= to the reflex, which is exactly the goal, with the session-less fleet sweep left unconfined by design.",
+    "reuse": "reckon/crew/runs.py:32 is the one owner of the keyword-acceptance capability and both sites (reckon/crew/dispatch_picker.py:445, reckon/crew_follow_commands.py:1705) now call it rather than forking it; no other owner exists (reckon/mcp_deadlines.py:461 resolves annotations, a different capability).",
+    "scope_discipline": "reckon/crew/runs.py:32 sits outside the node's declared write_paths although the coordinator's resume advice authorised a shared module and accepted reckon/crew/dispatch_picker.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is for sweep to take the session it sweeps so both its passes act only on it; reckon/crew/resumption.py:1704 filters the resume pass on pointer['session'] and resumption.py:1905 forwards session= into dispatch_awaiting_reviews, and reckon/crew_follow_commands.py:1705-1708 hands the follower's own session to the sweep it arms.\nVERDICT done_when: the done_when names tests/test_follow_sweep_is_session_scoped.py plus the 63 gate files importing resumption.py or crew_follow_commands.py; the manifest records the new file at 5 passed and both arms at 1008 passed / 0 failed across fourteen EXIT=0 head/base logs and 93 picker-importer passes each arm, and I re-ran the named file at efb24468c (5 passed).\nVERDICT write_paths: the node's declared write paths are reckon/crew_follow_commands.py, reckon/crew/resumption.py, tests/test_follow_sweep_is_session_scoped.py and the evidence fragment; the diff additionally carries reckon/crew/dispatch_picker.py (explicitly accepted by the coordinator's resume advice) and reckon/crew/runs.py (chosen as the 'existing module both can import' that same advice names), so the source diff is authorised but runs.py is not in the recorded write_paths.\nVERDICT manifest: read; it reports status complete, commits 62f79c62b and efb24468c, the new file at 5 passed, both arms at 1008 passed / 0 failed, ruff 3 findings at head equal to 3 at base, and names every gate and negative-control log.\nVERDICT diff: read both commits against base f13ae18cb; six files, 350 insertions and 19 deletions, the production change being the session parameter and resume-pass filter in resumption.py, the forwarding in crew_follow_commands.py, and the shared accepts_keyword helper used by both call sites.\nCALLINE\nCALL_SITES: reckon/crew_follow_commands.py:110 _sweep_lapsed_holds, reckon/crew_follow_commands.py:1705 _follow_watch_lines._sweep_quietly, reckon/crew_run_commands.py:42 sweep CLI, reckon/mcp.py:2171 sweep MCP action, reckon/crew/recovery_review_acceptance.py:397 dispatch_awaiting_reviews session filter\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:1704 filters the resume pass on pointer['session'] and resumption.py:1905 forwards session= to the reflex, which is exactly the goal, with the session-less fleet sweep left unconfined by design.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head-1.log:1 names efb24468c and gate-base-1.log:1 names f13ae18cb, both tails read 89 passed / EXIT=0, and I re-ran the named file green, but the manifest's baseline_suite.command and after_suite.command still carry a '<one chunk of about ten of the 63 gate files>' placeholder rather than the literal command.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: reckon/crew/runs.py:32 sits outside the node's declared write_paths although the coordinator's resume advice authorised a shared module and accepted reckon/crew/dispatch_picker.py.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log:32,95,137 redden the resume, reflex and cadence arms at EXIT=1, so each new assertion names a reinstated regression that fails it; the forwarding assertion at tests/test_follow_sweep_is_session_scoped.py:212 compares the recorded call to the same constant the test passed in, but it still reddens if session= is dropped at reckon/crew_follow_commands.py:110.\nSCORE fit: 18\nJUSTIFICATION fit: the added names (accepts_keyword, the session parameter) read as mechanism, the deferred imports at reckon/crew_follow_commands.py:108 match the module idiom, and no plan or ticket label appears in the diff.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/runs.py:32 is the one owner of the keyword-acceptance capability and both sites (reckon/crew/dispatch_picker.py:445, reckon/crew_follow_commands.py:1705) now call it rather than forking it; no other owner exists (reckon/mcp_deadlines.py:461 resolves annotations, a different capability).\nFINDING reckon/crew/runs.py:32 follow-on: the shared helper was placed in reckon/crew/runs.py, a module outside the node's declared write_paths recorded on the run; the coordinator should record the scope extension at promotion so this run does not read as a scope breach.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T061853259370-a-sweep-acts-on-the-session-it-names/manifest.md:1 follow-on: baseline_suite.command and after_suite.command carry an unsubstituted '<one chunk of about ten of the 63 gate files>' placeholder rather than the literal per-chunk command the logs record, so the manifest's gate command is not a literal command as the contract requires.",
+  "review_run_id": "r-20261016T082523439467-review-of-a-sweep-acts-on-the-session-it-names-efb24468ccf7",
+  "reviewed_base_sha": "f13ae18cb740c056d88bd723f6969e0ead5fc609",
+  "reviewed_head_sha": "efb24468ccf7e0386dd53a9539a715b1eb779936",
+  "reviewed_run_id": "r-20261016T061853259370-a-sweep-acts-on-the-session-it-names",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T08:45:40.211341+00:00",
+  "total": 109
+}
