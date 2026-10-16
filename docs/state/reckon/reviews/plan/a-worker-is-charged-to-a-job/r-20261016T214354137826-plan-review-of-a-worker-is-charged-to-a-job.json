@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T21:51:33.943Z",
+  "dispatched_at": "2026-10-16T21:44:29Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-worker-is-charged-to-a-job.html:899",
+      "id": "done_when-1",
+      "reason": "the fix is a plan-text change (name the absence assertion the test must carry, e.g. `\"or an sbatch into it\" not in prompt`, or restate the mutation), and without it \u00a711's own gate is unsatisfiable as described.",
+      "text": "\u00a711 declares the negative control \"re-adding 'or an sbatch into it' to the host line makes the updated test fail\", but the deliverable it prescribes for the repointed test (\"asserts the host line's in-place clause and its routes out as the line now composes them, reading the route sentence from reckon/nested_launch.py rather than restating it, as the two updated test files do\") yields presence-only substring assertions; inserting the forbidden clause leaves every one of them true (probe: `\"do not open an srun or salloc step in this job\"`, `nested.PARTITION_ROUTE`, `nested.NESTED_SRUN_SENTENCE` all still present), so the repointed test stays green and the declared control cannot fire \u2014 the node would reach its gate with an unfalsified measure, or stall trying to satisfy a control the mechanism forecloses",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "67b0ccf7e6b16d354c167b3524adcde31f8fb0326b5c2e6a4ff94d19f03e8d66",
+  "plan_slug": "a-worker-is-charged-to-a-job",
+  "plan_version": 69,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T214354137826-plan-review-of-a-worker-is-charged-to-a-job",
+  "reviewed_blob_sha": "5e77da43b05882beaca8ed901c09d0f5a75fc83b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited commit resolves to a commit object, the cited test function exists at `tests/test_worker_path_carries_shims.py:212`, the cited files exist, and \u00a711 carries no extensionless href to resolve.",
+    "done_when": "a finding \u2014 \u00a711's declared negative control (re-adding \"or an sbatch into it\" to the host line) cannot fire under the presence-only assertion style the same section prescribes, so the measure's falsification clause is unachievable as written.",
+    "evidence_paths": "pass \u2014 \u00a711's negative-control log lands \"under the run directory\", the durable run directory the plan's other nodes write their red logs to, not a session scratchpad or node-local temp path.",
+    "naming": "pass \u2014 \u00a711 changes only a test file and introduces no plan label, ticket number or version tag into code; its prose uses the plan's own section labels, which the plan's HTML may carry.",
+    "reasoning": "a finding \u2014 root cause matches the reproduced red (the assertion is stale against the \u00a710-composed line), but the same defect as done_when appears from the mechanism side: the assertion style \u00a711 prescribes (reading the route sentence from `reckon/nested_launch.py`, mirroring the sibling tests) does not produce the control the section asserts.",
+    "single_goal": "pass \u2014 \u00a711 names one deliverable: repoint the stale host-line assertion in one test file, with no product code change.",
+    "wiring": "pass \u2014 \u00a711 is declared `implementable` in `plan-section-declarations`, carries its own `<section data-reckon=\"section\" data-id=\"s11\">` element, and is recommended by the open followup `f-awcj-011`; no relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "bbb77150a6744c29a95721209df75a15c436f887bc64cdfd30347c9500b752f7",
+    "s-contract": "6c2b86636b5d6c1f87051d9d3f776896057e3f539cd1ddacd2be71dcb8a94200",
+    "s0": "684e9d028bd94c15a6f23c838815a01d6f51c5f3100fa847b8134ec9232ec0df",
+    "s1": "e5f377a019315c5f8e8d019bf5caed7ee4eb0ee12f35bbc0bc0a9889940cda85",
+    "s10": "bb83ceb5fa0455b401cc70e106fd1c709dee32357bc8258f635417008f72fa53",
+    "s11": "7b2a9d6a21e8022f79b917b95e3d354144aca5f43c7eb1b0a63fbe1be904939c",
+    "s2": "d2a6c7aa20c956f1d5cfbfabc0fec3210fad1df400fe0ea8e73c163e6a9a8b51",
+    "s2b": "fedf3e8e34497454f9ed3ad04693376d980447b2290b0216701ed1a6858cbbd8",
+    "s3": "4581863bc7044f5e9e9677ce3a54c9b5aaf92025cf2b32c4d4973e4e6b8881a0",
+    "s4": "6c1927e32109c00db5fdccd88bee4f743f8e9828e62490c11c4ad46a74720f44",
+    "s5": "0838626070b0f7c934aa09ee6663f71434a715619089d65e487ab76bf8d0c8df",
+    "s6": "5bea8900e9fded0b44d31c5f9267cd7550998d8c6861398aa5ba9e61dd27d228",
+    "s7": "a8e38789e85f0eb9fc677ba1ebe1ceb231d9333df7660618a1198313f10bb213",
+    "s8": "bce275f8870a562d83a7640171c814c79e6cb0ab0e2eaa8252ed072f522b3be0",
+    "s9": "e929fc5d2971a64d971ebfa0dc025df6808da0b054d096bcb39f3d5f2b0ba841"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T21:53:59.814953+00:00"
+}
