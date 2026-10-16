@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-seat-held-elsewhere-is-not-restarted">
+  <meta name="plan-evidence-for" content="a-seat-held-elsewhere-is-not-restarted">
+  <title>The move-aside exemption has one predicate and both branches tested | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="the-move-aside-exemption-has-one-predicate-landing">
+      <h2>The move-aside exemption has one predicate and both branches tested</h2>
+      <p><code>_staged_writes</code> in <code>reckon/interface_counts.py</code> spelled its exclusive-create test twice: the <code>os.open</code> guarded by
+      <code>O_EXCL</code> was matched once to build the <code>exclusive_creators</code> map and again to build the <code>not_created</code> map, so a change to what
+      counted as an exclusive create had to be made in both. Both call sites now call one local predicate, <code>exclusive_create_source</code> (defined at
+      <code>reckon/interface_counts.py:276</code>), which returns the path an exclusive <code>os.open</code> creates or <code>None</code>; the caller scan is at
+      line&nbsp;332 and the handler scan at line&nbsp;391. Behaviour is unchanged and the inventory set is identical.</p>
+      <p>The inline-rename branch of the move-aside exemption &mdash; a function that hands a local path to an exclusive-create helper and then
+      <code>os.rename</code>s that path aside itself &mdash; now has a case,
+      <code>test_inline_move_aside_after_a_helper_exclusive_create_is_not_staged</code>, which was previously unpinned. Measure: the seven test files importing
+      <code>reckon/interface_counts.py</code> give 120 passed at head against 119 passed at base, the delta being exactly the new case (0 failed either arm).
+      Negative control: with the <code>callers_not_staging</code> subtraction removed from the inline check, the new case fails &mdash; <code>claim_next_attempt</code>
+      is reported as a staged write (1 failed, 50 passed, <code>EXIT=1</code>).</p>
+    </section>
+  </main>
+</body>
+</html>
