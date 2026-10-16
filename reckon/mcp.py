@@ -121,9 +121,10 @@ from reckon.resources import (
     canonical_type,
     composed_provenance,
     content_provenance,
-    identify_resource,
+    iter_resources,
     resolve_resource,
     resource_map,
+    resource_scan_scope,
 )
 from reckon.roadmap import GraphTargetError, build_roadmap, resolve_graph_target
 
@@ -2361,6 +2362,37 @@ def _audit(
     path: str | None = None,
     check_links: bool = False,
 ) -> dict[str, Any]:
+    """Audit a project, or one authored document, through one shared scan.
+
+    The audit's own resource walk, discovery, index read and lifecycle pass all
+    reach :func:`iter_resources`, so the whole read runs inside one
+    :func:`resource_scan_scope`: the tree is walked once and its identification
+    memo is reused, instead of the audit walking the tree beside the scan.
+    """
+
+    with resource_scan_scope() as dropped:
+        return _audit_read(
+            project,
+            checkout_path,
+            view=view,
+            cursor=cursor,
+            limit=limit,
+            path=path,
+            check_links=check_links,
+            dropped=dropped,
+        )
+
+
+def _audit_read(
+    project: str | None = None,
+    checkout_path: str | None = None,
+    view: str | None = None,
+    cursor: str | None = None,
+    limit: int | None = None,
+    path: str | None = None,
+    check_links: bool = False,
+    dropped: list[tuple[Path, str]] | None = None,
+) -> dict[str, Any]:
     """Audit every plan in a project against the PlanState schema (the WARN half
     of reject-write-warn-doctor) and recompute the index rollups.
 
@@ -2407,7 +2439,7 @@ def _audit(
             "detail": "audit needs project or path",
         }
     if view is not None:
-        raw = _audit(project, checkout_path)
+        raw = _audit_read(project, checkout_path, dropped=dropped)
         try:
             return audit_view(
                 project,
@@ -2435,17 +2467,15 @@ def _audit(
     violations: list[dict[str, Any]] = []
     compatibility_records: list[tuple[str, str, str]] = []
     resource_collisions: list[tuple[str, str, str]] = []
-    invalid_resources: list[tuple[str, str]] = []
     html_files: list[Path] = []
     seen_resources: dict[tuple[str, str], Path] = {}
-    for html_path in sorted(docs_dir.rglob("*.html")):
-        try:
-            resource = identify_resource(docs_dir, html_path, project)
-        except ResourceCollision as exc:
-            invalid_resources.append((str(html_path.relative_to(docs_dir)), str(exc)))
-            continue
-        if resource is None or resource.archived:
-            continue
+    # Resources come from the read's one shared scan; the audit keeps no walk
+    # of its own. The scan drops a file whose location conflicts with its
+    # declared type, recording it, and the invalid-resource-path findings are
+    # reported from that record below.
+    for resource in iter_resources(
+        docs_dir, project, include_archived=False, ignore_invalid=True
+    ):
         if resource.type not in {"plan", "research", "evidence"}:
             continue
         html_file = resource.path
@@ -2481,6 +2511,11 @@ def _audit(
             # Drop the leading "PlanState.validate_for_write failed:" header line.
             lines = [ln for ln in lines if not ln.endswith("failed:")]
             violations.append({"slug": slug, "errors": lines})
+
+    invalid_resources = [
+        (str(invalid_path.relative_to(docs_dir)), message)
+        for invalid_path, message in (dropped or [])
+    ]
 
     findings: list[dict[str, Any]] = []
     project_state_findings = audit_project_state(docs_dir, project)

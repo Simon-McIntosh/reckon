@@ -459,9 +459,18 @@ _SCAN_SCOPE: ContextVar[dict[tuple, list[Resource]] | None] = ContextVar(
     "reckon_resource_scan_scope", default=None
 )
 
+#: Every file the in-scope scan dropped as an invalid resource, as
+#: ``(path, collision message)`` in walk order. A caller that needs the scan's
+#: strict raise — a reader that would fail rather than skip a file whose
+#: location conflicts with its declared type — reads the record instead of
+#: walking the tree a second time, so the whole read still walks once.
+_SCAN_DROPPED: ContextVar[list[tuple[Path, str]] | None] = ContextVar(
+    "reckon_resource_scan_dropped", default=None
+)
+
 
 @contextmanager
-def resource_scan_scope() -> Iterator[None]:
+def resource_scan_scope() -> Iterator[list[tuple[Path, str]]]:
     """Reuse one tree scan for every resource lookup inside a read-only pass.
 
     Resolving a slug scans the whole docs tree, and a roadmap resolves one slug
@@ -473,16 +482,23 @@ def resource_scan_scope() -> Iterator[None]:
     and ten for an audit. The scope must not span a write: a resource created
     or moved inside it stays invisible until the scope exits. Nested scopes
     share the outermost one.
+
+    The scope yields the record of files the scan dropped as invalid, so a
+    reader that must surface them can, and a strict caller inside the scope
+    still raises on the first of them.
     """
 
     if _SCAN_SCOPE.get() is not None:
-        yield
+        yield _SCAN_DROPPED.get() or []
         return
     token = _SCAN_SCOPE.set({})
+    dropped: list[tuple[Path, str]] = []
+    dropped_token = _SCAN_DROPPED.set(dropped)
     try:
-        yield
+        yield dropped
     finally:
         _SCAN_SCOPE.reset(token)
+        _SCAN_DROPPED.reset(dropped_token)
 
 
 def iter_resources(
@@ -495,7 +511,7 @@ def iter_resources(
 ) -> list[Resource]:
     """Discover resources in typed roots and bounded flat compatibility paths."""
     scope = _SCAN_SCOPE.get()
-    if scope is None or not ignore_invalid:
+    if scope is None:
         return _scan_resources(
             docs_dir,
             project,
@@ -517,6 +533,13 @@ def iter_resources(
             ignore_invalid=True,
         )
         scope[key] = cached
+    if not ignore_invalid:
+        # A strict caller raises on an invalid file rather than skipping it.
+        # The shared scan already dropped and recorded those files, so the
+        # raise is taken from its record instead of a second walk.
+        dropped = _SCAN_DROPPED.get() or []
+        if dropped:
+            raise ResourceCollision(dropped[0][1])
     return [
         resource
         for resource in cached
@@ -539,7 +562,10 @@ def _scan_resources(
             continue
         try:
             resource = identify_resource(docs_dir, path, project)
-        except ResourceCollision:
+        except ResourceCollision as exc:
+            dropped = _SCAN_DROPPED.get()
+            if dropped is not None:
+                dropped.append((path, str(exc)))
             if not ignore_invalid:
                 raise
             continue

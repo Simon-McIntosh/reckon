@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s12">
+  <meta name="plan-recorded-at" content="2026-10-16">
+  <meta name="plan-verdict" content="passed">
+  <title>The audit walks through the shared scan | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-audit-shares-the-scan-landing" data-node="the-audit-shares-the-scan" data-reckon="landed" data-when="2026-10-16">
+  <h2>The audit read takes its resources from the shared scan</h2>
+  <p><code>_audit</code> enumerated its plans with its own tree walk, <code>sorted(docs_dir.rglob("*.html"))</code> and a direct <code>identify_resource</code> per file, beside the scan the rest of the read reaches through <code>iter_resources</code>. The read now runs inside one <code>resource_scan_scope</code>, so it walks the docs tree once and reuses the scan's identification. A strict caller reached inside the scope — <code>doccheck.audit_lifecycle</code> through <code>_iter_doc_files</code>, which must still raise on an invalid file — no longer buys a second walk: <code>iter_resources</code> raises <code>ResourceCollision</code> from the record of files the shared scan dropped, so its exception type and message are unchanged. In <code>tests/test_the_audit_shares_the_scan.py</code> a wrapped <code>resources._scan_resources</code> is called once for one audit read of a temporary corpus (9 at base), and the audit's findings are equal to their base rows for a clean corpus and for one carrying an invalid resource path; a direct walk computed in the test finds exactly the invalid files the audit reports. Under the declared mutations the arms are red: restoring the audit's own <code>rglob</code> walk gives 1 failed, 9 walks counted, EXIT=1 (<code>negative-control-own-walk.log</code>); dropping invalid files without recording them gives 2 failed, 3 passed, EXIT=1, the audit losing its <code>invalid-resource-path</code> finding (<code>negative-control-unrecorded-drop.log</code>). The 27 test files reaching the audit give 355 passed / 0 failed at head and at base, apart from the new file; <code>ruff check</code> and <code>ruff format --check</code> add no finding and no format delta on <code>reckon/mcp.py</code> and <code>reckon/resources.py</code>.</p>
+</article>
+</body>
+</html>
