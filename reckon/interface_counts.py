@@ -255,6 +255,85 @@ def _staged_writes(definition_nodes):
         return None
 
     bodies = {name: list(owned_nodes(node)) for name, node in functions.items()}
+
+    def resolve_callee(name, called):
+        scope = name.split(".")[:-1]
+        candidates = [
+            ".".join([*scope[:depth], called]) for depth in range(len(scope), -1, -1)
+        ]
+        if called.startswith(("self.", "cls.")):
+            candidates.insert(0, ".".join([*scope, called.split(".", 1)[1]]))
+        return next(
+            (candidate for candidate in candidates if candidate in functions), None
+        )
+
+    def catches_file_exists(handler):
+        return handler.type is not None and any(
+            isinstance(kind, ast.Name) and kind.id == "FileExistsError"
+            for kind in ast.walk(handler.type)
+        )
+
+    def bind_arguments(callee, called, call):
+        parameters = [*functions[callee].args.posonlyargs, *functions[callee].args.args]
+        if (
+            called.startswith(("self.", "cls."))
+            and parameters
+            and parameters[0].arg in {"self", "cls"}
+            and not any(
+                call_name(decorator) == "staticmethod"
+                for decorator in functions[callee].decorator_list
+            )
+        ):
+            parameters = parameters[1:]
+        arguments = {
+            arg.arg: value for arg, value in zip(parameters, call.args, strict=False)
+        }
+        arguments.update({kw.arg: kw.value for kw in call.keywords if kw.arg})
+        return arguments
+
+    # A helper that exclusively creates one of its own parameters stamps the
+    # caller's path as a file someone else already made: an O_CREAT|O_EXCL open
+    # either made a fresh file or left the existing one untouched, so whatever
+    # the caller later renames is another writer's file, not a temporary the
+    # caller wrote and published. The move-aside exemption therefore reaches one
+    # level of delegation, to the path a caller handed to such a helper.
+    exclusive_creators = {}
+    for name, function in functions.items():
+        parameters = {
+            arg.arg
+            for arg in [
+                *function.args.posonlyargs,
+                *function.args.args,
+                *function.args.kwonlyargs,
+            ]
+        }
+        created = {
+            source_name(call.args[0])
+            for attempt in (node for node in bodies[name] if isinstance(node, ast.Try))
+            if any(catches_file_exists(handler) for handler in attempt.handlers)
+            for statement in attempt.body
+            for call in ast.walk(statement)
+            if isinstance(call, ast.Call)
+            and call_name(call.func) == "os.open"
+            and len(call.args) >= 2
+            and any(call_name(flag) == "os.O_EXCL" for flag in ast.walk(call.args[1]))
+        }
+        if parameters & created:
+            exclusive_creators[name] = parameters & created
+
+    callers_not_staging = {}
+    for name in functions:
+        callers_not_staging[name] = {
+            source
+            for call in (node for node in bodies[name] if isinstance(node, ast.Call))
+            if (callee := resolve_callee(name, call_name(call.func)))
+            in exclusive_creators
+            for argument in (
+                bind_arguments(callee, call_name(call.func), call).get(parameter)
+                for parameter in exclusive_creators[callee]
+            )
+            if (source := source_name(argument)) is not None
+        }
     locals_by_function = {}
     callees = {}
     found = set()
@@ -280,7 +359,7 @@ def _staged_writes(definition_nodes):
         forwarded = set()
         for call in (node for node in body if isinstance(node, ast.Call)):
             source = source_name(rename_source(call))
-            if source in local:
+            if source in local - callers_not_staging[name]:
                 found.add(name)
             elif source in parameter_names:
                 forwarded.add(source)
@@ -304,10 +383,7 @@ def _staged_writes(definition_nodes):
                 )
             }
             for handler in attempt.handlers:
-                if handler.type is None or not any(
-                    isinstance(kind, ast.Name) and kind.id == "FileExistsError"
-                    for kind in ast.walk(handler.type)
-                ):
+                if not catches_file_exists(handler):
                     continue
                 for statement in handler.body:
                     for call in ast.walk(statement):
@@ -315,38 +391,16 @@ def _staged_writes(definition_nodes):
                             not_created.setdefault(id(call), set()).update(exclusive)
         for call in (node for node in body if isinstance(node, ast.Call)):
             called = call_name(call.func)
-            scope = name.split(".")[:-1]
-            candidates = [
-                ".".join([*scope[:depth], called])
-                for depth in range(len(scope), -1, -1)
-            ]
-            if called.startswith(("self.", "cls.")):
-                candidates.insert(0, ".".join([*scope, called.split(".", 1)[1]]))
-            callee = next(
-                (candidate for candidate in candidates if candidate in functions), None
-            )
+            callee = resolve_callee(name, called)
             if callee not in callees:
                 continue
-            parameters, forwarded = callees[callee]
-            if (
-                called.startswith(("self.", "cls."))
-                and parameters
-                and parameters[0].arg in {"self", "cls"}
-                and not any(
-                    call_name(decorator) == "staticmethod"
-                    for decorator in functions[callee].decorator_list
-                )
-            ):
-                parameters = parameters[1:]
-            arguments = {
-                arg.arg: value
-                for arg, value in zip(parameters, call.args, strict=False)
-            }
-            arguments.update({kw.arg: kw.value for kw in call.keywords if kw.arg})
+            arguments = bind_arguments(callee, called, call)
             if any(
                 source_name(arguments.get(parameter))
-                in locals_by_function[name] - not_created.get(id(call), set())
-                for parameter in forwarded
+                in locals_by_function[name]
+                - not_created.get(id(call), set())
+                - callers_not_staging[name]
+                for parameter in callees[callee][1]
             ):
                 found.add(name)
     return found
