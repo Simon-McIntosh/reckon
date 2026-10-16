@@ -26,7 +26,7 @@
   <title>Jev Learns From Its Routes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -402,6 +402,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-16T09:10:00Z">
     <div class="r-comment-body"><p>§6 landed: codex worker time from the run-home rollout receipt (merge <code>41a0d82d0</code>, review 110, 0 added failures; a real run reads 708 s against 720 s wall). <a href="/reckon/evidence/archive/jev-learns-from-its-routes-landed.html#s6">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261016T074251461237-codex-worker-time-from-run-home" data-who="reckon-build" data-when="2026-10-16T08:34:10.346Z">
+    <div class="r-comment-body"><p>codex worker time is measured from the run-home rollout receipt — rollout._locate_rollout searches each run&#x27;s own codex-home through the shared run_home_sessions_root/run_home_rollout_paths owner that paid_lanes also reads, and promotion records worker_seconds = receipt generation_seconds + machine_seconds with worker_seconds_source rollout_receipt and both figures in the throughput block; named run r-20261016T055657532716-pick-state-render-slow-read reads 708 s beside its recorded wall time of 720 s</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-s2-interface-accounting" data-who="reckon-build" data-when="2026-10-16T06:20:00Z">
     <div class="r-comment-body"><p>Design review <code>r-20261016T060516832154</code>, interface_budget-1. <code>--assess</code> adds one repeatable option and retires nothing. <code>--spec-level</code> states how much design latitude a node leaves, and the node contract validates it. <code>--assess</code> states the coordinator's reading of difficulty in the capability requirement keys, which no dispatch option carried before. Free-form <code>--comment</code> stays for context. The lead directed a structured carrier on 2026-10-16.</p></div>
