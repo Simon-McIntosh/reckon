@@ -1857,16 +1857,33 @@ def _fence_write_roots(
     too, together with every declared write path outside the worktree, so a
     worker delivers into the same place whichever tier it runs on.
     """
-    return _backends.fenced_write_roots(
-        backend,
-        repository=repository,
-        run_directory=run_directory,
-        reports_directory=reports_dir(),
-        review_store_directory=review_store_root(),
-        manifest_path=manifest_path,
-        declared_write_paths=declared_write_paths,
-        worktree=worktree,
+    return (
+        *_backends.fenced_write_roots(
+            backend,
+            repository=repository,
+            run_directory=run_directory,
+            reports_directory=reports_dir(),
+            review_store_directory=review_store_root(),
+            manifest_path=manifest_path,
+            declared_write_paths=declared_write_paths,
+            worktree=worktree,
+        ),
+        _run_scratch_directory(run_directory),
     )
+
+
+def _run_scratch_directory(run_directory: str | Path) -> Path:
+    """Return this run's own scratch directory, for the fence to re-bind.
+
+    The fence seals the shared run-scratch root read-only so a worker can write
+    and delete only beneath its own directory, so that directory has to reach
+    the fence as a writable root or the worker loses its ``TMPDIR`` under the
+    seal. The run id is the run directory's own name: dispatch, resume and lane
+    change all compose against ``run_dir(run_id)``.
+    """
+    from reckon.crew.dispatch_launch import worker_scratch_dir
+
+    return worker_scratch_dir(Path(run_directory).name)
 
 
 def _brief_digest(source: str | Path) -> str:

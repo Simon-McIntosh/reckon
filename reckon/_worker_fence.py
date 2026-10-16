@@ -1107,6 +1107,39 @@ def worktree_git_write_roots(worktree: str | Path) -> list[Path]:
     return roots
 
 
+def worker_scratch_seal_root(
+    writable_roots: Iterable[str | Path],
+) -> Path | None:
+    """Return the run-scratch root to seal read-only, or None when none applies.
+
+    Every run's scratch directory is a direct child of one node-local root
+    (:func:`reckon.crew.dispatch_launch.worker_scratch_root`), so a worker that
+    can write the root can write and delete every sibling run's scratch — a
+    shared resource one run's cleanup destroyed for dozens of others. The root
+    is therefore sealed like a protected path, and the run's *own* scratch
+    directory re-bound writable after it, so a run writes only beneath its own.
+
+    The root is sealed only when the fence is handing it a writable root inside
+    that root, which every real launch does: dispatch, resume and lane change
+    grant ``worker_scratch_dir(run_id)`` as the run's ``TMPDIR``. A composition
+    with no such grant is not fencing a run's scratch, so it neither seals nor
+    creates the root — a preview invents nothing, and a launch never given a
+    scratch directory owns none to protect.
+
+    The dispatch package is imported here rather than at module load: reckon's
+    backend translation imports this module while the crew package is still
+    loading, so a module-level import would close a cycle.
+    """
+    from reckon.crew.dispatch_launch import worker_scratch_root
+
+    root = worker_scratch_root()
+    root_target = resolved_destination(root)
+    for raw in writable_roots:
+        if resolved_destination(Path(raw)).is_relative_to(root_target):
+            return root
+    return None
+
+
 def fence_argv(
     argv: Sequence[str],
     *,
@@ -1153,6 +1186,13 @@ def fence_argv(
     token refresh — and are mounted after the read-only pair so the writable
     one is the last word on its path.
 
+    When a writable root falls beneath the shared run-scratch root, that root is
+    sealed read-only among the protected paths and created first, so the run's
+    own scratch directory — re-bound writable by the ordinary grant below, which
+    comes after the overlay — is the only scratch a worker can write or delete;
+    see :func:`worker_scratch_seal_root`. A sibling run's scratch stays readable
+    but read-only, and ``/tmp`` outside the root is untouched.
+
     Every root the caller hands is created before the argv is composed, because
     bubblewrap binds a writable root by *source* path and refuses that root the
     same way when it cannot find it. A root this function adds itself — the
@@ -1168,6 +1208,21 @@ def fence_argv(
         roots.extend(worktree_git_write_roots(worktree))
     if manifest_path is not None:
         roots.append(Path(manifest_path).parent)
+    # The scratch root is sealed read-only and the run's own scratch directory
+    # is re-bound writable below, because every run's scratch sits directly
+    # beneath the one shared root; see :func:`worker_scratch_seal_root`. It is
+    # created before it is sealed, as every other handed root is, so the bind
+    # never refuses a launch over a directory that does not exist yet.
+    scratch_seal = worker_scratch_seal_root(roots)
+    if scratch_seal is not None:
+        try:
+            scratch_seal.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            raise BackendError(
+                f"cannot create the worker scratch root {scratch_seal} to seal "
+                f"it read-only: {exc}"
+            ) from exc
+        protected = [*protected, scratch_seal]
 
     binds = protected_read_only_binds(
         protected,
