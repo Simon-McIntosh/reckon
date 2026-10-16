@@ -25,9 +25,9 @@ refusal cannot tell which overlay produced it.
   **after** the overlay, with no writable grant for the whole store nor for a
   sibling's tree.
 * The hand-off is asserted on ``_fence_write_roots``: the run's declared report
-  and review directories are among the roots the fence re-binds, while neither
-  store root is handed writable, so a composed plan review or a run review whose
-  delivery path lies under the store keeps it writable.
+  and review directories are among the roots the fence re-binds, so a composed
+  plan review or a run review whose delivery path lies under either store keeps
+  it writable even though the store root itself is sealed.
 * The fence holds, proved by *executing* the composed argv: a fenced command
   writes and deletes a file in its own declared directories (lands), and
   ``rm -rf`` of a sibling report tree or ``rm`` of a sibling review record exits
@@ -263,14 +263,11 @@ def test_the_declared_directories_reach_the_fence_as_write_roots(
         f"{stores.own_review} is not among the fence write roots "
         f"{sorted(map(str, roots))}"
     )
-    # Neither shared store is handed writable: handing it would re-open, through
-    # the fence's seal, every other project's and run's reports and reviews.
-    assert stores.reports_root.resolve() not in roots, (
-        "the whole reports root was handed to the fence as a write root"
-    )
-    assert stores.reviews_root.resolve() not in roots, (
-        "the whole review store was handed to the fence as a write root"
-    )
+    # The shared stores themselves reach the fence as roots too (they are the
+    # delivery roots a restricted tier gets), but the fence seals each of them
+    # read-only and skips re-binding it, so the grant loop can never re-open a
+    # whole store through the seal; the composed-argv tests above assert that
+    # neither store root is bound writable.
 
 
 @pytest.fixture
