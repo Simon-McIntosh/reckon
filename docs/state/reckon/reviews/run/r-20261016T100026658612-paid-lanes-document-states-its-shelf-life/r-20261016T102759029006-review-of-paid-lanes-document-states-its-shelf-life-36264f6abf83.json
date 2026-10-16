@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "cf17e5066b84d04a394a43a5672c015cefb66d25",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/snapshot.py:642",
+    "reckon/crew/picker/lane_context.py:382",
+    "reckon/crew/paid_lanes.py:189"
+  ],
+  "completed_at": "2026-10-16T10:43:43.120Z",
+  "dispatched_at": "2026-10-16T10:31:40Z",
+  "findings": [
+    {
+      "file": "reckon/crew/paid_lanes.py",
+      "line": "163",
+      "severity": "follow-on",
+      "text": "follow-on: _INTERVAL_UNIT_SECONDS.get(unit, 1.0) silently treats an unrecognised unit as seconds, so if REFRESH_INTERVAL is ever edited to a dialect the table omits (for example \"5m\", which no key matches) the derivation yields a 5-second shelf life with no error rather than failing, which is the opposite of the derivation's purpose."
+    }
+  ],
+  "head_log_revision": "36264f6abf832db375ae07410861ede19e962fae",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 36264f6abf83 against its parent cf17e5066b84d; it adds SHELF_LIFE_INTERVALS, _INTERVAL_UNIT_SECONDS, refresh_interval_seconds and suggested_shelf_life_seconds plus the document key in reckon/crew/paid_lanes.py, a 66-line test file, and a 34-line evidence fragment.",
+    "done_when": "the done-when names tests/test_paid_lanes_document_states_its_shelf_life.py; its four cases assert 600 for 5min, 1200 under a patched 10min, the derivation identity, and through lane_context._budget_block a 345 s reading fresh and a 700 s reading stale; gate.log records 4 passed and negative_control.log is red at EXIT=1.",
+    "goal": "the goal is to publish the paid-lanes document's shelf life as two refresh intervals; reckon/crew/paid_lanes.py:459 adds \"suggested_shelf_life_seconds\": suggested_shelf_life_seconds() to compose_document, derived from REFRESH_INTERVAL.",
+    "manifest": "manifest.md reports status complete, records the gate as 4 passed with EXIT=0, base_arm.log and head_arm.log each 356 passed, negative_control.log red at EXIT=1, and one landing line.",
+    "write_paths": "prompt.txt grants reckon/crew/paid_lanes.py, tests/test_paid_lanes_document_states_its_shelf_life.py, docs/evidence/fragments/jev-learns-from-its-routes/paid-lanes-document-states-its-shelf-life.html and a figures directory; git show 36264f6abf83 changes the paid_lanes.py, the new test and the fragment only, and writes no figure."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows omitting the published key reddens three of the four cases -- including the 345 s reading at tests/test_paid_lanes_document_states_its_shelf_life.py:66 -- so the assertions fail on the exact regression the change prevents rather than passing regardless.",
+    "evidence": "gate.log records 4 passed and negative_control.log records the omission reddening the 345 s reading (3 failed, 1 passed, EXIT=1), but the test hand-builds the reading dict and so exercises the per-reading branch of lane_context._budget_block rather than the production _document_shelf_life_seconds path at reckon/crew/picker/lane_context.py:359.",
+    "fit": "reckon/crew/paid_lanes.py:151 hand-rolls a digit scan where reckon/crew/node.py:242 uses a compiled regex for the same shape of parse, and the added symbols carry no plan or version label.",
+    "goal_fidelity": "reckon/crew/paid_lanes.py:459 publishes suggested_shelf_life_seconds as refresh_interval_seconds() times SHELF_LIFE_INTERVALS (2), exactly the two-interval derivation the deliverable names, and it reads REFRESH_INTERVAL at call time.",
+    "reuse": "the capability search over reckon found no owner of the systemd time-span dialect (min/sec/hour/d) that REFRESH_INTERVAL uses; reckon/crew/node.py:245, reckon/calibration.py:28 and reckon/flight.py:128 all parse only single-letter units, so this adds a fourth duration parser rather than extending one.",
+    "scope_discipline": "git show 36264f6abf83 changes only reckon/crew/paid_lanes.py, tests/test_paid_lanes_document_states_its_shelf_life.py and docs/evidence/fragments/jev-learns-from-its-routes/paid-lanes-document-states-its-shelf-life.html, all inside prompt.txt's granted write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to publish the paid-lanes document's shelf life as two refresh intervals; reckon/crew/paid_lanes.py:459 adds \"suggested_shelf_life_seconds\": suggested_shelf_life_seconds() to compose_document, derived from REFRESH_INTERVAL.\nVERDICT done_when: the done-when names tests/test_paid_lanes_document_states_its_shelf_life.py; its four cases assert 600 for 5min, 1200 under a patched 10min, the derivation identity, and through lane_context._budget_block a 345 s reading fresh and a 700 s reading stale; gate.log records 4 passed and negative_control.log is red at EXIT=1.\nVERDICT write_paths: prompt.txt grants reckon/crew/paid_lanes.py, tests/test_paid_lanes_document_states_its_shelf_life.py, docs/evidence/fragments/jev-learns-from-its-routes/paid-lanes-document-states-its-shelf-life.html and a figures directory; git show 36264f6abf83 changes the paid_lanes.py, the new test and the fragment only, and writes no figure.\nVERDICT manifest: manifest.md reports status complete, records the gate as 4 passed with EXIT=0, base_arm.log and head_arm.log each 356 passed, negative_control.log red at EXIT=1, and one landing line.\nVERDICT diff: read 36264f6abf83 against its parent cf17e5066b84d; it adds SHELF_LIFE_INTERVALS, _INTERVAL_UNIT_SECONDS, refresh_interval_seconds and suggested_shelf_life_seconds plus the document key in reckon/crew/paid_lanes.py, a 66-line test file, and a 34-line evidence fragment.\nCALL_SITES: reckon/crew/picker/snapshot.py:642, reckon/crew/picker/lane_context.py:382, reckon/crew/paid_lanes.py:189\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/paid_lanes.py:459 publishes suggested_shelf_life_seconds as refresh_interval_seconds() times SHELF_LIFE_INTERVALS (2), exactly the two-interval derivation the deliverable names, and it reads REFRESH_INTERVAL at call time.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate.log records 4 passed and negative_control.log records the omission reddening the 345 s reading (3 failed, 1 passed, EXIT=1), but the test hand-builds the reading dict and so exercises the per-reading branch of lane_context._budget_block rather than the production _document_shelf_life_seconds path at reckon/crew/picker/lane_context.py:359.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show 36264f6abf83 changes only reckon/crew/paid_lanes.py, tests/test_paid_lanes_document_states_its_shelf_life.py and docs/evidence/fragments/jev-learns-from-its-routes/paid-lanes-document-states-its-shelf-life.html, all inside prompt.txt's granted write paths.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log shows omitting the published key reddens three of the four cases -- including the 345 s reading at tests/test_paid_lanes_document_states_its_shelf_life.py:66 -- so the assertions fail on the exact regression the change prevents rather than passing regardless.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/paid_lanes.py:151 hand-rolls a digit scan where reckon/crew/node.py:242 uses a compiled regex for the same shape of parse, and the added symbols carry no plan or version label.\nSCORE reuse: 16\nJUSTIFICATION reuse: the capability search over reckon found no owner of the systemd time-span dialect (min/sec/hour/d) that REFRESH_INTERVAL uses; reckon/crew/node.py:245, reckon/calibration.py:28 and reckon/flight.py:128 all parse only single-letter units, so this adds a fourth duration parser rather than extending one.\nFINDING reckon/crew/paid_lanes.py:163 follow-on: _INTERVAL_UNIT_SECONDS.get(unit, 1.0) silently treats an unrecognised unit as seconds, so if REFRESH_INTERVAL is ever edited to a dialect the table omits (for example \"5m\", which no key matches) the derivation yields a 5-second shelf life with no error rather than failing, which is the opposite of the derivation's purpose.\nreviewed_base_sha: cf17e5066b84d04a394a43a5672c015cefb66d25\nreviewed_head_sha: 36264f6abf832db375ae07410861ede19e962fae\n",
+  "review_run_id": "r-20261016T102759029006-review-of-paid-lanes-document-states-its-shelf-life-36264f6abf83",
+  "reviewed_base_sha": "cf17e5066b84d04a394a43a5672c015cefb66d25",
+  "reviewed_head_sha": "36264f6abf832db375ae07410861ede19e962fae",
+  "reviewed_run_id": "r-20261016T100026658612-paid-lanes-document-states-its-shelf-life",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T10:38:49+00:00",
+  "total": 111
+}
