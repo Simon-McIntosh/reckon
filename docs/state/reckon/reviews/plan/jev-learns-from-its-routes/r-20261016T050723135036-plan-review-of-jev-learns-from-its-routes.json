@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T05:21:48.827Z",
+  "dispatched_at": "2026-10-16T05:08:19Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/jev-learns-from-its-routes.html:274",
+      "id": "reasoning-1",
+      "reason": "the real codex timing available is the run's stream-file mtime span or the client rollout receipt's `generation_seconds`/`machine_seconds` (`_apply_receipt_to_throughput`, `reckon/_backends.py:2639`), so \u00a76 must name that source and label the recorded `worker_seconds_source` to match it rather than assert event-derived `stream_events`.",
+      "text": "\u00a76's deliverable is \"read worker time from a codex stream's own events and record `worker_seconds_source` `stream_events`\", but no codex `stream.jsonl` carries any time on its events: 0 of 83 codex streams under the crew home contain a `timestamp` field, and a 2026-10-16 codex run's events carry only `{thread_id, type, item, usage}` (item payloads `reasoning`/`agent_message`/`command_execution`/`mcp_tool_call`/`file_change` have no stamp or duration; `turn.completed` carries token `usage` only). The stream measures read worker time via `cached_stream_timestamp_bounds`, which keys on `event.get(\"timestamp\")` (`reckon/_backends.py:2621`) \u2014 the very field a claude-format stream carries and a codex stream does not (`reckon/crew/promotion_checks.py:133`). So the stated mechanism cannot be satisfied from the artifact \u00a76 names, and a node implementing it literally reaches its done-when only by inventing a different source.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/jev-learns-from-its-routes.html:120",
+      "id": "single_goal-1",
+      "reason": "the two are two halves of one requirement round-trip (the assessment is only weighable once \u00a73 can condition on a stored requirement), they share all write paths and one test file, and \u00a72's done-when proves both, so splitting is optional rather than corrective.",
+      "text": "\u00a72 bundles two of \u00a71's separate defect rows into one node: adding the `--assess` input that renders `node.orchestrator_assessment` (\u00a71 \"a coordinator's reading travels only inside --comment\"), and persisting the resolved capability on the run's `node_definition` (\u00a71 \"the run does not record the requirement\"), so one verdict must cover a new CLI surface and a record-writes change.",
+      "type": "single_goal",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "220b91c70b28d1fca7556c5f175a1a7191ad298e61db863ef0cc533a04e55c61",
+  "plan_slug": "jev-learns-from-its-routes",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T050723135036-plan-review-of-jev-learns-from-its-routes",
+  "reviewed_blob_sha": "e31dbed658f9d2e0b4a797745f9bd368c2a6719f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited module (`picker/__init__.py`, `picker/snapshot.py`, `picker/lane_context.py`, `picker/outcomes.py`, `picker/prompts.py`, `picker/types.py`, `picker/templates/questions.jinja`, `promotion_checks.py`, `crew/dispatch.py`, `crew_dispatch_commands.py`, `crew/dispatch_picker.py`) and symbol (`_declared_difficulty`, `_candidates_scan`, `budget_view`, `_budget_block`, `_terminal_stream_data`, `primary_run_id`) resolves, and the `/reckon/plans/lane-and-model-routing.html#s25` anchor resolves to the section it names.",
+    "done_when": "pass \u2014 every section names a negative control that inverts its own assertion (\u00a72 removes the `node_definition.capability` write, \u00a73 drops the requirement filter, \u00a74 ignores lineage, \u00a75 restores the source-blind expiry, \u00a76 removes the codex branch, \u00a77 drops the lineage join), so each gate can show its guard fires.",
+    "evidence_paths": "pass \u2014 no done-when writes to a session scratchpad or node-local temporary; tests sit under the repository `tests/` tree and \u00a76's stream-shape read names the durable crew home.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the new symbols or test filenames; `outcomes_at_requirement`, `moved_in`, `moved_off`, `budget_source`, `orchestrator_assessment`, `paired_arms` all name the mechanism, and no comment carries changelog prose.",
+    "reasoning": "a finding \u2014 the \u00a76 root cause is right but its mechanism names a timing source the codex stream does not carry.",
+    "single_goal": "a finding \u2014 \u00a72 carries two deliverables (the `--assess` input reaching Jev, and the run recording the resolved requirement).",
+    "wiring": "pass \u2014 `plan-after: lane-and-model-routing` resolves (verified by \u00a71's \"ordered after it\"), `plan-section-depends-on {s3: [jev-learns-from-its-routes#s2]}` points correctly at \u00a72, and \u00a74's ordering after \u00a73 and \u00a75's precedence over \u00a73 are declared in the sections' own prose and the followup; no declared edge points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "12fe1d9e53ada27cba172fc4bfa3f97df1da124727c99235482c36ca69738aec",
+    "s1": "7e6eed94a438683b2478e705a85ea179b2bc14bb0526c6c91b157373c5675c32",
+    "s2": "cc35fef7cc2d6ce0af14220bc78602ca25e960978e3dd3efb5979ca5e3c14917",
+    "s3": "8c32ca6d8eb6cbcea7a4a77a2ee64d9ce62a87bfb752bb507504eadb76cfb0db",
+    "s4": "828939c295d01d9b6fa0e90760eeee37626b612fb8414928adedddbb83f7238b",
+    "s5": "6cff1e7bf68d8874d67225b968adb4aeea6828a4800ac65b4676edd703eb6a52",
+    "s6": "59dc7e6d2fb567b8b638b554c8d74501a33d43961ae586721ae56cd584ef60c4",
+    "s7": "7c5ab37c4bc1961ab68b2ec5026a848b7c6f8c6a4c26ca2b70b6fbad0f54351a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T05:38:57.633117+00:00"
+}
