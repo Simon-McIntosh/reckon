@@ -292,13 +292,16 @@ def _budget_block(
 
     The one rule every staleness judgment in the picker derives through, so a
     candidate and the return-time block describing the same reading never
-    disagree. An account-surface reading describes now and is never stale by
-    age. A ledger-only reading carries the age of the run that recorded it, and
-    past the flight's shelf life it no longer describes the present. A reading
-    the paid-lanes document published is judged against the shelf life the
-    document itself suggests, falling back to the flight's shelf life only when
-    the document publishes none -- a document that states its own cadence is
-    trusted over the flight default, so a paid-lanes figure republished on a
+    disagree. An account-surface reading is fresh at the probe that took it and
+    stale past the flight's shelf life measured from that probe: a reading
+    re-served from a cached report ages rather than staying fresh forever, so a
+    probed account figure cannot outlive the flight it was served into. A
+    ledger-only reading likewise carries the age of the run that recorded it,
+    and past the flight's shelf life it no longer describes the present. A
+    reading the paid-lanes document published is judged against the shelf life
+    the document itself suggests, falling back to the flight's shelf life only
+    when the document publishes none -- a document that states its own cadence
+    is trusted over the flight default, so a paid-lanes figure republished on a
     slower clock than the flight's is not read as stale the moment it is served.
     """
 
@@ -313,7 +316,7 @@ def _budget_block(
         source = None
     observed = parse_utc(str(reading.get("observed_at") or "") or "")
     age = None if observed is None else max(0.0, (moment - observed).total_seconds())
-    if age is None or source is None or source == "account-surface":
+    if age is None or source is None:
         stale = False
     elif source == budget.WINDOW_SOURCE_DOCUMENT:
         # The document's own suggested cadence, carried on the reading beside the
@@ -327,7 +330,7 @@ def _budget_block(
         else:
             bound = shelf_life_minutes * 60.0
         stale = age > bound
-    else:  # ledger
+    else:  # account-surface or ledger: the flight's shelf life from observation
         stale = age > shelf_life_minutes * 60.0
     return {"budget_source": source, "budget_age_s": age, "stale": stale}
 

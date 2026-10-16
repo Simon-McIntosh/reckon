@@ -178,7 +178,7 @@ def test_fresh_ledger_reading_is_not_stale(ledger):
     assert blocks["clive"]["budget_age_s"] == pytest.approx(300.0)
 
 
-def test_account_surface_reading_is_never_stale(ledger):
+def test_account_surface_reading_past_shelf_life_is_stale(ledger):
     ledger([])
     profile = lane_context.run_time_profile("reckon", now=NOW)
     old = (NOW - timedelta(minutes=120)).isoformat()
@@ -194,7 +194,7 @@ def test_account_surface_reading_is_never_stale(ledger):
         profile, _node(), [_candidate("clive")], budget_snapshot=snapshot, now=NOW
     )
     assert blocks["clive"]["budget_source"] == "account-surface"
-    assert blocks["clive"]["stale"] is False
+    assert blocks["clive"]["stale"] is True
 
 
 def test_missing_lane_document_is_null(isolated_lane):

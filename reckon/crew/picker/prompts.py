@@ -53,11 +53,13 @@ _GLOSSARY: dict[str, str] = {
     "budget_age_s": "Seconds since the budget reading was observed; null when unknown.",
     "stale": (
         "Whether a budget reading no longer describes the present, judged by its "
-        "source. An account-surface reading describes now and is never stale by "
-        "age. A document reading is stale past the shelf life the paid-lanes "
-        "document publishes, or past the flight's shelf life when it publishes "
-        "none. A ledger reading is stale past the flight's shelf life. "
-        "budget_age_s says how old the reading is."
+        "source. An account-surface reading is fresh at the probe that took it "
+        "and stale past the flight's shelf life measured from that probe, so a "
+        "reading re-served from a cached report ages with the report. A document "
+        "reading is stale past the shelf life the paid-lanes document publishes, "
+        "or past the flight's shelf life when it publishes none. A ledger "
+        "reading is stale past the flight's shelf life. budget_age_s says how "
+        "old the reading is."
     ),
     "worker_slots": (
         "The extra workers this coordinator session's lane router would grant it "

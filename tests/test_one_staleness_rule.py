@@ -3,14 +3,16 @@
 A candidate and the return-time block describe the same reading, so they must
 agree about whether it still describes the present. One function,
 ``lane_context._budget_block``, owns that judgment and both surfaces derive
-through it: an account-surface reading is never stale by age, a paid-lanes
+through it: an account-surface reading is fresh at the probe that took it and
+stale past the flight's shelf life measured from that probe, a paid-lanes
 document reading is stale past the shelf life the document publishes (the
-flight's shelf life when it publishes none), and a ledger reading is stale past
-the flight's shelf life.
+flight's shelf life when it publishes none), and a ledger reading is stale
+past the flight's shelf life.
 """
 
 from __future__ import annotations
 
+import copy
 import inspect
 import json
 from datetime import UTC, datetime, timedelta
@@ -205,7 +207,12 @@ def test_the_rule_judges_each_source_by_its_own_bound():
     assert block("document", 345, document_backed=True, shelf=None)["stale"] is True
     assert block("ledger", 400)["stale"] is True
     assert block("ledger", 200)["stale"] is False
-    assert block("account-surface", 10**7)["stale"] is False
+    # An account-surface reading is fresh at its probe and ages like a ledger
+    # reading: past the flight's shelf life it no longer describes the present.
+    assert block("account-surface", 0)["stale"] is False
+    assert block("account-surface", 200)["stale"] is False
+    assert block("account-surface", 400)["stale"] is True
+    assert block("account-surface", 10**7)["stale"] is True
 
 
 def test_a_document_reading_beyond_the_flight_shelf_reads_fresh_on_both(
@@ -260,14 +267,13 @@ def test_a_ledger_reading_past_the_flight_shelf_reads_stale_on_both(
     assert block["budget_source"] == "ledger"
 
 
-def test_an_account_surface_reading_is_never_stale_by_age_on_both(
-    tmp_path, config, monkeypatch
-):
-    """Two hours old, past the flight shelf, and still fresh because it describes now."""
+def _account_surface_report(
+    now: datetime, *, age_seconds: float, utilisation: float = 0.4
+) -> dict:
+    """A pre-flight report whose codex account is an account-surface read that old."""
 
-    now = datetime.now(UTC)
-    observed = now - timedelta(hours=2)
-    crafted = {
+    observed = now - timedelta(seconds=age_seconds)
+    return {
         "checked_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "backends": [
             {
@@ -288,7 +294,7 @@ def test_an_account_surface_reading_is_never_stale_by_age_on_both(
                 "allowance": {
                     "state": budget.OBSERVED,
                     "observed_at": observed.isoformat(),
-                    "utilisation": 0.4,
+                    "utilisation": utilisation,
                     "burn_multiple": 1.0,
                     "resets_at": (now + timedelta(hours=2)).isoformat(),
                 },
@@ -296,11 +302,32 @@ def test_an_account_surface_reading_is_never_stale_by_age_on_both(
         ],
         "window_sources": {"codex": "account-surface"},
     }
+
+
+def _compose_account_surface(
+    config, repo, now, monkeypatch, *, age_seconds: float, utilisation: float = 0.4
+):
+    """Compose a report whose codex account was probed ``age_seconds`` ago."""
+
+    crafted = _account_surface_report(
+        now, age_seconds=age_seconds, utilisation=utilisation
+    )
     monkeypatch.setattr(
         snapshot.budget, "preflight", lambda *a, **k: json.loads(json.dumps(crafted))
     )
     monkeypatch.setattr(snapshot.budget, "summary", lambda report: "")
-    report = _compose(config, tmp_path, now, monkeypatch)
+    return _compose(config, repo, now, monkeypatch)
+
+
+def test_an_account_surface_reading_is_fresh_at_100s_on_both(
+    tmp_path, config, monkeypatch
+):
+    """Probed less than the flight shelf ago, both surfaces read a fresh reading."""
+
+    now = datetime.now(UTC)
+    report = _compose_account_surface(
+        config, tmp_path, now, monkeypatch, age_seconds=100
+    )
 
     candidate, block = _candidate_and_return_time(report, config, tmp_path, now)
 
@@ -310,25 +337,85 @@ def test_an_account_surface_reading_is_never_stale_by_age_on_both(
     assert block["budget_source"] == "account-surface"
 
 
-def test_reaging_judges_a_document_reading_by_the_documents_own_shelf(
+def test_an_account_surface_reading_ages_past_the_flight_shelf_on_both(
     tmp_path, config, monkeypatch
 ):
-    """A reuse that ages the reading past 900 s flips it, by the same rule."""
+    """400 s old against the 5 min flight shelf reads stale on both surfaces."""
 
     now = datetime.now(UTC)
-    document = _document(now, age_seconds=345, shelf_seconds=900)
+    report = _compose_account_surface(
+        config, tmp_path, now, monkeypatch, age_seconds=400
+    )
+
+    candidate, block = _candidate_and_return_time(report, config, tmp_path, now)
+
+    assert candidate.stale is True
+    assert candidate.budget_source == "account-surface"
+    assert block["stale"] is True
+    assert block["budget_source"] == "account-surface"
+
+
+def test_reaging_keeps_a_document_reading_fresh_between_the_two_shelves(
+    tmp_path, config, monkeypatch
+):
+    """445 s is past the 300 s flight shelf but inside the document's 900 s shelf.
+
+    A source-blind re-age would flip it; only the source-aware rule keeps it
+    fresh, so this case guards the rule rather than restating a reading that
+    both bounds would already expire.
+    """
+
+    now = datetime.now(UTC)
+    document = _document(now, age_seconds=145, shelf_seconds=900)
     report = _compose(config, tmp_path, now, monkeypatch, document=document)
     value = {
         "report": report,
         "built_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
 
-    later = now + timedelta(seconds=800)
+    # Advancing 300 s takes the reading to 445 s: past the flight shelf, inside
+    # the document's own.
+    later = now + timedelta(seconds=300)
     reaged = snapshot._reage_budget_report(value, later, config)
     state = next(e["state"] for e in reaged["backends"] if e["backend"] == "codex")
 
     assert state["source"] == "document"
-    assert state["expired"] is True
+    assert state["expired"] is False
+
+
+def test_a_reaged_account_surface_reading_does_not_exclude_at_the_ceiling(
+    tmp_path, config, monkeypatch
+):
+    """A cached account figure re-aged 10 min stale stops pressing the ceiling.
+
+    The ceiling gate acts on a fresh reading alone, so an account-surface
+    reading that has aged past the flight shelf since its probe no longer
+    refuses its lane.
+    """
+
+    ceiling_config = copy.deepcopy(config)
+    # Below the reading's 95%, so a fresh reading would be excluded and only a
+    # reading that has aged stale survives.
+    ceiling_config["budget"]["utilisation_ceiling_pct"] = 90
+    now = datetime.now(UTC)
+    report = _compose_account_surface(
+        config, tmp_path, now, monkeypatch, age_seconds=0, utilisation=0.95
+    )
+    value = {
+        "report": report,
+        "built_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+
+    later = now + timedelta(minutes=10)
+    reaged = snapshot._reage_budget_report(value, later, ceiling_config)
+
+    candidate, _block = _candidate_and_return_time(
+        reaged, ceiling_config, tmp_path, later
+    )
+
+    assert candidate.stale is True
+    assert candidate.budget_source == "account-surface"
+    assert not any(r.startswith("budget-ceiling") for r in candidate.reasons)
 
 
 def test_the_glossary_states_the_three_cases():
@@ -336,6 +423,10 @@ def test_the_glossary_states_the_three_cases():
     assert "account-surface" in entry
     assert "document" in entry
     assert "ledger" in entry
+    # The account-surface case names its probe and its shelf, and no longer
+    # claims the reading never ages.
+    assert "measured from that probe" in entry
+    assert "never stale" not in entry
 
 
 def test_the_picker_derives_staleness_only_through_the_one_rule():
