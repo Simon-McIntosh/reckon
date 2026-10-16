@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T12:53:46.691Z",
+  "dispatched_at": "2026-10-16T12:37:40Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:1512",
+      "id": "reasoning-1",
+      "reason": "the node's goal is preventing destruction, which writes and deletes cover and the done-when tests directly; the read clause is wording, and correcting the sentence would not alter the deliverable, the done-when or any dispatched work.",
+      "text": "the Deliverable says a worker \"can then read, write and delete only inside its own scratch directory\", but the mechanism named in the same sentence is a read-only bind, which withholds writes and deletions only: a `--ro-bind` of the scratch root leaves every sibling run's scratch directory (and the rest of the filesystem the `--dev-bind / /` opens) readable, so the stated read-restriction is broader than what the fence produces",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "d4e44ba0af670ad49c240f31082062de45c6f819e7532ba5ecd962e76b0df2aa",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 134,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T123555845436-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "e5fab6df4bfe9c88950239ecdcc9321c0d08c7c1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `fence_argv`, `_fence_write_roots`, `delivery_write_roots`, `worker_scratch_root()`/`worker_scratch_dir(run_id)`, the three fenced call sites and the three cited run ids all resolve.",
+    "done_when": "pass \u2014 \u00a79 declares a negative control (un-sealing the scratch root makes the sibling `rm -rf` succeed and the test fail) and each arm is falsifiable at base.",
+    "evidence_paths": "pass \u2014 the gate log and the declared negative-control log are written under the run directory, and the incident evidence sits on the durable reports tree, not a node-local path.",
+    "naming": "pass \u2014 the new test path and the touched modules carry no plan labels, stage names or ticket numbers.",
+    "reasoning": "a finding \u2014 the \u00a79 deliverable states a property (reads restricted to the run's own scratch) that the mechanism it names does not produce.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable: seal the worker scratch root and hand the run its own scratch directory as a write root.",
+    "wiring": "pass \u2014 \u00a79 needs only shipped machinery (the \u00a73 protected set, `_fence_write_roots`, and the `TMPDIR`-to-run-scratch wiring at `dispatch_launch.py:897`), all present; it declares no per-node edge that points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "c9461572b191897d8117a728855d7312fb26ec131a6d1324f15ae95945292ac3",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "c8790df9b7ec2d65dee1b371d6b1229b7f9fd8efa54525bf510b94752aa221ab"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T12:56:27.587049+00:00"
+}
