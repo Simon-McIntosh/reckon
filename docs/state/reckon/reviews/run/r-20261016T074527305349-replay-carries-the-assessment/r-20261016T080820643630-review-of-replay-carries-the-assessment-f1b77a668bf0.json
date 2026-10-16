@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f33b8db0ab9fcf2c80718c11352424e2af82368f",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:791",
+    "reckon/crew_dispatch_commands.py:752"
+  ],
+  "completed_at": "2026-10-16T08:21:03.792Z",
+  "dispatched_at": "2026-10-16T08:08:57Z",
+  "findings": [
+    {
+      "file": "tests/test_a_replay_carries_the_assessment.py",
+      "line": "161",
+      "severity": "follow-on",
+      "text": "follow-on: the first assertion's expected side is the module constant ASSESSMENT, the same value the test fed into the record, so it is not drawn from an independent source; it holds as a guard only because the recorded negative control reddens it (KeyError: 'orchestrator_assessment') when the field is dropped from the rebuilt request."
+    }
+  ],
+  "head_log_revision": "f1b77a668bf0de9b600d60a468f681b299a70547",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "git diff f33b8db0..f1b77a668 adds three files (+244): replay.py:87-89 is the fix, the new test file adds two tests, and the evidence fragment records the gate, measure and negative control; commit by commit (e4f821246, 6087a3c91, f1b77a668) all inside scope.",
+    "done_when": "the done_when names tests/test_a_replay_carries_the_assessment.py with both behaviours; logs/gate.log records 2 passed EXIT=0 and the base (46 passed, f33b8db0) and after (48 passed, f1b77a668) arms name no added failure.",
+    "goal": "the node goal is to carry a recorded orchestrator assessment into a replayed pick's request; reckon/crew/picker/replay.py:87-89 now rebuilds PickRequest from the recorded node_*definition* with that definition's orchestrator_assessment, so the replayed request carries it.",
+    "manifest": "read the reviewed manifest at runs/r-20261016T074527305349-replay-carries-the-assessment/manifest.md; it reports status complete, gate '2 passed' EXIT=0, base 46 / after 48, and names all four logs.",
+    "write_paths": "the manifest declares reckon/crew/picker/replay.py, tests/test_a_replay_carries_the_assessment.py and the evidence fragment; the diff touches exactly those three paths, so every change is inside the fence."
+  },
+  "justifications": {
+    "durability": "the assertion at tests/test_a_replay_carries_the_assessment.py:161 compares the rendered value against ASSESSMENT, the same constant the test supplied to the record rather than an independent source, and is a real guard only because logs/negative_control.log shows it reddens (KeyError) when the field is dropped.",
+    "evidence": "the gate command at logs/gate.log runs tests/test_a_replay_carries_the_assessment.py and records '2 passed' EXIT=0 at revision f1b77a668, with base/after deltas in logs/base_suite.log and logs/after_suite.log.",
+    "fit": "reckon/crew/picker/replay.py:87-89 mirrors the neighbouring 'or {}'-defaulted rebuild lines at replay.py:76-86 and adds no name the repository naming rules forbid, though its three-line comment is longer than the file's usual one-liners.",
+    "goal_fidelity": "reckon/crew/picker/replay.py:87-89 passes dict(definition.get('orchestrator_assessment') or {}) into the rebuilt request, which is exactly the goal's deliverable.",
+    "reuse": "the rendering capability is already owned by reckon/crew/picker/__init__.py:452 (_state_beside_assessment, driven by request.orchestrator_assessment) and the change populates that existing PickRequest field at reckon/crew/picker/types.py:22 rather than adding a mechanism.",
+    "scope_discipline": "the only changed paths are reckon/crew/picker/replay.py, tests/test_a_replay_carries_the_assessment.py and docs/evidence/fragments/jev-learns-from-its-routes/replay-carries-the-assessment.html, all declared in the manifest."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to carry a recorded orchestrator assessment into a replayed pick's request; reckon/crew/picker/replay.py:87-89 now rebuilds PickRequest from the recorded node_*definition* with that definition's orchestrator_assessment, so the replayed request carries it.\nVERDICT done_when: the done_when names tests/test_a_replay_carries_the_assessment.py with both behaviours; logs/gate.log records 2 passed EXIT=0 and the base (46 passed, f33b8db0) and after (48 passed, f1b77a668) arms name no added failure.\nVERDICT write_paths: the manifest declares reckon/crew/picker/replay.py, tests/test_a_replay_carries_the_assessment.py and the evidence fragment; the diff touches exactly those three paths, so every change is inside the fence.\nVERDICT manifest: read the reviewed manifest at runs/r-20261016T074527305349-replay-carries-the-assessment/manifest.md; it reports status complete, gate '2 passed' EXIT=0, base 46 / after 48, and names all four logs.\nVERDICT diff: git diff f33b8db0..f1b77a668 adds three files (+244): replay.py:87-89 is the fix, the new test file adds two tests, and the evidence fragment records the gate, measure and negative control; commit by commit (e4f821246, 6087a3c91, f1b77a668) all inside scope.\nCALL_SITES: reckon/crew_dispatch_commands.py:791, reckon/crew_dispatch_commands.py:752\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/picker/replay.py:87-89 passes dict(definition.get('orchestrator_assessment') or {}) into the rebuilt request, which is exactly the goal's deliverable.\nSCORE evidence: 20\nJUSTIFICATION evidence: the gate command at logs/gate.log runs tests/test_a_replay_carries_the_assessment.py and records '2 passed' EXIT=0 at revision f1b77a668, with base/after deltas in logs/base_suite.log and logs/after_suite.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only changed paths are reckon/crew/picker/replay.py, tests/test_a_replay_carries_the_assessment.py and docs/evidence/fragments/jev-learns-from-its-routes/replay-carries-the-assessment.html, all declared in the manifest.\nSCORE durability: 18\nJUSTIFICATION durability: the assertion at tests/test_a_replay_carries_the_assessment.py:161 compares the rendered value against ASSESSMENT, the same constant the test supplied to the record rather than an independent source, and is a real guard only because logs/negative_control.log shows it reddens (KeyError) when the field is dropped.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/picker/replay.py:87-89 mirrors the neighbouring 'or {}'-defaulted rebuild lines at replay.py:76-86 and adds no name the repository naming rules forbid, though its three-line comment is longer than the file's usual one-liners.\nSCORE reuse: 20\nJUSTIFICATION reuse: the rendering capability is already owned by reckon/crew/picker/__init__.py:452 (_state_beside_assessment, driven by request.orchestrator_assessment) and the change populates that existing PickRequest field at reckon/crew/picker/types.py:22 rather than adding a mechanism.\nFINDING tests/test_a_replay_carries_the_assessment.py:161 follow-on: the first assertion's expected side is the module constant ASSESSMENT, the same value the test fed into the record, so it is not drawn from an independent source; it holds as a guard only because the recorded negative control reddens it (KeyError: 'orchestrator_assessment') when the field is dropped from the rebuilt request.",
+  "review_run_id": "r-20261016T080820643630-review-of-replay-carries-the-assessment-f1b77a668bf0",
+  "reviewed_base_sha": "f33b8db0ab9fcf2c80718c11352424e2af82368f",
+  "reviewed_head_sha": "f1b77a668bf0de9b600d60a468f681b299a70547",
+  "reviewed_run_id": "r-20261016T074527305349-replay-carries-the-assessment",
+  "reviewer_run_id": "r-20261016T080820643630-review-of-replay-carries-the-assessment-f1b77a668bf0",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T08:22:19.274491+00:00",
+  "total": 117
+}
