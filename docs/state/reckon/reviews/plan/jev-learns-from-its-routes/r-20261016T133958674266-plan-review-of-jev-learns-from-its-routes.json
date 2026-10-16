@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T13:47:22.988Z",
+  "dispatched_at": "2026-10-16T13:40:51Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/jev-learns-from-its-routes.html:416",
+      "id": "wiring-1",
+      "reason": "without a driving invocation the four newest sections have no dispatch order, the same defect the prior review acted on for \u00a713.",
+      "text": "f-jlr-004 is the only open followup and orders \u00a713, \u00a79 and \u00a711 (all landed) while naming no invocation for the implementable \u00a714, \u00a715, \u00a716 and \u00a717",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/jev-learns-from-its-routes.html:378",
+      "id": "reasoning-1",
+      "reason": "the stated harm (a vacuous pass if the ceiling stops firing altogether) is already covered elsewhere, so the justification, and the node's standing as a distinct guard, change.",
+      "text": "\u00a716's Why states \"The string appears in no other test\" and \"nothing shows the ceiling firing on a fresh 95% reading\", but tests/test_picker_pressure.py:191 asserts a fresh reading at/above the ceiling is excluded with a `budget-ceiling` reason and tests/test_picker.py:169 exercises the same reason, so the ceiling's firing is already guarded at suite level",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/jev-learns-from-its-routes.html:24",
+      "id": "wiring-2",
+      "reason": "every one of those prerequisites has already landed, so no live ordering conflict exists and the omission changes no dispatch.",
+      "text": "`plan-section-depends-on` carries no entry for s14, s15, s16 or s17 although each shares a write path with an earlier section (\u00a714 with \u00a713 on `promotion_checks.py`, \u00a715 with \u00a73/\u00a74/\u00a75 on `snapshot.py`, \u00a716 with \u00a79 on `tests/test_one_staleness_rule.py`, \u00a717 with \u00a710 on `paid_lanes.py`)",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "e244eb5dc420ce38d5fb40b5aa72147cede06a28e976c6dfddaf66a821daaff9",
+  "plan_slug": "jev-learns-from-its-routes",
+  "plan_version": 49,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T133958674266-plan-review-of-jev-learns-from-its-routes",
+  "reviewed_blob_sha": "e64cd435ab3954d4b9b9e1a917e88038b0150db9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each section's cited review id (r-20261016T123711858952, r-20261016T131939416938, r-20261016T102759029006, r-20261016T120756937620) and every cited file path resolve.",
+    "done_when": "pass \u2014 each of \u00a714\u2013\u00a717 names a measurable done-when with a declared negative control that deletes or restores the specific mechanism and requires a named assertion to fail.",
+    "evidence_paths": "pass \u2014 \u00a714\u2013\u00a717 name repository test files and the landed-evidence href resolves; no session-scratchpad or node-local temporary path is declared.",
+    "naming": "pass \u2014 the changed sections name mechanisms (`session_id`, `moved_in`, `suggested_shelf_life_seconds`, `refresh_interval_seconds`) with no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a716's Why claims the ceiling-firing string \"appears in no other test\", but it appears in tests/test_picker_pressure.py:191 and tests/test_picker.py:169, the former asserting a fresh reading at/above the ceiling is excluded.",
+    "single_goal": "pass \u2014 \u00a714 (delete the duplicated helper, read the observation's session), \u00a715 (filter moved_in by the request's requirement), \u00a716 (add the ceiling positive control to one case), \u00a717 (refuse an unknown unit) each carry one deliverable.",
+    "wiring": "a finding \u2014 the only open followup f-jlr-004 (docs/plans/jev-learns-from-its-routes.html:416) gives a build order for \u00a713, \u00a79 and \u00a711, all now landed, and names no invocation for the newly-implementable \u00a714, \u00a715, \u00a716 and \u00a717, so the four newest sections have no driving dispatch; the `plan-section-depends-on` map likewise carries no entry for s14\u2013s17."
+  },
+  "section_digests": {
+    "_document": "90ccd539811e3861bebf6364dedc7d2b9a046bbda7a3092507fb8782042f756a",
+    "s1": "a8d94897c0a90e9cd66d3e5c67d6aca0aeb94d26a49bd944098a8d70a151ca34",
+    "s10": "0d42b606fb481de5ba3425ebbe60d11d1d0fa95c234be3787770a652d68b4bd7",
+    "s11": "403c9ebb80e8d39b6f9944fe5bd76edc62c59efc805c7b8906df46c317cc323c",
+    "s12": "48cbcffdbd3a8bcb2e95999c3339cec0f3210970c7b25ac4014ce6f18c6407a0",
+    "s13": "39d852b73e1d4700e81a4bd66cbe09d4555ca96d01411656200e6e0d451b169a",
+    "s14": "ff032abcb3a1ddcc32393ba480fa7558ef325c153f423163f22d5a258da62fa0",
+    "s15": "e879f9e58f623ccb67576329a1decd305f5a8b37cf9d718592e13a2b35e37b26",
+    "s16": "034faeb954788e7f685cd2f3ed47698043efcfb7570770609e02e3030daf56b1",
+    "s17": "a8f88eaee8c1801364c50491cf821b7c88bafc24e53f42dd8b1c688296b27fb3",
+    "s2": "cc35fef7cc2d6ce0af14220bc78602ca25e960978e3dd3efb5979ca5e3c14917",
+    "s3": "807cb056a055ab721cde0a5a171037e4f1dfecdb1d6a1d5d2c4e5babde307811",
+    "s4": "828939c295d01d9b6fa0e90760eeee37626b612fb8414928adedddbb83f7238b",
+    "s5": "6cff1e7bf68d8874d67225b968adb4aeea6828a4800ac65b4676edd703eb6a52",
+    "s6": "52a8aac92b5fb5f13ab9b1a64209356dd2469cac4df0bd6b230fe7d1a711d131",
+    "s7": "54c7b27c70ed529203f4484e6ad6fcca22fb6679577180b9364a8e92bd5fc7a7",
+    "s8": "652e49cdb77f02dc989a56ae626a1a124b80a5633e0c0f60319d4d4456a875d4",
+    "s9": "4a7f10635f6026036ecc6293a36261d0f1a5a77b026b7cd40d60ed92de631a92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T13:49:23.247664+00:00"
+}
