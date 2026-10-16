@@ -23,7 +23,7 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="248">
+<meta name="plan-version" content="249">
 <meta name="plan-modified" content="2026-10-16">
 <meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;deferred&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;,&quot;s34&quot;:&quot;done&quot;}">
 </head>
@@ -683,7 +683,10 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
     <div class="r-comment-body"><p>A correction to <code>c-close-s34</code>. The exclusive-node head sweep covered 206 of at least 214 test files that import the changed modules, not all of them. Its review (95) found that its file pattern missed 8 files that use a bare <code>import_module("reckon.crew.dispatch")</code>. §34 merged before that review delivered. The same worker is running those 8 files at head, plus each failing test alone at base and head if any fail. The result is recorded here when it lands.</p></div>
 </div>
 <div class="r-comment" data-section="s34" data-id="c-run-r-20261016T205210276701-review-of-head-sweep-names-its-failure-71d09c178286" data-who="reckon-build" data-when="2026-10-16T21:07:30.638Z">
-    <div class="r-comment-body"><p>Stored an independent review of r-20261016T201537573290-head-sweep-names-its-failure at reviewed base/head 71d09c178286c3e73052b348dac6204e5f1bedd7: status parsed, all six dimensions scored in 0..20 (total 95), added_failure_count 0 with added_failure_ids [] re-derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs, one blocking finding that the head sweep&#x27;s importer instrument omits 8 test files importing reckon/crew/dispatch.py through the bare import_module() form.</p></div>
+    <div class="r-comment-body"><p>Stored an independent review of r-20261016T201537573290-head-sweep-names-its-failure at reviewed base/head 71d09c178286c3e73052b348dac6204e5f1bedd7: status parsed, all six dimensions scored in 0..20 (total 95), added_failure_count 0 with added_failure_ids [] re-derived from the reviewed run's own baseline_suite and after_suite gate logs, one blocking finding that the head sweep's importer instrument omits 8 test files importing reckon/crew/dispatch.py through the bare import_module() form.</p></div>
+</div>
+<div class="r-comment" data-section="s34" data-id="c-run-r-20261016T201537573290-head-sweep-names-its-failure" data-who="reckon-build" data-when="2026-10-16T21:34:00Z">
+    <div class="r-comment-body"><p>Over the corrected importer set (214 test files — the earlier 206 plus the eight a bare import_module form hid), head a8cca7e1b has exactly one failing id, tests/test_worker_path_carries_shims.py::test_inside_allocation_prompt_names_the_host_and_storage_contract, and it fails identically at base 6906a79e: the same eight files give &#x27;1 failed, 54 passed&#x27; at head and at base, and the id passes 0 of 5 alone runs at each revision. The head failure set therefore carries nothing new; the 206-file head arm has zero failures.</p></div>
 </div>
 </section>
 </main>
