@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/serve.py:_discover_plans_uncached",
+    "reckon/serve.py:_read_readiness_uncached",
+    "reckon/metadata_index.py:_resource_row",
+    "reckon/mcp_discovery.py:_discover_project"
+  ],
+  "completed_at": "2026-10-16T23:21:35.734Z",
+  "dispatched_at": "2026-10-16T23:08:11Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the worker's own head-arm logs are superseded by the coordinator's importer population at the real landing merge, run r-20261016T231411366097, whose logs name their revisions",
+      "recorded_at": "2026-10-16T23:21:15.182436+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the worker's own head-arm logs are superseded by the coordinator's importer population at the real landing merge, run r-20261016T231411366097, whose logs name their revisions",
+      "recorded_at": "2026-10-16T23:21:25.297112+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T202538393252-a-fresh-process-reuses-the-plan-parse/logs/all_head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the log the reviewed manifest names for its head arm contains only its header line \u2014 no test results and no EXIT= line \u2014 and logs/head2/all.log is likewise header-only, so the done_when's clause that the importing test files give the same pass and fail ids at head as at base is not readable from the delivered logs."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T202538393252-a-fresh-process-reuses-the-plan-parse/logs/head/chunk_00.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: every head-arm chunk log's first line reads rev=2e26dc966e457ddf186a50604cc9a52fd880a76b (worktree, uncommitted), naming the base revision rather than the head it measured, so a reader comparing the base and head arms cannot tell which revision the head arm's failures belong to."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 2e26dc96; 7b8fcb274 adds the persisted-discovery read, discovery_state/record_discovery/readiness_from_state and reuse_parsed_state, 73155abc5 and f84f5162 add evidence prose, 746dce455 removes the uncalled parsed_state accessor, and 142960832 removes the in-process cache shortcut so the digest check runs on every read.",
+    "done_when": "the done_when names tests/test_a_fresh_process_reuses_the_plan_parse.py; I re-ran it at f84f5162 in a scratch archive of that commit and it reports 6 passed, EXIT=0 (review-head-gate.log), and the store-bypassed negative control recorded at logs/store-bypassed-negative-control.log holds 3 failed, EXIT=1; the done_when's other clause, that the serve/metadata_index-importing files give the same pass and fail ids at head as at base, has no completed head-arm log named on this node.",
+    "goal": "the goal is that a fresh process reads each plan's parsed discovery and readiness state from the persisted metadata index, re-parsing only changed files; reckon/serve.py:2282 serves that state from metadata_index.discovery_state and line 2309 writes a re-parsed file back with record_discovery, so the landed change is what the goal states.",
+    "manifest": "read; it names the five commits, the named test at 6 passed, three companion files with their results, logs/store-bypassed-negative-control.log as the negative control, and it names logs/all_head.log for the head arm \u2014 which holds only its header line, and the manifest does not claim the population comparison completed.",
+    "write_paths": "the manifest declares reckon/serve.py, reckon/metadata_index.py, reckon/_plan_html.py, tests/test_a_fresh_process_reuses_the_plan_parse.py, the evidence fragment and the figures directory; git diff --stat 2e26dc966e457ddf186a50604cc9a52fd880a76b f84f5162f116397a40481c2ee6d5ddbfa719b41f lists exactly those five paths and no figure, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_fresh_process_reuses_the_plan_parse.py:271 fails if the read after an in-process edit answers from the build as it was, which is exactly the regression commit 142960832 repaired.",
+    "evidence": "the named gate tests/test_a_fresh_process_reuses_the_plan_parse.py is green at the reviewed head (6 passed, EXIT=0) but the done_when's same-ids-at-base-and-head clause has no readable head-arm log \u2014 logs/all_head.log holds only a header line with no EXIT=.",
+    "fit": "reckon/_plan_html.py:1425 seeds the shared parse through the same memoized idiom read_state_and_text_file uses at line 1415, and no added name carries a plan, phase or ticket identifier.",
+    "goal_fidelity": "reckon/serve.py:2282-2309 serves discovery from metadata_index.discovery_state and leaves a file whose digest moved to the parse path, which is the goal's measure.",
+    "reuse": "reckon/serve.py:2607 now delegates the readiness derivation to reckon/metadata_index.py:750 rather than repeating it, and the discovery state was added to the existing persisted metadata index rather than a second cache, as the plan requires.",
+    "scope_discipline": "git diff --stat 2e26dc96..f84f5162 lists only the five declared write paths, the fragment at docs/evidence/fragments/a-read-answers-inside-its-deadline/a-fresh-process-reuses-the-plan-parse.html among them."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 2e26dc966e457ddf186a50604cc9a52fd880a76b\nreviewed_head_sha: f84f5162f116397a40481c2ee6d5ddbfa719b41f\n\nVERDICT goal: the goal is that a fresh process reads each plan's parsed discovery and readiness state from the persisted metadata index, re-parsing only changed files; reckon/serve.py:2282 serves that state from metadata_index.discovery_state and line 2309 writes a re-parsed file back with record_discovery, so the landed change is what the goal states.\nVERDICT done_when: the done_when names tests/test_a_fresh_process_reuses_the_plan_parse.py; I re-ran it at f84f5162 in a scratch archive of that commit and it reports 6 passed, EXIT=0 (review-head-gate.log), and the store-bypassed negative control recorded at logs/store-bypassed-negative-control.log holds 3 failed, EXIT=1; the done_when's other clause, that the serve/metadata_index-importing files give the same pass and fail ids at head as at base, has no completed head-arm log named on this node.\nVERDICT write_paths: the manifest declares reckon/serve.py, reckon/metadata_index.py, reckon/_plan_html.py, tests/test_a_fresh_process_reuses_the_plan_parse.py, the evidence fragment and the figures directory; git diff --stat 2e26dc966e457ddf186a50604cc9a52fd880a76b f84f5162f116397a40481c2ee6d5ddbfa719b41f lists exactly those five paths and no figure, all inside the declared scope.\nVERDICT manifest: read; it names the five commits, the named test at 6 passed, three companion files with their results, logs/store-bypassed-negative-control.log as the negative control, and it names logs/all_head.log for the head arm \u2014 which holds only its header line, and the manifest does not claim the population comparison completed.\nVERDICT diff: read commit by commit against 2e26dc96; 7b8fcb274 adds the persisted-discovery read, discovery_state/record_discovery/readiness_from_state and reuse_parsed_state, 73155abc5 and f84f5162 add evidence prose, 746dce455 removes the uncalled parsed_state accessor, and 142960832 removes the in-process cache shortcut so the digest check runs on every read.\n\nCALL_SITES: reckon/serve.py:_discover_plans_uncached, reckon/serve.py:_read_readiness_uncached, reckon/metadata_index.py:_resource_row, reckon/mcp_discovery.py:_discover_project\n\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/serve.py:2282-2309 serves discovery from metadata_index.discovery_state and leaves a file whose digest moved to the parse path, which is the goal's measure.\nSCORE evidence: 14\nJUSTIFICATION evidence: the named gate tests/test_a_fresh_process_reuses_the_plan_parse.py is green at the reviewed head (6 passed, EXIT=0) but the done_when's same-ids-at-base-and-head clause has no readable head-arm log \u2014 logs/all_head.log holds only a header line with no EXIT=.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 2e26dc96..f84f5162 lists only the five declared write paths, the fragment at docs/evidence/fragments/a-read-answers-inside-its-deadline/a-fresh-process-reuses-the-plan-parse.html among them.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_fresh_process_reuses_the_plan_parse.py:271 fails if the read after an in-process edit answers from the build as it was, which is exactly the regression commit 142960832 repaired.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/_plan_html.py:1425 seeds the shared parse through the same memoized idiom read_state_and_text_file uses at line 1415, and no added name carries a plan, phase or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/serve.py:2607 now delegates the readiness derivation to reckon/metadata_index.py:750 rather than repeating it, and the discovery state was added to the existing persisted metadata index rather than a second cache, as the plan requires.\n\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T202538393252-a-fresh-process-reuses-the-plan-parse/logs/all_head.log:1 follow-on: the log the reviewed manifest names for its head arm contains only its header line \u2014 no test results and no EXIT= line \u2014 and logs/head2/all.log is likewise header-only, so the done_when's clause that the importing test files give the same pass and fail ids at head as at base is not readable from the delivered logs.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T202538393252-a-fresh-process-reuses-the-plan-parse/logs/head/chunk_00.log:1 follow-on: every head-arm chunk log's first line reads rev=2e26dc966e457ddf186a50604cc9a52fd880a76b (worktree, uncommitted), naming the base revision rather than the head it measured, so a reader comparing the base and head arms cannot tell which revision the head arm's failures belong to.",
+  "review_run_id": "r-20261016T230727585113-review-of-a-fresh-process-reuses-the-plan-parse-f84f5162f116",
+  "reviewed_base_sha": "2e26dc966e457ddf186a50604cc9a52fd880a76b",
+  "reviewed_head_sha": "f84f5162f116397a40481c2ee6d5ddbfa719b41f",
+  "reviewed_run_id": "r-20261016T202538393252-a-fresh-process-reuses-the-plan-parse",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T23:19:02.469496+00:00",
+  "total": 107
+}
