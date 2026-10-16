@@ -26,8 +26,8 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.99">
-<meta name="plan-version" content="143">
-<meta name="plan-modified" content="2026-10-16">
+<meta name="plan-version" content="144">
+<meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
   <main class="plan-doc">
@@ -1986,6 +1986,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261016T211409111773-review-of-a-worker-cannot-remove-another-runs-reports-125add86bdcc" data-who="reckon-build" data-when="2026-10-16T21:22:30.232Z">
     <div class="r-comment-body"><p>reviewed the commits run r-20261016T195907790544-a-worker-cannot-remove-another-runs-reports gained since its review (base 2aa8df942 -&gt; head 125add86b, tests/test_a_worker_cannot_remove_another_runs_reports.py only): the production-composition seal test reddens on a grant-loop skip removal at reckon/_worker_fence.py:1300 and the two executed production cases redden under the store-drop negative controls; scores goal_fidelity 18, evidence 17, scope_discipline 20, durability 17, fit 18, reuse 18, total 108, one follow-on finding at tests/test_a_worker_cannot_remove_another_runs_reports.py:458.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261016T195907790544-a-worker-cannot-remove-another-runs-reports" data-who="reckon-build" data-when="2026-10-16T21:13:24Z">
+    <div class="r-comment-body"><p>sealed the reports root and review store read-only in fence_argv (they were handed to every launch as whole-store writable binds, per the incident worker.json) and granted only the run&#x27;s declared paths beneath them; the seal is now exercised over the roots a real launch hands the fence, not a hand-made list, so the grant loop&#x27;s skip of a sealed store is what the tests hold to; new test file 8 passed, both negative controls each delete the sibling and fail with EXIT=1</p></div>
 </div>
 </section>
 </main>
