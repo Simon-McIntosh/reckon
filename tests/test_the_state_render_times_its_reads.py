@@ -81,7 +81,7 @@ def _stub_reads(monkeypatch):
 
     def cached_run_time_profile(_project, *, now):
         calls["_cached_run_time_profile"] += 1
-        return {"groups": []}
+        return {"groups": []}, 0.0
 
     monkeypatch.setattr(lane_context, "local_lane_load", local_lane_load)
     monkeypatch.setattr(lane_context, "list_live", list_live)

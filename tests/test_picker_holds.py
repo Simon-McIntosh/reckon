@@ -144,6 +144,10 @@ def test_wait_profiles_only_live_local_shapes(lane, monkeypatch):
     monkeypatch.setattr(
         "reckon.crew.run_time_profile.ledger.runs", lambda *a, **k: rows
     )
+    # A pick serves a persisted profile rather than building one, so publish the
+    # project's profile first -- the act a promotion performs in the fleet.
+    lane_context._PROFILE_CACHE.clear()
+    lane_context.refresh_run_time_profile("sample", now=NOW)
     assert render()["local_lane"]["expected_wait_s"] == 200
 
 

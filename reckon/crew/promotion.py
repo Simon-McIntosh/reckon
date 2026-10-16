@@ -1236,6 +1236,18 @@ def _complete_locked(
             "version": ledger_version,
             "run": dict(existing),
         }
+    # The promotion that moves a project's ledger is the one moment its profile
+    # content changes, so it publishes the run-time profile the picks will later
+    # serve instead of letting a pick rebuild it. This runs after the append, for
+    # the promoted run's project, and never fails the promotion: the profile is
+    # an operational reading, and a build or cache write that fails leaves the
+    # previous reading in place rather than undoing a landed run.
+    try:
+        from reckon.crew.picker import lane_context as _lane_context
+
+        _lane_context.refresh_run_time_profile(project)
+    except Exception:
+        pass
     committed_review_paths: list[Path] = []
     with _report_written_ledger_row(
         run_id,

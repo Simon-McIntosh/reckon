@@ -550,12 +550,20 @@ def lanes(
     return blocks
 
 
+#: How old a persisted run-time profile may be and still be served to a pick.
+#: The profile is published by a promotion in its project, and a project's
+#: recent wall times drift between promotions, so a reading is served only while
+#: it is younger than this bound. Past it the pick serves none and the next
+#: promotion publishes a fresh one: rebuilding inside a pick is what pushed picks
+#: past their dispatch bound, so no age is ever paid for with a synchronous read.
+PROFILE_MAX_AGE_S = 24 * 60 * 60
+
 #: A project's run-time profile, memoized within one process. Each entry holds
 #: the freshness key the profile was read at beside the profile itself. This is
 #: a first layer only: a real dispatch is a fresh process, so the memo cannot
 #: carry a reading between dispatches and the persisted copy below is what makes
 #: the reuse survive.
-_PROFILE_CACHE: dict[str, tuple[str, Mapping[str, Any]]] = {}
+_PROFILE_CACHE: dict[str, tuple[Any, Mapping[str, Any]]] = {}
 
 
 def _profile_cache_root() -> Path:
@@ -622,50 +630,135 @@ def _profile_stamp_may_cache(before: Any, after: Any) -> bool:
     return before[0][:-1] == after[0][:-1] and before[1] == after[1]
 
 
-def _cached_run_time_profile(project: str, *, now: datetime) -> Mapping[str, Any]:
-    """Return a project's run-time profile, reusing the last read while its
-    ledger is unchanged.
+def _profile_age_s(profile: Mapping[str, Any], now: datetime) -> float | None:
+    """Seconds since the refresh persisted ``profile``, or ``None`` when unknown.
 
-    :func:`_expected_wait` asks for the profile of every distinct foreign
-    project with a live local worker on every pick, so reading each project's
-    whole ledger makes a pick's cost grow with the number of live foreign
-    projects -- the figure that pushes a pick past its five-second dispatch
-    bound. A real dispatch is a fresh process, so the reading is persisted beside
-    its freshness stamp through
-    :func:`reckon.capabilities.cached_pick_input_rekeyed`, which owns the schema
-    marker, the atomic write and the corrupt-entry handling: the in-process memo
-    is checked first, then that shared cache, and only a miss reads the ledger.
-    The stamp folds in the window's end date beside the ledger stamp, so a
-    profile is recomputed at least once a day even for a project whose ledger
-    stays still.
+    The age runs from the instant the refresh function wrote the entry, which it
+    records inside the value as ``persisted_at``. A value carrying no readable
+    stamp was written before that instant was recorded, so its age is unknown
+    and the caller treats it as older than the bound.
+    """
+
+    stamp = parse_utc(str(profile.get("persisted_at") or ""))
+    if stamp is None:
+        return None
+    return (now - stamp).total_seconds()
+
+
+def _read_served_profile(
+    project: str, *, now: datetime, filename: str
+) -> Mapping[str, Any] | None:
+    """The persisted profile for ``project`` when it is young enough to serve.
+
+    The entry is read directly through
+    :func:`reckon.capabilities._read_pick_entry` rather than through
+    :func:`reckon.capabilities.cached_pick_input_rekeyed`, because that function
+    serves a stored value only when its key equals the current stamp -- and the
+    case this read exists for is exactly a stamp that has moved. Reading the
+    entry is therefore what lets a moved stamp serve the last persisted profile.
+    An absent, unreadable, corrupt or version-mismatched entry reads as none, as
+    does a value with no ``persisted_at`` or one older than the bound.
+    """
+
+    path = capabilities.pick_input_cache_path(
+        project, root=_profile_cache_root(), filename=filename
+    )
+    entry = capabilities._read_pick_entry(path)
+    if entry is None:
+        return None
+    value = entry.get("value")
+    if not isinstance(value, Mapping):
+        return None
+    age = _profile_age_s(value, now)
+    if age is None or age >= PROFILE_MAX_AGE_S:
+        return None
+    return value
+
+
+def _cached_run_time_profile(
+    project: str, *, now: datetime
+) -> tuple[Mapping[str, Any], float | None]:
+    """Serve a project's persisted run-time profile and its age, or nothing.
+
+    A pick never builds a profile: :func:`_expected_wait` asks for the profile
+    of every distinct foreign project with a live local worker on every pick, so
+    reading each project's whole ledger made a pick's cost grow with the number
+    of live foreign projects, and a single synchronous rebuild was the read that
+    pushed picks past their five-second dispatch bound. So this serves the last
+    profile a promotion published for the project, and serves nothing when there
+    is none fit to serve.
+
+    The returned age runs from the instant the refresh persisted the profile. It
+    is ``None`` when no profile was served, and the profile is the empty mapping
+    then, so a caller weighs no group and invents no wall time. Five cases serve
+    none without ever reading a ledger: a cold cache with no persisted entry, a
+    profile older than :data:`PROFILE_MAX_AGE_S`, a ledger whose index yields no
+    stamp, a project id that cannot form a cache filename, and a value written
+    under another cache version.
     """
 
     key = _profile_stamp(project, now)
     if key is None:
-        return run_time_profile(project, now=now)
+        return {}, None
     cached = _PROFILE_CACHE.get(project)
     if cached is not None and cached[0] == key:
-        return cached[1]
+        return cached[1], _profile_age_s(cached[1], now)
     try:
         filename = _profile_filename(project)
     except ValueError:
-        # An unsafe project id must never form a cache path, and a pick must
-        # not fail over one: the profile is read without being cached.
-        return run_time_profile(project, now=now)
-    profile = capabilities.cached_pick_input_rekeyed(
+        # An unsafe project id must never form a cache path, and a pick must not
+        # fail over one: no profile is served for it.
+        return {}, None
+    profile = _read_served_profile(project, now=now, filename=filename)
+    if profile is None:
+        return {}, None
+    _PROFILE_CACHE[project] = (key, profile)
+    return profile, _profile_age_s(profile, now)
+
+
+def refresh_run_time_profile(
+    project: str, *, now: datetime | None = None
+) -> Mapping[str, Any] | None:
+    """Rebuild ``project``'s run-time profile and persist it under its stamp.
+
+    Building a profile is the read the pick no longer makes, so it moves to the
+    one moment a project's ledger content changes: the promotion that appends to
+    that project's ledger. Promotion calls this for the run's project after the
+    ledger append, so the profile a later pick serves was published by the
+    promotion that moved the ledger, and no pick pays for a rebuild.
+
+    The instant is recorded inside the value as ``persisted_at``, so a later read
+    can age it, and the value is stored through
+    :func:`reckon.capabilities.cached_pick_input_rekeyed` under the stamp the
+    build settled at. A project whose id cannot form a cache filename, or whose
+    ledger index yields no stamp, is not persisted, and a caller may call this
+    without it ever failing their work: a failed build or write leaves the
+    previous entry, and the caller's own result, unchanged.
+    """
+
+    moment = now if now is not None else datetime.now(UTC)
+    try:
+        filename = _profile_filename(project)
+    except ValueError:
+        return None
+    if _profile_stamp(project, moment) is None:
+        return None
+
+    def build() -> dict[str, Any]:
+        profile = dict(run_time_profile(project, now=moment))
+        profile["persisted_at"] = moment.isoformat()
+        return profile
+
+    value = capabilities.cached_pick_input_rekeyed(
         project,
-        lambda: _profile_stamp(project, now),
+        lambda: _profile_stamp(project, moment),
         _profile_stamp_may_cache,
-        lambda: run_time_profile(project, now=now),
+        build,
         root=_profile_cache_root(),
         filename=filename,
     )
-    # A profile built while the source was still settling is not cached at all,
-    # so it is memoized only when the key did not move across the build.
-    settled = _profile_stamp(project, now)
-    if settled is not None and settled == key:
-        _PROFILE_CACHE[project] = (settled, profile)
-    return profile
+    _PROFILE_CACHE.pop(project, None)
+    return value
 
 
 def _expected_wait(
@@ -674,17 +767,24 @@ def _expected_wait(
     records: Sequence[Mapping[str, Any]] | None,
     local_backend: str | None,
     now: datetime,
-) -> float | None:
-    """Median historical wall time for the shapes of local workers now live.
+) -> tuple[float | None, float | None]:
+    """Median historical wall time for the shapes of local workers now live,
+    beside the age of the oldest foreign profile that contributed to it.
 
     Each live worker contributes its matching profile median once, from
     whichever project it belongs to, so the figure reflects the whole live
     local load rather than only the picking project's share of it. This is a
     typical total run duration, not a prediction of the next slot's release.
-    Unmeasured shapes contribute no invented duration.
+    Unmeasured shapes contribute no invented duration: a foreign owner whose
+    profile is not served contributes no wall, exactly as an owner with no
+    matching group does. The second figure is the age of the oldest foreign
+    profile that did contribute, or ``None`` when none did; it names the
+    staleness behind the wait, so a router can weigh a reading taken two hours
+    ago differently from one taken minutes ago.
     """
     profiles = {}
     walls = []
+    foreign_ages: list[float] = []
     with timed_read("list_live"):
         live_rows = list_live()
     for row in live_rows:
@@ -705,14 +805,15 @@ def _expected_wait(
             continue
         # Every live local worker contributes its shape's median once, whatever
         # project it belongs to: the figure is the typical wall time for the
-        # local runs now live, so a worker from another project must be
-        # profiled rather than dropped. Dropping it would let the estimate read
-        # null (or low) while the lane is genuinely busy with that project's
-        # runs -- a wrong answer about load, not merely a slow one. The pick's
-        # own records are reused rather than re-read; each other owner is read
-        # from its own ledger only when its ledger has moved since the last
-        # pick, so a repeated pick does not re-decode every foreign project's
-        # history, and only owners with live local workers are read at all.
+        # local runs now live, so a worker from another project must be counted
+        # rather than dropped. Dropping it would let the estimate read null (or
+        # low) while the lane is genuinely busy with that project's runs -- a
+        # wrong answer about load, not merely a slow one. The pick's own records
+        # are reused rather than re-read; every other owner is served from its
+        # own persisted profile, which the promotion that moved its ledger
+        # published, so a pick never decodes a foreign ledger itself and only
+        # owners with live local workers are read at all.
+        owner_age: float | None = None
         if owner not in profiles:
             if owner == project and records is not None:
                 recent = [
@@ -729,7 +830,10 @@ def _expected_wait(
                 profiles[owner] = {"groups": _group_rows(recent)}
             else:
                 with timed_read("_cached_run_time_profile"):
-                    profiles[owner] = _cached_run_time_profile(owner, now=now)
+                    served, served_age = _cached_run_time_profile(owner, now=now)
+                profiles[owner] = served
+                if owner != project:
+                    owner_age = served_age
         shape = _as_mapping(row.get("node"))
         node = SimpleNamespace(
             role=shape.get("role") or row.get("role"),
@@ -739,7 +843,11 @@ def _expected_wait(
         wall = _number((group or {}).get("wall_seconds_median"))
         if wall is not None:
             walls.append(wall)
-    return median(walls) if walls else None
+            if owner_age is not None:
+                foreign_ages.append(owner_age)
+    wait = median(walls) if walls else None
+    oldest_age = max(foreign_ages) if foreign_ages else None
+    return wait, oldest_age
 
 
 def local_lane(
@@ -790,14 +898,16 @@ def local_lane(
         admission = "admitting"
     else:
         admission = "unavailable"
+    expected_wait_s, expected_wait_profile_age_s = _expected_wait(
+        project=project,
+        records=records,
+        local_backend=local_backend,
+        now=moment,
+    )
     return {
         "admission": admission,
-        "expected_wait_s": _expected_wait(
-            project=project,
-            records=records,
-            local_backend=local_backend,
-            now=moment,
-        ),
+        "expected_wait_s": expected_wait_s,
+        "expected_wait_profile_age_s": expected_wait_profile_age_s,
         "running": load.get("running"),
         "waiting": load.get("waiting"),
         "headroom": load.get("headroom"),
@@ -843,7 +953,8 @@ def build(
         profile = {"groups": _group_rows(selected)}
     elif project:
         with timed_read("_cached_run_time_profile"):
-            profile = _cached_run_time_profile(project, now=moment)
+            served, _served_age = _cached_run_time_profile(project, now=moment)
+        profile = served
     return {
         "return_times": return_times(
             profile,

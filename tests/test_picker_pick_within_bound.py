@@ -103,11 +103,11 @@ def test_expected_wait_counts_a_foreign_projects_live_worker(monkeypatch):
     """A live local worker from another project still shapes the wait estimate.
 
     The figure is the typical wall time for the local runs now live, so a
-    worker whose project the pick did not read records for must be profiled
-    from its own ledger rather than dropped: dropping it would let the estimate
-    read null while the lane is genuinely busy with that project's runs. The
-    foreign profile is read exactly once and its median is what the estimate
-    reports, so a guard that reinstates the drop fails here.
+    worker whose project the pick did not read records for must contribute
+    rather than be dropped: dropping it would let the estimate read null while
+    the lane is genuinely busy with that project's runs. The foreign profile is
+    served from what its promotion published, never rebuilt by the pick, and its
+    median beside its age is what the estimate reports.
     """
     now = datetime(2026, 10, 3, 4, 0, tzinfo=UTC)
     foreign = {
@@ -120,10 +120,8 @@ def test_expected_wait_counts_a_foreign_projects_live_worker(monkeypatch):
         "node": {"role": "implement", "spec_level": "guided"},
     }
     monkeypatch.setattr(lane_context, "list_live", lambda: [foreign])
-    read: list[str] = []
 
     def profile(project, **_kwargs):
-        read.append(project)
         return {
             "groups": [
                 {
@@ -138,15 +136,23 @@ def test_expected_wait_counts_a_foreign_projects_live_worker(monkeypatch):
         }
 
     monkeypatch.setattr(lane_context, "run_time_profile", profile)
+    lane_context._PROFILE_CACHE.clear()
+    lane_context.refresh_run_time_profile("other", now=now)
+    monkeypatch.setattr(
+        lane_context,
+        "run_time_profile",
+        lambda *a, **kw: (_ for _ in ()).throw(AssertionError("rebuilt")),
+    )
+    lane_context._PROFILE_CACHE.clear()
 
-    wait = lane_context._expected_wait(
+    wait, age = lane_context._expected_wait(
         project="proj",
         records=[],
         local_backend="clive",
         now=now,
     )
-    assert read == ["other"]
     assert wait == 420.0
+    assert age == 0.0
 
 
 def _candidate() -> Candidate:
