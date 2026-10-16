@@ -75,6 +75,12 @@
 <p>§2 was merged together with that measurement at <code>e6b265996</code>, because the measurement's base, <code>723616aab</code>, already carried §2's two commits. <code>tests/test_browser_harness_finds_playwright.py</code> and <code>tests/test_browser_skip_is_not_vacuous.py</code> run inside the browser population and passed at head. One intermittent figure-reload id is the only failure at head that is absent at base; see §7.</p>
   </section>
 
+  <section id="s10">
+    <h2>§10 — a budget-stopped suite run records as overrun, landed</h2>
+    <p><code>_build_counts</code> in <code>reckon/crew/standing_suite.py</code> now treats pytest's progress column (<code>[ NN%]</code>, plain or xdist) as evidence that the test phase was reached. A run stopped at its budget after its tests began is therefore no longer recorded as a failed collection. Its <code>collected</code> stays null when no count was printed, and the promotion hold names only the overrun. The <code>EXIT=</code> reader also accepts a negative status, so a re-recorded log of a killed run reads <code>-9</code> rather than nothing. Collection-error evidence still decides first, and a run with no progress and no summary is still a collection failure.</p>
+<p>Run <code>r-20261016T161708083824-a-killed-suite-run-reached-its-tests</code>, commit <code>be0d77120</code>, merged at <code>073a9f5db</code>. At the merged head, the new <code>tests/test_a_killed_suite_run_reached_its_tests.py</code>, <code>tests/test_standing_suite.py</code> and <code>tests/test_standing_suite_holds_promotion.py</code> pass, 20 tests, <code>EXIT=0</code>. With the progress clause removed, the 76% case and the hold-message case fail (3 failed, <code>EXIT=1</code>). Review 115/120: its one follow-on, a gate log stamped with the base commit, is met by the merged-head gate log, which names <code>073a9f5db</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>

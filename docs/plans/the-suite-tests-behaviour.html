@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-after" content="the-suite-is-green-at-head">
   <meta name="plan-standalone" content="It shares the suite with the-suite-is-green-at-head, which it is sequenced after, but no section of either waits on the other.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;deferred&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;deferred&quot;,&quot;s10&quot;:&quot;done&quot;}">
   <title>The Suite Tests Behaviour | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="67">
+<meta name="plan-version" content="68">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -156,7 +156,7 @@
 <p><strong>Done when</strong> <code>reckon.flight.resolve</code> for the reckon project succeeds at the head, and <code>review_populations</code> returns the browser declaration with a 1,200 s budget. A <code>reckon crew suite run --project reckon</code> at the head writes a row named <code>browser</code> beside the standing suite's own row. A freshly started <code>reckon mcp</code> server answers <code>crew(view="flight", project="reckon")</code> without error. The process listing that opened the section is logged under the run directory. The negative control is executed and logged: with the block removed again in a scratch copy of the layer, <code>review_populations</code> returns no browser declaration and a suite run over that copy writes no <code>browser</code> row. Write path: <code>docs/state/reckon/flight.yaml</code>.</p>
 
     <h2 id="s10">§10 — A suite run stopped at its budget is recorded as overrun, not as a failed collection</h2>
-<section data-reckon="section" data-id="s10" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s10" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> At 15:04Z on 2026-10-16, a <code>reckon crew suite run --project reckon</code> at <code>8655e3c44</code> was stopped at its 1,200 s budget with exit status -9. Its <code>-q</code> progress had reached 76%: the log, <code>docs/state/reckon/suite-runs/suite-1792163098345424981.log</code>, holds 147 progress lines ending <code>[ 76%]</code>. The row recorded <code>collection_failed: true</code> and <code>collected: 0</code>. The promotion hold then read "failed to collect and overran its budget", which is half false. The cause is in <code>_build_counts</code> in <code>reckon/crew/standing_suite.py</code>. For any exit status other than 0, 1 or 5 it sets <code>collection_failed</code> from whether a final summary was printed. A run stopped before its summary therefore reads as one that never collected, even when its own progress lines show tests running.</p>
 <p><strong>Deliverable.</strong> <code>_build_counts</code> treats pytest's progress output as evidence that the test phase was reached: the <code>[ NN%]</code> column under <code>-q</code>, in plain and xdist form. A run whose log carries it is not a collection failure, whatever its exit status. Its <code>collected</code> stays unknown (<code>null</code>) when neither a collection line nor a summary states it, and is never recorded as 0. Positive collection-error evidence (<code>_COLLECTION_ERROR_RE</code>, or exit status 5) still decides a collection failure first. A run with neither progress nor a summary is classified as before. The promotion hold then names a budget-stopped run as "overran its budget" only.</p>
 <p><strong>Done when</strong> a new test, <code>tests/test_a_killed_suite_run_reached_its_tests.py</code>, builds counts from three fixed logs:</p>
@@ -193,10 +193,11 @@
     <pre class="r-fu-prompt">/reckon-build the-suite-tests-behaviour §8</pre>
     <p class="r-fu-outcome">§8 landed across three nodes (merges 6c1518d21, e400cbf43, 45c5db175): every real-home guard the census classed as unfiltered now fails only on a trace its own test minted, through one shared helper.</p>
     </article>
-<article class="r-fu" data-id="f-tstb-005" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build the-suite-tests-behaviour §10" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tstb-005" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build the-suite-tests-behaviour §10" data-resolved-at="2026-10-16T16:39:47+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Record a budget-stopped suite run as overrun, not as a failed collection</h4>
     <div class="r-fu-body"><p>§10 is implementable and writes <code>reckon/crew/standing_suite.py</code> and one new test. It is independent of the deferred §6 and §9. The run it fixes, the 15:04Z standing-suite run at <code>8655e3c44</code>, held every tier-none promotion in the project with a reason that was half false.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-suite-tests-behaviour §10</pre>
+    <p class="r-fu-outcome"><p>§10 landed at <code>073a9f5db</code>. No followup is written. The two remaining sections are deferred, each with its own opening condition. §9 waits until no reckon process older than <code>f76612774</code> is still running; §6 waits for a suite run with <code>--durations</code>.</p></p>
     </article>
 </section>
   
@@ -347,6 +348,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261016T162942846197-review-of-a-killed-suite-run-reached-its-tests-be0d77120808" data-who="reckon-build" data-when="2026-10-16T16:37:12Z">
     <div class="r-comment-body"><p>Reviewed e121b18eb26412acdcffb1a3386a15332e391d8f..be0d7712080803b243ea04cb2c04e1d5534b12c0 with parsed scores 20,17,20,19,19,20, one follow-on finding, and added failures unmeasured because the reviewed run records no baseline_suite arm.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-16T16:40:00Z">
+    <div class="r-comment-body"><p>§10 landed: a budget-stopped suite run with progress output records as overrun, not as a failed collection (merge <code>073a9f5db</code>, review 115/120). <a href="/reckon/evidence/archive/the-suite-tests-behaviour-landed.html#s10">evidence</a></p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
