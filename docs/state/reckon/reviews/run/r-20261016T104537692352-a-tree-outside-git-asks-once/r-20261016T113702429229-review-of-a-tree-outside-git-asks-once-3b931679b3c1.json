@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own suite/base and suite/head gate logs (twelve pytest chunks each arm): head failure ids minus base failure ids is empty",
+  "base_log_revision": "6583d7b7f26e27a3bb9e753fc45fcf3dd9ddab4f",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/serve.py:1739",
+    "reckon/serve.py:1901",
+    "reckon/doccheck.py:311",
+    "reckon/archive.py:86"
+  ],
+  "completed_at": "2026-10-16T12:06:04.632Z",
+  "dispatched_at": "2026-10-16T11:38:12Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "1697",
+      "severity": "blocking",
+      "text": "blocking: _git_head remembers \"outside any repository\" on any _run_git failure - a ten-second timeout, a spawn error, a dubious-ownership refusal or an unborn HEAD - and _git_directory only tests the root's own .git, so a docs root nested inside a repository but without its own .git (where git resolves HEAD by walking up) is remembered as outside and every later age and HEAD lookup answers no commit without spawning, silently falling back to plan-modified ages until that directory's mtime changes; the worktree currently carries an uncommitted repair of exactly this distinction, showing git's own not-a-repository verdict apart from every other failure."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T104537692352-a-tree-outside-git-asks-once/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite and after_suite name the directories suite/base and suite/head rather than a log file, so the production reader annotate_review_of_run (reckon/crew/review.py:1683 _read_gate_log) resolves them as files, gets None, and records the added-failure count as unmeasured, so the added-failure total cap can never be applied to this run."
+    }
+  ],
+  "head_log_revision": "3b931679b3c14b7b5d977a72714b64821845e42a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read the landed revision against its parent 6583d7b7f one commit at a time; a single commit, three files, +188/-1, carrying the memo, three tests and a landing fragment.",
+    "done_when": "the done_when names tests/test_a_tree_outside_git_asks_once.py, counts the git subprocesses a twelve-plan no-repository audit starts and bounds that count at one, and the manifest records the run (3 passed, EXIT=0) plus a base-versus-head probe of ten spawns against one.",
+    "goal": "the node goal is to remember a docs root outside any repository so later age and HEAD lookups spawn no git, and reckon/serve.py:1645-1706 adds _GIT_OUTSIDE_MEMO, _root_outside_repository and _remember_root_outside_repository, consulted from _git_head at reckon/serve.py:1694.",
+    "manifest": "read; it records the gate command and result, a red negative control, base and head arm results with their failure ids, and a failure_attribution",
+    "write_paths": "the manifest declares four write paths and the diff touches only reckon/serve.py, tests/test_a_tree_outside_git_asks_once.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-tree-outside-git-asks-once.html."
+  },
+  "justifications": {
+    "durability": "tests/test_a_tree_outside_git_asks_once.py:71 and :86 redden when the memo is removed, but no assertion covers the failure-versus-outside distinction at reckon/serve.py:1697, so the blocking finding's path is unguarded.",
+    "evidence": "tests/test_a_tree_outside_git_asks_once.py:71 bounds the no-repository audit's spawn count and the manifest records the run's result and a negative control that reddens with EXIT=1.",
+    "fit": "the memo and its two helpers at reckon/serve.py:1645-1674 mirror the existing _GIT_HEAD_MEMO and _file_identity idiom and introduce no forbidden name.",
+    "goal_fidelity": "reckon/serve.py:1694 consults the remembered outside answer from _git_head, so a root confirmed outside a repository resolves once and later lookups spawn no git.",
+    "reuse": "a search of reckon/ for an existing outside-repository memo (grep -rn OUTSIDE_MEMO and outside_repository) found no owner, and the extension lands on _git_head, the module's one HEAD resolver.",
+    "scope_discipline": "every path in the diff is inside the manifest's declared write paths, and the only extra is landing-fragment prose the dispatch told this node not to write."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to remember a docs root outside any repository so later age and HEAD lookups spawn no git, and reckon/serve.py:1645-1706 adds _GIT_OUTSIDE_MEMO, _root_outside_repository and _remember_root_outside_repository, consulted from _git_head at reckon/serve.py:1694.\nVERDICT done_when: the done_when names tests/test_a_tree_outside_git_asks_once.py, counts the git subprocesses a twelve-plan no-repository audit starts and bounds that count at one, and the manifest records the run (3 passed, EXIT=0) plus a base-versus-head probe of ten spawns against one.\nVERDICT write_paths: the manifest declares four write paths and the diff touches only reckon/serve.py, tests/test_a_tree_outside_git_asks_once.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-tree-outside-git-asks-once.html.\nVERDICT manifest: read; it records the gate command and result, a red negative control, base and head arm results with their failure ids, and a failure_attribution\nVERDICT diff: read the landed revision against its parent 6583d7b7f one commit at a time; a single commit, three files, +188/-1, carrying the memo, three tests and a landing fragment.\nCALL_SITES: reckon/serve.py:1739, reckon/serve.py:1901, reckon/doccheck.py:311, reckon/archive.py:86\nSCORE goal_fidelity: 19\nSCORE evidence: 17\nSCORE scope_discipline: 18\nSCORE durability: 15\nSCORE fit: 19\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: reckon/serve.py:1694 consults the remembered outside answer from _git_head, so a root confirmed outside a repository resolves once and later lookups spawn no git.\nJUSTIFICATION evidence: tests/test_a_tree_outside_git_asks_once.py:71 bounds the no-repository audit's spawn count and the manifest records the run's result and a negative control that reddens with EXIT=1.\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared write paths, and the only extra is landing-fragment prose the dispatch told this node not to write.\nJUSTIFICATION durability: tests/test_a_tree_outside_git_asks_once.py:71 and :86 redden when the memo is removed, but no assertion covers the failure-versus-outside distinction at reckon/serve.py:1697, so the blocking finding's path is unguarded.\nJUSTIFICATION fit: the memo and its two helpers at reckon/serve.py:1645-1674 mirror the existing _GIT_HEAD_MEMO and _file_identity idiom and introduce no forbidden name.\nJUSTIFICATION reuse: a search of reckon/ for an existing outside-repository memo (grep -rn OUTSIDE_MEMO and outside_repository) found no owner, and the extension lands on _git_head, the module's one HEAD resolver.\nFINDING reckon/serve.py:1697 blocking: _git_head remembers \"outside any repository\" on any _run_git failure - a ten-second timeout, a spawn error, a dubious-ownership refusal or an unborn HEAD - and _git_directory only tests the root's own .git, so a docs root nested inside a repository but without its own .git (where git resolves HEAD by walking up) is remembered as outside and every later age and HEAD lookup answers no commit without spawning, silently falling back to plan-modified ages until that directory's mtime changes; the worktree currently carries an uncommitted repair of exactly this distinction, showing git's own not-a-repository verdict apart from every other failure.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T104537692352-a-tree-outside-git-asks-once/manifest.md:15 follow-on: baseline_suite and after_suite name the directories suite/base and suite/head rather than a log file, so the production reader annotate_review_of_run (reckon/crew/review.py:1683 _read_gate_log) resolves them as files, gets None, and records the added-failure count as unmeasured, so the added-failure total cap can never be applied to this run.\nREVIEWED_BASE_SHA: 6583d7b7f26e27a3bb9e753fc45fcf3dd9ddab4f\nREVIEWED_HEAD_SHA: 3b931679b3c14b7b5d977a72714b64821845e42a\n",
+  "review_run_id": "r-20261016T113702429229-review-of-a-tree-outside-git-asks-once-3b931679b3c1",
+  "reviewed_base_sha": "6583d7b7f26e27a3bb9e753fc45fcf3dd9ddab4f",
+  "reviewed_head_sha": "3b931679b3c14b7b5d977a72714b64821845e42a",
+  "reviewed_run_id": "r-20261016T104537692352-a-tree-outside-git-asks-once",
+  "role": "review",
+  "rubric": "node",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T11:59:47.979425+00:00",
+  "total": 108
+}
