@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_backends.py:2214",
+    "reckon/_backends.py:293",
+    "reckon/crew/dispatch_admission.py:_fence_write_roots"
+  ],
+  "completed_at": "2026-10-16T20:59:35.875Z",
+  "dispatched_at": "2026-10-16T20:50:43Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-worker-cannot-remove-another-runs-reports",
+      "recorded_at": "2026-10-16T21:00:29.233508+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "record defect: the reviewer ran ruff check (all checks passed) and ruff format --check (already formatted) at head; only the log was unrecorded",
+      "recorded_at": "2026-10-16T21:00:30.351311+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_worker_cannot_remove_another_runs_reports.py",
+      "line": "212",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion that the whole reports root is not bound writable is vacuous \u2014 the argv is composed with writable=[stores.own_report] only, and fence_argv grants only roots it is handed, so the reports root is never among them and the assertion cannot redden; the skip it purports to guard (key in store_seal_keys at reckon/_worker_fence.py:1300) is the line that keeps production from re-opening the whole store, since delivery_write_roots hands reports_dir() and review_store_root() as writable roots into fence_argv at reckon/_backends.py:2214, and removing that skip leaves the suite green while the store is re-opened; the same holds at tests/test_a_worker_cannot_remove_another_runs_reports.py:236 for the review store."
+    },
+    {
+      "file": "manifest.md",
+      "line": "10",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when requires ruff check and ruff format --check to add no findings on the changed Python files against base, but the manifest records no ruff run and names no ruff log; I ran both at head (ruff check: All checks passed; ruff format --check: 2 files already formatted), so the clause holds but is unevidenced in the record."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 52c1c1f0; two commits, net +361/-1 spanning reckon/_worker_fence.py and the new test file, both inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_worker_cannot_remove_*_reports.py with a fenced rm refusal, two negative controls and a head-vs-base subset suite; the manifest records new-test.log (5 passed) and stores-negative-control.log (both arms fail).",
+    "goal": "the node goal is to seal the reports root and the review store read-only and re-bind only the run's declared paths under them writable; the diff adds shared_store_seal_roots at reckon/_worker_fence.py:1143 and seals both in fence_argv at reckon/_worker_fence.py:1273.",
+    "manifest": "read; it records commits 7853529ad and 2aa8df942, the subset suite 101 vs base 96, the store negative-control log, and both baseline_suite/after_suite with failure_count 0.",
+    "write_paths": "the declared paths include reckon/_worker_fence.py and the test file; the net diff touches only those two, and commit 1's reckon/_backends.py edit was reverted in commit 2, so nothing out of scope remains."
+  },
+  "justifications": {
+    "durability": "the seal is guarded \u2014 tests/test_a_worker_cannot_remove_another_runs_reports.py:201 fails without the overlay and the executed refusal fails under the negative control \u2014 but the load-bearing skip at reckon/_worker_fence.py:1300 has no test, since no test hands a store root in as a writable root.",
+    "evidence": "tests/test_a_worker_cannot_remove_another_runs_reports.py passes 5 and stores-negative-control.log fails one arm per store, but the done_when's ruff clause is unrecorded in manifest.md:10 and the whole-store-not-bound assertions at tests/test_a_worker_cannot_remove_another_runs_reports.py:212 are vacuous.",
+    "fit": "shared_store_seal_roots at reckon/_worker_fence.py:1143 mirrors the sibling worker_scratch_seal_root at :1110 and the naming checks over the two changed files return no banned label.",
+    "goal_fidelity": "reckon/_worker_fence.py:1273-1275 adds both stores to protected and :1300 skips re-binding each store root, so only declared paths beneath them are granted writable.",
+    "reuse": "shared_store_seal_roots at reckon/_worker_fence.py:1143 extends the seal already used at :1265, the sibling of worker_scratch_seal_root at :1110, and a search over reckon/ found no other owner of a delivery-store seal.",
+    "scope_discipline": "the net diff at reckon/_worker_fence.py and tests/test_a_worker_cannot_remove_another_runs_reports.py is entirely within the declared write paths, and commit 1's reckon/_backends.py edit does not survive to head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to seal the reports root and the review store read-only and re-bind only the run's declared paths under them writable; the diff adds shared_store_seal_roots at reckon/_worker_fence.py:1143 and seals both in fence_argv at reckon/_worker_fence.py:1273.\nVERDICT done_when: the done_when names tests/test_a_worker_cannot_remove_*_reports.py with a fenced rm refusal, two negative controls and a head-vs-base subset suite; the manifest records new-test.log (5 passed) and stores-negative-control.log (both arms fail).\nVERDICT write_paths: the declared paths include reckon/_worker_fence.py and the test file; the net diff touches only those two, and commit 1's reckon/_backends.py edit was reverted in commit 2, so nothing out of scope remains.\nVERDICT manifest: read; it records commits 7853529ad and 2aa8df942, the subset suite 101 vs base 96, the store negative-control log, and both baseline_suite/after_suite with failure_count 0.\nVERDICT diff: read commit by commit against base 52c1c1f0; two commits, net +361/-1 spanning reckon/_worker_fence.py and the new test file, both inside the declared scope.\nCALL_SITES: reckon/_backends.py:2214, reckon/_backends.py:293, reckon/crew/dispatch_admission.py:_fence_write_roots\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:1273-1275 adds both stores to protected and :1300 skips re-binding each store root, so only declared paths beneath them are granted writable.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_worker_cannot_remove_another_runs_reports.py passes 5 and stores-negative-control.log fails one arm per store, but the done_when's ruff clause is unrecorded in manifest.md:10 and the whole-store-not-bound assertions at tests/test_a_worker_cannot_remove_another_runs_reports.py:212 are vacuous.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the net diff at reckon/_worker_fence.py and tests/test_a_worker_cannot_remove_another_runs_reports.py is entirely within the declared write paths, and commit 1's reckon/_backends.py edit does not survive to head.\nSCORE durability: 13\nJUSTIFICATION durability: the seal is guarded \u2014 tests/test_a_worker_cannot_remove_another_runs_reports.py:201 fails without the overlay and the executed refusal fails under the negative control \u2014 but the load-bearing skip at reckon/_worker_fence.py:1300 has no test, since no test hands a store root in as a writable root.\nSCORE fit: 18\nJUSTIFICATION fit: shared_store_seal_roots at reckon/_worker_fence.py:1143 mirrors the sibling worker_scratch_seal_root at :1110 and the naming checks over the two changed files return no banned label.\nSCORE reuse: 19\nJUSTIFICATION reuse: shared_store_seal_roots at reckon/_worker_fence.py:1143 extends the seal already used at :1265, the sibling of worker_scratch_seal_root at :1110, and a search over reckon/ found no other owner of a delivery-store seal.\nFINDING tests/test_a_worker_cannot_remove_another_runs_reports.py:212 follow-on: the assertion that the whole reports root is not bound writable is vacuous \u2014 the argv is composed with writable=[stores.own_report] only, and fence_argv grants only roots it is handed, so the reports root is never among them and the assertion cannot redden; the skip it purports to guard (key in store_seal_keys at reckon/_worker_fence.py:1300) is the line that keeps production from re-opening the whole store, since delivery_write_roots hands reports_dir() and review_store_root() as writable roots into fence_argv at reckon/_backends.py:2214, and removing that skip leaves the suite green while the store is re-opened; the same holds at tests/test_a_worker_cannot_remove_another_runs_reports.py:236 for the review store.\nFINDING manifest.md:10 follow-on: the done_when requires ruff check and ruff format --check to add no findings on the changed Python files against base, but the manifest records no ruff run and names no ruff log; I ran both at head (ruff check: All checks passed; ruff format --check: 2 files already formatted), so the clause holds but is unevidenced in the record.",
+  "review_run_id": "r-20261016T205010809229-review-of-a-worker-cannot-remove-another-runs-reports-2aa8df942a38",
+  "reviewed_base_sha": "52c1c1f0827634db5b8e7adc12b4f962a8131dde",
+  "reviewed_head_sha": "2aa8df942a385d09c12f72817b8396b6ed4f4b5b",
+  "reviewed_run_id": "r-20261016T195907790544-a-worker-cannot-remove-another-runs-reports",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T20:58:55.408593+00:00",
+  "total": 103
+}
