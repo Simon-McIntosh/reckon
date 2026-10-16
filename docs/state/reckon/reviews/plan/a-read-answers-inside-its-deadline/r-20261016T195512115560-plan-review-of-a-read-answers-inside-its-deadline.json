@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T20:08:22.171Z",
+  "dispatched_at": "2026-10-16T19:55:50Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:188",
+      "id": "done_when-1",
+      "reason": "as written the node passes on the median while the first read after a restart or a corpus change still exceeds the deadline, so the section's measure does not establish the property it claims; the plan would need to require the first invocation (or a pre-built store), not the median of three.",
+      "text": "\u00a719's node measure reads \"The cold roadmap, measured on an exclusive `all_debug` node over a frozen corpus, three invocations \u2026 has a median under the 30 s deadline\", but the done-when's own unit test has the first read persist the store and only the second read avoid the parse). The store is on disk across processes, so invocation 1's cold read is the only one still paying the parse; invocations 2 and 3 load the store. A median of three therefore passes even when a cold read on a fresh corpus is still ~44 s, which is exactly the target \u00a719 restates from \u00a76 (\"a cold roadmap under the 30 s MCP deadline\") \u2014 the measure can be met by the two invocations that are not cold in the sense the target means.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:188",
+      "id": "anchors_resolve-1",
+      "reason": "the entry-point list is what the node's profiler must import and drive; a worker following `discovery._discover_project` looks for a module that is not there, and the paragraph that fixes the measure names the wrong anchor for one of its three reads.",
+      "text": "\u00a719's done-when requires the node drive \"the same entry points that profiler drove (`mcp._roadmap`, `mcp._audit` and `discovery._discover_project`)\", but `discovery` names no module \u2014 `reckon/discovery.py` does not exist and no `import discovery` appears anywhere in `reckon/`; the function lives at `reckon/mcp_discovery.py:149`, imported into `reckon/mcp.py` as `_discover_project`. The paragraph's other two entry points resolve (`reckon/mcp.py:1385` and `:2357`), so the citation is inconsistent as written.",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9c3e182aea627beb7a3d3f3a8c93795da6624a47f90f27b29cd532b08e36027d",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 136,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T195512115560-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "0ff7e339aad40b5f2401e683f52839998ba8607b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a719 cites the discovery entry point as `discovery._discover_project`, and no module named `discovery` exists in the tree; the function is `reckon/mcp_discovery.py:149`.",
+    "done_when": "a finding \u2014 \u00a719's node measure takes the median of three invocations of the cold roadmap, which the second and third invocations can carry by reusing the store the first per-process read reports building, so the measure can pass while a genuinely cold first read still misses the 30 s deadline.",
+    "evidence_paths": "pass \u2014 \u00a719's measurement and control logs go to the run directory, and it names `reckon/serve.py`, `reckon/metadata_index.py`, `reckon/_plan_html.py` and `tests/test_a_fresh_process_reuses_the_plan_parse.py`, all durable, unlike the node-local scratch \u00a77 lost; this is the write-path gap the prior review named, now present.",
+    "naming": "pass \u2014 \u00a719 adds only `tests/test_a_fresh_process_reuses_the_plan_parse.py`, named by mechanism; no plan labels, stage names, ticket numbers or version tags reach a symbol, filename or comment it introduces.",
+    "reasoning": "pass \u2014 the stated root cause (`_DISC_CACHE` in memory only, so every fresh process re-parses all plans) matches the cited evidence (`_discover_plans_uncached` 38.744 s = 277% of the 13.97 s excess, `_plan_html.read_state` 31.7 s inside it); the mechanism (a persisted store keyed by file identity, read by discovery) can produce the done-when; and the caller is named \u2014 `_discover_plans_uncached` reaches `parse_meta` and `_read_readiness_state` for every plan, which I confirmed at `reckon/serve.py:2255-2296`, and both this and `mcp._roadmap`/`mcp._audit` resolve.",
+    "single_goal": "pass \u2014 \u00a719 has one deliverable (persist each plan's parsed discovery and readiness state across processes) with one measure (fresh-process parses counted) and one node check of the consequence (cold roadmap inside the deadline); the code change and its measurement are the same goal, as in \u00a716.",
+    "wiring": "pass \u2014 \u00a719 declares no depends-on/informs/gates edge of its own, and its dependency on \u00a76's measurement is stated at the point it matters (\"it is the in-session control \u00a76's done-when requires\"); the open followup `f-araiid-019` carries the route, and \u00a76's reopen comment now records the measurement that underpins \u00a719."
+  },
+  "section_digests": {
+    "_document": "ad7fc49262aab7b5663c83b5378f2e62811896b490bd02f25112205eb7195f29",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "699fd3ac8cdadb021c34c9afaf6684854d1da741d7f3c03e2ce2074224f20e48",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T20:10:25.918863+00:00"
+}
