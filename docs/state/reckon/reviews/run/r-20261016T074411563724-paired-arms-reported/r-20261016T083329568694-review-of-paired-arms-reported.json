@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f33b8db0ab9fcf2c80718c11352424e2af82368f",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:764",
+    "reckon/project_setup_commands.py:401"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-16T07:45:13Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/outcomes.py",
+      "line": "452",
+      "severity": "follow-on",
+      "text": "follow-on: the pair block applies its own window while read_outcomes at reckon/crew/picker/outcomes.py:677 has already filtered the ledger rows by `since`, so a shadow inside the window whose primary completed before it is reported under `unpaired` \u2014 the same bucket the plan reserves for a primary that is not committed \u2014 and a reader cannot tell the two apart."
+    },
+    {
+      "file": "base-suite-body.log",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded base arm covers only tests/test_picker_outcomes.py, tests/test_capabilities.py and tests/test_picker_helpers_have_one_owner.py, while the done_when's comparison names every test file importing capabilities.py or outcomes.py (fourteen files), so \"no added failure against the base revision\" is only partly evidenced although the head arm over the full affected-file sweep was green."
+    }
+  ],
+  "head_log_revision": "8d6a6513399fc7af4b9c190644028bd401568c07",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base f33b8db0; the single commit 8d6a6513 adds pair_shadow_arms and _arm_figures and rewires derive_capabilities in reckon/capabilities.py, adds the paired_arms/unpaired block in reckon/crew/picker/outcomes.py, adds the test file and the evidence fragment \u2014 all inside the declared scope.",
+    "done_when": "the done_when names tests/test_paired_arms_are_reported.py; that test builds a primary plus a backend-only shadow, a time-budget-confounded shadow and an orphan shadow and asserts the pair block and the orphan listing (tests/test_paired_arms_are_reported.py:124-215), and the manifest records its run as 6 passed.",
+    "goal": "the goal is \"Report each committed shadow arm beside its primary through the join derive_capabilities owns\"; the diff moves the join into one function `pair_shadow_arms` at reckon/capabilities.py:984 and reports it as `paired_arms`/`unpaired` from reckon/crew/picker/outcomes.py:622-623.",
+    "manifest": "read; it states the gate tests/test_paired_arms_are_reported.py passed 6, the base and head arms of the three-file subset suite each 46 passed, and names its logs.",
+    "write_paths": "the manifest declares reckon/capabilities.py, reckon/crew/picker/outcomes.py, tests/test_paired_arms_are_reported.py, docs/evidence/fragments/jev-learns-from-its-routes/paired-arms-reported.html and docs/figures/jev-learns-from-its-routes/paired-arms-reported; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_paired_arms_are_reported.py:146 fails when the declared mutation forces controlled true, shown by the negative-control log's 2 failed / 4 passed, and tests/test_paired_arms_are_reported.py:219 fails if the join is re-inlined.",
+    "evidence": "the gate tests/test_paired_arms_are_reported.py passes and its result is recorded in the manifest, but the done_when's \"no added failure against the base revision\" is backed only by a three-file base arm while fourteen test files import the changed modules.",
+    "fit": "the added names pair_shadow_arms and _arm_figures at reckon/capabilities.py:960-984 describe the mechanism and carry no plan, stage or ticket identifier.",
+    "goal_fidelity": "reckon/capabilities.py:1061 calls pair_shadow_arms and reckon/crew/picker/outcomes.py:457 reports its paired/unpaired output as paired_arms and unpaired.",
+    "reuse": "the join search over reckon/ found no owner of a shadow-to-primary reporting join besides the inline copy pair_shadow_arms replaces, so the new function is the first owner rather than a fork.",
+    "scope_discipline": "every path in the diff against f33b8db0 is one of the manifest's declared write paths, and no figure was written although the node's done-when names no artifact."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"Report each committed shadow arm beside its primary through the join derive_capabilities owns\"; the diff moves the join into one function `pair_shadow_arms` at reckon/capabilities.py:984 and reports it as `paired_arms`/`unpaired` from reckon/crew/picker/outcomes.py:622-623.\nVERDICT done_when: the done_when names tests/test_paired_arms_are_reported.py; that test builds a primary plus a backend-only shadow, a time-budget-confounded shadow and an orphan shadow and asserts the pair block and the orphan listing (tests/test_paired_arms_are_reported.py:124-215), and the manifest records its run as 6 passed.\nVERDICT write_paths: the manifest declares reckon/capabilities.py, reckon/crew/picker/outcomes.py, tests/test_paired_arms_are_reported.py, docs/evidence/fragments/jev-learns-from-its-routes/paired-arms-reported.html and docs/figures/jev-learns-from-its-routes/paired-arms-reported; every path in the diff is inside them.\nVERDICT manifest: read; it states the gate tests/test_paired_arms_are_reported.py passed 6, the base and head arms of the three-file subset suite each 46 passed, and names its logs.\nVERDICT diff: read commit by commit against base f33b8db0; the single commit 8d6a6513 adds pair_shadow_arms and _arm_figures and rewires derive_capabilities in reckon/capabilities.py, adds the paired_arms/unpaired block in reckon/crew/picker/outcomes.py, adds the test file and the evidence fragment \u2014 all inside the declared scope.\nCALL_SITES: reckon/crew_dispatch_commands.py:764, reckon/project_setup_commands.py:401\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/capabilities.py:1061 calls pair_shadow_arms and reckon/crew/picker/outcomes.py:457 reports its paired/unpaired output as paired_arms and unpaired.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate tests/test_paired_arms_are_reported.py passes and its result is recorded in the manifest, but the done_when's \"no added failure against the base revision\" is backed only by a three-file base arm while fourteen test files import the changed modules.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff against f33b8db0 is one of the manifest's declared write paths, and no figure was written although the node's done-when names no artifact.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_paired_arms_are_reported.py:146 fails when the declared mutation forces controlled true, shown by the negative-control log's 2 failed / 4 passed, and tests/test_paired_arms_are_reported.py:219 fails if the join is re-inlined.\nSCORE fit: 16\nJUSTIFICATION fit: the added names pair_shadow_arms and _arm_figures at reckon/capabilities.py:960-984 describe the mechanism and carry no plan, stage or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the join search over reckon/ found no owner of a shadow-to-primary reporting join besides the inline copy pair_shadow_arms replaces, so the new function is the first owner rather than a fork.\nFINDING reckon/crew/picker/outcomes.py:452 follow-on: the pair block applies its own window while read_outcomes at reckon/crew/picker/outcomes.py:677 has already filtered the ledger rows by `since`, so a shadow inside the window whose primary completed before it is reported under `unpaired` \u2014 the same bucket the plan reserves for a primary that is not committed \u2014 and a reader cannot tell the two apart.\nFINDING base-suite-body.log:3 follow-on: the recorded base arm covers only tests/test_picker_outcomes.py, tests/test_capabilities.py and tests/test_picker_helpers_have_one_owner.py, while the done_when's comparison names every test file importing capabilities.py or outcomes.py (fourteen files), so \"no added failure against the base revision\" is only partly evidenced although the head arm over the full affected-file sweep was green.",
+  "review_run_id": "r-20261016T083329568694-review-of-paired-arms-reported",
+  "reviewed_base_sha": "f33b8db0ab9fcf2c80718c11352424e2af82368f",
+  "reviewed_head_sha": "8d6a6513399fc7af4b9c190644028bd401568c07",
+  "reviewed_run_id": "r-20261016T074411563724-paired-arms-reported",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T08:58:01.448805+00:00",
+  "total": 108
+}
