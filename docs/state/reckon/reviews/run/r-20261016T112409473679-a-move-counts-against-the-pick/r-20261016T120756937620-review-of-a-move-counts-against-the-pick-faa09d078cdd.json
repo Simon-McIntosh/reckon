@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:353",
+    "reckon/crew/dispatch_picker.py:492",
+    "reckon/crew_dispatch_commands.py:812",
+    "reckon/crew/picker/replay.py:91",
+    "reckon/crew/picker/prompts.py:214"
+  ],
+  "completed_at": "2026-10-16T12:24:00.546Z",
+  "dispatched_at": "2026-10-16T12:08:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/types.py",
+      "line": "53",
+      "severity": "follow-on",
+      "text": "follow-on: the comment claims moved_in and moved_off are both read at the request's requirement, but only moved_off is requirement-filtered (snapshot.py:337-338); moved_in (snapshot.py:334) tallies every moved row in the 14-day window whatever the row recorded, so a move recorded once at a different requirement inflates the receiver's moved_in with no matching moved_off on the chooser."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read faa09d078 against base 8044ba654; five files, +444/-9, every path inside the declared scope.",
+    "done_when": "tests/test_a_move_counts_against_the_pick.py:174-297 builds the three fixture rows, the no-pick row, the rendered-state check and the negative control; the manifest records 5 passed at EXIT=0.",
+    "goal": "the node counts a coordinator's move off Jev's pick against that pick, not against the lane it landed on; reckon/crew/picker/snapshot.py:207 (_picked_backend_away) and snapshot.py:328-341 (the scan branch) implement it.",
+    "manifest": "read; status complete; baseline_suite 201 passed EXIT=0 (base-picker-snapshot-importers.log) and after_suite 206 passed EXIT=0 (head-picker-snapshot-importers.log).",
+    "write_paths": "the diff touches only the declared paths -- reckon/crew/picker/snapshot.py, types.py, prompts.py, the new test file and the evidence fragment; docs/figures was declared and the done-when requires no figure."
+  },
+  "justifications": {
+    "durability": "the negative control monkeypatches _picked_backend_away to None and the recorded log shows three tests redden (negative-control-ignoring-lineage.log, EXIT=1).",
+    "evidence": "the gate names tests/test_a_move_counts_against_the_pick.py and both suite arms are recorded EXIT=0 in the manifest's gate logs; docked one because the base arm cannot include the node's new test file, so the zero-added comparison is over a set that differs by construction.",
+    "fit": "the change matches the Mapping/Counter idiom of reckon/crew/picker/snapshot.py:220, but the comment at types.py:53 misstates the mechanism it describes.",
+    "goal_fidelity": "snapshot.py:328-341 removes a row moved off its pick from the receiving candidate's pooled outcome and tallies it under moved_in, and credits the picked candidate's moved_off.",
+    "reuse": "_candidates_scan (snapshot.py:220) is extended in place and the existing _outcome_counts/_recorded_requirement helpers are reused; no prior owner of a move concept exists in reckon/crew/picker/ or reckon/velocity.py.",
+    "scope_discipline": "every path in git diff 8044ba654 faa09d078 sits inside the manifest's declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node counts a coordinator's move off Jev's pick against that pick, not against the lane it landed on; reckon/crew/picker/snapshot.py:207 (_picked_backend_away) and snapshot.py:328-341 (the scan branch) implement it.\nVERDICT done_when: tests/test_a_move_counts_against_the_pick.py:174-297 builds the three fixture rows, the no-pick row, the rendered-state check and the negative control; the manifest records 5 passed at EXIT=0.\nVERDICT write_paths: the diff touches only the declared paths -- reckon/crew/picker/snapshot.py, types.py, prompts.py, the new test file and the evidence fragment; docs/figures was declared and the done-when requires no figure.\nVERDICT manifest: read; status complete; baseline_suite 201 passed EXIT=0 (base-picker-snapshot-importers.log) and after_suite 206 passed EXIT=0 (head-picker-snapshot-importers.log).\nVERDICT diff: read faa09d078 against base 8044ba654; five files, +444/-9, every path inside the declared scope.\nCALL_SITES: reckon/crew/picker/__init__.py:353, reckon/crew/dispatch_picker.py:492, reckon/crew_dispatch_commands.py:812, reckon/crew/picker/replay.py:91, reckon/crew/picker/prompts.py:214\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: snapshot.py:328-341 removes a row moved off its pick from the receiving candidate's pooled outcome and tallies it under moved_in, and credits the picked candidate's moved_off.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate names tests/test_a_move_counts_against_the_pick.py and both suite arms are recorded EXIT=0 in the manifest's gate logs; docked one because the base arm cannot include the node's new test file, so the zero-added comparison is over a set that differs by construction.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 8044ba654 faa09d078 sits inside the manifest's declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: the negative control monkeypatches _picked_backend_away to None and the recorded log shows three tests redden (negative-control-ignoring-lineage.log, EXIT=1).\nSCORE fit: 18\nJUSTIFICATION fit: the change matches the Mapping/Counter idiom of reckon/crew/picker/snapshot.py:220, but the comment at types.py:53 misstates the mechanism it describes.\nSCORE reuse: 20\nJUSTIFICATION reuse: _candidates_scan (snapshot.py:220) is extended in place and the existing _outcome_counts/_recorded_requirement helpers are reused; no prior owner of a move concept exists in reckon/crew/picker/ or reckon/velocity.py.\nFINDING reckon/crew/picker/types.py:53 follow-on: the comment claims moved_in and moved_off are both read at the request's requirement, but only moved_off is requirement-filtered (snapshot.py:337-338); moved_in (snapshot.py:334) tallies every moved row in the 14-day window whatever the row recorded, so a move recorded once at a different requirement inflates the receiver's moved_in with no matching moved_off on the chooser.",
+  "review_run_id": "r-20261016T120756937620-review-of-a-move-counts-against-the-pick-faa09d078cdd",
+  "reviewed_base_sha": "8044ba654bdd00758676cc232f98cd1eb7e246c4",
+  "reviewed_head_sha": "faa09d078cdd15c474d86aa2fcc7888fd52f9ecd",
+  "reviewed_run_id": "r-20261016T112409473679-a-move-counts-against-the-pick",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T12:19:23.850013+00:00",
+  "total": 117
+}
