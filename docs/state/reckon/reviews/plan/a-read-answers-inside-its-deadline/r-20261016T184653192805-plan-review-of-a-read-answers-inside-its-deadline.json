@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T19:00:00.095Z",
+  "dispatched_at": "2026-10-16T18:47:32Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:188",
+      "id": "wiring-1",
+      "reason": "a coordinator reading the followups cannot tell whether \u00a76 is unmeasured or already measured, and the re-measure \u00a719 makes necessary has no owner to dispatch.",
+      "text": "\u00a719's Why states \"The 2026-10-16 \u00a76 re-measure ran on an exclusive all_debug node, 98dci4-clu-3141 (job 1287619)\", yet no run comment under \u00a76 records it and `f-araiid-remeasure` (line 281, status open, recommends \u00a76) still reads \"Every read fix \u00a76 waits on has landed, \u00a716 and \u00a717 included. Re-measure the reads...\", so the plan simultaneously shows the \u00a76 re-measure as already run and as still to do, and no open followup names the post-\u00a719 \u00a76 re-measure that \u00a76's done-when still requires (the MCP `storage-slow` check and every target)",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:188",
+      "id": "evidence_paths-1",
+      "reason": "the worker's log destination is unstated and a later reader cannot open the dumps \u00a719's attribution rests on without re-deriving their path.",
+      "text": "\u00a719's done-when requires a measurement log and a control log \"under the run directory\" and its Why rests on \"The kept profile dumps\", but \u00a719's Write paths name only `reckon/serve.py`, `reckon/metadata_index.py`, `reckon/_plan_html.py` and the test file, unlike every sibling measurement section (\u00a76 \"Write paths: the run directory\", \u00a77 and \u00a79 \"the run's own report directory\", \u00a718 \"the run directory, and ...\"), and the dumps it cites sit at the durable path `~/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/profiles/head/` which \u00a719 does not name",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:10",
+      "id": "reasoning-1",
+      "reason": "a summary ratio that no section computes or relies on; correcting it changes no mechanism, measure or relationship.",
+      "text": "the plan summary states \"warm reads are 13-20x their shipped targets\", but \u00a71's own table (lines 43-44) gives roadmap 12.45 s against a 1.33 s shipped median (9.4x) and audit 18.10 s against 0.914 s (19.8x), so the summary's low end is not a figure the plan carries",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "343a9987f008da6263e06256f2b7e32827b30283d0ef2a664b2d85b2e0a837fe",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 124,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T184653192805-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "1166ab0dee1ccb9b799da8e2c7d7f5dc6bb295dd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every file and symbol anchor resolves: `discover_plans` (reckon/serve.py:2232), `_discover_plans_uncached` (2255), `_read_readiness_uncached` (2565), `_DISC_CACHE` (1276), `read_state` (reckon/_plan_html.py:1109) and the index schema `reckon.metadata-index` (reckon/metadata_index.py:69).",
+    "done_when": "pass \u2014 \u00a719's done-when is measurable (a new-process discovery read with zero plan parses, exactly one parse after one file changes, and a cold-roadmap median against the 30 s deadline) and names a declared negative control (the persisted store bypassed, so every plan is parsed and the test fails).",
+    "evidence_paths": "a finding \u2014 \u00a719's done-when writes a measurement log and a control log under \"the run directory\" but its Write paths name only code and the test file, and its Why cites kept profile dumps with no path, though the dumps exist under a durable report directory.",
+    "naming": "pass \u2014 \u00a719's prose and its test filename (`tests/test_a_fresh_process_reuses_the_plan_parse.py`) carry no plan labels, stage names, ticket numbers or version tags, and read as mechanism.",
+    "reasoning": "a finding \u2014 the plan summary's warm-read multiple is not the one \u00a71's own table yields.",
+    "single_goal": "pass \u2014 \u00a719 carries one deliverable, persisting the plan parse across processes; the parse-count test, the cold-roadmap measure and the ruff clause are gates on that one change.",
+    "wiring": "a finding \u2014 \u00a719's Why reports a completed \u00a76 re-measure (job 1287619 at `81852a885`) that no comment records and whose owning followup `f-araiid-remeasure` still presents as pending, and no open followup names the \u00a76 re-measure \u00a76's done-when still needs after \u00a719 lands."
+  },
+  "section_digests": {
+    "_document": "6e2c2338c2d115f755f0a74ae54dfa6bbc681636cf53ab7069de67cd90a45ab4",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "9e46238276b5357bafe12f93f6c0b3ab4b3a7776a29e81a07114d9902f15ecc5",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T19:02:34.698160+00:00"
+}
