@@ -26,7 +26,7 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.99">
-<meta name="plan-version" content="148">
+<meta name="plan-version" content="149">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -2017,6 +2017,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-s10-review-store-gap" data-who="reckon-build" data-when="2026-10-17T00:20:00Z">
     <div class="r-comment-body"><p>Correction to the close above: the review store is not sealed for a run review. A run review dispatched through the CLI at 22:13Z, under the merged code (run <code>r-20261016T221318556228</code>), received <code>--ro-bind ~/.config/reckon</code> and then <code>--bind ~/.config/reckon/crew/reviews/reckon</code>. Its two declared record files do not exist at dispatch, so the fence grants their parent, the whole project's store of 4,233 staged records. Any run review can still delete every other staged review record of its project. The reports root is sealed as stated. §10's test put the run's own record and the sibling's in different subdirectories (<code>reviews/&lt;project&gt;/run-a/</code> and <code>run-b/</code>), but production writes flat files, <code>reviews/&lt;project&gt;/&lt;run_id&gt;.json</code>, in one directory. So the test passed on a layout production does not use. §12 carries the repair.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261016T212841719818-fence-reports-seal-population-at-merge" data-who="reckon-build" data-when="2026-10-16T21:59:40.581Z">
+    <div class="r-comment-body"><p>importer population of the fence reports seal measured at base 1a26b890f and merge candidate bc0a246bc on an exclusive all_debug node: no failing test id is added by the merge — base 1 failed/1111 passed, candidate 2 failed/1118 passed, and the single candidate-only id is load-only (5/5 green alone at both revisions), while the one shared failure is pre-existing at base</p></div>
 </div>
 </section>
 </main>
