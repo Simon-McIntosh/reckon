@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="74">
+<meta name="plan-version" content="76">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -371,6 +371,12 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-10-16T07:05:00Z">
     <div class="r-comment-body"><p>§12 landed. An audit read walks the docs tree once instead of nine times, through the shared scan, and its findings are unchanged. Merged as <code>0532f9d18</code>. Review: 109/120 after two repair rounds. §13 can go next. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s12">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261016T025139354260-the-audit-shares-the-scan" data-who="reckon-build" data-when="2026-10-16T04:42:46.277Z">
+    <div class="r-comment-body"><p>The audit read opens one resource_scan_scope and takes its resources from iter_resources, so it walks the docs tree once where base made nine; the scope records the files the scan drops as invalid — keyed by (docs_dir, project), because one scope can span several docs trees and a reader must take only its own tree's drops — and the audit reports its invalid-resource-path findings from that record, while a strict caller reached inside the scope (doccheck's lifecycle pass) raises ResourceCollision from the same record instead of a second walk. Measure: tests/test_the_audit_shares_the_scan.py (6 cases) — a wrapped resources._scan_resources is called exactly 1 time for one audit read of a temporary corpus (9 at base); the audit's findings equal their base rows for a clean corpus and for one with an invalid resource path; and one scope over two docs trees, each holding a different invalid file, has each tree's strict read raise its own file. Three negative controls red.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261016T044300425098-review-of-the-audit-shares-the-scan-5d8abfaf54cd" data-who="reckon-build" data-when="2026-10-16T04:57:36.118Z">
+    <div class="r-comment-body"><p>Reviewed the delta 366b779831f5..5d8abfaf54c of run r-20261016T025139354260-the-audit-shares-the-scan — one line in reckon/resources.py naming the mapping resource_scan_scope yields, which resolves the prior review&#x27;s annotation finding — and stored a parsed record (6/6 dimensions scored 0..20, total 109, no blocking finding, durability 12 because the annotation change is unguarded by any test or type checker) at reviews/reckon/r-20261016T025139354260-the-audit-shares-the-scan.at-5d8abfaf54cda07525e12164313d3dc1061cfbb2.json.</p></div>
 </div>
 </section>
 </main>
