@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's manifest carries no baseline_suite or after_suite gate logs, so the added-failure count was not taken and a zero would assert a measurement never made",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/nested_launch.py:179 (refusal text read by tests/test_nested_refusal_names_the_route.py:139)",
+    "reckon/crew/worker_digest.py:125 (compute_routes_sentence read by tests/test_nested_refusal_names_the_route.py:155)",
+    "reckon/crew/dispatch_launch.py:547 (_worker_host_line read by tests/test_the_host_line_allows_a_separate_partition_job.py:146)"
+  ],
+  "completed_at": "2026-10-16T16:05:00.232Z",
+  "dispatched_at": "2026-10-16T15:49:56Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the two test files are the fixture's only consumers, and moving it into tests/conftest.py would put a mutation switch into the suite-wide conftest every test imports, a shared file outside this node's write scope; the duplication is two short definitions kept beside the cases they serve",
+      "recorded_at": "2026-10-16T16:06:13.205467+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "harmless redundancy: the assertion restates a declaration property the sibling file also checks, adds no failure mode, and removing it changes no verdict; not worth a further resume and review round",
+      "recorded_at": "2026-10-16T16:06:29.213985+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_the_host_line_allows_a_separate_partition_job.py",
+      "line": "117",
+      "severity": "follow-on",
+      "text": "follow-on: the env-gated _declared_route_mutation fixture at :117 and its ROUTE_MUTATION_ENV constant at :42 duplicate the byte-identical copies at tests/test_nested_refusal_names_the_route.py:76 and :72, so one definition in tests/conftest.py (which already owns suite-wide autouse fixtures at :136) would serve both and the change forks a capability the repository already has a home for."
+    },
+    {
+      "file": "tests/test_the_host_line_allows_a_separate_partition_job.py",
+      "line": "147",
+      "severity": "follow-on",
+      "text": "follow-on: assert nested.PARTITION_ROUTE_VERB in DECLARED_ROUTE restates the declaration property already held by tests/test_nested_refusal_names_the_route.py:131, so it adds no coverage to the host-line case and is inert under the mutation only because DECLARED_ROUTE is frozen."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read the gained commit 45430de76 against 39afa6e0e \u2014 it captures DECLARED_ROUTE and DECLARED_SENTENCE at import, replaces names_sbatch_as_the_submission with the pure text check names_the_partition_route, moves the route mutation into an env-gated autouse fixture (RECKON_PARTITION_ROUTE_NEGATIVE_CONTROL) applied after import, and updates the evidence fragment's outcome text.",
+    "done_when": "The done_when names tests/test_nested_refusal_names_the_route.py and tests/test_the_host_line_allows_a_separate_partition_job.py plus a stale-digest check and a logged negative control; the manifest records gate-head.log 32 passed EXIT=0, digest-check.log up to date EXIT=0 and negative-control.log 7 failed 25 passed EXIT=1, and the gained commit re-runs that same gate unchanged.",
+    "goal": "The source node's goal is to name sbatch as the partition route in the nested-launch refusal, the compute digest sentence and the host line; the gained commit 45430de76 hardens the tests that pin those three texts to the one declared route, capturing nested.PARTITION_ROUTE at import as DECLARED_ROUTE (tests/test_nested_refusal_names_the_route.py:65) so the expectation no longer moves with the value the negative control mutates.",
+    "manifest": "Read; it records 32 passed at head (gate-head.log) and 7 failed 25 passed EXIT=1 at negative-control.log, with digest-check.log up to date EXIT=0; it carries no baseline_suite or after_suite, so the added-failure count is unmeasured rather than zero.",
+    "write_paths": "The source node's declared write paths include the two named test files and docs/evidence/fragments/a-worker-is-charged-to-a-job/the-partition-route-names-sbatch.html; git diff --stat 39afa6e0e..45430de76 names exactly those three paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_nested_refusal_names_the_route.py:139 asserts the composed refusal carries DECLARED_ROUTE captured at import, and negative-control.log shows it reddens when the route is mutated in memory, so reinstating the removed live-constant conjunct would again pass under the mutation.",
+    "evidence": "gate-head.log records 32 passed EXIT=0 and negative-control.log records 7 failed 25 passed EXIT=1, both read here, but the reviewed run carries no baseline_suite or after_suite so the added-failure count is unmeasured rather than zero.",
+    "fit": "the new names DECLARED_ROUTE, names_the_partition_route and _declared_route_mutation follow the two modules' test idiom and carry no plan or stage label, with the only wrinkle being the fixture's per-file duplication.",
+    "goal_fidelity": "the gained commit makes tests/test_nested_refusal_names_the_route.py:137 assert names_the_partition_route(text), a verbatim check of the produced text against the frozen DECLARED_ROUTE captured at :65, which is exactly the pin the prior review found missing.",
+    "reuse": "the env-gated _declared_route_mutation fixture and its ROUTE_MUTATION_ENV constant are defined identically at tests/test_nested_refusal_names_the_route.py:72 and tests/test_the_host_line_allows_a_separate_partition_job.py:42 while tests/conftest.py:136 already owns suite-wide autouse fixtures.",
+    "scope_discipline": "git diff --stat 39afa6e0e..45430de76 names only the two declared test files and the declared evidence fragment, with no path outside the source node's write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is to name sbatch as the partition route in the nested-launch refusal, the compute digest sentence and the host line; the gained commit 45430de76 hardens the tests that pin those three texts to the one declared route, capturing nested.PARTITION_ROUTE at import as DECLARED_ROUTE (tests/test_nested_refusal_names_the_route.py:65) so the expectation no longer moves with the value the negative control mutates.\nVERDICT done_when: The done_when names tests/test_nested_refusal_names_the_route.py and tests/test_the_host_line_allows_a_separate_partition_job.py plus a stale-digest check and a logged negative control; the manifest records gate-head.log 32 passed EXIT=0, digest-check.log up to date EXIT=0 and negative-control.log 7 failed 25 passed EXIT=1, and the gained commit re-runs that same gate unchanged.\nVERDICT write_paths: The source node's declared write paths include the two named test files and docs/evidence/fragments/a-worker-is-charged-to-a-job/the-partition-route-names-sbatch.html; git diff --stat 39afa6e0e..45430de76 names exactly those three paths and nothing else.\nVERDICT manifest: Read; it records 32 passed at head (gate-head.log) and 7 failed 25 passed EXIT=1 at negative-control.log, with digest-check.log up to date EXIT=0; it carries no baseline_suite or after_suite, so the added-failure count is unmeasured rather than zero.\nVERDICT diff: Read the gained commit 45430de76 against 39afa6e0e \u2014 it captures DECLARED_ROUTE and DECLARED_SENTENCE at import, replaces names_sbatch_as_the_submission with the pure text check names_the_partition_route, moves the route mutation into an env-gated autouse fixture (RECKON_PARTITION_ROUTE_NEGATIVE_CONTROL) applied after import, and updates the evidence fragment's outcome text.\nCALL_SITES: reckon/nested_launch.py:179 (refusal text read by tests/test_nested_refusal_names_the_route.py:139), reckon/crew/worker_digest.py:125 (compute_routes_sentence read by tests/test_nested_refusal_names_the_route.py:155), reckon/crew/dispatch_launch.py:547 (_worker_host_line read by tests/test_the_host_line_allows_a_separate_partition_job.py:146)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the gained commit makes tests/test_nested_refusal_names_the_route.py:137 assert names_the_partition_route(text), a verbatim check of the produced text against the frozen DECLARED_ROUTE captured at :65, which is exactly the pin the prior review found missing.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log records 32 passed EXIT=0 and negative-control.log records 7 failed 25 passed EXIT=1, both read here, but the reviewed run carries no baseline_suite or after_suite so the added-failure count is unmeasured rather than zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 39afa6e0e..45430de76 names only the two declared test files and the declared evidence fragment, with no path outside the source node's write_paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_nested_refusal_names_the_route.py:139 asserts the composed refusal carries DECLARED_ROUTE captured at import, and negative-control.log shows it reddens when the route is mutated in memory, so reinstating the removed live-constant conjunct would again pass under the mutation.\nSCORE fit: 18\nJUSTIFICATION fit: the new names DECLARED_ROUTE, names_the_partition_route and _declared_route_mutation follow the two modules' test idiom and carry no plan or stage label, with the only wrinkle being the fixture's per-file duplication.\nSCORE reuse: 15\nJUSTIFICATION reuse: the env-gated _declared_route_mutation fixture and its ROUTE_MUTATION_ENV constant are defined identically at tests/test_nested_refusal_names_the_route.py:72 and tests/test_the_host_line_allows_a_separate_partition_job.py:42 while tests/conftest.py:136 already owns suite-wide autouse fixtures.\nFINDING tests/test_the_host_line_allows_a_separate_partition_job.py:117 follow-on: the env-gated _declared_route_mutation fixture at :117 and its ROUTE_MUTATION_ENV constant at :42 duplicate the byte-identical copies at tests/test_nested_refusal_names_the_route.py:76 and :72, so one definition in tests/conftest.py (which already owns suite-wide autouse fixtures at :136) would serve both and the change forks a capability the repository already has a home for.\nFINDING tests/test_the_host_line_allows_a_separate_partition_job.py:147 follow-on: assert nested.PARTITION_ROUTE_VERB in DECLARED_ROUTE restates the declaration property already held by tests/test_nested_refusal_names_the_route.py:131, so it adds no coverage to the host-line case and is inert under the mutation only because DECLARED_ROUTE is frozen.",
+  "review_run_id": "r-20261016T154922354751-review-of-the-partition-route-names-sbatch-45430de76ac3",
+  "reviewed_base_sha": "39afa6e0e8978286bf6655e9ba56307fce1d08bc",
+  "reviewed_head_sha": "45430de76ac3bd3bada8c2eeb505beba4b28c6ea",
+  "reviewed_run_id": "r-20261016T145527130463-the-partition-route-names-sbatch",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "role": "review",
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T16:00:54.647886+00:00",
+  "total": 109
+}
