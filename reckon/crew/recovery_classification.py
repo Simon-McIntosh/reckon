@@ -493,18 +493,26 @@ def classify_pointer(
     # and the deferral does not fire. An exited worker on another node therefore
     # reads ``scoring`` at once rather than waiting a quarter of an hour for its
     # stream to pass the stall window.
-    # The stream-aware deferral belongs to the delivered verdict alone. A run
-    # that wrote ``complete`` may still be in its final turn, so holding it at
-    # ``running`` keeps a review duty off a worker the reflex is about to
-    # release. A ``blocked`` or ``failed`` verdict is not a delivery: it is the
-    # stop itself, and holding it at ``running`` would hide that stop from every
-    # reader — most sharply from promotion, where it would carry a blocked run
-    # with a live session past the resume-path refusal it must still meet while
-    # deleting the pointer a resume needs. A superseded manifest is deferred
-    # whatever its word, because that verdict belongs to a previous attempt and
-    # says nothing about the one now running.
+    # A terminal verdict is provisional while its writer is provably alive: a
+    # worker that is still running outranks the status word on its file. A
+    # superseded manifest is deferred for the same reason whatever its word,
+    # because that verdict belongs to a previous attempt and says nothing about
+    # the one now running.
+    #
+    # The stream-aware term is the delivered verdict's alone. A ``complete``
+    # manifest whose worker sits on another node — liveness unknown, but the
+    # stream moving and no exit record — is still finishing its final turn, so
+    # holding it at ``running`` keeps a review duty off a worker the reflex is
+    # about to release. A ``blocked`` or ``failed`` verdict is not a delivery:
+    # it is the stop itself, and holding it at ``running`` on the strength of a
+    # moving stream would hide that stop from every reader — most sharply from
+    # promotion, where it would carry a blocked run with a live session past the
+    # resume-path refusal it must still meet while deleting the pointer a resume
+    # needs. Only a proven-alive process, not a moving stream, defers those.
     deferred_outcome = manifest_status in TERMINAL_MANIFEST_STATUSES and (
-        superseded_manifest or (manifest_status == "complete" and not process_gone)
+        alive is True
+        or superseded_manifest
+        or (manifest_status == "complete" and not process_gone)
     )
     interruption = None
     interruption_commits = 0
