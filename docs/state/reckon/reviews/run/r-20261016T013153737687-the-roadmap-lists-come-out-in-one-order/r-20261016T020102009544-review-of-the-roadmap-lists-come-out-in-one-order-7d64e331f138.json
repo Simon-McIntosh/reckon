@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "1d7174ddf992eb13be8c31fd62017a07f5062c00",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/serve.py:2421",
+    "reckon/flight.py:2309",
+    "reckon/mcp.py:1561",
+    "reckon/mcp.py:2709",
+    "reckon/crew/plan_review.py:3074",
+    "reckon/roadmap.py:2167"
+  ],
+  "completed_at": "2026-10-16T02:11:51.853Z",
+  "dispatched_at": "2026-10-16T02:01:45Z",
+  "findings": [
+    {
+      "file": "tests/test_the_roadmap_lists_come_out_in_one_order.py",
+      "line": "120",
+      "severity": "blocking",
+      "text": "blocking: the new file adds a ruff finding (W292 no newline at end of file) and fails ruff format --check, so gates/ruff.log ends EXIT=1; the done_when requires ruff check and format add no findings on the changed files, and the manifest reports the clause clean."
+    },
+    {
+      "file": "/home/ITER/.config/reckon/crew/runs/r-20261016T013153737687-the-roadmap-lists-come-out-in-one-order/gates/head-chunk3.log",
+      "line": "1",
+      "severity": "blocking",
+      "text": "blocking: the head arm's fourth chunk ends at 64 of 65 dots with no summary line and no EXIT=, so it records no result, yet the manifest's tests line claims the head arm ran 411 passed EXIT=0; the id-parity clause of the done_when is unevidenced for those ten files."
+    }
+  ],
+  "head_log_revision": "7d64e331f138a1acbfbd8157263e8412e9678550",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against base 1d7174ddf; three files changed, all inside scope; the code change is _scope_slugs returning sorted(plans)/sorted(selected) instead of a set.",
+    "done_when": "the done_when names a two-seed byte-identical render plus id-parity and ruff-clean clauses; the new test asserts the render, but the ruff clause is red in gates/ruff.log and the head arm's fourth chunk has no recorded result.",
+    "goal": "the node's goal is a stable key order for the roadmap's decision-blocker and wiring lists; reckon/roadmap.py:2597 now iterates selected slugs in sorted order, so both lists append plan by plan in slug order.",
+    "manifest": "read; it reports 1 passed/EXIT=0 for the new test and 411 passed each arm, but gates/head-chunk3.log is truncated with no summary or EXIT= line and gates/ruff.log shows an added finding the manifest reports as absent.",
+    "write_paths": "the declared paths are reckon/roadmap.py, tests/test_the_roadmap_lists_come_out_in_one_order.py and the evidence fragment; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_roadmap_lists_come_out_in_one_order.py:120 compares two independent subprocess renders and fails when the order key is removed, as the recorded negative control shows.",
+    "evidence": "the two-seed assertion at tests/test_the_roadmap_lists_come_out_in_one_order.py:120 reproduces and the negative control fires, but gates/ruff.log:EXIT=1 records an added finding on the new file and gates/head-chunk3.log carries no summary or EXIT=.",
+    "fit": "tests/test_the_roadmap_lists_come_out_in_one_order.py:120 has no trailing newline and fails ruff format --check, against a repo whose commits must add no findings.",
+    "goal_fidelity": "reckon/roadmap.py:1973 and :1994 return sorted slug lists, so the loop at :2665 that appends decision_blockers and wiring_findings now visits plans in plan-identity order.",
+    "reuse": "the fix uses the builtin sorted slugs already used at reckon/roadmap.py:1317, :1406 and :1929 rather than adding a new ordering mechanism.",
+    "scope_discipline": "the diff touches only reckon/roadmap.py, tests/test_the_roadmap_lists_come_out_in_one_order.py and the evidence fragment, all inside the declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a stable key order for the roadmap's decision-blocker and wiring lists; reckon/roadmap.py:2597 now iterates selected slugs in sorted order, so both lists append plan by plan in slug order.\nVERDICT done_when: the done_when names a two-seed byte-identical render plus id-parity and ruff-clean clauses; the new test asserts the render, but the ruff clause is red in gates/ruff.log and the head arm's fourth chunk has no recorded result.\nVERDICT write_paths: the declared paths are reckon/roadmap.py, tests/test_the_roadmap_lists_come_out_in_one_order.py and the evidence fragment; every path in the diff is inside them.\nVERDICT manifest: read; it reports 1 passed/EXIT=0 for the new test and 411 passed each arm, but gates/head-chunk3.log is truncated with no summary or EXIT= line and gates/ruff.log shows an added finding the manifest reports as absent.\nVERDICT diff: read commit by commit against base 1d7174ddf; three files changed, all inside scope; the code change is _scope_slugs returning sorted(plans)/sorted(selected) instead of a set.\nCALL_SITES: reckon/serve.py:2421, reckon/flight.py:2309, reckon/mcp.py:1561, reckon/mcp.py:2709, reckon/crew/plan_review.py:3074, reckon/roadmap.py:2167\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:1973 and :1994 return sorted slug lists, so the loop at :2665 that appends decision_blockers and wiring_findings now visits plans in plan-identity order.\nSCORE evidence: 12\nJUSTIFICATION evidence: the two-seed assertion at tests/test_the_roadmap_lists_come_out_in_one_order.py:120 reproduces and the negative control fires, but gates/ruff.log:EXIT=1 records an added finding on the new file and gates/head-chunk3.log carries no summary or EXIT=.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/roadmap.py, tests/test_the_roadmap_lists_come_out_in_one_order.py and the evidence fragment, all inside the declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_the_roadmap_lists_come_out_in_one_order.py:120 compares two independent subprocess renders and fails when the order key is removed, as the recorded negative control shows.\nSCORE fit: 12\nJUSTIFICATION fit: tests/test_the_roadmap_lists_come_out_in_one_order.py:120 has no trailing newline and fails ruff format --check, against a repo whose commits must add no findings.\nSCORE reuse: 20\nJUSTIFICATION reuse: the fix uses the builtin sorted slugs already used at reckon/roadmap.py:1317, :1406 and :1929 rather than adding a new ordering mechanism.\nFINDING tests/test_the_roadmap_lists_come_out_in_one_order.py:120 blocking: the new file adds a ruff finding (W292 no newline at end of file) and fails ruff format --check, so gates/ruff.log ends EXIT=1; the done_when requires ruff check and format add no findings on the changed files, and the manifest reports the clause clean.\nFINDING /home/ITER/.config/reckon/crew/runs/r-20261016T013153737687-the-roadmap-lists-come-out-in-one-order/gates/head-chunk3.log:1 blocking: the head arm's fourth chunk ends at 64 of 65 dots with no summary line and no EXIT=, so it records no result, yet the manifest's tests line claims the head arm ran 411 passed EXIT=0; the id-parity clause of the done_when is unevidenced for those ten files.\n",
+  "review_run_id": "r-20261016T020102009544-review-of-the-roadmap-lists-come-out-in-one-order-7d64e331f138",
+  "reviewed_base_sha": "1d7174ddf992eb13be8c31fd62017a07f5062c00",
+  "reviewed_head_sha": "7d64e331f138a1acbfbd8157263e8412e9678550",
+  "reviewed_run_id": "r-20261016T013153737687-the-roadmap-lists-come-out-in-one-order",
+  "scores": {
+    "durability": 20,
+    "evidence": 12,
+    "fit": 12,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T02:14:37.329082+00:00",
+  "total": 103
+}
