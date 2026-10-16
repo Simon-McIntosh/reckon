@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T23:35:28.490Z",
+  "dispatched_at": "2026-10-16T23:29:21Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/process_signal.py:148",
+      "id": "reuse_search-1",
+      "reason": "naming the owner turns the Deliverable from \"resolve RECKON_HOME ourselves\" into \"compare the scanned process's home against `crew_home()`\", which is the wording that keeps one resolver and gives the implementer the correct fallback chain for free.",
+      "text": "the plan's Why/Deliverable cite the failing test, the two doors and a-run-has-one-live-writer \u00a72, but no home resolver; the rule it needs is already owned by `reckon/_store.py:132` (`_config_home`: RECKON_HOME resolved, else `~/.config/reckon` when it exists, else `~/docs-server`), surfaced as `reckon/crew/run_paths.py:19` (`crew_home()` \u2192 `<config home>/crew`) and consumed for a run's own directory by `reckon/crew/runs.py:81` (`run_dir()`), so the plan should name the mechanism it extends rather than restate its precedence",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/run_paths.py:19",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should extend `crew_home()`/`_config_home` and say so, because a forked precedence is exactly the drift the owner exists to prevent, and the failure it produces (a live run read not alive, a stop that reaches nothing) is silent.",
+      "text": "implemented literally as written (\"RECKON_HOME resolved, with an absent RECKON_HOME standing for the default home\"), the matcher becomes a second home resolver: a bare `os.environ.get(\"RECKON_HOME\") or <constant>` silently drops the `~/.config/reckon`-exists-then-`~/docs-server` fallback at `reckon/_store.py:139-147`, and an unresolved (trailing-slash or symlinked) RECKON_HOME value splits one home into two and hides a run's own live worker; the census of home-resolution sites is `reckon/_store.py:132` (owner), `reckon/crew/run_paths.py:19` (owner's crew leaf), `reckon/crew/runs.py:81` (a run's own directory), and one pre-existing deliberate fork at `reckon/crew/obligation_snapshot.py:136` (which documents why it forks \u2014 a prompt-hook import cost \u2014 a reason this matcher does not share)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_liveness.py:1091",
+      "id": "duplicate_owner-2",
+      "reason": "it fixes both the semantics (\"the home the run belongs to\", not \"the home this process happens to be configured with\") and the test's shape, since an explicit `home=` parameter makes the done-when's `_processes_owning_run` assertion a direct call rather than a dependence on the test process's own environment.",
+      "text": "the plan scopes the match to \"the caller's crew home\", but the caller's ambient `RECKON_HOME` is not the fact that matters: both doors hold the run's own record/directory (`_env_scan_run_pid` reads the record; `signal_worker(reach_run=True)` reads `run_dir` at `reckon/crew/process_signal.py:510-520`), and a process whose ambient home differs from the record's home \u2014 an isolated `RECKON_HOME` around a CLI stop, a stale inherited value \u2014 would then fail to match the run's own worker, reading a live run as ended and delivering a stop to nothing, which is the dangerous direction; the run's home is derivable from what the caller already holds via `reckon/crew/runs.py:81` (`run_dir()` \u2192 `crew_home()`), so `_processes_owning_run` should be told the home explicitly by each door rather than reading `os.environ` itself",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/process_signal.py:300",
+      "id": "reuse_search-2",
+      "reason": "this confirms the plan's own structural claim rather than contradicting it, its WOULD_CHANGE verdict is recorded for scoring only.",
+      "text": "census of run-id-in-environment matchers, so the plan's claim \"with no second matcher\" can be checked rather than assumed: `RECKON_RUN_ID` is read from the caller's own environment (not scanned) in `reckon/hooks/worker_git_guard.py:538`, `reckon/hooks/native_agent_guard.py:200`, `reckon/mcp_deadlines.py:709`, `reckon/crew/budget_lift.py:280`, `reckon/worker_git_shim.py:775`; the two process-table scans that could plausibly have duplicated the matcher do not \u2014 `reckon/crew/dispatch_launch.py:2992` (`_child_processes_of`) matches by parent pid and `reckon/crew/gc.py:983` (`_processes_holding`) matches by cwd/fd path, and no other site reads `/proc/<pid>/environ` for a run id \u2014 so the one matcher at `reckon/crew/process_signal.py:176` really is the only owner and the narrowing does reach both doors",
+      "type": "reuse_search",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "7f3eaa06fdc3fe12a8fb436e89d0a5c2044010d06677a8f987d4c1de6c254f99",
+  "plan_slug": "a-run-mark-is-read-in-its-own-crew-home",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T232840761440-plan-review-of-a-run-mark-is-read-in-its-own-crew-home",
+  "reviewed_blob_sha": "bbffc752f1bd9c4326d808e6e5cd03c9202db462",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the narrowing lands inside the one matcher both doors already call (`reckon/crew/process_signal.py:148`), adding no new function, so substantial behaviour is hidden behind the interface that already hides it.",
+    "duplicate_owner": "a finding \u2014 the comparison as written in the plan re-derives the crew-home precedence rather than calling its owner, and takes the home from the caller's ambient environment rather than from the run record both doors hold.",
+    "interface_budget": "pass \u2014 public_definitions 1757, cli_options 355, mcp_views 34, refusal_families 23; the section adds a test file and a comparison inside one private matcher that `reckon/crew/routing.py:3623` already re-exports, and adds no public definition, CLI option, MCP view or refusal family, so there is nothing for it to retire or merge.",
+    "reuse_search": "a finding \u2014 the plan names the two doors it changes (`_processes_owning_run`, `_env_scan_run_pid`) but names no home-resolution mechanism, and the \"RECKON_HOME resolved, absent \u2192 the launcher's default\" rule it adopts is machinery that already exists as `_config_home` / `crew_home` / `runs.run_dir`.",
+    "thin_wrapper": "pass \u2014 no new layer is proposed; the stop door and the liveness door inherit the change through `_processes_owning_run` rather than gaining a parallel matcher, and the plan states that both doors go through the one matcher rather than wrapping it."
+  },
+  "section_digests": {
+    "_document": "40c223e122141aaad1c7ab22cae8e33a116eff433615b56d0541fe1781a07af4",
+    "s1": "2ab23e10b5d27a87bce149dff090e3231ec699d002ccea31d2987b732578387c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T23:38:40.737565+00:00"
+}
