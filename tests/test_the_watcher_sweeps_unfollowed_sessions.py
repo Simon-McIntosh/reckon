@@ -96,10 +96,12 @@ REFUSED_STREAM = (
     / "codex-usage-limit.jsonl"
 )
 SOURCE_ROOT = Path(__file__).resolve().parents[1]
-# The registration helper holds its advisory lock for this many seconds and is
-# ended early by the case, so the bound is only the ceiling a leaked helper
-# reaches on its own.
-_REGISTRATION_HOLD_SECONDS = 60
+# The registration helper holds its advisory lock until the case releases it --
+# on the pipe it reads, or when the case's finally terminates it -- so this is
+# only a safety ceiling for a helper whose reader has somehow gone, not the
+# lifetime the lock is held for. A short bound here would let a slow lane end
+# the helper mid-case, drop the lock, and make the liveness premise flaky.
+_REGISTRATION_HOLD_CEILING_SECONDS = 900
 _HELPER_READY_SECONDS = 15.0
 
 
@@ -207,10 +209,18 @@ def _hold_a_live_registration(
     are read as they are written: a pipe into a captured test process resolves
     to nothing that delivers and the registration reads expired. A socket
     reads ``stream``, which delivers.
+
+    The helper holds the lock until the case tells it to release, rather than
+    for a fixed span: it waits on the pipe the case hands it as stdin and exits
+    when the case closes that end, which the case's ``finally`` does by
+    terminating it. A span would let a slow lane end the helper mid-case and
+    drop the lock, making the liveness premise flaky. The wait is also bounded
+    by a safety ceiling, so a crashed case whose pipe somehow survives does not
+    leave the helper holding a lock forever.
     """
     started_at = _ago(age_seconds)
     script = (
-        "import fcntl, os, time\n"
+        "import fcntl, os, select, sys\n"
         "from reckon.crew.follower_registration import (\n"
         "    follower_lock_path, _write_watch_record,\n"
         ")\n"
@@ -227,13 +237,17 @@ def _hold_a_live_registration(
         "})\n"
         "fcntl.flock(handle.fileno(), fcntl.LOCK_EX)\n"
         'os.write(1, b"ready\\n")\n'
-        f"time.sleep({_REGISTRATION_HOLD_SECONDS})\n"
+        # Hold the lock until the case closes this pipe (EOF, which select
+        # reports as readable), bounded by a generous ceiling as a last resort.
+        "select.select([sys.stdin], [], [], "
+        f"{_REGISTRATION_HOLD_CEILING_SECONDS})\n"
     )
     parent, child = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
     process = subprocess.Popen(
         [sys.executable, "-c", script],
         cwd=SOURCE_ROOT,
         env={**os.environ, "PYTHONPATH": str(SOURCE_ROOT)},
+        stdin=subprocess.PIPE,
         stdout=child,
         stderr=subprocess.PIPE,
     )
