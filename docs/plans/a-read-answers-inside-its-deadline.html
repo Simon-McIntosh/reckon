@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="70">
+<meta name="plan-version" content="71">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -359,6 +359,9 @@
 </div>
 <div class="r-comment" data-section="s15" data-id="c-close-s15" data-who="reckon-build" data-when="2026-10-16T04:45:00Z">
     <div class="r-comment-body"><p>§15 landed. The roadmap's decision-blocker and wiring-finding lists come out in one order whatever the hash seed, so two reads of an unchanged project are byte-identical. Merged as <code>ca2e3f428</code>. Review: 117/120 after one repair round. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s15">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261016T013153737687-the-roadmap-lists-come-out-in-one-order" data-who="reckon-build" data-when="2026-10-16T02:25:06.077Z">
+    <div class="r-comment-body"><p>roadmap(docs/evidence/fragments/a-read-answers-inside-its-deadline/the-roadmap-lists-come-out-in-one-order.html): _scope_slugs now returns slugs sorted by plan identity instead of a set, so decision_blockers and wiring_findings are emitted in a stable key order across processes; new test renders one fixed docs tree under two PYTHONHASHSEED values and finds the JSON byte-identical (1 passed, EXIT=0), negative control with the order key removed fails (1 failed, EXIT=1).</p></div>
 </div>
 </section>
 </main>
