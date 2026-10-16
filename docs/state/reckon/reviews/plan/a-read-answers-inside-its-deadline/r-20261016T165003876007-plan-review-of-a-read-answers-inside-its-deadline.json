@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T17:10:51.985Z",
+  "dispatched_at": "2026-10-16T16:51:43Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:135",
+      "id": "done_when-1",
+      "reason": "the section must either add the cold audit and discovery medians to the completion floor or exempt them in the done-when, since the ambiguity decides whether a partial re-measure closes \u00a76 or is redispatched.",
+      "text": "the done-when's first clause requires \"the cold and warm medians of roadmap, audit and discovery\" in the log, but the completion floor protects only \"both arms' cold roadmaps and both arms' warm roadmap and audit\" and the section states cold audit and both discovery medians \"carry no target\"; on the hour-exhaustion path the run \"records the medians of every read that did finish and names each read that did not\", so a run \u00a76 calls complete can omit exactly the cold audit and cold discovery medians the done-when demands, leaving a worker unable to tell whether such a partial run satisfies \u00a76",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:130",
+      "id": "done_when-2",
+      "reason": "the floor's operative list is explicit and the two extra base warm reads are the comparison figures the section already explains, so the gloss misleads no worker about what to run.",
+      "text": "the sentence \"Those reads are the control and all three targets\" describes the six floor reads (both arms' cold roadmaps plus both arms' warm roadmap and audit) as the control and three targets, but the control is the base arm's cold roadmap and the three targets are the head arm's cold roadmap and warm roadmap and audit \u2014 four reads \u2014 so the sentence's count does not match the list it glosses",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "0a361a14d1b4e346c5085d1930011586a3c4345acb8343efe96a9294092b321b",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 117,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T165003876007-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "7206f9c374e125063a9768c7c0b9c526cfd1bcde",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited profiler health-tool-latency/scripts/profile_reads.py resolves under the health-review-1010 report directory that \u00a71 names, and \u00a76's section references all resolve.",
+    "done_when": "a finding \u2014 the done-when requires the log to carry the cold and warm medians of roadmap, audit and discovery, but \u00a76's completion floor and its target list leave the cold audit and cold discovery medians unprotected, so an hour-exhausted run the section calls complete leaves the done-when unmet.",
+    "evidence_paths": "pass \u2014 the log and every profiler .prof dump go under the run directory, a durable path, and the section explicitly forbids leaving them on node-local scratch.",
+    "naming": "pass \u2014 the added sentence introduces no symbol, ticket number, version tag or plan label.",
+    "reasoning": "pass \u2014 the mechanism (the health review's profiler over one frozen corpus, both arms run in place in the worker's own all_debug job placed by the dispatch host) runs on the production read path with its caller named, and the serial requirement it now imposes fits the one-hour partition: the floor reads alone sum to about 18 minutes and the full serial run to about 47 minutes at the plan's own loaded-node figures, less on an exclusive node.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable (measure the three reads at base and head inside the deadline); the attribution of a missed target is a proposal for a new section, not a second deliverable here.",
+    "wiring": "pass \u2014 \u00a76's dependency prose resolves: every section it waits on (\u00a72\u2013\u00a75, \u00a78, \u00a710, \u00a711, \u00a712, \u00a713, \u00a714, \u00a716, \u00a717) exists and is done, and the open followup f-araiid-remeasure points at \u00a76."
+  },
+  "section_digests": {
+    "_document": "27e04b7ec4c7a4424eb7839ff032567efe8f2c9f504c5f09139c14dd3ec284e3",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "23aaf685e5dd84a42b81c29f8cc548d564701f1095f2c80031c2dde486fc01df",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T17:12:32.302442+00:00"
+}
