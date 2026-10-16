@@ -1,0 +1,83 @@
+{
+  "artifacts": [
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node (reviewed run's report directory, read-only)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/manifest.md (reviewed run's delivered record, read-only; ranks its findings)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/logs/summary.log (medians table, summary line, literal command - read-only; re-reduced)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/logs/missed-target-attribution.log (missed-target attribution, literal command - read-only; re-reduced)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/scripts/summary.py, /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/scripts/excess_attribution.py (cited scripts, re-run)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/profiles/{base,head}/{roadmap,audit,discovery}/inv{1,2,3}/*.prof (36 dumps, read-only; re-analysed)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T184518073480-review-of-reads-remeasured-on-a-quiet-node-81852a8852e3/claims-rerun.log (this review's re-run log: two cited commands, EXIT=0 each)"
+  ],
+  "claim_lines": [
+    "CLAIM 1: reproduced: re-ran `/home/ITER/mcintos/Code/reckon/.venv/bin/python /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/scripts/summary.py /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/logs` from the reviewed run's report directory; it printed head roadmap cold median 43.971 s (min-max 43.499-58.950) over n=3, marked MISSED against the < 30 s deadline - the figure the run states. Re-running the cited `excess_attribution.py /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/profiles head roadmap 30` reproduced the attribution: median cold total_tt 43.967 s, excess 13.967 s, covered by _discover_plans_uncached (serve.py) cum 38.744 s = 277% of excess",
+    "CLAIM 2: reproduced: re-ran the same cited `summary.py /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/logs`; it printed head roadmap warm median 1.563 s (min-max 1.561-1.618) over n=3, marked MET against <= 2 s - the figure the run states",
+    "CLAIM 3: reproduced: re-ran the same cited `summary.py /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/logs`; it printed head audit warm median 2.471 s (min-max 2.468-2.489) over n=3, marked MET against <= 3 s - the figure the run states"
+  ],
+  "claim_summary": {
+    "detail": "The run's summary line is the last line of logs/summary.log: 'NEGATIVE CONTROL HOLDS: base cold roadmap median 43.32 s exceeds the 30 s MCP deadline'. The table beneath carries base roadmap cold median 43.316 s (min-max 43.222-60.355); 43.316 rounds to 43.32, so the summary's figure is the table's figure and the two agree. The re-run of `summary.py` re-emitted both. Caveat: the summary line's 'control holds' claim is numerically consistent with its table but is void as a control, because the run's own manifest declares the base arm imported the head tree (base arm ran head code); the run records this itself in blockers. No numeric discrepancy between the summary line and the table was found.",
+    "verdict": "agrees"
+  },
+  "claim_summary_line": "CLAIM_SUMMARY: agrees: the run's summary line reads 'NEGATIVE CONTROL HOLDS: base cold roadmap median 43.32 s exceeds the 30 s MCP deadline'; the table beneath carries base roadmap cold median 43.316 s (min-max 43.222-60.355), which rounds to 43.32, so the summary quotes the table's own figure and the two agree (re-ran `summary.py /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/logs`: it re-emitted both the line and the 43.316 table cell). Caveat (not a numeric mismatch): the run's own manifest blockers declare the base arm's invocations imported the head tree, so the control-holds line is void as a control even though its number matches the table - the run states this itself",
+  "claim_verdicts": {
+    "CLAIM 1": {
+      "cites": "logs/summary.log table row 'roadmap | head | cold ... 43.971 ... MISSED'; logs/missed-target-attribution.log (command line and attribution)",
+      "detail": "Re-ran `summary.py /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/logs` from the reviewed run's report directory; it printed head roadmap cold median 43.971 s (min-max 43.499-58.950), n=3, MISSED against < 30 s - the run's figure. Re-ran `excess_attribution.py /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/profiles head roadmap 30`: median cold total_tt 43.967 s, excess 13.967 s, _discover_plans_uncached cum 38.744 s (277% of excess), matching the run's attribution. Log: claims-rerun.log.",
+      "finding": "rank 1 (the headline negative): head cold roadmap misses the 30 s MCP deadline",
+      "verdict": "reproduced"
+    },
+    "CLAIM 2": {
+      "cites": "logs/summary.log table row 'roadmap | head | warm ... 1.563 ... MET'",
+      "detail": "Re-ran `summary.py /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/logs`; it printed head roadmap warm median 1.563 s (min-max 1.561-1.618), n=3, MET against <= 2 s - the run's figure. Log: claims-rerun.log.",
+      "finding": "rank 2: head warm roadmap meets the 2 s target",
+      "verdict": "reproduced"
+    },
+    "CLAIM 3": {
+      "cites": "logs/summary.log table row 'audit | head | warm ... 2.471 ... MET'",
+      "detail": "Re-ran `summary.py /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/logs`; it printed head audit warm median 2.471 s (min-max 2.468-2.489), n=3, MET against <= 3 s - the run's figure. Log: claims-rerun.log.",
+      "finding": "rank 3: head warm audit meets the 3 s target",
+      "verdict": "reproduced"
+    }
+  },
+  "claims": [
+    {
+      "cites": "logs/summary.log table; scripts/summary.py; logs/missed-target-attribution.log; scripts/excess_attribution.py",
+      "finding": "head cold roadmap misses the 30 s MCP deadline at median 43.971 s; excess 13.967 s attributed to _discover_plans_uncached covering 277%",
+      "rank": 1,
+      "report_figure": "head roadmap cold median 43.971 s, MISSED (< 30 s); attributed _discover_plans_uncached cum 38.744 s = 277% of excess",
+      "rerun_figure": "identical: median 43.971 s (43.499-58.950), MISSED; _discover_plans_uncached cum 38.744 s = 277% of excess",
+      "verdict": "reproduced"
+    },
+    {
+      "cites": "logs/summary.log table; scripts/summary.py",
+      "finding": "head warm roadmap meets the 2 s target at median 1.563 s",
+      "rank": 2,
+      "report_figure": "head roadmap warm median 1.563 s, MET (<= 2 s)",
+      "rerun_figure": "identical: median 1.563 s (1.561-1.618), MET",
+      "verdict": "reproduced"
+    },
+    {
+      "cites": "logs/summary.log table; scripts/summary.py",
+      "finding": "head warm audit meets the 3 s target at median 2.471 s",
+      "rank": 3,
+      "report_figure": "head audit warm median 2.471 s, MET (<= 3 s)",
+      "rerun_figure": "identical: median 2.471 s (2.468-2.489), MET",
+      "verdict": "reproduced"
+    }
+  ],
+  "completed_at": "2026-10-16T18:58:03.554Z",
+  "dimensions": null,
+  "dispatched_at": "2026-10-16T18:46:01Z",
+  "method": "The reviewed run is read-only: its manifest records commits: [] and changed_paths: [] confined to its report directory, with no gate suite, so reviewed_base_sha == reviewed_head_sha == 81852a8852e3b6a9c3596f6cde728c8298bf5f5a and there is no diff to read (the run's internal arms measured base d249200c71933bee80c0076617fa63c1ae1c74a8 against head 81852a88, but the revision it read and left unmoved is 81852a88). DEVIATION FROM THE BRIEF, reported as a blocker: the report the brief names, report.md under the reviewed run's report directory, does not exist - the run's process ended (exit.json exited_at 2026-10-16T18:48:57Z, ended_during 'working') one turn before writing it, and its stream's last record is the text 'Writing the report now'. The run's delivered record was therefore read as its report: manifest.md (ranks its findings and carries the headline figures), logs/summary.log (the medians table, its summary line, and the literal command it cites in its own file header), and logs/missed-target-attribution.log (the missed-target attribution and its own literal command). The two scripts it cites were re-run from the reviewed run's report directory against the run's on-disk inputs: scripts/summary.py <logs> (reproduces the whole medians table and the summary line) and scripts/excess_attribution.py <profiles> head roadmap 30 (reproduces the missed-target attribution). These are deterministic re-reductions of the logged samples; no re-measurement is possible (the corpus and the node-local head-tree extraction were torn down when the reviewed run's job ended). The three findings re-run are the three the run marks against a target, which are its ranked headline claims and the ones its done-when names.",
+  "project": "reckon",
+  "report_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-on-a-quiet-node/report.md",
+  "report_present": false,
+  "review_run_id": "r-20261016T184518073480-review-of-reads-remeasured-on-a-quiet-node-81852a8852e3",
+  "reviewed_base_sha": "81852a8852e3b6a9c3596f6cde728c8298bf5f5a",
+  "reviewed_head_sha": "81852a8852e3b6a9c3596f6cde728c8298bf5f5a",
+  "reviewed_run_id": "r-20261016T180558240058-reads-remeasured-on-a-quiet-node",
+  "rubric": "claims",
+  "status": "parsed",
+  "suite_delta_fields_omitted": "added_failure_count and added_failure_ids are intentionally absent: the reviewed run ran no gate suite (this review adds none). The record does not score the six landed-node dimensions; dimensions is null.",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T18:55:26+00:00"
+}
