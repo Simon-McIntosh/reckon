@@ -15,62 +15,25 @@ from pathlib import Path
 from typing import Any
 
 from reckon._store import write_json_atomically
-from reckon.crew.obligation_snapshot import CLI_MODULE_FILES
+from reckon.crew import obligation_snapshot
+from reckon.crew.obligation_snapshot import code_stamp
 
-
-# One source file's content digest, kept beside the stat that vouches for it.
-# A follower re-checks its stamp at a bounded cadence and most ticks find
-# nothing new, so the mtime and size let an untouched file reuse the digest it
-# had last time rather than reading every follower module on every tick.
-_follower_source_digests: dict[str, tuple[int, int, str]] = {}
-
-
-def _source_content_digest(source: Path, metadata: os.stat_result) -> str:
-    """Return a digest of a source file's bytes, reused while its stat holds.
-
-    The stat is a pre-check, not the identity: a tool that rewrites a file with
-    identical bytes — a formatter, a checkout restoring the same revision —
-    moves the mtime alone, and a stamp keyed on it reloaded every follower for
-    nothing. An unchanged mtime and size reuse the last digest; a moved one
-    reads the bytes and finds them the same, so the stamp does not move.
-    """
-    key = str(source)
-    cached = _follower_source_digests.get(key)
-    if (
-        cached is not None
-        and cached[0] == metadata.st_mtime_ns
-        and cached[1] == metadata.st_size
-    ):
-        return cached[2]
-    try:
-        digest = hashlib.sha256(source.read_bytes()).hexdigest()
-    except OSError:
-        digest = ""
-    _follower_source_digests[key] = (metadata.st_mtime_ns, metadata.st_size, digest)
-    return digest
+# Re-exported for the facade callers that read the stamp's own digest memo and
+# helper from this module; both names are the single implementation in
+# ``obligation_snapshot``, so a caller reaching either one shares one memo.
+_source_content_digest = obligation_snapshot._source_content_digest
+_follower_source_digests = obligation_snapshot._source_digests
 
 
 def follower_code_stamp() -> str:
     """Return a stamp that advances when code used by a follower changes.
 
-    Keyed on content rather than on the mtime and size alone, because a touched
-    file whose bytes are unchanged is not new code and must not reload a
-    running follower.
+    A follower's launch is built from the same source a producer's is, so it
+    reads the one package-wide :func:`reckon.crew.obligation_snapshot.code_stamp`
+    and the two cannot drift. The package directory is resolved from this
+    module rather than the stamp's own, so a caller can point at a copied tree.
     """
-    package_dir = Path(__file__).resolve().parent.parent
-    sources = [
-        *(package_dir / name for name in CLI_MODULE_FILES),
-        *sorted((package_dir / "crew").glob("*.py")),
-    ]
-    stamp = hashlib.sha256()
-    for source in sources:
-        try:
-            metadata = source.stat()
-        except OSError:
-            continue
-        stamp.update(str(source.relative_to(package_dir)).encode())
-        stamp.update(f":{_source_content_digest(source, metadata)}\n".encode())
-    return stamp.hexdigest()
+    return code_stamp(Path(__file__).resolve().parent.parent)
 
 
 def follower_dir(project: str) -> Path:
