@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_backends.py:2214",
+    "reckon/_backends.py:293",
+    "reckon/crew/dispatch_admission.py:_fence_write_roots"
+  ],
+  "completed_at": "2026-10-16T21:22:30.232Z",
+  "dispatched_at": "2026-10-16T21:14:37Z",
+  "findings": [
+    {
+      "file": "tests/test_a_worker_cannot_remove_another_runs_reports.py",
+      "line": "458",
+      "severity": "follow-on",
+      "text": "follow-on: the without_the_skip loop asserts _bind_of(without_the_skip, store) != -1 against a list the test itself just inserted the bind into, so it holds whatever the fence emits and cannot redden under any code state; it demonstrates the helper's shape, not the guard, and counting it as durability coverage overstates what it protects, the real guard being the assertion at :435."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 125add86b against base 2aa8df942 commit by commit; one file changed, the test file only, and every added assertion is inside the declared write paths.",
+    "done_when": "the done_when names tests/test_a_worker_cannot_remove_another_runs_reports.py with a seal of both stores, two executed fenced rm refusals, two negative controls, head-vs-base importer subsets and ruff; the manifest records new-test.log (8 passed), stores-production-negative-control.log (both arms redden), suite-head-subset 104 vs suite-base-subset 96, and ruff.log.",
+    "goal": "the node goal is to make the worker fence seal the reports root and the review store read-only and re-bind only the run's declared paths under them writable; this commit is test-only, and tests/test_a_worker_cannot_remove_another_runs_reports.py:410 asserts that seal is exercised over the very roots a launch hands the fence.",
+    "manifest": "read; it names commits 7853529ad, 2aa8df942 and 125add86b, records after_suite at revision 125add86b with failure_count 0, and cites the production negative-control log.",
+    "write_paths": "the declared paths include tests/test_a_worker_cannot_remove_another_runs_reports.py; the single commit 125add86b changes only that path (+167/-5)."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_cannot_remove_another_runs_reports.py:435 reddens if the grant loop's skip at reckon/_worker_fence.py:1300 is removed, since _within_any matches a path against itself, but the skip-local reddening is shown only by the test's own synthetic argv, not by a runtime mutation.",
+    "evidence": "stores-production-negative-control.log records both arms reddening under RECKON_TEST_REPORTS_SEAL_NEGATIVE=1 and RECKON_TEST_REVIEW_SEAL_NEGATIVE=1, and ruff.log now carries the check the previous review found unrecorded.",
+    "fit": "production_roots and production_argv at tests/test_a_worker_cannot_remove_another_runs_reports.py:172 follow the existing Stores-helper idiom and the naming scan over the file returns no banned label.",
+    "goal_fidelity": "tests/test_a_worker_cannot_remove_another_runs_reports.py:435 asserts the whole store handed as a production root is never re-bound writable, which is the seal reckon/_worker_fence.py:1300 enforces.",
+    "reuse": "production_roots at tests/test_a_worker_cannot_remove_another_runs_reports.py:172 extends the module's own Stores helper over the same _fence_write_roots capability the fence owns rather than forking it.",
+    "scope_discipline": "the whole of commit 125add86b is confined to tests/test_a_worker_cannot_remove_another_runs_reports.py, a declared write path, and touches no production file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the worker fence seal the reports root and the review store read-only and re-bind only the run's declared paths under them writable; this commit is test-only, and tests/test_a_worker_cannot_remove_another_runs_reports.py:410 asserts that seal is exercised over the very roots a launch hands the fence.\nVERDICT done_when: the done_when names tests/test_a_worker_cannot_remove_another_runs_reports.py with a seal of both stores, two executed fenced rm refusals, two negative controls, head-vs-base importer subsets and ruff; the manifest records new-test.log (8 passed), stores-production-negative-control.log (both arms redden), suite-head-subset 104 vs suite-base-subset 96, and ruff.log.\nVERDICT write_paths: the declared paths include tests/test_a_worker_cannot_remove_another_runs_reports.py; the single commit 125add86b changes only that path (+167/-5).\nVERDICT manifest: read; it names commits 7853529ad, 2aa8df942 and 125add86b, records after_suite at revision 125add86b with failure_count 0, and cites the production negative-control log.\nVERDICT diff: read 125add86b against base 2aa8df942 commit by commit; one file changed, the test file only, and every added assertion is inside the declared write paths.\nCALL_SITES: reckon/_backends.py:2214, reckon/_backends.py:293, reckon/crew/dispatch_admission.py:_fence_write_roots\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_worker_cannot_remove_another_runs_reports.py:435 asserts the whole store handed as a production root is never re-bound writable, which is the seal reckoning/_worker_fence.py:1300 enforces.\nSCORE evidence: 17\nJUSTIFICATION evidence: stores-production-negative-control.log records both arms reddening under RECKON_TEST_REPORTS_SEAL_NEGATIVE=1 and RECKON_TEST_REVIEW_SEAL_NEGATIVE=1, and ruff.log now carries the check the previous review found unrecorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole of commit 125add86b is confined to tests/test_a_worker_cannot_remove_another_runs_reports.py, a declared write path, and touches no production file.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_worker_cannot_remove_another_runs_reports.py:435 reddens if the grant loop's skip at reckon/_worker_fence.py:1300 is removed, since _within_any matches a path against itself, but the skip-local reddening is shown only by the test's own synthetic argv, not by a runtime mutation.\nSCORE fit: 18\nJUSTIFICATION fit: production_roots and production_argv at tests/test_a_worker_cannot_remove_another_runs_reports.py:172 follow the existing Stores-helper idiom and the naming scan over the file returns no banned label.\nSCORE reuse: 18\nJUSTIFICATION reuse: production_roots at tests/test_a_worker_cannot_remove_another_runs_reports.py:172 extends the module's own Stores helper over the same _fence_write_roots capability the fence owns rather than forking it.\nFINDING tests/test_a_worker_cannot_remove_another_runs_reports.py:458 follow-on: the without_the_skip loop asserts _bind_of(without_the_skip, store) != -1 against a list the test itself just inserted the bind into, so it holds whatever the fence emits and cannot redden under any code state; it demonstrates the helper's shape, not the guard, and counting it as durability coverage overstates what it protects, the real guard being the assertion at :435.\n",
+  "review_run_id": "r-20261016T211409111773-review-of-a-worker-cannot-remove-another-runs-reports-125add86bdcc",
+  "reviewed_base_sha": "2aa8df942a385d09c12f72817b8396b6ed4f4b5b",
+  "reviewed_head_sha": "125add86bdcc04a3c3bf14a81f08e61cf5c6139f",
+  "reviewed_run_id": "r-20261016T195907790544-a-worker-cannot-remove-another-runs-reports",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T21:20:48.504879+00:00",
+  "total": 108
+}
