@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "8ed7958f9ba1561515f913bfcb8e648640afb5c1",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/paid_lanes.py:465"
+  ],
+  "completed_at": "2026-10-16T14:21:55.375Z",
+  "dispatched_at": "2026-10-16T14:10:27Z",
+  "findings": [
+    {
+      "file": "tests/test_paid_lanes_document_states_its_shelf_life.py",
+      "line": "54",
+      "severity": "follow-on",
+      "text": "follow-on: test_every_known_unit_converts_as_before reads its expected factor from paid_lanes._INTERVAL_UNIT_SECONDS, the same mapping refresh_interval_seconds indexes, so the assertion is a round-trip over one constant \u2014 a wrong factor (min valued 6.0) or a restored seconds fallback both leave it green, and it therefore adds no guard against the defect the node repaired; the sibling assertion at :44 is independent and negative-controlled, so this is not blocking."
+    }
+  ],
+  "head_log_revision": "712a78a090ea6c8dd1268bbf6315f432dac056fc",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit 712a78a09 against base 8ed7958f9, one commit, two files, 23 insertions and 1 deletion, all inside the declared scope; the production change is the strict lookup and the ValueError at reckon/crew/paid_lanes.py:163-169.",
+    "done_when": "the done_when names tests/test_paid_lanes_document_states_its_shelf_life.py and four clauses; the gate log records 6 passed at EXIT=0 and the negative-control log shows the refusal assertion reddening, but the clause requiring each arm's pytest basetemp under the run's own TMPDIR is not evidenced because neither arm's recorded command passes --basetemp.",
+    "goal": "the node's goal is to refuse a refresh interval whose unit the table lacks, and reckon/crew/paid_lanes.py:163-169 raises ValueError naming the interval and the accepted units when the parsed unit is absent from _INTERVAL_UNIT_SECONDS.",
+    "manifest": "read; it states the gate ran 6 passed with EXIT=0, names its gate, base, head and negative-control logs, quotes the reproduction before the repair, and records 362 base / 364 head with 0 added failures.",
+    "write_paths": "read the four paths declared at prompt.txt:76-79 of the source run; the diff touches only reckon/crew/paid_lanes.py and tests/test_paid_lanes_document_states_its_shelf_life.py, both inside them, and no path outside them."
+  },
+  "justifications": {
+    "durability": "negative_control.log shows tests/test_paid_lanes_document_states_its_shelf_life.py:44 reddening with DID NOT RAISE when the seconds fallback is restored, so that guard is independent and verified, but the second assertion at :54 derives its expected value from the same constant the implementation indexes and cannot fail on a wrong factor.",
+    "evidence": "gate.log records 6 passed at EXIT=0, base_arm.log 362 passed and head_arm.log 364 passed (0 added failures), and negative_control.log records EXIT=1, but the done_when's per-arm basetemp clause is unmeasured because neither recorded command passes --basetemp.",
+    "fit": "the raise at reckon/crew/paid_lanes.py:163-169 follows the module's refusal idiom (a named ValueError) and the message construction matches reckon/crew/node.py:803, and the commit carries a conventional subject and a body with no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/paid_lanes.py:163-169 refuses an unknown unit and names it and the accepted units, exactly the deliverable \u00a717 states, with the bare-number path preserved because \"\" remains a key at reckon/crew/paid_lanes.py:112.",
+    "reuse": "the change extends the existing owner in place at reckon/crew/paid_lanes.py:163-169 rather than adding a definition, so no capability is forked; the sibling duration parser at reckon/crew/node.py:803 predates this change and is not reached by the diff.",
+    "scope_discipline": "the diff is confined to the two declared source and test paths and writes no fragment or figure, but the node's granted docs/evidence and docs/figures paths were unnecessary and the added test at tests/test_paid_lanes_document_states_its_shelf_life.py:51-54 exercises a clause the sibling assertion at :44 already covers."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to refuse a refresh interval whose unit the table lacks, and reckon/crew/paid_lanes.py:163-169 raises ValueError naming the interval and the accepted units when the parsed unit is absent from _INTERVAL_UNIT_SECONDS.\nVERDICT done_when: the done_when names tests/test_paid_lanes_document_states_its_shelf_life.py and four clauses; the gate log records 6 passed at EXIT=0 and the negative-control log shows the refusal assertion reddening, but the clause requiring each arm's pytest basetemp under the run's own TMPDIR is not evidenced because neither arm's recorded command passes --basetemp.\nVERDICT write_paths: read the four paths declared at prompt.txt:76-79 of the source run; the diff touches only reckon/crew/paid_lanes.py and tests/test_paid_lanes_document_states_its_shelf_life.py, both inside them, and no path outside them.\nVERDICT manifest: read; it states the gate ran 6 passed with EXIT=0, names its gate, base, head and negative-control logs, quotes the reproduction before the repair, and records 362 base / 364 head with 0 added failures.\nVERDICT diff: read commit 712a78a09 against base 8ed7958f9, one commit, two files, 23 insertions and 1 deletion, all inside the declared scope; the production change is the strict lookup and the ValueError at reckon/crew/paid_lanes.py:163-169.\nCALL_SITES: reckon/crew/paid_lanes.py:465\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/paid_lanes.py:163-169 refuses an unknown unit and names it and the accepted units, exactly the deliverable \u00a717 states, with the bare-number path preserved because \"\" remains a key at reckon/crew/paid_lanes.py:112.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate.log records 6 passed at EXIT=0, base_arm.log 362 passed and head_arm.log 364 passed (0 added failures), and negative_control.log records EXIT=1, but the done_when's per-arm basetemp clause is unmeasured because neither recorded command passes --basetemp.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the diff is confined to the two declared source and test paths and writes no fragment or figure, but the node's granted docs/evidence and docs/figures paths were unnecessary and the added test at tests/test_paid_lanes_document_states_its_shelf_life.py:51-54 exercises a clause the sibling assertion at :44 already covers.\nSCORE durability: 16\nJUSTIFICATION durability: negative_control.log shows tests/test_paid_lanes_document_states_its_shelf_life.py:44 reddening with DID NOT RAISE when the seconds fallback is restored, so that guard is independent and verified, but the second assertion at :54 derives its expected value from the same constant the implementation indexes and cannot fail on a wrong factor.\nSCORE fit: 18\nJUSTIFICATION fit: the raise at reckon/crew/paid_lanes.py:163-169 follows the module's refusal idiom (a named ValueError) and the message construction matches reckon/crew/node.py:803, and the commit carries a conventional subject and a body with no plan or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change extends the existing owner in place at reckon/crew/paid_lanes.py:163-169 rather than adding a definition, so no capability is forked; the sibling duration parser at reckon/crew/node.py:803 predates this change and is not reached by the diff.\nFINDING tests/test_paid_lanes_document_states_its_shelf_life.py:54 follow-on: test_every_known_unit_converts_as_before reads its expected factor from paid_lanes._INTERVAL_UNIT_SECONDS, the same mapping refresh_interval_seconds indexes, so the assertion is a round-trip over one constant \u2014 a wrong factor (min valued 6.0) or a restored seconds fallback both leave it green, and it therefore adds no guard against the defect the node repaired; the sibling assertion at :44 is independent and negative-controlled, so this is not blocking.\n",
+  "review_run_id": "r-20261016T140927636937-review-of-unknown-interval-unit-refused-712a78a090ea",
+  "reviewed_base_sha": "8ed7958f9ba1561515f913bfcb8e648640afb5c1",
+  "reviewed_head_sha": "712a78a090ea6c8dd1268bbf6315f432dac056fc",
+  "reviewed_run_id": "r-20261016T135552049429-unknown-interval-unit-refused",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T14:15:50.633027+00:00",
+  "total": 105
+}
