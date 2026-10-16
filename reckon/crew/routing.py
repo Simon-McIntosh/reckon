@@ -865,12 +865,16 @@ def shadow_worktree_session(
 ) -> str:
     """Return the session token a shadow worktree lives under.
 
-    New shadows add a recorded unique component beyond the primary run and
-    candidate backend, allowing repeated arms on one backend to retain separate
-    worktrees. A missing component preserves the single legacy location for
-    records written before repeated arms were supported.
+    The token names the candidate backend and the run's recorded unique
+    component, so repeated arms on one backend retain separate worktrees, and
+    never the primary run id: this token is the worktree path shown in the
+    shadow's composed prompt, and naming the primary there would hand the shadow
+    the identity of the run it is measuring. ``primary_run_id`` is kept for
+    signature compatibility with the dispatch caller and is deliberately unused;
+    records written before the token dropped the primary are resolved by
+    :func:`_shadow_worktree_records` under their own legacy naming.
     """
-    stem = f"shadow-{primary_run_id}-{candidate_backend}"
+    stem = f"shadow-{candidate_backend}" if candidate_backend else "shadow"
     return f"{stem}-{component}" if component else stem
 
 
@@ -900,16 +904,23 @@ def _shadow_worktree_records(
         # flight config: the record is what says which candidate actually ran.
         candidate = str(record.get("backend") or "").strip()
         component = str(lineage.get("worktree_component") or "").strip()
-        # A record that predates the candidate-named path (or never named one)
-        # still resolves its single legacy worktree; only one candidate could
-        # have produced a shadow before the candidate entered the path.
-        session = (
-            shadow_worktree_session(primary_run_id, candidate, component)
-            if candidate
-            else f"shadow-{primary_run_id}"
-        )
-        for root in roots:
-            result[(root / session / node).resolve()] = record
+        # A shadow's worktree session no longer names its primary: a current run
+        # builds its token from the candidate backend and its component alone. A
+        # record committed before that change still carries the primary in its
+        # path, and the ledger row does not record which naming produced it, so
+        # every naming the record could have used is resolved. A record that
+        # predates the candidate-named path (or never named one) still resolves
+        # its single legacy worktree; only one candidate could have produced a
+        # shadow before the candidate entered the path.
+        sessions = {shadow_worktree_session(primary_run_id, candidate, component)}
+        if candidate:
+            legacy = f"shadow-{primary_run_id}-{candidate}"
+            sessions.add(f"{legacy}-{component}" if component else legacy)
+        else:
+            sessions.add(f"shadow-{primary_run_id}")
+        for session in sessions:
+            for root in roots:
+                result[(root / session / node).resolve()] = record
     return result
 
 

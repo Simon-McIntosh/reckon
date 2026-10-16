@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-shadow-worktree-hides-its-primary">
+  <meta name="plan-title" content="A shadow's worktree session names no primary">
+  <meta name="plan-summary" content="A shadow's worktree session token carried the primary's run id, so the worktree path in the shadow's composed prompt named the run it was measured against. The token is now built from the candidate backend and the ledger's recorded component alone, and pre-change records still resolve through _shadow_worktree_records under their legacy naming.">
+  <meta name="plan-evidence-for" content="reckon:a-shadow-cannot-see-its-primary">
+  <meta name="plan-verifies" content="reckon:a-shadow-cannot-see-its-primary#s3">
+  <meta name="plan-recorded-at" content="2026-10-16">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,shadow,worktree,routing">
+  <title>A shadow's worktree session names no primary &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A shadow's worktree session names no primary</h1>
+
+    <section id="a-shadow-worktree-hides-its-primary-changes">
+      <h2>What changed</h2>
+      <p><code>shadow_worktree_session</code> in
+        <code>reckon/crew/routing.py</code> used to build the shadow's session
+        token as <code>shadow-&lt;primary&gt;-&lt;candidate&gt;</code>, and the
+        session is the worktree directory the composed prompt names on its
+        <em>Work only in &hellip;</em> line. The shadow read its primary's run
+        id out of its own prompt. The token is now
+        <code>shadow-&lt;candidate&gt;-&lt;component&gt;</code>: the candidate
+        backend and the run's recorded unique component, and never the primary.
+        The signature is unchanged, so the caller in
+        <code>dispatch.py</code> is untouched.</p>
+      <p><code>_shadow_worktree_records</code> resolves every naming a ledger
+        row could have used, because the row does not record which naming wrote
+        it: the current <code>shadow-&lt;candidate&gt;-&lt;component&gt;</code>,
+        and the pre-change forms
+        <code>shadow-&lt;primary&gt;-&lt;candidate&gt;-&lt;component&gt;</code>,
+        <code>shadow-&lt;primary&gt;-&lt;candidate&gt;</code> and
+        <code>shadow-&lt;primary&gt;</code>. A committed record therefore maps
+        to more than one candidate path, and gc and promotion still find every
+        pre-change shadow worktree.</p>
+      <ul>
+        <li><code>reckon/crew/routing.py</code> —
+          <code>shadow_worktree_session</code> and
+          <code>_shadow_worktree_records</code>.</li>
+        <li><code>tests/test_a_shadow_worktree_hides_its_primary.py</code> —
+          five cases: the stub-launched shadow's worktree path and prompt name
+          no primary; a dry resolution's session names no primary; and each
+          legacy naming resolves to its original worktree path.</li>
+      </ul>
+    </section>
+
+    <section id="a-shadow-worktree-hides-its-primary-measure">
+      <h2>Measure</h2>
+      <p>Head gate over the 68 test files importing
+        <code>reckon/crew/routing.py</code>, run in place on the fleet
+        allocation with pytest-xdist (<code>-n 8</code>) and a 300&nbsp;s
+        per-test timeout: <strong>751 passed, 1 skipped</strong>, zero
+        failures. The base arm at revision
+        <code>aa2110776</code> recorded <strong>744 passed, 1 skipped, 2
+        errors</strong>; the two errors are a scaffolding artifact of the
+        scratch tree (a <code>git archive</code> export has no
+        <code>.git</code>, so <code>test_staged_write_inventory.py</code>'s
+        <code>git ls-tree</code> setup fails with exit 128), not failures, and
+        neither appears in the head arm. No failure id is added.</p>
+      <p>The declared negative control restores the primary run id in the
+        <code>shadow_worktree_session</code> stem. With it applied the dry-run
+        and the stub-launch assertions fail, each showing the primary id inside
+        the worktree path:</p>
+      <ul>
+        <li><code>negative-control.log</code> — <code>EXIT=1</code>, two
+          failing ids the head arm does not fail:
+          <code>test_a_shadow_worktree_and_prompt_name_no_primary</code> and
+          <code>test_a_dry_run_records_a_component_that_names_no_primary</code>,
+          both with <em>AssertionError</em> quoting the path
+          <code>shadow-r-&hellip;-node-a-candidate-a-&hellip;/node-a</code>.</li>
+      </ul>
+      <p>Ruff delta on the staged paths is zero: <code>routing.py</code> has 9
+        findings and 20 format hunks before and after, and the new test file is
+        clean on both <code>ruff check</code> and
+        <code>ruff format --check</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
