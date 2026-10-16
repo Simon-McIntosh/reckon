@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T23:49:29.998Z",
+  "dispatched_at": "2026-10-16T23:37:11Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-answers-inside-its-deadline/r-20261016T233631417638-plan-review-of-a-read-answers-inside-its-deadline/plan.html:204",
+      "id": "reasoning-1",
+      "reason": "the deliverable and the done-when are correctly scoped to `fleet_state`, and \u00a718 measured the session-slice cost at 0.135 s, so this is an over-stated justification clause rather than a mechanism the node would build wrongly.",
+      "text": "\u00a723 says \"A sweep derives through that call, so a sweep gets the same bound\", but a sweep resolves each run's reviewed head a second time outside the derivation: `sweep` calls `payload_for` per session (`obligation_snapshot.py:1025`), and `payload_for` calls `obligations._review_duty_item` for every review-classified row (`obligation_snapshot.py:~900`), which calls `recovery._review_head_and_tree` (`reckon/crew/obligations.py:367`) and so `_reviewed_run_head` \u2014 a reader the same section explicitly keeps at current behaviour (\"Readers outside a derivation keep their current behaviour\"). The sweep's total per-run resolution is therefore the derivation's count plus the slice's, so the sweep is not bounded by \u00a723, while \u00a724's harness times `fleet_state` alone and would not see the slice's share",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-answers-inside-its-deadline/r-20261016T233631417638-plan-review-of-a-read-answers-inside-its-deadline/plan.html:196",
+      "id": "reasoning-2",
+      "reason": "the mechanism the section argues (per-tree matching over every record and row) is corroborated by the log and the bound rests on the call count, not on this call time, so no dispatch would change.",
+      "text": "\u00a721's Why reports, from the first repair node's profile over the live crew state, that `_holding_record` runs \"25 calls taking 5.39 s\", but the log that same paragraph names (`negative-control/fleet_state_subprocess_callers.log`) records `_holding_record` at 24 calls and 4.652 s cumulative, while the adjacent figures in that sentence (58,640 `_names_worktree` calls at 1.68 s) do match that log exactly \u2014 so one figure in the cited set is not from the source it is attributed to",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "d22aa709cd2f302e629ef764dabbb0215f78e0ca6735fdedcf3ed19ffd6fb64c",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 156,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T233631417638-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "1d91e69f0771c38a8c6f8ac420babb58aef7ff0f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a723's five cited commits (`234fda360`, `f5c9157f8`, `7962c482e`, `d0ccc51c3`, `7b915b6e7`) all resolve as commits; `obligation_snapshot.fleet_state` exists (`reckon/crew/obligation_snapshot.py:826`) and is the call `sweep` makes at line 1020, which grounds the changed bound; `ledger._index_payload` (`reckon/ledger.py:1096`) and `recovery_review_subject._reviewed_run_head` (`reckon/crew/recovery_review_subject.py:155`) exist and are reached from the derivation.",
+    "done_when": "pass \u2014 \u00a721's bound (calls of `routing.record_names_worktree` during one `_held_worktree_records` call at most records plus trees) and \u00a723's (one `_index_payload`, at most one `_reviewed_run_head` per live run, counted in one `fleet_state`) are both measurable, and each carries a base-tree negative control that fails on the pre-change count.",
+    "evidence_paths": "pass \u2014 both sections log to the run directory, a durable path; \u00a721's cited log resolves on disk at `/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T223039066944-held-worktree-records-spawn-no-git-per-record/negative-control/fleet_state_subprocess_callers.log`.",
+    "naming": "pass \u2014 neither changed section introduces a plan label, stage name, ticket number or version tag into a symbol, path or comment.",
+    "reasoning": "a finding \u2014 \u00a723's added clause \"a sweep gets the same bound\" is not supported by the code path it describes, and \u00a721's cited call count for `_holding_record` does not match the log it names.",
+    "single_goal": "pass \u2014 \u00a721 has one deliverable (match each record once) and \u00a723 one mechanism (a single derivation answering all its readers) whose two counts are two assertions on that one mechanism.",
+    "wiring": "pass \u2014 \u00a721 and \u00a723 each name write paths that exist (`reckon/crew/obligations.py`, `reckon/crew/routing.py`, `reckon/ledger.py`), depend on nothing missing, and their shared-file ordering against \u00a722 is carried by open followup f-araiid-020, which sequences \u00a720 to \u00a724 because all three write `obligations.py`."
+  },
+  "section_digests": {
+    "_document": "d4ddda961784c7a505897dfa112dcf8d73378167d498be05466e8103832740db",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "f6e2a8c3d1c90f4194ec9891635cef181cf62c62a5dbb39efd4c9832ac5d1e9b",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s20": "81e1ff125ddfc6955aa9bfbaae255b04b8bd03b75e9a4bbaec4a6e2de4790a39",
+    "s21": "93c26d8153670522a297c9682a2ff81a94a80ce84bbd612d0bf57aad9fb539c6",
+    "s22": "6266f82976abf2a572694b2f91bf0143ff9a02ea484166e79b8197bde4e1a5e6",
+    "s23": "4321ff2d8140d171672f409435642b777a8991489a48f5c7d56f37b9099471f6",
+    "s24": "321ad2d463c387730c6dd7dd790e9dcb871a912f6cea79856885f3b15e8da7c3",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T23:51:37.599927+00:00"
+}
