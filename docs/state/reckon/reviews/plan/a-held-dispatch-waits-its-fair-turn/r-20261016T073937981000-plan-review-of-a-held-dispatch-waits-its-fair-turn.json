@@ -1,0 +1,86 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T07:46:47.092Z",
+  "dispatched_at": "2026-10-16T07:40:22Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:161",
+      "id": "single_goal-1",
+      "reason": "the four deliverables need four measures and four controls; as one node it will be built and closed on the weakest of them, and the obligations and reroute requirements are already the substance of other sections.",
+      "text": "\u00a724's Deliverable states four separate requirements \u2014 a queued run's recorded backend is the launchable lane; a review composed with no lane named never resolves to an excluded backend; a queued pointer whose backend no admission service drains is refused or rerouted; and a queued run past its review-queued bound raises a duty \u2014 so the node cannot be reviewed or closed on one verdict and its single gate proves none of them fully",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:161",
+      "id": "done_when-1",
+      "reason": "a done-when whose controls do not cover two of its measured behaviours cannot show those guards fire, so those halves pass however the code behaves.",
+      "text": "the single negative control (\"with the queued backend left as the metered one, `admit_once` for the local lane launches nothing\") exercises only the backend-rewrite assertion, so the \"backend no service drains is refused or rerouted\" assertion and the \"obligations view reports a review-queued run past its bound\" assertion are asserted without any control that could falsify them",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:161",
+      "id": "wiring-1",
+      "reason": "a coordinator dispatching \u00a724 on its declared scope cannot satisfy an assertion that lives in a module the node does not own; the dependency on \u00a75 (or the obligations write path) must be declared or the assertion dropped.",
+      "text": "\u00a724's done-when requires \"the obligations view reports a review-queued run past its bound for the session that queued it\", but \u00a724 has `data-links=\"\"` and its write paths are `reckon/crew/dispatch.py`, `dispatch_plan.py`, `queue_admission.py`, `recovery_review_dispatch.py` and the new test \u2014 `reckon/crew/obligations.py` is not among them, and \u00a75 already owns the obligations reading (\"beside its existing `review-queued` reading, whose 30-minute bound is unchanged\")",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:161",
+      "id": "reasoning-1",
+      "reason": "the deliverable asserts a fix (\"never resolves to a backend in `review_excluded_backends`\") on a cause the plan has not shown ran, so the node would aim its repair at a path that may never have been taken; the plan should locate the caller or narrow the deliverable to \"find and report the site\".",
+      "text": "the Why names a second fault, \"a review composed with no lane named resolved to `codex`, although `review_excluded_backends` is meant to keep reviews off metered lanes\", but the same paragraph states \"the site where `local` and the resolved backend part company is not yet known\", and the cited evidence points away from that mechanism: the pointer recorded `local: true`, and a review with `local` set is routed through `flight.select_local_backend` in `_dispatch_composed_review` (`reckon/crew/recovery_review_dispatch.py:1804-1810`), while the excluded-backend consult lives in `_ordered_review_lanes` (`reckon/crew/recovery_review_dispatch.py:1186`)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "031a02040bb4462e74bc76df4d9af2f96e0b75f8348ee4d22a0d680ee02fe1ad",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 130,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T073937981000-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "a351f2dd5af05e50fbe7ed8e7f9a06d55525d5ee",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited discard json, `reckon/crew/queue_admission.py`, `reckon/crew/dispatch.py`, `reckon/crew/dispatch_plan.py` and `reckon/crew/recovery_review_dispatch.py` all resolve; there are no extensionless hrefs in \u00a724.",
+    "done_when": "a finding \u2014 \u00a724 declares one negative control, which falsifies only the backend-rewrite assertion; the refuse-or-reroute assertion and the obligations-duty assertion are measured with no control.",
+    "evidence_paths": "pass \u2014 \u00a724's gate logs go \"under the run directory\" and its cited discard record is on the operator's durable config path, not a scratchpad.",
+    "naming": "pass \u2014 \u00a724 names no plan labels, ticket numbers or version tags; the new file `test_a_queued_run_waits_on_its_lane.py` is mechanism-named.",
+    "reasoning": "a finding \u2014 \u00a724's second fault asserts the review \"resolved to codex, although `review_excluded_backends` is meant to keep reviews off metered lanes\", yet the plan concedes the site is unknown and cites no evidence the compose path that ran ever consults that exclusion.",
+    "single_goal": "a finding \u2014 \u00a724 carries four independent deliverables (queue the launchable backend, honour `review_excluded_backends` at compose, refuse-or-reroute an undrained pointer, raise an obligations duty).",
+    "wiring": "a finding \u2014 \u00a724 declares no relationship (empty `data-links`) to \u00a75, although its done-when measures the obligations view \u00a75 owns."
+  },
+  "section_digests": {
+    "_document": "8e6def821cfef3792374a58a2689f0afe5d03fbe58917d27f7f504c284955f07",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "f67610611bfb819007234cb2d266523cab773379dedf07c8b53feb8f9e78ef59",
+    "s19": "1a735ef01d42913d9085a7d2db7eb238ecd99450b1ee61e3702d9951b4be8b04",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s20": "27cbb7d66474dcc03ee947d28d02bf69241181f95114d64b5dfd64cece9a6d2d",
+    "s21": "9d6a0b0914d4b7c617f66b56c23c29f423e83783cee042a59efd0844e910758e",
+    "s22": "04e32404c6bd6fba4d019c4ac2feb930c097b69019a6b5feeab58d4c16120a94",
+    "s23": "70ceaed3d3c3bdadbebbb977a408f022cd463ddb7697e91a9f3ddb9783544474",
+    "s24": "9e73552afcd60fb5623f3a8222a9ab4661fb7bb01ea57ccb4af0277a12eb3229",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T07:48:27.940771+00:00"
+}
