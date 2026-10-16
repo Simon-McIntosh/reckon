@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "e21947c41b449e8a611d9204ccfcea41fd2bd49d",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1150",
+    "reckon/crew/queue_admission.py:157",
+    "reckon/crew/recovery_review_dispatch.py:1983",
+    "reckon/crew_dispatch_commands.py:1686",
+    "reckon/crew/plan_review.py:2771"
+  ],
+  "completed_at": "2026-10-16T09:45:32.118Z",
+  "dispatched_at": "2026-10-16T09:32:51Z",
+  "findings": [
+    {
+      "file": "tests/test_a_queued_run_waits_on_its_lane.py",
+      "line": "273",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares the admitted pointer's backend against LOCAL_BACKEND, the exact lane handed to admit_once at :261, and admit_once admits only pointers whose backend equals the lane it drains, so the assertion holds for any admitted run and cannot catch a regression in the assertion it names."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T075029708252-a-queued-run-waits-on-its-lane/manifest.md",
+      "line": "79",
+      "severity": "follow-on",
+      "text": "follow-on: the regression check states the file gives the same 12 pass ids at head, but its cited head-rereview.log stops after 8 of 12 tests with no summary line and no EXIT=, so the head side of the done_when's regression clause is claimed rather than recorded; the same manifest at :90 says zero failures were observed with no FAILED line while base-subset.log and head-subset.log each record an F."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T075029708252-a-queued-run-waits-on-its-lane/manifest.md",
+      "line": "43",
+      "severity": "follow-on",
+      "text": "follow-on: the plan's done-when names a reflex-review fixture with the metered backend in review_excluded_backends and directs the node to stop and report rather than change code when that fixture does not reproduce; the node reports it does not reproduce and edits reckon/crew/dispatch.py anyway on a substituted re-dispatch reproduction, so a coordinator must adjudicate whether that substitution is accepted."
+    }
+  ],
+  "head_log_revision": "3d651787d7f436727c0ec187ca1735bc0ebc191d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read 3d651787d7f4 against its parent e21947c41b44; it adds a 14-line queued-backend carry in reckon/crew/dispatch.py, a 275-line test file and a 4-line evidence fragment.",
+    "done_when": "the plan names a reflex-review fixture with the metered backend in review_excluded_backends; tests/test_a_queued_run_waits_on_its_lane.py:207-273 reproduces a re-dispatch of an already-queued request instead, and head-gate.log records 2 passed while negative-control.log is red at EXIT=1.",
+    "goal": "the goal is that a review dispatched with local set queues with the local backend so the local admission can launch it; reckon/crew/dispatch.py:1152-1156 keeps an already-queued request's recorded backend on re-queue.",
+    "manifest": "manifest.md reports status complete with four test logs and names the re-queue site, but its regression check claims a head result its own head-rereview.log does not reach.",
+    "write_paths": "prompt.txt grants reckon/crew/dispatch.py, reckon/crew/dispatch_plan.py, reckon/crew/queue_admission.py, reckon/crew/recovery_review_dispatch.py, tests/test_a_queued_run_waits_on_its_lane.py and the fragment; git show 3d651787d7f4 changes dispatch.py, the new test and the fragment only."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_run_waits_on_its_lane.py:230 fails with the fix reverted (negative-control.log), so it guards the re-queue lane, but the admission test's assertion at :273 moves with the value it tests.",
+    "evidence": "head-gate.log records 2 passed and negative-control.log is red at EXIT=1, but the manifest's regression clause rests on head-rereview.log, which stops after 8 of 12 tests with no summary and no EXIT= line.",
+    "fit": "reckon/crew/dispatch.py:1146-1156 keeps the module's existing idiom of a single guarded local that feeds _queued_request_record, and neither the new symbol queued_backend_name nor the new test file carries a plan or version label.",
+    "goal_fidelity": "reckon/crew/dispatch.py:1152-1156 stops the re-queue from rewriting the lane a waiting request was queued on, which is the one path by which a request queued on clive could come to record codex, though the plan's named review_excluded_backends fixture was not the reproduction.",
+    "reuse": "the capability search over reckon/crew found no owner that carries a queued request's backend across a re-queue; _queued_request_record at reckon/crew/dispatch.py:225 remains the single builder and the change routes the existing recorded value through it with no new definition.",
+    "scope_discipline": "git show 3d651787d7f4 changes reckon/crew/dispatch.py, tests/test_a_queued_run_waits_on_its_lane.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-queued-run-waits-on-its-lane.html, all inside prompt.txt's granted write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a review dispatched with local set queues with the local backend so the local admission can launch it; reckon/crew/dispatch.py:1152-1156 keeps an already-queued request's recorded backend on re-queue.\nVERDICT done_when: the plan names a reflex-review fixture with the metered backend in review_excluded_backends; tests/test_a_queued_run_waits_on_its_lane.py:207-273 reproduces a re-dispatch of an already-queued request instead, and head-gate.log records 2 passed while negative-control.log is red at EXIT=1.\nVERDICT write_paths: prompt.txt grants reckon/crew/dispatch.py, reckon/crew/dispatch_plan.py, reckon/crew/queue_admission.py, reckon/crew/recovery_review_dispatch.py, tests/test_a_queued_run_waits_on_its_lane.py and the fragment; git show 3d651787d7f4 changes dispatch.py, the new test and the fragment only.\nVERDICT manifest: manifest.md reports status complete with four test logs and names the re-queue site, but its regression check claims a head result its own head-rereview.log does not reach.\nVERDICT diff: read 3d651787d7f4 against its parent e21947c41b44; it adds a 14-line queued-backend carry in reckon/crew/dispatch.py, a 275-line test file and a 4-line evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:1150, reckon/crew/queue_admission.py:157, reckon/crew/recovery_review_dispatch.py:1983, reckon/crew_dispatch_commands.py:1686, reckon/crew/plan_review.py:2771\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1152-1156 stops the re-queue from rewriting the lane a waiting request was queued on, which is the one path by which a request queued on clive could come to record codex, though the plan's named review_excluded_backends fixture was not the reproduction.\nSCORE evidence: 11\nJUSTIFICATION evidence: head-gate.log records 2 passed and negative-control.log is red at EXIT=1, but the manifest's regression clause rests on head-rereview.log, which stops after 8 of 12 tests with no summary and no EXIT= line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show 3d651787d7f4 changes reckon/crew/dispatch.py, tests/test_a_queued_run_waits_on_its_lane.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-queued-run-waits-on-its-lane.html, all inside prompt.txt's granted write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_queued_run_waits_on_its_lane.py:230 fails with the fix reverted (negative-control.log), so it guards the re-queue lane, but the admission test's assertion at :273 moves with the value it tests.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch.py:1146-1156 keeps the module's existing idiom of a single guarded local that feeds _queued_request_record, and neither the new symbol queued_backend_name nor the new test file carries a plan or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search over reckon/crew found no owner that carries a queued request's backend across a re-queue; _queued_request_record at reckon/crew/dispatch.py:225 remains the single builder and the change routes the existing recorded value through it with no new definition.\nFINDING tests/test_a_queued_run_waits_on_its_lane.py:273 follow-on: the assertion compares the admitted pointer's backend against LOCAL_BACKEND, the exact lane handed to admit_once at :261, and admit_once admits only pointers whose backend equals the lane it drains, so the assertion holds for any admitted run and cannot catch a regression in the lane the request records.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T075029708252-a-queued-run-waits-on-its-lane/manifest.md:79 follow-on: the regression check states the file gives the same 12 pass ids at head, but its cited head-rereview.log stops after 8 of 12 tests with no summary line and no EXIT=, so the head side of the done_when's regression clause is claimed rather than recorded; the same manifest at :90 says zero failures were observed with no FAILED line while base-subset.log and head-subset.log each record an F.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T075029708252-a-queued-run-waits-on-its-lane/manifest.md:43 follow-on: the plan's done-when names a reflex-review fixture with the metered backend in review_excluded_backends and directs the node to stop and report rather than change code when that fixture does not reproduce; the node reports it does not reproduce and edits reckon/crew/dispatch.py anyway on a substituted re-dispatch reproduction, so a coordinator must adjudicate whether that substitution is accepted.\nreviewed_base_sha: e21947c41b449e8a611d9204ccfcea41fd2bd49d\nreviewed_head_sha: 3d651787d7f436727c0ec187ca1735bc0ebc191d\n",
+  "review_run_id": "r-20261016T093136658359-review-of-a-queued-run-waits-on-its-lane-3d651787d7f4",
+  "reviewed_base_sha": "e21947c41b449e8a611d9204ccfcea41fd2bd49d",
+  "reviewed_head_sha": "3d651787d7f436727c0ec187ca1735bc0ebc191d",
+  "reviewed_run_id": "r-20261016T075029708252-a-queued-run-waits-on-its-lane",
+  "role": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T09:45:00+00:00",
+  "total": 99
+}
