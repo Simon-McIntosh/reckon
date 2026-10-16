@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:352",
+    "reckon/crew/picker/__init__.py:431",
+    "reckon/crew/picker/replay.py:58",
+    "reckon/crew/picker/prompts.py:181",
+    "reckon/crew/dispatch_picker.py:494"
+  ],
+  "commits_read": "31a87ffe0a167fafe09f8cfadb9848778a120ae1",
+  "completed_at": "2026-10-16T08:46:09.600Z",
+  "dispatched_at": "2026-10-16T08:29:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_picker.py",
+      "line": "494",
+      "severity": "follow-on",
+      "text": "the production dispatch path builds PickRequest with no capability, so _request_requirement returns None and outcomes_at_requirement is never populated on a live pick, leaving the block inert outside replay until the declared capability is wired onto the live request."
+    },
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "247",
+      "severity": "follow-on",
+      "text": "a request naming no requirement yields no block at all rather than a pooled fallback, so a live pick shows the candidate no requirement-scoped history and the fallback rows remain an undecided question."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified five production call sites reaching snapshot.candidates, prompts._candidate_state and the live PickRequest.",
+    "diff": "read commit by commit; two commits, six files, all in scope.",
+    "done_when": "tests/test_outcomes_at_requirement.py asserts the six named figures; the manifest records 6 passed and the arm logs.",
+    "goal": "the goal is to show Jev each candidate's outcomes at the node's requirement; snapshot.py:303 builds that block.",
+    "manifest": "read; states 6 passed, arms 250 vs 244, added failures 0, names the logs.",
+    "write_paths": "read the manifest's declared paths (snapshot.py, types.py, prompts.py, questions.jinja) every path in the diff (snapshot.py, types.py, prompts.py, templates/questions.jinja, tests/test_outcomes_at_requirement.py, docs/evidence/fragments/jev-learns-from-its-routes/outcomes-at-requirement.html) is inside them."
+  },
+  "justifications": {
+    "durability": "the negative control confirms tests/test_outcomes_at_requirement.py:159 reddens (4 == 0) when the requirement filter is removed.",
+    "evidence": "tests/test_outcomes_at_requirement.py asserts every done_when clause and the manifest records the run at 6 passed with the two arm logs.",
+    "fit": "the new helpers follow the surrounding Mapping-guard, docstring idiom of reckon/crew/picker/snapshot.py:169 and introduce no plan-labelled symbol.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:303-320 builds the matched-requirement block and prompts.py:189 renders it, but dispatch_picker.py:494 builds the block inert on the live request.",
+    "reuse": "no owner of the (reasoning,risk) equality match exists, but _requirement_level at snapshot.py:172 re-implements the normalisation reckon/capability.py:126 already performs.",
+    "scope_discipline": "every changed path is declared, but snapshot.py:826 and snapshot.py:919 carry format-only hunks in budget_view unrelated to the goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to show Jev each candidate's outcomes over runs whose recorded requirement matches the node's; reckon/crew/picker/snapshot.py:303 _requirement_block builds that per-candidate block from rows whose node_definition.capability equals the request's.\nVERDICT done_when: the done_when names tests/test_outcomes_at_requirement.py with six specific figures (lane A 0/2, lane B 3/0, pooled unchanged, medians, unrecorded, rendered state plus glossary, single scan call), and the manifest records that run at 6 passed with base/head arm logs.\nVERDICT write_paths: read the manifest's declared paths (snapshot.py, types.py, prompts.py, questions.jinja) every path in the diff (snapshot.py, types.py, prompts.py, templates/questions.jinja, tests/test_outcomes_at_requirement.py, docs/evidence/fragments/jev-learns-from-its-routes/outcomes-at-requirement.html) is inside them.\nVERDICT manifest: read; it states tests/test_outcomes_at_requirement.py 6 passed EXIT=0, head arm 250 vs base arm 244 over the same 33 files, added failures 0, names logs/head_arm.log and the declared negative control.\nVERDICT diff: read commit by commit against f33b8db0a -- a0f7f050d (feature) and 31a87ffe0 (evidence fragment); six files changed, all inside the declared scope.\nCALL_SITES: reckon/crew/picker/__init__.py:352, reckon/crew/picker/__init__.py:431, reckon/crew/picker/replay.py:58, reckon/crew/picker/prompts.py:181, reckon/crew/dispatch_picker.py:494\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:303-320 builds the matched-requirement block and prompts.py:189 renders it, but dispatch_picker.py:494 builds the live request with no capability so the block never reaches Jev live.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_outcomes_at_requirement.py asserts every done_when clause (snapshot.py matched counts, medians, unrecorded) and the manifest records the run at 6 passed with the two arm logs.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every changed path is declared, but snapshot.py:826 and snapshot.py:919 carry format-only hunks in budget_view unrelated to the goal.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control confirms tests/test_outcomes_at_requirement.py:159 reddens (4 == 0) when the requirement filter at snapshot.py:283 is removed, and each assertion compares a fixture literal against the parsed block.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers follow the surrounding Mapping-guard, docstring idiom of reckon/crew/picker/snapshot.py:169 and introduce no unnamed or plan-labelled symbol.\nSCORE reuse: 15\nJUSTIFICATION reuse: no owner of the (reasoning,risk) equality match exists, but _requirement_level at snapshot.py:172 re-implements the None/empty normalisation that reckon/capability.py:126 capability_request already performs.\nFINDING reckon/crew/dispatch_picker.py:494 follow-on: the production dispatch path builds PickRequest with no capability, so _request_requirement returns None and outcomes_at_requirement is never populated on a live pick, leaving the block inert outside replay until the declared capability is wired onto the live request.\nFINDING reckon/crew/picker/snapshot.py:247 follow-on: a request naming no requirement yields no block at all rather than a pooled fallback, so a live pick today shows the candidate no requirement-scoped history and the fallback rows remain an undecided question.\n",
+  "review_run_id": "r-20261016T082920895849-review-of-outcomes-at-requirement-31a87ffe0a16",
+  "reviewed_base_sha": "f33b8db0ab9fcf2c80718c11352424e2af82368f",
+  "reviewed_head_sha": "31a87ffe0a167fafe09f8cfadb9848778a120ae1",
+  "reviewed_run_id": "r-20261016T074119831873-outcomes-at-requirement",
+  "reviewed_run_ref": "r-20261016T074119831873-outcomes-at-requirement",
+  "reviewer_run_id": "r-20261016T082920895849-review-of-outcomes-at-requirement-31a87ffe0a16",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 15,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T08:40:02.192716+00:00",
+  "total": 105
+}

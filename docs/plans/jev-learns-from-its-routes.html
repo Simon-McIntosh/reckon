@@ -26,7 +26,7 @@
   <title>Jev Learns From Its Routes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -423,6 +423,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-s3-revise-before-dispatch" data-who="reckon-build" data-when="2026-10-16T06:20:00Z">
     <div class="r-comment-body"><p>Design review <code>r-20261016T060516832154</code>, duplicate_owner-3, deferred to this section's revision before dispatch. <code>reckon/crew/picker/outcomes.py</code> already groups routed outcomes by the requirement's risk, and <code>reckon/crew/lane_evidence.py</code> owns shape-conditioned lane evidence. The revision names both and states why the picker's per-candidate block remains a separate consumer, or extends one of them.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261016T082920895849-review-of-outcomes-at-requirement-31a87ffe0a16" data-who="reckon-build" data-when="2026-10-16T08:46:09.600Z">
+    <div class="r-comment-body"><p>independent review of r-20261016T074119831873-outcomes-at-requirement at head 31a87ffe0a read from base f33b8db0a: six dimensions scored (goal_fidelity 17, evidence 19, scope_discipline 17, durability 19, fit 18, reuse 15; total 105), added failures 0, two follow-on findings (the live dispatch never names a capability so the block is inert, and a requirement-less request renders no block at all); no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-s7-revise-before-dispatch" data-who="reckon-build" data-when="2026-10-16T06:20:00Z">
     <div class="r-comment-body"><p>Held out of the first wave until revised. Design review <code>r-20261016T060516832154</code>, reuse_search-1 and duplicate_owner-1, deferred to this revision. <code>reckon/capabilities.py</code> <code>derive_capabilities</code> already joins each shadow row to its primary through <code>lineage.primary_run_id</code>, under the control predicate <code>ledger.shadow_controlled</code>. So §1's row 7, which says nothing pairs them, is wrong. The revision extends that owner rather than adding a second join, so a confounded pair is never reported as a matched one.</p></div>
