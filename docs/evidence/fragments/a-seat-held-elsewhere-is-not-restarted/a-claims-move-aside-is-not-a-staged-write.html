@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-seat-held-elsewhere-is-not-restarted">
+  <meta name="plan-evidence-for" content="a-seat-held-elsewhere-is-not-restarted">
+  <title>A claim&rsquo;s move-aside is not a staged write | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="a-claims-move-aside-is-not-a-staged-write-landing">
+      <h2>A claim&rsquo;s move-aside is not a staged write</h2>
+      <p>The staged-write detector <code>_staged_writes</code> in <code>reckon/interface_counts.py</code> reaches one level of delegation for its move-aside
+      exemption: it resolves the callee of every call, recognises a helper that exclusively creates one of its own parameters with
+      <code>O_CREAT | O_EXCL</code>, and treats the argument a caller hands that helper as a file the caller did not stage, so a later rename of that path &mdash;
+      whether performed inline or through a helper &mdash; is a move-aside rather than a publication of a locally written temporary. It still reports a locally
+      written temporary handed to a renaming helper and a locally written temporary replaced in place, and behaviour in <code>reckon/crew/resumption.py</code> is
+      unchanged, so <code>claim_next_attempt</code> is no longer reported. Measure: <code>tests/test_staged_write_inventory.py</code> &mdash;
+      <code>test_every_staged_write_reaches_the_owner</code> passes at head with its expected set unchanged, and a new case pins a delegated move-aside
+      unreported while a temporary handed to a renaming helper and a locally replaced temporary are reported; with the exemption removed the inventory test
+      and the move-aside case both fail (2&nbsp;failed, 48&nbsp;passed).</p>
+    </section>
+  </main>
+</body>
+</html>

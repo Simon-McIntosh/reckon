@@ -149,6 +149,38 @@ def writer(destination):
     }
 
 
+def test_delegated_move_aside_after_a_helper_exclusive_create_is_not_staged():
+    tree = ast.parse("""
+def _create_attempt_claim(path, attempt):
+    try:
+        descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        return False
+    return True
+def _move_attempt_claim_aside(path):
+    os.rename(path, path.with_name(f"{path.name}.reclaimed"))
+def claim_next_attempt(run_id):
+    path = attempt_claim_path(run_id, 1)
+    if _create_attempt_claim(path, 1):
+        return path
+    _move_attempt_claim_aside(path)
+def _rename_into_place(source, destination):
+    os.replace(source, destination)
+def stage_beside(destination):
+    temporary = destination.with_suffix(".tmp")
+    temporary.write_text("payload")
+    _rename_into_place(temporary, destination)
+def replace_locally(destination):
+    temporary = destination.with_suffix(".tmp")
+    temporary.write_text("payload")
+    os.replace(temporary, destination)
+""")
+    assert interface_counts._staged_writes(interface_counts.definitions(tree)) == {
+        "stage_beside",
+        "replace_locally",
+    }
+
+
 @pytest.mark.parametrize("publisher", ["client", "compiled", "thumbnail"])
 @pytest.mark.parametrize("interrupt", [False, True])
 def test_byte_publishers_use_binary_handles_and_clean_failed_temporaries(
