@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4abeafea05e04b82507dacd1b8ec8b7eddcb2f64",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:_renew_producer_lease",
+    "reckon/crew/dispatch_watch.py:_unmet_follower_conditions",
+    "reckon/crew/watch_unit.py:watch_state",
+    "reckon/crew/runs.py:project_watch_visibility"
+  ],
+  "completed_at": "2026-10-16T08:41:38Z",
+  "dispatched_at": "2026-10-16T08:34:06Z",
+  "findings": [
+    {
+      "file": "tests/test_a_hostless_follower_is_judged_by_its_lease.py",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: the home fixture duplicates RECKON_HOME isolation already owned by the automatic tests/conftest.py:1161 fixture; two competing isolation homes can drift, and the additional real-home check can use the existing fixture."
+    }
+  ],
+  "head_log_revision": "58238461308fecef65d48c63f6bb574cafecda89",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read 5436fdb058535eb93644ce1fdb97593f7366a000 and 58238461308fecef65d48c63f6bb574cafecda89 against base 4abeafea05e04b82507dacd1b8ec8b7eddcb2f64; the three-file diff adds lease host inference, targeted cases and the updated exact-byte expectation.",
+    "done_when": "the source prompt and plan section 18 require fresh foreign, local, stale, unnamed, renewal, negative-control, importer and Ruff checks; tests/test_a_hostless_follower_is_judged_by_its_lease.py:23-65 and the run's named gate logs cover them.",
+    "goal": "the source prompt's goal names host inference from a fresh lease; reckon/crew/follower_registration.py:572-588 reads that host before the foreign-liveness verdict.",
+    "manifest": "manifest.md records both commits, the updated writer test, 9 targeted passes, 41 importer passes at base and head, and paths to logs whose summaries and EXIT lines agree.",
+    "write_paths": "prompt.txt:68-72 grants the product file and new test, while resume-2-advice.txt:1 grants the existing lease-writer test; all three changed paths fall within those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_a_hostless_follower_is_judged_by_its_lease.py:56-58 fails if a fresh foreign lease is ignored or an invalid/local lease revives a free registration, line 65 fails if renewal omits the host, and tests/test_the_follower_lease_uses_the_store_writer.py:66-67 fails if bytes or mode change.",
+    "evidence": "tests/test_a_hostless_follower_is_judged_by_its_lease.py:23-65 exercises the specified cases; own-head-gate.log records 9 passes, negative-control.log fails the foreign case, imports-base.log and imports-head.log each record 41 passes, and ruff-head.log passes.",
+    "fit": "reckon/crew/follower_registration.py:110-120 retains the shared atomic writer and lines 572-640 keep the existing liveness result shape, while the changed tests use the repository's pytest idiom.",
+    "goal_fidelity": "reckon/crew/follower_registration.py:116 records the renewing host and lines 574-640 use a fresh named host to select foreign-lease or local lock-and-pid liveness.",
+    "reuse": "tests/test_a_hostless_follower_is_judged_by_its_lease.py:13-20 adds a home-isolation fixture that duplicates the existing automatic owner tests/conftest.py:1161-1170 instead of extending or using it.",
+    "scope_discipline": "git's base-to-head diff changes only reckon/crew/follower_registration.py and the two tests named by prompt.txt:68-72 and resume-2-advice.txt:1."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source prompt's goal names host inference from a fresh lease; reckon/crew/follower_registration.py:572-588 reads that host before the foreign-liveness verdict.\nVERDICT done_when: the source prompt and plan section 18 require fresh foreign, local, stale, unnamed, renewal, negative-control, importer and Ruff checks; tests/test_a_hostless_follower_is_judged_by_its_lease.py:23-65 and the run's named gate logs cover them.\nVERDICT write_paths: prompt.txt:68-72 grants the product file and new test, while resume-2-advice.txt:1 grants the existing lease-writer test; all three changed paths fall within those grants.\nVERDICT manifest: manifest.md records both commits, the updated writer test, 9 targeted passes, 41 importer passes at base and head, and paths to logs whose summaries and EXIT lines agree.\nVERDICT diff: read 5436fdb058535eb93644ce1fdb97593f7366a000 and 58238461308fecef65d48c63f6bb574cafecda89 against base 4abeafea05e04b82507dacd1b8ec8b7eddcb2f64; the three-file diff adds lease host inference, targeted cases and the updated exact-byte expectation.\nCALL_SITES: reckon/crew_follow_commands.py:_renew_producer_lease, reckon/crew/dispatch_watch.py:_unmet_follower_conditions, reckon/crew/watch_unit.py:watch_state, reckon/crew/runs.py:project_watch_visibility\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/follower_registration.py:116 records the renewing host and lines 574-640 use a fresh named host to select foreign-lease or local lock-and-pid liveness.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_hostless_follower_is_judged_by_its_lease.py:23-65 exercises the specified cases; own-head-gate.log records 9 passes, negative-control.log fails the foreign case, imports-base.log and imports-head.log each record 41 passes, and ruff-head.log passes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git's base-to-head diff changes only reckon/crew/follower_registration.py and the two tests named by prompt.txt:68-72 and resume-2-advice.txt:1.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_hostless_follower_is_judged_by_its_lease.py:56-58 fails if a fresh foreign lease is ignored or an invalid/local lease revives a free registration, line 65 fails if renewal omits the host, and tests/test_the_follower_lease_uses_the_store_writer.py:66-67 fails if bytes or mode change.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/follower_registration.py:110-120 retains the shared atomic writer and lines 572-640 keep the existing liveness result shape, while the changed tests use the repository's pytest idiom.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_a_hostless_follower_is_judged_by_its_lease.py:13-20 adds a home-isolation fixture that duplicates the existing automatic owner tests/conftest.py:1161-1170 instead of extending or using it.\nFINDING tests/test_a_hostless_follower_is_judged_by_its_lease.py:14 follow-on: the home fixture duplicates RECKON_HOME isolation already owned by the automatic tests/conftest.py:1161 fixture; two competing isolation homes can drift, and the additional real-home check can use the existing fixture.\nreviewed_base_sha: 4abeafea05e04b82507dacd1b8ec8b7eddcb2f64\nreviewed_head_sha: 58238461308fecef65d48c63f6bb574cafecda89\n",
+  "review_run_id": "r-20261016T083225503700-review-of-a-hostless-follower-is-judged-by-its-lease-58238461308f",
+  "reviewed_base_sha": "4abeafea05e04b82507dacd1b8ec8b7eddcb2f64",
+  "reviewed_head_sha": "58238461308fecef65d48c63f6bb574cafecda89",
+  "reviewed_run_id": "r-20261016T075954221978-a-hostless-follower-is-judged-by-its-lease",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T08:38:29.002791+00:00",
+  "total": 103
+}
