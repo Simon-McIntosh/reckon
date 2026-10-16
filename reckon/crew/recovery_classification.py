@@ -579,6 +579,33 @@ def classify_pointer(
         classification = "queued"
         detail = str(record.get("reason") or "waiting for a local lane slot")
         action = "wait for a local lane slot"
+    elif _attempt_awaits_its_worker(record) and (
+        not manifest_status or manifest_status in NON_TERMINAL_MANIFEST_STATUSES
+    ):
+        # A resume publishes the new attempt's identity and retires the
+        # previous attempt's canonical worker and exit records before its
+        # supervisor can spawn anything. In the window that follows the pointer
+        # still carries the earlier attempt's exited process, and the run
+        # directory still holds that attempt's exit record and its stream,
+        # while the attempt the run is now on has recorded no process and no
+        # end of its own. Read from that evidence the predecessor's end is
+        # drawn as this attempt's, and a run that is only starting is read
+        # halted.
+        #
+        # The reading is deferred to the attempt's own clock instead — the
+        # deferral the producer's death branch applies, taken here as well so
+        # the end readings composed from the pointer (an interruption, an
+        # exited worker whose work is committed) cannot draw the run halted
+        # before that branch is reached. A manifest that carries a verdict word
+        # of its own still outranks this arm: a resumed attempt is deferred
+        # only while nothing on disk says the run has reached an outcome.
+        classification = "running"
+        detail = (
+            "the run's current attempt has recorded no process and no end of "
+            "its own yet; it is read as starting rather than as the end of the "
+            "attempt the pointer still names"
+        )
+        action = f"reckon crew observe --run {run_id}"
     elif interruption is not None:
         classification = INTERRUPTED_RUN_PHASE
         signal_name = interruption.get("signal_name")
@@ -1553,6 +1580,7 @@ from .recovery_liveness import (  # noqa: E402
     STRANDED_LAUNCH_BOUND_SECONDS,
     _PRE_SPAWN_PHASES,
     _absence_of_a_verdict_is_transient,
+    _attempt_awaits_its_worker,
     _current_attempt_number,
     _manifest_predates_the_current_attempt,
     _carries_orientation_write,
