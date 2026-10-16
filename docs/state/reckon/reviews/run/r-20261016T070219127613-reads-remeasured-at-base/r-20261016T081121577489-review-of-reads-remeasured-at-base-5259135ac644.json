@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-16T08:26:24.820Z",
+  "dispatched_at": "2026-10-16T08:11:53Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the host contract forbids a nested srun, so no worker can take an exclusive debug node; both arms ran concurrently on the same node over the same corpus, so the base-versus-head comparison holds, though neither is a quiet-node absolute",
+      "recorded_at": "2026-10-16T08:25:56.999048+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "a header count error; the medians table and the per-run logs it draws from are all present and agree",
+      "recorded_at": "2026-10-16T08:25:57.935861+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070219127613-reads-remeasured-at-base/manifest.md",
+      "line": "51",
+      "severity": "follow-on",
+      "text": "follow-on: the node ran on the shared fleet node 98dci4-clu-2002 under load 18-38 rather than the exclusive debug node its goal and brief name, so the medians carry sibling load and are not the quiet-node figures section six's base-versus-head comparison assumes; the manifest discloses the deviation and the host contract forbade a nested srun, so it does not hold the node."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070219127613-reads-remeasured-at-base/logs/base-reads-summary.log",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "follow-on: the header records logs_scanned: 10 while 11 run logs exist and the medians table draws one value from each, so the count contradicts the table it heads and a reader cannot reconcile the two without recounting the directory."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "The diff against the reviewed base 5259135ac is empty -- the manifest's commits is [] and no source file changed, because the node is measurement-only and lands no code.",
+    "done_when": "The done-when asks for a log recording warm and cold medians for all three reads at base d249200c7 beside the section-one figures, with reckon.__file__ naming the base tree and every log ending with its exit-status line; logs/base-reads-summary.log:9-17 carries that table beside the section-one figures, every log's PREAMBLE names the base tree, and all 11 end with EXIT=0.",
+    "goal": "The node goal is to measure roadmap, audit and discovery cold and warm at base d249200c7 over the pinned docs tree on an exclusive debug node; the run measured all three at base d249200c7 over the 5259135ac corpus and recorded medians, but on the shared fleet node 98dci4-clu-2002 (logs/roadmap-run2.log line 3), not the exclusive node the goal names.",
+    "manifest": "Read; the manifest at .config/reckon/crew/runs/r-20261016T070219127613-reads-remeasured-at-base/manifest.md records status complete, 11 profiler invocations all EXIT=0, the medians table, and the caveats (shared host, corpus copy without .git).",
+    "write_paths": "The declared exclusive write path is the report directory reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-at-base; the run wrote its logs there and under its own run directory and committed no code (manifest commits: [])."
+  },
+  "justifications": {
+    "durability": "no code landed so there is no regression surface to guard, and the run's own re-derivability rests on logs/base-reads-summary.log naming the revision, corpus and literal command rather than on a test that fails on regression.",
+    "evidence": "logs/base-reads-summary.log:9-17 records the medians beside the section-one figures and every log ends with its EXIT= line, so the done-when's measure is both measured and recorded, though the header's logs_scanned count of 10 contradicts the 11 logs the table draws from.",
+    "fit": "no source is added and the run's own artefact names (logs/roadmap-run1.log, medians.py) carry no plan, stage or ticket label the repository naming rules forbid.",
+    "goal_fidelity": "logs/roadmap-run2.log:3 shows the run on 98dci4-clu-2002 at load 18-38, not the exclusive debug node the goal names, so one of the goal's three clauses (base revision, pinned corpus, exclusive node) is unmet.",
+    "reuse": "the run adds no definition and reuses the health review's existing profiler at reports/reckon/health-review-1010/health-tool-latency/scripts/profile_reads.py rather than forking it.",
+    "scope_discipline": "the manifest's changed_paths are logs under the report directory, the run's own log directory, and the removed /tmp scratch, with no committed code, so nothing lands outside the declared report scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to measure roadmap, audit and discovery cold and warm at base d249200c7 over the pinned docs tree on an exclusive debug node; the run measured all three at base d249200c7 over the 5259135ac corpus and recorded medians, but on the shared fleet node 98dci4-clu-2002 (logs/roadmap-run2.log line 3), not the exclusive node the goal names.\nVERDICT done_when: The done-when asks for a log recording warm and cold medians for all three reads at base d249200c7 beside the section-one figures, with reckon.__file__ naming the base tree and every log ending with its exit-status line; logs/base-reads-summary.log:9-17 carries that table beside the section-one figures, every log's PREAMBLE names the base tree, and all 11 end with EXIT=0.\nVERDICT write_paths: The declared exclusive write path is the report directory reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-at-base; the run wrote its logs there and under its own run directory and committed no code (manifest commits: []).\nVERDICT manifest: Read; the manifest at .config/reckon/crew/runs/r-20261016T070219127613-reads-remeasured-at-base/manifest.md records status complete, 11 profiler invocations all EXIT=0, the medians table, and the caveats (shared host, corpus copy without .git).\nVERDICT diff: The diff against the reviewed base 5259135ac is empty -- the manifest's commits is [] and no source file changed, because the node is measurement-only and lands no code.\nCALL_SITES: none\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: logs/roadmap-run2.log:3 shows the run on 98dci4-clu-2002 at load 18-38, not the exclusive debug node the goal names, so one of the goal's three clauses (base revision, pinned corpus, exclusive node) is unmet.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/base-reads-summary.log:9-17 records the medians beside the section-one figures and every log ends with its EXIT= line, so the done-when's measure is both measured and recorded, though the header's logs_scanned count of 10 contradicts the 11 logs the table draws from.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the manifest's changed_paths are logs under the report directory, the run's own log directory, and the removed /tmp scratch, with no committed code, so nothing lands outside the declared report scope.\nSCORE durability: 16\nJUSTIFICATION durability: no code landed so there is no regression surface to guard, and the run's own re-derivability rests on logs/base-reads-summary.log naming the revision, corpus and literal command rather than on a test that fails on regression.\nSCORE fit: 20\nJUSTIFICATION fit: no source is added and the run's own artefact names (logs/roadmap-run1.log, medians.py) carry no plan, stage or ticket label the repository naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the run adds no definition and reuses the health review's existing profiler at reports/reckon/health-review-1010/health-tool-latency/scripts/profile_reads.py rather than forking it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070219127613-reads-remeasured-at-base/manifest.md:51 follow-on: the node ran on the shared fleet node 98dci4-clu-2002 under load 18-38 rather than the exclusive debug node its goal and brief name, so the medians carry sibling load and are not the quiet-node figures section six's base-versus-head comparison assumes; the manifest discloses the deviation and the host contract forbade a nested srun, so it does not hold the node.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070219127613-reads-remeasured-at-base/logs/base-reads-summary.log:5 follow-on: the header records logs_scanned: 10 while 11 run logs exist and the medians table draws one value from each, so the count contradicts the table it heads and a reader cannot reconcile the two without recounting the directory.",
+  "review_run_id": "r-20261016T081121577489-review-of-reads-remeasured-at-base-5259135ac644",
+  "reviewed_base_sha": "5259135ac644ec7289c20ae2906039d48d0475a9",
+  "reviewed_head_sha": "5259135ac644ec7289c20ae2906039d48d0475a9",
+  "reviewed_run_id": "r-20261016T070219127613-reads-remeasured-at-base",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 12,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T08:22:22.726177+00:00",
+  "total": 103
+}
