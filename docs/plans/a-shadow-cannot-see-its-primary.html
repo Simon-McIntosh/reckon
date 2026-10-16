@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="jev-learns-from-its-routes">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;a-shadow-cannot-see-its-primary#s2&quot;, &quot;a-shadow-cannot-see-its-primary#s3&quot;], &quot;s5&quot;: [&quot;a-shadow-cannot-see-its-primary#s4&quot;], &quot;s6&quot;: [&quot;a-shadow-cannot-see-its-primary#s5&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -130,7 +130,7 @@
     </ul>
 
     <h2 id="s3">§3 — A shadow's worktree path and prompt do not name its primary</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p>
       <strong>Deliverable.</strong> <code>shadow_worktree_session</code> in <code>reckon/crew/routing.py</code> names a
       new shadow's worktree session from its candidate backend and its recorded unique component, without the
@@ -286,6 +286,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-s4-resolution-layer" data-who="reckon-build" data-when="2026-10-16T19:52:00Z">
     <div class="r-comment-body"><p>Content review <code>r-20261016T193510730111</code>, finding <code>reasoning-1</code>: §4 puts the resolution of the primary's paths in two layers. One sentence has <code>launch_plan</code> gain the paths to hide. The other has the launch look up the primary's ledger row, but <code>launch_plan</code> in <code>reckon/_backends.py</code> takes no project or ledger. The fix, to be written into §4 before it dispatches: each crew-layer caller (dispatch, session launch, resume) looks up the primary's row from the lineage and calls <code>promotion_scope._primary_read_targets</code>. It passes the resolved paths to <code>launch_plan</code> as a plain list of paths to hide, and <code>launch_plan</code> hands them to <code>fence_argv</code>. <code>_backends.py</code> gains no ledger parameter and no crew import.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-16T20:36:00Z">
+    <div class="r-comment-body"><p>§3 landed: a shadow's worktree session is <code>shadow-&lt;candidate&gt;-&lt;component&gt;</code>, so neither its path nor its prompt names the primary, and every pre-change naming still resolves (commit <code>d079e008</code>). 751 passed against base with no added failure; the negative control fails two ids; review scores 17–20. <a href="/reckon/evidence/archive/a-shadow-cannot-see-its-primary-landed.html#s3">evidence</a></p></div>
 </div>
 </section>
 </main>

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-shadow-cannot-see-its-primary-landed">
+  <meta name="plan-title" content="A Shadow Cannot See Its Primary — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Shadow Cannot See Its Primary: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-shadow-cannot-see-its-primary">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Shadow Cannot See Its Primary — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Shadow Cannot See Its Primary — landed record</h1>
+  <p>Closure synthesis for A Shadow Cannot See Its Primary: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s3">
+    <h2>§3 — a shadow&#x27;s worktree path and prompt name no primary</h2>
+    <p>Run <code>r-20261016T195237375210-a-shadow-worktree-hides-its-primary</code>, commit <code>d079e008637fcd8f9f5ca8e04cef2a68becbade1</code>. <code>shadow_worktree_session</code> in <code>reckon/crew/routing.py</code> now builds the shadow's session token as <code>shadow-&lt;candidate&gt;-&lt;component&gt;</code>, without the primary run id. That token is the worktree directory a shadow's prompt names on its <code>Work only in …</code> line, the only place the prompt named the primary. The signature is unchanged, so <code>dispatch.py</code> is untouched. <code>_shadow_worktree_records</code> resolves the new naming and the three pre-change forms, so gc and promotion still find old shadow worktrees.</p><p><strong>Measure.</strong> <code>tests/test_a_shadow_worktree_hides_its_primary.py</code>, five cases. The head gate over the 68 test files importing <code>routing.py</code> gave 751 passed, 1 skipped, 0 failed, on the committed content: the log finished at 22:19:51, after the 22:14:59 commit. The base arm at <code>aa2110776</code> gave 744 passed, 1 skipped and 2 errors. Both errors are scaffolding in <code>test_staged_write_inventory.py</code>, because the exported scratch tree has no <code>.git</code>. No failure id was added. The negative control restores the primary id in the stem and fails two ids, <code>EXIT=1</code>.</p><p><strong>Review.</strong> <code>r-20261016T202202658563</code> scored fit 19, goal fidelity 19, reuse 20, scope discipline 20, durability 18 and evidence 17. It found no blocking defect. Its three follow-ons: two assertions build their expected token from the run's own lineage component, and the head arm's recorded revision equals the base. The coordinator also notes a harmless looseness: for a pre-change row with no component, the resolver registers the unused path <code>shadow-&lt;candidate&gt;/&lt;node&gt;</code>, which several rows can share. No dispatch creates a tree there, because every new shadow records a component.</p>
+  </section>
+
+</main>
+</body>
+</html>
