@@ -11,6 +11,7 @@ reader polling through a renewing writer never sees a torn record.
 from __future__ import annotations
 
 import json
+import socket
 import stat
 import threading
 import time
@@ -55,7 +56,12 @@ def test_the_lease_bytes_and_mode_are_exactly_what_the_writer_produces(
     """
     follower_registration.renew_follower_lease(PROJECT, SESSION, now=1000.0)
     lease = follower_registration.follower_lease_path(PROJECT, SESSION)
-    record = {"project": PROJECT, "session": SESSION, "renewed_at": 1000.0}
+    record = {
+        "project": PROJECT,
+        "session": SESSION,
+        "renewed_at": 1000.0,
+        "host": socket.gethostname(),
+    }
     expected = (json.dumps(record, sort_keys=True) + "\n").encode()
     assert lease.read_bytes() == expected
     assert stat.S_IMODE(lease.stat().st_mode) == 0o644

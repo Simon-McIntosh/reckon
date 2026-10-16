@@ -109,7 +109,12 @@ def renew_follower_lease(
     moment = time.time() if now is None else float(now)
     write_json_atomically(
         follower_lease_path(project, session),
-        {"project": project, "session": session, "renewed_at": moment},
+        {
+            "project": project,
+            "session": session,
+            "renewed_at": moment,
+            "host": socket.gethostname(),
+        },
         indent=None,
         mode=0o644,
     )
@@ -122,8 +127,8 @@ def _producer_lease_seconds() -> float:
     return producer_lease_seconds()
 
 
-def _follower_lease_renewed_at(lock_path: Path) -> float | None:
-    """The instant a registration's lease last renewed, or None if it has not.
+def _follower_lease_record(lock_path: Path) -> dict[str, Any] | None:
+    """Read a lease's validated renewal time and optional host.
 
     The lease is published by a rename, so one read sees a whole record. A
     reader that finds it missing or unparseable reads once more before judging
@@ -136,7 +141,17 @@ def _follower_lease_renewed_at(lock_path: Path) -> float | None:
     value = record.get("renewed_at")
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
-    return float(value)
+    validated: dict[str, Any] = {"renewed_at": float(value)}
+    host = record.get("host")
+    if isinstance(host, str) and host:
+        validated["host"] = host
+    return validated
+
+
+def _follower_lease_renewed_at(lock_path: Path) -> float | None:
+    """The instant a registration's lease last renewed, or None if it has not."""
+    record = _follower_lease_record(lock_path)
+    return None if record is None else record["renewed_at"]
 
 
 def _pipe_reader_pids(inode: int, *, exclude: int) -> list[int]:
@@ -564,8 +579,19 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
         time.sleep(0.005)
 
     pid = record.get("pid")
-    foreign = _seat_names_a_foreign_host(record)
+    host = _seat_host(record)
     lease_renewed_at: float | None = None
+    if not host:
+        lease = _follower_lease_record(path)
+        if (
+            lease is not None
+            and time.time() - lease["renewed_at"] <= _producer_lease_seconds()
+        ):
+            lease_host = lease.get("host")
+            if lease_host is not None:
+                host = lease_host
+                lease_renewed_at = lease["renewed_at"]
+    foreign = bool(host) and host != socket.gethostname()
     if foreign:
         # A pid is issued by one kernel, so a registration written on another
         # host names a process this host's table cannot answer for: its absence
@@ -610,7 +636,8 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
         # released True, exactly as a free lock reads for a registration on this
         # host. Reading only ``live`` from the lease would still let a live
         # foreign follower read ``released: True`` through ``watch_state``.
-        lease_renewed_at = _follower_lease_renewed_at(path)
+        if lease_renewed_at is None:
+            lease_renewed_at = _follower_lease_renewed_at(path)
         lease_fresh = (
             lease_renewed_at is not None
             and time.time() - lease_renewed_at <= _producer_lease_seconds()
@@ -662,7 +689,7 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
     return {
         "registered": registered,
         "live": live,
-        "host": _seat_host(record),
+        "host": host,
         "foreign": foreign,
         # A registration file that exists while it does not read as registered
         # is a follower that was armed and has since expired; a path that was
@@ -810,6 +837,5 @@ from .run_paths import (  # noqa: E402
 
 from .watch_unit import (  # noqa: E402
     _seat_host,
-    _seat_names_a_foreign_host,
     _watch_attach_line,
 )
