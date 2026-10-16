@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="114">
+<meta name="plan-version" content="115">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -127,7 +127,7 @@
 <section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> A measurement node, run after §2 to §5 and the read fixes §8, §10, §11, §12, §13, §14, §16 and §17 are promoted: the health review's profiler
       (<code>health-tool-latency/scripts/profile_reads.py</code>) runs roadmap, audit and discovery on one frozen copy of the reckon corpus, extracted at one pinned revision into node-local scratch and read by both arms, as §7 requires so that run-record churn cannot move the figures, on a compute
-      node with no other reckon worker on it, three cold runs and five warm runs of each read, and records the medians. The counts are sized for the partition's one-hour limit. If both arms cannot finish inside it, the run records the medians of every read that did finish and names each read that did not. The node is obtained by
+      node with no other reckon worker on it, three cold runs and five warm runs of each read, and records the medians. The counts are sized for the partition's one-hour limit, and the reads run in a fixed order so the hour cannot drop the control or the warm targets. The base arm's cold roadmap runs first, then the warm reads of both arms, then the remaining cold reads. If the hour runs out after that, the run records the medians of every read that did finish and names each read that did not. The node is not complete until the base arm's cold roadmap and both arms' warm roadmap and audit have run. The node is obtained by
       naming the partition in the done-when, which names <code>all_debug</code>. The dispatch host then submits the worker as
       its own job on that partition, and the worker runs both arms in place there without opening another <code>srun</code>
       step. A brief's <code>srun</code> alone is folded into the fleet job, which is how both arms of the 2026-10-16
