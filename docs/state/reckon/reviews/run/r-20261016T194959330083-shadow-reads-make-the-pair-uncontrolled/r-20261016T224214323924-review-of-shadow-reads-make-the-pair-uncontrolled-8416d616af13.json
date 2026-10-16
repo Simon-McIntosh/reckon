@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:1207 _complete_locked",
+    "reckon/crew/promotion.py:451 complete",
+    "reckon/crew/promotion_scope.py:1158 _shadow_stream_contamination",
+    "reckon/capabilities.py:984 pair_shadow_arms"
+  ],
+  "completed_at": "2026-10-16T22:50:55.196Z",
+  "dispatched_at": "2026-10-16T22:42:42Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "valid; carried into the done-when of s6, whose test already drives crew complete on shadow arms, as an end-to-end assertion that promoting a contaminated shadow stores shadow_controlled false",
+      "recorded_at": "2026-10-16T22:51:54.830839+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "1207",
+      "severity": "follow-on",
+      "text": "follow-on: the call run.update(_shadow_control_marks(...)) into _complete_locked is covered by no test, so deleting it reinstates the stored shadow_controlled contradiction this node exists to fix while all 26 tests stay green."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 86164b4a; 8416d616a is the only commit gained since the prior review and touches exactly the four files the goal names.",
+    "done_when": "the done_when names tests/test_crew_shadow_contamination.py, the committed fixture, the pair verdict and the negative control; the manifest records 26 passed at head and a negative control at EXIT=1, and logs/gate-target-file.log records the 26-passed run at head 8416d616a.",
+    "goal": "the source node's goal is that a shadow's reads of its primary's run directory, review records or worktree make the pair contaminated and uncontrolled; reckon/crew/promotion.py:593 _shadow_control_marks re-takes the row's verdict through that one predicate after the scan answers.",
+    "manifest": "read; it records the target-file gate at 26 passed, the importer arm 563 to 578 passed with zero added failures, the negative control, the ruff delta and the promotion-path ordering, and it names the promotion wiring as landed.",
+    "write_paths": "the source node's declared paths are ledger.py, capabilities.py, promotion_scope.py, the test file, the fixture and the evidence fragment; this increment adds reckon/crew/promotion.py, which the coordinator widened the scope to in resume-2-advice.txt, and every changed path sits inside that widened set."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_shadow_contamination.py:729 reddens if _shadow_control_marks stops re-taking the verdict or promotion_scope.py:1123 stops resolving the .at- siblings, but no test covers the promotion.py:1207 call itself.",
+    "evidence": "logs/gate-target-file.log records 26 passed at head 8416d616a and negative-control.log records EXIT=1 with test_a_contaminated_pair_is_uncontrolled failing under the declared mutation.",
+    "fit": "reckon/crew/promotion.py:593 extends the neighbouring helper idiom (Mapping, Iterable, Path, a docstring stating the why) and adds no plan or stage label.",
+    "goal_fidelity": "reckon/crew/promotion.py:1207 now re-takes the stored verdict through ledger.shadow_controlled at promotion.py:610, closing the contradiction the prior review flagged at promotion.py:1181.",
+    "reuse": "reckon/crew/promotion.py:593 wraps the existing _shadow_stream_contamination and ledger.shadow_controlled rather than adding a second scan or predicate, and a capability search over reckon/ found no other owner of the marks.",
+    "scope_discipline": "git diff --name-only 86164b4a..8416d616a lists only the evidence fragment, promotion.py, promotion_scope.py and the test file, and promotion.py was granted in resume-2-advice.txt."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that a shadow's reads of its primary's run directory, review records or worktree make the pair contaminated and uncontrolled; reckon/crew/promotion.py:593 _shadow_control_marks re-takes the row's verdict through that one predicate after the scan answers.\nVERDICT done_when: the done_when names tests/test_crew_shadow_contamination.py, the committed fixture, the pair verdict and the negative control; the manifest records 26 passed at head and a negative control at EXIT=1, and logs/gate-target-file.log records the 26-passed run at head 8416d616a.\nVERDICT write_paths: the source node's declared paths are ledger.py, capabilities.py, promotion_scope.py, the test file, the fixture and the evidence fragment; this increment adds reckon/crew/promotion.py, which the coordinator widened the scope to in resume-2-advice.txt, and every changed path sits inside that widened set.\nVERDICT manifest: read; it records the target-file gate at 26 passed, the importer arm 563 to 578 passed with zero added failures, the negative control, the ruff delta and the promotion-path ordering, and it names the promotion wiring as landed.\nVERDICT diff: read commit by commit against base 86164b4a; 8416d616a is the only commit gained since the prior review and touches exactly the four files the goal names.\nCALL_SITES: reckon/crew/promotion.py:1207 _complete_locked, reckon/crew/promotion.py:451 complete, reckon/crew/promotion_scope.py:1158 _shadow_stream_contamination, reckon/capabilities.py:984 pair_shadow_arms\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1207 now re-takes the stored verdict through ledger.shadow_controlled at promotion.py:610, closing the contradiction the prior review flagged at promotion.py:1181.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-target-file.log records 26 passed at head 8416d616a and negative-control.log records EXIT=1 with test_a_contaminated_pair_is_uncontrolled failing under the declared mutation.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only 86164b4a..8416d616a lists only the evidence fragment, promotion.py, promotion_scope.py and the test file, and promotion.py was granted in resume-2-advice.txt.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_crew_shadow_contamination.py:729 reddens if _shadow_control_marks stops re-taking the verdict or promotion_scope.py:1123 stops resolving the .at- siblings, but no test covers the promotion.py:1207 call itself.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/promotion.py:593 extends the neighbouring helper idiom (Mapping, Iterable, Path, a docstring stating the why) and adds no plan or stage label.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/promotion.py:593 wraps the existing _shadow_stream_contamination and ledger.shadow_controlled rather than adding a second scan or predicate, and a capability search over reckon/ found no other owner of the marks.\nFINDING reckon/crew/promotion.py:1207 follow-on: the call run.update(_shadow_control_marks(...)) into _complete_locked is covered by no test, so deleting it reinstates the stored shadow_controlled contradiction this node exists to fix while all 26 tests stay green.",
+  "review_run_id": "r-20261016T224214323924-review-of-shadow-reads-make-the-pair-uncontrolled-8416d616af13",
+  "reviewed_base_sha": "86164b4a5b243e1739f0a314d7a8b4bb272eb774",
+  "reviewed_head_sha": "8416d616af13f7e15ba7f2076a8bd889c96bad2a",
+  "reviewed_run_id": "r-20261016T194959330083-shadow-reads-make-the-pair-uncontrolled",
+  "reviewer_run_id": "r-20261016T224214323924-review-of-shadow-reads-make-the-pair-uncontrolled-8416d616af13",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T194959330083-shadow-reads-make-the-pair-uncontrolled/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/36355bc4-c7d8-45bc-a3eb-b6ea284801ec/shadow-reads-make-the-pair-uncontrolled",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T22:49:02.000162+00:00",
+  "total": 103
+}
