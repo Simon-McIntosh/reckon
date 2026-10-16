@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="136">
+<meta name="plan-version" content="137">
 <meta name="plan-modified" content="2026-10-16">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -496,6 +496,9 @@
 </div>
 <div class="r-comment" data-section="s24" data-id="c-run-r-20261016T075029708252-a-queued-run-waits-on-its-lane" data-who="reckon-build" data-when="2026-10-16T10:54:10.991Z">
     <div class="r-comment-body"><p>a re-queue keeps the backend already on the waiting request, so a local-queued review is launched by the local admission pass; merged as a9136c5b0; gate 2 passed, control red, review 108</p></div>
+</div>
+<div class="r-comment" data-section="s24" data-id="c-s24-correction" data-who="reckon-build" data-when="2026-10-16T11:40:00Z">
+    <div class="r-comment-body"><p>Correction to <code>c-close-s24</code>: it said the fix reaches the lane only after the admit service restarts. That is wrong. The change is in <code>dispatch()</code>'s in-place re-queue branch, which runs only when a coordinator re-dispatches a node whose request is already queued, and each such dispatch is a fresh <code>crew dispatch</code> process. The admit service's <code>_launch_queued</code> in <code>reckon/crew/queue_admission.py</code> unlinks the queued pointer before it calls <code>dispatch</code>, so the admission launch never takes that branch. The fix has been live for every dispatch since <code>a9136c5b0</code>, and no restart is needed.</p></div>
 </div>
 </section>
 </main>
