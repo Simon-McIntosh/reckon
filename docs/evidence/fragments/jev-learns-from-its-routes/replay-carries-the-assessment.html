@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:jev-learns-from-its-routes">
+  <meta name="plan-verifies" content="reckon:jev-learns-from-its-routes#s8">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-16">
+  <meta name="evidence-commit" content="e4f821246">
+</head>
+<body>
+<main class="plan-doc">
+<section id="replay-carries-checkpoint">
+  <h2>A replayed pick carries the recorded assessment</h2>
+  <p><code>reckon/crew/picker/replay.py</code> rebuilt each replayed
+  <code>PickRequest</code> from the run's <code>node_definition</code> without
+  that definition's <code>orchestrator_assessment</code>. A live pick renders
+  the coordinator's reading as <code>node.orchestrator_assessment</code> beside
+  the declared <code>node.capability</code>, so a replay meant to show what Jev
+  saw showed the declared capability alone.</p>
+  <p>The rebuild now passes <code>dict(definition.get("orchestrator_assessment")
+  or {})</code> through to the request. The replayed request's rendered
+  <code>node</code> block then carries it.
+  <code>reckon/crew/picker/replay.py</code>, commit <code>e4f821246</code>.</p>
+</section>
+<section id="replay-carries-the-assessment-measure">
+  <h2>Measure</h2>
+  <p><code>tests/test_a_replay_carries_the_assessment.py</code> replays a
+  recorded run whose definition carries <code>{"reasoning": "deep"}</code> with
+  the picker's own render left real — only the candidate scan and the model
+  client are stubbed. The rendered state the row records, and the state the
+  pick's client was handed, both carry
+  <code>node.orchestrator_assessment == {"reasoning": "deep"}</code>; a recorded
+  run with no assessment renders no such key in either.</p>
+  <p>Gate: <code>2 passed</code>, <code>EXIT=0</code>
+  (<code>logs/gate.log</code>). The test files importing
+  <code>replay.py</code> show no added failure against the base revision: base
+  <code>46 passed</code> / <code>EXIT=0</code> in a scratch extraction of
+  <code>f33b8db0ab</code> (<code>logs/base_suite.log</code>), after
+  <code>48 passed</code> / <code>EXIT=0</code> in the worktree
+  (<code>logs/after_suite.log</code>) — the two added tests are this node's.</p>
+</section>
+<section id="replay-carries-the-assessment-negative-control">
+  <h2>Negative control</h2>
+  <p>Declared: <em>dropping the field from the rebuilt request makes the first
+  assertion fail</em>. With the <code>orchestrator_assessment</code> argument
+  removed from the rebuilt request,
+  <code>test_a_replay_carries_the_recorded_assessment</code> fails with
+  <code>KeyError: 'orchestrator_assessment'</code> and the run exits non-zero;
+  the no-assessment test still passes, since it expects the key absent.
+  <code>1 failed, 1 passed</code>, <code>EXIT=1</code> —
+  <code>logs/negative_control.log</code>.</p>
+</section>
+</main>
+</body>
+</html>
