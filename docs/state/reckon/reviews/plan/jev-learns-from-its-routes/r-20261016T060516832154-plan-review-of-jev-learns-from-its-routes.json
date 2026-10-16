@@ -1,0 +1,75 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T06:11:48.037Z",
+  "dispatched_at": "2026-10-16T06:06:01Z",
+  "findings": [
+    {
+      "anchor": "reckon/capabilities.py:1033",
+      "id": "reuse_search-1",
+      "reason": "the plan's own evidence row is falsified by the codebase, and \u00a77 must extend the existing join or state why it cannot.",
+      "text": "the plan adds `paired_arms` (\u00a77) on the claim that \"nothing sets a primary beside its shadow\" (\u00a71, evidence table row 7), but `derive_capabilities` already joins a shadow row to its primary through `lineage.primary_run_id` and reports `primary_gate`, `primary_success` and the `controlled` predicate (`reckon/capabilities.py:1034-1051`), and `reckon/crew/picker/outcomes.py:559 records shadow rows as excluded from the report; the plan searched `outcomes.py` but not the module that already holds the pairing",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/picker/outcomes.py",
+      "id": "duplicate_owner-1",
+      "reason": "the owner to extend is `derive_capabilities`/`ledger.shadow_controlled`, and a second pairing silently drops the control guard the owner applies.",
+      "text": "\u00a77's `paired_arms` block re-derives the shadow\u2194primary join that `reckon/capabilities.py:1033-1051` (`derive_capabilities`) already owns, including the control predicate `reckon/ledger.py:406` `shadow_controlled`, which ledger.py:418 and capabilities.py:1048 call the sole control predicate; \u00a77's deliverable names neither, so a confounded shadow pair (one whose recorded configuration did not reproduce its primary) would be reported as a pair",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/picker/lane_context.py:279",
+      "id": "duplicate_owner-2",
+      "reason": "if `_budget_block` is the owner to extend, \u00a75 must fold snapshot.py:523 and snapshot.py:584 onto it rather than add a fourth computation, or the three-way disagreement the section exists to remove persists.",
+      "text": "\u00a75 introduces \"one function\" for source-aware staleness but names only two of the three places that compute it today; the candidate's `stale` is derived in `reckon/crew/picker/snapshot.py:523` (`_compose_budget_report`) and re-derived in `snapshot.py:584` (`_reage_budget_report`), while `lane_context._budget_block` (lane_context.py:279-281) already implements the source-aware rule (account-surface never stale, ledger stale) that \u00a75 extends for the document source; the section does not name these as the sites it replaces",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/picker/snapshot.py:170",
+      "id": "duplicate_owner-3",
+      "reason": "the picker state and the outcomes report are genuinely different consumers, and outcomes.py already conditions by risk, so \u00a73's addition stands; naming the overlap would tighten the plan but the design is sound without it.",
+      "text": "\u00a73 adds requirement-conditioned outcome counts in `_candidates_scan`, but `reckon/crew/picker/outcomes.py:394-407` already groups routed outcomes by a requirement key (`risk`, read from `node_definition.risk` at outcomes.py:394-396) and `reckon/crew/lane_evidence.py:1-7` is the existing shape-conditioned lane-evidence owner (its docstring: \"shape-conditioned lane evidence\"); \u00a73 cites neither, so the author cannot state whether the requirement key should extend the report's grouping",
+      "type": "duplicate_owner",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/crew_dispatch_commands.py:682",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the CLI surface it adds, and \u00a72's `--assess` is a second structured-difficulty carrier beside `--spec-level` whose relationship the section leaves unstated.",
+      "text": "\u00a72 adds a repeatable CLI option `--assess KEY=VALUE` beside the existing `--spec-level` (crew_dispatch_commands.py:682) and \u00a77 adds a `paired_arms` block to the `--outcomes` payload (crew_dispatch_commands.py:720); against the supplied cli_options 354, neither section names what it retires or merges, or why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "544f59d21f33338400396b044005edc02a6adc593f0a25019866d7dd14836d21",
+  "plan_slug": "jev-learns-from-its-routes",
+  "plan_version": 4,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T060516832154-plan-review-of-jev-learns-from-its-routes",
+  "reviewed_blob_sha": "a5d24fdaf6ae3a0bafe76b2b7eb1b4967d6c45c3",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a75 hides the source-aware staleness rule behind one function that both the candidate flag and the return-time block call, so the rule lives in one place rather than being spread across readers.",
+    "duplicate_owner": "a finding \u2014 \u00a77 re-derives the shadow\u2194primary join already owned by `reckon/capabilities.py` `derive_capabilities`, and \u00a75 must name the three existing staleness computations it replaces rather than adding a fourth.",
+    "interface_budget": "a finding \u2014 public_definitions 1742, cli_options 354, mcp_views 34, refusal_families 23; \u00a72 adds a repeatable CLI option (`--assess`) and \u00a77 adds an output block, and neither section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a71 asserts \"nothing sets a primary beside its shadow\" and \u00a77 proposes a new `paired_arms` report, but the search missed `reckon/capabilities.py` `derive_capabilities`, which already joins every shadow row to its primary.",
+    "thin_wrapper": "pass \u2014 no section adds a wrapper over existing machinery without justification; \u00a72 explicitly extends `PickRequest`/`build_state` instead of adding a second request type, and \u00a75 consolidates rather than wraps."
+  },
+  "section_digests": {
+    "_document": "bafd56c94e4a722e44647d81c01252a7cf558e781ab2e4346aac7f590726e02f",
+    "s1": "cb7c1c70fa397641ce06c9fe8b724b705b99ea013101ce6dd8a1ca183106d869",
+    "s2": "cc35fef7cc2d6ce0af14220bc78602ca25e960978e3dd3efb5979ca5e3c14917",
+    "s3": "8179a37e4b295ca4d07095c460b0db5cfa2464f0511c156fc51e08c807ba7fc0",
+    "s4": "828939c295d01d9b6fa0e90760eeee37626b612fb8414928adedddbb83f7238b",
+    "s5": "6cff1e7bf68d8874d67225b968adb4aeea6828a4800ac65b4676edd703eb6a52",
+    "s6": "53f3985a9e51660338ed6f513d576b48f5e68d1fcefca5338672e0ae74f5112d",
+    "s7": "7c5ab37c4bc1961ab68b2ec5026a848b7c6f8c6a4c26ca2b70b6fbad0f54351a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T06:13:44.248356+00:00"
+}
