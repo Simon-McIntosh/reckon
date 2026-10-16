@@ -81,6 +81,12 @@ def replay(
                 estimated_context=int(definition.get("estimated_context") or 0),
                 comment=str(definition.get("comment") or ""),
                 session=session,
+                # The coordinator's reading travelled on the recorded node
+                # definition, so a replay weighs the same two readings the
+                # original pick did rather than the declared capability alone.
+                orchestrator_assessment=dict(
+                    definition.get("orchestrator_assessment") or {}
+                ),
             )
             selection = pick(
                 request,
