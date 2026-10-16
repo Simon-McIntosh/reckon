@@ -209,11 +209,11 @@ def run_home_rollout_paths(
     return paths
 
 
-def _locate_rollout(session_id: str) -> Path | None:
+def _locate_rollout(session_id: str, *, run_id: str | None = None) -> Path | None:
     if _SESSION_ID.fullmatch(session_id) is None:
         return None
     candidates = list(CLIENT_SESSIONS_DIR.glob(f"*/*/*/rollout-*-{session_id}.jsonl"))
-    candidates.extend(run_home_rollout_paths(session_id))
+    candidates.extend(run_home_rollout_paths(session_id, run_id=run_id))
     return max(candidates, key=str, default=None)
 
 
@@ -380,7 +380,10 @@ def _notional_price(
 
 
 def read_rollout_receipt(
-    session_id: str, *, model_identifier: str | None = None
+    session_id: str,
+    *,
+    model_identifier: str | None = None,
+    run_id: str | None = None,
 ) -> RolloutReceipt:
     """Return the measured client receipt values for one crew session.
 
@@ -401,8 +404,15 @@ def read_rollout_receipt(
     and the run's measured tokens; a lane without a dated rate is explicitly
     unpriced, and a caller that supplies no model gets the explicit no-model
     marker rather than a fabricated figure.
+
+    ``run_id`` confines the lookup to one crew run's harness home.  A run that
+    resumed on codex more than once keeps several clients under its own home,
+    and a caller measuring that run's own sessions restricts the search and the
+    run directory it resolves against this way rather than reading another
+    run's receipt.  A caller that names no run searches every home, which is
+    the shape the single-session paid-lanes scan uses.
     """
-    path = _locate_rollout(str(session_id))
+    path = _locate_rollout(str(session_id), run_id=run_id)
     if path is None:
         return _unmeasured(Unmeasured.MISSING_ROLLOUT)
 

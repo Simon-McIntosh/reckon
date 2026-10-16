@@ -71,6 +71,11 @@ class StreamMeasures:
     # where an exec stream carries no timestamps to bound it from. None when no
     # receipt measured the span, so an unmeasured run is never read as a zero.
     rollout_seconds: int | None = None
+    # The composition ``worker_seconds`` was summed from when a run spans more
+    # than one attempt — ``stream_events+rollout_receipts`` and its single-part
+    # forms. None for a single-attempt run, whose row keeps the source name
+    # every reader already keys on; the promotion derives that name as before.
+    worker_seconds_source: str | None = None
 
 
 def _zone_aware_stream_timestamp(timestamp: object) -> datetime | None:
@@ -87,6 +92,49 @@ def _zone_aware_stream_timestamp(timestamp: object) -> datetime | None:
     return parsed
 
 
+def _measured_rollout_receipt(session_id: str, run_id: str | None) -> Any | None:
+    """The receipt for one codex session, kept only when it measured the span.
+
+    The lookup is confined to the run's own harness home, so a run that resumed
+    on codex many times measures its own clients rather than whichever home
+    sorts last. A receipt that measured no span is dropped rather than folded
+    in as a zero: an unmeasured client must not relabel a stream's own report,
+    so its absence stays the explicit unmeasured state the caller falls back
+    from.
+    """
+    if not session_id:
+        return None
+    try:
+        candidate = rollout.read_rollout_receipt(session_id, run_id=run_id or None)
+    except (OSError, ValueError):
+        return None
+    if isinstance(
+        getattr(candidate, "generation_seconds", None), float
+    ) and isinstance(getattr(candidate, "machine_seconds", None), float):
+        return candidate
+    return None
+
+
+def _codex_session_of_stream(path: Path) -> str | None:
+    """The codex session a stream names, or ``None`` when it names none.
+
+    A codex client stream opens with a ``thread.started`` record carrying its
+    ``thread_id``, which every resume of that one session repeats, so the id is
+    read from the stream itself rather than from the client's global session
+    home. A claude event stream carries no such field and is dated from its own
+    timestamps instead, so the two attempt shapes are separated by which
+    measurement the stream affords rather than by the backend's name.
+    """
+    events, _malformed = _backends.cached_stream_events(path)
+    for event in events:
+        if not isinstance(event, Mapping):
+            continue
+        thread_id = event.get("thread_id")
+        if isinstance(thread_id, str) and thread_id.strip():
+            return thread_id.strip()
+    return None
+
+
 def _terminal_stream_data(
     record: Mapping[str, Any],
 ) -> StreamMeasures:
@@ -95,6 +143,7 @@ def _terminal_stream_data(
     if record.get("launch") != "cli":
         return StreamMeasures(None, None, None, budget, None)
 
+    run_id = str(record.get("run_id") or "").strip() or None
     backend_name = str(record.get("backend") or "")
     backend = _backend_settings(record, None)
     path = Path(str(record.get("log_path") or ""))
@@ -114,20 +163,21 @@ def _terminal_stream_data(
     # own report, so an absent rollout leaves the span explicitly unmeasured
     # rather than claimed.
     record_session = str(record.get("session_id") or "").strip()
-    receipt = None
-    rollout_seconds = None
-    if record_session:
-        candidate = rollout.read_rollout_receipt(record_session)
-        if isinstance(
-            getattr(candidate, "generation_seconds", None), float
-        ) and isinstance(getattr(candidate, "machine_seconds", None), float):
-            receipt = candidate
-            # The receipt's wall span is its own model seconds; the exec stream
-            # cannot separate inference from tool wait, so this is the figure a
-            # codex run's worker seconds must be read from.
-            rollout_seconds = int(
-                candidate.generation_seconds + candidate.machine_seconds
-            )
+    receipt = _measured_rollout_receipt(record_session, run_id)
+    rollout_seconds = (
+        None
+        if receipt is None
+        else int(receipt.generation_seconds + receipt.machine_seconds)
+    )
+    # Each attempt the run made, measured on its own. A stream that carries
+    # event timestamps is dated by its last one and spans first-to-last; a
+    # stream that carries none — a codex client stream — is dated by its file
+    # modification time and its worker time read from its own rollout receipt.
+    # The run's end is the latest attempt's end, never an earlier one's, and
+    # its worker time is the sum of every attempt's own span.
+    attempt_ends: list[tuple[datetime, str]] = []
+    event_spans: list[int] = []
+    session_spans: dict[str, int] = {}
     for candidate in paths:
         observation = _backends.observe_log(
             backend_name=backend_name,
@@ -149,6 +199,32 @@ def _terminal_stream_data(
             timestamps.append(first)
         if last is not None:
             timestamps.append(last)
+        if first is not None and last is not None:
+            event_spans.append(max(0, int((last[0] - first[0]).total_seconds())))
+            attempt_ends.append((last[0], "terminal_event"))
+            continue
+        # No event timestamps bound this attempt. Its file's own modification
+        # time is the end its writer left, and its session's receipt carries the
+        # worker span the stream cannot.
+        stream_session = _codex_session_of_stream(candidate)
+        if stream_session:
+            span_receipt = _measured_rollout_receipt(stream_session, run_id)
+            if span_receipt is not None:
+                session_spans.setdefault(
+                    stream_session,
+                    int(
+                        span_receipt.generation_seconds
+                        + span_receipt.machine_seconds
+                    ),
+                )
+        try:
+            written = candidate.stat().st_mtime
+        except OSError:
+            written = None
+        if written is not None:
+            attempt_ends.append(
+                (datetime.fromtimestamp(written, tz=timezone.utc), "stream_mtime")
+            )
     if receipt is not None:
         # A span the receipt measured belongs on the row even where the stream
         # reached no terminal record of its own: a killed codex run still has a
@@ -157,6 +233,28 @@ def _terminal_stream_data(
         # this only fills the gap rather than overwriting one reading with another.
         throughput.setdefault("generation_seconds", float(receipt.generation_seconds))
         throughput.setdefault("machine_seconds", float(receipt.machine_seconds))
+    if len(paths) > 1 and attempt_ends and (event_spans or session_spans):
+        # A run that made more than one attempt is measured across all of them:
+        # its end is the latest attempt's end rather than an intermediate or
+        # first attempt's, and its worker time is the sum of each attempt's own
+        # span, so a run that moved lane or resumed many times is not recorded
+        # as the length of whichever attempt happened to carry timestamps.
+        end, end_source = max(attempt_ends, key=lambda item: item[0])
+        parts: list[str] = []
+        if event_spans:
+            parts.append("stream_events")
+        if session_spans:
+            parts.append("rollout_receipts")
+        return StreamMeasures(
+            end.isoformat(timespec="seconds").replace("+00:00", "Z"),
+            end_source,
+            sum(event_spans) + sum(session_spans.values()),
+            budget,
+            session_id,
+            throughput,
+            None,
+            worker_seconds_source="+".join(parts),
+        )
     if timestamps:
         first = min(timestamps, key=lambda item: item[0])
         last = max(timestamps, key=lambda item: item[0])
