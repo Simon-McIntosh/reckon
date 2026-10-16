@@ -1,0 +1,91 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 4,
+  "added_failure_ids": [
+    "tests/test_jev_prompt_carries_what_it_weighs.py::test_rendered_state_is_one_json_object",
+    "tests/test_picker.py::test_representative_state_is_bounded_and_comment_verbatim",
+    "tests/test_picker_pressure.py::test_representative_live_state_fits_the_token_bound",
+    "tests/test_picker_return_time.py::test_representative_nine_candidate_state_is_bounded"
+  ],
+  "added_failures_note": "derived from the reviewed run's own gate logs: after_suite (gate-armed-head.log) completes at 4 failed / 4 failing ids; baseline_suite (gate-armed-base.log) never reaches its summary line (EXIT=137, '# stopped by the background time limit before the summary line') so it records no failure_ids and reports 0 failures through 79%. The two arms therefore cannot be reduced by id against each other: all four head ids are counted as added. The inference still holds for two of the four by direct observation - test_jev_prompt_carries_what_it_weighs.py (21st file in the run's alphabetical list) and tests/test_picker.py (36th) both ran inside the base arm's 79% span with no F - and for the other two by mechanism, since the two keys the change renders unconditionally sit inside the requirement-gated block at the base revision and are absent from those fixtures' candidate dicts there.",
+  "base_log_revision": "75aa6abd1a5a199d22bca35953ac4c37e52da47a",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:409 prompts.render(...) - the pick path that builds Jev's routing state",
+    "reckon/crew/picker/__init__.py:472 prompts.render(\"questions.jinja\", candidates=offered) - the question payload Jev answers",
+    "reckon/crew/picker/prompts.py:337 build_state -> _candidate_state(candidate), fed by reckon/crew/picker/snapshot.py:1191-1197 which sets Candidate.moved_in/moved_off"
+  ],
+  "completed_at": "2026-10-16T15:56:14.359Z",
+  "dispatched_at": "2026-10-16T15:46:27Z",
+  "findings": [
+    {
+      "file": "tests/test_picker_pressure.py",
+      "line": "477",
+      "severity": "blocking",
+      "text": "blocking: the change adds two keys to every candidate's rendered state, and the representative nine-candidate pick now estimates 2230 tokens against the test's ceiling of 2200 (gate-armed-head.log: 'assert 2230 <= 2200'). rendered_token_estimate is the picker's own production budget for the state it hands Jev, so the landed change puts a representative pick over that budget by 30 tokens; the two size bounds and the two field-set constants that assert this contract are in files the node was fenced out of, but the regression is caused by the landed change and the plan's done-when forbids any added failure in test files importing prompts.py."
+    },
+    {
+      "file": "tests/test_picker.py",
+      "line": "262",
+      "severity": "blocking",
+      "text": "blocking: the same two extra keys per candidate push the rendered state to 8086 characters against the bound 'assert len(rendered) <= 1500 * 5' (7500) at gate-armed-head.log: 'assert 8086 <= (1500 * 5)'. The comment above the bound says 'the bound still holds the whole prompt to a few KB', so the change breaches a declared prompt-size ceiling rather than a stale literal."
+    },
+    {
+      "file": "tests/test_jev_prompt_carries_what_it_weighs.py",
+      "line": "120",
+      "severity": "follow-on",
+      "text": "follow-on: test_rendered_state_is_one_json_object asserts 'set(payload[\"candidates\"][\"remote\"]) == CANDIDATE_FIELDS' against a set literal declared at tests/test_jev_prompt_carries_what_it_weighs.py:43, so it reddens purely because the node's own output contract grew by moved_in and moved_off. The remedy is to add the two names to CANDIDATE_FIELDS; there is no production consequence, but the file is outside the node's write scope so the added failure stands."
+    },
+    {
+      "file": "tests/test_picker_return_time.py",
+      "line": "274",
+      "severity": "follow-on",
+      "text": "follow-on: 'assert set(payload[\"candidates\"][\"clive\"]) == CANDIDATE_KEYS' against the literal at tests/test_picker_return_time.py:31 reddens for the same reason; the length bound at line 273 passes, so this is the field-set contract and not the size bound the manifest's follow_ons attributes to it."
+    },
+    {
+      "file": "manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the follow_ons line attributes all four added failures to size bounds ('the latter three bound the rendered state's size'), but gate-armed-head.log shows only two are size bounds (test_picker.py:262, test_picker_pressure.py:477) and the other two are exact-set field contracts (test_jev_prompt_carries_what_it_weighs.py:120, test_picker_return_time.py:274); it also records the base arm as showing 'zero failures through 79%', which is true but is not the summary-line comparison the done-when asks for, so the record reads as a completed two-arm comparison when one arm is incomplete."
+    }
+  ],
+  "head_log_revision": "df84976d8a72f722e1ab8d1daa0755ac28e6195b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 75aa6abd1; the single commit df84976d8 changes 5 files - reckon/crew/picker/prompts.py (moved_in/moved_off hoisted out of the outcomes_at_requirement block and rendered unconditionally, plus the two _GLOSSARY entries rewritten), reckon/crew/picker/types.py (the Candidate field comment), tests/test_a_move_counts_against_the_pick.py (one new test), tests/test_picker_helpers_have_one_owner.py (GOLDEN_STATE gains \"moved_in\":null,\"moved_off\":null on both candidates and nothing else), and the new evidence fragment - with nothing outside the declared write paths. The GOLDEN_STATE edit is exactly the two keys per candidate as the done-when requires.",
+    "done_when": "the manifest records a gate of 12 passed over the two named test files and a negative control whose red id the head arm passes, and both are present at gate-head.log and negative_control.log (1 failed, 7 passed, EXIT=1, KeyError: 'moved_in' on test_a_request_naming_no_requirement_renders_the_move_figures). The done-when's last clause - 'test files importing reckon/crew/picker/prompts.py show no added failure against the base revision' - is not met: the head arm completes at 4 failed / 452 passed with four failing ids, and the base arm never reaches its summary line (EXIT=137), so the required comparison cannot be reduced and none of the four is retired by name.",
+    "goal": "the goal is to render every candidate's moved_in and moved_off whether or not the request names a requirement; reckon/crew/picker/prompts.py:233-234 now emits both keys unconditionally beside the conditional outcomes_at_requirement block, the new test at tests/test_a_move_counts_against_the_pick.py:282 renders a no-requirement request and finds codex moved_in failed 1 and clive moved_off 1, and the two _GLOSSARY entries plus the types.py comment state the requirement-versus-every-move reading, so the goal is met.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T151623426039-moves-render-for-every-pick/manifest.md; status complete, commit df84976d8, gate-head 12 passed, negative control 1 failed (EXIT=1), armed head arm 4 failed / 452 passed with the four ids recorded, armed base arm incomplete at 79% (EXIT=137), measurement_module and measurement_cwd naming the scratch base-arm tree, and both suite arms carrying their literal commands and logs, though the follow_ons line at manifest.md:21 misattributes two of the four failures and presents the incomplete base arm as if it settled the comparison.",
+    "write_paths": "the manifest declares reckon/crew/picker/prompts.py, reckon/crew/picker/types.py, tests/test_a_move_counts_against_the_pick.py, tests/test_picker_helpers_have_one_owner.py, docs/evidence/fragments/jev-learns-from-its-routes/moves-render-for-every-pick.html and docs/figures/jev-learns-from-its-routes/moves-render-for-every-pick; `git show --stat df84976d8` lists exactly the first four plus the fragment, with no figure, so every landed path is inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_move_counts_against_the_pick.py:308-310 fails if the change regresses - negative_control.log shows restoring the requirement-gated rendering reddens it with KeyError: 'moved_in', an id the head arm passes - and its two assertions compare the code's transform against the literal count 1, not against a value the test handed in, so the assertion is independent of the value under test.",
+    "evidence": "the gate the node ran names its result at gate-head.log (12 passed) and the negative control at negative_control.log (1 failed, EXIT=1), but the done-when's final clause is unmet - gate-armed-head.log completes at 4 failed / 452 passed and gate-armed-base.log never reaches its summary line (EXIT=137), so four added failures stand unretired by name.",
+    "fit": "reckon/crew/picker/prompts.py:217-234 follows the surrounding _candidate_state idiom of a dict literal with conditional spreads, the rewritten comments state the mechanism in the code's own terms, and no forbidden name, plan label or version suffix is introduced.",
+    "goal_fidelity": "reckon/crew/picker/prompts.py:233-234 renders moved_in and moved_off outside the outcomes_at_requirement block, so a request naming no requirement still shows the figures, which is the whole of the \u00a718 deliverable.",
+    "reuse": "the change adds no definition of its own; it extends the single owner of candidate rendering, _candidate_state at reckon/crew/picker/prompts.py:195, which is already the one place build_state (prompts.py:337) turns a Candidate into Jev's state, so no capability is forked.",
+    "scope_discipline": "`git show --stat df84976d8` names only reckon/crew/picker/prompts.py, reckon/crew/picker/types.py, the two declared test files and the evidence fragment, all inside the write paths declared at manifest.md:3, and the GOLDEN_STATE edit adds only the two keys per candidate the done-when names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to render every candidate's moved_in and moved_off whether or not the request names a requirement; reckon/crew/picker/prompts.py:233-234 now emits both keys unconditionally beside the conditional outcomes_at_requirement block, the new test at tests/test_a_move_counts_against_the_pick.py:282 renders a no-requirement request and finds codex moved_in failed 1 and clive moved_off 1, and the two _GLOSSARY entries plus the types.py comment state the requirement-versus-every-move reading, so the goal is met.\nVERDICT done_when: the manifest records a gate of 12 passed over the two named test files and a negative control whose red id the head arm passes, and both are present at gate-head.log and negative_control.log (1 failed, 7 passed, EXIT=1, KeyError: 'moved_in' on test_a_request_naming_no_requirement_renders_the_move_figures); the done-when's last clause - 'test files importing reckon/crew/picker/prompts.py show no added failure against the base revision' - is not met, because the head arm completes at 4 failed / 452 passed and the base arm never reaches its summary line.\nVERDICT write_paths: the manifest declares the two picker modules, the two test files, the evidence fragment and a figure directory; `git show --stat df84976d8` lists exactly the two modules, the two test files and the fragment, all inside the declared scope.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T151623426039-moves-render-for-every-pick/manifest.md; status complete, commit df84976d8, gate-head 12 passed, armed head arm 4 failed / 452 passed, armed base arm incomplete at 79% (EXIT=137), and the follow_ons line at manifest.md:21 misattributes two of the four failures.\nVERDICT diff: read commit by commit against 75aa6abd1; the single commit df84976d8 changes 5 files - prompts.py, types.py, two tests and the fragment - hoisting moved_in/moved_off out of the requirement-gated block, with nothing outside the declared write paths.\nCALL_SITES: reckon/crew/picker/__init__.py:409 prompts.render (the pick path), reckon/crew/picker/__init__.py:472 prompts.render(\"questions.jinja\") (the question payload), reckon/crew/picker/prompts.py:337 build_state->_candidate_state fed by reckon/crew/picker/snapshot.py:1191-1197\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/prompts.py:233-234 renders moved_in and moved_off outside the outcomes_at_requirement block, so a request naming no requirement still shows the figures, which is the whole of the \u00a718 deliverable.\nSCORE evidence: 10\nJUSTIFICATION evidence: the gate names its result at gate-head.log (12 passed) and the negative control at negative_control.log (1 failed, EXIT=1), but gate-armed-head.log completes at 4 failed / 452 passed while gate-armed-base.log never reaches its summary line (EXIT=137), so the done-when's no-added-failure clause is unmet.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git show --stat df84976d8` names only reckon/crew/picker/prompts.py, reckon/crew/picker/types.py, the two declared test files and the evidence fragment, all inside the write paths declared at manifest.md:3.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_move_counts_against_the_pick.py:308-310 fails if the change regresses - negative_control.log shows the requirement-gated rendering reddens it with KeyError: 'moved_in' - and its assertions compare the code's transform against the literal 1, not a value the test handed in.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/picker/prompts.py:217-234 follows the surrounding _candidate_state dict-literal idiom, the rewritten comments state the mechanism in the code's own terms, and no forbidden name or plan label is introduced.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition and extends the single owner of candidate rendering, _candidate_state at reckon/crew/picker/prompts.py:195, so no capability is forked.\nFINDING tests/test_picker_pressure.py:477 blocking: the change adds two keys to every candidate's rendered state, and the representative nine-candidate pick now estimates 2230 tokens against the test's ceiling of 2200 (gate-armed-head.log: 'assert 2230 <= 2200'); rendered_token_estimate is the picker's own production budget for the state it hands Jev, so a representative pick is now over it.\nFINDING tests/test_picker.py:262 blocking: the same two extra keys per candidate push the rendered state to 8086 characters against 'assert len(rendered) <= 1500 * 5' (7500), breaching the declared prompt-size ceiling the comment above it says still holds.\nFINDING tests/test_jev_prompt_carries_what_it_weighs.py:120 follow-on: test_rendered_state_is_one_json_object reddens because 'set(payload[\"candidates\"][\"remote\"]) == CANDIDATE_FIELDS' against the literal at line 43 does not carry the two new names; the remedy is to extend CANDIDATE_FIELDS, and the file is outside the node's write scope.\nFINDING tests/test_picker_return_time.py:274 follow-on: 'assert set(payload[\"candidates\"][\"clive\"]) == CANDIDATE_KEYS' against the literal at line 31 reddens for the same reason; the length bound at line 273 passes, so this is the field-set contract and not the size bound the manifest attributes to it.\nFINDING manifest.md:21 follow-on: the follow_ons line attributes all four added failures to size bounds when only two are, and presents the incomplete base arm as if it settled the two-arm comparison, so the record understates which remediations are needed and overstates what the base arm showed.\nREVIEWED_BASE_SHA: 75aa6abd1a5a199d22bca35953ac4c37e52da47a\nREVIEWED_HEAD_SHA: df84976d8a72f722e1ab8d1daa0755ac28e6195b",
+  "review_run_id": "r-20261016T154552640990-review-of-moves-render-for-every-pick-df84976d8a72",
+  "reviewed_base_sha": "75aa6abd1a5a199d22bca35953ac4c37e52da47a",
+  "reviewed_head_sha": "df84976d8a72f722e1ab8d1daa0755ac28e6195b",
+  "reviewed_run_id": "r-20261016T151623426039-moves-render-for-every-pick",
+  "role": "review",
+  "rubric": "node",
+  "scores": {
+    "durability": 19,
+    "evidence": 10,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T15:52:07.240813+00:00",
+  "total": 107
+}
