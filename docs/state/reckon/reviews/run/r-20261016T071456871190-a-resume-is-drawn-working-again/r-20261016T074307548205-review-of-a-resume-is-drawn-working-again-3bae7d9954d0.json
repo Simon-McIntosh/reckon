@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "c051f2dafd05098490b9064510b7358e62048815",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:follower_row_path",
+    "reckon/crew_follow_commands.py:1397"
+  ],
+  "completed_at": "2026-10-16T08:00:12.230Z",
+  "dispatched_at": "2026-10-16T07:43:58Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-resume-is-drawn-working-again",
+      "recorded_at": "2026-10-16T07:57:30.533292+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "1037",
+      "severity": "follow-on",
+      "text": "the comment reads \"the set is what the deliverable tests a row against\", replacing the previous \"the policy tests a row against\"; \"deliverable\" is node/plan vocabulary that names no mechanism in the module, where ``RowPolicy`` is the thing that reads START_KINDS at ticker.py:1301, so the rewritten sentence is less precise than the one it replaced"
+    }
+  ],
+  "head_log_revision": "3bae7d9954d086dd77c139414ed35aeac2ea04aa",
+  "item_verdicts": {
+    "diff": "read commit 3bae7d995 against base c051f2daf; three files, 217 insertions and 9 deletions, all inside the declared scope; the production change is the START_KINDS widening at reckon/crew/ticker.py:1038-1041 plus the two docstrings",
+    "done_when": "the done_when names tests/test_a_resume_is_drawn_working_again.py with the four-row sequence (working->blocked, blocked->blocked, blocked->working, working->completed_unpromoted), the peer-session and delivered-hold cases, head/base id parity for the ticker-importing files, and a negative control; the manifest records each run and its result",
+    "goal": "the node's goal is to make the ticker draw a run of the pane's own session resumed out of a stop state as working again; reckon/crew/ticker.py:1038-1041 widens START_KINDS to pair every PANE_STATES[\"halted\"] state with ``working``",
+    "manifest": "read; it states head 5 passed / base 3 failed on the new test, a 440-id parity across the 34 ticker-importing files with one pre-existing failure on both arms, and the negative control, each with a named log; it reproduces the base behaviour as feed(blocked, working) returning []",
+    "write_paths": "the declared paths are reckon/crew/ticker.py, tests/test_a_resume_is_drawn_working_again.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-resume-is-drawn-working-again.html and a docs/figures directory; every path in the diff is inside them"
+  },
+  "justifications": {
+    "durability": "the negative control at negative-control.log reddens three added assertions (test_a_resume_out_of_a_stop_is_drawn_working_again, test_the_working_row_is_between_the_halted_and_delivered_rows, test_each_stop_state_the_pane_draws_halted_resumes_working) with EXIT=1 when the stop-to-working kinds are removed from START_KINDS",
+    "evidence": "the manifest's head-new-test.log (5 passed, EXIT=0) and base-new-test.log (3 failed, 2 passed, EXIT=1) record the gate, ids-head.txt matches ids-base.txt at 440 ids, and I re-ran the named file at 3bae7d995 (5 passed)",
+    "fit": "the change extends the existing START_KINDS at reckon/crew/ticker.py:1038 and derives the stop set from PANE_STATES rather than restating the vocabulary, matching the module's idiom; one comment word regressed to node vocabulary",
+    "goal_fidelity": "reckon/crew/ticker.py:1038-1041 pairs every halted stop state with ``working`` and ticker.py:1642 prints that row for the pane's own session, which is exactly the goal",
+    "reuse": "the landed change extends ticker.py's own START_KINDS and reuses PANE_STATES[\"halted\"] instead of listing stop states, so no capability is forked and no owner duplicated",
+    "scope_discipline": "the diff's three files (reckon/crew/ticker.py, tests/test_a_resume_is_drawn_working_again.py, docs/evidence/fragments/.../a-resume-is-drawn-working-again.html) are all inside the declared write paths"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the ticker draw a run of the pane's own session resumed out of a stop state as working again; reckon/crew/ticker.py:1038-1041 widens START_KINDS to pair every PANE_STATES[\"halted\"] state with working.\nVERDICT done_when: the done_when names tests/test_a_resume_is_drawn_working_again.py with the four-row sequence, the peer-session and delivered-hold cases, head/base id parity, and a negative control; the manifest records each run and its result.\nVERDICT write_paths: the declared paths are reckon/crew/ticker.py, tests/test_a_resume_is_drawn_working_again.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-resume-is-drawn-working-again.html and a docs/figures dir; every path in the diff is inside them.\nVERDICT manifest: read; it states head 5 passed / base 3 failed, the 440-id parity and the negative control, each with a named log.\nVERDICT diff: read commit 3bae7d995 against base c051f2daf; three files, 217 insertions and 9 deletions, all inside the declared scope.\nCALL_SITES: reckon/crew_follow_commands.py:follower_row_path, reckon/crew_follow_commands.py:1397\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:1038-1041 pairs every halted stop state with working and ticker.py:1642 prints it for the pane's own session, which is the goal.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's head-new-test.log (5 passed, EXIT=0) and base-new-test.log (3 failed, 2 passed, EXIT=1) record the gate, and ids-head.txt matches ids-base.txt at 440 ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's three files (ticker.py, the new test, the evidence fragment) are all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control at negative-control.log reddens three added assertions (test_a_resume_out_of_a_stop_is_drawn_working_again, test_the_working_row_is_between_the_halted_and_delivered_rows, test_each_stop_state_the_pane_draws_halted_resumes_* ) with EXIT=1 when the stop-to-working kinds are removed.\nSCORE fit: 18\nJUSTIFICATION fit: the change extends the existing START_KINDS at reckon/crew/ticker.py:1038 and derives the stop set from PANE_STATES, matching the module's idiom; one comment word regressed.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends ticker.py's own START_KINDS and reuses PANE_STATES[\"halted\"] rather than restating the stop vocabulary, so no capability is forked.\nFINDING reckon/crew/ticker.py:1037 follow-on: the comment now reads \"the set is what the deliverable tests a row against\", replacing the clearer \"the policy tests a row against\"; \"deliverable\" is node vocabulary and names no mechanism in the module.",
+  "review_run_id": "r-20261016T074307548205-review-of-a-resume-is-drawn-working-again-3bae7d9954d0",
+  "reviewed_base_sha": "c051f2dafd05098490b9064510b7358e62048815",
+  "reviewed_head_sha": "3bae7d9954d086dd77c139414ed35aeac2ea04aa",
+  "reviewed_run_id": "r-20261016T071456871190-a-resume-is-drawn-working-again",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T07:53:36.796433+00:00",
+  "total": 114
+}
