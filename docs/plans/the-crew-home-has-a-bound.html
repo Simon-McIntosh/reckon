@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Storage bounds for the crew home and caches; no live plan waits on them and they wait on none. The pick-input index belongs to one-typesafe-model-picker&#x27;s code and is fixed here because its growth is independent of the picker&#x27;s open sections.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="47">
+<meta name="plan-version" content="49">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -122,7 +122,7 @@
       <code>tests/test_gc_bounds_a_run_file.py</code>; <code>tests/test_flight.py</code> passes; the fleet supervisor's own log tests pass. This section runs after §3, which writes the same module.</p>
 
     <h2 id="s5">§5 — The existing backlog is reclaimed</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="deferred" data-links=""></section>
     <p><strong>Deliverable.</strong> An operational node, run after §2 to §4 are promoted and installed: run <code>reckon crew gc</code> for
       the reckon repository and capture its report, then <code>reckon crew gc --apply</code>, capturing every printed removal to a log under
       the run directory; remove the six redirection-named directories in the crew home and the seven stray files at the checkout root after
@@ -160,7 +160,7 @@
 
     <h2 id="s9">§9 — A test writes no ledger index into the real cache</h2>
 <section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> After §5, ledger indexes appeared in the real <code>~/.cache/reckon</code> keyed to temporary repositories under <code>/tmp/.../pytest-of-mcintos/.../test_a_refused_envelope_puts_t0/repo</code> and <code>.../entry-points0</code>. So some tests resolve <code>_store.cache_root("pick-input")</code> to the real cache. That is a write outside the repository under test, which the project's test rules forbid. Each such index is orphaned the moment pytest removes its temporary directory.</p><p><strong>Deliverable.</strong> Every test that builds a ledger uses a temporary cache root.</p><p><strong>Done when</strong> a guard runs the test files that produced these indexes and finds that the real cache gained no file during the run. The suite's selection for <code>reckon/ledger.py</code> shows no added failure against base. The negative control removes the redirection, and the guard must then see a new file.</p><p><strong>Write paths:</strong> the test files that write the real cache, found by the node, and the guard test.</p>
+<p><strong>Why.</strong> After §5, ledger indexes appeared in the real <code>~/.cache/reckon</code> keyed to temporary repositories under <code>/tmp/.../pytest-of-mcintos/.../test_a_refused_envelope_puts_t0/repo</code> and <code>.../entry-points0</code>. So some tests resolve <code>_store.cache_root("pick-input")</code> to the real cache. That is a write outside the repository under test, which the project's test rules forbid. Each such index is orphaned the moment pytest removes its temporary directory.</p><p><strong>Deliverable.</strong> Every test that builds a ledger uses a temporary cache root.</p><p><strong>Done when</strong> a guard runs every test file that imports <code>reckon/ledger.py</code> or <code>reckon/_store.py</code>, which together cover every test that can build a ledger, and finds that the real cache gained no file during the run. The suite's selection for <code>reckon/ledger.py</code> shows no added failure against base. The negative control removes the redirection, and the guard must then see a new file.</p><p><strong>Write paths:</strong> the test files that write the real cache, found by the node, and the guard test.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -185,7 +185,7 @@
 <article class="r-fu" data-id="f-tchhab-004" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Stop the two ledger-index leaks (§8, §9)</h4>
     <div class="r-fu-body"><p>§8 makes a read of a missing ledger build no index. §9 keeps tests out of the real cache. They write different files, so they can run in parallel. One question is not this plan's to settle: <code>crew/reports</code> is now 187 GB, mostly imas-efit's 139 GB and nova's 35 GB. Those projects' coordinators own that data, so any bound on it is the lead's decision.</p></div>
-    <pre class="r-fu-prompt">/reckon-build the-crew-home-has-a-bound §8</pre>
+    <pre class="r-fu-prompt">/reckon-build the-crew-home-has-a-bound §8 §9</pre>
     </article>
 </section>
   
@@ -265,6 +265,9 @@
 <div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-16T16:10:00Z">
     <div class="r-comment-body"><p>§5 landed, with the lead's go-ahead, as a coordinator operation. The 22-minute <code>gc</code> run is longer than a worker can hold in the foreground. The pinned <code>crew gc --apply</code> removed 2,621 items and freed 162.6 GB: <code>~/.cache/reckon</code> went from 182.0 GB to 20.3 GB. No worktree was taken. The two remaining strays, <code>crew/runs, </code> and <code>9</code>, are gone. One done-when clause is not met. The four stores hold 494 GB against §1's 330 GB, because imas-efit's reports (139 GB), nova's reports (35 GB) and the shared run store grew outside reckon's reach. The two index leaks it found are now §8 and §9. <a href="/reckon/evidence/archive/the-crew-home-has-a-bound-landed.html#s5-backlog-reclaimed">evidence</a></p></div>
 </div>
+<div class="r-comment" data-section="s5" data-id="c-s5-reopened-on-review" data-who="reckon-build" data-when="2026-10-16T16:40:00Z">
+    <div class="r-comment-body"><p>§5 is moved back to deferred, acting on content-review finding <code>done_when-2</code>. The reclaim it describes has run (see <code>c-close-s5</code>), but its combined-size clause is not met. Marking the section done would quietly drop that shortfall from the roadmap. The open decision <code>reports-bound-across-projects</code> holds it until the lead chooses.</p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-s6-gc-run-promoted-1013" data-who="reckon-build" data-when="2026-10-13T00:10:00Z">
     <div class="r-comment-body"><p>A further case for this section, measured on 2026-10-12 and 2026-10-13 on seven runs of session <code>67139f13</code>. The obligations hook's <code>worktree-held</code> remedy is <code>reckon crew gc --run &lt;id&gt; --apply</code>. For a run that has been promoted and released, that command exits 1 with "no record names a worktree for run …", although the run's merged, clean worktree still exists on disk. So the prescribed remedy can never discharge the obligation.</p><p>Each tree was released by hand instead, after re-checking that it was clean, that its head is on main, and that no live pointer claims it.</p><p>When this section is built, <code>gc --run</code> should find a promoted run's worktree from the ledger row or the worktree root, and release it under the same checks, or the hook should name a remedy that works.</p></div>
 </div>
@@ -292,6 +295,19 @@
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261013T212357897899-review-of-gc-reaches-every-tree-its-obligation-names-d5b07a2bc71c" data-who="reckon-build" data-when="2026-10-13T21:39:51.835Z">
     <div class="r-comment-body"><p>review of r-20261013T203205342989-gc-reaches-every-tree-its-obligation-names (gained commit only) stored: parsed, 6/6 dimensions, total 108, base 7962c482 head d5b07a2bc, 1 follow-on finding, no blocking finding.</p></div>
 </div>
+</section>
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="reports-bound-across-projects" data-choice="" data-by="" data-when="" data-sections="s5" data-recommended="rebaseline-the-clause" data-recommended-by="reckon-build">
+    <p class="r-dec-q">Should the crew home&#x27;s reports store be bounded across projects?</p>
+    <p class="r-dec-ctx">&lt;p&gt;§5&#x27;s reclaim ran on 2026-10-16 and freed 162.6 GB. Its done-when wants the four stores at least 100 GB below §1&#x27;s 330 GB, but they now hold 494 GB. Nearly all of the growth is other projects&#x27; data: imas-efit&#x27;s reports are 139 GB, nova&#x27;s are 35 GB, and the shared run store has grown too. A &lt;code&gt;--project reckon&lt;/code&gt; sweep cannot reach any of it, and should not. So the clause can be met only if those stores are bounded, and that is the lead&#x27;s decision, not reckon&#x27;s. §5 stays deferred until it is made.&lt;/p&gt;</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="sweep-each-project">Each project&#x27;s coordinator runs crew gc for its own project</button>
+      <button class="r-opt" data-value="per-project-quota">reckon bounds each project&#x27;s reports with a size quota</button>
+      <button class="r-opt" data-value="rebaseline-the-clause">Measure the clause on reckon&#x27;s own share of the stores, which §5 met</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
 </section>
 </main>
 </body>
