@@ -26,7 +26,7 @@
   <title>Jev Learns From Its Routes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="66">
+<meta name="plan-version" content="67">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -605,7 +605,10 @@
     <div class="r-comment-body"><p>§18 — independent review of the moves-render-for-every-pick commits gained since the earlier review (base df84976d8, head cbb15ee1) stored as a parsed record: goal_fidelity 18, evidence 13, scope_discipline 20, durability 16, fit 18, reuse 20 (total 105); the earlier review's two blocking findings are repaired (bounds raised, expected key set extended; repair-head.log 2 passed, repair-negative-control.log EXIT=1) and 2 added failures remain in files outside the node's scope, recorded under follow_ons; 3 follow-on findings, 0 blocking.</p></div>
 </div>
 <div class="r-comment" data-section="s18" data-id="c-run-r-20261016T165917821039-review-of-moves-render-for-every-pick-3099cdd7435e" data-who="reckon-build" data-when="2026-10-16T17:14:31.655Z">
-    <div class="r-comment-body"><p>plan section 18 review - the gained commit 3099cdd74 renders the move figures sparsely for every pick (reckon/crew/picker/prompts.py:253-262): moved_in only when it holds a move and moved_off only when positive, so a move-free state is unchanged in size; goal met and scope held, but two follow-ons recorded - the source node&#x27;s base arm (gate-armed-base.log) never reached its summary line (exit 137) so the done-when&#x27;s against-the-base clause rests on the green head arm alone, and gate-head.log:1 names revision cbb15ee1a while its body carries the change.</p></div>
+    <div class="r-comment-body"><p>plan section 18 review - the gained commit 3099cdd74 renders the move figures sparsely for every pick (reckon/crew/picker/prompts.py:253-262): moved_in only when it holds a move and moved_off only when positive, so a move-free state is unchanged in size; goal met and scope held, but two follow-ons recorded - the source node's base arm (gate-armed-base.log) never reached its summary line (exit 137) so the done-when's against-the-base clause rests on the green head arm alone, and gate-head.log:1 names revision cbb15ee1a while its body carries the change.</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261016T151623426039-moves-render-for-every-pick" data-who="reckon-build" data-when="2026-10-16T16:57:09Z">
+    <div class="r-comment-body"><p>the picker&#x27;s candidate state renders moved_in and moved_off for every pick, beside outcomes_at_requirement when the request names a requirement and on their own when it names none, so a no-requirement pick shows Jev coordinator moves; both are rendered sparsely (moved_in only when it holds at least one move, moved_off only when it is greater than zero), so a candidate no coordinator moved a run onto or off carries neither key and a state with no moves is unchanged in size; over one moved row at a no-requirement request the receiving candidate&#x27;s moved_in reads 1 failed, the chosen candidate&#x27;s moved_off reads 1, and a third, move-free candidate carries neither key; the glossary and the prompts.py/types.py comments state both figures are read at the request&#x27;s requirement when it names one and over every move when it names none, and that an absent key means no coordinator moved a run onto, or off, that candidate in the window.</p></div>
 </div>
 </section>
 </main>
