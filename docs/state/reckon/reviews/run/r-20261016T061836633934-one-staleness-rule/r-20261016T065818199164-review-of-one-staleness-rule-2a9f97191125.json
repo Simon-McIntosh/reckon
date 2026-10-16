@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/picker/lane_context.py:793",
+    "reckon/crew/picker/prompts.py:263",
+    "reckon/crew/picker/prompts.py:341",
+    "reckon/crew/picker/__init__.py:317",
+    "reckon/crew/picker/__init__.py:346",
+    "reckon/crew/dispatch_picker.py:168",
+    "reckon/crew/picker/replay.py:47",
+    "reckon/crew/picker/replay.py:58"
+  ],
+  "completed_at": "2026-10-16T07:14:16.515Z",
+  "dispatched_at": "2026-10-16T06:58:47Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "tests/test_one_staleness_rule.py",
+      "line": 326,
+      "severity": "follow-on",
+      "text": "the re-age assertion advances the reading 800 s to 1145 s, past both the 900 s document bound and the 300 s flight bound, so it passes on a source-blind re-age and guards nothing the node claims; a delta landing between the bounds (100 s, 445 s total, which I verified reads expired False) is the case that would redden on that regression."
+    },
+    {
+      "file": "reckon/crew/paid_lanes.py",
+      "line": 408,
+      "severity": "follow-on",
+      "text": "compose_document emits no suggested_shelf_life_seconds, so _document_shelf_life_seconds returns None for the real paid-lanes document and the document's-own-shelf half of the new rule fires only on the test's synthetic document, leaving the flight-shelf fallback as that branch's only production effect."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T061836633934-one-staleness-rule/gate-head.log",
+      "line": 1,
+      "severity": "follow-on",
+      "text": "the gate log holds only a progress line and a count, with no revision, tree or command header and no EXIT= sentinel, so a reader cannot tell which revision produced the 8 passed the manifest cites."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read both commits against base f13ae18cb; 8b2182991 rewrites the staleness branch of lane_context._budget_block, adds _positive_number and _document_shelf_life_seconds, makes snapshot._compose_budget_report and _reage_budget_report delegate to the rule, adds budget_source to BudgetCandidate and states the three cases in the prompts glossary; 2a9f97191 adds the landing fragment.",
+    "done_when": "tests/test_one_staleness_rule.py is the named gate and the manifest records 8 passed; re-running that file at reviewed head 2a9f97191 in the source worktree reproduces 8 passed, and suite-head.log (297 passed) against suite-base.log (289 passed) carries no FAILED line either side, so 0 added failures; but gate-head.log carries no header naming revision, tree and command and no EXIT= line, so the log does not itself locate the revision it ran at.",
+    "goal": "The node goal is to judge every budget reading's staleness through one source-aware rule both surfaces call; reckon/crew/picker/lane_context.py:264 is now that single rule, and snapshot.py:561, snapshot.py:627 and lane_context.py:379 all delegate to it, with the candidate's own flag taken from the composed report's expired at snapshot.py:844.",
+    "manifest": "read manifest.md; it reads status: complete, names commits 8b2182991 and 2a9f97191, records tests/test_one_staleness_rule.py 8 passed, records a readable negative control (EXIT=1, three failing ids none of which fail at head) and base 289 / head 297 with 0 added failures; baseline_suite and after_suite are prose rather than the armed JSON shape, and retry_failures, artifacts and evidence_inputs are empty.",
+    "write_paths": "the manifest declares six paths (reckon/crew/picker/snapshot.py, lane_context.py, prompts.py, tests/test_one_staleness_rule.py, docs/evidence/fragments/jev-learns-from-its-routes/one-staleness-rule.html, and the figures directory); the diff changes the first five and adds no figure, so every changed path is inside the declaration."
+  },
+  "justifications": {
+    "durability": "the negative control at negative-control.log reinstates the source-blind compose and reddens three tests, so the compose assertions are independent, but tests/test_one_staleness_rule.py:326 advances the reading to 1145 s, past both the 900 s document bound and the 300 s flight bound, so a source-blind re-age passes it.",
+    "evidence": "tests/test_one_staleness_rule.py:211 covers the done_when's headline case and re-runs green at 2a9f97191, but gate-head.log:1 carries neither the revision and command header nor the EXIT= sentinel, so the stored result does not locate the revision it reports.",
+    "fit": "the added helper and comments at reckon/crew/picker/lane_context.py:230 keep the module's bool-excluding numeric-guard idiom and no added name, filename or comment carries a plan label.",
+    "goal_fidelity": "reckon/crew/picker/lane_context.py:264 is the single source-aware judgment and snapshot.py:844 takes the candidate's flag from the same composition the return-time block reads through lane_context.py:379, which is exactly the one rule the goal names.",
+    "reuse": "the change edits the picker's existing owner lane_context._budget_block in place rather than forking a second rule, but its document branch restates the document-shelf staleness judgment reckon/crew/lane_document.py:351 already owns for lane documents without extending that owner.",
+    "scope_discipline": "every path in the diff (reckon/crew/picker/snapshot.py, lane_context.py, prompts.py, tests/test_one_staleness_rule.py and the fragment) is inside the declared write paths and no figure was added, though the document-shelf machinery and the added report key at snapshot.py:571 exceed what the two surfaces' disagreement required."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-one-staleness-rule-2a9f97191125",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to judge every budget reading's staleness through one source-aware rule both surfaces call; reckon/crew/picker/lane_context.py:264 is now that single rule, and snapshot.py:561, snapshot.py:627 and lane_context.py:379 all delegate to it, with the candidate's own flag taken from the composed report's expired at snapshot.py:844.\nVERDICT done_when: tests/test_one_staleness_rule.py is the named gate and the manifest records 8 passed; re-running that file at reviewed head 2a9f97191 in the source worktree reproduces 8 passed, and suite-head.log (297 passed) against suite-base.log (289 passed) carries no FAILED line either side, so 0 added failures; but gate-head.log carries no header naming revision, tree and command and no EXIT= line, so the log does not itself locate the revision it ran at.\nVERDICT write_paths: the manifest declares six paths (reckon/crew/picker/snapshot.py, lane_context.py, prompts.py, tests/test_one_staleness_rule.py, docs/evidence/fragments/jev-learns-from-its-routes/one-staleness-rule.html, and the figures directory); the diff changes the first five and adds no figure, so every changed path is inside the declaration.\nVERDICT manifest: read manifest.md; it reads status: complete, names commits 8b2182991 and 2a9f97191, records tests/test_one_staleness_rule.py 8 passed, records a readable negative control (EXIT=1, three failing ids none of which fail at head) and base 289 / head 297 with 0 added failures; baseline_suite and after_suite are prose rather than the armed JSON shape, and retry_failures, artifacts and evidence_inputs are empty.\nVERDICT diff: read both commits against base f13ae18cb; 8b2182991 rewrites the staleness branch of lane_context._budget_block, adds _positive_number and _document_shelf_life_seconds, makes snapshot._compose_budget_report and _reage_budget_report delegate to the rule, adds budget_source to BudgetCandidate and states the three cases in the prompts glossary; 2a9f97191 adds the landing fragment.\nCALL_SITES: reckon/crew/picker/lane_context.py:793, reckon/crew/picker/prompts.py:263, reckon/crew/picker/prompts.py:341, reckon/crew/picker/__init__.py:317, reckon/crew/picker/__init__.py:346, reckon/crew/dispatch_picker.py:168, reckon/crew/picker/replay.py:47, reckon/crew/picker/replay.py:58\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/lane_context.py:264 is the single source-aware judgment and snapshot.py:844 takes the candidate's flag from the same composition the return-time block reads through lane_context.py:379, which is exactly the one rule the goal names.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_one_staleness_rule.py:211 covers the done_when's headline case and re-runs green at 2a9f97191, but gate-head.log:1 carries neither the revision and command header nor the EXIT= sentinel, so the stored result does not locate the revision it reports.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/picker/snapshot.py, lane_context.py, prompts.py, tests/test_one_staleness_rule.py and the fragment) is inside the declared write paths and no figure was added, though the document-shelf machinery and the added report key at snapshot.py:571 exceed what the two surfaces' disagreement required.\nSCORE durability: 15\nJUSTIFICATION durability: the negative control at negative-control.log reinstates the source-blind compose and reddens three tests, so the compose assertions are independent, but tests/test_one_staleness_rule.py:326 advances the reading to 1145 s, past both the 900 s document bound and the 300 s flight bound, so a source-blind re-age passes it.\nSCORE fit: 18\nJUSTIFICATION fit: the added helper and comments at reckon/crew/picker/lane_context.py:230 keep the module's bool-excluding numeric-guard idiom and no added name, filename or comment carries a plan label.\nSCORE reuse: 17\nJUSTIFICATION reuse: the change edits the picker's existing owner lane_context._budget_block in place rather than forking a second rule, but its document branch restates the document-shelf staleness judgment reckon/crew/lane_document.py:351 already owns for lane documents without extending that owner.\nFINDING tests/test_one_staleness_rule.py:326 follow-on: the re-age assertion advances the reading 800 s to 1145 s, past both the 900 s document bound and the 300 s flight bound, so it passes on a source-blind re-age and guards nothing the node claims; a delta landing between the bounds (100 s, 445 s total, which I verified reads expired False) is the case that would redden on that regression.\nFINDING reckon/crew/paid_lanes.py:408 follow-on: compose_document emits no suggested_shelf_life_seconds, so _document_shelf_life_seconds returns None for the real paid-lanes document and the document's-own-shelf half of the new rule fires only on the test's synthetic document, leaving the flight-shelf fallback as that branch's only production effect.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T061836633934-one-staleness-rule/gate-head.log:1 follow-on: the gate log holds only a progress line and a count, with no revision, tree or command header and no EXIT= sentinel, so a reader cannot tell which revision produced the 8 passed the manifest cites.\n",
+  "review_run_id": "r-20261016T065818199164-review-of-one-staleness-rule-2a9f97191125",
+  "reviewed_base_sha": "f13ae18cb740c056d88bd723f6969e0ead5fc609",
+  "reviewed_head_sha": "2a9f9719112575e160786f6cf8c534c65025d82a",
+  "reviewed_run_id": "r-20261016T061836633934-one-staleness-rule",
+  "reviewer_run_id": "r-20261016T065818199164-review-of-one-staleness-rule-2a9f97191125",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 18
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T061836633934-one-staleness-rule/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/7f3919e9-ce61-40b0-8920-63dbc823179b/one-staleness-rule",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T07:16:27.756774+00:00",
+  "total": 102
+}

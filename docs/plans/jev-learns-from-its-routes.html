@@ -26,7 +26,7 @@
   <title>Jev Learns From Its Routes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -378,6 +378,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-s5-fold-sites" data-who="reckon-build" data-when="2026-10-16T06:20:00Z">
     <div class="r-comment-body"><p>Design review <code>r-20261016T060516832154</code>, duplicate_owner-2, answered acted: the section's "one function" covers every site that computes a candidate's staleness. Today the rule is computed in three places: <code>lane_context._budget_block</code> (the source-aware owner to extend with the document case), <code>snapshot.py</code> <code>_compose_budget_report</code>, and <code>snapshot.py</code> <code>_reage_budget_report</code>. Both snapshot sites fold onto the owner, and no fourth computation is added.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261016T065818199164-review-of-one-staleness-rule-2a9f97191125" data-who="reckon-build" data-when="2026-10-16T07:14:16.515Z">
+    <div class="r-comment-body"><p>review-of-one-staleness-rule-2a9f97191125: independent review of one-staleness-rule at head 2a9f97191 scores 19/15/18/15/18/17 over goal_fidelity/evidence/scope_discipline/durability/fit/reuse (total 102), with three follow-on findings and no blocking finding; the node&#x27;s gate reproduces (tests/test_one_staleness_rule.py, 8 passed, EXIT=0)</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-s3-revise-before-dispatch" data-who="reckon-build" data-when="2026-10-16T06:20:00Z">
     <div class="r-comment-body"><p>Design review <code>r-20261016T060516832154</code>, duplicate_owner-3, deferred to this section's revision before dispatch. <code>reckon/crew/picker/outcomes.py</code> already groups routed outcomes by the requirement's risk, and <code>reckon/crew/lane_evidence.py</code> owns shape-conditioned lane evidence. The revision names both and states why the picker's per-candidate block remains a separate consumer, or extends one of them.</p></div>
