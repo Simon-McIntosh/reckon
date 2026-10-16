@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:_discover_plans_uncached",
+    "reckon/serve.py:_read_readiness_uncached",
+    "reckon/mcp_discovery.py:discover_plans"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-16T20:26:43Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "746dce455 only removes metadata_index.parsed_state, which nothing in reckon/ or tests/ calls, so no test outcome moves between the logged tree and the reviewed head; the importer population at the merge candidate is measured by run r-20261016T212928840993 in git checkouts whose logs name their revisions",
+      "recorded_at": "2026-10-16T21:54:44.954892+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T202538393252-a-fresh-process-reuses-the-plan-parse/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest states the named test ran at head 746dce455, but the log it records (logs/fresh-parse-tests.log) carries no revision header and was written at 23:39, before the commit at 23:40, and the head arm log logs/all_head.log was taken at 23:11 over the uncommitted working tree; neither log names the reviewed head, so the suite evidence is traceable to the working tree rather than to the commit the manifest cites."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 746dce455 against 73155abc commit by commit; it is a single 19-line deletion of metadata_index.parsed_state, adding nothing, and no file references the removed name afterwards.",
+    "done_when": "the done_when names tests/test_a_fresh_process_reuses_the_plan_parse.py and its store-bypassed negative control; the manifest records 5 passed EXIT=0 for that file and 3 failing cases for the control, and I re-ran the named file at head 746dce455 and it reports 5 passed, EXIT=0.",
+    "goal": "the node goal is to make a fresh process read each plan's parsed discovery and readiness state from the persisted metadata index, re-parsing only changed files; the gained commit deletes metadata_index.parsed_state, the second, uncalled accessor to a persisted parse, leaving the one route the goal's reuse path uses.",
+    "manifest": "read; it names the three commits ending at 746dce455, the named test's 5 passed, the store-bypassed negative control and the 74-file arm logs.",
+    "write_paths": "the manifest declares reckon/serve.py, reckon/metadata_index.py, reckon/_plan_html.py, the new test file and the evidence fragment; the gained diff touches only reckon/metadata_index.py, inside that scope and inside the plan's own write paths."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion, so reinstating metadata_index.parsed_state would fail no test; the guard is the absence of any reference, not a test.",
+    "evidence": "the named gate file ran green at head, but the run's head arm log logs/all_head.log names no revision and predates 746dce455, so the recorded suite evidence is not tied to the reviewed head.",
+    "fit": "the removal leaves reckon/metadata_index.py reading state through the shared parse idiom it already uses at lines 694 and 728, and introduces no name.",
+    "goal_fidelity": "reckon/metadata_index.py no longer offers a second, uncalled route to the persisted parse, so the module keeps only the one the goal's reuse path reaches through reckon/serve.py:2301.",
+    "reuse": "deleting parsed_state() consolidates on the parse owner at reckon/_plan_html.py:1425 rather than duplicating its capability.",
+    "scope_discipline": "git show --stat 746dce455 lists only reckon/metadata_index.py with 19 deletions, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a fresh process read each plan's parsed discovery and readiness state from the persisted metadata index, re-parsing only changed files; the gained commit deletes metadata_index.parsed_state, the second, uncalled accessor to a persisted parse, leaving the one route the goal's reuse path uses.\nVERDICT done_when: the done_when names tests/test_a_fresh_process_reuses_the_plan_parse.py and its store-bypassed negative control; the manifest records 5 passed EXIT=0 for that file and 3 failing cases for the control, and I re-ran the named file at head 746dce455 and it reports 5 passed, EXIT=0.\nVERDICT write_paths: the manifest declares reckon/serve.py, reckon/metadata_index.py, reckon/_plan_html.py, the new test file and the evidence fragment; the gained diff touches only reckon/metadata_index.py, inside that scope and inside the plan's own write paths.\nVERDICT manifest: read; it names the three commits ending at 746dce455, the named test's 5 passed, the store-bypassed negative control and the 74-file arm logs.\nVERDICT diff: read 746dce455 against 73155abc commit by commit; it is a single 19-line deletion of metadata_index.parsed_state, adding nothing, and no file references the removed name afterwards.\nCALL_SITES: reckon/serve.py:_discover_plans_uncached, reckon/serve.py:_read_readiness_uncached, reckon/mcp_discovery.py:discover_plans\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/metadata_index.py no longer offers a second, uncalled route to the persisted parse, so the module keeps only the one the goal's reuse path reaches through reckon/serve.py:2301.\nSCORE evidence: 14\nJUSTIFICATION evidence: the named gate file ran green at head, but the run's head arm log logs/all_head.log names no revision and predates 746dce455, so the recorded suite evidence is not tied to the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 746dce455 lists only reckon/metadata_index.py with 19 deletions, all inside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: the diff adds no assertion, so reinstating metadata_index.parsed_state would fail no test; the guard is the absence of any reference, not a test.\nSCORE fit: 20\nJUSTIFICATION fit: the removal leaves reckon/metadata_index.py reading state through the shared parse idiom it already uses at lines 694 and 728, and introduces no name.\nSCORE reuse: 20\nJUSTIFICATION reuse: deleting parsed_state() consolidates on the parse owner at reckon/_plan_html.py:1425 rather than duplicating its capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T202538393252-a-fresh-process-reuses-the-plan-parse/manifest.md:15 follow-on: the manifest states the named test ran at head 746dce455, but the log it records (logs/fresh-parse-tests.log) carries no revision header and was written at 23:39, before the commit at 23:40, and the head arm log logs/all_head.log was taken at 23:11 over the uncommitted working tree; neither log names the reviewed head, so the suite evidence is traceable to the working tree rather than to the commit the manifest cites.\nreviewed_base_sha: 73155abc596156d03e1d7d9e3886f693747bd024\nreviewed_head_sha: 746dce455e8e8e133aca418918d106924a424bc2\n",
+  "review_run_id": "legacy-aa6960303152",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "73155abc596156d03e1d7d9e3886f693747bd024",
+  "reviewed_head_sha": "746dce455e8e8e133aca418918d106924a424bc2",
+  "reviewed_run_id": "r-20261016T202538393252-a-fresh-process-reuses-the-plan-parse",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T21:50:09.723282+00:00",
+  "total": 107
+}
