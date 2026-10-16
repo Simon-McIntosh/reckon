@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "79325b6b87d1d7e28eb1a0cdaa46de9d41df5210",
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/runs.py:2297",
+    "reckon/crew/runs.py:2437",
+    "reckon/crew/runs.py:2829",
+    "reckon/crew/runs.py:2988",
+    "reckon/crew_follow_commands.py:241",
+    "reckon/crew_follow_commands.py:327",
+    "reckon/mcp.py:266",
+    "reckon/mcp.py:292",
+    "reckon/crew/obligation_snapshot.py:471"
+  ],
+  "completed_at": "2026-10-16T23:28:20.842Z",
+  "dispatched_at": "2026-10-16T23:15:51Z",
+  "findings": [],
+  "head_log_revision": "c41684d2ac6a9648e9afd5d99e835fc7e2269894",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "Read both commits (c41684d2, 6d5666b8) against base 79325b6b; the fix moves the stamp onto code_stamp and the doc commit adds the evidence fragment, and no code file differs between the two.",
+    "done_when": "The done_when names tests/test_a_launch_code_change_reloads_the_producer.py; I re-ran that file at the reviewed head for 3 passed exit 0, and the manifest records it in a 59-passed head gate plus a base-tree negative control that reddens the advance case.",
+    "goal": "The node goal is one package-wide source stamp that reloads the producer on a change to any reckon module; reckon/crew/obligation_snapshot.py:400 defines code_stamp over sorted(root.rglob(\"*.py\")) and both former callers read it (reckon/crew/follower_registration.py:36, reckon/crew/obligation_snapshot.py:429).",
+    "manifest": "Read; it records status complete, the head gate at c41684d2 for 59 passed exit 0, the base-tree negative control at 79325b6b for 1 failed exit 1, and the importer population as a coordinator-at-merge follow-on.",
+    "write_paths": "The manifest declares four paths and the diff's four changed files are exactly those: reckon/crew/obligation_snapshot.py, reckon/crew/follower_registration.py, tests/test_a_launch_code_change_reloads_the_producer.py, docs/evidence/fragments/a-worker-cannot-write-your-home/a-launch-code-change-reloads-the-producer.html."
+  },
+  "justifications": {
+    "durability": "tests/test_a_launch_code_change_reloads_the_producer.py:69 reddens at base because the base stamp ignores _worker_fence.py and :80 pins content-vs-mtime keying, while the agreement case at :96 guards only a future re-fork.",
+    "evidence": "tests/test_a_launch_code_change_reloads_the_producer.py passes 3 at the reviewed head and the base-tree arm records 1 failed exit 1 in the run's negative-control.log, with the importer-population clause the coordinator's at merge.",
+    "fit": "code_stamp, _source_digests and _source_content_digest are mechanism-named, both commits carry a conventional subject and a body, and ruff check plus ruff format --check pass on the three changed Python files.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:413 hashes every module under the package and both callers delegate to it at follower_registration.py:36 and obligation_snapshot.py:429.",
+    "reuse": "the change extends the existing owner reckon/crew/obligation_snapshot.py:400 rather than forking it; a search for package-wide hashing found reckon/served_code.py:82, reckon/crew_follow_commands.py:185 and reckon/crew/dispatch_peer.py:55, none of which owns a reload stamp.",
+    "scope_discipline": "every path in the diff (obligation_snapshot.py, follower_registration.py, the new test, the evidence fragment) lies inside the manifest's four declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is one package-wide source stamp that reloads the producer on a change to any reckon module; reckon/crew/obligation_snapshot.py:400 defines code_stamp over sorted(root.rglob(\"*.py\")) and both former callers read it (reckon/crew/follower_registration.py:36, reckon/crew/obligation_snapshot.py:429).\nVERDICT done_when: The done_when names tests/test_a_launch_code_change_reloads_the_producer.py; I re-ran that file at the reviewed head for 3 passed exit 0, and the manifest records it in a 59-passed head gate plus a base-tree negative control that reddens the advance case.\nVERDICT write_paths: The manifest declares four paths and the diff's four changed files are exactly those: reckon/crew/obligation_snapshot.py, reckon/crew/follower_registration.py, tests/test_a_launch_code_change_reloads_the_producer.py, docs/evidence/fragments/a-worker-cannot-write-your-home/a-launch-code-change-reloads-the-producer.html.\nVERDICT manifest: Read; it records status complete, the head gate at c41684d2 for 59 passed exit 0, the base-tree negative control at 79325b6b for 1 failed exit 1, and the importer population as a coordinator-at-merge follow-on.\nVERDICT diff: Read both commits (c41684d2, 6d5666b8) against base 79325b6b; the fix moves the stamp onto code_stamp and the doc commit adds the evidence fragment, and no code file differs between the two.\nCALL_SITES: reckon/crew/runs.py:2297, reckon/crew/runs.py:2437, reckon/crew/runs.py:2829, reckon/crew/runs.py:2988, reckon/crew_follow_commands.py:241, reckon/crew_follow_commands.py:327, reckon/mcp.py:266, reckon/mcp.py:292, reckon/crew/obligation_snapshot.py:471\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:413 hashes every module under the package and both callers delegate to it at follower_registration.py:36 and obligation_snapshot.py:429.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_a_launch_code_change_reloads_the_producer.py passes 3 at the reviewed head and the base-tree arm records 1 failed exit 1 in the run's negative-control.log, with the importer-population clause the coordinator's at merge.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (obligation_snapshot.py, follower_registration.py, the new test, the evidence fragment) lies inside the manifest's four declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_launch_code_change_reloads_the_producer.py:69 reddens at base because the base stamp ignores _worker_fence.py and :80 pins content-vs-mtime keying, while the agreement case at :96 guards only a future re-fork.\nSCORE fit: 20\nJUSTIFICATION fit: code_stamp, _source_digests and _source_content_digest are mechanism-named, both commits carry a conventional subject and a body, and ruff check plus ruff format --check pass on the three changed Python files.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner reckon/crew/obligation_snapshot.py:400 rather than forking it; a search for package-wide hashing found reckon/served_code.py:82, reckon/crew_follow_commands.py:185 and reckon/crew/dispatch_peer.py:55, none of which owns a reload stamp.\n",
+  "review_run_id": "r-20261016T231520985831-review-of-a-launch-code-change-reloads-the-producer-6d5666b8012e",
+  "reviewed_base_sha": "79325b6b87d1d7e28eb1a0cdaa46de9d41df5210",
+  "reviewed_head_sha": "6d5666b8012e2011632a173ca6ed2748972a259e",
+  "reviewed_run_id": "r-20261016T223825166477-a-launch-code-change-reloads-the-producer",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T23:24:53.079309+00:00",
+  "total": 118
+}
