@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T07:37:43.793Z",
+  "dispatched_at": "2026-10-16T07:31:36Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/jev-learns-from-its-routes.html:24",
+      "id": "wiring-1",
+      "reason": "the coordinator would dispatch \u00a76 and \u00a710 in parallel on a false disjointness claim, and the plan needs a depends-on edge (and the matching followup wording) serializing one after the other.",
+      "text": "`plan-section-depends-on` carries no edge between s6 and s10 and f-jlr-002 states the two \"write disjoint files and can run together\", but \u00a76's write paths name `reckon/crew/paid_lanes.py` (the run-home search only) and \u00a710's write paths name `reckon/crew/paid_lanes.py`, so dispatching the wave as the followup orders it puts two workers in one file concurrently",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "da68b30eccf26907b7deb73c5f6497172978056f8de26161093207b74f8d1611",
+  "plan_slug": "jev-learns-from-its-routes",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T073059142118-plan-review-of-jev-learns-from-its-routes",
+  "reviewed_blob_sha": "8a81245a9512ca28bc39e4f12b5db3f947f6bb55",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor in the in-scope units resolves: the splice at `reckon/crew/picker/__init__.py:456` and `htmlsafe_json_dumps` at :276/:295, `build_state` at `reckon/crew/picker/prompts.py:211`, `_compose_budget_report`/`_reage_budget_report`/`budget_view` in `snapshot.py`, `_budget_block` in `lane_context.py`, `compose_document`/`REFRESH_INTERVAL` in `paid_lanes.py`, `lane-and-model-routing` \u00a727 (which does write `lane_context.py` and `prompts.py`), the cited review total 97 (18+16+17+18+16+12), and the evidence page `docs/evidence/archive/jev-learns-from-its-routes-landed.html`.",
+    "done_when": "pass \u2014 \u00a79, \u00a710 and \u00a711 each name a negative control that can fail (restore \"never stale by age\"; omit the published shelf-life key; restore the post-render splice), and each names the assertion that must then fail.",
+    "evidence_paths": "pass \u2014 no in-scope section places evidence in a session scratchpad or a node-local temporary path; \u00a710's assertion runs through the landed `lane_context._budget_block`, and the landed record is the archive page named in the close comments.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the new symbols (`suggested_shelf_life_seconds`, the tests' file names, `build_state`), and no changelog prose.",
+    "reasoning": "pass \u2014 each in-scope mechanism produces its done-when on the real path: \u00a79's rule is computed by the single owner `lane_context._budget_block` (`snapshot.py:535`, `:611`) whose `expired` flag feeds the ceiling gate at `snapshot.py:890-897`; \u00a710 adds the top-level `suggested_shelf_life_seconds` that `lane_context._document_shelf_life_seconds` reads; \u00a711 moves the assessment into `build_state`, the state's encoder, deleting the splice at `picker/__init__.py:456`. The stated root causes match the code: `compose_document` returns no shelf-life key, and the splice exists as described.",
+    "single_goal": "pass \u2014 \u00a79 (account-surface reading ages from its probe), \u00a710 (the document states its own shelf life) and \u00a711 (one encoder owns the state) each carry one deliverable with one verdict.",
+    "wiring": "a finding \u2014 f-jlr-002 declares \u00a73, \u00a76, \u00a77, \u00a78 and \u00a710 write disjoint files and can run together, but \u00a76 and \u00a710 both write `reckon/crew/paid_lanes.py`, and no `plan-section-depends-on` edge serializes them."
+  },
+  "section_digests": {
+    "_document": "396c8874179b182e9ed2fa3f9b809eb0c56dbb001422af72c7ceccb878aee72f",
+    "s1": "a8d94897c0a90e9cd66d3e5c67d6aca0aeb94d26a49bd944098a8d70a151ca34",
+    "s10": "0d42b606fb481de5ba3425ebbe60d11d1d0fa95c234be3787770a652d68b4bd7",
+    "s11": "403c9ebb80e8d39b6f9944fe5bd76edc62c59efc805c7b8906df46c317cc323c",
+    "s2": "cc35fef7cc2d6ce0af14220bc78602ca25e960978e3dd3efb5979ca5e3c14917",
+    "s3": "807cb056a055ab721cde0a5a171037e4f1dfecdb1d6a1d5d2c4e5babde307811",
+    "s4": "828939c295d01d9b6fa0e90760eeee37626b612fb8414928adedddbb83f7238b",
+    "s5": "6cff1e7bf68d8874d67225b968adb4aeea6828a4800ac65b4676edd703eb6a52",
+    "s6": "52a8aac92b5fb5f13ab9b1a64209356dd2469cac4df0bd6b230fe7d1a711d131",
+    "s7": "54c7b27c70ed529203f4484e6ad6fcca22fb6679577180b9364a8e92bd5fc7a7",
+    "s8": "652e49cdb77f02dc989a56ae626a1a124b80a5633e0c0f60319d4d4456a875d4",
+    "s9": "4a7f10635f6026036ecc6293a36261d0f1a5a77b026b7cd40d60ed92de631a92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T07:39:08.312163+00:00"
+}
