@@ -1959,9 +1959,18 @@ def _scope_slugs(
     plans: dict[str, dict[str, Any]],
     membership: dict[str, list[str]],
     sprint_id: str | None,
-) -> set[str]:
+) -> list[str]:
+    """Return the slugs in scope, in a stable slug order.
+
+    The roadmap report visits its plans in the order this returns, appending
+    decision-blocker and wiring rows as it goes. A set here made that order
+    depend on the process hash seed, so two reads of an unchanged project
+    emitted the same rows in different orders. Sorting by slug derives the
+    order from the plan identity instead.
+    """
+
     if not sprint_id:
-        return set(plans)
+        return sorted(plans)
     selected = {
         slug
         for slug, plan in plans.items()
@@ -1982,7 +1991,7 @@ def _scope_slugs(
             ):
                 selected.add(parsed.slug)
                 pending.append(parsed.slug)
-    return selected
+    return sorted(selected)
 
 
 def _qualified_plan(project: str, slug: str) -> str:

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s15">
+  <meta name="plan-recorded-at" content="2026-10-16">
+  <meta name="plan-verdict" content="passed">
+  <title>The roadmap's lists come out in one order | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-roadmap-lists-come-out-in-one-order-landing" data-node="the-roadmap-lists-come-out-in-one-order" data-reckon="landed" data-when="2026-10-16">
+  <h2>The roadmap's lists come out in one order</h2>
+  <p><code>_scope_slugs</code> returned a <code>set</code>, so the order in which the roadmap report visited plans — and appended <code>decision_blockers</code> and <code>wiring_findings</code> — depended on the process hash seed. It now returns the slugs sorted by plan identity, so two reads of an unchanged project emit the same rows in the same order. <code>tests/test_the_roadmap_lists_come_out_in_one_order.py</code> renders one fixed docs tree in two subprocesses under seeds 1 and 104729 and requires the JSON byte-identical: 1 passed, EXIT=0, and 411 tests across the 40 roadmap-importing files passed at head as at base (EXIT=0 each). Negative control — the order key removed (<code>_scope_slugs</code> back to a set) — gave 1 failed, EXIT=1.</p>
+</article>
+</body>
+</html>
