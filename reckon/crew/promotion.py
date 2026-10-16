@@ -839,7 +839,13 @@ def _complete_locked(
     wall_seconds = _elapsed_seconds(record.get("created_at"), finished)
     stalled = _wall_exceeded_budget(wall_seconds, node.get("time_budget"))
     worker_seconds = stream.worker_seconds
-    if worker_seconds is not None:
+    if stream.rollout_seconds is not None:
+        # A codex receipt measures the model span the exec stream cannot: its
+        # own wall span is authoritative over the stream's absence, on a normal
+        # finish and on a stalled one alike, so it is read before the fallbacks.
+        worker_seconds = stream.rollout_seconds
+        worker_seconds_source = "rollout_receipt"
+    elif worker_seconds is not None:
         worker_seconds_source = "stream_events"
     elif stream.completion_source == "stream_mtime" and stalled:
         worker_seconds_source = "stalled"
