@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="jev-learns-from-its-routes">
   <meta name="plan-title" content="Jev Learns From Its Routes">
-  <meta name="plan-summary" content="Jev weighs a node's requirement against outcomes read at that requirement, counts coordinator moves against its picks, and reads staleness one way.">
+  <meta name="plan-summary" content="Jev weighs a node&#x27;s requirement against outcomes read at that requirement, counts coordinator moves against its picks, and reads staleness one way.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="9.25">
@@ -26,6 +26,8 @@
   <title>Jev Learns From Its Routes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="2">
+<meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
   <main class="plan-doc">
@@ -96,7 +98,7 @@
         </tr>
         <tr>
           <td>A paired arm exists but nothing compares it</td>
-          <td><code>reckon crew shadow --run &lt;committed run&gt; --backend &lt;lane&gt;</code> re-runs a committed run at
+          <td><code>reckon crew shadow --run &lt;committed run&gt; --session &lt;session&gt; --backend &lt;lane&gt;</code> re-runs a committed run at
           its base on another lane (verified as a dry run on <code>fused-convergence</code>). The outcomes report
           excludes shadow rows, and nothing sets a primary beside its shadow.</td>
           <td><code>reckon/crew/picker/outcomes.py</code></td>
@@ -189,8 +191,8 @@
       <code>unrecorded</code> only. The rendered state carries the block, and its glossary entry is present. The
       negative control drops the requirement filter, so both lanes' blocks equal their pooled counts and the
       assertion on A must fail. The test files importing <code>snapshot.py</code> or <code>prompts.py</code> show no
-      added failure against the base revision, and a pick's <code>snapshot_ms</code> on the test fixture is within 10%
-      of the base revision's figure.
+      added failure against the base revision. A test patches <code>_candidates_scan</code> to count its calls and finds
+      exactly one per pick, so the new block adds no second pass over the rows.
     </p>
 
     <h2 id="s4">§4 — A coordinator's move off Jev's pick counts against that pick, not for the lane it landed on</h2>
@@ -260,32 +262,43 @@
       <code>lane_context.py</code> show no added failure against the base revision.
     </p>
 
-    <h2 id="s6">§6 — Codex worker time is measured from its own stream</h2>
+    <h2 id="s6">§6 — Codex worker time is measured from its rollout receipt</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p>
       <strong>Why.</strong> The lead's direction asks Jev to weigh recent throughput per lane and model. A codex run's
-      <code>worker_seconds</code> is the run's wall time on a normal finish and absent on a stalled one, because the
-      stream measures find no worker time in the codex event schema. Nova's codex-lane implement runs this month record
+      <code>worker_seconds</code> is the run's wall time on a normal finish and absent on a stalled one. The stream
+      measures take worker time from event timestamps (<code>cached_stream_timestamp_bounds</code> in
+      <code>reckon/_backends.py</code>), and a codex stream's events carry none: none of 83 codex streams under the crew
+      home has a <code>timestamp</code> field. Nova's codex-lane implement runs this month record
       <code>stream_events</code> on 6 of 108. So codex throughput is either wall time or unknown, while clive's is
-      measured.
+      measured. Codex's own measurement exists elsewhere: the client rollout receipt carries
+      <code>generation_seconds</code> and <code>machine_seconds</code>, which <code>_apply_receipt_to_throughput</code>
+      folds into a live throughput block. No promoted codex row in nova this month carries <code>machine_seconds</code>,
+      so the receipt does not reach the committed record.
     </p>
     <p>
-      <strong>Deliverable.</strong> The stream measures read worker time from a codex stream's own events and record
-      <code>worker_seconds_source</code> <code>stream_events</code>, as they already do for the claude-format streams
-      clive and claude write. A codex stream that carries no usable timing still falls back as today.
+      <strong>Deliverable.</strong> At promotion, a codex run whose stream carries no event timestamps takes its
+      <code>worker_seconds</code> from the client rollout receipt's <code>machine_seconds</code>, through the same receipt
+      reader <code>_apply_receipt_to_throughput</code> is fed from. It records <code>worker_seconds_source</code>
+      <code>rollout_receipt</code>, and the promoted throughput block carries the receipt's
+      <code>generation_seconds</code> and <code>machine_seconds</code>. A stalled codex run whose receipt covers it is
+      measured the same way. A run with no readable receipt falls back as today. Claude-format streams are unchanged.
     </p>
     <p>
-      <strong>Write paths.</strong> <code>reckon/crew/promotion_checks.py</code> and
-      <code>tests/test_codex_worker_time_is_measured.py</code>. Read the codex stream shape from a real run's
-      <code>stream.jsonl</code> under the crew home before writing the fixture, and cite that run in the test's
-      docstring.
+      <strong>Write paths.</strong> <code>reckon/crew/promotion_checks.py</code>, <code>reckon/crew/promotion.py</code> and
+      <code>tests/test_codex_worker_time_is_measured.py</code>. First confirm from a real codex run of this week that its
+      rollout receipt is readable at the moment promotion runs: under a fenced run, the rollout lives in that run's own
+      harness home. Cite that run in the test's docstring. If no real run's receipt is readable at promotion, report
+      <code>blocked</code> with what was found, rather than measuring something else.
     </p>
     <p>
-      <strong>Done when</strong> a test promotes a fixture codex stream, copied in shape from a real codex run with its
-      content trimmed, and finds <code>worker_seconds</code> equal to the span the stream's own events state and
-      <code>worker_seconds_source</code> <code>stream_events</code>. A claude-format fixture still yields its existing
-      figure. The negative control removes the codex branch, and the codex fixture must then record
-      <code>wall_fallback</code>. The test files importing <code>promotion_checks.py</code> show no added failure
+      <strong>Done when</strong> a test promotes a fixture codex run whose stream and rollout receipt are copied in shape
+      from a real codex run, with content trimmed. It finds <code>worker_seconds</code> equal to the receipt's
+      <code>machine_seconds</code> and <code>worker_seconds_source</code> <code>rollout_receipt</code>, on a normal
+      finish and on a stalled one. A codex fixture with no receipt still records <code>wall_fallback</code>, and a
+      claude-format fixture still yields its existing figure. The manifest reports the figure the new path gives for one
+      real codex run of this week, beside that run's recorded wall time. The negative control removes the receipt
+      branch, and the codex fixture must then record <code>wall_fallback</code>. The test files importing <code>promotion_checks.py</code> show no added failure
       against the base revision.
     </p>
 
@@ -315,25 +328,25 @@
     </p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="assessment-beside-declared" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Does the orchestrator's difficulty assessment sit beside the section's declared capability in Jev's state, or replace it for the pick?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="beside">Beside the declared capability (recommended)</button>
-          <button class="r-opt" data-value="replace">Replace the declared capability</button>
-        </p>
-        <p class="r-dec-rat">Beside keeps both facts visible: the plan's authored requirement and the coordinator's reading at dispatch. Jev weighs the disagreement, and §3 can still condition history on the declared requirement, which is the stable, reviewed one. Replacing would let one dispatch flag silently rewrite the requirement that history is keyed on.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="assessment-beside-declared" data-choice="beside" data-by="Simon McIntosh" data-when="2026-10-16T05:42:29+00:00">
+    <p class="r-dec-q">Does the orchestrator&#x27;s difficulty assessment sit beside the section&#x27;s declared capability in Jev&#x27;s state, or replace it for the pick?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="beside">Beside the declared capability (recommended)</button>
+      <button class="r-opt" data-value="replace">Replace the declared capability</button>
+      </p>
+    <p class="r-dec-rat">Jev sees the section&#x27;s declared capability and the coordinator&#x27;s assessment side by side and weighs any disagreement; outcome history stays keyed on the declared, reviewed requirement. Chosen by the lead on 2026-10-16.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-jlr-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-16">
-        <h4 class="r-fu-title">Build §2, §5, §6 and §7 in parallel; §3 after §2; §4 after §3</h4>
-        <div class="r-fu-body"><p>§2, §5, §6 and §7 write disjoint files. §3 reads the requirement §2 records and shares <code>snapshot.py</code> with §5, so it runs after both. §4 shares <code>snapshot.py</code> with §3 and runs last. The decision on the orchestrator assessment settles §2's shape.</p></div>
-        <pre class="r-fu-prompt">/reckon-build jev-learns-from-its-routes §2</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-jlr-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2, §5, §6 and §7 in parallel; §3 after §2; §4 after §3</h4>
+    <div class="r-fu-body"><p>§2, §5, §6 and §7 write disjoint files. §3 reads the requirement §2 records and shares <code>snapshot.py</code> with §5, so it runs after both. §4 shares <code>snapshot.py</code> with §3 and runs last. The decision on the orchestrator assessment settles §2's shape.</p></div>
+    <pre class="r-fu-prompt">/reckon-build jev-learns-from-its-routes §2</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>
