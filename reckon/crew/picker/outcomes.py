@@ -22,7 +22,7 @@ from pathlib import Path
 from statistics import median
 from typing import Any
 
-from reckon import flight, ledger
+from reckon import capabilities, flight, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew.run_time_profile import _number, _percentile, run_time_profile
 from reckon.crew.runs import crew_home
@@ -443,6 +443,29 @@ def summarize(
                         else None,
                     }
                 )
+    paired_arms: list[dict[str, Any]] = []
+    unpaired_arms: list[dict[str, Any]] = []
+    for project, rows in sorted(rows_by_project.items()):
+        committed = [row for row in rows if isinstance(row, Mapping)]
+        # The report window reads a shadow row's own completion time, exactly
+        # as the counts above do, so the pair block shares one window.
+        in_window: set[str] = set()
+        for row in committed:
+            stamp = parse_utc(row.get("completed_at"))
+            if boundary is None or (stamp is not None and stamp >= boundary):
+                in_window.add(str(row.get("run_id") or ""))
+        paired, unpaired = capabilities.pair_shadow_arms(committed)
+        paired_arms.extend(
+            {"project": project, **entry}
+            for entry in paired
+            if entry["shadow"]["run_id"] in in_window
+        )
+        unpaired_arms.extend(
+            {"project": project, **entry}
+            for entry in unpaired
+            if entry["shadow"]["run_id"] in in_window
+        )
+
     group_rows: list[dict[str, Any]] = []
     for (project, backend, role, spec, risk, attribution), members in sorted(
         groups.items(), key=lambda item: str(item[0])
@@ -560,6 +583,7 @@ def summarize(
             "window": "since is inclusive on run completed_at and hold held_at",
             "latency": "p50 is median; p90 is nearest-rank percentile",
             "repair_or_resume": "attempt kind repair, resume, or redispatch, or a repair/resume remedy",
+            "paired_arms": "one entry per committed shadow row whose lineage names a committed primary; controlled is the sole control predicate, and a confounded pair is listed with controlled false; a shadow whose primary is not committed is listed under unpaired",
             "profile": "14-day run-time profile; backend, role and spec; largest effort cohort",
             "missing": "unknown outcomes and absent numeric values are excluded from rate denominators",
         },
@@ -595,6 +619,8 @@ def summarize(
         "approximate_outcomes": [
             group for group in group_rows if group["attribution"] == "approximate"
         ],
+        "paired_arms": paired_arms,
+        "unpaired": unpaired_arms,
         "calibration": {
             name: {
                 "count": len(calibration[name]),

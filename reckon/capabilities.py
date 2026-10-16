@@ -957,6 +957,70 @@ def routing_surface(
     return derive_routing(mounts)
 
 
+def _arm_figures(run: Mapping[str, Any]) -> dict[str, Any]:
+    """Report one arm's routing and outcome figures under a reader's key set.
+
+    Both arms of a pair report the same keys, so a comparison of the candidate
+    lane against the primary needs no shape resolution per side.
+    """
+
+    agent = run.get("agent")
+    review = run.get("review")
+    return {
+        "run_id": str(run.get("run_id") or ""),
+        "backend": str(run.get("backend") or ""),
+        "lane": run.get("lane"),
+        "model": run.get("model_key")
+        or (agent.get("model") if isinstance(agent, Mapping) else None),
+        "route_mode": run.get("route_mode"),
+        "gate": run.get("gate"),
+        "review_total": review.get("total") if isinstance(review, Mapping) else None,
+        "wall_seconds": run.get("wall_seconds"),
+        "worker_seconds": run.get("worker_seconds"),
+        "worker_seconds_source": run.get("worker_seconds_source"),
+    }
+
+
+def pair_shadow_arms(
+    runs: Sequence[Mapping[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Join every shadow row to the primary its lineage names.
+
+    The one place a shadow row is matched to its primary. ``paired`` holds one
+    entry per shadow row whose named primary is present among ``runs``, carrying
+    the sole control verdict and both arms' figures. ``unpaired`` holds a shadow
+    whose named primary is absent, naming it — a shadow cannot be read as a pair
+    without the row it measures against.
+    """
+
+    runs_by_id = {
+        str(run.get("run_id") or ""): run for run in runs if run.get("run_id")
+    }
+    paired: list[dict[str, Any]] = []
+    unpaired: list[dict[str, Any]] = []
+    for run in runs:
+        lineage = run.get("lineage")
+        if not (isinstance(lineage, Mapping) and lineage.get("kind") == "shadow"):
+            continue
+        primary_run_id = str(lineage.get("primary_run_id") or "")
+        primary = runs_by_id.get(primary_run_id)
+        if primary is None:
+            unpaired.append(
+                {"shadow": _arm_figures(run), "primary_run_id": primary_run_id}
+            )
+            continue
+        paired.append(
+            {
+                "shadow": _arm_figures(run),
+                "primary": _arm_figures(primary),
+                # The sole control predicate, so a confounded pair is never
+                # listed as a matched one.
+                "controlled": ledger.shadow_controlled(lineage),
+            }
+        )
+    return paired, unpaired
+
+
 def derive_capabilities(
     mounted_docs: Mapping[str, str | Path],
     *,
@@ -994,11 +1058,8 @@ def derive_capabilities(
         estimates = _plan_estimates(docs_dir)
         data, version = ledger.load(str(project), root=docs_dir.parent)
         source_versions[str(project)] = ledger.history_version(data, version)
-        runs_by_id = {
-            str(run.get("run_id") or ""): run
-            for run in data["runs"]
-            if run.get("run_id")
-        }
+        pairs_by_shadow, _unpaired_arms = pair_shadow_arms(data["runs"])
+        pairings = {pair["shadow"]["run_id"]: pair for pair in pairs_by_shadow}
         for run in data["runs"]:
             agent_key = calibration_configuration_key(run)
             exclusion = ledger.measurement_exclusion_reason(run)
@@ -1032,20 +1093,27 @@ def derive_capabilities(
             lineage = run.get("lineage")
             if isinstance(lineage, Mapping) and lineage.get("kind") == "shadow":
                 primary_run_id = str(lineage.get("primary_run_id") or "")
-                primary = runs_by_id.get(primary_run_id) or {}
+                pair = pairings.get(str(run.get("run_id") or ""))
+                primary_gate = (
+                    str(pair["primary"]["gate"] or "") or None
+                    if pair is not None
+                    else None
+                )
                 observation.update(
                     {
                         "primary_run_id": primary_run_id,
-                        "primary_gate": str(primary.get("gate") or "") or None,
+                        "primary_gate": primary_gate,
                         "primary_success": (
-                            str(primary.get("gate") or "") == "passed"
-                            if primary
-                            else None
+                            primary_gate == "passed" if pair is not None else None
                         ),
                         # The sole control predicate: a confounded pair must
                         # never be pooled with a controlled one when this
                         # slice is read for a qualification verdict.
-                        "controlled": ledger.shadow_controlled(lineage),
+                        "controlled": (
+                            bool(pair["controlled"])
+                            if pair is not None
+                            else ledger.shadow_controlled(lineage)
+                        ),
                     }
                 )
                 shadow_observations[
