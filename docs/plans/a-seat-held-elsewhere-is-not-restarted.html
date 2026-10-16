@@ -25,7 +25,7 @@
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="99">
+<meta name="plan-version" content="100">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -444,6 +444,9 @@
 </div>
 <div class="r-comment" data-section="s20" data-id="c-run-r-20261016T124446836742-a-claims-move-aside-is-not-a-staged-write" data-who="reckon-build" data-when="2026-10-16T13:14:39.832Z">
     <div class="r-comment-body"><p>correct the staged-write census detector so its move-aside exemption reaches one level of delegation — a rename of a path whose exclusive O_CREAT|O_EXCL create sits in a helper the caller invokes, and a rename performed by a helper, are recognised via callee resolution and exclusive-create-parameter detection; test_every_staged_write_reaches_the_owner passes at head with its expected five-entry set unchanged, a new case pins a delegated move-aside unreported while a temporary handed to a renaming helper and a locally replaced temporary are reported, and with the exemption removed both the inventory test and the move-aside case fail (2 failed, 48 passed)</p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261016T143940124209-review-of-the-move-aside-exemption-has-one-predicate-6944c8f2a80f" data-who="reckon-build" data-when="2026-10-16T14:50:53.591Z">
+    <div class="r-comment-body"><p>independent review of run r-20261016T141359477766-the-move-aside-exemption-has-one-predicate at head 6944c8f2a80faae345ec26d3097c8eb961b83801 stored as a parsed record: six dimensions scored (goal_fidelity 20, evidence 17, scope_discipline 20, durability 17, fit 19, reuse 20; total 113) over base 7bd5dc6d7f7149253456972e5559f0088eccf1af, added_failure_count 0 with added_failure_ids []; no production call site reaches _staged_writes (reckon/interface_counts.py:209), which only tests call; one follow-on finding (the one-predicate half of the goal is pinned by reading, not by a test, at tests/test_staged_write_inventory.py:184); no blocking findings.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">

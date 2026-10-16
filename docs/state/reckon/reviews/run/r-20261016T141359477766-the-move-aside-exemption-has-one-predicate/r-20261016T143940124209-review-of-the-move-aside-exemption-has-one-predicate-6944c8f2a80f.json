@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite: baseline_suite (revision 7bd5dc6d7) records 0 failure ids from gate-base.log and after_suite (revision affb84c21) records 0 from gate-head.log, both at EXIT=0 and both completed to their summary line (119 passed and 120 passed); head-minus-base is empty, so the node's change adds no failing id.",
+  "call_site_count": 0,
+  "call_site_note": "none: _staged_writes (reckon/interface_counts.py:209) is called only from tests/test_staged_write_inventory.py; grep over reckon/, docs/ui and docs/plans finds no production caller, and the four figures in COUNT_KEYS do not include it.",
+  "call_sites": [],
+  "completed_at": "2026-10-16T14:50:53.591Z",
+  "dispatched_at": "2026-10-16T14:40:25Z",
+  "findings": [
+    {
+      "file": "tests/test_staged_write_inventory.py",
+      "line": "184",
+      "severity": "follow-on",
+      "text": "follow-on: the case guards the exemption's inline-rename branch but nothing fails if either scan re-inlines a divergent exclusive-create test, so the one-predicate half of the goal can regress without a red gate; the predicate's sharing is asserted only by reading reckon/interface_counts.py:332 and :391."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none: _staged_writes (reckon/interface_counts.py:209) is called only from tests/test_staged_write_inventory.py; grep over reckon/, docs/ui and docs/plans finds no production caller, and the four figures in COUNT_KEYS do not include it.",
+    "diff": "read commit by commit against 7bd5dc6d7; affb84c21 replaces the two inlined exclusive-create tests with the local predicate exclusive_create_source (reckon/interface_counts.py:276) at both call sites and adds the inline-rename case to tests/test_staged_write_inventory.py:184, and 6944c8f2a adds only the evidence fragment, 74 insertions and 12 deletions over three files.",
+    "done_when": "the done_when asks for one shared predicate with its line cited, an inline-rename case that passes with the inventory set unchanged, a control that reddens the new case when the callers_not_staging subtraction is removed, identical pass/fail ids at head and base apart from the new case, and clean ruff; the manifest cites line 276, cites the two call sites as lines 332 and 391, records the control at negative_control_log, and the three logs on disk (gate-head.log, gate-base.log, neg-control.log) carry the revisions, the EXIT lines and the failures the measure names.",
+    "goal": "the node's goal is to make the staged-write detector spell its exclusive-create test once and cover its inline-rename branch with a case; reckon/interface_counts.py:276 defines the single local predicate exclusive_create_source, called at :332 by the exclusive_creators scan and at :391 by the not_created map, and tests/test_staged_write_inventory.py:184 adds the inline-rename case, so both halves of the goal are met.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T141359477766-the-move-aside-exemption-has-one-predicate/manifest.md; status complete, it records both commits, the three changed paths, the seven-file gate command with 120 passed at head (EXIT=0) against 119 at base (EXIT=0), the negative_control_log path and the inventory set unchanged, and its landing line states the same.",
+    "write_paths": "the node was fenced to reckon/interface_counts.py, tests/test_staged_write_inventory.py, docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/the-move-aside-exemption-has-one-predicate.html and the docs/figures/.../the-move-aside-exemption-has-one-predicate directory; the diff of 7bd5dc6d7..6944c8f2a touches exactly the first three and nothing else, and the fourth is not created, which the done-when permits since it names no artifact."
+  },
+  "justifications": {
+    "durability": "tests/test_staged_write_inventory.py:201 compares against the literal set {\"stage_beside\"}, an independent source, and neg-control.log:1 shows the declared mutation reddening it with claim_next_attempt reported as a staged write, but nothing fails if a caller re-inlines a divergent exclusive-create test, so the one-predicate half of the goal is unpinned.",
+    "evidence": "gate-head.log, gate-base.log and neg-control.log all carry a revision header, an EXIT= line and the pass/fail figures the manifest quotes, but the head arm was run at affb84c21 (gate-head.log:1) while the reviewed head is 6944c8f2a, and the manifest's ruff result is stated without a log, which I confirmed independently with uv run ruff check and ruff format --check on the two files (clean).",
+    "fit": "reckon/interface_counts.py:276 follows the local-helper idiom of source_name and catches_file_exists beside it and carries no plan, sprint or ticket identifier, though its docstring is fuller than its docstringless siblings.",
+    "goal_fidelity": "reckon/interface_counts.py:276 is the one predicate and lines 332 and 391 are its only callers, and the base file 7bd5dc6d7:reckon/interface_counts.py carried two separate O_EXCL spellings, so the duplication the goal names is gone and the inline-rename case at tests/test_staged_write_inventory.py:184 covers the branch the goal names.",
+    "reuse": "the change adds no capability: it reuses the existing source_name and call_name helpers, removes the duplicated test, and a search over reckon/ for O_EXCL, FileExistsError and AST-level exclusive-create detection found no other owner of that capability to fork.",
+    "scope_discipline": "every path in the diff is inside the write paths declared at manifest.md:3, the volume is 74 insertions across three files, and no plan meta or shared index line is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the staged-write detector spell its exclusive-create test once and cover its inline-rename branch with a case; reckon/interface_counts.py:276 defines the single local predicate exclusive_create_source, called at :332 by the exclusive_creators scan and at :391 by the not_created map, and tests/test_staged_write_inventory.py:184 adds the inline-rename case, so both halves of the goal are met.\nVERDICT done_when: the done_when asks for one shared predicate with its line cited, an inline-rename case that passes with the inventory set unchanged, a control that reddens the new case when the callers_not_staging subtraction is removed, identical pass/fail ids at head and base apart from the new case, and clean ruff; the manifest cites line 276, cites the two call sites as lines 332 and 391, records the control at negative_control_log, and the three logs on disk (gate-head.log, gate-base.log, neg-control.log) carry the revisions, the EXIT lines and the failures the measure names.\nVERDICT write_paths: the node was fenced to reckon/interface_counts.py, tests/test_staged_write_inventory.py, docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/the-move-aside-exemption-has-one-predicate.html and the docs/figures/.../the-move-aside-exemption-has-one-predicate directory; the diff of 7bd5dc6d7..6944c8f2a touches exactly the first three and nothing else, and the fourth is not created, which the done-when permits since it names no artifact.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T141359477766-the-move-aside-exemption-has-one-predicate/manifest.md; status complete, it records both commits, the three changed paths, the seven-file gate command with 120 passed at head (EXIT=0) against 119 at base (EXIT=0), the negative_control_log path and the inventory set unchanged, and its landing line states the same.\nVERDICT diff: read commit by commit against 7bd5dc6d7; affb84c21 replaces the two inlined exclusive-create tests with the local predicate exclusive_create_source (reckon/interface_counts.py:276) at both call sites and adds the inline-rename case to tests/test_staged_write_inventory.py:184, and 6944c8f2a adds only the evidence fragment, 74 insertions and 12 deletions over three files.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/interface_counts.py:276 is the one predicate and lines 332 and 391 are its only callers, and the base file 7bd5dc6d7:reckon/interface_counts.py carried two separate O_EXCL spellings, so the duplication the goal names is gone and the inline-rename case at tests/test_staged_write_inventory.py:184 covers the branch the goal names.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log, gate-base.log and neg-control.log all carry a revision header, an EXIT= line and the pass/fail figures the manifest quotes, but the head arm was run at affb84c21 (gate-head.log:1) while the reviewed head is 6944c8f2a, and the manifest's ruff result is stated without a log, which I confirmed independently with uv run ruff check and ruff format --check on the two files (clean).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the write paths declared at manifest.md:3, the volume is 74 insertions across three files, and no plan meta or shared index line is touched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_staged_write_inventory.py:201 compares against the literal set {\"stage_beside\"}, an independent source, and neg-control.log:1 shows the declared mutation reddening it with claim_next_attempt reported as a staged write, but nothing fails if a caller re-inlines a divergent exclusive-create test, so the one-predicate half of the goal is unpinned.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/interface_counts.py:276 follows the local-helper idiom of source_name and catches_file_exists beside it and carries no plan, sprint or ticket identifier, though its docstring is fuller than its docstringless siblings.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no capability: it reuses the existing source_name and call_name helpers, removes the duplicated test, and a search over reckon/ for O_EXCL, FileExistsError and AST-level exclusive-create detection found no other owner of that capability to fork.\nFINDING tests/test_staged_write_inventory.py:184 follow-on: follow-on: the case guards the exemption's inline-rename branch but nothing fails if either scan re-inlines a divergent exclusive-create test, so the one-predicate half of the goal can regress without a red gate; the predicate's sharing is asserted only by reading reckon/interface_counts.py:332 and :391.\n",
+  "review_run_id": "r-20261016T143940124209-review-of-the-move-aside-exemption-has-one-predicate-6944c8f2a80f",
+  "reviewed_base_sha": "7bd5dc6d7f7149253456972e5559f0088eccf1af",
+  "reviewed_head_sha": "6944c8f2a80faae345ec26d3097c8eb961b83801",
+  "reviewed_run_id": "r-20261016T141359477766-the-move-aside-exemption-has-one-predicate",
+  "role": "review",
+  "rubric": "node",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T14:47:26.425242+00:00",
+  "total": 113
+}
