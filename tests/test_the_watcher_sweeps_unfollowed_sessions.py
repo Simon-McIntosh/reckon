@@ -133,9 +133,7 @@ def _lapsed_run(
     manifest = directory / "manifest.md"
     manifest.write_text("node: node-a\nstatus: blocked\n", encoding="utf-8")
     dispatched_at = (
-        "2026-09-03T09:00:00Z"
-        if idle_seconds_ago is None
-        else _ago(idle_seconds_ago)
+        "2026-09-03T09:00:00Z" if idle_seconds_ago is None else _ago(idle_seconds_ago)
     )
     record = {
         "run_id": run_id,
@@ -278,7 +276,9 @@ def _arrange(config_home, repo, monkeypatch: pytest.MonkeyPatch) -> tuple:
     _lapsed_run(
         "r-foreign", repo=repo, session=ELSEWHERE_SESSION, launcher_host=FOREIGN_HOST
     )
-    _lapsed_run("r-attended", repo=repo, session=ATTENDED_SESSION, idle_seconds_ago=LONG_AGO)
+    _lapsed_run(
+        "r-attended", repo=repo, session=ATTENDED_SESSION, idle_seconds_ago=LONG_AGO
+    )
     _lapsed_run(
         "r-fresh", repo=repo, session=FRESH_SESSION, idle_seconds_ago=WITHIN_GRACE
     )
