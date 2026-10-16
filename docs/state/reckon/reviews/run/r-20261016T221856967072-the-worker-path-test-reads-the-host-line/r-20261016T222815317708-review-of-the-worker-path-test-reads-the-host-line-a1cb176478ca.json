@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:547",
+    "reckon/crew/dispatch_launch.py:570",
+    "reckon/crew/worker_digest.py:139"
+  ],
+  "completed_at": "2026-10-16T22:34:06.380Z",
+  "dispatched_at": "2026-10-16T22:28:44Z",
+  "findings": [
+    {
+      "file": "tests/test_worker_path_carries_shims.py",
+      "line": "233",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion `nested.PARTITION_ROUTE_VERB in DECLARED_ROUTE` compares two module constants of reckon/nested_launch.py against each other and never reads the composed prompt, so it adds no coverage of the change under test and would fail only if the verb and the route sentence drifted apart inside nested_launch.py itself."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 7da3aa6d..a1cb1764 commit by commit; the single commit a1cb17647 changes only tests/test_worker_path_carries_shims.py (+17/-4), importing reckon.nested_launch, capturing DECLARED_ROUTE/DECLARED_SENTENCE at import, and repointing two stale literals while adding the absent-clause assertion.",
+    "done_when": "the done_when names three test files passing together, the host-line clauses asserted as composed from reckon/nested_launch.py, the clause \"or an sbatch into it\" absent, and a negative control re-adding it failing; the manifest records the three-file gate at gate-head.log (14 passed, EXIT=0) and negative-control.log (1 failed, 3 passed, EXIT=1), and I re-ran tests/test_worker_path_carries_shims.py at head a1cb1764 (4 passed, EXIT=0).",
+    "goal": "the node goal is to repoint the stale host-line assertion in the worker-path test at the sentence the host line now composes; tests/test_worker_path_carries_shims.py:226-240 does exactly that, dropping the restated stale clause and asserting the composed clauses instead.",
+    "manifest": "read manifest.md; status complete at head a1cb1764, it records the gate command, its 14-passed / EXIT=0 result and the negative control beside it.",
+    "write_paths": "the declared write paths are tests/test_worker_path_carries_shims.py, docs/evidence/fragments/a-worker-is-charged-to-a-job/the-worker-path-test-reads-the-host-line.html and docs/figures/a-worker-is-charged-to-a-job/the-worker-path-test-reads-the-host-line; the diff touches only the test file, inside them, and the fragment and figure are unwritten, which the landing contract allows for a 21-line node."
+  },
+  "justifications": {
+    "durability": "the added assertion at tests/test_worker_path_carries_shims.py:239 reddens under the recorded negative control, which re-adds \"or an sbatch into it\" to reckon/crew/dispatch_launch.py:569 and fails exactly that case, though the guard matches only that literal wording.",
+    "evidence": "gate-head.log records 14 passed / EXIT=0 and negative-control.log records 1 failed / EXIT=1 with the failing id the head arm passes (tests/test_worker_path_carries_shims.py::test_inside_allocation_prompt_names_the_host_and_storage_contract), and I re-ran that file green at head.",
+    "fit": "the change follows the module-level declaration idiom already at tests/test_worker_path_carries_shims.py:31 and adds no plan or ticket identifier, but the comment at line 31 restates the intent the assertion below already shows.",
+    "goal_fidelity": "tests/test_worker_path_carries_shims.py:230-238 repoints the assertion at the clauses reckon/crew/dispatch_launch.py:567-574 composes, dropping the stale \"or an sbatch into it\" tail.",
+    "reuse": "it reads the owner declarations reckon/nested_launch.py:71 PARTITION_ROUTE and :83 NESTED_SRUN_SENTENCE rather than copying them, and a search over tests/ and reckon/ found no other owner of that route-or-step sentence to extend.",
+    "scope_discipline": "the diff's only path, tests/test_worker_path_carries_shims.py, is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to repoint the stale host-line assertion in the worker-path test at the sentence the host line now composes; tests/test_worker_path_carries_shims.py:226-240 does exactly that, dropping the restated stale clause and asserting the composed clauses instead.\nVERDICT done_when: the done_when names three test files passing together, the host-line clauses asserted as composed from reckon/nested_launch.py, the clause \"or an sbatch into it\" absent, and a negative control re-adding it failing; the manifest records the three-file gate at gate-head.log (14 passed, EXIT=0) and negative-control.log (1 failed, 3 passed, EXIT=1), and I re-ran tests/test_worker_path_carries_shims.py at head a1cb1764 (4 passed, EXIT=0).\nVERDICT write_paths: the declared write paths are tests/test_worker_path_carries_shims.py, docs/evidence/fragments/a-worker-is-charged-to-a-job/the-worker-path-test-reads-the-host-line.html and docs/figures/a-worker-is-charged-to-a-job/the-worker-path-test-reads-the-host-line; the diff touches only the test file, inside them, and the fragment and figure are unwritten, which the landing contract allows for a 21-line node.\nVERDICT manifest: read manifest.md; status complete at head a1cb1764, it records the gate command, its 14-passed / EXIT=0 result and the negative control beside it.\nVERDICT diff: read 7da3aa6d..a1cb1764 commit by commit; the single commit a1cb17647 changes only tests/test_worker_path_carries_shims.py (+17/-4), importing reckon.nested_launch, capturing DECLARED_ROUTE/DECLARED_SENTENCE at import, and repointing two stale literals while adding the absent-clause assertion.\nCALL_SITES: reckon/crew/dispatch_launch.py:547, reckon/crew/dispatch_launch.py:570, reckon/crew/worker_digest.py:139\nreviewed_base_sha: 7da3aa6d32fb48dd4bf6cd101b8b5ae8819932ad\nreviewed_head_sha: a1cb176478caa43c64cbbdfdf3bc1ec7af64818c\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_worker_path_carries_shims.py:230-238 repoints the assertion at the clauses reckon/crew/dispatch_launch.py:567-574 composes, dropping the stale \"or an sbatch into it\" tail.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head.log records 14 passed / EXIT=0 and negative-control.log records 1 failed / EXIT=1 with the failing id the head arm passes (tests/test_worker_path_carries_shims.py::test_inside_allocation_prompt_names_the_host_and_storage_contract), and I re-ran that file green at head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's only path, tests/test_worker_path_carries_shims.py, is inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the added assertion at tests/test_worker_path_carries_shims.py:239 reddens under the recorded negative control, which re-adds \"or an sbatch into it\" to reckon/crew/dispatch_launch.py:569 and fails exactly that case, though the guard matches only that literal wording.\nSCORE fit: 16\nJUSTIFICATION fit: the change follows the module-level declaration idiom already at tests/test_worker_path_carries_shims.py:31 and adds no plan or ticket identifier, but the comment at line 31 restates the intent the assertion below already shows.\nSCORE reuse: 20\nJUSTIFICATION reuse: it reads the owner declarations reckon/nested_launch.py:71 PARTITION_ROUTE and :83 NESTED_SRUN_SENTENCE rather than copying them, and a search over tests/ and reckon/ found no other owner of that route-or-step sentence to extend.\nFINDING tests/test_worker_path_carries_shims.py:233 follow-on: the assertion `nested.PARTITION_ROUTE_VERB in DECLARED_ROUTE` compares two module constants of reckon/nested_launch.py against each other and never reads the composed prompt, so it adds no coverage of the change under test and would fail only if the verb and the route sentence drifted apart inside nested_launch.py itself.",
+  "review_run_id": "r-20261016T222815317708-review-of-the-worker-path-test-reads-the-host-line-a1cb176478ca",
+  "reviewed_base_sha": "7da3aa6d32fb48dd4bf6cd101b8b5ae8819932ad",
+  "reviewed_head_sha": "a1cb176478caa43c64cbbdfdf3bc1ec7af64818c",
+  "reviewed_run_id": "r-20261016T221856967072-the-worker-path-test-reads-the-host-line",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T22:35:30.218711+00:00",
+  "total": 113
+}
