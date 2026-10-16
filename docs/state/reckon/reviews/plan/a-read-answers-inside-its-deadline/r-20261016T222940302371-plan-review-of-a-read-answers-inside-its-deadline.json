@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T22:37:55.497Z",
+  "dispatched_at": "2026-10-16T22:30:16Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:192",
+      "id": "reasoning-1",
+      "reason": "the node would publish a filesystem-only split it cannot substantiate, which is the filesystem-plus-churn mixture the pairing was added to remove and which \u00a721 to \u00a724's sizing and \u00a724's 30 s bound rest on.",
+      "text": "\u00a720's done-when now says each pair \"times the derivation in place on GPFS and over that copy, back to back, so both arms of a pair read the same state\", and the next sentence concludes \"Their difference is then the filesystem alone\"; but the in-place arm reads the live crew home, which the running producer keeps writing (that write is the plan's own premise, snapshots published about once a minute), while its paired arm reads a copy frozen at capture, and the only fingerprint recorded \u2014 capture time, live-pointer count, per-run file count \u2014 is of the copy, so nothing measures what the live tree held when the in-place arm ran",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:192",
+      "id": "done_when-1",
+      "reason": "both arms run read-only over the same copy, so the arm comparison stands without the count, and naming the instrumentation is a detail the worker can settle without changing the mechanism or the measure.",
+      "text": "\u00a720's done-when says \"the harness counts the refused memo writes per call and logs the count\", but a refused write is swallowed by construction: `_write_classification_memo` catches `OSError` and returns (reckon/crew/recovery_memo.py:206-207), so no code on the derivation path observes the refusal and the count has no source unless the node instruments the writer or the atomic-write call",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "1f3b7a438bf2c6eb15327484cd4dd984374045d38cc2274f01fade9cac57f6f1",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 146,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T222940302371-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "1fe48e4c92bc3c7db40655a975b2ec1ae020d967",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `obligation_snapshot.fleet_state` (reckon/crew/obligation_snapshot.py:826), `FLOOR_TICK_SECONDS` (line 55) and `_write_classification_memo` (reckon/crew/recovery_memo.py:172) all resolve, and the extensionless fragment hrefs resolve as `<path>.html`.",
+    "done_when": "a finding \u2014 \u00a720's done-when requires the harness to count the refused memo writes per call, but a refused write leaves no readable signal on the derivation path.",
+    "evidence_paths": "pass \u2014 both nodes write into the run directory and into `docs/evidence/fragments/a-read-answers-inside-its-deadline/`, durable paths a later reader can open, and both name them in their write paths.",
+    "naming": "pass \u2014 the changed prose cites mechanism and module paths only; no plan label, ticket number or version tag reaches a symbol, file or comment.",
+    "reasoning": "a finding \u2014 \u00a720 asserts the paired arms read the same state and that their difference is the filesystem alone, which the pairing does not deliver while the live arm is timed against live crew state.",
+    "single_goal": "pass \u2014 \u00a720 carries one deliverable (split the production lag) and \u00a724 one (measure the repaired pass against the freshness window).",
+    "wiring": "pass \u2014 \u00a724's dependence on \u00a721 to \u00a723 is stated in its deliverable (\"at the revision before \u00a721 merged and at the revision after \u00a723 merged\") and \u00a720 declares no dependency it needs, measuring one revision."
+  },
+  "section_digests": {
+    "_document": "d4ddda961784c7a505897dfa112dcf8d73378167d498be05466e8103832740db",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "f6e2a8c3d1c90f4194ec9891635cef181cf62c62a5dbb39efd4c9832ac5d1e9b",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s20": "f61eca1e9566add4c915f2dfe92f1e46d15f6b075b82039f2c4d19da74410549",
+    "s21": "4d93efb4f5d84adaeb9eea5dc423557ae897e4118bc313d1f7fc1e2839f2e2fb",
+    "s22": "6266f82976abf2a572694b2f91bf0143ff9a02ea484166e79b8197bde4e1a5e6",
+    "s23": "19ab14ea99e986a9e91a521cccdf725d2ca25f3119b1b53c489aa0fb3cc24dd1",
+    "s24": "b34107c3fc182abcf954a57b28b1566ba7ca34935a2fcbcf0327cca3d5650bf5",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T22:44:22.155218+00:00"
+}
