@@ -26,7 +26,7 @@
   <title>Jev Learns From Its Routes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="47">
+<meta name="plan-version" content="48">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -519,7 +519,10 @@
     <div class="r-comment-body"><p>§9 landed: a re-served account-surface reading ages past the flight shelf life (merge <code>e0eacfcaa</code>, review 114, 0 added failures). Open follow-on: give the ceiling case a positive control on a fresh 95% reading. <a href="/reckon/evidence/archive/jev-learns-from-its-routes-landed.html#s9">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261016T123411374160-a-reserved-account-reading-ages" data-who="reckon-build" data-when="2026-10-16T13:16:58Z">
-    <div class="r-comment-body"><p>An account-surface budget reading now ages past the flight&#x27;s shelf life measured from its probe: lane_context._budget_block judges it like a ledger reading while a document reading keeps the document&#x27;s own shelf life, so the candidate flag and the return-time block stay in agreement and a re-served cached reading can no longer hold a lane stale. The return-time block&#x27;s account-surface case, which asserted the reading fresh at any age, is flipped to stale at 120 minutes against the default 60-minute flight shelf.</p></div>
+    <div class="r-comment-body"><p>An account-surface budget reading now ages past the flight's shelf life measured from its probe: lane_context._budget_block judges it like a ledger reading while a document reading keeps the document's own shelf life, so the candidate flag and the return-time block stay in agreement and a re-served cached reading can no longer hold a lane stale. The return-time block's account-surface case, which asserted the reading fresh at any age, is flipped to stale at 120 minutes against the default 60-minute flight shelf.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261016T131939416938-review-of-a-reserved-account-reading-ages-dfe0a84dbd9e" data-who="reckon-build" data-when="2026-10-16T13:31:28.989Z">
+    <div class="r-comment-body"><p>The landed change makes an account-surface budget reading age past the flight&#x27;s shelf life from its probe by removing the never-stale exemption in lane_context._budget_block and judging it in the same branch as a ledger reading, while a document reading keeps the document&#x27;s own shelf life. Both surfaces (the candidate flag and return_times) derive through the one rule, so a cached, re-aged account figure can no longer hold a lane fresh. The change is confined to its declared write paths, the glossary is corrected, and the superseded account-surface case in tests/test_picker_return_time.py:181-197 is flipped to stale at 120 minutes. Reviewed base 91b6d66ed2dc652de4286ca67e4c1a2accdbd8d4, reviewed head dfe0a84dbd9ee6522742c987fa92b3f329577d47.</p></div>
 </div>
 </section>
 </main>

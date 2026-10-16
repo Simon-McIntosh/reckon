@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own suite-delta arms, both complete and readable: baseline_suite (base-arm-importers.log, revision 91b6d66ed2dc652de4286ca67e4c1a2accdbd8d4, '424 passed in 329.92s', EXIT=0, failure_count 0, failure_ids []) and after_suite (head-arm-importers.log, revision dfe0a84dbd9ee6522742c987fa92b3f329577d47, '426 passed in 388.69s', EXIT=0, failure_count 0, failure_ids []). The head arm records zero failing ids, so the head failure_ids [] is the added set (empty) and the two new tests account for 426 over the base's 424.",
+  "base_log_revision": "91b6d66ed2dc652de4286ca67e4c1a2accdbd8d4",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/lane_context.py:380",
+    "reckon/crew/picker/snapshot.py:726",
+    "reckon/crew/picker/snapshot.py:798"
+  ],
+  "completed_at": "2026-10-16T13:31:28.989Z",
+  "dispatched_at": "2026-10-16T13:21:14Z",
+  "findings": [
+    {
+      "file": "tests/test_one_staleness_rule.py",
+      "line": "418",
+      "severity": "follow-on",
+      "text": "follow-on: the ceiling case asserts the absence of a \"budget-ceiling\" reason after a 10-minute re-age but never shows the ceiling firing on a fresh 95% reading, and the string \"budget-ceiling\" appears in no other test in the repository, so the absence would pass vacuously if the ceiling gate at reckon/crew/picker/snapshot.py:1077-1080 stopped firing; the code path exists (utilisation_pct is set at snapshot.py:741 and read at :1077), but the assertion does not exercise the instrument it reports on."
+    }
+  ],
+  "head_log_revision": "dfe0a84dbd9ee6522742c987fa92b3f329577d47",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "3 production call sites name the changed rule, all outside the node's own tests: reckon/crew/picker/lane_context.py:380 (return_times), reckon/crew/picker/snapshot.py:726 (_compose_budget_report) and snapshot.py:798 (_reage_budget_report); the ceiling consumer at snapshot.py:1077 reads the expired flag those set.",
+    "diff": "read 91b6d66ed..dfe0a84db commit by commit: 490c93875 removes the account-surface exemption in lane_context._budget_block and judges it by the flight shelf from observation, corrects _GLOSSARY[\"stale\"] in prompts.py, supersedes the account-surface case in tests/test_one_staleness_rule.py and adds the ceiling and between-shelves re-age cases, and adds the evidence fragment; dfe0a84db flips tests/test_picker_return_time.py:181-197 from fresh to stale at 120 min.",
+    "done_when": "the done_when names tests/test_one_staleness_rule.py; the reviewed file asserts 0 s fresh and 400 s stale against the 5-min flight shelf directly at :212-215 and on both surfaces at :340-355, the ceiling case at :386-419, the between-shelves re-age at :358-383, and the corrected glossary at :421-427; the manifest records the gate at 10 passed and I re-ran it (10 passed in 1.51s, EXIT=0).",
+    "goal": "the node's goal is to make a re-served account-surface reading go stale past the flight shelf life measured from its probe; reckon/crew/picker/lane_context.py:330-333 now takes that branch, which previously exempted the reading at :316.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-.../manifest.md \u2014 status complete, commits [\"490c93875\",\"dfe0a84db\"], the gate cited against gate-one-staleness-rule.log (10 passed, EXIT=0), the negative control against negative-control-never-stale.log (3 failed, EXIT=1), and both arm sweeps (424/0 and 426/0).",
+    "write_paths": "the plan declares reckon/crew/picker/lane_context.py, reckon/crew/picker/prompts.py and tests/test_one_staleness_rule.py; the coordinator's run pointer also grants tests/test_picker_return_time.py, the evidence fragment and the figures directory; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "the 400 s assertion at tests/test_one_staleness_rule.py:214 reddens when the never-stale exemption is restored, as negative-control-never-stale.log shows (test_an_account_surface_reading_ages_past_the_flight_shelf_on_both among 3 failed), and the between-shelves re-age case at :358-383 flips under a source-blind rule; the ceiling assertion at :418 is an absence with no positive control in the repository.",
+    "evidence": "the gate at tests/test_one_staleness_rule.py:340-355 records 400 s stale against the 5-min shelf in the manifest's '10 passed', the arm sweep is 426 vs 424 with zero added failures, and the only letter-level gap is the done_when's '0 s old on both surfaces' case, which is asserted on the rule at :213 and on both surfaces at 100 s, below the same 300 s bound.",
+    "fit": "the new cases keep the file's helper idiom (a crafted report composed through snapshot then read on both surfaces) at tests/test_one_staleness_rule.py:311-335, and the added names carry no plan label, version or ticket reference.",
+    "goal_fidelity": "the account-surface branch at reckon/crew/picker/lane_context.py:330-333 now ages by the flight shelf from observation, and both the candidate flag and return_times derive through the same function, so a re-served reading can no longer hold a lane fresh.",
+    "reuse": "the change edits the owner of the staleness judgment in place \u2014 lane_context._budget_block's caller set (lane_context.py:380, snapshot.py:726 and :798) already delegated to it \u2014 and forks no capability; a search of reckon/crew/picker for a second staleness computation found none.",
+    "scope_discipline": "every path in the diff \u2014 lane_context.py, prompts.py, tests/test_one_staleness_rule.py, tests/test_picker_return_time.py and the evidence fragment \u2014 is inside the declared write paths, and the return-time file was needed because the section supersedes the behaviour it asserted."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make a re-served account-surface reading go stale past the flight shelf life measured from its probe; reckon/crew/picker/lane_context.py:330-333 now takes that branch, which previously exempted the reading at :316.\nVERDICT done_when: the done_when names tests/test_one_staleness_rule.py; the reviewed file asserts 0 s fresh and 400 s stale against the 5-min flight shelf directly at :212-215 and on both surfaces at :340-355, the ceiling case at :386-419, the between-shelves re-age at :358-383, and the corrected glossary at :421-427; the manifest records the gate at 10 passed and I re-ran it (10 passed in 1.51s, EXIT=0).\nVERDICT write_paths: the plan declares reckon/crew/picker/lane_context.py, reckon/crew/picker/prompts.py and tests/test_one_staleness_rule.py; the coordinator's run pointer also grants tests/test_picker_return_time.py, the evidence fragment and the figures directory; every path in the diff is inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T123411374160-a-reserved-account-reading-ages/manifest.md \u2014 status complete, commits [\"490c93875\",\"dfe0a84db\"], the gate cited against gate-one-staleness-rule.log (10 passed, EXIT=0), the negative control against negative-control-never-stale.log (3 failed, EXIT=1), and both arm sweeps (424/0 and 426/0).\nVERDICT diff: read 91b6d66ed..dfe0a84db commit by commit: 490c93875 removes the account-surface exemption in lane_context._budget_block and judges it by the flight shelf from observation, corrects _GLOSSARY[\"stale\"] in prompts.py, supersedes the account-surface case in tests/test_one_staleness_rule.py and adds the ceiling and between-shelves re-age cases, and adds the evidence fragment; dfe0a84db flips tests/test_picker_return_time.py:181-197 from fresh to stale at 120 min.\nCALL_SITES: reckon/crew/picker/lane_context.py:380, reckon/crew/picker/snapshot.py:726, reckon/crew/picker/snapshot.py:798\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the account-surface branch at reckon/crew/picker/lane_context.py:330-333 now ages by the flight shelf from observation, and both the candidate flag and return_times derive through the same function, so a re-served reading can no longer hold a lane fresh.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate at tests/test_one_staleness_rule.py:340-355 records 400 s stale against the 5-min shelf in the manifest's '10 passed', the arm sweep is 426 vs 424 with zero added failures, and the only letter-level gap is the done_when's '0 s old on both surfaces' case, which is asserted on the rule at :213 and on both surfaces at 100 s, below the same 300 s bound.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff \u2014 lane_context.py, prompts.py, tests/test_one_staleness_rule.py, tests/test_picker_return_time.py and the evidence fragment \u2014 is inside the declared write paths, and the return-time file was needed because the section supersedes the behaviour it asserted.\nSCORE durability: 18\nJUSTIFICATION durability: the 400 s assertion at tests/test_one_staleness_rule.py:214 reddens when the never-stale exemption is restored, as negative-control-never-stale.log shows (test_an_account_surface_reading_ages_past_the_flight_shelf_on_both among 3 failed), and the between-shelves re-age case at :358-383 flips under a source-blind rule; the ceiling assertion at :418 is an absence with no positive control in the repository.\nSCORE fit: 19\nJUSTIFICATION fit: the new cases keep the file's helper idiom (a crafted report composed through snapshot then read on both surfaces) at tests/test_one_staleness_rule.py:311-335, and the added names carry no plan label, version or ticket reference.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change edits the owner of the staleness judgment in place \u2014 lane_context._budget_block's caller set (lane_context.py:380, snapshot.py:726 and :798) already delegated to it \u2014 and forks no capability; a search of reckon/crew/picker for a second staleness computation found none.\nFINDING tests/test_one_staleness_rule.py:418 follow-on: the ceiling case asserts the absence of a \"budget-ceiling\" reason after a 10-minute re-age but never shows the ceiling firing on a fresh 95% reading, and the string \"budget-ceiling\" appears in no other test in the repository, so the absence would pass vacuously if the ceiling gate at reckon/crew/picker/snapshot.py:1077-1080 stopped firing; the code path exists (utilisation_pct is set at snapshot.py:741 and read at :1077), but the assertion does not exercise the instrument it reports on.",
+  "review_run_id": "r-20261016T131939416938-review-of-a-reserved-account-reading-ages-dfe0a84dbd9e",
+  "reviewed_base_sha": "91b6d66ed2dc652de4286ca67e4c1a2accdbd8d4",
+  "reviewed_head_sha": "dfe0a84dbd9ee6522742c987fa92b3f329577d47",
+  "reviewed_run_id": "r-20261016T123411374160-a-reserved-account-reading-ages",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T13:34:00+00:00",
+  "total": 114
+}
