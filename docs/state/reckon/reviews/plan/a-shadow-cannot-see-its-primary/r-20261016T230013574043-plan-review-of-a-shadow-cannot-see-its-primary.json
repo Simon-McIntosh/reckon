@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T23:06:52.688Z",
+  "dispatched_at": "2026-10-16T23:00:47Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-shadow-cannot-see-its-primary.html:242",
+      "id": "reasoning-1",
+      "reason": "the node would implement a check reading a pointer that does not exist for one of its two arms, so \u00a76 must name the observable source of a shadow partner's non-terminal state (its run-dir record, or a pointer the paired dispatch is required to publish) for the primary arm's hold to have anything to read.",
+      "text": "\u00a76 says the refusal reads \"the partner's run id and phase\", and its done-when (:245) requires \"promoting a paired arm whose partner's pointer is `working` \u2026 succeeds once the partner's pointer is terminal\", but \u00a75 (:217-218) states that a shadow lineage publishes no launch pointer and that \"its record is written only at the end of its own dispatch\", and `_publish_launch_claim` (reckon/crew/dispatch_claims.py:576) suppresses the pointer for `shadow_lineage` (\"A shadow run publishes nothing\"), so when the arm being promoted is the primary arm its partner is the shadow, whose pointer \u2014 the only source \u00a76 names \u2014 does not exist for the whole of that arm's life; the hold would silently never fire in that direction, which is exactly the \"first arm to land\" case \u00a76's Why states it exists to close",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "40ddfb879b2e179a5b816496f9fcd6fcb147109f050731aa1c044cd3a65116eb",
+  "plan_slug": "a-shadow-cannot-see-its-primary",
+  "plan_version": 20,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "the premise does not hold: dispatch.py:2046 writes a shadow's full live pointer unconditionally; only the pre-launch scope claim (_publish_launch_claim, and the scope check under if not shadow_lineage) is skipped. A shadow's pointer exists from launch until promotion, so s6 can read the partner's phase in both directions. s5's 'publishes no launch pointer' should read 'launch claim'; that wording is fixed before s5 dispatches (comment c-s5-claim-not-pointer)",
+      "when": "2026-10-16T23:07:59.874844+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the premise does not hold: dispatch.py:2046 writes a shadow's full live pointer unconditionally; only the pre-launch scope claim (_publish_launch_claim, and the scope check under if not shadow_lineage) is skipped. A shadow's pointer exists from launch until promotion, so s6 can read the partner's phase in both directions. s5's 'publishes no launch pointer' should read 'launch claim'; that wording is fixed before s5 dispatches (comment c-s5-claim-not-pointer)",
+      "when": "2026-10-16T23:07:59.874844+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-shadow-cannot-see-its-primary.v20.json",
+  "review_run_id": "r-20261016T230013574043-plan-review-of-a-shadow-cannot-see-its-primary",
+  "reviewed_blob_sha": "7844095dbf4908ec12be797505b834b93eccd362",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves in the checkout: `_primary_read_surfaces` (reckon/crew/promotion_scope.py:1081), `_primary_read_targets` (1041), `fence_argv` (reckon/_worker_fence.py:1174), `launch_plan` (reckon/_backends.py:2081), `_shadow_dispatch_config` (reckon/crew/dispatch.py:465), `shadow_source` (352), `claim_published` (1313), `_require_independently` (reckon/crew/promotion_checks.py:931), `_require_worker_stopped_before_promotion` (517), and the extensionless `/reckon/evidence/archive/...#s3` href resolves as `.html`.",
+    "done_when": "pass \u2014 every node names a declared negative control (s4 drops the masks, s5 drops the primary arm's masks, s6 removes the check from the composed list), and each is a measurable stub/dry-run assertion; the s6 measure is undermined only as recorded under `reasoning`.",
+    "evidence_paths": "pass \u2014 the plans' gate evidence is committed under `docs/evidence/archive/` and the negative-control logs are written under the crew run directory, both durable and off a session scratchpad.",
+    "naming": "pass \u2014 the new surface names mechanisms (`--pair-backend`, `--pair-backend`, `paired_shadow_run_id`, `_primary_read_surfaces`), carrying no plan label, ticket number or version tag; the `shadow-isolation-scope` key is plan metadata, not a code symbol.",
+    "reasoning": "a finding \u2014 \u00a76's promotion hold is specified to read \"the partner's pointer\" phase, but \u00a75's own mechanism and the code establish that a shadow lineage publishes no launch pointer, so the hold cannot be evaluated in the direction where the primary arm is promoted.",
+    "single_goal": "pass \u2014 s4 (fence masks), s5 (paired dispatch) and s6 (paired-arm promotion hold) each carry one deliverable; s6's added row-contamination assertion drives `crew complete` on the same promotion.py path it edits, not a separate deliverable.",
+    "wiring": "pass \u2014 the node table's depends-on edges (s4\u2192[s2,s3], s5\u2192[s4], s6\u2192[s5]) all resolve to nodes that exist, and no needed edge is missing."
+  },
+  "section_digests": {
+    "_document": "9c08b3b024bf6957fba4c17e99186cd85c9a7b2743c9f6b582e2686d1b143cda",
+    "s1": "770768dc8c73c5fefe174fd6a4f867ad2b40854cb74c588f41848bd65b6600d3",
+    "s2": "2180ff0a03d627a0c6b67adf9242725afb8aa0cb334f88e11e542b36132ccc8f",
+    "s3": "330eeee9f8ec7d9d7cd19844afd555d06dcdd4b49c538f4118af635df0f0ce57",
+    "s4": "f36740b9079eda6c3a3f73311884c21dc4eed14e7940bad6b7ad8794bd90c329",
+    "s5": "2a201d168be7196c684cd9c91c15adc87d21e1de1294af20991384e6a60d27fe",
+    "s6": "9228dda06539bc3d981efea74e54fc5413be3939fb26a628ad9f1407c1508b83"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T23:07:57.567566+00:00"
+}
