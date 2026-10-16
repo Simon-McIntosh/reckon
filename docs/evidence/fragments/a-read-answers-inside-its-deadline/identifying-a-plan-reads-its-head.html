@@ -32,11 +32,11 @@
   <section id="identifying-a-plan-reads-its-head-outcome">
     <h2>Outcome</h2>
     <p>The metadata parse is split into a head-only reader
-    (<code>_plan_html.parse_meta_head</code>, whose fields come from
+    (<code>_plan_html._parse_meta_head</code>, whose fields come from
     <code>_meta_head_fields</code>) and the section-derived <code>impl</code> tail
     that <code>parse_meta</code> keeps. Identification
     (<code>resources.identify_resource</code>, its digest-shared
-    <code>metadata_index.parse_meta_head_shared</code>, and the canonical-path
+    <code>metadata_index._parse_meta_head_shared</code>, and the canonical-path
     checks in <code>resources.py</code>) now reads the head only.
     <code>parse_meta</code> is unchanged: a reader asking for <code>impl</code>
     still receives the figure derived through the parser.</p>
@@ -55,11 +55,29 @@
     <strong>0.4627&nbsp;s</strong> at head.</p>
   </section>
 
+  <section id="identifying-a-plan-reads-its-head-reader-output">
+    <h2>Reader output over one frozen tree</h2>
+    <p>The inventory, roadmap and discovery payloads were dumped at base and at
+    head over a single frozen copy of the project's docs, taken once, with the
+    process config home pointing at a mount that resolves inside that copy and
+    nothing the live fleet writes to reachable. 55,974 leaf fields compared.</p>
+    <p>Unseeded, the two arms differ on 57 values and 6 keyed positions; so does
+    a repeated run of <em>one</em> arm against itself on the same frozen input
+    (base&nbsp;vs&nbsp;base: 57 values). The differing fields are the order of
+    two lists the readers build from sets — <code>roadmap.decision_blockers</code>
+    and <code>roadmap.wiring_findings</code> — and each list is identical as a
+    multiset between the arms. With <code>PYTHONHASHSEED=0</code> the ordering is
+    fixed and the difference is <strong>zero</strong>: 0 differing values, 0
+    keys present in one dump alone. The change therefore moves no reader's
+    output; the unseeded spread is the readers' own set iteration.</p>
+  </section>
+
   <section id="identifying-a-plan-reads-its-head-negative-control">
     <h2>Negative control</h2>
     <p>Identification routed back through the full <code>parse_meta</code>
     (<code>metadata_index.parse_meta_shared</code>): the two zero-entry cases fail
-    (assert 1 == 0), <code>EXIT=1</code>. Log:
+    (assert 11 == 0 for the cold resolve, assert 1 == 0 for identification), the
+    third still passes, <code>EXIT=1</code>. Log:
     <code>negative-control.log</code> under the run directory.</p>
   </section>
 </main>

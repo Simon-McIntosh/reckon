@@ -8,7 +8,7 @@ promotion. Keying the parse on the file's content digest lets the trees share
 one parse; a file whose bytes changed is parsed afresh.
 
 Identification reads only the head, so the parse it shares is the head parse
-``metadata_index.parse_meta_head_shared`` keys on the digest. The negative
+``metadata_index._parse_meta_head_shared`` keys on the digest. The negative
 control keys the same reuse by path again, under which the cross-tree case
 parses identical content once per tree and this file's head-parse count fails.
 """
@@ -145,13 +145,13 @@ def test_parse_memo_is_keyed_on_content_not_path(tmp_path, monkeypatch):
     path_a = _write_plan(tree_a, "alpha", "Alpha")
     path_b = _write_plan(tree_b, "alpha", "Alpha")
 
-    first = metadata_index.parse_meta_head_shared(path_a)
-    second = metadata_index.parse_meta_head_shared(path_b)
+    first = metadata_index._parse_meta_head_shared(path_a)
+    second = metadata_index._parse_meta_head_shared(path_b)
     assert first == second
     assert calls["count"] == 1
     # A caller mutating its copy cannot poison the entry the next tree reads.
     first["slug"] = "poisoned"
-    assert metadata_index.parse_meta_head_shared(path_b)["slug"] == "alpha"
+    assert metadata_index._parse_meta_head_shared(path_b)["slug"] == "alpha"
 
 
 def test_identical_content_bounds_the_path_walk(tmp_path, monkeypatch):

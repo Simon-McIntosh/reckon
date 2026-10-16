@@ -12,7 +12,7 @@ builds no soup, so a cold resolve and a bare identification enter it zero times.
 deferring to the parser.
 
 The negative control routes identification back through the full ``parse_meta``
-(``identify_resource`` calling ``parse_meta`` rather than ``parse_meta_head``),
+(``identify_resource`` calling ``parse_meta`` rather than ``_parse_meta_head``),
 under which the zero-entry case fails.
 """
 
@@ -119,7 +119,7 @@ def test_parse_meta_still_defers_to_the_parser(tmp_path, monkeypatch):
     path = docs / "plans" / "plan-03.html"
     text = path.read_text(encoding="utf-8")
 
-    head_rec = _plan_html.parse_meta_head(path)
+    head_rec = _plan_html._parse_meta_head(path)
     # The head declares the authored figure and no derived source.
     assert head_rec["impl"] == 0.1
     assert head_rec.get("impl_source") is None
@@ -137,5 +137,5 @@ def test_parse_meta_still_defers_to_the_parser(tmp_path, monkeypatch):
     assert rec["impl_source"] == expected_source
     # The reader classifies with the head record, so identification never asks
     # for the derived figure it would have to parse the body to produce.
-    assert _plan_html.parse_meta_head(path)["slug"] == rec["slug"]
-    assert _plan_html.parse_meta_head(path)["type"] == rec["type"]
+    assert _plan_html._parse_meta_head(path)["slug"] == rec["slug"]
+    assert _plan_html._parse_meta_head(path)["type"] == rec["type"]

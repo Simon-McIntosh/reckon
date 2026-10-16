@@ -2214,7 +2214,7 @@ def parse_meta(path: Path, slug: str | None = None) -> dict:
     )
 
 
-def parse_meta_head(path: Path, slug: str | None = None) -> dict:
+def _parse_meta_head(path: Path, slug: str | None = None) -> dict:
     """Inventory record from a document's head alone, building no soup.
 
     Identity — the type, slug and archived flag a slug resolve sorts on — is
@@ -2228,7 +2228,7 @@ def parse_meta_head(path: Path, slug: str | None = None) -> dict:
     from reckon.file_memo import memoized
 
     return memoized(
-        "parse_meta_head",
+        "_parse_meta_head",
         path,
         lambda: _parse_meta_head_uncached(path, slug),
         variant=slug,
