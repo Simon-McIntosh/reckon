@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T14:24:09.640Z",
+  "dispatched_at": "2026-10-16T14:09:40Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:135",
+      "id": "reasoning-1",
+      "reason": "the sections \u00a76 waits on are all done, so this assertion decides whether a fixing section is filed before \u00a76 dispatches or \u00a76 is recorded as an expected miss, and the plan currently says neither.",
+      "text": "\u00a76's done-when requires \"warm medians of at most 2 s for roadmap\" and \"a cold roadmap under the 30 s MCP deadline\", but the plan's own recorded head figures put warm roadmap at 2.6 s (\u00a716's close, measured after \u00a716 landed) and cold roadmap at 90.7 s (\u00a76's own 2026-10-16 second measurement), and \u00a711 \u2014 the cold fix \u00a79 filed at its close (\"The cold time is the plan parse, repeated five or six times per file... \u00a711 carries the fix\") \u2014 has landed and left cold roadmap roughly 3x its criterion; the two sections filed since (\u00a716, \u00a717) target warm reads only, so the re-measure \u00a76 is now routed at is dispatched against criteria the plan's own evidence already fails with no mechanism left to close them",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:138",
+      "id": "evidence_paths-1",
+      "reason": "naming one durable directory for the log, the dumps and the pinned revision removes an ambiguity that would otherwise cost the node its evidence.",
+      "text": "\u00a76 names its output in three places without saying which receives what: \"the log under the run directory\" (line 135), \"the run's report directory\" for every `.prof` dump (line 138), and, in the same sentence, \"Write paths: the run's own log directory\"; the report directory and the run directory are different trees, so a node that follows the write-path line for its dumps writes them outside its granted path and the section's whole purpose \u2014 keeping the dumps that a missed target is attributed from \u2014 fails exactly as it did on 2026-10-12",
+      "type": "evidence_paths",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bab8cf7f0c172e2b6e4a6d48fdf3a6f080c5ca259f82870d7ac6f9c35cc9aa5d",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 106,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T140828851647-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "69a06540838df1d4c2e7ec9bcf2dd70fa3eb90a8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited profiler resolves at `~/.config/reckon/crew/reports/reckon/health-review-1010/health-tool-latency/scripts/profile_reads.py`, and \"as \u00a77 requires\" resolves to \u00a77's frozen-corpus clause at line 143.",
+    "done_when": "pass \u2014 \u00a76's done-when is measurable (medians over five runs, an MCP call that must return) and it declares a negative control, the base arm measured in the same window, which the plan's own record shows exceeding the 30 s deadline.",
+    "evidence_paths": "a finding \u2014 \u00a76 sends its retained profiler dumps to \"the run's report directory\" while declaring its write path as \"the run's own log directory\", so the evidence the section exists to keep can land outside the node's granted write path.",
+    "naming": "pass \u2014 \u00a76 introduces no code, and its text carries no plan labels, stage names or ticket numbers.",
+    "reasoning": "a finding \u2014 \u00a76's done-when asserts a warm roadmap at or under 2 s and a cold roadmap under the deadline, but the plan's own latest head measurements put those at 2.6 s and 90.7 s, and every section still implementable after \u00a716 and \u00a717 targets neither path.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable, the measurement of the three reads, and the MCP-return clause is a read of the same measurement rather than a second deliverable.",
+    "wiring": "pass \u2014 `f-araiid-remeasure` (open) routes \u00a76 by both its `data-recommends-skill` and its prompt, every section \u00a76 waits on (\u00a72\u2013\u00a75, \u00a78, \u00a710, \u00a711, \u00a712, \u00a713, \u00a714, \u00a716, \u00a717) is `done`, and `f-araiid-remeasure`'s body names \u00a718 only in passing while its prompt dispatches \u00a76 alone."
+  },
+  "section_digests": {
+    "_document": "27e04b7ec4c7a4424eb7839ff032567efe8f2c9f504c5f09139c14dd3ec284e3",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "0151b19557c7a622d2fd26c91747c60ea32cb81d89da3aa408c6a06de85cf057",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T14:26:56.264804+00:00"
+}
