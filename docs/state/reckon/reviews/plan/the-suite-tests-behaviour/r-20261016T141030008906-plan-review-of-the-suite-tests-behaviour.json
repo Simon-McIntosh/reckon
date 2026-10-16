@@ -1,0 +1,38 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T14:22:48.912Z",
+  "dispatched_at": "2026-10-16T14:11:37Z",
+  "findings": [],
+  "plan_fingerprint": "5e85b833f616008ef726e4ec2d3e50cb968e748bf2c9d2b34539bf0b69d8000d",
+  "plan_slug": "the-suite-tests-behaviour",
+  "plan_version": 59,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T141030008906-plan-review-of-the-suite-tests-behaviour",
+  "reviewed_blob_sha": "c83594cb7e240e6766a1e6ee90e4e6f8cfb34212",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 resolving extensionless hrefs as `<path>.html` per the house convention, the-suite-is-green-at-head resolves; `tests/conftest.py` carries `module_reaches_the_browser_harness` (:59) and `pytest_collection_modifyitems` (:1148), `tests/spa_browser_harness.py` exists, `record_from_log` is at `reckon/crew/standing_suite.py:306` (it takes `declaration: SuiteDeclaration` and writes `budget_seconds=declaration.budget_seconds()`), `docs/state/reckon/flight.yaml` declares the standing-suite command with `-m not browser` and a 20m/1,200 s budget, and `reckon crew suite run` records one row per declared population at `reckon/crew_run_commands.py:1103`.",
+    "done_when": "pass \u2014 the finding raised against \u00a77's done-when is resolved: the committed-row clause now sits inside the node's declared write paths (`docs/state/reckon/suite-runs` was added in efe72983e), the measure is quantitative (row name `browser`, its counts, a 1,200 s budget), and the negative control is genuine \u2014 removing the standing-suite command's marker exclusion collects a marked test so the exclusion assertion fails.",
+    "evidence_paths": "pass \u2014 the committed row lands in the git-tracked `docs/state/reckon/suite-runs/` (an existing committed row there, `20260929T102119.421963Z-8e5df9da882b.json`, confirms the directory is durable and tracked), and the two-arm measurement log sits in the run directory, not a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches the code paths \u00a77 names; the gate id `g-tstb-browser-row` and comment id `c-hold-s2-1010` are plan-document references only.",
+    "reasoning": "pass \u2014 the preamble matches its cited comment c-hold-s2-1010 (head 866.8 s against base 190.3 s; 32 of 33 failures Timeout (>20.0s); base arm at 60 s); the collection hook that applies the marker exists in `tests/conftest.py` and is exactly the mechanism the redefined population rests on; and the row mechanism runs on a named caller \u2014 `reckon crew suite run` records one row per declared population (crew_run_commands.py:1103), with \u00a77's one-off row supplied through `record_from_log`'s declaration, as the changed clause states. Noted but not a defect: that recorder writes `duration_seconds=0.0` and `over_budget=False` (standing_suite.py:325-326, 364-365), so \u00a77's committed row carries the declared bound but not the run's measured duration \u2014 the changed clause claims only the bound, and \u00a77's done-when measures only name, counts and budget, so no plan claim is unsupported; \u00a79's recurring rows go through `standing_suite.run`, which measures duration.",
+    "single_goal": "pass \u2014 \u00a77 carries one deliverable (the browser population marked at collection, excluded from the standing-suite command, and recorded as its own row); the quiet-node measurement and its row are that deliverable's evidence, not a second deliverable.",
+    "wiring": "pass \u2014 \u00a77's ordering with \u00a72 is recorded by gate g-tstb-browser-row (data-section=\"s2\", data-gated-sections=\"s2\", required-evidence \"the-suite-tests-behaviour#s7\"), matching \u00a77's \"\u00a72's completion is gated on this section's evidence\", and every anchor \u00a77 cites resolves."
+  },
+  "section_digests": {
+    "_document": "30239abe7f7f8c3daf98f163a0df086a153904d1a7c52d9dc97c14fbd014f7eb",
+    "s1": "1d6184c53af837617ac7ee370d7b6d622f0b187f5ac5e8f8d90a1dda6a98b5b2",
+    "s2": "0a2190864603950ade3af9b2de4b53b463e747cc8dc4c1f6e9175cdd5a4ee623",
+    "s3": "b54ea6f02bf0468b0b6f22c4317ef1f30b269045ffcaa9c19ae6abd2d175e96b",
+    "s4": "0bbb53f80bd6f9eb08c166f5e54fdde7bd5678c29b455fd39e15555bcbc17e35",
+    "s5": "ab2721f7547c999de436c1bb3551c6fe1aff3bbe51e9d92c2f44f5f91ce4123d",
+    "s6": "2ab2547ce36adce1b8926643bbc4604f1d6d1695d52434c1e8849e50f80c4b9d",
+    "s7": "bf032ca99746069192bc2149363ebf17d36835a929ae3f348b9e35794270d82a",
+    "s8": "62593f92e5fae32f09b44fa99f06a95716d5b469914f43bc6d0a97c03d6c2831",
+    "s9": "34da0984e7531a8bd80734f0ffd4f3407cbaea01df800914f72836bc46648719"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T14:25:41.696516+00:00"
+}
