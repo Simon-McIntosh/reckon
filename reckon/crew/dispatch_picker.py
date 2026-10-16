@@ -1,6 +1,5 @@
 # ruff: noqa: I001, UP035
 from __future__ import annotations
-import inspect
 import json
 import os
 import subprocess
@@ -32,6 +31,7 @@ from reckon.crew.routing import (
 from reckon.crew.runs import (
     _pointer_lock,
     _write_json,
+    accepts_keyword,
     pointer_path,
     read_pointer,
     run_dir,
@@ -479,12 +479,11 @@ def dispatch_picker_selection(
                 "estimated_context_ms": estimated_context_ms,
                 "running": pick_running,
             }
-            parameters = inspect.signature(pick).parameters.values()
-            if not any(item.kind is item.VAR_KEYWORD for item in parameters):
-                accepted = {item.name for item in parameters}
-                inputs = {
-                    key: value for key, value in inputs.items() if key in accepted
-                }
+            inputs = {
+                key: value
+                for key, value in inputs.items()
+                if accepts_keyword(pick, key)
+            }
             # The pick times and names each of its own steps and marks the one
             # it is inside in ``pick_running``, so an expiry during the call is
             # named from pick()'s own vocabulary rather than from a step list

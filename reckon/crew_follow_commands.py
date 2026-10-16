@@ -90,8 +90,15 @@ def _follow_render_event(
 
 
 
-def _sweep_lapsed_holds(project: str, *, dry_run: bool = False) -> dict[str, Any]:
+def _sweep_lapsed_holds(
+    project: str, *, session: str | None = None, dry_run: bool = False
+) -> dict[str, Any]:
     """Resume this project's runs whose provider refusal has lapsed.
+
+    ``session`` confines the sweep to the runs the named session owns, so a
+    follower armed to observe another session never resumes that session's runs
+    or composes its reviews. A caller with no session to confine to passes
+    nothing and sweeps the whole fleet.
 
     Deferred like every other crew import in this file, and wrapped so a
     recovery that cannot run never takes the follower down with it: the pane a
@@ -100,8 +107,7 @@ def _sweep_lapsed_holds(project: str, *, dry_run: bool = False) -> dict[str, Any
     """
     from reckon.crew.resumption import sweep
 
-    return sweep(project, dry_run=dry_run)
-
+    return sweep(project, session=session, dry_run=dry_run)
 
 
 _FOLLOWER_CHECKPOINT_ENV = "RECKON_FOLLOWER_CHECKPOINT"
@@ -1692,7 +1698,14 @@ def _follow_watch_lines(
 
     def _sweep_quietly() -> None:
         try:
-            sweep(project)
+            # The follower's own sweep takes the session it serves, so a sweep
+            # armed here never reaches another session's runs. A sweep injected
+            # by a test may still keep the older single-argument shape, so the
+            # session is offered only to a callable that declares it.
+            if runs.accepts_keyword(sweep, "session"):
+                sweep(project, session=session)
+            else:
+                sweep(project)
         except Exception:  # noqa: BLE001 - a failed recovery must not end the pane
             return
 

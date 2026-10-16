@@ -2,6 +2,7 @@
 from __future__ import annotations
 import fcntl as fcntl
 import hashlib as hashlib
+import inspect as inspect
 import json as json
 import os as os
 import re as re
@@ -26,6 +27,29 @@ from reckon.env_duration import read_duration_override
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS as LEASE_RENEW_SECONDS, HostLease as HostLease
 from reckon.crew.node import _TERMINAL_RUN_PHASES as _TERMINAL_RUN_PHASES, DEFAULT_WATCH_STALL_WINDOW as DEFAULT_WATCH_STALL_WINDOW, RUN_DRAIN_DISPOSITIONS as RUN_DRAIN_DISPOSITIONS, CrewError as CrewError, TaskNode as TaskNode, parse_duration as parse_duration
 from reckon.crew.obligation_snapshot import CLI_MODULE_FILES as CLI_MODULE_FILES
+
+
+def accepts_keyword(callable_object: Callable[..., Any], keyword: str) -> bool:
+    """Whether a callable takes ``keyword`` by name, or swallows any keyword.
+
+    A caller forwarding an optional input to a callable it did not write has to
+    know whether the callee names that input: one sweep keeps an older
+    single-argument shape, and a caller that hands it a keyword the callee does
+    not declare fails at the call rather than at the declaration. The answer is
+    read from the callee's own signature, so the call shape follows what the
+    callable declares — the keyword by name, or ``**kwargs`` that takes
+    anything — rather than the identity of one function object. A signature
+    that cannot be introspected (a builtin with no Python-level signature)
+    reports no, since the caller cannot then prove the keyword is taken.
+    """
+    try:
+        parameters = inspect.signature(callable_object).parameters
+    except (TypeError, ValueError):
+        return False
+    return keyword in parameters or any(
+        parameter.kind is inspect.Parameter.VAR_KEYWORD
+        for parameter in parameters.values()
+    )
 
 
 def live_dir() -> Path:
