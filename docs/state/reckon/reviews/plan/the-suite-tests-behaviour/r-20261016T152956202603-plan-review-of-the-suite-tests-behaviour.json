@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T15:45:47.756Z",
+  "dispatched_at": "2026-10-16T15:30:45Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-suite-tests-behaviour.html:184",
+      "id": "wiring-1",
+      "reason": "an implementable section with no followup has no dispatch path, so the budget-stop misclassification \u00a710 exists to fix would never be built (the same gap an earlier review raised for \u00a78 and the author closed with f-tstb-004).",
+      "text": "\u00a710 is declared implementable (line 159, `plan-section-declarations`) yet every followup is resolved and f-tstb-003's outcome says \"No followup is written\" while naming only the two deferred sections (\u00a76, \u00a79) as remaining, so the plan records no order that reaches \u00a710 and a coordinator working its own followup sequence will not dispatch it",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-suite-tests-behaviour.html:340",
+      "id": "wiring-2",
+      "reason": "an open gate whose required evidence (`#s7`) has landed and whose gated section is `done` misreports \u00a72's state and would send a coordinator to re-check a satisfied gate.",
+      "text": "gate `g-tstb-browser-row` still carries `data-status=\"open\"` and an empty `data-verdict`, while the `c-close-s2` comment added in this revision states \u00a72's merge at `e6b265996` \"satisfies gate g-tstb-browser-row\", so the plan's gate record contradicts its own newly written comment and the roadmap will still present \u00a72 as gated",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "15638fb5b2ef329de5e79ba8929cc43eef184d80b4f9c34b47b50329461fcd30",
+  "plan_slug": "the-suite-tests-behaviour",
+  "plan_version": 63,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T152956202603-plan-review-of-the-suite-tests-behaviour",
+  "reviewed_blob_sha": "d20b0a9ac8db8dc5323e9f83ba728b1ee00b56b6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/standing_suite.py`, `_build_counts`, `_COLLECTION_ERROR_RE`, `_NOTHING_COLLECTED_EXIT` (5), commit `8655e3c44`, the row `20261016T152458.395768Z-8655e3c44df8.json` and log `suite-1792163098345424981.log` (147 `[ NN%]` lines ending `[ 76%]`) all resolve.",
+    "done_when": "pass \u2014 \u00a710's done-when is measurable and declares a negative control (remove the progress clause, the first case fails), and its three fixed-log cases separate the changed behaviour from the two unchanged ones.",
+    "evidence_paths": "pass \u2014 \u00a710's gate log goes under the run directory and its cited defect row and log sit on the repo's `docs/state/reckon/suite-runs/` path, not a scratchpad.",
+    "naming": "pass \u2014 \u00a710 introduces no plan labels, ticket numbers or changelog prose; the new test name states the mechanism.",
+    "reasoning": "pass \u2014 the root cause matches the committed row (`collection_failed:true`, `collected:0`, `exit_status:-9` at `_build_counts`'s `ran is None` branch), the described mechanism produces the done-when (progress present \u2192 not a collection failure; no summary token \u2192 `ran` None \u2192 `collected` null), and `_build_counts` is reached on the production path from `run()` with `hold_reason` reading the same flags.",
+    "single_goal": "pass \u2014 \u00a710 carries one deliverable (`_build_counts` stops reading a budget-stopped run as a collection failure).",
+    "wiring": "a finding \u2014 \u00a710 is declared implementable but the plan's followup set is fully resolved and f-tstb-003's outcome names no path to it."
+  },
+  "section_digests": {
+    "_document": "895e51748ee0ddbf610cf84ebbe606401aad9b64499f2d7c29674599473a0d0a",
+    "s1": "1d6184c53af837617ac7ee370d7b6d622f0b187f5ac5e8f8d90a1dda6a98b5b2",
+    "s10": "c3c0bb773a68528821c28eeabc7fbcdd80cf42fcb8ea2ba3ba8eefa8fdb0ce99",
+    "s2": "0a2190864603950ade3af9b2de4b53b463e747cc8dc4c1f6e9175cdd5a4ee623",
+    "s3": "b54ea6f02bf0468b0b6f22c4317ef1f30b269045ffcaa9c19ae6abd2d175e96b",
+    "s4": "0bbb53f80bd6f9eb08c166f5e54fdde7bd5678c29b455fd39e15555bcbc17e35",
+    "s5": "ab2721f7547c999de436c1bb3551c6fe1aff3bbe51e9d92c2f44f5f91ce4123d",
+    "s6": "2ab2547ce36adce1b8926643bbc4604f1d6d1695d52434c1e8849e50f80c4b9d",
+    "s7": "bf032ca99746069192bc2149363ebf17d36835a929ae3f348b9e35794270d82a",
+    "s8": "62593f92e5fae32f09b44fa99f06a95716d5b469914f43bc6d0a97c03d6c2831",
+    "s9": "34da0984e7531a8bd80734f0ffd4f3407cbaea01df800914f72836bc46648719"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T15:59:41.356989+00:00"
+}
