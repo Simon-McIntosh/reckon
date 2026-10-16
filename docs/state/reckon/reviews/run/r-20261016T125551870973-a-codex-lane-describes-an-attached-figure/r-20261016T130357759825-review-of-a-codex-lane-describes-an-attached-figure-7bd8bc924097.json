@@ -1,0 +1,79 @@
+{
+  "artifacts": [
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/figure-probe/report.md (reviewed deliverable, read-only)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/figure-probe/probe-figure.png (recorded figure, read-only; re-hashed)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T125551870973-a-codex-lane-describes-an-attached-figure/stream.jsonl (cited stream, read-only; re-parsed)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T130357759825-review-of-a-codex-lane-describes-an-attached-figure-7bd8bc924097/claims-rerun.log (this review's re-run: sha256 match, 1164-char match, event order 3<5, EXIT=0)"
+  ],
+  "claim_lines": [
+    "CLAIM 1: reproduced: re-ran `sha256sum /home/ITER/mcintos/.config/reckon/crew/reports/reckon/figure-probe/probe-figure.png` from the reviewed run's directory; it printed 107a6d8a5f5ab2b8098e599113716779e6f6d5f00f16d4eae0db42e65b28bfed, exactly the SHA-256 the report states",
+    "CLAIM 2: reproduced: re-ran an inline Python comparison from the reviewed run's directory; the report's fenced description is 1,164 characters and equals the first agent_message in stream.jsonl character for character (equal=True), matching the report's stated 1,164-character verbatim match",
+    "CLAIM 3: reproduced: re-ran the stream parse; the description agent_message is event 3 and the first tool event (item.started command_execution) is event 5, so the description precedes the first tool call as the report and its manifest state; the reviewed head 7bd8bc924097668b4d78b9e1787bdb6c12f8f0cc resolves as a commit and the run wrote no repository path"
+  ],
+  "claim_summary": {
+    "detail": "The report's summary line - the numeric sentence of final.txt - reads: 'The fenced description matches the first answer in the run stream character for character: 1,164 characters. That answer preceded the first tool call...' The record beneath it carries the same two figures: report.md's fenced description block is 1,164 characters (and is the answer), and the manifest's tests field reads 'PASS, 1164 characters equal, description event 3 before first tool event 5'. Both figures the summary quotes are the record's own figures, so the summary agrees with it. Note (not a discrepancy): the report carries no table; its figures appear in prose and in the manifest's tests field, which was read as the record beneath the summary.",
+    "verdict": "agrees"
+  },
+  "claim_summary_line": "CLAIM_SUMMARY: agrees: the report's summary line reads 'The fenced description matches the first answer in the run stream character for character: 1,164 characters. That answer preceded the first tool call'; the record beneath it (report.md's fenced block, 1,164 characters, and the manifest's tests field 'PASS, 1164 characters equal, description event 3 before first tool event 5') carries the same two figures, and the re-run reproduced both, so the summary's figures are the record's figures (the report states no table; the figures appear in prose)",
+  "claim_verdicts": {
+    "CLAIM 1": {
+      "cites": "report.md header (Figure, SHA-256); final.txt paragraph 1",
+      "detail": "Re-ran `sha256sum /home/ITER/mcintos/.config/reckon/crew/reports/reckon/figure-probe/probe-figure.png` from the reviewed run's directory; it printed 107a6d8a5f5ab2b8098e599113716779e6f6d5f00f16d4eae0db42e65b28bfed, exactly the report's figure. Log: claims-rerun.log.",
+      "finding": "rank 1 (the headline record): the attached figure is recorded at the stated path with SHA-256 107a6d8a5f5ab2b8098e599113716779e6f6d5f00f16d4eae0db42e65b28bfed",
+      "verdict": "reproduced"
+    },
+    "CLAIM 2": {
+      "cites": "report.md fenced text block; stream.jsonl first agent_message (event index 3); final.txt paragraph 2",
+      "detail": "Re-ran an inline Python comparison from the reviewed run's directory: the report's fenced block is 1,164 characters and equals the first agent_message text in stream.jsonl character for character (True). This is the report's stated figure. Log: claims-rerun.log.",
+      "finding": "rank 2 (the delivery measure): the fenced description in report.md matches the first answer in the run stream character for character, at 1,164 characters",
+      "verdict": "reproduced"
+    },
+    "CLAIM 3": {
+      "cites": "stream.jsonl event order; manifest.md tests field ('description event 3 before first tool event 5'); final.txt paragraph 2",
+      "detail": "Re-ran the stream parse: the description agent_message is event index 3 and the first tool event (item.started command_execution) is event index 5, so the description precedes the first tool call as the manifest states. The reviewed head 7bd8bc924097668b4d78b9e1787bdb6c12f8f0cc exists as a commit and the run's manifest lists it as the base with no repository path in changed_paths. Log: claims-rerun.log.",
+      "finding": "rank 3 (the ordering evidence): the description preceded the first tool call in the stream, and no repository file was changed or committed",
+      "verdict": "reproduced"
+    }
+  },
+  "claims": [
+    {
+      "cites": "report.md header (Figure, SHA-256); sha256sum",
+      "finding": "the attached figure is recorded at the stated path with SHA-256 107a6d8a5f5ab2b8098e599113716779e6f6d5f00f16d4eae0db42e65b28bfed",
+      "rank": 1,
+      "report_figure": "probe-figure.png sha256 107a6d8a5f5ab2b8098e599113716779e6f6d5f00f16d4eae0db42e65b28bfed",
+      "rerun_figure": "identical: 107a6d8a5f5ab2b8098e599113716779e6f6d5f00f16d4eae0db42e65b28bfed",
+      "verdict": "reproduced"
+    },
+    {
+      "cites": "report.md fenced text block; stream.jsonl first agent_message",
+      "finding": "the fenced description matches the run stream's first answer character for character at 1,164 characters",
+      "rank": 2,
+      "report_figure": "fenced description == stream first answer, 1,164 characters",
+      "rerun_figure": "identical: report fenced desc 1164 chars; first agent_message 1164 chars; equal=True",
+      "verdict": "reproduced"
+    },
+    {
+      "cites": "stream.jsonl event order; manifest.md tests field; final.txt",
+      "finding": "the description answer preceded the first tool call (event 3 before event 5)",
+      "rank": 3,
+      "report_figure": "description event 3 before first tool event 5",
+      "rerun_figure": "identical: agent_message at event index 3, first tool event at event index 5",
+      "verdict": "reproduced"
+    }
+  ],
+  "completed_at": "2026-10-16T13:11:41.189Z",
+  "dimensions": null,
+  "dispatched_at": "2026-10-16T13:05:52Z",
+  "method": "The reviewed run is read-only: its manifest records commits: [7bd8bc924097668b4d78b9e1787bdb6c12f8f0cc] (the base revision) and changed_paths confined to its report directory (report.md), with no gate suite, so reviewed_base_sha == reviewed_head_sha == 7bd8bc924097668b4d78b9e1787bdb6c12f8f0cc and there is no diff to read. Its deliverable is report.md under the report directory; its run summary is final.txt under the run directory. The report cites no script, but each of its headline findings is checkable by a single command re-run from the reviewed run's own directory, /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T125551870973-a-codex-lane-describes-an-attached-figure: (1) `sha256sum` over the recorded figure path reproduces the SHA-256 the report states; (2) an inline Python comparison of the report's fenced description against the first agent message in stream.jsonl reproduces the character-for-character match and the 1,164-character count; (3) the same stream parse reproduces the event-order claim that the description precedes the first tool call. The report's own summary line (the numeric sentence of final.txt) was compared against the record beneath it (report.md's header block and the manifest's tests field).",
+  "project": "reckon",
+  "report_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/figure-probe/report.md",
+  "review_run_id": "r-20261016T130357759825-review-of-a-codex-lane-describes-an-attached-figure-7bd8bc924097",
+  "reviewed_base_sha": "7bd8bc924097668b4d78b9e1787bdb6c12f8f0cc",
+  "reviewed_head_sha": "7bd8bc924097668b4d78b9e1787bdb6c12f8f0cc",
+  "reviewed_run_id": "r-20261016T125551870973-a-codex-lane-describes-an-attached-figure",
+  "rubric": "claims",
+  "status": "parsed",
+  "suite_delta_fields_omitted": "added_failure_count and added_failure_ids are intentionally absent: the reviewed run ran no gate suite (this review adds none).",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T13:16:00+00:00"
+}
