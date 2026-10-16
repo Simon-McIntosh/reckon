@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-after" content="the-suite-is-green-at-head">
   <meta name="plan-standalone" content="It shares the suite with the-suite-is-green-at-head, which it is sequenced after, but no section of either waits on the other.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;deferred&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
   <title>The Suite Tests Behaviour | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="62">
+<meta name="plan-version" content="63">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -154,6 +154,18 @@
 <p><strong>Deliverable.</strong> The <code>review.populations</code> block that <code>725454470</code> removed is restored as it stood. It names one population, <code>browser</code>, whose command is the standing-suite command with <code>-m browser</code> in place of <code>-m not browser</code>, with a <code>20m</code> budget. <code>reckon crew suite run --project reckon</code> then records the browser row under that declared budget. No reader code changes.</p>
 <p><strong>Opens when</strong> no reckon process started before <code>f76612774</code> (2026-10-11T00:11Z) is still running on any login or fleet node. That covers <code>reckon mcp</code>, <code>python -m reckon.mcp</code>, <code>reckon serve</code>, <code>reckon crew admit</code> and <code>reckon crew follow</code>. Check it by listing those processes with their start times on each node.</p>
 <p><strong>Done when</strong> <code>reckon.flight.resolve</code> for the reckon project succeeds at the head, and <code>review_populations</code> returns the browser declaration with a 1,200 s budget. A <code>reckon crew suite run --project reckon</code> at the head writes a row named <code>browser</code> beside the standing suite's own row. A freshly started <code>reckon mcp</code> server answers <code>crew(view="flight", project="reckon")</code> without error. The process listing that opened the section is logged under the run directory. The negative control is executed and logged: with the block removed again in a scratch copy of the layer, <code>review_populations</code> returns no browser declaration and a suite run over that copy writes no <code>browser</code> row. Write path: <code>docs/state/reckon/flight.yaml</code>.</p>
+
+    <h2 id="s10">§10 — A suite run stopped at its budget is recorded as overrun, not as a failed collection</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> At 15:04Z on 2026-10-16, a <code>reckon crew suite run --project reckon</code> at <code>8655e3c44</code> was stopped at its 1,200 s budget with exit status -9. Its <code>-q</code> progress had reached 76%: the log, <code>docs/state/reckon/suite-runs/suite-1792163098345424981.log</code>, holds 147 progress lines ending <code>[ 76%]</code>. The row recorded <code>collection_failed: true</code> and <code>collected: 0</code>. The promotion hold then read "failed to collect and overran its budget", which is half false. The cause is in <code>_build_counts</code> in <code>reckon/crew/standing_suite.py</code>. For any exit status other than 0, 1 or 5 it sets <code>collection_failed</code> from whether a final summary was printed. A run stopped before its summary therefore reads as one that never collected, even when its own progress lines show tests running.</p>
+<p><strong>Deliverable.</strong> <code>_build_counts</code> treats pytest's progress output as evidence that the test phase was reached: the <code>[ NN%]</code> column under <code>-q</code>, in plain and xdist form. A run whose log carries it is not a collection failure, whatever its exit status. Its <code>collected</code> stays unknown (<code>null</code>) when neither a collection line nor a summary states it, and is never recorded as 0. Positive collection-error evidence (<code>_COLLECTION_ERROR_RE</code>, or exit status 5) still decides a collection failure first. A run with neither progress nor a summary is classified as before. The promotion hold then names a budget-stopped run as "overran its budget" only.</p>
+<p><strong>Done when</strong> a new test, <code>tests/test_a_killed_suite_run_reached_its_tests.py</code>, builds counts from three fixed logs:</p>
+<ul>
+<li>progress lines up to <code>[ 76%]</code> and <code>EXIT=-9</code>: reads <code>collection_failed</code> false and <code>collected</code> null;</li>
+<li>an <code>ERROR collecting</code> line and exit 2: reads <code>collection_failed</code> true;</li>
+<li>no progress line and <code>EXIT=-9</code>: reads <code>collection_failed</code> true.</li>
+</ul>
+<p>It also asserts that the hold message for a latest row that overran its budget, with progress evidence, says "overran its budget" and not "failed to collect". The new test, <code>tests/test_standing_suite.py</code> and <code>tests/test_standing_suite_holds_promotion.py</code> pass with <code>EXIT=0</code> in a log under the run directory. <code>ruff check</code> and <code>ruff format --check</code> report no findings on the touched paths. The negative control is executed and logged: with the progress-evidence clause removed, the first case fails. Write paths: <code>reckon/crew/standing_suite.py</code>, <code>tests/test_a_killed_suite_run_reached_its_tests.py</code>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
