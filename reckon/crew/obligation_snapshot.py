@@ -337,6 +337,15 @@ def live_foreign_seat_host(project: str | None) -> str:
     return watch_unit.live_foreign_seat_host(project)
 
 
+def live_foreign_seat(project: str | None) -> tuple[str, str]:
+    """The live foreign seat's host and stamp, taken from the same record."""
+    if not project:
+        return "", ""
+    from reckon.crew import watch_unit
+
+    return watch_unit.live_foreign_seat(project)
+
+
 # ── Code stamp ──────────────────────────────────────────────────────────────
 
 _PACKAGE_DIR = Path(__file__).resolve().parent.parent
@@ -402,10 +411,10 @@ def freshness_reading(
     ``project`` names the seat to consult when no snapshot is held, and when the
     recorded pid is not running on this host. A snapshot published by a producer
     on another node records that node's pid, which this host's process table
-    answers for only by accident, so a locally-absent pid is not by itself an
-    absence; the project's seat, which crosses the shared home, is asked whether
-    it names a foreign host whose stream is still fresh, and a yes counts as a
-    live producer.
+    answers for only by accident. A locally absent pid is not by itself an
+    absence: the project's seat and host lease cross the shared home and can
+    name a live producer elsewhere. The seat's code stamp identifies the
+    producer now holding it, even when its predecessor wrote the snapshot.
 
     The four not-fresh reasons are ``no-producer`` for an absent producer with
     no live seat behind it, ``no-follower`` for no snapshot at all while a live
@@ -424,12 +433,15 @@ def freshness_reading(
     # read it pulls in the crew facade, which the prompt path must not touch
     # while a live snapshot already answers the reading.
     host = ""
+    seat_stamp = ""
     if not _records_the_live_producer(producer):
-        host = live_foreign_seat_host(project)
+        host, seat_stamp = live_foreign_seat(project)
         if not host:
             return NO_PRODUCER, host
     stamp = source_code_stamp() if current_stamp is None else current_stamp
-    if str(producer.get("code_stamp") or "") != stamp:
+    # Older seat records may carry no stamp; retain their snapshot's reading.
+    producer_stamp = seat_stamp or str(producer.get("code_stamp") or "")
+    if producer_stamp != stamp:
         return STALE_CODE, host
     computed = _parse_instant(document.get("computed_at"))
     if computed is None:

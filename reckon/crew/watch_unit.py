@@ -141,30 +141,31 @@ def _stream_says_alive(record: Mapping[str, Any], project: str | None) -> bool:
 
 
 def live_foreign_seat_host(project: str) -> str:
-    """The host a live foreign seat names, or an empty string when none.
+    """The host a live foreign seat names, or an empty string when none."""
+    return live_foreign_seat(project)[0]
 
-    A reader on the seat's own host cannot read a foreign producer's process
-    table, so the two facts the shared home carries are the ones it has: the
-    seat names a host other than this one, and that seat's transition stream
-    moved within its stall window. Both together are a producer still at work
-    elsewhere; either alone is not, because a stale-or-absent stream marks a
-    foreign producer no more alive than a local dead pid does.
 
-    The host is returned rather than a flag because a reader that has decided a
-    producer is live elsewhere still needs to say *where* -- the sentence a
-    coordinator reads names the node, and the seat is the only place that name
-    lives. A caller that needs only the yes/no wraps this result in
-    :func:`seat_names_a_live_foreign_producer`, so the two can never disagree
-    about which seat is live.
+def live_foreign_seat(project: str) -> tuple[str, str]:
+    """Read a live foreign seat's host and code stamp from one seat record.
+
+    The seated producer renews its host lease even when no transition occurs.
+    A moving stream remains a second witness when the lease is absent. A lease
+    held on a different host cannot validate this seat's code stamp or host.
     """
     try:
         with watch_lock_path(project).open("rb") as handle:
             record = _read_watch_record(handle)
     except OSError:
-        return ""
+        return "", ""
     if not _seat_names_a_foreign_host(record):
-        return ""
-    return _seat_host(record) if _seat_stream_fresh(project, record) else ""
+        return "", ""
+    host = _seat_host(record)
+    holder = watch_host_lease(project).holder()
+    if (holder is not None and holder.host == host) or _seat_stream_fresh(
+        project, record
+    ):
+        return host, str(record.get("code_stamp") or "")
+    return "", ""
 
 
 def seat_names_a_live_foreign_producer(project: str) -> bool:
