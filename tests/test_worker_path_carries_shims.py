@@ -18,6 +18,7 @@ import pytest
 
 import reckon.crew.dispatch_launch as dispatch_launch_module
 from reckon import host as host_module
+from reckon import nested_launch as nested
 from reckon._backends import LaunchPlan
 from reckon.crew.node import TaskNode
 from reckon.crew.prompts import compose_prompt
@@ -26,6 +27,12 @@ from reckon.nested_launch import real_binary, shim_directory
 from reckon.worker_git_shim import worker_shim_directory
 
 dispatch_module = import_module("reckon.crew.dispatch")
+
+# The route sentence and the step fact the host line composes its routes out
+# from, captured once at import so the expectation the prompt is read against
+# names the same declaration the line was built from rather than a copy of it.
+DECLARED_ROUTE = nested.PARTITION_ROUTE
+DECLARED_SENTENCE = nested.NESTED_SRUN_SENTENCE
 
 DECLARED_MUTATION = "remove the shim-directory PATH prepend"
 MUTATION_ENV = "RECKON_TEST_REMOVE_SHIM_PATH_PREPEND"
@@ -219,11 +226,17 @@ def test_inside_allocation_prompt_names_the_host_and_storage_contract(
     assert f"job {JOB}" in prompt
     assert f"{SCRATCH} is node-local" in prompt
     assert "the work runs in place" in prompt
-    assert (
-        "do not open an srun or salloc step in this job or an sbatch into it" in prompt
-    )
+    # The prohibition is scoped to a step inside this job. Its routes out are
+    # asserted against the declaration the line composes them from, so a route
+    # that moves in nested_launch.py moves the expectation with it.
+    assert "do not open an srun or salloc step in this job" in prompt
+    assert DECLARED_ROUTE in prompt
+    assert nested.PARTITION_ROUTE_VERB in DECLARED_ROUTE
+    assert DECLARED_SENTENCE in prompt
     assert "RECKON_ALLOW_NESTED_LAUNCH=1" in prompt
-    assert f"logs a later reader needs go under {run_directory}" in prompt
+    assert f"a later reader needs go under {run_directory}" in prompt
+    # sbatch is the route out of the held job, so the line must not forbid it.
+    assert "or an sbatch into it" not in prompt
 
 
 def test_outside_allocation_carries_the_git_shim_but_no_scheduler_shims(
