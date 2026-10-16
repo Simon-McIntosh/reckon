@@ -60,6 +60,11 @@
     <p>Run <code>r-20261016T095813341068-a-live-pick-reads-outcomes-at-its-capability</code> (clive, picked by Jev at 0.73), commits <code>6e9a3a97b</code> and <code>f7f51d1fb</code>, merged at <code>83f43ad19</code>. <code>pick()</code> resolves the declared capability before building candidates, so a live pick now renders <code>outcomes_at_requirement</code>. Gate: 4 passed; the negative control, restoring the old order, leaves the block absent. Over an 11-file importer subset, both arms show the same single pre-existing failure, so 0 failures were added. The full 62-file importer sweep did not fit the node's 45-minute fence, and its status was repaired to complete with that reason. Independent review <code>r-20261016T105103848923</code> totals 113. Its follow-on: the capability now also reaches the role-override class lookup. No flight layer declares <code>by_capability_class</code>, so that has no effect under today's configuration.</p>
   </section>
 
+  <section id="s4">
+    <h2>§4 — a coordinator&#x27;s move counts against Jev&#x27;s pick</h2>
+    <p>Run <code>r-20261016T112409473679-a-move-counts-against-the-pick</code> (clive, picked by Jev at 0.46), commit <code>faa09d078</code>, merged at <code>da7f8f65c</code>. A row whose lineage moves it off the backend its <code>picker_selection</code> chose is removed from the receiving candidate's <code>outcomes</code> and <code>outcomes_at_requirement</code> and counted as that candidate's <code>moved_in</code>. The candidate Jev chose gains <code>moved_off</code>. A lane change with no picker selection counts under its final lane as before. Gate: 5 passed; over the 25 files importing <code>snapshot.py</code>, 206 passed at head against 201 at base, so 0 failures added. The negative control, which ignores lineage, reddens three tests. Independent review <code>r-20261016T120756937620</code> totals 117. Its follow-on: <code>moved_in</code> is not filtered by requirement, while <code>moved_off</code> is.</p>
+  </section>
+
 </main>
 </body>
 </html>
