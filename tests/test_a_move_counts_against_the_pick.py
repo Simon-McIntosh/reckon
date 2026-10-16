@@ -39,6 +39,18 @@ CONFIG = {
 _DEEP_CRITICAL = {"reasoning": "deep", "risk": "critical"}
 _SHALLOW_LOW = {"reasoning": "standard", "risk": "low"}
 
+#: Three backends, so a state can hold a moved-onto candidate, a moved-off
+#: candidate and a candidate with no move in the same rendered pick.
+CONFIG_THREE_LANES = {
+    "local_backend": "clive",
+    "roles": {"implement": {}, "review": {}},
+    "backends": {
+        "clive": {"model": "m-clive"},
+        "codex": {"model": "m-codex"},
+        "amine": {"model": "m-amine"},
+    },
+}
+
 
 def _request(requirements: dict[str, str] | None = _DEEP_CRITICAL) -> PickRequest:
     """A request naming no requirement is one whose capability names none."""
@@ -159,10 +171,10 @@ def picker_env(monkeypatch, tmp_path):
     return tmp_path
 
 
-def _candidates(records, picker_env, request=None):
+def _candidates(records, picker_env, request=None, config=None):
     return snapshot.candidates(
         request or _request(),
-        CONFIG,
+        config or CONFIG,
         picker_env,
         records=records,
         budget_snapshot={"backends": [], "groups": []},
@@ -277,6 +289,61 @@ def test_the_rendered_state_carries_the_move_figures_and_the_glossary(picker_env
     ]["glossary"]
     assert "moved_in" in glossary
     assert "moved_off" in glossary
+
+
+def test_a_request_naming_no_requirement_renders_the_move_figures(picker_env):
+    """A pick that names no requirement still renders the move figures, sparsely.
+
+    There is no at-requirement block to carry them, so the receiving
+    candidate's ``moved_in`` and the chosen candidate's ``moved_off`` must stand
+    on their own -- otherwise a node dispatched with no declared capability,
+    such as a brief, shows Jev no coordinator moves at all. They are rendered
+    sparsely: the candidate no coordinator moved a run onto or off carries
+    neither key, so a move-free candidate adds no bytes to the state and the
+    prompt keeps within its size budget.
+    """
+
+    rows = [
+        _row(
+            backend="codex",
+            model="m-codex",
+            gate="failed",
+            requirement=_DEEP_CRITICAL,
+            picker_selection=_selection("clive", "m-clive"),
+            lineage=_lineage("clive", "codex"),
+        ),
+    ]
+    candidates = [
+        candidate
+        for candidate in _candidates(
+            rows,
+            picker_env,
+            request=_request(requirements=None),
+            config=CONFIG_THREE_LANES,
+        )
+        if not candidate.reasons
+    ]
+    state = prompts.build_state(
+        node=_request(requirements=None).node,
+        capability={},
+        estimated_context=0,
+        comment="",
+        candidates=candidates,
+        lane={"return_times": {}, "lanes": {}, "local_lane": {}},
+        attempts=0,
+    )
+    codex = state["candidates"]["codex"]
+    clive = state["candidates"]["clive"]
+    amine = state["candidates"]["amine"]
+    # No requirement was named, so no at-requirement block is rendered...
+    assert "outcomes_at_requirement" not in codex
+    # ...yet the move figures are, read over every move: a moved-onto candidate
+    # renders moved_in and a moved-off candidate renders moved_off.
+    assert codex["moved_in"]["failed"] == 1
+    assert clive["moved_off"] == 1
+    # A candidate no coordinator moved a run onto or off carries neither key.
+    assert "moved_in" not in amine
+    assert "moved_off" not in amine
 
 
 def test_ignoring_lineage_leaves_the_move_counted_for_the_lane(picker_env, monkeypatch):

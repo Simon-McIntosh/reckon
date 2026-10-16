@@ -49,8 +49,12 @@ class Candidate:
     # vocabulary over the rows a coordinator moved away from another pick and
     # onto this candidate, kept out of ``outcomes`` and
     # ``outcomes_at_requirement``; ``moved_off`` is how many of this candidate's
-    # own picks a coordinator moved away. Both are null when the request names
-    # no requirement, and are read at the request's requirement when one is.
+    # own picks a coordinator moved away. Both are read at the request's
+    # requirement when it names one, and over every move when it names none, and
+    # both are rendered sparsely: ``moved_in`` only when it holds at least one
+    # move and ``moved_off`` only when it is greater than zero, so an absent key
+    # means no coordinator moved a run onto, or off, this candidate in the
+    # window.
     moved_in: dict[str, int] | None = None
     moved_off: int | None = None
 

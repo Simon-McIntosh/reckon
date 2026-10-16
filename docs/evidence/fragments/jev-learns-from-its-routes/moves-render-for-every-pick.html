@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+</head>
+<body>
+  <section data-reckon="evidence" id="moves-render-for-every-pick">
+    <h2 id="moves-render-for-every-pick-title">Jev sees coordinator moves when the request names no requirement</h2>
+    <p id="moves-render-for-every-pick-landing">
+      <code>_candidate_state</code> in <code>reckon/crew/picker/prompts.py</code>
+      now renders <code>moved_in</code> and <code>moved_off</code> for every
+      candidate, not only inside the block emitted when the request names a
+      requirement: they travel beside <code>outcomes_at_requirement</code> when
+      one is named and stand on their own when none is, so a node dispatched
+      with no declared capability no longer shows Jev zero coordinator moves.
+      Both figures are rendered sparsely, so the state stays within its size
+      budget: <code>moved_in</code> is included only when it holds at least one
+      move, and <code>moved_off</code> only when it is greater than zero. A
+      candidate no coordinator moved a run onto or off carries neither key, so a
+      state with no moves is exactly as large as it was before the move figures
+      existed. Over one moved row (a clive pick a coordinator moved to codex that
+      failed) at a request naming no requirement, the rendered state carries the
+      receiving codex candidate's <code>moved_in</code> with one failed and the
+      chosen clive candidate's <code>moved_off</code> 1, while a third candidate
+      with no moves carries neither key and no
+      <code>outcomes_at_requirement</code> block is present. The
+      <code>moved_in</code> and <code>moved_off</code> glossary entries and the
+      field comments in <code>prompts.py</code> and <code>types.py</code> now
+      state the figures are read at the request's requirement when it names one
+      and over every move when it names none, and that an absent key means no
+      coordinator moved a run onto, or off, that candidate in the window. Gate
+      <code>tests/test_a_move_counts_against_the_pick.py</code> and
+      <code>tests/test_picker_helpers_have_one_owner.py</code> 12 passed;
+      negative control (the move figures rendered on every candidate) fails the
+      "carries neither key" assertion in
+      <code>test_a_request_naming_no_requirement_renders_the_move_figures</code>
+      (EXIT=1). Because a move-free state is unchanged in size, the two
+      representative-state guards in <code>tests/test_picker.py</code> and
+      <code>tests/test_picker_pressure.py</code> keep their existing bounds and
+      pass unchanged.
+    </p>
+  </section>
+</body>
+</html>
