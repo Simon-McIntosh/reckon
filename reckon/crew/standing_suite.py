@@ -24,7 +24,7 @@ pytest exits 1 for a suite that collected, ran and failed, and that is an
 ordinary failing suite a writer knows what to do with — not a suite to hold.
 Only three things mark a collection failure: pytest's own collection-error
 line, an exit status of 5 ("no tests collected"), or a non-zero status that is
-neither 0 nor 1 and a summary showing no test ran. The collected count is read
+neither 0 nor 1 with no progress or summary showing tests ran. The collected count is read
 from pytest's collection line when it prints one and otherwise summed from the
 final summary counts, because under ``-q`` — the form this project's own suite
 declares — pytest prints no collection line at all.
@@ -69,7 +69,7 @@ WAIVER_KIND = "waiver"
 
 # A run's trailing exit-status line, the form :func:`run` leaves and
 # :func:`record_from_log` reads.
-_EXIT_LINE_RE = re.compile(r"^EXIT=(\d+)\s*$", re.MULTILINE)
+_EXIT_LINE_RE = re.compile(r"^EXIT=(-?\d+)\s*$", re.MULTILINE)
 
 # The plain pytest collection line ("collected 12 items") and the pytest-xdist
 # form (`[12 items]`). Under `-q` — the form this repository's own suite
@@ -83,6 +83,9 @@ _XDIST_ITEMS_RE = re.compile(r"\[\s*(\d+)\s+items?\s*\]")
 # inside an "Interrupted:" banner, and the per-file "ERROR collecting" line
 # other runners emit.
 _COLLECTION_ERROR_RE = re.compile(r"errors?\s+during collection|ERROR collecting")
+
+# Quiet pytest prints this column after test progress, including with xdist.
+_PROGRESS_RE = re.compile(r"\[\s*(?:100|[1-9]?\d)%\](?=\s|$)")
 
 # pytest's exit status for a run that collected nothing. Exit 1 is deliberately
 # NOT here: pytest documents it as "tests were collected and run but some
@@ -387,7 +390,7 @@ def _build_counts(log_text: str, exit_status: int | None) -> dict[str, Any]:
     prints one, and otherwise derived from the final summary counts, because
     under ``-q`` — the form this project's own suite declares — pytest prints
     no collection line at all. A run with no evidence of collection records
-    zero, which is the honest count rather than an absent one.
+    zero. A stopped run with progress but no count keeps collection unknown.
     """
     results = _result_counts(log_text)
     collected_line = _collected(log_text)
@@ -398,7 +401,7 @@ def _build_counts(log_text: str, exit_status: int | None) -> dict[str, Any]:
         or exit_status == _NOTHING_COLLECTED_EXIT
     ):
         collection_failed = True
-    elif exit_status in (None, 0, 1):
+    elif exit_status in (None, 0, 1) or _PROGRESS_RE.search(log_text):
         # 0 is a clean run and 1 is pytest's "tests ran and some failed"; both
         # are evidence the test phase was reached.
         collection_failed = False
