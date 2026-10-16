@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T22:21:33.375Z",
+  "dispatched_at": "2026-10-16T22:12:08Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:192",
+      "id": "done_when-1",
+      "reason": "\u00a76 and \u00a77 both pin the corpus precisely because \"run-record churn cannot move the figures\", so the split this node exists to produce can be wrong in exactly the way the plan's own precedent forbids, and making the arms comparable (record the live document/pointer count per pass, or sample the live state at the copy's size) changes the measure.",
+      "text": "\u00a720 times the node-local arm over a copy \"taken at the start of the job\" but the in-place arm over live crew state that keeps changing for the several minutes five passes take, so the arm difference it reports mixes filesystem cost with corpus churn, and the only control (two frozen node-local copies) cannot see the churn",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:192",
+      "id": "reasoning-1",
+      "reason": "the arm's second call is named the producer's steady state and is the figure \u00a724's freshness window rests on, yet on this arm the memo cannot be refreshed by the process under test, so the headline number is taken on a path production does not take while the plan's stated guard against that stays silent; the author must either widen the bind to the memo directory or record the memo-refusal and state its effect on the second call.",
+      "text": "\u00a720 asserts the bwrap read-only bind \"refuses any write to the live state. A pass that fails on a refused write is reported as a finding, not worked around\", but the one write this derivation issues is the classification memo, written best-effort with the refusal swallowed (reckon/crew/recovery_memo.py:_write_classification_memo/write path, `except OSError: return`; called from recovery_classification.classify_pointer at line 1575, reached through fleet_state -> _classified_rows), so nothing fails and nothing is reported",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bbd8200ed2169d31e5d0459e0f2cd3b042bfdffd931d99d12b0da3abb8652288",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 144,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T221131232808-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "1a7a8f85ea3dc63775625a0a22c22b439888e21f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 obligation_snapshot.fleet_state (reckon/crew/obligation_snapshot.py:826), FLOOR_TICK_SECONDS (line 55) and FRESHNESS_WINDOW_SECONDS (line 51) all resolve, and \u00a720's claim that fleet_state publishes no snapshot holds (write_snapshot is reached only from sweep, line 728 vs 968).",
+    "done_when": "a finding \u2014 \u00a720's declared control is an A/A check between two node-local copies, which cannot falsify the split it reports, because both control copies are frozen while the in-place arm reads live state.",
+    "evidence_paths": "pass \u2014 both write their logs and reports under the run directory plus a docs/evidence/fragments/a-read-answers-inside-its-deadline/ page, not a scratch or node-local path.",
+    "naming": "pass \u2014 \u00a720 and \u00a724 name functions and mechanisms (fleet_state, FLOOR_TICK_SECONDS, FRESHNESS_WINDOW_SECONDS); no plan label, stage name or ticket number reaches a symbol, and no changelog prose is present.",
+    "reasoning": "a finding \u2014 the read-only bind \u00a720 imposes silently swallows the one write the measured derivation makes, so the pass it measures is not the producer's path and the \"reported as a finding\" promise cannot fire.",
+    "single_goal": "pass \u2014 \u00a720 delivers one investigation (the filesystem/pass split) and \u00a724 one measurement (the repaired pass against the freshness window).",
+    "wiring": "pass \u2014 \u00a720 rests on the completed \u00a718 profile and \u00a724 on \u00a721 to \u00a723, both ordering claims stated in their own text and in followup f-araiid-020, and neither names a node that does not exist."
+  },
+  "section_digests": {
+    "_document": "d4ddda961784c7a505897dfa112dcf8d73378167d498be05466e8103832740db",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "f6e2a8c3d1c90f4194ec9891635cef181cf62c62a5dbb39efd4c9832ac5d1e9b",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s20": "4deae2f4b6becdf8650bd38b9202cd83981cef8781be78964b1c17fc35dce91c",
+    "s21": "4d93efb4f5d84adaeb9eea5dc423557ae897e4118bc313d1f7fc1e2839f2e2fb",
+    "s22": "6266f82976abf2a572694b2f91bf0143ff9a02ea484166e79b8197bde4e1a5e6",
+    "s23": "19ab14ea99e986a9e91a521cccdf725d2ca25f3119b1b53c489aa0fb3cc24dd1",
+    "s24": "0ac34efd551cc3f05bda730254c3b6bdddb1e06525e3d942dee71c75119cf55f",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T22:27:45.140902+00:00"
+}
