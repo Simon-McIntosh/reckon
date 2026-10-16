@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/resources.py:276",
+    "reckon/resources.py:363",
+    "reckon/resources.py:628",
+    "reckon/resources.py:1243",
+    "reckon/metadata_index.py:181"
+  ],
+  "completed_at": "2026-10-16T01:21:55.050Z",
+  "dispatched_at": "2026-10-16T01:10:41Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "parse_meta_shared lost its last production caller to the head parse; deleting an unused function changes no behaviour, so it is recorded in the s14 landing as residual rather than holding the read-path fix that unblocks the picker",
+      "recorded_at": "2026-10-16T01:23:07.729391+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/metadata_index.py",
+      "line": "163",
+      "severity": "follow-on",
+      "text": "follow-on: parse_meta_shared is public but, after identification moved onto the head parse, has no production caller anywhere in the repository (grep over reckon, tests, docs finds only its definition; the sole remaining reference is the run's negative_control.py, which rebinds it as the full-parse delegate). Its head-reading sibling was underscored in this same commit, so the deliverable's \"no public function or option is added\" is left half-applied: the dead public function should have been privatised or its remaining consumer named."
+    },
+    {
+      "file": "tests/test_resource_identity_reads_the_digest_index.py",
+      "line": "148",
+      "severity": "follow-on",
+      "text": "follow-on: the file is edited outside the run's plan section 14 declared write paths (reckon/resources.py, reckon/_plan_html.py, reckon/metadata_index.py, tests/test_identifying_a_plan_reads_its_head.py and the evidence fragment). The rename of parse_meta_head_shared to _parse_meta_head_shared made the edit necessary to keep the file importable, but the run's recorded write_paths were never extended; the coordinator accepted the path at promotion, so no action is outstanding on the worker."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/identifying-a-plan-reads-its-head.html",
+      "line": "59",
+      "severity": "follow-on",
+      "text": "follow-on: the new \"Reader output over one frozen tree\" section carries the change's headline comparison (55,974 fields, 5.1226 s to 0.4627 s) as prose with no figure, while docs/figures/a-read-answers-inside-its-deadline/ is a declared write path and does not exist. The user mandate asks a research/evidence doc to embed a before/after figure where a graphic would communicate the result, and a two-arm timing and field-difference comparison is exactly that case."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base d1318812; b5ccedc6 changes reckon/metadata_index.py (fold parse_meta_shared and parse_meta_head_shared into one _digest_memo, underscore both head readers), reckon/_plan_html.py:2217 (parse_meta_head -> _parse_meta_head), reckon/resources.py:276,363,628,1243 and the two test files (call-site renames) and the evidence fragment (new names plus the reader-output section).",
+    "done_when": "the read_state-count and same-id assertions are met and logged (focused-new-test.log 3 passed, focused-digest-test.log 5 passed, id-comparison2.log 0 new failures), and the reader-output equality the prior review found undemonstrated is now shown on frozen input: frozen-readers-diff-seed0.log records 0 differing values and 0 keys present in one dump alone out of 55,974 fields, with a positive control in frozen-readers-diff-base-repeat.log (57 differing unseeded within one arm).",
+    "goal": "the node goal is head-only identification so a slug resolve parses no plan body; reckon/_plan_html.py:2217 defines _parse_meta_head and reckon/resources.py:276,363,628,1243 route identification through it and metadata_index.py:171, and tests/test_identifying_a_plan_reads_its_head.py:99,113 fail (11 == 0, 1 == 0) under the negative control, so the landed change preserves the goal while making the head readers private.",
+    "manifest": "read; it reads status: complete, names commit b5ccedc6, and records the 3-passed own gate, the red negative control (11 == 0 and 1 == 0), the frozen-reader comparison at 0 of 55,974 fields under PYTHONHASHSEED=0 and 0 new failures across 38 suite chunks.",
+    "write_paths": "the declared write paths are reckon/resources.py, reckon/_plan_html.py, reckon/metadata_index.py, tests/test_identifying_a_plan_reads_its_head.py, the evidence fragment and docs/figures/a-read-answers-inside-its-deadline/identifying-a-plan-reads-its-head; this commit also changes tests/test_resource_identity_reads_the_digest_index.py, outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_resource_identity_reads_the_digest_index.py:151 (assert calls[\"count\"] == 1) and :153-154 (the poison-mutation check) are verified to fire by the file's own declared negative control, and tests/test_identifying_a_plan_reads_its_head.py:99,113 are shown to redden under the run's negative control (negative-control.log: assert 11 == 0, assert 1 == 0, EXIT=1); the rename itself adds no assertion, so nothing guards the privacy of the head readers, but no behaviour changed under it.",
+    "evidence": "the prior blocking item is closed on evidence a reader can open: frozen-readers-diff-seed0.log records 0 differing values / 0 one-sided keys over 55,974 fields, and the absence is a controlled one because frozen-readers-diff-base-repeat.log shows the same comparison reddening by 57 fields on one frozen arm against itself, so the instrument is seen to see differences.",
+    "fit": "reckon/metadata_index.py:130 names the helper by the mechanism it performs (_digest_memo taking the cache and the delegate) and no added name carries a plan, stage or ticket label; the commit subject and body are conventional and free of attribution.",
+    "goal_fidelity": "reckon/resources.py:276 reaches identification through metadata_index._parse_meta_head_shared and reckon/_plan_html.py:2217 now exposes _parse_meta_head privately, so the goal holds and the section 14 clause that no public function is added is satisfied for this commit's additions.",
+    "reuse": "reckon/metadata_index.py:130 replaces the two near-verbatim digest memos with one _digest_memo that both parse_meta_shared (:163) and _parse_meta_head_shared (:171) extend, so no capability is forked; the only other memo, reckon/file_memo.py:43 memoized, keys on stat identity per path and is a different capability, left alone.",
+    "scope_discipline": "five of the six paths in the diff are inside the declared write paths and tests/test_resource_identity_reads_the_digest_index.py:148 is outside them, edited only to follow the renamed helper; the declared write path docs/figures/a-read-answers-inside-its-deadline/identifying-a-plan-reads-its-head is unused."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is head-only identification so a slug resolve parses no plan body; this commit keeps the head readers private (reckon/_plan_html.py:2217 _parse_meta_head, reckon/metadata_index.py:171 _parse_meta_head_shared) and reckon/resources.py:276,363,628,1243 route identification through them, so the landed change preserves the goal and satisfies section 14's \"no public function is added\".\nVERDICT done_when: The read_state-count and same-id assertions are met and logged (focused-new-test.log 3 passed, focused-digest-test.log 5 passed, id-comparison2.log 0 new failures), and the reader-output equality the prior review found undemonstrated is now shown on frozen input at frozen-readers-diff-seed0.log (0 differing values, 0 one-sided keys, 55,974 fields) with a positive control in frozen-readers-diff-base-repeat.log (57 differing unseeded within one arm).\nVERDICT write_paths: The declared write paths are reckon/resources.py, reckon/_plan_html.py, reckon/metadata_index.py, tests/test_identifying_a_plan_reads_its_head.py, the evidence fragment and the figures directory; this commit also changes tests/test_resource_identity_reads_the_digest_index.py, outside them.\nVERDICT manifest: Read; it reads status: complete, names commit b5ccedc6, and records the 3-passed own gate, the red negative control (11 == 0 / 1 == 0), the frozen-reader comparison at 0 of 55,974 fields and 0 new failures across 38 suite chunks.\nVERDICT diff: Read commit by commit against base d1318812; b5ccedc6 folds the two digest memos into one _digest_memo and underscores both head readers in reckon/metadata_index.py, renames the reader in reckon/_plan_html.py:2217, updates the four call sites in reckon/resources.py and the two test files, and extends the evidence fragment with the new names and a reader-output section.\nCALL_SITES: reckon/resources.py:276, reckon/resources.py:363, reckon/resources.py:628, reckon/resources.py:1243, reckon/metadata_index.py:181\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/resources.py:276 reaches identification through metadata_index._parse_meta_head_shared and reckon/_plan_html.py:2217 now exposes _parse_meta_head privately, so the goal holds and section 14's clause that no public function is added is satisfied for this commit's additions.\nSCORE evidence: 18\nJUSTIFICATION evidence: frozen-readers-diff-seed0.log records 0 differing values and 0 one-sided keys over 55,974 fields, and frozen-readers-diff-base-repeat.log shows the same comparison reddening by 57 fields on one frozen arm against itself, so the instrument is seen to see differences.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: five of the six paths in the diff are inside the declared write paths and tests/test_resource_identity_reads_the_digest_index.py:148 is outside them, edited only to follow the renamed helper.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_identifying_a_plan_reads_its_head.py:99,113 are shown to redden under the run's negative control (negative-control.log: assert 11 == 0, assert 1 == 0, EXIT=1) and tests/test_resource_identity_reads_the_digest_index.py:151 guards the folded memo, though no assertion guards the privacy of the head readers.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/metadata_index.py:130 names the helper by the mechanism it performs and no added name carries a plan, stage or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/metadata_index.py:130 replaces the two near-verbatim digest memos with one _digest_memo that both parse_meta_shared (:163) and _parse_meta_head_shared (:171) extend, and reckon/file_memo.py:43 memoized keys on stat identity and is a different capability.\nFINDING reckon/metadata_index.py:163 follow-on: parse_meta_shared is public but has no production caller after identification moved to the head parse; its head-reading sibling was underscored here, so the dead public function should have been privatised too or its remaining consumer named.\nFINDING tests/test_resource_identity_reads_the_digest_index.py:148 follow-on: the file is edited outside the run's declared write paths; the rename forced the edit but the recorded write_paths were never extended.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/identifying-a-plan-reads-its-head.html:59 follow-on: the new reader-output section states the change's headline comparison as prose with no figure while the declared figures path does not exist.\n",
+  "review_run_id": "r-20261016T011004768797-review-of-identifying-a-plan-reads-its-head-b5ccedc64e46",
+  "reviewed_base_sha": "d13188122600fe31fb38c693d8481bb08cf749cb",
+  "reviewed_head_sha": "b5ccedc64e46b40ddcccd56bd3acf8b78d0f433b",
+  "reviewed_run_id": "r-20261015T231328322634-identifying-a-plan-reads-its-head",
+  "reviewer_run_id": "r-20261016T011004768797-review-of-identifying-a-plan-reads-its-head-b5ccedc64e46",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 13
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T231328322634-identifying-a-plan-reads-its-head/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/identifying-a-plan-reads-its-head",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T01:20:00.000000+00:00",
+  "total": 104
+}
