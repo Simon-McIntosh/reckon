@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T17:42:32.463Z",
+  "dispatched_at": "2026-10-16T17:36:31Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-answers-inside-its-deadline/r-20261016T173549969142-plan-review-of-a-read-answers-inside-its-deadline/plan.html:130",
+      "id": "reasoning-1",
+      "reason": "the fixed order is what the paragraph offers as its protection that \"the hour cannot drop the control or any target\"; left as written it is an unsatisfiable instruction for the worker, so the ordering clause must be restated as an invocation order (roadmap both arms, then audit, then discovery) rather than a cold-then-warm phase split.",
+      "text": "the deliverable now states \"each invocation yielding one cold and one warm sample as the profiler's `main` takes them\" (confirmed: `profile_reads.py` line 54-55 calls `timed(f\"{which}-cold\", fn)` then `timed(f\"{which}-warm\", fn)` in one process), but immediately fixes the run order as \"Both arms' cold roadmaps run first, the base arm's and then the head arm's. The warm reads of both arms follow, then the remaining cold reads\"; a cold roadmap cannot be produced without its warm roadmap in the same invocation, so \"the warm reads of both arms follow\" the cold roadmaps and the \"remaining cold reads\" precede their own warm reads \u2014 the phase split the sentence describes is not producible by the named profiler, and a worker bound by this node's \"exact \u2014 implement as written\" spec cannot satisfy it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "022d475c62e4095805fd50c51011098e5ce04a0d9cef34f82a136879b833481a",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 121,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T173549969142-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "187549def12315b0afba2d5c394a929f86648648",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `health-tool-latency/scripts/profile_reads.py` resolves under the health-review-1010 report dir, and \u00a76's inline `\u00a7N` references all resolve to extant sections.",
+    "done_when": "pass \u2014 \u00a76's done-when carries a declared negative control (the base revision measured the same way, which must exceed the 30 s deadline), and its targets and floor are measurable.",
+    "evidence_paths": "pass \u2014 the log, the profiler `.prof` dumps and the pinned corpus revision are written into the run directory, not node-local scratch.",
+    "naming": "pass \u2014 \u00a76's changed sentence adds no plan label, ticket number or version tag to a symbol; it is plan prose.",
+    "reasoning": "a finding \u2014 the changed sentence couples each profiler invocation to one cold AND one warm sample, which makes the same paragraph's phase-ordered schedule (\"Both arms' cold roadmaps run first \u2026 The warm reads of both arms follow, then the remaining cold reads\") unsatisfiable.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable, a single measurement of the three reads at base and head.",
+    "wiring": "pass \u2014 \u00a76's open followup f-araiid-remeasure names \u00a76 and states every read fix it waits on (\u00a716, \u00a717 included) has landed, matching \u00a76's stated dependency on \u00a72\u2013\u00a75 and \u00a78\u2013\u00a717."
+  },
+  "section_digests": {
+    "_document": "27e04b7ec4c7a4424eb7839ff032567efe8f2c9f504c5f09139c14dd3ec284e3",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "0193ff830b9cdeb85d354ba8c6aed9992e944ca45c0308d9baf05bac8140f9be",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T17:44:15.365886+00:00"
+}
