@@ -90,6 +90,11 @@
     <p>Run <code>r-20261016T135552049429-unknown-interval-unit-refused</code> (clive, picked by Jev at 0.94), commit <code>712a78a09</code>, merged at <code>fbb5d893b</code>. <code>refresh_interval_seconds</code> raises <code>ValueError</code> for a unit missing from <code>_INTERVAL_UNIT_SECONDS</code>, naming the interval and the accepted units. Gate: 6 passed; the negative control, restoring the seconds fallback, makes the refusal test report "DID NOT RAISE". Independent review <code>r-20261016T140927636937</code> totals 105.</p>
   </section>
 
+  <section id="s15">
+    <h2>§15 — moved_in is counted at the request&#x27;s requirement</h2>
+    <p>Run <code>r-20261016T135405558096-moved-in-at-the-requirement</code> (clive, picked by Jev at 0.93), commit <code>983bff9f9</code>, merged at <code>a83fce115</code>. When the request names a requirement, <code>moved_in</code> counts only moves recorded at it, as <code>moved_off</code> does; when it names none, both count every move. Gate: 7 passed; the negative control, dropping the filter, reads 2 where 1 is expected. Over the importer set, 223 passed at head against 221 at base, with 0 failures in either. Independent review <code>r-20261016T142327430065</code> totals 113. Its follow-ons: <code>prompts.py</code> shows both figures only inside the at-requirement block, so for a request with no requirement they never reach Jev (now §18); <code>types.py</code>'s field comment still calls them null in that case; and the logs' <code>rev</code> header is not the form the review reader parses.</p>
+  </section>
+
 </main>
 </body>
 </html>
