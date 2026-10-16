@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no head gate log, so the added-failure count was not taken",
+  "base_log_revision": "c051f2dafd05098490b9064510b7358e62048815",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:follower_row_path",
+    "reckon/crew_follow_commands.py:1397"
+  ],
+  "completed_at": "2026-10-16T08:31:42.381Z",
+  "dispatched_at": "2026-10-16T08:13:29Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the named after_suite log is truncated, but the run's own chunk logs complete with EXIT= and show no added failure; a record defect, not a failing gate",
+      "recorded_at": "2026-10-16T08:32:35.017403+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T071456871190-a-resume-is-drawn-working-again/suite-head.log",
+      "line": "285",
+      "severity": "follow-on",
+      "text": "follow-on: after_suite names this log but it is truncated mid-run (line 285, 61 percent, no pytest summary and no EXIT line), so the manifest's after_suite.completed true is not supported by the file it names and the canonical added-failure derivation over the named pair reads unmeasured where the run's own chunk logs support zero added."
+    }
+  ],
+  "head_log_revision": "5adb49775aade383dc867e0b95b4443ced6f9288",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit-by-commit against c051f2da -- 3bae7d995 widens START_KINDS from PANE_STATES[\"halted\"] and adds the six-case test file plus the evidence fragment; 5adb49775 rewrites the START_KINDS comment to name RowPolicy, comment-only. The production change is the two-line START_KINDS union at reckon/crew/ticker.py:1038-1041.",
+    "done_when": "section 38's done-when drives the ticker through working->blocked, blocked->blocked, blocked->working, working->completed_unpromoted and requires the resume withheld at base and a working row printed at head; tests/test_a_resume_is_drawn_working_again.py:113-128 assert exactly that, and the run's base arm (base-new-test.log, 3 failed) and negative control (negative-control.log, 3 failed EXIT=1) show the base withholding, so the gate asserts the stated measure.",
+    "goal": "the node goal is to draw a run of the pane's own session resumed out of a stop as working again; reckon/crew/ticker.py:1038-1041 widens START_KINDS to pair every state in the pane's halt vocabulary with \"working\", and reckon/crew/ticker.py:1301 has RowPolicy._is_own_start accept those pairs for the pane's own session.",
+    "manifest": "read; it records head-new-test.log 5 passed EXIT=0, identical head/base gate id sets, the negative control, and an after_suite over suite-head.log -- but that log is truncated, so the arm it names is not readable as complete (see the finding).",
+    "write_paths": "read the manifest's declared paths (reckon/crew/ticker.py, tests/test_a_resume_is_drawn_working_again.py, the evidence fragment, the figures directory); every path in the diff c051f2da..5adb49775 is inside them."
+  },
+  "justifications": {
+    "durability": "the negative control at negative-control.log removes the stop-to-working kinds and reddens 3 of the 5 added tests with EXIT=1, and no added assertion compares a value against a variable the test itself handed the pane.",
+    "evidence": "the manifest's after_suite names suite-head.log, which ends mid-run at line 285 with no pytest summary and no EXIT line, so reckon.crew.review.added_failures_from_gate_logs over the pair the manifest names returns (None, []) -- unmeasured -- while suite-base.log and the chunk logs are complete.",
+    "fit": "the comment at reckon/crew/ticker.py:1030-1042 names RowPolicy, the mechanism that reads the set, and both commits carry conventional subjects with bodies and no plan or ticket identifiers.",
+    "goal_fidelity": "reckon/crew/ticker.py:1038-1041 makes the stop-to-working pair a start for the pane's own session while leaving PANE_STATES[\"delivered\"] and [\"landed\"] out, so section 32's delivered hold is untouched (tests/test_a_resume_is_drawn_working_again.py:172-185).",
+    "reuse": "START_KINDS is built from PANE_STATES[\"halted\"] at reckon/crew/ticker.py:1041, the pane's single vocabulary owner, rather than a second hand-written stop list, so a newly drawn halted state is a start the moment it is drawn.",
+    "scope_discipline": "git diff c051f2da..5adb49775 touches only reckon/crew/ticker.py, tests/test_a_resume_is_drawn_working_again.py and the evidence fragment, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to draw a run of the pane's own session resumed out of a stop as working again; reckon/crew/ticker.py:1038-1041 widens START_KINDS to pair every state in the pane's halt vocabulary with \"working\", and reckon/crew/ticker.py:1301 has RowPolicy._is_own_start accept those pairs for the pane's own session.\nVERDICT done_when: section 38's done-when drives the ticker through working->blocked, blocked->blocked, blocked->working, working->completed_unpromoted and requires the resume withheld at base and a working row printed at head; tests/test_a_resume_is_drawn_working_again.py:113-128 assert exactly that, and the run's base arm (base-new-test.log, 3 failed) and negative control (negative-control.log, 3 failed EXIT=1) show the base withholding, so the gate asserts the stated measure.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/ticker.py, tests/test_a_resume_is_drawn_working_again.py, the evidence fragment, the figures directory); every path in the diff c051f2da..5adb49775 is inside them.\nVERDICT manifest: read; it records head-new-test.log 5 passed EXIT=0, identical head/base gate id sets, the negative control, and an after_suite over suite-head.log -- but that log is truncated, so the arm it names is not readable as complete (see the finding).\nVERDICT diff: read commit-by-commit against c051f2da -- 3bae7d995 widens START_KINDS from PANE_STATES[\"halted\"] and adds the six-case test file plus the evidence fragment; 5adb49775 rewrites the START_KINDS comment to name RowPolicy, comment-only. The production change is the two-line START_KINDS union at reckon/crew/ticker.py:1038-1041.\nCALL_SITES: reckon/crew_follow_commands.py:follower_row_path, reckon/crew_follow_commands.py:1397\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:1038-1041 makes the stop-to-working pair a start for the pane's own session while leaving PANE_STATES[\"delivered\"] and [\"landed\"] out, so section 32's delivered hold is untouched (tests/test_a_resume_is_drawn_working_again.py:172-185).\nSCORE evidence: 15\nJUSTIFICATION evidence: the manifest's after_suite names suite-head.log, which ends mid-run at line 285 with no pytest summary and no EXIT line, so reckon.crew.review.added_failures_from_gate_logs over the pair the manifest names returns (None, []) -- unmeasured -- while suite-base.log and the chunk logs are complete.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff c051f2da..5adb49775 touches only reckon/crew/ticker.py, tests/test_a_resume_is_drawn_working_again.py and the evidence fragment, all inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control at negative-control.log removes the stop-to-working kinds and reddens 3 of the 5 added tests with EXIT=1, and no added assertion compares a value against a variable the test itself handed the pane.\nSCORE fit: 19\nJUSTIFICATION fit: the comment at reckon/crew/ticker.py:1030-1042 names RowPolicy, the mechanism that reads the set, and both commits carry conventional subjects with bodies and no plan or ticket identifiers.\nSCORE reuse: 20\nJUSTIFICATION reuse: START_KINDS is built from PANE_STATES[\"halted\"] at reckon/crew/ticker.py:1041, the pane's single vocabulary owner, rather than a second hand-written stop list, so a newly drawn halted state is a start the moment it is drawn.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T071456871190-a-resume-is-drawn-working-again/suite-head.log:285 follow-on: after_suite names this log but it is truncated mid-run (line 285, 61 percent, no pytest summary and no EXIT line), so the manifest's after_suite.completed true is not supported by the file it names and the canonical added-failure derivation over the named pair reads unmeasured where the run's own chunk logs support zero added.\nreviewed_base_sha: c051f2dafd05098490b9064510b7358e62048815\nreviewed_head_sha: 5adb49775aade383dc867e0b95b4443ced6f9288\n",
+  "review_run_id": "r-20261016T081221491382-review-of-a-resume-is-drawn-working-again-5adb49775aad",
+  "reviewed_base_sha": "c051f2dafd05098490b9064510b7358e62048815",
+  "reviewed_head_sha": "5adb49775aade383dc867e0b95b4443ced6f9288",
+  "reviewed_run_id": "r-20261016T071456871190-a-resume-is-drawn-working-again",
+  "reviewer": {
+    "effort": "explicit",
+    "model": "deepseek-v4.1-flash"
+  },
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T08:28:22.853041+00:00",
+  "total": 111
+}
