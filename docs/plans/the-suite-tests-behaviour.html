@@ -26,7 +26,7 @@
   <title>The Suite Tests Behaviour | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="65">
+<meta name="plan-version" content="66">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -252,6 +252,9 @@
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-16T15:30:00Z">
     <div class="r-comment-body"><p>§2 landed: the harness finds Playwright's headless shell (commits <code>c2c060c05</code> and <code>9e45ca5a4</code>, run <code>r-20261010T203540295453-browser-harness-finds-playwright</code>). It was merged at <code>e6b265996</code> with §7's measurement, which satisfies gate <code>g-tstb-browser-row</code>. <a href="/reckon/evidence/archive/the-suite-tests-behaviour-landed.html#s2">evidence</a></p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261010T203540295453-browser-harness-finds-playwright" data-who="reckon-build" data-when="2026-10-10T21:33:03.821Z">
+    <div class="r-comment-body"><p>fixed(tests): installed_browser() now resolves RECKON_BROWSER, the three PATH names, then Playwright&#x27;s headless shell newest-first; browser population skips 66-&gt;0 for a missing browser</p></div>
+</div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261010T231215125913-browser-population-own-row" data-who="reckon-build" data-when="2026-10-10T23:29:47.149Z">
     <div class="r-comment-body"><p>Marked the browser population at collection (223 tests in modules importing tests/spa_browser_harness.py now carry the `browser` marker) and gave it its own suite row: the standing-suite command in flight.yaml deselects the marker and a log recorded under the `browser` population name writes a row carrying that name, its own budget and its pass/fail/skip counts, while the promotion hold reads only the standing suite's own rows.</p></div>
 </div>
@@ -283,7 +286,7 @@
     <div class="r-comment-body"><p>§7 landed: the browser population's quiet-node measurement, from run <code>r-20261016T133039000231-browser-population-quiet-measure</code> merged at <code>e6b265996</code> (re-review 105/120). The head arm collected 227 with 0 skipped for a missing browser, against 72 in the control. The browser row is committed with a 1,200 s budget. One intermittent id fails only at head: <code>test_figure_reloads_after_a_dropped_connection</code>, which failed at head in 2 of 3 windows and at base in 0. <a href="/reckon/evidence/archive/the-suite-tests-behaviour-landed.html#s7">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261016T133039000231-browser-population-quiet-measure" data-who="reckon-build" data-when="2026-10-16T15:01:39Z">
-    <div class="r-comment-body"><p>measurement: both arms of the browser population ran on one exclusive all_debug node (job 1287480) at a 60 s timeout; head arm collected 227 / passed 208 / failed 19 / skipped 0, base arm 224 / 201 / 19 / 4 errored / 0; the negative control (base revision with the chromium symlink removed from PATH) skipped 72 for a missing browser against 0 at head; no id fails only at head, so this node&#x27;s change adds no failing id of its own</p></div>
+    <div class="r-comment-body"><p>measurement: both arms of the browser population ran on one exclusive all_debug node (job 1287480) at a 60 s timeout; head arm collected 227 / passed 208 / failed 19 / skipped 0, base arm 224 / 201 / 19 / 4 errored / 0; the negative control (base revision with the chromium symlink removed from PATH) skipped 72 for a missing browser against 0 at head; no id fails only at head, so this node's change adds no failing id of its own</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261011T003514683816-source-text-assertions-multi-site" data-who="reckon-build" data-when="2026-10-11T00:51:53.114Z">
     <div class="r-comment-body"><p>§5 scope — the ten scoped test files held 23 source-text assertion sites at dispatch and 6 at head; 7 sites in 3 tests rewritten to call the code and assert its effect, 10 sites in 5 tests deleted citing an existing behaviour test; the ten files pass at head (426 passed, 0 failed).</p></div>
