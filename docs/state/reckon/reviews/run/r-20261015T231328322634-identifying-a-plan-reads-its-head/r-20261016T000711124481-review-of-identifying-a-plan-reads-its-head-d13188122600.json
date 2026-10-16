@@ -1,0 +1,120 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/resources.py:276",
+    "reckon/resources.py:363",
+    "reckon/resources.py:628",
+    "reckon/roadmap.py:158",
+    "reckon/_store.py:297",
+    "reckon/mcp.py:735",
+    "reckon/serve.py:2821",
+    "reckon/evidence.py:645",
+    "reckon/archive.py:75"
+  ],
+  "completed_at": "2026-10-16T00:16:58.132Z",
+  "dimension_dispositions": {
+    "evidence": {
+      "kind": "folded",
+      "node": "identifying-a-plan-reads-its-head",
+      "recorded_at": "2026-10-16T00:17:49.354128+00:00"
+    },
+    "reuse": {
+      "kind": "folded",
+      "node": "identifying-a-plan-reads-its-head",
+      "recorded_at": "2026-10-16T00:18:00.506676+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-16T00:07:39Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "identifying-a-plan-reads-its-head",
+      "recorded_at": "2026-10-16T00:18:11.527272+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "identifying-a-plan-reads-its-head",
+      "recorded_at": "2026-10-16T00:18:21.736951+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the test counted the read_state entries this node removes, so the behaviour change supersedes it; the path is accepted at promotion with --accept-path",
+      "recorded_at": "2026-10-16T00:18:43.972410+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "identifying-a-plan-reads-its-head",
+      "recorded_at": "2026-10-16T00:18:32.484673+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T231328322634-identifying-a-plan-reads-its-head/manifest.md",
+      "line": "37",
+      "severity": "blocking",
+      "text": "blocking: the done_when's \"inventory, roadmap and discovery outputs for that tree are equal at base and head\" is not demonstrated \u2014 the recorded dumps (frozen-readers-base.json vs frozen-readers-head.json) differ on 97 fields including many roadmap.decision_blockers entries and active_sprint_id S25->S26, so the two arms raced a live checkout; the manifest characterises the divergence as active_sprint_id alone and so overstates its own evidence."
+    },
+    {
+      "file": "reckon/metadata_index.py",
+      "line": "160",
+      "severity": "follow-on",
+      "text": "follow-on: parse_meta_head_shared is a near-verbatim copy of parse_meta_shared at :130 (same lock, _META_MAX_ENTRIES bound, deepcopy and OSError fallback, differing only in cache dict and delegate), forking the digest-memo mechanism rather than factoring a shared helper."
+    },
+    {
+      "file": "tests/test_resource_identity_reads_the_digest_index.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the file is rewritten outside the plan \u00a714 declared write paths; the change was necessary because it counted the read_state entries this node removes, but the run's recorded write_paths must be extended for it to be in scope."
+    },
+    {
+      "file": "reckon/_plan_html.py",
+      "line": "2217",
+      "severity": "follow-on",
+      "text": "follow-on: parse_meta_head (and metadata_index.py:160 parse_meta_head_shared) are added as non-underscored module-level functions, contradicting \u00a714's deliverable that \"no public function or option is added\"."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read commit by commit against base 7b0926e9; b9359c3 changes reckon/_plan_html.py, reckon/metadata_index.py, reckon/resources.py and two test files, d131881 adds the evidence fragment.",
+    "done_when": "the done_when's read_state-count, timing and same-id assertions are met and logged (negative-control.log:51 EXIT=1; timing-base.log 5.1226 s vs timing-head.log 0.4627 s; id-comparison.log 0 new failures), but its inventory/roadmap/discovery equality assertion is not demonstrated \u2014 the recorded dumps differ on 97 fields.",
+    "goal": "the node goal is head-only identification \u2014 a slug resolve and a bare identification parse no plan body; reckon/_plan_html.py:2217 adds parse_meta_head and reckon/resources.py:276,363,628,1243 route identification through it, so a cold resolve enters read_state zero times, as the negative control's 11 == 0 / 1 == 0 red run shows.",
+    "manifest": "read; it reads status: complete, names commits b9359c3 and d131881, and records the 3-passed own gate, the red negative control, the base 5.1226 s -> head 0.4627 s cold timing and 0 added suite failures, but its follow_ons understate the reader-dump divergence as active_sprint_id alone.",
+    "write_paths": "the declared write paths are reckon/resources.py, reckon/_plan_html.py, reckon/metadata_index.py, tests/test_identifying_a_plan_reads_its_head.py and the evidence fragment; the diff also changes tests/test_resource_identity_reads_the_digest_index.py, outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_identifying_a_plan_reads_its_head.py:88 and :102 fail under the declared mutation, as negative-control.log:24 (assert 11 == 0) and :44 (assert 1 == 0) show, so the zero-entry assertions do discriminate the regression they guard.",
+    "evidence": "negative-control.log:51 records EXIT=1 and timing-base.log/timing-head.log record 5.1226 s -> 0.4627 s, but the done_when's reader-output equality is contradicted by frozen-readers-base.json vs -head.json differing on 97 fields, and equiv_parse_meta.py's claimed \"0 differing\" result carries no log under the run directory.",
+    "fit": "reckon/_plan_html.py:2217 names the mechanism and follows the module's regex-and-prose docstring idiom with no plan label in any added name; the only smell is tests/test_resource_identity_reads_the_digest_index.py:65 reaching into the private _parse_meta_head_uncached.",
+    "goal_fidelity": "reckon/resources.py:276 routes identify_resource through metadata_index.parse_meta_head_shared and tests/test_identifying_a_plan_reads_its_head.py:88 shows the cold resolve entering read_state zero times, though reckon/_plan_html.py:2217 adds a public parse_meta_head the \u00a714 deliverable's \"no public function is added\" forbids.",
+    "reuse": "reckon/metadata_index.py:160 parse_meta_head_shared duplicates the digest-keyed memo of parse_meta_shared at reckon/metadata_index.py:130 near-verbatim rather than extending it with one shared helper.",
+    "scope_discipline": "every path in the diff is inside the declared scope except tests/test_resource_identity_reads_the_digest_index.py, which the b9359c3 commit rewrites outside the plan \u00a714 write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is head-only identification \u2014 a slug resolve and a bare identification parse no plan body; reckon/_plan_html.py:2217 adds parse_meta_head and reckon/resources.py:276,363,628,1243 route identification through it, so a cold resolve enters read_state zero times as the negative control's 11 == 0 / 1 == 0 red run shows.\nVERDICT done_when: The done_when's read_state-count, timing and same-id assertions are met and logged (negative-control.log:51 EXIT=1; timing-base.log 5.1226 s vs timing-head.log 0.4627 s; id-comparison.log 0 new failures), but its inventory/roadmap/discovery equality assertion is not demonstrated \u2014 the recorded dumps differ on 97 fields.\nVERDICT write_paths: The declared write paths are reckon/resources.py, reckon/_plan_html.py, reckon/metadata_index.py, tests/test_identifying_a_plan_reads_its_head.py and the evidence fragment; the diff also changes tests/test_resource_identity_reads_the_digest_index.py, outside them.\nVERDICT manifest: Read; it reads status: complete, names commits b9359c3 and d131881, records the 3-passed own gate, the red negative control, the base 5.1226 s -> head 0.4627 s cold timing and 0 added suite failures, but its follow_ons understate the reader-dump divergence as active_sprint_id alone.\nVERDICT diff: Read commit by commit against base 7b0926e9; b9359c3 changes reckon/_plan_html.py, reckon/metadata_index.py, reckon/resources.py and two test files, d131881 adds the evidence fragment.\nCALL_SITES: reckon/resources.py:276, reckon/resources.py:363, reckon/resources.py:628, reckon/roadmap.py:158, reckon/_store.py:297, reckon/mcp.py:735, reckon/serve.py:2821, reckon/evidence.py:645, reckon/archive.py:75\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/resources.py:276 routes identify_resource through metadata_index.parse_meta_head_shared and tests/test_identifying_a_plan_reads_its_head.py:88 shows the cold resolve entering read_state zero times, though reckon/_plan_html.py:2217 adds a public parse_meta_head the \u00a714 deliverable's \"no public function is added\" forbids.\nSCORE evidence: 9\nJUSTIFICATION evidence: negative-control.log:51 records EXIT=1 and timing-base.log/timing-head.log record 5.1226 s -> 0.4627 s, but the done_when's reader-output equality is contradicted by frozen-readers-base.json vs -head.json differing on 97 fields, and equiv_parse_meta.py's claimed \"0 differing\" result carries no log under the run directory.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared scope except tests/test_resource_identity_reads_the_digest_index.py, which the b9359c3 commit rewrites outside the plan \u00a714 write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_identifying_a_plan_reads_its_head.py:88 and :102 fail under the declared mutation, as negative-control.log:24 (assert 11 == 0) and :44 (assert 1 == 0) show, so the zero-entry assertions do discriminate the regression they guard.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/_plan_html.py:2217 names the mechanism and follows the module's regex-and-prose docstring idiom with no plan label in any added name; the only smell is tests/test_resource_identity_reads_the_digest_index.py:65 reaching into the private _parse_meta_head_uncached.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/metadata_index.py:160 parse_meta_head_shared duplicates the digest-keyed memo of parse_meta_shared at reckon/metadata_index.py:130 near-verbatim rather than extending it with one shared helper.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T231328322634-identifying-a-plan-reads-its-head/manifest.md:37 blocking: the done_when's \"inventory, roadmap and discovery outputs for that tree are equal at base and head\" is not demonstrated \u2014 the recorded dumps (frozen-readers-base.json vs frozen-readers-head.json) differ on 97 fields including many roadmap.decision_blockers entries and active_sprint_id S25->S26, so the two arms raced a live checkout; the manifest characterises the divergence as active_sprint_id alone and so overstates its own evidence.\nFINDING reckon/metadata_index.py:160 follow-on: parse_meta_head_shared is a near-verbatim copy of parse_meta_shared at :130 (same lock, _META_MAX_ENTRIES bound, deepcopy and OSError fallback, differing only in cache dict and delegate), forking the digest-memo mechanism rather than factoring a shared helper.\nFINDING tests/test_resource_identity_reads_the_digest_index.py:1 follow-on: the file is rewritten outside the plan \u00a714 declared write paths; the change was necessary because it counted the read_state entries this node removes, but the run's recorded write_paths must be extended for it to be in scope.\nFINDING reckon/_plan_html.py:2217 follow-on: parse_meta_head (and metadata_index.py:160 parse_meta_head_shared) are added as non-underscored module-level functions, contradicting \u00a714's deliverable that \"no public function or option is added\".",
+  "review_run_id": "r-20261016T000711124481-review-of-identifying-a-plan-reads-its-head-d13188122600",
+  "reviewed_base_sha": "7b0926e9b82566050ba5f51093b098861735df42",
+  "reviewed_head_sha": "d13188122600fe31fb38c693d8481bb08cf749cb",
+  "reviewed_run_id": "r-20261015T231328322634-identifying-a-plan-reads-its-head",
+  "reviewer_run_id": "r-20261016T000711124481-review-of-identifying-a-plan-reads-its-head-d13188122600",
+  "scores": {
+    "durability": 17,
+    "evidence": 9,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 12
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T231328322634-identifying-a-plan-reads-its-head/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/identifying-a-plan-reads-its-head",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T00:14:30.792368+00:00",
+  "total": 76
+}
