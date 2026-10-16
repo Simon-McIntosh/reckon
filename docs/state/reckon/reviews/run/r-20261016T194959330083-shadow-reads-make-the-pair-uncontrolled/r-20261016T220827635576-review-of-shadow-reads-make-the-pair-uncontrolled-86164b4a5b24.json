@@ -1,0 +1,103 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:1181 _shadow_stream_contamination",
+    "reckon/crew/picker/outcomes.py:457 pair_shadow_arms",
+    "reckon/capabilities.py:1071 derive_capabilities",
+    "reckon/crew/promotion.py:988 ledger.build_record"
+  ],
+  "completed_at": "2026-10-16T22:20:58.724Z",
+  "dispatched_at": "2026-10-16T22:08:56Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "shadow-reads-make-the-pair-uncontrolled",
+      "recorded_at": "2026-10-16T22:22:14.522395+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "shadow-reads-make-the-pair-uncontrolled",
+      "recorded_at": "2026-10-16T22:22:26.313514+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "shadow-reads-make-the-pair-uncontrolled",
+      "recorded_at": "2026-10-16T22:22:36.269162+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "shadow-reads-make-the-pair-uncontrolled",
+      "recorded_at": "2026-10-16T22:22:45.592809+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "1181",
+      "severity": "follow-on",
+      "text": "follow-on: a promoted shadow's stored row keeps shadow_controlled true beside shadow_contaminated because the mark is set after ledger.build_record at line 988, the exact contradiction the plan's section 1 describes; the join is only complete for pair_shadow_arms, and the file sits outside this node's declared write scope."
+    },
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": "1122",
+      "severity": "follow-on",
+      "text": "follow-on: _primary_review_record_paths returns the review records only inside `if base.is_file()`, so an .at-sha sibling whose base staging file is absent is never resolved and a shadow reading it is not marked."
+    },
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": "1100",
+      "severity": "follow-on",
+      "text": "follow-on: the review-record and worktree_retention surfaces of _primary_read_surfaces are resolved by untested code; only the run-directory surface is exercised (test_the_scan_runs_when_the_primary_cites_no_commit), so the promotion wiring a real scan depends on is unguarded."
+    },
+    {
+      "file": "docs/evidence/fragments/a-shadow-cannot-see-its-primary/shadow-reads-make-the-pair-uncontrolled.html",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the regression row quotes slice00's 1719 passed as the whole cohort, while the manifest records 244 importing files across four slices, so the fragment understates the arm it reports."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base aa2110776; 08de78b03 is the source change, 4dfa456c6 the fixture and fragment anchor, 86164b4a5 the negative-control record, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_crew_shadow_contamination.py in both stream dialects, the committed fixture, the no-cited-commit scan, the pair verdict and the negative control; the manifest records 21 passed and a negative control at EXIT=1, and I re-ran that file at head 86164b4a and it reported 21 passed.",
+    "goal": "the node's goal is that a shadow's reads of its primary's run directory, review records or worktree make the pair contaminated and uncontrolled; reckon/ledger.py:2921 widens shadow_primary_read to the three record surfaces and reckon/capabilities.py:1013 joins the mark to the control verdict.",
+    "manifest": "read; it records the gate at 21 passed, four importer slices with zero added failures, the isolated arms, the negative control and the ruff delta, and it names the promotion-path ordering as a follow-on.",
+    "write_paths": "read the source node's declared write paths and compared against git diff --name-only aa2110776..86164b4a; every changed path (reckon/ledger.py, reckon/capabilities.py, reckon/crew/promotion_scope.py, the test file, the fixture, the evidence fragment) is inside them."
+  },
+  "justifications": {
+    "durability": "the ledger-level branches redden if reverted (the negative control proves the pair guard) but the resolution layer in reckon/crew/promotion_scope.py:1100,1122 carries no test, so a regression in the review-record glob or the worktree_retention read would pass the gate.",
+    "evidence": "the done_when's measures are asserted in tests/test_crew_shadow_contamination.py (21 passed at head, re-run by me) and the negative control log shows EXIT=1 with test_a_contaminated_pair_is_uncontrolled failing, all recorded in the manifest.",
+    "fit": "the additions extend the existing scanner in reckon/ledger.py:2882 beside its neighbouring helpers, and no plan, stage or version label appears in the changed source, tests or the fragment's element id.",
+    "goal_fidelity": "reckon/ledger.py:2921 and reckon/capabilities.py:1013 deliver the widened scan and the joined pair verdict, but the stored shadow_controlled remains stale in the real promotion path because reckon/crew/promotion.py:1181 computes the mark after build_record at line 988.",
+    "reuse": "the change extends the existing one scanner (stream_tool_calls, shadow_primary_read) rather than adding a second, per the plan's own constraint; reckon/ledger.py:3023 _path_under restates trivial string containment that three private Path-based helpers (reckon/_worker_fence.py:952, reckon/hooks/worker_stop.py:178, reckon/mcp_census.py:114) already implement, none a shared owner.",
+    "scope_discipline": "git diff --name-only aa2110776..86164b4a lists only the declared write paths, and the evidence fragment docs/evidence/fragments/a-shadow-cannot-see-its-primary/shadow-reads-make-the-pair-uncontrolled.html is the contract-required landing anchor inside that scope."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a shadow's reads of its primary's run directory, review records or worktree make the pair contaminated and uncontrolled; reckon/ledger.py:2921 widens shadow_primary_read to the three record surfaces and reckon/capabilities.py:1013 joins the mark to the control verdict.\nVERDICT done_when: the done_when names tests/test_crew_shadow_contamination.py in both stream dialects, the committed fixture, the no-cited-commit scan, the pair verdict and the negative control; the manifest records 21 passed and a negative control at EXIT=1, and I re-ran that file at head 86164b4a and it reported 21 passed.\nVERDICT write_paths: read the source node's declared write paths and compared against git diff --name-only aa2110776..86164b4a; every changed path (reckon/ledger.py, reckon/capabilities.py, reckon/crew/promotion_scope.py, the test file, the fixture, the evidence fragment) is inside them.\nVERDICT manifest: read; it records the gate at 21 passed, four importer slices with zero added failures, the isolated arms, the negative control and the ruff delta, and it names the promotion-path ordering as a follow-on.\nVERDICT diff: read commit by commit against base aa2110776; 08de78b03 is the source change, 4dfa456c6 the fixture and fragment anchor, 86164b4a5 the negative-control record, all inside the declared scope.\nCALL_SITES: reckon/crew/promotion.py:1181 _shadow_stream_contamination, reckon/crew/picker/outcomes.py:457 pair_shadow_arms, reckon/capabilities.py:1071 derive_capabilities, reckon/crew/promotion.py:988 ledger.build_record\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/ledger.py:2921 and reckon/capabilities.py:1013 deliver the widened scan and the joined pair verdict, but the stored shadow_controlled remains stale in the real promotion path because reckon/crew/promotion.py:1181 computes the mark after build_record at line 988.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when's measures are asserted in tests/test_crew_shadow_contamination.py (21 passed at head, re-run by me) and the negative control log shows EXIT=1 with test_a_contaminated_pair_is_uncontrolled failing, all recorded in the manifest.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only aa2110776..86164b4a lists only the declared write paths, and the evidence fragment docs/evidence/fragments/a-shadow-cannot-see-its-primary/shadow-reads-make-the-pair-uncontrolled.html is the contract-required landing anchor inside that scope.\nSCORE durability: 15\nJUSTIFICATION durability: the ledger-level branches redden if reverted (the negative control proves the pair guard) but the resolution layer in reckon/crew/promotion_scope.py:1100,1122 carries no test, so a regression in the review-record glob or the worktree_retention read would pass the gate.\nSCORE fit: 18\nJUSTIFICATION fit: the additions extend the existing scanner in reckon/ledger.py:2882 beside its neighbouring helpers, and no plan, stage or version label appears in the changed source, tests or the fragment's element id.\nSCORE reuse: 17\nJUSTIFICATION reuse: the change extends the existing one scanner (stream_tool_calls, shadow_primary_read) rather than adding a second, per the plan's own constraint; reckon/ledger.py:3023 _path_under restates trivial string containment that three private Path-based helpers (reckon/_worker_fence.py:952, reckon/hooks/worker_stop.py:178, reckon/mcp_census.py:114) already implement, none a shared owner.\nFINDING reckon/crew/promotion.py:1181 follow-on: a promoted shadow's stored row keeps shadow_controlled true beside shadow_contaminated because the mark is set after ledger.build_record at line 988, the exact contradiction the plan's section 1 describes; the join is only complete for pair_shadow_arms, and the file sits outside this node's declared write scope.\nFINDING reckon/crew/promotion_scope.py:1122 follow-on: _primary_review_record_paths returns the review records only inside `if base.is_file()`, so an .at-sha sibling whose base staging file is absent is never resolved and a shadow reading it is not marked.\nFINDING reckon/crew/promotion_scope.py:1100 follow-on: the review-record and worktree_retention surfaces of _primary_read_surfaces are resolved by untested code; only the run-directory surface is exercised (test_the_scan_runs_when_the_primary_cites_no_commit), so the promotion wiring a real scan depends on is unguarded.\nFINDING docs/evidence/fragments/a-shadow-cannot-see-its-primary/shadow-reads-make-the-pair-uncontrolled.html:21 follow-on: the regression row quotes slice00's 1719 passed as the whole cohort, while the manifest records 244 importing files across four slices, so the fragment understates the arm it reports.\n",
+  "review_run_id": "r-20261016T220827635576-review-of-shadow-reads-make-the-pair-uncontrolled-86164b4a5b24",
+  "reviewed_base_sha": "aa211077614a39eee5a13621cde9ba4b44aef229",
+  "reviewed_head_sha": "86164b4a5b243e1739f0a314d7a8b4bb272eb774",
+  "reviewed_run_id": "r-20261016T194959330083-shadow-reads-make-the-pair-uncontrolled",
+  "reviewer_run_id": "r-20261016T220827635576-review-of-shadow-reads-make-the-pair-uncontrolled-86164b4a5b24",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T194959330083-shadow-reads-make-the-pair-uncontrolled/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/36355bc4-c7d8-45bc-a3eb-b6ea284801ec/shadow-reads-make-the-pair-uncontrolled",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T22:18:26.087006+00:00",
+  "total": 103
+}
