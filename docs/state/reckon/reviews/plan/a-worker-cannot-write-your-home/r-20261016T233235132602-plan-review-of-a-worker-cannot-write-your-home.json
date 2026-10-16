@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T23:40:27.623Z",
+  "dispatched_at": "2026-10-16T23:33:15Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-worker-cannot-write-your-home.html:1524",
+      "id": "reasoning-1",
+      "reason": "the declared change to a shared helper silently moves the delivery/still-working verdict for the watcher, and a node that implements only what s12 names ships that shift with no gate covering it.",
+      "text": "s12 states \"One reader reads the declared paths rather than the store: `_review_store_record_paths`\", but that helper has a second consumer in the same module \u2014 `_delivered_review_record` (`reckon/crew/recovery_review_delivery.py:124`, calling the helper at `:139`), whose only caller `review_delivered` is read by `_stop_delivered_reviews` (`:190,208`) to SIGTERM a review run whose stream outlives its delivery by the grace; broadening the helper to also select run-directory paths (which the deliverable requires) makes a record sitting unfiled in the review run's own directory count as delivered, so the run can be stopped by grace on evidence the plan never names",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-cannot-write-your-home.html:1524",
+      "id": "reasoning-2",
+      "reason": "the done-when's third case already requires `_review_subject` to return its reviewed run and head with a red control, so a builder that picks another leaf name is caught by the node's own gate rather than shipping.",
+      "text": "s12 explains the run-directory reader gap as \"it must learn the run-directory location too. Otherwise the head comes back empty\", but `_review_record_subject` (`reckon/crew/recovery_review_dispatch.py:130`) recovers both the reviewed run and the head from the record's *filename* (`<run>.json`, `<run>.at-<head>.json`), so the run-directory record must keep that leaf spelling; a run-directory record named otherwise yields a standing-less run id, not merely an empty head, and the deliverable never states the spelling the new location must carry",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "989ab82b0a95a2e99d9a0d72c80e78aba33ca24de283196401d457a0c16eedcb",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 156,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T233235132602-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "547d288681bf81f1bd95f66d0d3c852d2e54029e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited target resolves: `recovery_review_subject.py:610,613` (the two `review.review_path` declarations), `_review_store_record_paths` at `recovery_review_delivery.py:47`, `_review_subject` at `recovery_review_dispatch.py:150`, `_review_head_covers` at `:180`, `_fence_write_roots` at `dispatch_admission.py:1842`, `delivery_write_roots` at `_backends.py:140`, `_supervisor_exit_record` at `dispatch_launch.py:2371`, `python -m reckon.crew.supervisor_main` at `dispatch_launch.py:1869`, `complete` at `promotion.py:143`, and the comment `c-s10-review-store-gap` at the plan's own line 2024.",
+    "done_when": "pass \u2014 each of s12's three cases names a declared negative control (widen the grant back to the parent directory, remove the fallback filing, leave `_review_store_record_paths` selecting store paths only), and the first case fails on unfixed code because an absent declared record file still grants its parent, the whole project store directory.",
+    "evidence_paths": "pass \u2014 s12's gate logs go \"under the run directory\", which is durable, and the incident evidence it cites lives in committed review comments and `docs/state`, never a session scratchpad.",
+    "naming": "pass \u2014 the section carries section numbering and mechanism prose only; no plan label, ticket number or version tag reaches a symbol or a comment.",
+    "reasoning": "a finding \u2014 s12's root cause, its `_fence_write_roots`/`_declared_write_grant` mechanism and its supervisor-outside-the-fence claim all match the code, but its reader inventory is wrong: `_review_store_record_paths` has two consumers, not the one the deliverable names, and the second one's verdict changes under the instructed fix.",
+    "single_goal": "pass \u2014 s12 carries one deliverable, that a run review's fence grants nothing writable holding another run's record; the run-directory delivery, the supervisor filing and the reader adjustment are the one chosen shape, not separate goals.",
+    "wiring": "pass \u2014 s12 declares no section-level links, as every other section of this plan does, and the relationship it relies on (the \u00a710 seal it repairs) is already landed, so nothing it needs is missing."
+  },
+  "section_digests": {
+    "_document": "675850e692c53fb3212fb53b4ef23c0602170c1625b9b315f019b301d3fea4a7",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "c5c7fe720643fd4e73b5f1c9fff30c26f8357f46808e3b91eb33b5271d3a19bc",
+    "s11": "f2f305292dacd47d88930479053d919c6bce05b3f863e60a502ce40a2b1c1239",
+    "s12": "bde6f6d429727e5b911de7a58db6714c939deb6d39a86a7b325e6ebef81fba04",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T23:42:50.652381+00:00"
+}
