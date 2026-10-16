@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite gate logs; baseline_suite (6583d7b7f) failing ids are tests/test_metadata_index_survives_restart.py::test_the_change_watch_invalidates_the_tree and tests/test_one_sprint_item_slug.py::test_consumers_share_the_one_reader (chunk_07) plus tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner (chunk_12); after_suite (73fab3359) fails the identical three, read from arm_base_suite and arm_head_suite and their per-chunk logs, so the head-minus-base set is empty.",
+  "base_log_revision": "6583d7b7f26e27a3bb9e753fc45fcf3dd9ddab4f",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/serve.py:1764 _git_first_committed",
+    "reckon/serve.py:1926 _git_last_committed",
+    "reckon/fleet_index.py:45 _commit_days",
+    "reckon/crew/plan_review.py:2477 code_review_subject",
+    "reckon/serve.py:1796 history lookup",
+    "reckon/serve.py:1950 last-modified lookup"
+  ],
+  "completed_at": "2026-10-16T13:40:13.153Z",
+  "dispatched_at": "2026-10-16T13:26:31Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the locale pinning is guarded by test_git_is_asked_in_the_c_locale, which the recorded locale control reddens; the non-C case is a behaviour statement that holds wherever a catalogue exists and is harmless where none does",
+      "recorded_at": "2026-10-16T13:39:43.523174+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_tree_outside_git_asks_once.py",
+      "line": "193",
+      "severity": "follow-on",
+      "text": "follow-on: test_outside_root_is_remembered_under_a_non_c_locale claims to exercise the locale pinning, but on a host with no French catalogue it is equivalent to the plain outside-root case and does not fail when LC_ALL=C is removed from the spawn; negative_control_locale.log reddens only test_git_is_asked_in_the_c_locale at :222, so this case cannot catch the regression its docstring implies."
+    }
+  ],
+  "head_log_revision": "73fab3359012e91796cbafeb4ceac71fc14290a6",
+  "item_aggregate": 113,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against 78be02692; 73fab3359 deletes _run_git_head, extends _run_git with report_failure and an LC_ALL=C spawn environment at reckon/serve.py:1549, and 9c0403f9e and d7f624486 record the rule in the evidence fragment.",
+    "done_when": "the done_when bounds a >=10-plan no-.git audit at one git process, requires the in-repository tree to read base-equal ages, and requires the importing test files to give the same pass and fail ids at head as at base; the gate at head reports 7 passed EXIT=0 (gate_locale_head.log) and the manifest records two 137-file arms that agree chunk for chunk.",
+    "goal": "the node's goal is that a docs root outside any git repository is remembered as such so later age and HEAD lookups spawn no git; reckon/serve.py:1707 _git_head consults the new _git_says_outside_repository at reckon/serve.py:1696 and remembers the root at reckon/serve.py:1739 only for git's own not-a-repo exit.",
+    "manifest": "read; it records the 7-passed gate command with its log, the two suite arms with their failure ids and a failure_attribution for each of the three, three red negative controls with their exit codes, and an unrepaired nested-root key mismatch stated rather than absorbed.",
+    "write_paths": "the manifest declares reckon/serve.py, tests/test_a_tree_outside_git_asks_once.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/a-tree-outside-git-asks-once.html and docs/figures/...; the three commits since the last review touch only the first three, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_tree_outside_git_asks_once.py:251 reddens when LC_ALL=C is removed from the spawn (negative_control_locale.log) and the timeout cases at :176 and :279 redden under the remember-any-failure mutation.",
+    "evidence": "gate_locale_head.log names revision 73fab3359 and reports 7 passed EXIT=0, and arm_base_suite and arm_head_suite agree chunk for chunk; the two commits above 73fab3359 are docs-only, so the arm's code is the reviewed head's code.",
+    "fit": "the report_failure flag at reckon/serve.py:1533 follows the module's keyword-only optional-argument idiom and _git_says_outside_repository at reckon/serve.py:1696 matches the surrounding small-helper style, though its one-line body is called once.",
+    "goal_fidelity": "reckon/serve.py:1727 short-circuits a remembered outside root before the spawn and reckon/serve.py:1739 records the root only when git's own exit names no repository.",
+    "reuse": "the duplicated _run_git_head is deleted and its plumbing folds into the module's existing _run_git owner at reckon/serve.py:1528; a search of reckon/ for the not-a-repo text finds only reckon/serve.py:1704, so the classifier had no owner to extend.",
+    "scope_discipline": "every file in the diff since 9c0403f9e is inside the manifest's declared write paths, and the only reach beyond the HEAD lookup is routing the two other _run_git callers through the same locale-pinned spawn."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a docs root outside any git repository is remembered as such so later age and HEAD lookups spawn no git; reckon/serve.py:1707 _git_head consults the new _git_says_outside_repository at reckon/serve.py:1696 and remembers the root at reckon/serve.py:1739 only for git's own not-a-repo exit.\nVERDICT done_when: the done_when bounds a >=10-plan no-.git audit at one git process, requires the in-repository tree to read base-equal ages, and requires the importing test files to give the same pass and fail ids at head as at base; the gate at head reports 7 passed EXIT=0 (gate_locale_head.log) and the manifest records two 137-file arms that agree chunk for chunk.\nVERDICT write_paths: the manifest declares reckon/serve.py, tests/test_a_tree_outside_git_asks_once.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/a-tree-outside-git-asks-once.html and docs/figures/...; the three commits since the last review touch only the first three, all inside them.\nVERDICT manifest: read; it records the 7-passed gate command with its log, the two suite arms with their failure ids and a failure_attribution for each of the three, three red negative controls with their exit codes, and an unrepaired nested-root key mismatch stated rather than absorbed.\nVERDICT diff: read commit by commit against 78be02692; 73fab3359 deletes _run_git_head, extends _run_git with report_failure and an LC_ALL=C spawn environment at reckon/serve.py:1549, and 9c0403f9e and d7f624486 record the rule in the evidence fragment.\nCALL_SITES: reckon/serve.py:1764 _git_first_committed, reckon/serve.py:1926 _git_last_committed, reckon/fleet_index.py:45 _commit_days, reckon/crew/plan_review.py:2477 code_review_subject, reckon/serve.py:1796 history lookup, reckon/serve.py:1950 last-modified lookup\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/serve.py:1727 short-circuits a remembered outside root before the spawn and reckon/serve.py:1739 records the root only when git's own exit names no repository.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate_locale_head.log names revision 73fab3359 and reports 7 passed EXIT=0, and arm_base_suite and arm_head_suite agree chunk for chunk; the two commits above 73fab3359 are docs-only, so the arm's code is the reviewed head's code.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every file in the diff since 9c0403f9e is inside the manifest's declared write paths, and the only reach beyond the HEAD lookup is routing the two other _run_git callers through the same locale-pinned spawn.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_tree_outside_git_asks_once.py:251 reddens when LC_ALL=C is removed from the spawn (negative_control_locale.log) and the timeout cases at :176 and :279 redden under the remember-any-failure mutation.\nSCORE fit: 18\nJUSTIFICATION fit: the report_failure flag at reckon/serve.py:1533 follows the module's keyword-only optional-argument idiom and _git_says_outside_repository at reckon/serve.py:1696 matches the surrounding small-helper style, though its one-line body is called once.\nSCORE reuse: 20\nJUSTIFICATION reuse: the duplicated _run_git_head is deleted and its plumbing folds into the module's existing _run_git owner at reckon/serve.py:1528; a search of reckon/ for \"not a git repository\" finds only reckon/serve.py:1704, so the classifier had no owner to extend.\nFINDING tests/test_a_tree_outside_git_asks_once.py:193 follow-on: test_outside_root_is_remembered_under_a_non_c_locale claims to exercise the locale pinning, but on a host with no French catalogue it is equivalent to the plain outside-root case and does not fail when LC_ALL=C is removed from the spawn; negative_control_locale.log reddens only test_git_is_asked_in_the_c_locale at :222, so this case cannot catch the regression its docstring implies.\n",
+  "review_run_id": "r-20261016T132556824479-review-of-a-tree-outside-git-asks-once-d7f624486e87",
+  "reviewed_base_sha": "78be026928dcdba5c3c98ac713b3bc9c8408ffb9",
+  "reviewed_head_sha": "d7f624486e87bf7fcf61e682bf563cd62f1334de",
+  "reviewed_run_id": "r-20261016T104537692352-a-tree-outside-git-asks-once",
+  "role": "review",
+  "rubric": "node",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T13:37:30.005260+00:00",
+  "total": 113
+}
