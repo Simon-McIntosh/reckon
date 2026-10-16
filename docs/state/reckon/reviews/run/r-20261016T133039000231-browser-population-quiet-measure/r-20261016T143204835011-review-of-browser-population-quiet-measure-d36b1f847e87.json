@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite: baseline_suite (revision 26173171b) records 19 failure ids from logs/base-arm.log and after_suite (revision 723616aab) records 18 from logs/head-arm.log, both at EXIT=1 and both completed to their summary line; head-minus-base is empty, and the one id base fails and head does not is tests/test_build.py::test_release_tag_match_reports_when_no_release_tags_exist, so the node's change adds no failing id.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/standing_suite.py:482 _latest_record (reads every *.json in the suite-runs directory)",
+    "reckon/crew_run_commands.py:1098 (the suite-runs directory the committed row lands in)"
+  ],
+  "completed_at": "2026-10-16T14:47:20.416Z",
+  "dispatched_at": "2026-10-16T14:33:53Z",
+  "findings": [
+    {
+      "file": "logs/collect.py",
+      "line": "73",
+      "severity": "blocking",
+      "text": "blocking: the missing_browser_skips counter is `re.findall(r\"^SKIPPED.*no supported browser\", text, re.M)`, which matches no line of the final window's arm logs \u2014 their skip text is \"SPA composition check requires an installed browser\" (logs/negative-control-skip-reasons.log:2) and none of logs/base-arm.log, logs/head-arm.log or logs/negative-control.log carries any SKIPPED line at all \u2014 so logs/comparison.log records missing_browser_skips=0 for every arm, including the negative control that skipped 72 for a missing browser and is annotated \"(must report skips for a missing browser)\" on the same line; the column the done_when names for that purpose is structurally incapable of being non-zero and directly contradicts the arm's own skipped=72, inverting the control's outcome for any reader who takes the comparison log at face value."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 723616aab; 009e7b967 adds the fragment plus a first row (207 passed, 20 failed), d36b1f847 deletes that row and writes the re-run's in its place and rewrites the fragment to the re-run's numbers, 143 insertions over two docs files, no production or test source changed.",
+    "done_when": "the FENCE-EVIDENCE measure asks for both arms plus a control on one exclusive node, per-arm logs each carrying an EXIT= line and host, a comparison log listing each arm's collected count, duration, skips for a missing browser (0 required at the head arm) and failing ids with the head-only ids named, the head-arm log recorded as the browser population's row through record_from_log with a 20 m SuiteDeclaration, and a fragment stating both arms' counts, durations and ids; every element is present except that the comparison log's missing_browser_skips column reads 0 for every arm (logs/collect.py:73), so the control's required skip demonstration is not readable in the artifact the measure names.",
+    "goal": "the goal is to measure the browser population on one exclusive all_debug node with both arms at a 60 s per-test timeout; docs/evidence/fragments/the-suite-tests-behaviour/browser-population-quiet-measure.html:24 records both arms at --timeout=60 on one exclusive all_debug job (1287428) and logs/base-arm.log:1 and logs/head-arm.log:1 both name host=98dci4-clu-3141, so the goal is met.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T133039000231-browser-population-quiet-measure/manifest.md; status complete, it records the three arms' counts and durations, baseline_suite (revision 26173171b, 19 failure ids) and after_suite (revision 723616aab, 18 failure ids), the gate command and seven log paths under the run directory.",
+    "write_paths": "the manifest declares docs/state/reckon/suite-runs, docs/evidence/fragments/the-suite-tests-behaviour/browser-population-quiet-measure.html and docs/figures/the-suite-tests-behaviour/browser-population-quiet-measure; the diff lands the row docs/state/reckon/suite-runs/20261016T141805.400068Z-723616aab8b5-browser.json and that fragment and nothing else, so nothing escaped the declared scope."
+  },
+  "justifications": {
+    "durability": "no test reads docs/state/reckon/suite-runs, so deleting or corrupting the committed row or the fragment fails nothing; only tests/test_standing_suite.py exercises the recorder that produced the row.",
+    "evidence": "the committed row docs/state/reckon/suite-runs/20261016T141805.400068Z-723616aab8b5-browser.json reconciles with logs/head-arm.log's \"18 failed, 209 passed\" summary at a 1200 s budget, but logs/comparison.log's missing_browser_skips column reads 0 for the control arm that skipped 72 for exactly that reason.",
+    "fit": "the fragment mirrors the sibling evidence shape (plan-* meta tags, article data-reckon=\"landed\", an element id beginning with the node id) and the row is written by the repository's own recorder, though the fragment has no trailing newline.",
+    "goal_fidelity": "logs/base-arm.log:1 and logs/head-arm.log:1 both name host=98dci4-clu-3141 and --timeout=60, and docs/evidence/fragments/the-suite-tests-behaviour/browser-population-quiet-measure.html:24 states both arms ran on one exclusive all_debug node.",
+    "reuse": "the node adds no definition of its own; it records through the existing owner reckon/crew/standing_suite.py:306 record_from_log with a reckon.flight.SuiteDeclaration, so no capability is forked.",
+    "scope_discipline": "both paths in the diff, the fragment and the suite-runs row, sit inside the write paths declared at manifest.md:3 and nothing else is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure the browser population on one exclusive all_debug node with both arms at a 60 s per-test timeout; docs/evidence/fragments/the-suite-tests-behaviour/browser-population-quiet-measure.html:24 records both arms at --timeout=60 on one exclusive all_debug job (1287428) and logs/base-arm.log:1 and logs/head-arm.log:1 both name host=98dci4-clu-3141, so the goal is met.\nVERDICT done_when: the FENCE-EVIDENCE measure asks for both arms plus a control on one exclusive node, per-arm logs each carrying an EXIT= line and host, a comparison log listing each arm's collected count, duration, skips for a missing browser (0 required at the head arm) and failing ids with the head-only ids named, the head-arm log recorded as the browser population's row through record_from_log with a 20 m SuiteDeclaration, and a fragment stating both arms' counts, durations and ids; every element is present except that the comparison log's missing_browser_skips column reads 0 for every arm (logs/collect.py:73), so the control's required skip demonstration is not readable in the artifact the measure names.\nVERDICT write_paths: the manifest declares docs/state/reckon/suite-runs, docs/evidence/fragments/the-suite-tests-behaviour/browser-population-quiet-measure.html and docs/figures/the-suite-tests-behaviour/browser-population-quiet-measure; the diff lands the row docs/state/reckon/suite-runs/20261016T141805.400068Z-723616aab8b5-browser.json and that fragment and nothing else, so nothing escaped the declared scope.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T133039000231-browser-population-quiet-measure/manifest.md; status complete, it records the three arms' counts and durations, baseline_suite (revision 26173171b, 19 failure ids) and after_suite (revision 723616aab, 18 failure ids), the gate command and seven log paths under the run directory.\nVERDICT diff: read commit by commit against 723616aab; 009e7b967 adds the fragment plus a first row (207 passed, 20 failed), d36b1f847 deletes that row and writes the re-run's in its place and rewrites the fragment to the re-run's numbers, 143 insertions over two docs files, no production or test source changed.\nCALL_SITES: reckon/crew/standing_suite.py:482 _latest_record reads every *.json in the suite-runs directory (filtering by population, so the browser row does not displace the standing suite's own latest), reckon/crew_run_commands.py:1098 names the suite-runs directory the committed row lands in\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: logs/base-arm.log:1 and logs/head-arm.log:1 both name host=98dci4-clu-3141 and --timeout=60, and docs/evidence/fragments/the-suite-tests-behaviour/browser-population-quiet-measure.html:24 states both arms ran on one exclusive all_debug node.\nSCORE evidence: 13\nJUSTIFICATION evidence: the committed row docs/state/reckon/suite-runs/20261016T141805.400068Z-723616aab8b5-browser.json reconciles with logs/head-arm.log's \"18 failed, 209 passed\" summary at a 1200 s budget, but logs/comparison.log's missing_browser_skips column reports 0 for the control arm that skipped 72 for exactly that reason.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both paths in the diff, the fragment and the suite-runs row, sit inside the write paths declared at manifest.md:3 and nothing else is touched.\nSCORE durability: 8\nJUSTIFICATION durability: no test reads docs/state/reckon/suite-runs, so deleting or corrupting the committed row or the fragment fails nothing; only tests/test_standing_suite.py exercises the recorder that produced the row.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment mirrors the sibling evidence shape (plan-* meta tags, article data-reckon=\"landed\", an element id beginning with the node id) and the row is written by the repository's own recorder, though the fragment has no trailing newline.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node adds no definition of its own; it records through the existing owner reckon/crew/standing_suite.py:306 record_from_log with a reckon.flight.SuiteDeclaration, so no capability is forked.\nFINDING logs/collect.py:73 blocking: the missing_browser_skips counter is `re.findall(r\"^SKIPPED.*no supported browser\", text, re.M)`, which matches no line of the final window's arm logs \u2014 their skip text is \"SPA composition check requires an installed browser\" (logs/negative-control-skip-reasons.log:2) and none of logs/base-arm.log, logs/head-arm.log or logs/negative-control.log carries any SKIPPED line at all \u2014 so logs/comparison.log records missing_browser_skips=0 for every arm, including the negative control that skipped 72 for a missing browser and is annotated \"(must report skips for a missing browser)\" on the same line; the column the done_when names for that purpose is structurally incapable of being non-zero and directly contradicts the arm's own skipped=72, inverting the control's outcome for any reader who takes the comparison log at face value.\n",
+  "review_run_id": "r-20261016T143204835011-review-of-browser-population-quiet-measure-d36b1f847e87",
+  "reviewed_base_sha": "723616aab8b580f544ff7a134cf6cf7235088fa8",
+  "reviewed_head_sha": "d36b1f847e877a44f65d6ed1f9a84260cc71755f",
+  "reviewed_run_id": "r-20261016T133039000231-browser-population-quiet-measure",
+  "role": "review",
+  "rubric": "node",
+  "scores": {
+    "durability": 8,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T14:42:44.221890+00:00",
+  "total": 98
+}
