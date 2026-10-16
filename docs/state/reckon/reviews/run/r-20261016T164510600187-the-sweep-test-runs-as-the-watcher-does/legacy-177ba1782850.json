@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-16T16:46:26Z",
+  "findings": [
+    {
+      "file": "tests/test_the_watcher_sweeps_unfollowed_sessions.py",
+      "line": "246",
+      "severity": "follow-on",
+      "text": "follow-on: the helper is spawned with stderr=subprocess.PIPE and that stream is never drained while the helper holds the attended session's registration lock for the case's whole life, so a helper that ever wrote more than the pipe buffer to stderr would block on the write, keep its lock, and hang the case until the harness timeout \u2014 routing the helper's stderr to DEVNULL removes the exposure."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_the_watcher_sweeps_unfollowed_sessions.py:457 reddens if the registration returns to this process \u2014 the base fixture wrote pid=os.getpid(), which would make `own` non-empty \u2014 so the assertion names the regression it guards.",
+    "evidence": "logs/gate-sweep.log ends 2 passed EXIT=0 and logs/negative-control-sweep.log ends 2 failed EXIT=1 with the offered ids on its body, matching the two conditions the done_when names; the manifest records no baseline_suite/after_suite arms, so the added-failure figure rests on the single gate log.",
+    "fit": "the helpers at tests/test_the_watcher_sweeps_unfollowed_sessions.py:190 and :263 are named by mechanism, the module docstring states the premise, and both commits carry conventional subjects with bodies and no attribution.",
+    "goal_fidelity": "tests/test_the_watcher_sweeps_unfollowed_sessions.py:190 writes the attended registration from a subprocess and :452 asserts no follower row names os.getpid(), so the tick runs as the registration-free production watcher does.",
+    "reuse": "the helper at :190 extends the production owner by importing reckon/crew/follower_registration.py:_write_watch_record rather than re-deriving it, and a search of tests/ for a cross-process registration holder found only the in-process test_crew_watch_visibility.py:_hold_seat_lock, which is a different capability.",
+    "scope_discipline": "git diff c36688c82..c80ce5b12 changes only the test file and the node's own evidence fragment, both inside the declared fence, and nothing under reckon/."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the watcher sweep test tick from a process holding no follower registration; the landed fixture writes the attended session's registration from a helper subprocess and asserts the tick's process holds none (tests/test_the_watcher_sweeps_unfollowed_sessions.py:190, :452).\nVERDICT done_when: the done_when names the two assertions (tick holds no registration; reflex offers only the swept session's run) plus a pass and a red control; logs/gate-sweep.log records 2 passed EXIT=0 and logs/negative-control-sweep.log records 2 failed EXIT=1.\nVERDICT write_paths: read the manifest's declared paths; the diff touches exactly tests/test_the_watcher_sweeps_unfollowed_sessions.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-sweep-test-runs-as-the-watcher-does.html, both inside the fence.\nVERDICT manifest: read; it records the gate (2 passed), the negative control (2 failed, offered ids on the log), ruff clean both arms, and status complete at head c80ce5b12.\nVERDICT diff: read both commits from base c36688c82 to head c80ce5b12 \u2014 the fixture's registration moved to a helper process whose lock lifetime is bound to the case, plus a 15-line empty evidence fragment; two files, nothing under reckon/.\nCALL_SITES: reckon/crew/runs.py:3162 sweep_unfollowed_sessions, reckon/crew/runs.py:3243 watch, reckon/crew/recovery_watch.py:2247 watch_ticker, reckon/crew/recovery_repair_dispatch.py:1000 _sweeping_session, reckon/crew/recovery_review_acceptance.py:396\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_the_watcher_sweeps_unfollowed_sessions.py:190 writes the attended registration from a subprocess and :452 asserts no follower row names os.getpid(), so the tick runs as the registration-free production watcher does.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-sweep.log ends 2 passed EXIT=0 and logs/negative-control-sweep.log ends 2 failed EXIT=1 with the offered ids on its body, matching the two conditions the done_when names; the manifest records no baseline_suite/after_suite arms, so the added-failure figure rests on the single gate log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff c36688c82..c80ce5b12 changes only the test file and the node's own evidence fragment, both inside the declared fence, and nothing under reckon/.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_watcher_sweeps_unfollowed_sessions.py:457 reddens if the registration returns to this process \u2014 the base fixture wrote pid=os.getpid(), which would make `own` non-empty \u2014 so the assertion names the regression it guards.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers at tests/test_the_watcher_sweeps_unfollowed_sessions.py:190 and :263 are named by mechanism, the module docstring states the premise, and both commits carry conventional subjects with bodies and no attribution.\nSCORE reuse: 18\nJUSTIFICATION reuse: the helper at :190 extends the production owner by importing reckon/crew/follower_registration.py:_write_watch_record rather than re-deriving it, and a search of tests/ for a cross-process registration holder found only the in-process test_crew_watch_visibility.py:_hold_seat_lock, which is a different capability.\nFINDING tests/test_the_watcher_sweeps_unfollowed_sessions.py:246 follow-on: the helper is spawned with stderr=subprocess.PIPE and that stream is never drained while the helper holds the attended session's registration lock for the case's whole life, so a helper that ever wrote more than the pipe buffer to stderr would block on the write, keep its lock, and hang the case until the harness timeout \u2014 routing the helper's stderr to DEVNULL removes the exposure.",
+  "review_run_id": "legacy-177ba1782850",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "c36688c828f59a7c584258c54d8d4629e9ab5f74",
+  "reviewed_head_sha": "c80ce5b1274299d869fc975b10c3aef8cb09e0ed",
+  "reviewed_run_id": "r-20261016T164510600187-the-sweep-test-runs-as-the-watcher-does",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261016T174653453912-review-of-the-sweep-test-runs-as-the-watcher-does-c80ce5b12742",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T17:55:33.857427+00:00",
+  "total": 113
+}
