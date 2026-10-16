@@ -841,6 +841,12 @@
     so this node raises no blocker. No plan state is touched by this node: the driving followup stays open and no
     terminal status is set, because only the coordinator observes the other nodes.</p>
   </section>
+  <section id="s10">
+    <h2>§10 — the partition route names sbatch, landed</h2>
+    <p>The nested-launch partition route now names its verb. <code>reckon/nested_launch.py</code> declares <code>PARTITION_ROUTE</code> as a separate partition job submitted with <code>sbatch</code> (<code>sbatch --wait</code> when the caller needs the result before it continues). Beside it, <code>NESTED_SRUN_SENTENCE</code> says that an <code>srun</code> from inside the allocation runs as a step of the held job, with or without the opt-in and whatever partition it names. The <code>srun</code>, <code>sbatch</code> and <code>salloc</code> refusals, the digests' fleet-compute sentence and <code>_worker_host_line</code> all compose from those two constants, and the role digests were regenerated. The shims' decisions are unchanged.</p>
+<p>Run <code>r-20261016T145527130463-the-partition-route-names-sbatch</code>, commits <code>5637dfc6b</code>, <code>39afa6e0e</code> and <code>45430de76</code>, merged at <code>904e2d720</code>. At the merged head, the two route test files and <code>tests/test_worker_digest.py</code> pass, 32 tests, <code>EXIT=0</code>. The first review (110/120) found that the text checks still passed under the mutation, because the <code>srun</code> sentence also says <code>sbatch</code>. The repair pins every produced text to the route phrase itself. With the route's verb clause removed, 7 cases fail, covering all three refusals, both digest cases and the host line. The re-review scored 109/120, and its two follow-ons on test duplication were exempted with reasons.</p>
+  </section>
+
 </main>
 </body>
 </html>
