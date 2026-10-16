@@ -1,0 +1,108 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f13ae18cb740c056d88bd723f6969e0ead5fc609",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:111",
+    "reckon/crew_follow_commands.py:1355",
+    "reckon/crew_follow_commands.py:1725",
+    "reckon/crew_run_commands.py:42",
+    "reckon/mcp.py:2171"
+  ],
+  "completed_at": "2026-10-16T07:29:08.595Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "a-sweep-acts-on-the-session-it-names",
+      "recorded_at": "2026-10-16T07:27:43.819569+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-16T07:19:06Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-sweep-acts-on-the-session-it-names",
+      "recorded_at": "2026-10-16T07:27:54.126199+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-sweep-acts-on-the-session-it-names",
+      "recorded_at": "2026-10-16T07:28:04.967617+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "a-sweep-acts-on-the-session-it-names",
+      "recorded_at": "2026-10-16T07:28:16.510241+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "the reviewer measured the ruff delta itself: 5 findings at base and 2 at head across the changed modules, both pre-existing, and the added code is format-clean; only the record is missing",
+      "recorded_at": "2026-10-16T07:28:26.532038+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "114",
+      "severity": "follow-on",
+      "text": "follow-on: _sweep_accepts_a_session duplicates rather than extends a capability the repository already owns - reckon/crew/dispatch_picker.py:442-447 performs the same signature adaptation (inspect.signature, pass a keyword only when the callable names it or takes **kwargs) inline for the injected pick callable; the addition is a second implementation of that mechanism, so a later change to the adaptation rule has two places to find and the two can drift."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "1722",
+      "severity": "follow-on",
+      "text": "follow-on: the follower's own call site is the defect's entry point and no test guards it - test_the_followers_sweep_carries_the_session_it_serves drives _sweep_lapsed_holds, not _follow_watch_lines, so reverting reckon/crew_follow_commands.py:1725 to sweep(project) would leave all four new tests green while the original bug returns."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T061853259370-a-sweep-acts-on-the-session-it-names/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm's record is ambiguous - baseline_suite.command and after_suite.command carry angle-bracket placeholders (<base>, <63 gate files>) instead of the literal command, and gate-base-2.log:1 names the head revision 62f79c62b while gate-base-1/3/4.log:1 name f13ae18cb, so a reader comparing arms cannot tell which revision a log ran at from its own header."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T061853259370-a-sweep-acts-on-the-session-it-names/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when names ruff check and ruff format --check as part of the measure, but neither the manifest's tests field nor test_logs records any ruff run; I checked the delta myself - base carries 5 findings across the two changed modules and head 2 (both pre-existing SIM103/SIM115 shifted in line), and the added code is format-clean - so the clause holds, but the worker's own record does not show it."
+    }
+  ],
+  "head_log_revision": "62f79c62ba89b50107db244d4c487342c865c83e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit 62f79c62b against base f13ae18cb, four files, 296 insertions and 11 deletions, all inside the declared scope; the production change is the session parameter on sweep at reckon/crew/resumption.py:1654, the resume-pass filter at resumption.py:1704, session= on the reflex call at resumption.py:1905, and the follower forwarding its session at reckon/crew_follow_commands.py:111 and :1725.",
+    "done_when": "the done_when names tests/test_follow_sweep_is_session_scoped.py, a chunked head/base gate ending in EXIT=, and a ruff clause; the manifest records the new file at 4 passed and the head gate at 1008 passed / 0 failed across seven EXIT=0 logs with base 1007 passed / 1 flaky at gate-base-2.log, I re-ran the named file green (4 passed), but no ruff result is recorded anywhere.",
+    "goal": "the goal is for sweep to take the session it sweeps so both its passes act only on it, and reckon/crew/resumption.py:1697-1704 filters the resume pass on pointer['session'] while resumption.py:1905 passes session= into dispatch_awaiting_reviews.",
+    "manifest": "read; it reports the new file at 4 passed, the head gate at 1008 passed / 0 failed and the base gate at 1007 passed / 1 flaky, names its twelve gate logs and its negative-control log, and attributes the one base failure to test_every_attempt_is_supervised.py::test_crew_redispatch_keeps_the_harness_behind_a_supervisor[codex] as flaky rather than head-vs-base.",
+    "write_paths": "read the five paths declared at prompt.txt of the source run and the manifest's orientation_write_paths; the diff's four files (reckon/crew/resumption.py, reckon/crew_follow_commands.py, tests/test_follow_sweep_is_session_scoped.py, docs/evidence/fragments/.../a-sweep-acts-on-the-session-it-names.html) are all inside them and nothing outside is touched."
+  },
+  "justifications": {
+    "durability": "the negative-control.log reddens both new assertions (test_a_session_sweep_resumes_only_that_sessions_lapsed_runs, test_a_session_sweep_composes_only_that_sessions_review) with EXIT=1 on the declared mutations, but the follower's own call site at reckon/crew_follow_commands.py:1722 has no test that fails if its session= is dropped.",
+    "evidence": "reckon/crew/resumption.py ships behind real logs (gate-head-1..7 at EXIT=0, gate-base-*.log with the one flaky id) and a red negative-control.log at EXIT=1, but the done_when's ruff clause has no recorded result and gate-head-4.log:1 names the base revision f13ae18cb rather than the head it ran at.",
+    "fit": "the added names (_sweep_accepts_a_session, the session parameter) describe their mechanism, the deferred import at reckon/crew_follow_commands.py:109 matches the module idiom, and no plan or ticket label appears in the diff.",
+    "goal_fidelity": "reckon/crew/resumption.py:1697-1704 and :1905 give the session to both passes and reckon/crew_follow_commands.py:1725 hands the follower's own session in, which is exactly the goal, with only the session-less fleet sweep left unconfined by design.",
+    "reuse": "reckon/crew_follow_commands.py:114 re-implements the same call-signature adaptation already written inline at reckon/crew/dispatch_picker.py:442-447 (inspect.signature plus a VAR_KEYWORD escape) rather than sharing it.",
+    "scope_discipline": "every path in commit 62f79c62b is one of the declared write paths and no figure or extra evidence prose was written, matching the node's stated no-artifact done-when."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is for sweep to take the session it sweeps so both its passes act only on it, and reckon/crew/resumption.py:1697-1704 filters the resume pass on pointer['session'] while resumption.py:1905 passes session= into dispatch_awaiting_reviews.\nVERDICT done_when: the done_when names tests/test_follow_sweep_is_session_scoped.py, a chunked head/base gate ending in EXIT=, and a ruff clause; the manifest records the new file at 4 passed and the head gate at 1008 passed / 0 failed across seven EXIT=0 logs with base 1007 passed / 1 flaky at gate-base-2.log, I re-ran the named file green (4 passed), but no ruff result is recorded anywhere.\nVERDICT write_paths: read the five paths declared at prompt.txt of the source run and the manifest's orientation_write_paths; the diff's four files (reckon/crew/resumption.py, reckon/crew_follow_commands.py, tests/test_follow_sweep_is_session_scoped.py, docs/evidence/fragments/.../a-sweep-acts-on-the-session-it-names.html) are all inside them and nothing outside is touched.\nVERDICT manifest: read; it reports the new file at 4 passed, the head gate at 1008 passed / 0 failed and the base gate at 1007 passed / 1 flaky, names its twelve gate logs and its negative-control log, and attributes the one base failure to test_every_attempt_is_supervised.py::test_crew_redispatch_keeps_the_harness_behind_a_supervisor[codex] as flaky rather than head-vs-base.\nVERDICT diff: read commit 62f79c62b against base f13ae18cb, four files, 296 insertions and 11 deletions, all inside the declared scope; the production change is the session parameter on sweep at reckon/crew/resumption.py:1654, the resume-pass filter at resumption.py:1704, session= on the reflex call at resumption.py:1905, and the follower forwarding its session at reckon/crew_follow_commands.py:111 and :1725.\nCALL_SITES: reckon/crew_follow_commands.py:111, reckon/crew_follow_commands.py:1355, reckon/crew_follow_commands.py:1725, reckon/crew_run_commands.py:42, reckon/mcp.py:2171\nSCORE goal_fidelity: 19\nSCORE evidence: 15\nSCORE scope_discipline: 20\nSCORE durability: 16\nSCORE fit: 18\nSCORE reuse: 5\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:1697-1704 and :1905 give the session to both passes and reckon/crew_follow_commands.py:1725 hands the follower's own session in, which is exactly the goal, with only the session-less fleet sweep left unconfined by design.\nJUSTIFICATION evidence: reckon/crew/resumption.py ships behind real logs (gate-head-1..7 at EXIT=0, gate-base-*.log with the one flaky id) and a red negative-control.log at EXIT=1, but the done_when's ruff clause has no recorded result and gate-head-4.log:1 names the base revision f13ae18cb rather than the head it ran at.\nJUSTIFICATION scope_discipline: every path in commit 62f79c62b is one of the declared write paths and no figure or extra evidence prose was written, matching the node's stated no-artifact done-when.\nJUSTIFICATION durability: the negative-control.log reddens both new assertions (test_a_session_sweep_resumes_only_that_sessions_lapsed_runs, test_a_session_sweep_composes_only_that_sessions_review) with EXIT=1 on the declared mutations, but the follower's own call site at reckon/crew_follow_commands.py:1722 has no test that fails if its session= is dropped.\nJUSTIFICATION fit: the added names (_sweep_accepts_a_session, the session parameter) describe their mechanism, the deferred import at reckon/crew_follow_commands.py:109 matches the module idiom, and no plan or ticket label appears in the diff.\nJUSTIFICATION reuse: reckon/crew_follow_commands.py:114 re-implements the same call-signature adaptation already written inline at reckon/crew/dispatch_picker.py:442-447 (inspect.signature plus a VAR_KEYWORD escape) rather than sharing it.\nFINDING reckon/crew_follow_commands.py:114 follow-on: follow-on: _sweep_accepts_a_session duplicates rather than extends a capability the repository already owns - reckon/crew/dispatch_picker.py:442-447 performs the same signature adaptation (inspect.signature, pass a keyword only when the callable names it or takes **kwargs) inline for the injected pick callable; the addition is a second implementation of that mechanism, so a later change to the adaptation rule has two places to find and the two can drift.\nFINDING reckon/crew_follow_commands.py:1722 follow-on: follow-on: the follower's own call site is the defect's entry point and no test guards it - test_the_followers_sweep_carries_the_session_it_serves drives _sweep_lapsed_holds, not _follow_watch_lines, so reverting reckon/crew_follow_commands.py:1725 to sweep(project) would leave all four new tests green while the original bug returns.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T061853259370-a-sweep-acts-on-the-session-it-names/manifest.md:1 follow-on: follow-on: the base arm's record is ambiguous - baseline_suite.command and after_suite.command carry angle-bracket placeholders (<base>, <63 gate files>) instead of the literal command, and gate-base-2.log:1 names the head revision 62f79c62b while gate-base-1/3/4.log:1 name f13ae18cb, so a reader comparing arms cannot tell which revision a log ran at from its own header.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T061853259370-a-sweep-acts-on-the-session-it-names/manifest.md:1 follow-on: follow-on: the done_when names ruff check and ruff format --check as part of the measure, but neither the manifest's tests field nor test_logs records any ruff run; I checked the delta myself - base carries 5 findings across the two changed modules and head 2 (both pre-existing SIM103/SIM115 shifted in line), and the added code is format-clean - so the clause holds, but the worker's own record does not show it.",
+  "review_run_id": "r-20261016T071834885446-review-of-a-sweep-acts-on-the-session-it-names-62f79c62ba89",
+  "reviewed_base_sha": "f13ae18cb740c056d88bd723f6969e0ead5fc609",
+  "reviewed_head_sha": "62f79c62ba89b50107db244d4c487342c865c83e",
+  "reviewed_run_id": "r-20261016T061853259370-a-sweep-acts-on-the-session-it-names",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T07:26:43.297959+00:00",
+  "total": 93
+}
