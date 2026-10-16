@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
 from reckon import budget
 from reckon.crew import paid_lanes
 from reckon.crew.picker import lane_context
@@ -36,6 +38,20 @@ def test_the_shelf_life_is_derived_from_the_refresh_interval() -> None:
             paid_lanes.refresh_interval_seconds(interval)
             * paid_lanes.SHELF_LIFE_INTERVALS
         )
+
+
+def test_an_unknown_interval_unit_is_refused() -> None:
+    with pytest.raises(ValueError, match="unknown refresh interval unit") as raised:
+        paid_lanes.refresh_interval_seconds("5m")
+    message = str(raised.value)
+    assert "5m" in message
+    for unit in ("s", "sec", "min", "h", "hour", "d"):
+        assert unit in message
+
+
+def test_every_known_unit_converts_as_before() -> None:
+    for unit, factor in paid_lanes._INTERVAL_UNIT_SECONDS.items():
+        assert paid_lanes.refresh_interval_seconds("5" + unit) == 5.0 * factor
 
 
 def test_a_document_reading_is_judged_against_the_documents_shelf_life() -> None:
