@@ -1651,6 +1651,7 @@ def writer_sweep_status(project: str, writer: Any) -> dict[str, Any] | None:
 def sweep(
     project: str,
     *,
+    session: str | None = None,
     config: Mapping[str, Any] | None = None,
     dry_run: bool = False,
     launcher: Callable[..., int] | None = None,
@@ -1665,6 +1666,17 @@ def sweep(
     tells a coordinator the run finished rather than from the coordinator
     remembering. That pass is idempotent for the same reason the resume pass
     is: a run whose review is stored or already in flight is left alone.
+
+    ``session`` names the session this sweep is for, and both passes act only
+    on runs whose pointer records that ownership. It is the one mechanism that
+    scopes a sweep for any caller: a follower passes the session it serves so a
+    sweep it runs never resumes another session's run or composes another
+    session's review, and a caller holding no follower registration — the
+    watcher that sweeps a run whose session armed no follower — passes it
+    explicitly. Left unset, both passes behave as a whole-fleet sweep: the
+    resume pass considers every lapsed run and the review pass resolves its
+    session from the follower registration this process holds, empty for a
+    process holding none, which the reflex reads as no filter.
 
     Idempotent by construction: a resumed run carries the trigger it was
     resumed for, so a second pass over the same fleet reports nothing to do.
@@ -1686,6 +1698,11 @@ def sweep(
     considered = 0
 
     for pointer in list_live(project=project):
+        # A session-scoped sweep resumes only the runs that session owns: a
+        # follower resuming another session's run restarts a worker under a
+        # coordinator that did not choose its lane or its member.
+        if session is not None and str(pointer.get("session") or "") != session:
+            continue
         run_id = str(pointer.get("run_id") or "")
         if not run_id:
             continue
@@ -1782,13 +1799,13 @@ def sweep(
                 }
             )
             continue
-        session = resolve_session(run_id, record=pointer)
-        if not session["resolved"]:
+        recovered = resolve_session(run_id, record=pointer)
+        if not recovered["resolved"]:
             skipped.append(
                 {
                     **entry,
                     "reason": "no-recoverable-session",
-                    "detail": session["detail"],
+                    "detail": recovered["detail"],
                 }
             )
             continue
@@ -1837,8 +1854,8 @@ def sweep(
                 {
                     **entry,
                     "would_resume": True,
-                    "session_id": session["session_id"],
-                    "session_source": session["source"],
+                    "session_id": recovered["session_id"],
+                    "session_source": recovered["source"],
                     "hold": signature,
                     "advice": advice,
                     **({"observed": observation["observed"]} if observation else {}),
@@ -1864,8 +1881,8 @@ def sweep(
         resumed.append(
             {
                 **entry,
-                "session_id": session["session_id"],
-                "session_source": session["source"],
+                "session_id": recovered["session_id"],
+                "session_source": recovered["source"],
                 "hold": signature,
                 "advice": advice,
                 **({"observed": observation["observed"]} if observation else {}),
@@ -1886,7 +1903,7 @@ def sweep(
     if not dry_run:
         try:
             reviews = dispatch_awaiting_reviews(
-                project=project, config=config, launcher=launch
+                project=project, config=config, launcher=launch, session=session
             )
         except (CrewError, OSError) as exc:
             # A review pass that cannot run must not take the resume pass's

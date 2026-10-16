@@ -1,4 +1,5 @@
 import hashlib
+import inspect
 import json
 import os
 import re
@@ -90,8 +91,15 @@ def _follow_render_event(
 
 
 
-def _sweep_lapsed_holds(project: str, *, dry_run: bool = False) -> dict[str, Any]:
+def _sweep_lapsed_holds(
+    project: str, *, session: str | None = None, dry_run: bool = False
+) -> dict[str, Any]:
     """Resume this project's runs whose provider refusal has lapsed.
+
+    ``session`` confines the sweep to the runs the named session owns, so a
+    follower armed to observe another session never resumes that session's runs
+    or composes its reviews. A caller with no session to confine to passes
+    nothing and sweeps the whole fleet.
 
     Deferred like every other crew import in this file, and wrapped so a
     recovery that cannot run never takes the follower down with it: the pane a
@@ -100,7 +108,26 @@ def _sweep_lapsed_holds(project: str, *, dry_run: bool = False) -> dict[str, Any
     """
     from reckon.crew.resumption import sweep
 
-    return sweep(project, dry_run=dry_run)
+    return sweep(project, session=session, dry_run=dry_run)
+
+
+def _sweep_accepts_a_session(sweep: Callable[..., Any]) -> bool:
+    """Whether a follower's sweep callable declares the session it sweeps.
+
+    The follower's own sweep takes the session so a sweep it runs is confined
+    to the session it serves, but a sweep injected by a test may still be the
+    older single-argument form. The session is offered only to a callable that
+    declares it, so the call shape follows the callable's own signature rather
+    than the identity of one function object.
+    """
+    try:
+        parameters = inspect.signature(sweep).parameters
+    except (TypeError, ValueError):
+        return False
+    return "session" in parameters or any(
+        parameter.kind is inspect.Parameter.VAR_KEYWORD
+        for parameter in parameters.values()
+    )
 
 
 
@@ -1692,7 +1719,12 @@ def _follow_watch_lines(
 
     def _sweep_quietly() -> None:
         try:
-            sweep(project)
+            if _sweep_accepts_a_session(sweep):
+                # The follower's own sweep takes the session it serves, so a
+                # sweep armed here never reaches another session's runs.
+                sweep(project, session=session)
+            else:
+                sweep(project)
         except Exception:  # noqa: BLE001 - a failed recovery must not end the pane
             return
 
