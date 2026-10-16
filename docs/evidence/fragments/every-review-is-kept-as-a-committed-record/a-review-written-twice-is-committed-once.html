@@ -10,8 +10,8 @@
   <meta name="plan-summary" content="A promotion commits each staged review round once: a staged record whose bytes equal the delivered record's is not filed again, and a round the committed tree already holds is not rewritten, so a finding disposition recorded on it survives the subject's next review.">
   <meta name="plan-evidence-for" content="reckon:every-review-is-kept-as-a-committed-record">
   <meta name="plan-verifies" content="reckon:every-review-is-kept-as-a-committed-record#s20">
-  <meta name="plan-commits" content="2e8ec66af">
-  <meta name="plan-artifacts" content="reckon/crew/promotion_checks.py,tests/test_a_review_written_twice_is_committed_once.py">
+  <meta name="plan-commits" content="2e8ec66af,8c4ccf6de">
+  <meta name="plan-artifacts" content="reckon/crew/promotion.py,reckon/crew/promotion_checks.py,tests/test_a_review_written_twice_is_committed_once.py">
   <meta name="plan-recorded-at" content="2026-10-16">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-tags" content="crew,promotion,reviews,tests">
@@ -23,6 +23,42 @@
 <article id="a-review-written-twice-is-committed-once-landing" class="r-note" data-node="a-review-written-twice-is-committed-once" data-reckon="landed" data-when="2026-10-16">
   <h2>A review written to both of its paths is committed once</h2>
   <p id="a-review-written-twice-is-committed-once-landing-line">A promotion now files a staged review round once, and never rewrites a round the committed tree already holds.</p>
+
+  <p><strong>What changed.</strong> <code>_delivered_review_payloads_for_commit</code> skips a staged
+  record whose bytes equal the delivered record's, so a reviewer that wrote its one
+  record to both of the paths its dispatch grants has it filed once. It separately skips
+  a round the committed tree already holds — matched by the round's review id, or by the
+  reviewed head it carries — in that order, so a later promotion does not rewrite a
+  committed round and drop a disposition recorded on it. A staged round the subject has
+  not committed yet is still committed under its derived legacy id. The committed tree
+  those skips read is the caller's <code>root</code> — the same root
+  <code>promotion.py</code> writes the landing into — rather than the run's own
+  repository, which a landing given an explicit root may differ from.</p>
+
+  <p><strong>The measure.</strong> Four cases in
+  <code>tests/test_a_review_written_twice_is_committed_once.py</code>, each with the crew
+  home and the committed tree under temporary directories: one record at both granted
+  paths lands once under the review run's id; a second staged round at another head lands
+  under its legacy id; a disposition written to a committed round survives a later
+  promotion; and the same disposition survives when the landing's root is a checkout
+  other than the run's own repository. The file is <strong>4 passed</strong>, exit 0. The
+  importing population runs at both revisions in its own pytest process — base
+  <code>b329ee744</code> <strong>55 passed</strong>, exit 0; head <strong>59 passed</strong>,
+  exit 0 — so the +4 is exactly the new file and the added failure id set is empty. ruff
+  check and format are unchanged against base on the three changed files.</p>
+
+  <p><strong>The negative controls.</strong> Removing both skips from the declared
+  mutation reddens all three original cases: the byte-identity skip files the one round
+  twice (<code>legacy-17c189f35223.json</code> beside the run's own file), and the
+  already-committed skip makes the later promotion drop the disposition
+  (<code>KeyError: 'finding_dispositions'</code>). Pointing the reader back at the run's
+  repository — the mutation written on disk for the one run and the file restored from its
+  exact original bytes afterwards — reddens the differing-root case the same way: 1 failed,
+  exit 1.</p>
+
+  <p><strong>What this node did not do.</strong> A worker does not close its own node:
+  this fragment sets no terminal status and resolves no followup. The test file comparing
+  the surfaces at the merged head belongs to a separately dispatched node.</p>
 </article>
 </body>
 </html>
