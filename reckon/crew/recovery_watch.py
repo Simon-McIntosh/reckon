@@ -2212,6 +2212,15 @@ def _recreate_unlinked_registration(project: str, watcher: Mapping[str, Any]) ->
 IDLE_POLL_INTERVAL_CAP_SECONDS = 30.0
 
 
+# A tick is a second and the orphan sweep walks every live pointer in the
+# project, so the producer gives the sweep its own cadence rather than running
+# it on every pass: at most one sweep per this many seconds. The grace window a
+# session must be unattended for is minutes long, so a sweep this often finds a
+# lapsed session within half a minute of its grace expiring while a quiet
+# project pays for a handful of sweeps a minute at most.
+WATCHER_SWEEP_INTERVAL_SECONDS = 30.0
+
+
 def _sweep_lift_rows(
     project: str, seen: dict[str, dict[str, Any]] | None
 ) -> dict[str, dict[str, Any]] | None:
@@ -2352,6 +2361,12 @@ def watch_ticker(
         # on a re-arm. A reload replaces this process image in place, so the
         # memory resets with the seat and the baseline is re-emitted.
         lift_seen: dict[str, dict[str, Any]] | None = None
+        # The instant of this producer's last orphan sweep, so the pass that
+        # walks the whole fleet runs on its own cadence rather than on every
+        # tick. Zero rather than the armed instant, so the first pass sweeps:
+        # a producer taking a seat for a project already holding a session
+        # nobody follows sweeps it without waiting out one interval.
+        swept_at = 0.0
         while True:
             if not runs.renew_watch_host_lease(project):
                 return
@@ -2382,6 +2397,20 @@ def watch_ticker(
             # a lift moved, and it never ends the seat: an unreadable document
             # is the un-lifted state and is skipped with the memory kept.
             lift_seen = _sweep_lift_rows(project, lift_seen)
+            # The orphan sweep rides the same reconciliation beat, on its own
+            # cadence. A follower's sweep acts only on the session it serves, so
+            # a session that armed no follower has no sweeper and here is the
+            # only pass that reaches it: the watcher names the session
+            # explicitly and records itself as the writer. It is best-effort,
+            # like the lift fold above — a sweep that raises must not end a seat
+            # whose whole job is to go on reporting the fleet.
+            passed_at = _utc_seconds()
+            if passed_at - swept_at >= WATCHER_SWEEP_INTERVAL_SECONDS:
+                swept_at = passed_at
+                try:
+                    runs.sweep_unfollowed_sessions(project)
+                except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
+                    print(f"orphan-sweep-failure: {project}: {exc}", flush=True)
             _stop_delivered_reviews(pointers, signal_run=signal_run)
             moment = _utc_seconds()
             current = {
