@@ -482,10 +482,13 @@ def classify_pointer(
     # issued the pid; a producer classifying the fleet from another node reads a
     # worker's liveness as unknown, so a delivered worker still in its final
     # turn read ``scoring`` and raised a review duty the reflex was about to
-    # discharge itself. The hoisted verdict already answers the question the
-    # deferral means to ask — is the worker gone — from the process table where
-    # it can and from the run's own stream where it cannot, so the deferral
-    # consults it rather than liveness alone.
+    # discharge itself. So for a delivered (``complete``) manifest the deferral
+    # consults the hoisted verdict rather than liveness alone: it answers the
+    # question the deferral means to ask — is the worker gone — from the process
+    # table where it can and from the run's own stream where it cannot. The
+    # stream-aware verdict holds only that verdict; every other terminal word
+    # defers on proven liveness alone, so a moving stream never hides a blocked
+    # or failed stop.
     #
     # The exit record is the other half of the question, and it crosses nodes on
     # the shared home where a pid cannot. It is folded into the hoisted verdict:
