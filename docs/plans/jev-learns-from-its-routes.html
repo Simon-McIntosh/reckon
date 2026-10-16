@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="lane-and-model-routing">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;jev-learns-from-its-routes#s2&quot;, &quot;jev-learns-from-its-routes#s5&quot;], &quot;s4&quot;: [&quot;jev-learns-from-its-routes#s3&quot;], &quot;s8&quot;: [&quot;jev-learns-from-its-routes#s2&quot;], &quot;s9&quot;: [&quot;jev-learns-from-its-routes#s5&quot;, &quot;lane-and-model-routing#s27&quot;], &quot;s10&quot;: [&quot;jev-learns-from-its-routes#s5&quot;], &quot;s11&quot;: [&quot;jev-learns-from-its-routes#s2&quot;, &quot;jev-learns-from-its-routes#s9&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;jev-learns-from-its-routes#s2&quot;, &quot;jev-learns-from-its-routes#s5&quot;], &quot;s4&quot;: [&quot;jev-learns-from-its-routes#s3&quot;], &quot;s8&quot;: [&quot;jev-learns-from-its-routes#s2&quot;], &quot;s9&quot;: [&quot;jev-learns-from-its-routes#s5&quot;, &quot;lane-and-model-routing#s27&quot;], &quot;s10&quot;: [&quot;jev-learns-from-its-routes#s5&quot;, &quot;jev-learns-from-its-routes#s6&quot;], &quot;s11&quot;: [&quot;jev-learns-from-its-routes#s2&quot;, &quot;jev-learns-from-its-routes#s9&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
   <title>Jev Learns From Its Routes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="16">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -377,9 +377,15 @@
     <pre class="r-fu-prompt">/reckon-build jev-learns-from-its-routes §2</pre>
     <p class="r-fu-outcome">§2 and §5 landed (merge 613aadd29; reviews 97 and 102). §6 and §7 were revised after review, and §8 to §11 were added from the landed nodes' follow-ons; f-jlr-002 carries the order</p>
     </article>
-<article class="r-fu" data-id="f-jlr-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-b9" data-written-at="2026-10-16" data-recommends-skill="/reckon-build jev-learns-from-its-routes §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-jlr-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-b9" data-written-at="2026-10-16" data-recommends-skill="/reckon-build jev-learns-from-its-routes §3" data-resolved-at="2026-10-16T07:40:58+00:00" data-resolved-by="reckon-b9">
     <h4 class="r-fu-title">Build §3, §6, §7, §8 and §10 now; §4 after §3; §9 after lane-and-model-routing §27; §11 after §9</h4>
     <div class="r-fu-body"><p>§3, §6, §7, §8 and §10 write disjoint files and can run together. §4 shares <code>snapshot.py</code> with §3 and follows it. §9 and §11 write <code>lane_context.py</code> or <code>prompts.py</code>, as lane-and-model-routing §27 does, so they follow it in that order.</p></div>
+    <pre class="r-fu-prompt">/reckon-build jev-learns-from-its-routes §3</pre>
+    <p class="r-fu-outcome">superseded by f-jlr-003: §6 and §10 both write reckon/crew/paid_lanes.py, so they are serialised rather than run together</p>
+    </article>
+<article class="r-fu" data-id="f-jlr-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-b9" data-written-at="2026-10-16" data-recommends-skill="/reckon-build jev-learns-from-its-routes §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §3, §6, §7 and §8 now; §10 after §6; §4 after §3; §9 after lane-and-model-routing §27; §11 after §9</h4>
+    <div class="r-fu-body"><p>§3, §6, §7 and §8 write disjoint files and can run together. §10 shares <code>reckon/crew/paid_lanes.py</code> with §6 and follows it. §4 shares <code>snapshot.py</code> with §3 and follows it. §9 and §11 write <code>lane_context.py</code> or <code>prompts.py</code>, as lane-and-model-routing §27 does, so they follow it in that order.</p></div>
     <pre class="r-fu-prompt">/reckon-build jev-learns-from-its-routes §3</pre>
     </article>
 </section>
