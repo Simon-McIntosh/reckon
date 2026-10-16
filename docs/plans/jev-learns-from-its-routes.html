@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="lane-and-model-routing">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;jev-learns-from-its-routes#s2&quot;, &quot;jev-learns-from-its-routes#s5&quot;], &quot;s4&quot;: [&quot;jev-learns-from-its-routes#s3&quot;], &quot;s8&quot;: [&quot;jev-learns-from-its-routes#s2&quot;], &quot;s9&quot;: [&quot;jev-learns-from-its-routes#s4&quot;, &quot;jev-learns-from-its-routes#s5&quot;, &quot;lane-and-model-routing#s27&quot;], &quot;s10&quot;: [&quot;jev-learns-from-its-routes#s5&quot;, &quot;jev-learns-from-its-routes#s6&quot;], &quot;s11&quot;: [&quot;jev-learns-from-its-routes#s2&quot;, &quot;jev-learns-from-its-routes#s9&quot;, &quot;jev-learns-from-its-routes#s12&quot;], &quot;s12&quot;: [&quot;jev-learns-from-its-routes#s3&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;jev-learns-from-its-routes#s2&quot;, &quot;jev-learns-from-its-routes#s5&quot;], &quot;s4&quot;: [&quot;jev-learns-from-its-routes#s3&quot;], &quot;s8&quot;: [&quot;jev-learns-from-its-routes#s2&quot;], &quot;s9&quot;: [&quot;jev-learns-from-its-routes#s4&quot;, &quot;jev-learns-from-its-routes#s5&quot;, &quot;lane-and-model-routing#s27&quot;], &quot;s10&quot;: [&quot;jev-learns-from-its-routes#s5&quot;, &quot;jev-learns-from-its-routes#s6&quot;], &quot;s11&quot;: [&quot;jev-learns-from-its-routes#s2&quot;, &quot;jev-learns-from-its-routes#s9&quot;, &quot;jev-learns-from-its-routes#s12&quot;], &quot;s12&quot;: [&quot;jev-learns-from-its-routes#s3&quot;], &quot;s13&quot;: [&quot;jev-learns-from-its-routes#s6&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
   <title>Jev Learns From Its Routes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="36">
+<meta name="plan-version" content="38">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -391,10 +391,16 @@
     <pre class="r-fu-prompt">/reckon-build jev-learns-from-its-routes §3</pre>
     <p class="r-fu-outcome">superseded by f-jlr-003: §6 and §10 both write reckon/crew/paid_lanes.py, so they are serialised rather than run together</p>
     </article>
-<article class="r-fu" data-id="f-jlr-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-b9" data-written-at="2026-10-16" data-recommends-skill="/reckon-build jev-learns-from-its-routes §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-jlr-003" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-b9" data-written-at="2026-10-16" data-recommends-skill="/reckon-build jev-learns-from-its-routes §3" data-resolved-at="2026-10-16T11:46:23+00:00" data-resolved-by="reckon-b9">
     <h4 class="r-fu-title">Build §3, §6, §7 and §8 now; §10 after §6; §4 after §3; §9 after lane-and-model-routing §27; §11 after §9</h4>
     <div class="r-fu-body"><p>§3, §6, §7 and §8 write disjoint files and can run together. §10 shares <code>reckon/crew/paid_lanes.py</code> with §6 and follows it. §4 shares <code>snapshot.py</code> with §3 and follows it. §9 and §11 write <code>lane_context.py</code> or <code>prompts.py</code>, as lane-and-model-routing §27 does, so they follow it in that order.</p></div>
     <pre class="r-fu-prompt">/reckon-build jev-learns-from-its-routes §3</pre>
+    <p class="r-fu-outcome">§2, §3, §5, §6, §7, §8, §10 and §12 landed; §4 is building; §13 added; f-jlr-004 carries the remaining order</p>
+    </article>
+<article class="r-fu" data-id="f-jlr-004" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-b9" data-written-at="2026-10-16" data-recommends-skill="/reckon-build jev-learns-from-its-routes §13" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §13 now; §9 after §4; §11 after §9</h4>
+    <div class="r-fu-body"><p>§13 writes the promotion and rollout modules, which no open section shares, so it can run beside §4. §9 writes <code>lane_context.py</code> and <code>prompts.py</code> and follows §4. §11 writes <code>prompts.py</code> and <code>picker/__init__.py</code> and follows §9.</p></div>
+    <pre class="r-fu-prompt">/reckon-build jev-learns-from-its-routes §13</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -484,6 +490,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261016T095813341068-a-live-pick-reads-outcomes-at-its-capability" data-who="reckon-build" data-when="2026-10-16T10:46:04.635Z">
     <div class="r-comment-body"><p>A live pick resolves the node's declared capability before it builds candidates and hands the scan a request carrying it, so each candidate's outcomes_at_requirement reads the matched rows while the pooled outcomes stay unchanged; gate tests/test_a_live_pick_reads_outcomes_at_its_requirement.py 4 passed, negative control 1 failed (EXIT=1)</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-s13-attempt-count" data-who="reckon-build" data-when="2026-10-16T11:50:00Z">
+    <div class="r-comment-body"><p>Correction, from content review <code>r-20261016T112931464702</code> (reasoning-1). The primary's run directory holds <code>stream.jsonl</code>, <code>lane-change-2.jsonl</code> and <code>resume-1.jsonl</code> to <code>resume-18.jsonl</code>: twenty attempts and nineteen codex sessions, not twenty resumes. The mechanism and done-when are unchanged.</p></div>
 </div>
 </section>
 </main>
