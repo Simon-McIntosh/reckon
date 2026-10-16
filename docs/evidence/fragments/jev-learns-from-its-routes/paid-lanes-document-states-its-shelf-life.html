@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:jev-learns-from-its-routes">
+  <meta name="plan-verifies" content="reckon:jev-learns-from-its-routes#s10">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-16">
+</head>
+<body>
+<main class="plan-doc">
+<section id="paid-lanes-document-states-its-shelf-life">
+  <h2>The paid-lanes document states its own shelf life, derived from its refresh cadence</h2>
+  <p>A composed document now carries <code>suggested_shelf_life_seconds</code>:
+  600 for the five-minute <code>REFRESH_INTERVAL</code> and 1200 when the interval
+  is patched to ten minutes, so the figure moves with the cadence rather than
+  sitting beside it as a second literal. Through
+  <code>lane_context._budget_block</code>, a reading taken from the document
+  345&nbsp;s old reads fresh and one 700&nbsp;s old reads stale, against a
+  five-minute flight shelf life that would have called the 345&nbsp;s reading
+  stale.</p>
+  <p>Gate: <code>tests/test_paid_lanes_document_states_its_shelf_life.py</code>
+  &mdash; 4 passed. The 23 test files importing
+  <code>reckon/crew/paid_lanes.py</code> show 356 passed at base and 356 passed
+  at head: no added failure. Negative control omitted the published key and the
+  same gate failed on the 345&nbsp;s reading (3 failed, 1 passed).</p>
+</section>
+</main>
+</body>
+</html>
