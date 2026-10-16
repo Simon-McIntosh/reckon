@@ -50,6 +50,11 @@
     <p>Run <code>r-20261016T074411563724-paired-arms-reported</code> (clive, picked by Jev at 0.83), commit <code>8d6a65133</code>, merged at <code>90988acaf</code>. The shadow-to-primary join moves into <code>capabilities.pair_shadow_arms</code>, which <code>derive_capabilities</code> calls. <code>crew pick --outcomes</code> gains <code>paired_arms</code>, carrying the <code>shadow_controlled</code> verdict and both arms' figures, and <code>unpaired</code>. Gate: 6 passed, and the head arm of the 28-file affected sweep has 672 passed and 0 failed; the negative control reddens the confounded pair's assertion. Independent review <code>r-20261016T083329568694</code> totals 108. Its follow-ons: a shadow whose primary predates the <code>since</code> window reads as unpaired, and the base arm covered three of the fourteen affected files.</p>
   </section>
 
+  <section id="s10">
+    <h2>§10 — the paid-lanes document states its own shelf life</h2>
+    <p>Run <code>r-20261016T100026658612-paid-lanes-document-states-its-shelf-life</code> (clive, picked by Jev at 0.94), commit <code>36264f6ab</code>, merged at <code>080fc82c7</code>. <code>compose_document</code> publishes <code>suggested_shelf_life_seconds</code> as <code>SHELF_LIFE_INTERVALS</code> (2) times <code>REFRESH_INTERVAL</code>, 600 s at the 5-minute timer. A document reading 345 s old now reads fresh through §5's rule, and one 700 s old reads stale. Gate: 4 passed; the negative control, which omits the key, makes the 345 s reading stale. Independent review <code>r-20261016T102759029006</code> totals 111. Its follow-on: an interval unit missing from <code>_INTERVAL_UNIT_SECONDS</code> silently reads as seconds, so <code>5m</code> would give a 5-second shelf life; it should refuse instead.</p>
+  </section>
+
 </main>
 </body>
 </html>
