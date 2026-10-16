@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T07:15:27.448Z",
+  "dispatched_at": "2026-10-16T07:05:13Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/jev-learns-from-its-routes.html:24",
+      "id": "wiring-1",
+      "reason": "without an s9\u2192s5 edge the scheduler can run them concurrently and s9's account-surface assertion contradicts s5's on a file s5 creates.",
+      "text": "`plan-section-depends-on` gives s9 the single edge `[\"lane-and-model-routing#s27\"]`, but s9 supersedes s5's account-surface case (its own text: the account-surface test case \"changes from fresh at any age to stale past the shelf life\") and writes the same three files s5 writes, so nothing orders s9 after s5 and both may be dispatched into `tests/test_one_staleness_rule.py` at once",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/jev-learns-from-its-routes.html:366",
+      "id": "wiring-2",
+      "reason": "an implementable section absent from the driving followup is not scheduled, so \u00a78's and \u00a79's work is left unbuilt until a later hand-written followup names it.",
+      "text": "the plan's only open followup f-jlr-001 names the build order for \u00a72\u2013\u00a77 and omits \u00a78 and \u00a79, which the revision added as implementable sections, so neither has a driving invocation",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "54d231c4e71f6e3f138d5061addd9eb938d5d861674b7fb4e26349c9893d8ca0",
+  "plan_slug": "jev-learns-from-its-routes",
+  "plan_version": 8,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T070439830283-plan-review-of-jev-learns-from-its-routes",
+  "reviewed_blob_sha": "c2caf791cb4890f326f822021b3b7f8f69c2719b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified `read_rollout_receipt` (reckon/crew/promotion_checks.py:114), `_locate_rollout` globbing only `CLIENT_SESSIONS_DIR = ~/.codex/sessions` (reckon/crew/rollout.py:173,176), `_codex_rollout_candidates` (reckon/crew/paid_lanes.py:984), `derive_capabilities` with `lineage.primary_run_id` and `ledger.shadow_controlled` (reckon/capabilities.py:960,1034; reckon/ledger.py:406), `replay.py` rebuilding `PickRequest` from `node_definition` (reckon/crew/picker/replay.py:65\u201381), `_budget_block` (reckon/crew/picker/lane_context.py:251), `_reage_budget_report` (reckon/crew/picker/snapshot.py:547), `lane-and-model-routing` \u00a727 which `docs/plans/lane-and-model-routing.html:162` confirms writes `lane_context.py` and `prompts.py`, and the cited run `r-20261016T055657532716-pick-state-render-slow-read` which exists with a `codex-home/sessions` tree.",
+    "done_when": "pass \u2014 each changed section (s6, s7, s8, s9) states a measurable done-when and a negative control that can fail: \u00a76 removes the run-home search and the fixture must then record the wall fallback; \u00a77 reads `controlled` true for every pair and the confounded pair's assertion must fail; \u00a78 drops the field from the rebuilt request and the first assertion must fail; \u00a79 restores \"never stale by age\" and the 400 s assertion must fail.",
+    "evidence_paths": "pass \u2014 no scratchpad or node-local temporary path is named; \u00a76's test is required to point the crew home at a temporary directory and never write under `~/.codex`, and the figure lands in the manifest.",
+    "naming": "pass \u2014 the declared test filenames and mechanism names (`test_one_staleness_rule.py`, `test_a_replay_carries_the_assessment.py`, `_reage_budget_report`, `_locate_rollout`) carry no plan label, ticket number or version tag; the only `\u00a7`/`r-`/`c-` tokens are plan structure and run citations, not code.",
+    "reasoning": "pass \u2014 \u00a76's stated cause matches the code (a fenced run's rollout lives under its run home, which `_locate_rollout`'s `~/.codex/sessions`-only glob cannot reach, so the receipt is never folded in); \u00a77's premise holds (`reckon/crew/picker/outcomes.py:559,581` excludes shadow rows); \u00a78's rebuild omits the field as claimed; each mechanism names its production caller (promotion for \u00a76, `reckon crew pick --outcomes` for \u00a77, `replay()` for \u00a78, the ceiling gate for \u00a79).",
+    "single_goal": "pass \u2014 s6 measures codex worker time from the receipt, s7 reports a primary beside its shadow arm, s8 carries the assessment through replay, s9 ages a re-served account-surface reading; one deliverable each.",
+    "wiring": "a finding \u2014 s9 declares `depends-on` only `lane-and-model-routing#s27`, yet it supersedes s5's account-surface staleness case and shares three write paths with s5 (`lane_context.py`, `prompts.py`, `tests/test_one_staleness_rule.py`), so no edge orders s9 after s5; the driving followup f-jlr-001 also still names only \u00a72\u2013\u00a77."
+  },
+  "section_digests": {
+    "_document": "a7217eeb601f044c789e4f32b0bd09c4a8f4a660ff6a990b9aa0fbe6d8e9320a",
+    "s1": "a8d94897c0a90e9cd66d3e5c67d6aca0aeb94d26a49bd944098a8d70a151ca34",
+    "s2": "cc35fef7cc2d6ce0af14220bc78602ca25e960978e3dd3efb5979ca5e3c14917",
+    "s3": "807cb056a055ab721cde0a5a171037e4f1dfecdb1d6a1d5d2c4e5babde307811",
+    "s4": "828939c295d01d9b6fa0e90760eeee37626b612fb8414928adedddbb83f7238b",
+    "s5": "6cff1e7bf68d8874d67225b968adb4aeea6828a4800ac65b4676edd703eb6a52",
+    "s6": "52a8aac92b5fb5f13ab9b1a64209356dd2469cac4df0bd6b230fe7d1a711d131",
+    "s7": "54c7b27c70ed529203f4484e6ad6fcca22fb6679577180b9364a8e92bd5fc7a7",
+    "s8": "652e49cdb77f02dc989a56ae626a1a124b80a5633e0c0f60319d4d4456a875d4",
+    "s9": "bee8d1c1a0ef356dc4e56ebcc29075114d77fe024e3fda4d56e2696ab1e6e389"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T07:24:08.605010+00:00"
+}
