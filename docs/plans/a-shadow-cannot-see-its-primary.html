@@ -26,8 +26,8 @@
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
-<meta name="plan-modified" content="2026-10-16">
+<meta name="plan-version" content="14">
+<meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
   <main class="plan-doc">
@@ -211,12 +211,14 @@
       <code>shadow_source</code>'s refusal of an uncommitted primary does not apply.
     </p>
     <p>
-      Each arm's fence hides the other. The shadow arm gets §4's masks of its primary, resolved from its lineage.
-      The primary arm gets the same masks of its shadow: the launching caller resolves the shadow's run directory,
-      review records and worktree through <code>promotion_scope._primary_read_targets</code>, reading the shadow's
-      live pointer, which carries the same <code>run_id</code> and <code>worktree</code> fields as a ledger row. It
-      passes them to <code>launch_plan</code> as §4 does. A resume or redispatch of either arm composes the same
-      masks from the arm's own record.
+      Each arm's fence hides the other. Neither partner can be read from a store at launch. The primary of a
+      paired dispatch has no ledger row until it is promoted. A shadow lineage publishes no launch pointer
+      (<code>claim_published = not shadow_lineage</code> in <code>dispatch.py</code>), and its record is written
+      only at the end of its own dispatch. So the paired dispatch allocates both run ids, creates both run
+      directories and fixes both worktree paths before either arm launches. It composes each arm's masks from its
+      partner's allocated run id and worktree path, resolved through <code>promotion_scope._primary_read_surfaces</code>,
+      the function §2 added, and passes them to <code>launch_plan</code> as §4 does. A resume or redispatch of
+      either arm composes the same masks from the partner run id its own record names.
     </p>
     <p>
       <strong>Write paths.</strong> <code>reckon/crew/dispatch.py</code>, <code>reckon/crew_dispatch_commands.py</code>,
@@ -236,9 +238,9 @@
     <h2 id="s6">§6 — A paired arm does not land before its partner finishes</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> §5 starts both arms before either lands, but they finish at different times. If the first arm to finish were promoted, main would hold its result while the second arm was still working, and the second arm could copy it from the main checkout as the xpoint-cell-owner shadow did.</p>
-<p><strong>Deliverable.</strong> <code>reckon crew complete</code> refuses to promote a paired arm while its partner is non-terminal. The refusal names the partner's run id and phase. It is one <code>_require_*</code> check in <code>reckon/crew/promotion_checks.py</code>, run with the others through <code>_require_independently</code>, beside <code>_require_worker_stopped_before_promotion</code>. A run is paired when its lineage is a shadow lineage naming a live primary, or when its record names a <code>paired_shadow_run_id</code>. Once the partner is terminal, either arm promotes as it does today. A shadow of an already-promoted primary, dispatched through <code>crew shadow</code>, is not held.</p>
+<p><strong>Deliverable.</strong> <code>reckon crew complete</code> refuses to promote a paired arm while its partner is non-terminal. The refusal names the partner's run id and phase. It is one <code>_require_*</code> check defined in <code>reckon/crew/promotion_checks.py</code>. It is registered in the lambda list that <code>reckon/crew/promotion.py</code> passes to <code>_require_independently</code>, beside <code>_require_worker_stopped_before_promotion</code>. A run is paired when its lineage is a shadow lineage naming a live primary, or when its record names a <code>paired_shadow_run_id</code>. Once the partner is terminal, either arm promotes as it does today. A shadow of an already-promoted primary, dispatched through <code>crew shadow</code>, is not held.</p>
 <p><strong>Residual.</strong> Both worktrees share the repository's object store, so an arm could still reach its partner's commits through git. §2's scan reports a read of the partner's worktree or commit as contamination, so such a pair reads as uncontrolled rather than passing silently.</p>
-<p><strong>Write paths.</strong> <code>reckon/crew/promotion_checks.py</code> and <code>tests/test_a_paired_arm_waits_for_its_partner.py</code>.</p>
+<p><strong>Write paths.</strong> <code>reckon/crew/promotion_checks.py</code>, <code>reckon/crew/promotion.py</code> and <code>tests/test_a_paired_arm_waits_for_its_partner.py</code>.</p>
 <p><strong>Done when</strong> promoting a paired arm whose partner's pointer is <code>working</code> is refused, naming the partner, and nothing is merged. The same promotion succeeds once the partner's pointer is terminal. A shadow of a promoted primary, and an unpaired run, promote unchanged. Negative control: with the check removed from the composed list, the working-partner promotion is not refused and the test fails, logged under the run directory. The test files importing <code>reckon/crew/promotion_checks.py</code> show no added failure id against the base revision. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the changed Python files.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
@@ -294,7 +296,7 @@
     <div class="r-comment-body"><p>§3 — shadow_worktree_session now builds the worktree session from the candidate backend and recorded component alone, so a shadow's worktree path and composed prompt name no primary run id; _shadow_worktree_records still resolves the pre-change namings. Measure: head gate over the files importing routing.py is 751 passed / 1 skipped / 0 failed, base arm 744 passed / 1 skipped / 2 scaffolding errors (no added failure id); negative control EXIT=1 with 2 failing ids.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261016T202202658563-review-of-a-shadow-worktree-hides-its-primary-d079e008637f" data-who="reckon-build" data-when="2026-10-16T20:32:20.408Z">
-    <div class="r-comment-body"><p>§3 — independent review of r-20261016T195237375210 (a-shadow-worktree-hides-its-primary) at head d079e008, base aa2110776: goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 19, reuse 20 (total 113); three follow-on findings, no blocking finding; added failures against the reviewed run&#x27;s own base arm: 0.</p></div>
+    <div class="r-comment-body"><p>§3 — independent review of r-20261016T195237375210 (a-shadow-worktree-hides-its-primary) at head d079e008, base aa2110776: goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 19, reuse 20 (total 113); three follow-on findings, no blocking finding; added failures against the reviewed run's own base arm: 0.</p></div>
 </div>
 </section>
 </main>
