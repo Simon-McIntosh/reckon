@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="jev-learns-from-its-routes">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;a-shadow-cannot-see-its-primary#s2&quot;, &quot;a-shadow-cannot-see-its-primary#s3&quot;], &quot;s5&quot;: [&quot;a-shadow-cannot-see-its-primary#s4&quot;], &quot;s6&quot;: [&quot;a-shadow-cannot-see-its-primary#s5&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -81,7 +81,7 @@
     </p>
 
     <h2 id="s2">§2 — A shadow's reads of its primary make the pair uncontrolled</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>
       <strong>Deliverable.</strong> The existing contamination scan is widened, and its verdict is joined to the
       control verdict. No second scanner or record is added.
@@ -242,7 +242,7 @@
 <p><strong>Deliverable.</strong> <code>reckon crew complete</code> refuses to promote a paired arm while its partner is non-terminal. The refusal names the partner's run id and phase. It is one <code>_require_*</code> check defined in <code>reckon/crew/promotion_checks.py</code>. It is registered in the lambda list that <code>reckon/crew/promotion.py</code> passes to <code>_require_independently</code>, beside <code>_require_worker_stopped_before_promotion</code>. A run is paired when its lineage is a shadow lineage naming a live primary, or when its record names a <code>paired_shadow_run_id</code>. Once the partner is terminal, either arm promotes as it does today. A shadow of an already-promoted primary, dispatched through <code>crew shadow</code>, is not held.</p>
 <p><strong>Residual.</strong> Both worktrees share the repository's object store, so an arm could still reach its partner's commits through git. §2's scan reports a read of the partner's worktree or commit as contamination, so such a pair reads as uncontrolled rather than passing silently.</p>
 <p><strong>Write paths.</strong> <code>reckon/crew/promotion_checks.py</code>, <code>reckon/crew/promotion.py</code> and <code>tests/test_a_paired_arm_waits_for_its_partner.py</code>.</p>
-<p><strong>Done when</strong> promoting a paired arm whose partner's pointer is <code>working</code> is refused, naming the partner, and nothing is merged. The same promotion succeeds once the partner's pointer is terminal. A shadow of a promoted primary, and an unpaired run, promote unchanged. Negative control: with the check removed from the composed list, the working-partner promotion is not refused and the test fails, logged under the run directory. The test files importing <code>reckon/crew/promotion_checks.py</code> show no added failure id against the base revision. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the changed Python files.</p>
+<p><strong>Done when</strong> promoting a paired arm whose partner's pointer is <code>working</code> is refused, naming the partner, and nothing is merged. The same promotion succeeds once the partner's pointer is terminal. A shadow of a promoted primary, and an unpaired run, promote unchanged. The same test drives <code>crew complete</code> on a shadow whose stream reads its primary's run directory and finds the stored row carries <code>shadow_contaminated</code> and <code>shadow_controlled</code> false. That guards the <code>_shadow_control_marks</code> call in <code>_complete_locked</code>, which §2 landed without a test of its own. Negative control: with the check removed from the composed list, the working-partner promotion is not refused and the test fails, logged under the run directory. The test files importing <code>reckon/crew/promotion_checks.py</code> show no added failure id against the base revision. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the changed Python files.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -304,6 +304,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261016T224214323924-review-of-shadow-reads-make-the-pair-uncontrolled-8416d616af13" data-who="reckon-build" data-when="2026-10-16T22:50:55.196Z">
     <div class="r-comment-body"><p>review of r-20261016T194959330083-shadow-reads-make-the-pair-uncontrolled at head 8416d616a scored 6 dimensions (goal_fidelity 18, evidence 17, scope_discipline 19, durability 14, fit 16, reuse 19) with one follow-on finding on the untested promotion wiring; the parsed record is stored under the review store for reckon.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-16T22:58:00Z">
+    <div class="r-comment-body"><p>§2 landed: a shadow's reads of its primary's run directory, review records or worktree mark the row contaminated, and a contaminated row is stored, paired and reported uncontrolled with its reason (commits <code>08de78b03</code>–<code>8416d616a</code>). 26 focused tests pass, importers show no added failure, and the negative control fails as declared. <a href="/reckon/evidence/archive/a-shadow-cannot-see-its-primary-landed.html#s2">evidence</a></p></div>
 </div>
 </section>
 </main>
