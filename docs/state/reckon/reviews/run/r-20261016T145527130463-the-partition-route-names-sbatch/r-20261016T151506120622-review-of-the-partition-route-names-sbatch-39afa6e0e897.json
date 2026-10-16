@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1608 (_worker_host_line composes the worker prompt)",
+    "reckon/nested_launch.py:227 (refusal_message, called by nested_launch.main, which the host_shims/srun|sbatch|salloc shims execute)",
+    "reckon/crew/worker_digest.py:429 (compute_routes_sentence via ADDED_SENTENCES:150 and generate:490, whose output is the committed reckon/crew/digests/implement.md:468 and reckon/crew/digests/test.md:392 delivered to the fleet roles)"
+  ],
+  "completed_at": "2026-10-16T15:28:39.167Z",
+  "dispatched_at": "2026-10-16T15:15:38Z",
+  "findings": [
+    {
+      "file": "tests/test_nested_refusal_names_the_route.py",
+      "line": "89",
+      "severity": "follow-on",
+      "text": "follow-on: names_sbatch_as_the_submission returns the conjunction of a text check and the declaration self-check nested.PARTITION_ROUTE_VERB in nested.PARTITION_ROUTE, and under the declared mutation the text conjunct still holds because the refusal and digest texts are composed from the reverted constant, so the negative control reddens on the declaration rather than on any produced text and does not show that the refusal, digest or host-line strings carry sbatch."
+    },
+    {
+      "file": "tests/test_the_host_line_allows_a_separate_partition_job.py",
+      "line": "125",
+      "severity": "follow-on",
+      "text": "follow-on: the host-line case restates the same declaration self-check (assert nested.PARTITION_ROUTE_VERB in nested.PARTITION_ROUTE) inside a test about the host line, so the case can redden on a constant change the host line itself does not exercise and its failure carries no information about _worker_host_line."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commit by commit against base 39759eb0b \u2014 5637dfc6b declares the route with its verb and the nested-srun sentence and composes the three texts from them, and 39afa6e0e records the landing anchor; the two digests carrying the fleet block are regenerated and all eight paths sit inside the fence.",
+    "done_when": "The done-when names tests/test_nested_refusal_names_the_route.py and tests/test_the_host_line_allows_a_separate_partition_job.py asserting the three texts name sbatch and the srun-as-step fact, a route-patch case, a stale-digest check and a logged negative control; the manifest records gate-head.log 32 passed EXIT=0, digest-check.log up-to-date EXIT=0 and negative-control.log 8 failed 2 passed EXIT=1.",
+    "goal": "The node goal is to name sbatch as the partition route in the nested-launch refusal, the compute digest sentence and the host line; reckon/nested_launch.py:71-86 declares PARTITION_ROUTE with its submitting verb plus PARTITION_ROUTE_VERB and NESTED_SRUN_SENTENCE, and reckon/nested_launch.py:179-182, reckon/crew/worker_digest.py:125-143 and reckon/crew/dispatch_launch.py:547-578 each compose them rather than restating the route.",
+    "manifest": "Read; it reports 32 passed EXIT=0 at head (gate-head.log), a regenerated-digest check of up to date EXIT=0, a ruff delta of zero against base copies on dispatch_launch.py, and a negative control of 8 failed 2 passed EXIT=1.",
+    "write_paths": "Read the manifest's declared write paths; git diff --stat 39759eb0b..39afa6e0e lists eight paths \u2014 reckon/nested_launch.py, reckon/crew/worker_digest.py, reckon/crew/dispatch_launch.py, reckon/crew/digests/implement.md, reckon/crew/digests/test.md, the two named test files and the evidence fragment \u2014 every one inside the declared scope, with docs/figures/<...> declared but unused."
+  },
+  "justifications": {
+    "durability": "the negative control reddens eight ids and tests/test_nested_refusal_names_the_route.py:138-158 independently patches PARTITION_ROUTE and asserts the host line and digest sentence move with it, but the refusal cases' verb claim leans on a declaration self-check at tests/test_nested_refusal_names_the_route.py:89 that never reads the text under test.",
+    "evidence": "the receipt gate-head.log records 32 passed EXIT=0 and negative-control.log records 8 failed 2 passed EXIT=1, both read here, but the declared 'no findings on the touched Python paths' is met only as a delta of zero against pre-existing findings in reckon/crew/dispatch_launch.py, and no baseline arm exists so the added-failure count is unmeasured.",
+    "fit": "the new names PARTITION_ROUTE_VERB, NESTED_SRUN_SENTENCE and compute_routes_sentence follow the module's existing declaration idiom and carry no plan label, though the two function-local imports at reckon/crew/dispatch_launch.py:556 and reckon/crew/worker_digest.py:134 depart from the top-of-file import style those modules use elsewhere.",
+    "goal_fidelity": "reckon/nested_launch.py:71-86 declares the route with sbatch and the nested-srun sentence, and the refusal, reckon/crew/worker_digest.py:125 and reckon/crew/dispatch_launch.py:570 each read those constants, which is exactly the section's deliverable.",
+    "reuse": "compute_routes_sentence at reckon/crew/worker_digest.py:125 extends the existing ADDED_SENTENCES mechanism at :149 rather than forking it, and the refusals and host line read the one owner reckon/nested_launch.py, so no capability is duplicated.",
+    "scope_discipline": "every path in git diff --stat 39759eb0b..39afa6e0e is inside the manifest's declared write paths, and the shim decisions under reckon/host_shims are untouched as the deliverable requires."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to name sbatch as the partition route in the nested-launch refusal, the compute digest sentence and the host line; reckon/nested_launch.py:71-86 declares PARTITION_ROUTE with its submitting verb plus PARTITION_ROUTE_VERB and NESTED_SRUN_SENTENCE, and reckon/nested_launch.py:179-182, reckon/crew/worker_digest.py:125-143 and reckon/crew/dispatch_launch.py:547-578 each compose them rather than restating the route.\nVERDICT done_when: The done-when names tests/test_nested_refusal_names_the_route.py and tests/test_the_host_line_allows_a_separate_partition_job.py asserting the three texts name sbatch and the srun-as-step fact, a route-patch case, a stale-digest check and a logged negative control; the manifest records gate-head.log 32 passed EXIT=0, digest-check.log up-to-date EXIT=0 and negative-control.log 8 failed 2 passed EXIT=1.\nVERDICT write_paths: Read the manifest's declared write paths; git diff --stat 39759eb0b..39afa6e0e lists eight paths \u2014 reckon/nested_launch.py, reckon/crew/worker_digest.py, reckon/crew/dispatch_launch.py, reckon/crew/digests/implement.md, reckon/crew/digests/test.md, the two named test files and the evidence fragment \u2014 every one inside the declared scope, with docs/figures/<...> declared but unused.\nVERDICT manifest: Read; it reports 32 passed EXIT=0 at head (gate-head.log), a regenerated-digest check of up to date EXIT=0, a ruff delta of zero against base copies on dispatch_launch.py, and a negative control of 8 failed 2 passed EXIT=1.\nVERDICT diff: Read commit by commit against base 39759eb0b \u2014 5637dfc6b declares the route with its verb and the nested-srun sentence and composes the three texts from them, and 39afa6e0e records the landing anchor; the two digests carrying the fleet block are regenerated and all eight paths sit inside the fence.\nCALL_SITES: reckon/crew/dispatch.py:1608 (_worker_host_line composes the worker prompt), reckon/nested_launch.py:227 (refusal_message, called by nested_launch.main, which the host_shims/srun|sbatch|salloc shims execute), reckon/crew/worker_digest.py:429 (compute_routes_sentence via ADDED_SENTENCES:150 and generate:490, whose output is the committed reckon/crew/digests/implement.md:468 and reckon/crew/digests/test.md:392 delivered to the fleet roles)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/nested_launch.py:71-86 declares the route with sbatch and the nested-srun sentence, and the refusal, reckon/crew/worker_digest.py:125 and reckon/crew/dispatch_launch.py:570 each read those constants, which is exactly the section's deliverable.\nSCORE evidence: 17\nJUSTIFICATION evidence: the receipt gate-head.log records 32 passed EXIT=0 and negative-control.log records 8 failed 2 passed EXIT=1, both read here, but the declared \"no findings on the touched Python paths\" is met only as a delta of zero against pre-existing findings in reckon/crew/dispatch_launch.py, and no baseline arm exists so the added-failure count is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 39759eb0b..39afa6e0e is inside the manifest's declared write paths, and the shim decisions under reckon/host_shims are untouched as the deliverable requires.\nSCORE durability: 16\nJUSTIFICATION durability: the negative control reddens eight ids and tests/test_nested_refusal_names_the_route.py:138-158 independently patches PARTITION_ROUTE and asserts the host line and digest sentence move with it, but the refusal cases' verb claim leans on a declaration self-check at tests/test_nested_refusal_names_the_route.py:89 that never reads the text under test.\nSCORE fit: 17\nJUSTIFICATION fit: the new names PARTITION_ROUTE_VERB, NESTED_SRUN_SENTENCE and compute_routes_sentence follow the module's existing declaration idiom and carry no plan label, though the two function-local imports at reckon/crew/dispatch_launch.py:556 and reckon/crew/worker_digest.py:134 depart from the top-of-file import style those modules use elsewhere.\nSCORE reuse: 20\nJUSTIFICATION reuse: compute_routes_sentence at reckon/crew/worker_digest.py:125 extends the existing ADDED_SENTENCES mechanism at :149 rather than forking it, and the refusals and host line read the one owner reckon/nested_launch.py, so no capability is duplicated.\nFINDING tests/test_nested_refusal_names_the_route.py:89 follow-on: names_sbatch_as_the_submission returns the conjunction of a text check and the declaration self-check nested.PARTITION_ROUTE_VERB in nested.PARTITION_ROUTE, and under the declared mutation the text conjunct still holds because the refusal and digest texts are composed from the reverted constant, so the negative control reddens on the declaration rather than on any produced text and does not show that the refusal, digest or host-line strings carry sbatch.\nFINDING tests/test_the_host_line_allows_a_separate_partition_job.py:125 follow-on: the host-line case restates the same declaration self-check (assert nested.PARTITION_ROUTE_VERB in nested.PARTITION_ROUTE) inside a test about the host line, so the case can redden on a constant change the host line itself does not exercise and its failure carries no information about _worker_host_line.\n",
+  "review_run_id": "r-20261016T151506120622-review-of-the-partition-route-names-sbatch-39afa6e0e897",
+  "reviewed_base_sha": "39759eb0ba87fa7d87b16688dc940fb8acd9a563",
+  "reviewed_head_sha": "39afa6e0e8978286bf6655e9ba56307fce1d08bc",
+  "reviewed_run_id": "r-20261016T145527130463-the-partition-route-names-sbatch",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "role": "review",
+  "rubric": "code",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T15:25:32.476395+00:00",
+  "total": 110
+}
