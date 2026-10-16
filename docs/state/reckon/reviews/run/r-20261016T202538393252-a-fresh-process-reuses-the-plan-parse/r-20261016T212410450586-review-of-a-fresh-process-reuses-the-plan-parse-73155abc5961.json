@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:_discover_plans_uncached",
+    "reckon/serve.py:_read_readiness_uncached",
+    "reckon/mcp_discovery.py:discover_plans"
+  ],
+  "completed_at": "2026-10-16T21:34:08.699Z",
+  "dispatched_at": "2026-10-16T21:24:53Z",
+  "findings": [
+    {
+      "file": "reckon/metadata_index.py",
+      "line": "775",
+      "severity": "follow-on",
+      "text": "follow-on: parsed_state is defined but has no caller anywhere in reckon/ or tests/ (grep finds only the definition), so it is dead code whose docstring promises a reuse of the shared per-file parse that never happens and it should be removed or wired up."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T202538393252-a-fresh-process-reuses-the-plan-parse/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded arms do not share fail ids as the done_when requires \u2014 the base arm fails test_a_code_review_reads_its_projects_package::test_this_repository_reads_the_same_modules_as_the_reckon_listing while the head arm does not \u2014 and the stale chunk arm under logs/head (23:00, pre-commit) shows six head failures that the later all_head.log contradicts; the manifest records both logs without reconciling the difference, so a reader cannot tell which head arm is authoritative."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 7b8fcb27 and 73155abc against base 2e26dc96 commit by commit; metadata_index gains a discovery map plus discovery_state/record_discovery/readiness_from_state/parsed_state, serve consumes it and delegates readiness to the owner, _plan_html gains reuse_parsed_state, and a 267-line test file is added.",
+    "done_when": "the gate names tests/test_a_fresh_process_reuses_the_plan_parse.py and the manifest records it; I re-ran that file at head and it reports 5 passed, but the recorded aggregate arms do not share fail ids as the done_when requires.",
+    "goal": "the node goal is to make a fresh process read each plan's parsed discovery and readiness from the persisted metadata index and re-parse only changed files; reckon/serve.py:2282 fetches metadata_index.discovery_state and :2301 seeds the shared parse from it, which is that deliverable.",
+    "manifest": "read; it names commits 7b8fcb27 and 73155abc, the 74-file head arm (787 passed, 1 collection error), the base arm logs and the negative-control log, and its landed fragment.",
+    "write_paths": "the manifest declares the five product/test/evidence paths plus a figures directory; the diff touches exactly those five and writes no figure, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "with the declared mutation the negative control reddens three parse-count cases (negative_control_store_bypassed.log, 3 failed, EXIT=1), so tests/test_a_fresh_process_reuses_the_plan_parse.py:198 fails if the store is bypassed, and the count/status assertions are against constants and the file the test wrote, not against the value under test.",
+    "evidence": "all_head.log records 787 passed/1 error and all_base.log records 1 failed/781 passed/1 error, so the base failing id (test_a_code_review_reads_its_projects_package::test_this_repository_reads_the_same_modules_as_the_reckon_listing) is absent at head and the manifest does not reconcile the parity the done_when asserts.",
+    "fit": "the additions follow the module idiom (Mapping guards, field-comment style at reckon/metadata_index.py:94) and the naming scan finds no banned label, but reckon/metadata_index.py:775 ships an unused function.",
+    "goal_fidelity": "reckon/serve.py:2282 reads metadata_index.discovery_state and :2292-2301 reuses stored meta/readiness and seeds the parse, so an unchanged tree is served without a re-parse exactly as the goal states.",
+    "reuse": "the change extends the owners it should \u2014 the persisted index and its rows in reckon/metadata_index.py:794 and :835, and the shared parse memo via reckon/_plan_html.py:1425 \u2014 with readiness logic moved to its owner at reckon/metadata_index.py:750 rather than duplicated.",
+    "scope_discipline": "every path in the diff (reckon/serve.py, reckon/metadata_index.py, reckon/_plan_html.py, the new test, the fragment) is a declared write path, though reckon/metadata_index.py:775 adds parsed_state that the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a fresh process read each plan's parsed discovery and readiness from the persisted metadata index and re-parse only changed files; reckon/serve.py:2282 fetches metadata_index.discovery_state and :2301 seeds the shared parse from it, which is that deliverable.\nVERDICT done_when: the gate names tests/test_a_fresh_process_reuses_the_plan_parse.py and the manifest records it; I re-ran that file at head and it reports 5 passed, but the recorded aggregate arms do not share fail ids as the done_when requires.\nVERDICT write_paths: the manifest declares the five product/test/evidence paths plus a figures directory; the diff touches exactly those five and writes no figure, all inside the declared scope.\nVERDICT manifest: read; it names commits 7b8fcb27 and 73155abc, the 74-file head arm (787 passed, 1 collection error), the base arm logs and the negative-control log, and its landed fragment.\nVERDICT diff: read 7b8fcb27 and 73155abc against base 2e26dc96 commit by commit; metadata_index gains a discovery map plus discovery_state/record_discovery/readiness_from_state/parsed_state, serve consumes it and delegates readiness to the owner, _plan_html gains reuse_parsed_state, and a 267-line test file is added.\nCALL_SITES: reckon/serve.py:_discover_plans_uncached, reckon/serve.py:_read_readiness_uncached, reckon/mcp_discovery.py:discover_plans\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/serve.py:2282 reads metadata_index.discovery_state and :2292-2301 reuses stored meta/readiness and seeds the parse, so an unchanged tree is served without a re-parse exactly as the goal states.\nSCORE evidence: 15\nJUSTIFICATION evidence: all_head.log records 787 passed/1 error and all_base.log records 1 failed/781 passed/1 error, so the base failing id (test_a_code_review_reads_its_projects_package::test_this_repository_reads_the_same_modules_as_the_reckon_listing) is absent at head and the manifest does not reconcile the parity the done_when asserts.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff (reckon/serve.py, reckon/metadata_index.py, reckon/_plan_html.py, the new test, the fragment) is a declared write path, though reckon/metadata_index.py:775 adds parsed_state that the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: with the declared mutation the negative control reddens three parse-count cases (negative_control_store_bypassed.log, 3 failed, EXIT=1), so tests/test_a_fresh_process_reuses_the_plan_parse.py:198 fails if the store is bypassed, and the count/status assertions are against constants and the file the test wrote, not against the value under test.\nSCORE fit: 16\nJUSTIFICATION fit: the additions follow the module idiom (Mapping guards, field-comment style at reckon/metadata_index.py:94) and the naming scan finds no banned label, but reckon/metadata_index.py:775 ships an unused function.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change extends the owners it should \u2014 the persisted index and its rows in reckon/metadata_index.py:794 and :835, and the shared parse memo via reckon/_plan_html.py:1425 \u2014 with readiness logic moved to its owner at reckon/metadata_index.py:750 rather than duplicated.\nFINDING reckon/metadata_index.py:775 follow-on: parsed_state is defined but has no caller anywhere in reckon/ or tests/ (grep finds only the definition), so it is dead code whose docstring promises a reuse of the shared per-file parse that never happens and it should be removed or wired up.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T202538393252-a-fresh-process-reuses-the-plan-parse/manifest.md:15 follow-on: the recorded arms do not share fail ids as the done_when requires \u2014 the base arm fails test_a_code_review_reads_its_projects_package::test_this_repository_reads_the_same_modules_as_the_reckon_listing while the head arm does not \u2014 and the stale chunk arm under logs/head (23:00, pre-commit) shows six head failures that the later all_head.log contradicts; the manifest records both logs without reconciling the difference, so a reader cannot tell which head arm is authoritative.\n",
+  "review_run_id": "r-20261016T212410450586-review-of-a-fresh-process-reuses-the-plan-parse-73155abc5961",
+  "reviewed_base_sha": "2e26dc966e457ddf186a50604cc9a52fd880a76b",
+  "reviewed_head_sha": "73155abc596156d03e1d7d9e3886f693747bd024",
+  "reviewed_run_id": "r-20261016T202538393252-a-fresh-process-reuses-the-plan-parse",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T21:32:13.832558+00:00",
+  "total": 103
+}
