@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no head gate log, so the added-failure count was not taken",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-16T20:28:59.529Z",
+  "dispatched_at": "2026-10-16T20:14:41Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "head-sweep-names-its-failure",
+      "recorded_at": "2026-10-16T20:29:43.524996+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "head-sweep-names-its-failure",
+      "recorded_at": "2026-10-16T20:29:55.177686+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T184118127566-discarded-run-test-at-base-and-head/manifest.md",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: after_suite records completed:false (EXIT=124) and still names the capped head sweep, and neither the manifest nor the report records the terminated re-run (resume-1.stderr.log reads \"srun: forcing job termination\"; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T184118127566-discarded-run-test-at-base-and-head/logs/head_sweep_uncapped.log ends at 58% with no EXIT= line), so a reader cannot tell that the run sent to close the loose end ran and died."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T184118127566-discarded-run-test-at-base-and-head/logs/head_sweep.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head 204-file importer sweep never printed its summary and its single failure marker at the 85% row is unidentified, so the plan section 34 done-when this node was sent to close (the same pass/fail ids at head as at base) remains open, the marker potentially a new-at-head failure of another test."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no diff to read because the reviewed run is a read-only measurement (manifest commits: none, changed_paths: []), so I read its two arms' logs and report.md instead.",
+    "done_when": "the node's evidence fence names per-arm logs carrying the revision, dispatch.__file__ and a trailing EXIT= line with the single test alone five times and in-file under -n 10 five times per arm; those logs exist under the run directory and the counts they print (1 passed; 8 passed) match the manifest, but the brief's 204-file importer arm at head never completed (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T184118127566-discarded-run-test-at-base-and-head/logs/head_sweep.log ends EXIT=124) so its one failure id is unread.",
+    "goal": "the goal is to measure whether tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated fails at base as well as at head, and report.md:44-53 delivers exactly that per-arm pass/fail table with the single verdict at report.md:32.",
+    "manifest": "read source-run manifest.md; it records status complete with baseline_suite complete (1 failed, EXIT=1) and after_suite completed:false (EXIT=124), and names the unidentified head-sweep marker under follow_ons, but its checkpoint at manifest.md:10 still describes the uncapped head re-run as launched-and-pending and no field records that run's termination.",
+    "write_paths": "read the manifest's declared path /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-plan-is-reviewed-before-it-is-built/discarded-run-test-at-base-and-head; changed_paths is [] and report.md is the only product written there, the logs sitting under the run's own run directory."
+  },
+  "justifications": {
+    "durability": "no regression guard is added because the node changes no code, and the verdict's strongest arm is incomplete \u2014 /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T184118127566-discarded-run-test-at-base-and-head/logs/head_sweep.log ends EXIT=124 with one failure marker unread \u2014 so report.md:125-131 rests the head-sweep pass on artifact timestamps rather than on a test result line.",
+    "evidence": "the focused-arm logs under the run directory record revision, module path and EXIT= with the counts the manifest cites, but /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T184118127566-discarded-run-test-at-base-and-head/logs/head_sweep.log:1 names revision a8cca7e1b with no summary line, so the brief's importer arm never asserted the head half of the comparison.",
+    "fit": "the deliverable follows the report-per-node idiom at reports/reckon/a-plan-is-reviewed-before-it-is-built/discarded-run-test-at-base-and-head/report.md with a per-arm results table and a method note, adding no symbol or filename the naming rules forbid.",
+    "goal_fidelity": "report.md:48-53 carries the base and head pass/fail counts the goal asks for and report.md:30-40 states the single verdict, so the landed measurement is the one the goal names.",
+    "reuse": "the node adds no definition (manifest commits: none, changed_paths: []), so there is no capability to fork and nothing that duplicates an owner the repository already has.",
+    "scope_discipline": "manifest changed_paths is [] and no path under reckon/ or tests/ changed, the only writes being report.md under the declared report directory and logs under the run's own run directory (report.md:100-121)."
+  },
+  "method": "The reviewed run is a read-only measurement (manifest commits: none, changed_paths: []), so there is no diff and reviewed_base_sha == reviewed_head_sha == ae0657788dd3dc8602af02d3a966d1afe14ed1ee, the revision its worktree sat at and left unmoved (its own internal arms measured base 6906a79eab8371dc58aa69ff9c8de7a4dcc3da49 against head a8cca7e1b3ea9a68430a3c8e8b6b002a3d46c8a2). Read for the verdict: report.md, manifest.md, the eleven focused-run logs and both sweep logs under the run directory, and the resumed re-run's record (resume-1.stderr.log, /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T184118127566-discarded-run-test-at-base-and-head/logs/head_sweep_uncapped.log). The added-failure pair was derived as the record's read-time annotator derives it (reckon.crew.review.added_failures_from_gate_logs over baseline_suite and after_suite): the base log parses as pytest and yields {tests/test_crew_orphan.py::test_an_orphaned_watcher_is_replaced_rather_than_refused}, the head log carries no summary line and parses as no recognisable format, so the count is unmeasured rather than zero.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to measure whether tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated fails at base as well as at head, and report.md:44-53 delivers exactly that per-arm pass/fail table with the single verdict at report.md:32.\nVERDICT done_when: the node's evidence fence names per-arm logs carrying the revision, dispatch.__file__ and a trailing EXIT= line with the single test alone five times and in-file under -n 10 five times per arm; those logs exist under the run directory and the counts they print (1 passed; 8 passed) match the manifest, but the brief's 204-file importer arm at head never completed (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T184118127566-discarded-run-test-at-base-and-head/logs/head_sweep.log ends EXIT=124) so its one failure id is unread.\nVERDICT write_paths: read the manifest's declared path /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-plan-is-reviewed-before-it-is-built/discarded-run-test-at-base-and-head; changed_paths is [] and report.md is the only product written there, the logs sitting under the run's own run directory.\nVERDICT manifest: read source-run manifest.md; it records status complete with baseline_suite complete (1 failed, EXIT=1) and after_suite completed:false (EXIT=124), and names the unidentified head-sweep marker under follow_ons, but its checkpoint at manifest.md:10 still describes the uncapped head re-run as launched-and-pending and no field records that run's termination.\nVERDICT diff: there is no diff to read because the reviewed run is a read-only measurement (manifest commits: none, changed_paths: []), so I read its two arms' logs and report.md instead.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: report.md:48-53 carries the base and head pass/fail counts the goal asks for and report.md:30-40 states the single verdict, so the landed measurement is the one the goal names.\nSCORE evidence: 15\nJUSTIFICATION evidence: the focused-arm logs under the run directory record revision, module path and EXIT= with the counts the manifest cites, but /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T184118127566-discarded-run-test-at-base-and-head/logs/head_sweep.log:1 names revision a8cca7e1b with no summary line, so the brief's importer arm never asserted the head half of the comparison.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: manifest changed_paths is [] and no path under reckon/ or tests/ changed, the only writes being report.md under the declared report directory and logs under the run's own run directory (report.md:100-121).\nSCORE durability: 13\nJUSTIFICATION durability: no regression guard is added because the node changes no code, and the verdict's strongest arm is incomplete \u2014 /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T184118127566-discarded-run-test-at-base-and-head/logs/head_sweep.log ends EXIT=124 with one failure marker unread \u2014 so report.md:125-131 rests the head-sweep pass on artifact timestamps rather than on a test result line.\nSCORE fit: 18\nJUSTIFICATION fit: the deliverable follows the report-per-node idiom at reports/reckon/a-plan-is-reviewed-before-it-is-built/discarded-run-test-at-base-and-head/report.md with a per-arm results table and a method note, adding no symbol or filename the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node adds no definition (manifest commits: none, changed_paths: []), so there is no capability to fork and nothing that duplicates an owner the repository already has.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T184118127566-discarded-run-test-at-base-and-head/manifest.md:22 follow-on: after_suite records completed:false (EXIT=124) and still names the capped head sweep, and neither the manifest nor the report records the terminated re-run (resume-1.stderr.log reads \"srun: forcing job termination\"; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T184118127566-discarded-run-test-at-base-and-head/logs/head_sweep_uncapped.log ends at 58% with no EXIT= line), so a reader cannot tell that the run sent to close the loose end ran and died.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T184118127566-discarded-run-test-at-base-and-head/logs/head_sweep.log:1 follow-on: the head 204-file importer sweep never printed its summary and its single failure marker at the 85% row is unidentified, so the plan section 34 done-when this node was sent to close (the same pass/fail ids at head as at base) remains open, the marker potentially a new-at-head failure of another test.\n",
+  "review_run_id": "r-20261016T201413861094-review-of-discarded-run-test-at-base-and-head-ae0657788dd3",
+  "reviewed_base_sha": "ae0657788dd3dc8602af02d3a966d1afe14ed1ee",
+  "reviewed_head_sha": "ae0657788dd3dc8602af02d3a966d1afe14ed1ee",
+  "reviewed_run_id": "r-20261016T184118127566-discarded-run-test-at-base-and-head",
+  "role": "review",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T20:26:22.520645+00:00",
+  "total": 103
+}
