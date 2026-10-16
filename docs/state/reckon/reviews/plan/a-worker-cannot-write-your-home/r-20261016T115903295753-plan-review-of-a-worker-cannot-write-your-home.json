@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T12:29:27.703Z",
+  "dispatched_at": "2026-10-16T12:14:53Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:1512",
+      "id": "reasoning-1",
+      "reason": "a node dispatched against \u00a79 as written is scoped to files that cannot hand the run's own scratch directory to `fence_argv`, so it must either edit `reckon/_backends.py`/`reckon/crew/dispatch_admission.py`/`reckon/crew/dispatch_sessions.py` outside its declared paths and be refused at completion, or ship a seal that re-binds nothing and read as green on the argv-composition arm alone.",
+      "text": "\u00a79 re-binds \"the run's own scratch directory writable\" but names no caller for the hand-off and scopes none: `fence_argv` re-opens only the roots handed to it, which `reckon/_backends.py:2214` takes from `writable_directories` as composed by `_fence_write_roots` in `reckon/crew/dispatch_admission.py:1842` (and `reckon/crew/dispatch_sessions.py:1143,1595` for resume and lane change), while `delivery_write_roots` (`reckon/_backends.py:164-168`) supplies the run directory, the reports and review stores and `tempfile.gettempdir()` \u2014 never `worker_scratch_dir(run_id)`, which is the one root the seal makes read-only; \u00a79's declared write paths are `reckon/_worker_fence.py`, `reckon/crew/dispatch_launch.py` (hedged as \"if the scratch path has to be handed to the fence from there\") and the new test, and none of them composes those roots",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:1512",
+      "id": "reasoning-2",
+      "reason": "it understates evidence that already exists without altering the seal, its measure or its negative control.",
+      "text": "\u00a79 says \"Its output was discarded, so nothing records which directories went\", but the manifest it cites as reporting the mistake (`r-20261016T112641387594-jev-wave-suite-delta`) records exactly that: a count of the deleted per-run directories and the path of the saved deleted list",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "a5d6b2d1b19ee93d93dbac50fb2a171c6254442c03dff57a768502b64081e68f",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 131,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T115903295753-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "0facf512da7db4caec2830fc460cb5ec4f181693",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/_worker_fence.py`, `fence_argv`, `worker_scratch_root()`/`reckon/crew/dispatch_launch.py` and both cited run ids resolve, and the second run's `stderr.log` contains the quoted codex panic.",
+    "done_when": "pass \u2014 \u00a79's done-when is measurable (a composed `fence_argv` must carry a `--ro-bind` of the scratch root followed by a `--bind` of the run's own directory; a bubblewrap-gated arm shows a sibling `rm -rf` refused and the run's own directory writable) and it names a negative control (remove the scratch root from the sealed set; the sibling is deleted and the test fails).",
+    "evidence_paths": "pass \u2014 \u00a79's control is logged under the run directory (the config-home run store, which survives the run) and its incident evidence is cited in the run's own manifest; no session scratchpad or node-local temp path is named.",
+    "naming": "pass \u2014 \u00a79 introduces no plan label, ticket number or version tag into a symbol, filename or comment; the new test file `tests/test_a_worker_cannot_remove_another_runs_scratch.py` is named for what it asserts and is not already taken.",
+    "reasoning": "a finding \u2014 \u00a79 declares write paths that cannot make its mechanism reach the code path it depends on.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable, sealing the scratch root and re-opening only the run's own directory; creating the handed root first is a precondition of that seal, not a second goal.",
+    "wiring": "pass \u2014 \u00a79 is declared implementable in `plan-section-declarations`, its open followup `f-awcwyh-009` names it as the build target, and its reliance on \u00a73's protected set is stated in its own text (`the existing protected-then-granted bind order`); this plan declares no per-section `depends-on`, so nothing is missing or mispointed."
+  },
+  "section_digests": {
+    "_document": "c9461572b191897d8117a728855d7312fb26ec131a6d1324f15ae95945292ac3",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "f3bc013e6892c1bb60cc3aa7e92e51a82670ba6fba2841ea501a37812b221e1e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T12:32:47.478193+00:00"
+}
