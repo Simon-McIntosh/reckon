@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import subprocess
 from copy import deepcopy
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -23,6 +24,7 @@ import reckon.crew.picker as picker_package
 from reckon import cli as cli_module
 from reckon import crew_dispatch_commands, ledger
 from reckon.crew.node import TaskNode
+from reckon.crew.picker import prompts
 from reckon.crew.picker.types import Candidate
 
 PROJECT = "proj"
@@ -368,3 +370,93 @@ def test_record_carries_capability_on_the_picker_route(
         "reasoning": "deep",
         "risk": "critical",
     }
+
+
+# The lane blocks are carried straight through into the state, so the render's
+# equality with build_state's mapping is what is under test rather than any
+# figure inside them. The live lane document and the ledger are read by
+# ``lane_context.build``, which the test replaces, so nothing outside the
+# repository is read.
+_FIXED_LANE = {
+    "return_times": {"local": {"p50_s": 900.0, "n": 3}},
+    "lanes": {"local": {"models": ["local-model"]}},
+    "local_lane": {"admission": "open", "worker_slots": 2},
+    "read_at": "2026-10-16T12:00:00+00:00",
+}
+
+# The comment carries an apostrophe and an ampersand, which one encoder escapes
+# and the other leaves alone. A state holding neither could not tell a state
+# built once and the post-render splice apart.
+_COMMENT = "weigh the lane's pace & the node's own risk"
+
+
+def _byte_identity_arms(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[str, str]:
+    """Render the state with an assessment, beside the mapping it must equal.
+
+    The lane context is replaced so both arms carry the same blocks; otherwise
+    the live document that ``lane_context.build`` reads would make the two arms
+    differ by whatever had just been published.
+    """
+
+    lane_context = prompts.lane_context
+    monkeypatch.setattr(lane_context, "build", lambda **_kwargs: _FIXED_LANE)
+    node = TaskNode(
+        id="assessed-node",
+        goal="record the reading Jev weighs",
+        plan=PLAN,
+        section=SECTION,
+        role="implement",
+        spec_level="exact",
+        done_when="pytest reports one encoder built the state",
+        write_paths=["result.json"],
+        negative_control="none: no control applies to this render",
+        estimated_hours=2.0,
+    )
+    assessment = {"reasoning": "deep", "risk": "critical"}
+    now = datetime(2026, 10, 16, 16, 15, tzinfo=UTC)
+    rendered = prompts.render(
+        "state.jinja",
+        node=node,
+        capability=DECLARED_CAPABILITY,
+        estimated_context={"estimated_tokens": 1000},
+        comment=_COMMENT,
+        candidates=[_candidate()],
+        attempts=1,
+        now=now,
+        orchestrator_assessment=assessment,
+    )
+    mapping = prompts.build_state(
+        node=node,
+        capability=DECLARED_CAPABILITY,
+        estimated_context={"estimated_tokens": 1000},
+        comment=_COMMENT,
+        candidates=[_candidate()],
+        lane=_FIXED_LANE,
+        attempts=1,
+        orchestrator_assessment=assessment,
+    )
+    return rendered, prompts.encode(mapping)
+
+
+def test_rendered_state_is_build_states_mapping_encoded_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A state carrying an assessment is one mapping through one encoder."""
+
+    rendered, expected = _byte_identity_arms(monkeypatch)
+    assert json.loads(rendered)["node"]["orchestrator_assessment"] == {
+        "reasoning": "deep",
+        "risk": "critical",
+    }
+    assert rendered == expected
+
+
+def test_no_post_render_encoder_remains_in_the_picker() -> None:
+    """The picker no longer re-encodes a rendered state after building it."""
+
+    source = (
+        Path(__file__).parents[1] / "reckon" / "crew" / "picker" / "__init__.py"
+    ).read_text(encoding="utf-8")
+    assert "htmlsafe_json_dumps" not in source
