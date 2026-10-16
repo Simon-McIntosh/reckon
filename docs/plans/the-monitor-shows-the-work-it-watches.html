@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="183">
+<meta name="plan-version" content="184">
 <meta name="plan-modified" content="2026-10-16">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -832,6 +832,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s36" data-id="c-close-s36" data-who="reckon-build" data-when="2026-10-16T06:05:00Z">
     <div class="r-comment-body"><p>§36 landed. A resumed run is no longer drawn halted in the seconds before its new worker appears. The cause was the previous attempt's exit record read through the <code>exited_unfinished</code> arm, which the node reproduced at base before fixing it. Merged as <code>44e9cbc0c</code>. Results are clean at base and head. Review: 108/120. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s36">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s36" data-id="c-run-r-20261016T024829950525-a-resume-is-not-drawn-halted" data-who="reckon-build" data-when="2026-10-16T03:36:20.172Z">
+    <div class="r-comment-body"><p>a resumed run whose current attempt has recorded no process and no end of its own is read as starting rather than through its predecessor&#x27;s exit record; the deferral expires through the stranded-launch bound and a manifest carrying its own verdict word still outranks it</p></div>
 </div>
 </section>
 </main>
