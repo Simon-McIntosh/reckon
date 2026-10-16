@@ -1,0 +1,83 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T14:01:28.825Z",
+  "dispatched_at": "2026-10-16T13:53:21Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-worker-is-charged-to-a-job.html#s2b",
+      "id": "wiring-1",
+      "reason": "an undeclared section is invisible to the scheduler, so the stall/lane/abandoned repairs it names would never be dispatched without splitting it out and declaring it.",
+      "text": "\u00a72b is not in `plan-section-declarations` (which lists s1\u2013s10) and carries no `<section data-reckon=\"section\">` element, so the roadmap cannot resolve it as a section and would never dispatch the repair it describes",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-is-charged-to-a-job.html:23",
+      "id": "wiring-2",
+      "reason": "the dependency edge runs the wrong way, so the roadmap cannot order this plan after the plan whose \u00a71/\u00a72 it consumes.",
+      "text": "the plan's \u00a71 and \u00a72 build on \"section 1 of the positive-controls plan\" stream paths and \"the reaper that section 2 of the positive-controls plan built\", yet the only declared relationship is `plan-informs: crew-runtime-positive-controls`, which the graph renders as this plan *blocking* that plan rather than depending on it; no `plan-depends-on` edge exists",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-is-charged-to-a-job.html:302-527",
+      "id": "single_goal-1",
+      "reason": "a node with four deliverables cannot be reviewed or closed on one verdict, and a green gate on one clause proves none of the others.",
+      "text": "\u00a72b carries four separately-measured repairs (stall liveness, lane-ceiling-vs-node discrimination, abandoned-vs-end_turn reclassification, and emitting the threshold comparison) under four distinct Done-when clauses (lines 348, 382, 472, 521)",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-is-charged-to-a-job.html#s3",
+      "id": "done_when-1",
+      "reason": "the section is declared done on a measure its own evidence cannot produce; the cap of 25 must either be sized from a measured per-worker figure or the done-when must stop claiming a measured basis.",
+      "text": "\u00a73's done-when requires the roster refusal to name \"the limit and its measured basis rather than a core count\", but the plan's own decision record (`reservation-size-and-roster-limit`) states \"Per-worker resident memory has not been measured across a wave; the only figure in hand is a single nova solve at 24.6 GB, which is a test process rather than a worker\"",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-is-charged-to-a-job.html#s2b",
+      "id": "reasoning-1",
+      "reason": "the paragraph uses the stale premise to argue \u00a72's ordering is load-bearing, so a reader taking \u00a72b at face value would believe job-aware liveness is still unbuilt and could rebuild it.",
+      "text": "\u00a72b's premise \"Today's liveness is a host-local `os.kill` on a recorded pid. Under a placement the worker's pid is on another node\" is contradicted by \u00a72's landed record (b4f64519, d6182a37), which makes `record_process_alive` ask the scheduler whenever the record carries a placement",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "78ecf163d3aa852b9dee9225a6080a77245f781848657602c7ee765139190998",
+  "plan_slug": "a-worker-is-charged-to-a-job",
+  "plan_version": 64,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T135231758150-plan-review-of-a-worker-is-charged-to-a-job",
+  "reviewed_blob_sha": "70cf856e18a299a3cd73dff4aea9933f49d6124c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: the landed-evidence anchors #gate-command-must-be-runnable, #reservation-stands-until-answered and #s5-bound-names-itself are ids in docs/evidence/archive/a-worker-is-charged-to-a-job-landed.html; the fragments cited in the \u00a75/s9 comments exist; \u00a710's two test files (tests/test_nested_refusal_names_the_route.py and tests/test_the_host_line_allows_a_separate_partition_job.py) both exist; and \u00a78's `reckon/crew/runs.py:1531` does resolve at the revision it cites \u2014 `git show 1135b00d9:reckon/crew/runs.py` line 1531 reads `stall_window: str = DEFAULT_WATCH_STALL_WINDOW`.",
+    "done_when": "a finding \u2014 \u00a73's done-when requires the roster refusal to name \"the limit and its measured basis\", but the plan's own decision record states per-worker resident memory has never been measured across a wave.",
+    "evidence_paths": "pass \u2014 gate and negative-control logs sit under the shared crew runs directory (e.g. runs/r-20260919T225816807113-awcj-one-record-level-liveness-read/negative-control.red.log, verified present) and the per-node fragments under docs/evidence/fragments/a-worker-is-charged-to-a-job/; nothing is written to a node-local scratchpad.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach code; \u00a710's new symbols are named by mechanism, and the `RECKON_ALLOW_NESTED_LAUNCH`/`PARTITION_ROUTE` constants it composes from carry no plan reference. The `data-node=\"awcj-\u2026\"` anchors are plan-side data, not symbols.",
+    "reasoning": "a finding \u2014 \u00a72b's premise sentence contradicts \u00a72's own landed record: \u00a72b still states \"Today's liveness is a host-local `os.kill` on a recorded pid\", while \u00a72's landed note records that `record_process_alive` already asks the scheduler when the record carries a placement.",
+    "single_goal": "a finding \u2014 \u00a72b (docs/plans/a-worker-is-charged-to-a-job.html:302-527) carries four independently-measured repairs in one section.",
+    "wiring": "a finding \u2014 \u00a72b (a full section with four done-whens) appears in neither `plan-section-declarations` nor any `<section data-reckon=\"section\">` element, so the roadmap can never schedule it; and the plan consumes crew-runtime-positive-controls \u00a71/\u00a72 while declaring only `plan-informs` toward that plan, which the graph renders as the opposite direction (graph.jsx:872 places `informs` under `blocks`)."
+  },
+  "section_digests": {
+    "_document": "449ca4485267e96b09e13fb9678c1c90b41c800a4042aa8f714736850ce9fbd6",
+    "s-contract": "6c2b86636b5d6c1f87051d9d3f776896057e3f539cd1ddacd2be71dcb8a94200",
+    "s0": "684e9d028bd94c15a6f23c838815a01d6f51c5f3100fa847b8134ec9232ec0df",
+    "s1": "e5f377a019315c5f8e8d019bf5caed7ee4eb0ee12f35bbc0bc0a9889940cda85",
+    "s10": "bb83ceb5fa0455b401cc70e106fd1c709dee32357bc8258f635417008f72fa53",
+    "s2": "d2a6c7aa20c956f1d5cfbfabc0fec3210fad1df400fe0ea8e73c163e6a9a8b51",
+    "s2b": "fedf3e8e34497454f9ed3ad04693376d980447b2290b0216701ed1a6858cbbd8",
+    "s3": "4581863bc7044f5e9e9677ce3a54c9b5aaf92025cf2b32c4d4973e4e6b8881a0",
+    "s4": "6c1927e32109c00db5fdccd88bee4f743f8e9828e62490c11c4ad46a74720f44",
+    "s5": "0838626070b0f7c934aa09ee6663f71434a715619089d65e487ab76bf8d0c8df",
+    "s6": "5bea8900e9fded0b44d31c5f9267cd7550998d8c6861398aa5ba9e61dd27d228",
+    "s7": "a8e38789e85f0eb9fc677ba1ebe1ceb231d9333df7660618a1198313f10bb213",
+    "s8": "bce275f8870a562d83a7640171c814c79e6cb0ab0e2eaa8252ed072f522b3be0",
+    "s9": "e929fc5d2971a64d971ebfa0dc025df6808da0b054d096bcb39f3d5f2b0ba841"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T14:03:50.408748+00:00"
+}
