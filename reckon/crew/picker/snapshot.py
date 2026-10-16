@@ -31,6 +31,7 @@ from reckon.crew.dispatch import (
 )
 from reckon.crew.node import NodeValidation
 
+from . import lane_context
 from .types import Candidate, PickRequest
 
 
@@ -44,6 +45,7 @@ class BudgetCandidate(Candidate):
     """
 
     budget_reason: str | None = None
+    budget_source: str | None = None
     stale: bool | None = None
     budget_age_s: float | None = None
 
@@ -462,6 +464,24 @@ def _budget_view_request_key(
     }
 
 
+def _group_source(source: object) -> str:
+    """Translate a pre-flight group's source word into the picker's vocabulary.
+
+    A pre-flight group names its figure's provenance as ``document`` for the
+    published paid-lanes document, ``account-surface`` for a live account-window
+    read, and ``recorded`` for one a run's ledger carries. The picker's staleness
+    rule speaks of a ledger reading rather than a recorded one, so the recorded
+    word is mapped here rather than taught to a rule that also reads the raw
+    state vocabulary.
+    """
+
+    if source == budget.WINDOW_SOURCE_DOCUMENT:
+        return budget.WINDOW_SOURCE_DOCUMENT
+    if source == "account-surface":
+        return "account-surface"
+    return "ledger"
+
+
 def _compose_budget_report(
     project: str,
     config: dict[str, Any],
@@ -508,6 +528,11 @@ def _compose_budget_report(
     )
     by_backend = {entry["backend"]: entry for entry in report["backends"]}
     shelf_seconds = budget.policy(config)["evidence_shelf_life_minutes"] * 60
+    document_backed = lane_context._document_backed_backends(report)
+    # The cadence the paid-lanes document publishes for its own readings, carried
+    # on the report so a later re-age and the return-time block judge a
+    # document-backed reading by the same bound this composition did.
+    document_shelf_life_seconds = lane_context._document_shelf_life_seconds(document)
     moment = parse_utc(report["checked_at"])
     for group in report["groups"]:
         allowance = group.get("allowance") or {}
@@ -520,26 +545,34 @@ def _compose_budget_report(
         observed = parse_utc(str(allowance.get("observed_at") or ""))
         if observed is None or moment is None:
             continue
-        stale = (moment - observed).total_seconds() > shelf_seconds
-        source = (
-            "account-surface" if group.get("source") == "account-surface" else "ledger"
-        )
         for name in group["members"]:
             state = by_backend[name]["state"]
+            block = lane_context._budget_block(
+                {
+                    "source": _group_source(group.get("source")),
+                    "observed_at": allowance.get("observed_at"),
+                    "suggested_shelf_life_seconds": document_shelf_life_seconds,
+                },
+                moment=moment,
+                shelf_life_minutes=shelf_seconds / 60.0,
+                document_backed=str(name) in document_backed,
+            )
             state.update(
-                source=source,
+                source=block["budget_source"],
                 observed_at=observed.isoformat(),
-                expired=stale,
+                expired=block["stale"],
                 headroom="known",
                 utilisation_pct=allowance["utilisation"] * 100,
                 burn_multiple=allowance["burn_multiple"],
                 resets_at=allowance["resets_at"],
                 detail=(
                     "recorded account-window reading is stale"
-                    if stale
+                    if block["stale"]
                     else state.get("detail", "")
                 ),
             )
+    if document_shelf_life_seconds is not None:
+        report["suggested_shelf_life_seconds"] = document_shelf_life_seconds
     report["summary"] = budget.summary(report)
     return report
 
@@ -574,6 +607,8 @@ def _reage_budget_report(
         return report
     report["checked_at"] = moment.strftime("%Y-%m-%dT%H:%M:%SZ")
     shelf_seconds = budget.policy(config)["evidence_shelf_life_minutes"] * 60
+    document_backed = lane_context._document_backed_backends(report)
+    document_shelf_life_seconds = lane_context._document_shelf_life_seconds(report)
     for entry in report["backends"]:
         state = entry["state"]
         remaining = state.get("seconds_until_reset")
@@ -581,7 +616,17 @@ def _reage_budget_report(
             state["seconds_until_reset"] = max(0, int(remaining - delta))
         observed = parse_utc(str(state.get("observed_at") or ""))
         if observed is not None and state.get("headroom") == "known":
-            state["expired"] = (moment - observed).total_seconds() > shelf_seconds
+            # The same source-aware rule the composition and the return-time
+            # block use, so a reading re-aged across its bound flips on the same
+            # judgment that set it rather than on a second, source-blind one.
+            block = lane_context._budget_block(
+                state,
+                moment=moment,
+                shelf_life_minutes=shelf_seconds / 60.0,
+                document_backed=str(entry.get("backend")) in document_backed,
+                document_shelf_life_seconds=document_shelf_life_seconds,
+            )
+            state["expired"] = block["stale"]
     waits = [
         entry["state"]["seconds_until_reset"]
         for entry in report["backends"]
@@ -941,6 +986,7 @@ def candidates(
             budget_reason = str(state.get("detail") or "") or (
                 "no recorded account-window reading for the candidate's budget group"
             )
+        budget_source = state.get("source") if reading_known else None
         result.append(
             BudgetCandidate(
                 backend=name,
@@ -963,6 +1009,7 @@ def candidates(
                 ),
                 reasons=reasons,
                 budget_reason=budget_reason,
+                budget_source=budget_source,
                 stale=stale,
                 budget_age_s=budget_age_s,
                 context=context_block,

@@ -52,9 +52,12 @@ _GLOSSARY: dict[str, str] = {
     ),
     "budget_age_s": "Seconds since the budget reading was observed; null when unknown.",
     "stale": (
-        "A stale reading is a ledger-only budget reading past its shelf life; "
-        "its budget_age_s says how old it is. An account-surface reading is "
-        "never stale by age."
+        "Whether a budget reading no longer describes the present, judged by its "
+        "source. An account-surface reading describes now and is never stale by "
+        "age. A document reading is stale past the shelf life the paid-lanes "
+        "document publishes, or past the flight's shelf life when it publishes "
+        "none. A ledger reading is stale past the flight's shelf life. "
+        "budget_age_s says how old the reading is."
     ),
     "worker_slots": (
         "The extra workers this coordinator session's lane router would grant it "

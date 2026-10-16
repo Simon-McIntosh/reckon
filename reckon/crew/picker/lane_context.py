@@ -227,6 +227,22 @@ def _as_mapping(value: object) -> Mapping[str, Any]:
     return value if isinstance(value, Mapping) else {}
 
 
+def _positive_number(value: object) -> bool:
+    """Whether a value is a real, positive figure rather than a bool or a string.
+
+    A shelf life the document publishes is usable only when it is a number above
+    zero: a ``True`` is a flag rather than a duration, and a zero or a negative
+    would expire every reading the moment it is served. Anything else falls back
+    to the flight's own shelf life.
+    """
+
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and value > 0
+    )
+
+
 def _document_backed_backends(snapshot: Mapping[str, Any] | None) -> frozenset[str]:
     """Backends whose budget figures the published document, not the ledger, supplied.
 
@@ -248,25 +264,46 @@ def _document_backed_backends(snapshot: Mapping[str, Any] | None) -> frozenset[s
     )
 
 
+def _document_shelf_life_seconds(snapshot: Mapping[str, Any] | None) -> float | None:
+    """The shelf life the paid-lanes document suggested, or ``None`` for the flight's.
+
+    The document states its own republish cadence, so its readings are judged
+    against that rather than the flight's shelf life. A document that publishes
+    no usable figure leaves this ``None``, and every caller then falls back to
+    the flight's shelf life, which is what a document publishing no cadence
+    means.
+    """
+
+    if not isinstance(snapshot, Mapping):
+        return None
+    published = snapshot.get("suggested_shelf_life_seconds")
+    return float(published) if _positive_number(published) else None
+
+
 def _budget_block(
     reading: Mapping[str, Any],
     *,
     moment: datetime,
     shelf_life_minutes: float,
     document_backed: bool = False,
+    document_shelf_life_seconds: float | None = None,
 ) -> dict[str, Any]:
-    """Name a reading's source and age and mark a stale ledger reading.
+    """Name a reading's source and age and mark a stale reading by its source.
 
-    An account-surface reading describes now and is never stale by age; a
-    ledger-only reading carries the age of the run that recorded it, and past
-    its shelf life it no longer describes the present and is marked stale. A
-    reading the paid-lanes document published is labelled with its own
-    provenance, distinct from the ledger's, so a reader can tell a published
-    figure from one a run recorded.
+    The one rule every staleness judgment in the picker derives through, so a
+    candidate and the return-time block describing the same reading never
+    disagree. An account-surface reading describes now and is never stale by
+    age. A ledger-only reading carries the age of the run that recorded it, and
+    past the flight's shelf life it no longer describes the present. A reading
+    the paid-lanes document published is judged against the shelf life the
+    document itself suggests, falling back to the flight's shelf life only when
+    the document publishes none -- a document that states its own cadence is
+    trusted over the flight default, so a paid-lanes figure republished on a
+    slower clock than the flight's is not read as stale the moment it is served.
     """
 
     raw_source = reading.get("source")
-    if document_backed:
+    if document_backed or raw_source == budget.WINDOW_SOURCE_DOCUMENT:
         source = budget.WINDOW_SOURCE_DOCUMENT
     elif raw_source == "account-surface":
         source = "account-surface"
@@ -276,9 +313,22 @@ def _budget_block(
         source = None
     observed = parse_utc(str(reading.get("observed_at") or "") or "")
     age = None if observed is None else max(0.0, (moment - observed).total_seconds())
-    stale = bool(
-        source == "ledger" and age is not None and age > shelf_life_minutes * 60.0
-    )
+    if age is None or source is None or source == "account-surface":
+        stale = False
+    elif source == budget.WINDOW_SOURCE_DOCUMENT:
+        # The document's own suggested cadence, carried on the reading beside the
+        # stamp it qualifies; the caller's figure and the flight default are the
+        # fallbacks for a document that publishes none.
+        published = reading.get("suggested_shelf_life_seconds")
+        if _positive_number(published):
+            bound = float(published)
+        elif _positive_number(document_shelf_life_seconds):
+            bound = float(document_shelf_life_seconds)
+        else:
+            bound = shelf_life_minutes * 60.0
+        stale = age > bound
+    else:  # ledger
+        stale = age > shelf_life_minutes * 60.0
     return {"budget_source": source, "budget_age_s": age, "stale": stale}
 
 
@@ -303,6 +353,10 @@ def return_times(
     )
     readings = _budget_readings(budget_snapshot)
     document_backed = _document_backed_backends(budget_snapshot)
+    # The shelf life the paid-lanes document publishes for its own readings, so a
+    # document-backed stale flag here matches the candidate's rather than falling
+    # back to the flight's shorter cadence.
+    document_shelf_life_seconds = _document_shelf_life_seconds(budget_snapshot)
     size_key, size_bucket = _size_of(getattr(node, "time_budget", "") or "")
     blocks: dict[str, dict[str, Any]] = {}
     for candidate in candidates:
@@ -325,6 +379,7 @@ def return_times(
                     moment=moment,
                     shelf_life_minutes=shelf_life,
                     document_backed=str(backend) in document_backed,
+                    document_shelf_life_seconds=document_shelf_life_seconds,
                 )
             )
         blocks[str(backend)] = block
