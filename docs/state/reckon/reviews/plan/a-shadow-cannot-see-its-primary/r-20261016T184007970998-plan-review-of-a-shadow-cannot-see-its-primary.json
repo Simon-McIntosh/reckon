@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T18:48:59.632Z",
+  "dispatched_at": "2026-10-16T18:40:42Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-shadow-cannot-see-its-primary.html:149",
+      "id": "anchors_resolve-1",
+      "reason": "the named write path omits `reckon/_backends.py` (and the dispatch/resume callers), so masks composed \"from the shadow's lineage\" would never reach `fence_argv` and neither launch, resume nor redispatch would be masked.",
+      "text": "\u00a74's write paths name `reckon/crew/dispatch_launch.py` as \"the launch composition \u2026 that passes the shadow's lineage to the fence\", but `fence_argv` is composed in `reckon/_backends.py` `launch_plan` (its only caller, `_backends.py:2214`), which is reached from `reckon/crew/dispatch.py:1902`, `reckon/crew/dispatch_sessions.py` and `reckon/crew/resumption.py`; `dispatch_launch.py` post-processes an argv whose fence binds are already fixed and holds no lineage, so a node following \u00a74 edits the wrong file",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-shadow-cannot-see-its-primary.html:96",
+      "id": "anchors_resolve-2",
+      "reason": "the file promotion.py is correct and holds the shadow promotion path, so the node finds its target in seconds; only the parenthetical locator is imprecise.",
+      "text": "\u00a72 locates the shadow branch of promotion in `reckon/crew/promotion.py` \"beside `_write_shadow_patch`\", but `_write_shadow_patch` is defined at `reckon/crew/promotion_scope.py:903` and merely imported into promotion.py, so the parenthetical locator points at a function that is not in the named file",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-shadow-cannot-see-its-primary.html:106",
+      "id": "reasoning-1",
+      "reason": "the positive control's review-record clause cannot be exercised by the instrument as specified, so either the scan's input surface must widen beyond tool-input paths or that clause must be corrected.",
+      "text": "\u00a72's positive control says the retained stream must report `breached` \"naming the primary's run directory, its review records and the main checkout\", but the scan is defined (line 75) as reading \"tool inputs that name a path\", and in that stream the primary's review records appear in 0 tool inputs (their 10 references sit in tool results and assistant text \u2014 e.g. review-record paths carried inside a read manifest), while the run directory (4 tool inputs) and the main checkout outside `.venv` (8) do reproduce",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-shadow-cannot-see-its-primary.html:140",
+      "id": "reasoning-2",
+      "reason": "the mechanism's precondition (lineage reaching the fence) has no caller, so the node must also name and build the plumbing from the shadow record into `launch_plan`, which the write paths do not include.",
+      "text": "\u00a74 asserts the fence masks \"are composed from the shadow's lineage, so they apply on launch, resume and redispatch alike\", but names no production caller that supplies that lineage: `fence_argv`'s parameters are declared paths and a `config`, `launch_plan` receives no lineage, and the only shadow-aware plumbing in the launch chain sets `fence_config=config` (the flight config, which carries no lineage)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ec5513e99fcddb55a00efa38b61f5ea999297a8319ce57d5688c005e11ddcc2e",
+  "plan_slug": "a-shadow-cannot-see-its-primary",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T184007970998-plan-review-of-a-shadow-cannot-see-its-primary",
+  "reviewed_blob_sha": "fa0d4e8d1c040138477186b8b06d40166dc85e93",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a74 names `reckon/crew/dispatch_launch.py` as the file that passes the shadow's lineage to the fence, but that file contains no shadow, lineage or fence_argv reference; \u00a72's \"beside `_write_shadow_patch`\" points into `reckon/crew/promotion.py`, while `_write_shadow_patch` is defined in `reckon/crew/promotion_scope.py` (\u00a72's named file, promotion.py, is itself correct).",
+    "done_when": "pass \u2014 each of \u00a72, \u00a73 and \u00a74 states a measurable done-when and names a declared negative control (make shadow_controlled ignore isolation; restore the primary id in the session stem; drop the masks), so each gate can show its guard fires.",
+    "evidence_paths": "pass \u2014 the plan places no evidence or gate log in a session scratchpad or node-local temporary path; \u00a74's \"fenced stub launch (bwrap on this host)\" is the mechanism under test, not where its evidence is written.",
+    "naming": "pass \u2014 the proposed names (`shadow_isolation.py`, `lineage.isolation`, verdicts `clean`/`breached`, `isolation unmeasured`) describe mechanism, and the test filenames describe behaviour; no plan label, stage name, ticket number or version tag reaches code or a symbol.",
+    "reasoning": "a finding \u2014 \u00a72's stated root cause matches its \u00a71 evidence (the \u00a71 counts are verified below), but the \u00a72 positive control asserts a breach channel the retained stream does not expose to the scan the plan defines; and \u00a74's mechanism names no caller that actually feeds the fence, so as written it would not run on the code path it needs.",
+    "single_goal": "pass \u2014 \u00a72 (detection), \u00a73 (naming) and \u00a74 (fence) each carry one deliverable; the multi-file write sets are one mechanism per section, not two goals.",
+    "wiring": "pass \u2014 the sole section dependency (`plan-section-depends-on`) is s4 \u2192 a-shadow-cannot-see-its-primary#s3, which matches the followup order (\u00a74 composes masks from the shadow lineage \u00a73 settles); `plan-after` jev-learns-from-its-routes resolves to docs/plans/jev-learns-from-its-routes.html; \u00a75 is correctly deferred with no dependency asserted."
+  },
+  "section_digests": {
+    "_document": "9780a21959490e72e74c2e78090f3ee64c4c78e5908b79afafb681bbccfa44bc",
+    "s1": "7d4aec73ef1a38e9362d15025482885f37afd371f237946c9957c06c4b3fb8cb",
+    "s2": "03109562428be19eef52120ea3040ea8233886486d3054c30ab04796eb2acc16",
+    "s3": "330eeee9f8ec7d9d7cd19844afd555d06dcdd4b49c538f4118af635df0f0ce57",
+    "s4": "bab77fe6946ef5da15c7dc3e66d38df578adeaf3627aff79824233d2c8611ab3",
+    "s5": "2a07858e7b91efc28681036938f28fdcdd126a02bd9a74f5ff583def6ac5699a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T18:51:41.074792+00:00"
+}
