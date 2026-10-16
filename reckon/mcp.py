@@ -2336,20 +2336,21 @@ def _audit_document(
 def _audit_plan_state(path: Path) -> PlanState:
     """Return the lenient :class:`PlanState` for one authored document.
 
-    ``_plan_html.from_html`` reads and parses the whole document on every call,
-    so the audit's validation loop re-parsed every unchanged plan on every warm
-    read. Keying the parse on the file's stat identity through
-    :func:`reckon.file_memo.memoized` reuses it while the bytes are unchanged —
-    moving size, mtime or inode re-parses — and reuses the shared text read so
-    the file itself is opened once. The memo hands back a deep copy, so a
-    caller that mutates the state cannot poison the next reader.
+    Derived from the shared ``read_state_file`` parse, so a plan file's soup is
+    built once per read however many readers ask for it: routing this through
+    ``_plan_html.from_html`` built a soup of its own beside the parse the rest
+    of the audit already reaches. Keying the validation on the file's stat
+    identity through :func:`reckon.file_memo.memoized` reuses it while the bytes
+    are unchanged — moving size, mtime or inode re-parses — and the memo hands
+    back a deep copy, so a caller that mutates the state cannot poison the next
+    reader.
     """
     from reckon.file_memo import memoized
 
     return memoized(
         "audit_plan_state",
         path,
-        lambda: _plan_html.from_html(_plan_html._read_plan_text(path)),
+        lambda: PlanState.model_validate(_plan_html.read_state_file(path)),
     )
 
 
