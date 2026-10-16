@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "b329ee7444422d74688668500d23c8438e42531f",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:954",
+    "reckon/crew/promotion.py:1264"
+  ],
+  "completed_at": "2026-10-16T02:12:59.839Z",
+  "dispatched_at": "2026-10-16T02:03:44Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "promotion.py passes ledger_root into the committed-round reader, the one-line change the folded finding required; the path is accepted at promotion with --accept-path",
+      "recorded_at": "2026-10-16T02:15:39.389859+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "955",
+      "severity": "follow-on",
+      "text": "follow-on: the gained commit edits reckon/crew/promotion.py, which is not among the node's declared write paths, so the change landed ungated by the fence; the manifest discloses it and the coordinator should record the scope deviation."
+    }
+  ],
+  "head_log_revision": "60a0081e1d05a5c035529ca2069faa4406ac2ec8",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read commit by commit against base 7841e60b0; 8c4ccf6de threads root=ledger_root into the reader, adds the rounds_root fallback and the differing-root test case, and 60a0081e1 updates the evidence fragment.",
+    "done_when": "The done_when names tests/test_a_review_written_twice_is_committed_once.py with four cases and the importing population equal at head to base apart from the new file; the reviewed manifest records the file at 4 passed and the arms at 55 (base) and 59 (head) passed in gate-base.log and gate-head.log, so the gate asserts the measure.",
+    "goal": "The node goal is that review promotion commit each staged round once and never rewrite a round already committed; the gained commits make the already-committed skip read the tree the landing writes into, reckon/crew/promotion.py:955 passing root=ledger_root into _delivered_review_payloads_for_commit so reckon/crew/promotion_checks.py:2162 reads the same root as the write at reckon/crew/promotion.py:1264.",
+    "manifest": "Read; it reads status: complete, names the four commits, records 4 passed at the new test file, the base arm 55 and head arm 59 passed, and the two red negative controls (3 failed, and 1 failed for the differing-root case).",
+    "write_paths": "The declared write paths are reckon/crew/promotion_checks.py, tests/test_a_review_written_twice_is_committed_once.py, the evidence fragment docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-review-written-twice-is-committed-once.html and the figures directory; the gained diff also edits reckon/crew/promotion.py, which is outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_written_twice_is_committed_once.py:335 asserts the disposition the test wrote to the committed file survives, and negative-control-root-threading.log reddens it (1 failed, EXIT=1) when the reader is pointed back at the run's repository.",
+    "evidence": "the reviewed run's gate-base.log (55 passed) and gate-head.log (59 passed) plus the new-file run at 4 passed are on disk, though the ruff figure is recorded only in the manifest.",
+    "fit": "reckon/crew/promotion_checks.py:2026 names the helper and the rounds_root local by the mechanism they carry, and no name carries a plan or ticket label.",
+    "goal_fidelity": "reckon/crew/promotion.py:955 passes root=ledger_root and the write at reckon/crew/promotion.py:1264 uses the same root, so the skip reads what the landing stored.",
+    "reuse": "_committed_review_rounds composes the review module's own committed_review_root, COMMITTED_RUN_DIRNAME and carried_revision_pair (reckon/crew/review.py:1918, :1837, :348) rather than re-implementing them.",
+    "scope_discipline": "the gained commit edits reckon/crew/promotion.py:955, a file outside the node's declared write paths, though the manifest names it for the coordinator."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that review promotion commit each staged round once and never rewrite a round already committed; the gained commits make the already-committed skip read the tree the landing writes into, reckon/crew/promotion.py:955 passing root=ledger_root into _delivered_review_payloads_for_commit so reckon/crew/promotion_checks.py:2162 reads the same root as the write at reckon/crew/promotion.py:1264.\nVERDICT done_when: The done_when names tests/test_a_review_written_twice_is_committed_once.py with four cases and the importing population equal at head to base apart from the new file; the reviewed manifest records the file at 4 passed and the arms at 55 (base) and 59 (head) passed in gate-base.log and gate-head.log, so the gate asserts the measure.\nVERDICT write_paths: The declared write paths are reckon/crew/promotion_checks.py, tests/test_a_review_written_twice_is_committed_once.py, the evidence fragment docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-review-written-twice-is-committed-once.html and the figures directory; the gained diff also edits reckon/crew/promotion.py, which is outside them.\nVERDICT manifest: Read; it reads status: complete, names the four commits, records 4 passed at the new test file, the base arm 55 and head arm 59 passed, and the two red negative controls (3 failed, and 1 failed for the differing-root case).\nVERDICT diff: Read commit by commit against base 7841e60b0; 8c4ccf6de threads root=ledger_root into the reader, adds the rounds_root fallback and the differing-root test case, and 60a0081e1 updates the evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:954, reckon/crew/promotion.py:1264\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:955 passes root=ledger_root and the write at reckon/crew/promotion.py:1264 uses the same root, so the skip reads what the landing stored.\nSCORE evidence: 18\nJUSTIFICATION evidence: the reviewed run's gate-base.log (55 passed) and gate-head.log (59 passed) plus the new-file run at 4 passed are on disk, though the ruff figure is recorded only in the manifest.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: the gained commit edits reckon/crew/promotion.py:955, a file outside the node's declared write paths, though the manifest names it for the coordinator.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_review_written_twice_is_committed_once.py:335 asserts the disposition the test wrote to the committed file survives, and negative-control-root-threading.log reddens it (1 failed, EXIT=1) when the reader is pointed back at the run's repository.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion_checks.py:2026 names the helper and the rounds_root local by the mechanism they carry, and no name carries a plan or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: _committed_review_rounds composes the review module's own committed_review_root, COMMITTED_RUN_DIRNAME and carried_revision_pair (reckon/crew/review.py:1918, :1837, :348) rather than re-implementing them.\nFINDING reckon/crew/promotion.py:955 follow-on: the gained commit edits reckon/crew/promotion.py, which is not among the node's declared write paths, so the change landed ungated by the fence; the manifest discloses it and the coordinator should record the scope deviation.\n",
+  "review_run_id": "r-20261016T020303173200-review-of-a-review-written-twice-is-committed-once-60a0081e1d05",
+  "reviewed_base_sha": "7841e60b0755137c6566bc21e2a505893486e2e5",
+  "reviewed_head_sha": "60a0081e1d05a5c035529ca2069faa4406ac2ec8",
+  "reviewed_run_id": "r-20261016T005850794919-a-review-written-twice-is-committed-once",
+  "reviewer_run_id": "r-20261016T020303173200-review-of-a-review-written-twice-is-committed-once-60a0081e1d05",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 12
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T005850794919-a-review-written-twice-is-committed-once/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/a-review-written-twice-is-committed-once",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T02:10:12.298880+00:00",
+  "total": 103
+}
