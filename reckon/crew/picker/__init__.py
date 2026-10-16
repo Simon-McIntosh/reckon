@@ -6,6 +6,7 @@ import math
 import os
 import time
 from collections.abc import Callable, Mapping
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -387,6 +388,34 @@ def pick(
             session=request.session,
         )
     )
+    # The node's declared capability and estimate are read from the plan it
+    # names, inside the pick's own timing: a plan read that fails leaves both
+    # null rather than failing the pick, and its cost is attributed to its own
+    # stage so a slow resolve is visible rather than charged to the state render.
+    #
+    # The resolution runs before the candidate scan because the scan filters a
+    # candidate's history at the request's requirement: a live dispatch hands a
+    # request carrying no capability, so a scan run first would have no
+    # difficulty to read history at and the per-candidate
+    # ``outcomes_at_requirement`` block would be inert. Resolving first and
+    # handing the scan a request that carries the resolved capability makes the
+    # block filter on the same capability the state renders as
+    # ``node.capability``. A request that already carries a capability is kept,
+    # so it is handed to the scan unchanged.
+    capability_started = time.perf_counter()
+    mark("capability_ms")
+    try:
+        capability, estimated_hours, hours_source = _declared_difficulty(
+            request, config, repo=repo, authority=authority
+        )
+    finally:
+        stages["capability_ms"] = _milliseconds(capability_started)
+        unmark()
+    snapshot_request = (
+        request
+        if request.capability or not capability
+        else replace(request, capability=capability)
+    )
     # One docs-tree scan serves every candidate's plan lookup in this pick.
     snapshot_started = time.perf_counter()
     mark("snapshot_ms")
@@ -394,7 +423,7 @@ def pick(
     try:
         with resource_scan_scope():
             options = snapshotter(
-                request,
+                snapshot_request,
                 config,
                 repo,
                 records=rows,
@@ -409,19 +438,6 @@ def pick(
         unmark()
     offered = [candidate for candidate in options if not candidate.reasons]
     excluded = [candidate.as_dict() for candidate in options if candidate.reasons]
-    # The node's declared capability and estimate are read from the plan it
-    # names, inside the pick's own timing: a plan read that fails leaves both
-    # null rather than failing the pick, and its cost is attributed to its own
-    # stage so a slow resolve is visible rather than charged to the state render.
-    capability_started = time.perf_counter()
-    mark("capability_ms")
-    try:
-        capability, estimated_hours, hours_source = _declared_difficulty(
-            request, config, repo=repo, authority=authority
-        )
-    finally:
-        stages["capability_ms"] = _milliseconds(capability_started)
-        unmark()
     state_started = time.perf_counter()
     mark("state_render_ms")
     try:
