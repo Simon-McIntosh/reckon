@@ -1033,14 +1033,14 @@ ARRIVAL_WINDOW = 90.0
 # ``starting`` on a relaunched attempt, and from any stop state the pane drew as
 # ``halted`` when an attempt is resumed. All announce the same news — the run
 # began doing the work — so all are starts. ``START_KIND`` is the fresh-launch
-# pair a reader names when it means the canonical start; the set is what the
-# deliverable tests a row against. The stop states are read from the pane's own
-# vocabulary rather than listed here, so every state the pane draws ``halted``
-# — ``blocked``, ``exited-unfinished``, ``stalled``, ``abandoned`` and the rest —
-# pairs with ``working`` and a new one is a start the moment it is drawn. The
-# states the pane draws ``delivered`` or ``landed`` are excluded, because a
-# producer re-reading a rewritten manifest as working (`delivered -> working`) is
-# not resumed work and stays held.
+# pair a reader names when it means the canonical start; ``RowPolicy`` reads the
+# set when it decides whether a row is a start. The stop states are read from
+# the pane's own vocabulary rather than listed here, so every state the pane
+# draws ``halted`` — ``blocked``, ``exited-unfinished``, ``stalled``,
+# ``abandoned`` and the rest — pairs with ``working`` and a new one is a start
+# the moment it is drawn. The states the pane draws ``delivered`` or ``landed``
+# are excluded, because a producer re-reading a rewritten manifest as working
+# (`delivered -> working`) is not resumed work and stays held.
 START_KIND: tuple[Any, Any] = ("dispatched", "working")
 START_KINDS: frozenset[tuple[Any, Any]] = frozenset(
     {START_KIND, ("starting", "working")}
