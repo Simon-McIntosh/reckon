@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "cb279180626633e95276ce8bc8efc7fbacf54f37",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/runs.py:3286",
+    "reckon/crew/recovery_watch.py:2411",
+    "reckon/crew/recovery_review_acceptance.py:396"
+  ],
+  "completed_at": "2026-10-16T15:44:48.933Z",
+  "dispatched_at": "2026-10-16T15:29:54Z",
+  "findings": [
+    {
+      "file": "tests/test_the_watcher_sweeps_unfollowed_sessions.py",
+      "line": "284",
+      "severity": "follow-on",
+      "text": "follow-on: the finished run added for the re-arming session (r-late-review) is never offered by the head pass (offered == [\"r-scoring\"]) nor by any of the four recorded controls (negative-control.log offers only r-attended-review), because the filterless reflex resolves the sweeping process's own registered session at reckon/crew/recovery_review_acceptance.py:396 and never reaches the re-arming session's runs -- so this added fixture run contributes no discrimination, and the comment at line 376 that \"a pass that read no filter would offer both\" misdescribes the behaviour the instrument actually shows."
+    }
+  ],
+  "head_log_revision": "666b813709b0bbdf7c057379cde04f82cbcd9e83",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 666b8137..b46db0675 commit by commit; the single increment b46db0675 changes only tests/test_the_watcher_sweeps_unfollowed_sessions.py (+31/-8), adding a finished run for the re-arming session (r-late-review) and one for the attended session (r-attended-review), aging the attended one to the swept session's age, and moving the offered assertion above the launched assertion.",
+    "done_when": "the done_when names tests/test_the_watcher_sweeps_unfollowed_sessions.py, a head/base parity over the tests importing reckon/crew/runs.py, and a ruff delta on the changed Python files; the manifest records the gate at gate/watcher-sweep-committed.log (2 passed, EXIT=0, revision b46db0675) and both parity arms, but the base arm's chunk_08 is a collection abort recorded as a clean pass (gate/base-suite-third.txt:13), so the parity instrument overstates its coverage.",
+    "goal": "the node goal is that the project watcher sweep each session that has had no live follower for ten minutes, passing that session explicitly; the increment this review is scoped to is b46db0675, a test-only commit, and it strengthens the fixture that pins the sweep's review pass to the session it swept (tests/test_the_watcher_sweeps_unfollowed_sessions.py:281-296), leaving the production behaviour the goal names untouched.",
+    "manifest": "read manifest.md; status complete at head b46db0675, it records the gate command and its 2-passed / EXIT=0 result, four negative controls with their logs, both parity arms and the ruff delta, and it discloses that the node's declared negative control was replaced.",
+    "write_paths": "the declared write paths are reckon/crew/runs.py, tests/test_the_watcher_sweeps_unfollowed_sessions.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-watcher-sweeps-unfollowed-sessions.html and docs/figures/the-monitor-shows-the-work-it-watches/the-watcher-sweeps-unfollowed-sessions; the increment touches only the test file, which is inside them."
+  },
+  "justifications": {
+    "durability": "the offered assertion at tests/test_the_watcher_sweeps_unfollowed_sessions.py:379 reddens under negative-control.log (offered becomes r-attended-review), but the increment adds no new assertion and its r-late-review fixture run at line 284 is never offered by any pass or control, so part of the added fixture discriminates nothing.",
+    "evidence": "gate/watcher-sweep-committed.log:5 records 2 passed / EXIT=0 at b46db0675 and re-runs green, but the parity instrument records the base arm's aborted chunk_08 as failures=none at gate/base-suite-third.txt:13.",
+    "fit": "the increment follows the fixture idiom of tests/test_the_watcher_sweeps_unfollowed_sessions.py:281 and reuses _scoring_pointer, but the comment at line 376 claims \"a pass that read no filter would offer both\", which the recorded control refutes.",
+    "goal_fidelity": "tests/test_the_watcher_sweeps_unfollowed_sessions.py:379 pins the review pass to the session the sweep was given, which is the \"passing that session explicitly\" half of the goal, though the increment is test-only.",
+    "reuse": "the increment reuses the shared _scoring_pointer fixture (tests/test_review_lane_follows_its_run.py) and _age_run (tests/test_the_watcher_sweeps_unfollowed_sessions.py:99) rather than adding a second way to compose a review-ready run.",
+    "scope_discipline": "the increment's only path, tests/test_the_watcher_sweeps_unfollowed_sessions.py, is inside the four declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the project watcher sweep each session that has had no live follower for ten minutes, passing that session explicitly; the increment this review is scoped to is b46db0675, a test-only commit, and it strengthens the fixture that pins the sweep's review pass to the session it swept (tests/test_the_watcher_sweeps_unfollowed_sessions.py:281-296), leaving the production behaviour the goal names untouched.\nVERDICT done_when: the done_when names tests/test_the_watcher_sweeps_unfollowed_sessions.py, a head/base parity over the tests importing reckon/crew/runs.py, and a ruff delta on the changed Python files; the manifest records the gate at gate/watcher-sweep-committed.log (2 passed, EXIT=0, revision b46db0675) and both parity arms, but the base arm's chunk_08 is a collection abort recorded as a clean pass (gate/base-suite-third.txt:13), so the parity instrument overstates its coverage.\nVERDICT write_paths: the declared write paths are reckon/crew/runs.py, tests/test_the_watcher_sweeps_unfollowed_sessions.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-watcher-sweeps-unfollowed-sessions.html and docs/figures/the-monitor-shows-the-work-it-watches/the-watcher-sweeps-unfollowed-sessions; the increment touches only the test file, which is inside them.\nVERDICT manifest: read manifest.md; status complete at head b46db0675, it records the gate command and its 2-passed / EXIT=0 result, four negative controls with their logs, both parity arms and the ruff delta, and it discloses that the node's declared negative control was replaced.\nVERDICT diff: read 666b8137..b46db0675 commit by commit; the single increment b46db0675 changes only tests/test_the_watcher_sweeps_unfollowed_sessions.py (+31/-8), adding a finished run for the re-arming session (r-late-review) and one for the attended session (r-attended-review), aging the attended one to the swept session's age, and moving the offered assertion above the launched assertion.\nCALL_SITES: reckon/crew/runs.py:3286, reckon/crew/recovery_watch.py:2411, reckon/crew/recovery_review_acceptance.py:396\nreviewed_base_sha: 666b813709b0bbdf7c057379cde04f82cbcd9e83\nreviewed_head_sha: b46db06751c07feb28871a65bb2fb114188304ca\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_the_watcher_sweeps_unfollowed_sessions.py:379 pins the review pass to the session the sweep was given, which is the \"passing that session explicitly\" half of the goal, though the increment is test-only.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate/watcher-sweep-committed.log:5 records 2 passed / EXIT=0 at b46db0675 and re-runs green, but the parity instrument records the base arm's aborted chunk_08 as failures=none at gate/base-suite-third.txt:13.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the increment's only path, tests/test_the_watcher_sweeps_unfollowed_sessions.py, is inside the four declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: the offered assertion at tests/test_the_watcher_sweeps_unfollowed_sessions.py:379 reddens under negative-control.log (offered becomes r-attended-review), but the increment adds no new assertion and its r-late-review fixture run at line 284 is never offered by any pass or control, so part of the added fixture discriminates nothing.\nSCORE fit: 16\nJUSTIFICATION fit: the increment follows the fixture idiom of tests/test_the_watcher_sweeps_unfollowed_sessions.py:281 and reuses _scoring_pointer, but the comment at line 376 claims \"a pass that read no filter would offer both\", which the recorded control refutes.\nSCORE reuse: 20\nJUSTIFICATION reuse: the increment reuses the shared _scoring_pointer fixture (tests/test_review_lane_follows_its_run.py) and _age_run (tests/test_the_watcher_sweeps_unfollowed_sessions.py:99) rather than adding a second way to compose a review-ready run.\nFINDING tests/test_the_watcher_sweeps_unfollowed_sessions.py:284 follow-on: the finished run added for the re-arming session (r-late-review) is never offered by the head pass (offered == [\"r-scoring\"]) nor by any of the four recorded controls (negative-control.log offers only r-attended-review), because the filterless reflex resolves the sweeping process's own registered session at reckon/crew/recovery_review_acceptance.py:396 and never reaches the re-arming session's runs -- so this added fixture run contributes no discrimination, and the comment at line 376 that \"a pass that read no filter would offer both\" misdescribes the behaviour the instrument actually shows.\n",
+  "review_run_id": "r-20261016T152912416778-review-of-the-watcher-sweeps-unfollowed-sessions-b46db06751c0",
+  "reviewed_base_sha": "666b813709b0bbdf7c057379cde04f82cbcd9e83",
+  "reviewed_head_sha": "b46db06751c07feb28871a65bb2fb114188304ca",
+  "reviewed_run_id": "r-20261016T104920878164-the-watcher-sweeps-unfollowed-sessions",
+  "role": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T15:44:11.545704+00:00",
+  "total": 102
+}

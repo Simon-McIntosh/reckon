@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="215">
+<meta name="plan-version" content="216">
 <meta name="plan-modified" content="2026-10-16">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -926,6 +926,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s37" data-id="c-s37-merged-not-landed" data-who="reckon-build" data-when="2026-10-16T15:20:00Z">
     <div class="r-comment-body"><p>§37's third round is merged into main at <code>a0fe43397</code>, but the section is not landed. Both producer loops sweep an unfollowed session on this host. Unattended time runs from the later of the last follower sighting and the session's newest run activity, and a live registration excludes the session. The review scored 107 with 0 added failures. The worker's own note, however, records that the done-when's declared control, dropping the session from the watcher's <code>sweep</code> call, no longer fails on the reworked fixture, so nothing guards the session confinement. The coordinator merged before reading that note. A fourth round restores a nine-minute-session scoring run that an unfiltered sweep would review, with the control re-run. §37 lands when that round merges. Once the producer reloads onto <code>a0fe43397</code>, its tick sweeps unfollowed reckon sessions, including the abandoned <code>fleet-move-20261007</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s37" data-id="c-run-r-20261016T152912416778-review-of-the-watcher-sweeps-unfollowed-sessions-b46db06751c0" data-who="reckon-build" data-when="2026-10-16T15:44:48.933Z">
+    <div class="r-comment-body"><p>stored an independent review of run r-20261016T104920878164-the-watcher-sweeps-unfollowed-sessions covering only its increment 666b8137..b46db0675 (tests/test_the_watcher_sweeps_unfollowed_sessions.py): six dimensions scored goal_fidelity 17, evidence 14, scope_discipline 20, durability 15, fit 16, reuse 20 (total 102), one follow-on finding, added_failure_count 0 derived from the reviewed run&#x27;s own baseline_suite/after_suite gate logs.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
