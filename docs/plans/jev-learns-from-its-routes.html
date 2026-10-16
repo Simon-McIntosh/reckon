@@ -26,7 +26,7 @@
   <title>Jev Learns From Its Routes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -404,7 +404,7 @@
     <div class="r-comment-body"><p>§6 landed: codex worker time from the run-home rollout receipt (merge <code>41a0d82d0</code>, review 110, 0 added failures; a real run reads 708 s against 720 s wall). <a href="/reckon/evidence/archive/jev-learns-from-its-routes-landed.html#s6">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261016T074251461237-codex-worker-time-from-run-home" data-who="reckon-build" data-when="2026-10-16T08:34:10.346Z">
-    <div class="r-comment-body"><p>codex worker time is measured from the run-home rollout receipt — rollout._locate_rollout searches each run&#x27;s own codex-home through the shared run_home_sessions_root/run_home_rollout_paths owner that paid_lanes also reads, and promotion records worker_seconds = receipt generation_seconds + machine_seconds with worker_seconds_source rollout_receipt and both figures in the throughput block; named run r-20261016T055657532716-pick-state-render-slow-read reads 708 s beside its recorded wall time of 720 s</p></div>
+    <div class="r-comment-body"><p>codex worker time is measured from the run-home rollout receipt — rollout._locate_rollout searches each run's own codex-home through the shared run_home_sessions_root/run_home_rollout_paths owner that paid_lanes also reads, and promotion records worker_seconds = receipt generation_seconds + machine_seconds with worker_seconds_source rollout_receipt and both figures in the throughput block; named run r-20261016T055657532716-pick-state-render-slow-read reads 708 s beside its recorded wall time of 720 s</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-s2-interface-accounting" data-who="reckon-build" data-when="2026-10-16T06:20:00Z">
     <div class="r-comment-body"><p>Design review <code>r-20261016T060516832154</code>, interface_budget-1. <code>--assess</code> adds one repeatable option and retires nothing. <code>--spec-level</code> states how much design latitude a node leaves, and the node contract validates it. <code>--assess</code> states the coordinator's reading of difficulty in the capability requirement keys, which no dispatch option carried before. Free-form <code>--comment</code> stays for context. The lead directed a structured carrier on 2026-10-16.</p></div>
@@ -450,6 +450,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-16T09:10:00Z">
     <div class="r-comment-body"><p>§7 landed: paired arms reported through the one shadow join, with its control verdict (merge <code>90988acaf</code>, review 108, 0 added failures). <a href="/reckon/evidence/archive/jev-learns-from-its-routes-landed.html#s7">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261016T074411563724-paired-arms-reported" data-who="reckon-build" data-when="2026-10-16T08:31:22.618Z">
+    <div class="r-comment-body"><p>§7 — the shadow-to-primary join is now earlier, one function `pair_shadow_arms` in `reckon/capabilities.py` that `derive_capabilities` calls and `reckon crew pick --outcomes` reports through as `paired_arms` (per committed shadow: the `controlled` verdict and both arms&#x27; lane, model, route mode, gate, review total, wall seconds, worker seconds and worker-seconds source) plus `unpaired` naming the missing primary; gate `tests/test_paired_arms_are_reported.py` 6 passed, and `derive_capabilities`&#x27; shadow observations are byte-identical to the base revision over the same fixture.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261016T080820643630-review-of-replay-carries-the-assessment-f1b77a668bf0" data-who="reckon-build" data-when="2026-10-16T08:21:03.792Z">
     <div class="r-comment-body"><p>An independent review of r-20261016T074527305349-replay-carries-the-assessment scores all six dimensions (goal_fidelity 20, evidence 20, fit 19, durability 18, reuse 20, scope_discipline 20; total 117) over the revision pair f33b8db0..f1b77a668, with one follow-on finding and no blocking finding; the record carries reviewed_base_sha f33b8db0ab9fcf2c80718c11352424e2af82368f and reviewed_head_sha f1b77a668bf0de9b600d60a468f681b299a70547.</p></div>
