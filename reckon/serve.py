@@ -2275,6 +2275,11 @@ def _discover_plans_uncached(
         ).values(),
         key=lambda item: str(item.relative_path),
     )
+    # Each document's parsed meta and readiness, persisted across processes by
+    # the metadata index. A fresh process reads them for every unchanged file
+    # and only parses the ones whose bytes moved, so a restart no longer
+    # re-parses the whole tree before the first read answers.
+    persisted_discovery = metadata_index.discovery_state(docs_dir, project)
 
     for resource in resources:
         if resource.type not in {"plan", "research", "evidence"}:
@@ -2284,8 +2289,24 @@ def _discover_plans_uncached(
         # Scalar inventory stays on the lightweight meta path. Gates, decisions,
         # and open followups are the body state needed to explain roadmap
         # readiness. The SPA fetches the remaining full state per document.
-        rec = _plan_html.parse_meta(html_file)
-        gates, decisions, followups, declarations = _read_readiness_state(html_file)
+        relative = _docs_relative(html_file, docs_dir)
+        stored = persisted_discovery.get(relative) if relative is not None else None
+        if stored is not None and stored.get("readiness") is not None:
+            rec = stored["meta"]
+            gates, decisions, followups, declarations = stored["readiness"]
+            # Seed the shared parse with the persisted state so every later
+            # reader of this unchanged file — the roadmap's authored-section
+            # read among them — reuses it rather than rebuilding the soup.
+            if stored.get("state") is not None:
+                _plan_html.reuse_parsed_state(html_file, stored["state"])
+        else:
+            rec = _plan_html.parse_meta(html_file)
+            gates, decisions, followups, declarations = _read_readiness_state(html_file)
+            # A file the store could not answer for was read here, so write that
+            # read back under its new digest: the next process reuses it instead
+            # of parsing it again.
+            if relative is not None:
+                metadata_index.record_discovery(docs_dir, project, relative)
         slug = resource.slug
         artifact_type = resource.type
         created, edited = _row_times(html_file, repo_dir, git_times, git_last_times)
@@ -2552,6 +2573,20 @@ def _attach_schedule(
     return payload
 
 
+def _docs_relative(path: Path, docs_dir: Path) -> str | None:
+    """Return a file's docs-relative posix path, or none when it sits outside.
+
+    The persisted metadata index keys its entries by the docs-relative path its
+    own walk computes, so a discovery read must name a file the same way to look
+    its state up. A path outside the tree has no entry and is parsed directly.
+    """
+
+    try:
+        return path.relative_to(docs_dir).as_posix()
+    except ValueError:
+        return None
+
+
 def _read_readiness_state(
     path: Path,
 ) -> tuple[list[dict], list[dict], list[dict], dict]:
@@ -2569,20 +2604,7 @@ def _read_readiness_uncached(
         state, text = _plan_html.read_state_and_text_file(path)
     except ValueError as exc:
         raise PlanPageRefusalError(path, str(exc)) from exc
-    has_gates = 'data-reckon="gates"' in text or "data-reckon='gates'" in text
-    gates = list(state.get("gates") or []) if has_gates else []
-    decisions = state.get("decisions") or {}
-    decision_rows = [
-        {"key": key, **(decision if isinstance(decision, dict) else {})}
-        for key, decision in decisions.items()
-    ]
-    followups = list(state.get("followups") or [])
-    declarations = (
-        state.get("section_declarations")
-        if isinstance(state.get("section_declarations"), dict)
-        else {}
-    )
-    return gates, decision_rows, followups, declarations
+    return metadata_index.readiness_from_state(state, text)
 
 
 def _derive_lifecycle(

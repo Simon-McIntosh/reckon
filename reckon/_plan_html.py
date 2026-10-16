@@ -1422,6 +1422,23 @@ def read_state_and_text_file(path: Path) -> tuple[dict, str]:
     return memoized("read_state_and_text", path, compute)
 
 
+def reuse_parsed_state(path: Path, state: dict) -> None:
+    """Record an already-known parse of ``path`` so later readers reuse it.
+
+    A caller that holds a document's parsed state — read from a store persisted
+    across processes — seeds the shared parse so every later reader of the same
+    unchanged file takes that state instead of rebuilding the soup. The state
+    must be the parse of the file's current bytes; the seed is keyed on the
+    file's own stat identity exactly as a fresh parse would be, so a later write
+    discards it and the next reader parses the new bytes. The text is read here
+    so callers that need it alongside the state receive the file's bytes.
+    """
+
+    from reckon.file_memo import memoized
+
+    memoized("read_state_and_text", path, lambda: (state, _read_plan_text(path)))
+
+
 # ── Render ───────────────────────────────────────────────────────────────--
 
 
