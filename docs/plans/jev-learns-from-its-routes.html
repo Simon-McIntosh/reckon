@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="lane-and-model-routing">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;jev-learns-from-its-routes#s2&quot;, &quot;jev-learns-from-its-routes#s5&quot;], &quot;s4&quot;: [&quot;jev-learns-from-its-routes#s3&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;jev-learns-from-its-routes#s2&quot;, &quot;jev-learns-from-its-routes#s5&quot;], &quot;s4&quot;: [&quot;jev-learns-from-its-routes#s3&quot;], &quot;s8&quot;: [&quot;jev-learns-from-its-routes#s2&quot;], &quot;s9&quot;: [&quot;lane-and-model-routing#s27&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>Jev Learns From Its Routes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -100,7 +100,7 @@
           <td>A paired arm exists but nothing compares it</td>
           <td><code>reckon crew shadow --run &lt;committed run&gt; --session &lt;session&gt; --backend &lt;lane&gt;</code> re-runs a committed run at
           its base on another lane (verified as a dry run on <code>fused-convergence</code>). The outcomes report
-          excludes shadow rows, and nothing sets a primary beside its shadow.</td>
+          excludes shadow rows. Only <code>derive_capabilities</code> pairs a shadow with its primary, for capability qualification.</td>
           <td><code>reckon/crew/picker/outcomes.py</code></td>
         </tr>
       </tbody>
@@ -181,7 +181,7 @@
       <strong>Write paths.</strong> <code>reckon/crew/picker/snapshot.py</code>, <code>reckon/crew/picker/types.py</code>,
       <code>reckon/crew/picker/prompts.py</code>, <code>reckon/crew/picker/templates/questions.jinja</code> and
       <code>tests/test_outcomes_at_requirement.py</code>. §4 and §5 also write <code>snapshot.py</code>, so the three
-      run one at a time, §5 first.
+      run one at a time, §5 first. Two modules already condition outcomes, and neither is read by a pick. <code>reckon/crew/picker/outcomes.py</code> groups routed outcomes by risk for the outcomes report a coordinator reads, reading <code>node_definition.risk</code>, a field dispatch does not write. <code>reckon/crew/lane_evidence.py</code> returns shape-conditioned lane evidence for an orchestrator and deliberately omits gate outcomes. The pick reads its rows once, through <code>_candidates_scan</code>, so the block extends that scan. It reads the requirement from <code>node_definition.capability</code>, which §2 records.
     </p>
     <p>
       <strong>Done when</strong> a test builds ledger rows for two lanes: lane A passes four standard-reasoning rows and fails
@@ -263,69 +263,91 @@
     </p>
 
     <h2 id="s6">§6 — Codex worker time is measured from its rollout receipt</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="deferred" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p>
       <strong>Why.</strong> The lead's direction asks Jev to weigh recent throughput per lane and model. A codex run's
-      <code>worker_seconds</code> is the run's wall time on a normal finish and absent on a stalled one. The stream
-      measures take worker time from event timestamps (<code>cached_stream_timestamp_bounds</code> in
-      <code>reckon/_backends.py</code>), and a codex stream's events carry none: none of 83 codex streams under the crew
-      home has a <code>timestamp</code> field. Nova's codex-lane implement runs this month record
-      <code>stream_events</code> on 6 of 108. So codex throughput is either wall time or unknown, while clive's is
-      measured. Codex's own measurement exists elsewhere: the client rollout receipt carries
-      <code>generation_seconds</code> and <code>machine_seconds</code>, which <code>_apply_receipt_to_throughput</code>
-      folds into a live throughput block. No promoted codex row in nova this month carries <code>machine_seconds</code>,
-      so the receipt does not reach the committed record.
+      <code>worker_seconds</code> is its wall time on a normal finish (<code>wall_fallback</code>) and absent on a stalled
+      one, because codex stream events carry no timestamps: none of 83 codex streams under the crew home has one. Nova's
+      codex-lane implement runs this month record <code>stream_events</code> on 6 of 108. Codex measures its own model
+      span in the client rollout, and promotion already reads that receipt (<code>read_rollout_receipt</code> at
+      <code>reckon/crew/promotion_checks.py:114</code>), but the receipt never reaches a committed row. No promoted codex
+      row in nova this month carries <code>machine_seconds</code>. The cause is the locator: <code>_locate_rollout</code>
+      in <code>reckon/crew/rollout.py</code> searches only <code>~/.codex/sessions</code>. A fenced run writes its rollout
+      under its own run directory, as <code>runs/&lt;run&gt;/codex-home/sessions/</code>; one is present for
+      <code>r-20261016T055657532716-pick-state-render-slow-read</code>. <code>_codex_rollout_candidates</code> in
+      <code>reckon/crew/paid_lanes.py</code> already searches those run homes for its own purpose.
     </p>
     <p>
-      <strong>Deliverable.</strong> At promotion, a codex run whose stream carries no event timestamps takes its
-      <code>worker_seconds</code> from the client rollout receipt's <code>machine_seconds</code>, through the same receipt
-      reader <code>_apply_receipt_to_throughput</code> is fed from. It records <code>worker_seconds_source</code>
-      <code>rollout_receipt</code>, and the promoted throughput block carries the receipt's
-      <code>generation_seconds</code> and <code>machine_seconds</code>. A stalled codex run whose receipt covers it is
-      measured the same way. A run with no readable receipt falls back as today. Claude-format streams are unchanged.
+      <strong>Deliverable.</strong> Locating a session's rollout searches the run's own harness home as well as the main
+      client home. The run-home search has one owner, shared with the paid-lanes reader rather than copied. At promotion,
+      a codex run whose receipt measured its span records <code>worker_seconds</code> as
+      <code>generation_seconds</code> plus <code>machine_seconds</code>: the rollout's own wall span, the same quantity
+      clive's event span measures. It records <code>worker_seconds_source</code> <code>rollout_receipt</code>, and its
+      throughput block carries both figures. A stalled codex run whose receipt covers it is measured the same way. A run
+      with no receipt falls back as today, and claude-format streams are unchanged.
     </p>
     <p>
-      <strong>Write paths.</strong> <code>reckon/crew/promotion_checks.py</code>, <code>reckon/crew/promotion.py</code> and
-      <code>tests/test_codex_worker_time_is_measured.py</code>. First confirm from a real codex run of this week that its
-      rollout receipt is readable at the moment promotion runs: under a fenced run, the rollout lives in that run's own
-      harness home. Cite that run in the test's docstring. If no real run's receipt is readable at promotion, report
-      <code>blocked</code> with what was found, rather than measuring something else.
+      <strong>Write paths.</strong> <code>reckon/crew/rollout.py</code>, <code>reckon/crew/paid_lanes.py</code> (the
+      run-home search only), <code>reckon/crew/promotion_checks.py</code>, <code>reckon/crew/promotion.py</code> and
+      <code>tests/test_codex_worker_time_is_measured.py</code>. The test points the crew home at a temporary directory
+      and places its fixture rollout under a temporary run's <code>codex-home</code>. It never writes under
+      <code>~/.codex</code>. The fixture is copied in shape from the run named above, with its content trimmed, and the
+      test's docstring cites that run.
     </p>
     <p>
-      <strong>Done when</strong> a test promotes a fixture codex run whose stream and rollout receipt are copied in shape
-      from a real codex run, with content trimmed. It finds <code>worker_seconds</code> equal to the receipt's
-      <code>machine_seconds</code> and <code>worker_seconds_source</code> <code>rollout_receipt</code>, on a normal
-      finish and on a stalled one. A codex fixture with no receipt still records <code>wall_fallback</code>, and a
-      claude-format fixture still yields its existing figure. The manifest reports the figure the new path gives for one
-      real codex run of this week, beside that run's recorded wall time. The negative control removes the receipt
-      branch, and the codex fixture must then record <code>wall_fallback</code>. The test files importing <code>promotion_checks.py</code> show no added failure
-      against the base revision.
+      <strong>Done when</strong> the test promotes a fixture codex run whose rollout sits only under its run home. It finds
+      <code>worker_seconds</code> equal to the receipt's <code>generation_seconds</code> plus <code>machine_seconds</code>,
+      <code>worker_seconds_source</code> <code>rollout_receipt</code>, and both figures in the throughput block, on a
+      normal finish and on a stalled one. A codex fixture with no rollout records <code>wall_fallback</code>, and a
+      claude-format fixture yields its existing figure. The paid-lanes reader still finds the same run-home rollouts its
+      existing tests expect. The manifest reports the figure the new path gives for the run named above, beside its
+      recorded wall time. The negative control removes the run-home search, and the fixture must then record
+      <code>wall_fallback</code>. The test files importing <code>rollout.py</code>, <code>paid_lanes.py</code> or
+      <code>promotion_checks.py</code> show no added failure against the base revision.
     </p>
 
     <h2 id="s7">§7 — The outcomes report sets a primary run beside its shadow arm</h2>
-<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="deferred" data-links=""></section>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p>
       <strong>Why.</strong> The lead asked for a matched comparison of Jev's lane against codex on the next deep nodes.
       <code>reckon crew shadow</code> runs the second arm, and its committed row names its primary in
-      <code>lineage.primary_run_id</code>. The outcomes report excludes shadow rows, so neither the coordinator nor Jev
-      can read the pair as a pair.
+      <code>lineage.primary_run_id</code>. <code>derive_capabilities</code> in <code>reckon/capabilities.py</code>
+      already joins each shadow row to its primary for capability qualification, under the sole control predicate
+      <code>ledger.shadow_controlled</code>. That predicate holds only when a pair differs in backend, launch and model
+      alone. The outcomes report a coordinator reads excludes shadow rows, so the pair cannot be read as a pair there.
     </p>
     <p>
-      <strong>Deliverable.</strong> <code>reckon crew pick --outcomes</code> gains a <code>paired_arms</code> block. It
-      has one entry per committed shadow row whose primary is committed, giving each arm's lane, model, route mode,
-      gate, review total, wall seconds, worker seconds and worker-seconds source. A shadow whose primary is not
-      committed is listed under <code>unpaired</code> with the missing primary named.
+      <strong>Deliverable.</strong> The shadow-to-primary join moves out of <code>derive_capabilities</code> into one
+      function in <code>reckon/capabilities.py</code>, which <code>derive_capabilities</code> then calls. Its observations
+      stay unchanged. <code>reckon crew pick --outcomes</code> gains a <code>paired_arms</code> block from the same
+      function, with one entry per committed shadow row whose primary is committed. Each entry carries the
+      <code>controlled</code> verdict and both arms' lane, model, route mode, gate, review total, wall seconds, worker
+      seconds and worker-seconds source. A confounded pair is listed with <code>controlled</code> false, never as a
+      matched one. A shadow whose primary is not committed is listed under <code>unpaired</code>, naming the missing
+      primary.
     </p>
     <p>
-      <strong>Write paths.</strong> <code>reckon/crew/picker/outcomes.py</code> and <code>tests/test_paired_arms_are_reported.py</code>.
+      <strong>Write paths.</strong> <code>reckon/capabilities.py</code>, <code>reckon/crew/picker/outcomes.py</code> and
+      <code>tests/test_paired_arms_are_reported.py</code>.
     </p>
     <p>
-      <strong>Done when</strong> a test builds a primary row and a shadow row naming it, plus a shadow row naming a primary
-      absent from the ledger. The report pairs the first two with both arms' figures and lists the third under
-      <code>unpaired</code>. The existing outcome counts, which exclude shadow rows, are unchanged. The negative control
-      drops the lineage join, and the pair must then be absent. The test files importing <code>outcomes.py</code> show
-      no added failure against the base revision.
+      <strong>Done when</strong> a test builds a primary row and two shadow rows naming it. One shadow's lineage substitutes
+      only backend and model, and the other also substitutes the time budget. A third shadow names a primary absent from
+      the ledger. The report pairs the first shadow with <code>controlled</code> true and the second with
+      <code>controlled</code> false, both with both arms' figures, and lists the third under <code>unpaired</code>.
+      <code>derive_capabilities</code> returns the same shadow observations for these rows as on the base revision, and
+      the existing outcome counts, which exclude shadow rows, are unchanged. The negative control reads
+      <code>controlled</code> as true for every pair, and the second pair's assertion must then fail. The test files
+      importing <code>capabilities.py</code> or <code>outcomes.py</code> show no added failure against the base revision.
     </p>
+
+    <h2 id="s8">§8 — A replayed pick carries the orchestrator&#x27;s assessment</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §2's worker reported that <code>reckon/crew/picker/replay.py</code> rebuilds a <code>PickRequest</code> from a run's <code>node_definition</code> without the <code>orchestrator_assessment</code> §2 now records. A replayed pick therefore weighs the declared capability alone, and a replay meant to show what Jev saw shows less than Jev saw.</p><p><strong>Deliverable.</strong> A replayed pick's request carries the recorded <code>orchestrator_assessment</code>, so its rendered state matches the recorded one in that field.</p><p><strong>Write paths.</strong> <code>reckon/crew/picker/replay.py</code> and <code>tests/test_a_replay_carries_the_assessment.py</code>.</p><p><strong>Done when</strong> a test replays a recorded run whose <code>node_definition</code> carries <code>orchestrator_assessment</code> <code>{"reasoning": "deep"}</code>. The replayed request renders <code>node.orchestrator_assessment</code> equal to it. A recorded run without one renders no such key. The negative control drops the field from the rebuilt request, and the first assertion must then fail. The test files importing <code>replay.py</code> show no added failure against the base revision.</p>
+
+    <h2 id="s9">§9 — A re-served account-surface reading ages like any other reading</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §5 made <code>lane_context._budget_block</code> the one staleness rule, and under it an account-surface reading is never stale by age. That holds at the moment the account is probed, and not after. <code>budget_view</code> caches the composed report on its input files' stamps, and <code>_reage_budget_report</code> re-serves the cached report with every age advanced. If the paid-lanes document stops republishing, its stamp stops moving, and a probed account-surface reading is re-served indefinitely as fresh. It then still feeds the utilisation ceiling, which acts only on fresh readings. A stale exhaustion figure then refuses a lane: the self-sustaining stale hold that the repository's own guidance warns about.</p><p><strong>Deliverable.</strong> An account-surface reading is fresh when probed and stale past the flight's shelf life measured from its probe, like a ledger reading. A document reading keeps the document's own shelf life. The glossary's <code>stale</code> entry states the corrected case.</p><p><strong>Write paths.</strong> <code>reckon/crew/picker/lane_context.py</code>, <code>reckon/crew/picker/prompts.py</code> and <code>tests/test_one_staleness_rule.py</code>. Its account-surface case changes from fresh at any age to stale past the shelf life, a behaviour this section deliberately supersedes. <code>lane-and-model-routing</code> §27 also writes <code>lane_context.py</code> and <code>prompts.py</code>, so this section runs after it.</p><p><strong>Done when</strong> the test finds an account-surface reading 0 s old fresh, and the same reading at 400 s under a 5-minute shelf life stale, on both the candidate and the return-time block. A cached report re-aged by 10 minutes, holding an account-surface reading at 95% utilisation, does not exclude its candidate at the utilisation ceiling. The document and ledger cases from §5 are unchanged. The negative control restores "never stale by age" for account-surface readings, and the 400 s assertion must then fail. The test files importing <code>lane_context.py</code> or <code>snapshot.py</code> show no added failure against the base revision.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
