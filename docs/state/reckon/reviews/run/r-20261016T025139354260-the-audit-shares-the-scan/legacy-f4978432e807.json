@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite: both record completed=true, exit_status=0 and failure_count=0 (suite-base-chunk*.log, suite-head-chunk*.log), so the gains add no failing id over base.",
+  "backend": "local",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/mcp.py:2373",
+    "reckon/resources.py:544",
+    "reckon/resources.py:570",
+    "reckon/serve.py:2173",
+    "reckon/roadmap.py:2534",
+    "reckon/crew/picker/replay.py:63",
+    "reckon/crew/picker/__init__.py:360"
+  ],
+  "completed_at": "2026-10-16T04:42:46.277Z",
+  "dispatched_at": "2026-10-16T02:53:23Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read the delta 366b779831f5d320221107d96a0109c96a432d29..5d8abfaf54cda07525e12164313d3dc1061cfbb2 commit by commit \u2014 one file, reckon/resources.py, one line changed, the resource_scan_scope return annotation from Iterator[list[tuple[Path, str]]] to Iterator[dict[tuple[str, str], list[tuple[Path, str]]]]; the run's earlier commits were reviewed at heads 56563975b and 366b779831f5.",
+    "done_when": "the done_when names tests/test_the_audit_shares_the_scan.py for walk count, findings equality on a clean and on an invalid-resource corpus, suite parity and ruff; the delta adds no gate of its own and the manifest records 6 passed at head-newtest.log plus suite parity and 0 added ruff findings, all still green at head 5d8abfaf54c.",
+    "goal": "the source node goal is to make the audit read its resources through one shared resource scan instead of its own tree walk; this delta is the repair of the prior review's finding, naming at reckon/resources.py:476 the mapping resource_scan_scope yields, so the annotation agrees with the _SCAN_DROPPED record at reckon/resources.py:470.",
+    "manifest": "read run r-20261016T025139354260's manifest.md; it records status complete, head 5d8abfaf54cda07525e12164313d3dc1061cfbb2, the 6-passed gate at head-newtest.log, suite parity across three chunks on each arm, and three negative-control logs.",
+    "write_paths": "the manifest declares reckon/mcp.py, reckon/resources.py, tests/test_the_audit_shares_the_scan.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-audit-shares-the-scan.html; the delta touches only reckon/resources.py, inside that scope."
+  },
+  "justifications": {
+    "durability": "no test or static check fails if the annotation at reckon/resources.py:476 is reverted to Iterator[list[...]] \u2014 pyproject.toml declares no type checker and annotations have no runtime effect, so the correction is unguarded.",
+    "evidence": "the manifest records the node's gate at head-newtest.log (6 passed) with suite parity and ruff, and the delta is a type-only line no runtime gate can observe.",
+    "fit": "reckon/resources.py:476 matches the file's @contextmanager Iterator[...] idiom and the docstring sentence beside it at reckon/resources.py:488.",
+    "goal_fidelity": "reckon/resources.py:476 now declares the yielded mapping, matching the _SCAN_DROPPED type at reckon/resources.py:470 and the docstring at reckon/resources.py:488, completing the shared-scan change.",
+    "reuse": "the delta adds no definition and extends no capability; it corrects the annotation of the existing owner resource_scan_scope at reckon/resources.py:464.",
+    "scope_discipline": "git diff 366b779831f5 5d8abfaf54c --stat names only reckon/resources.py, inside the declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node goal is to make the audit read its resources through one shared resource scan instead of its own tree walk; this delta is the repair of the prior review's finding, naming at reckon/resources.py:476 the mapping resource_scan_scope yields, so the annotation agrees with the _SCAN_DROPPED record at reckon/resources.py:470.\nVERDICT done_when: the done_when names tests/test_the_audit_shares_the_scan.py for walk count, findings equality on a clean and on an invalid-resource corpus, suite parity and ruff; the delta adds no gate of its own and the manifest records 6 passed at head-newtest.log plus suite parity and 0 added ruff findings, all still green at head 5d8abfaf54c.\nVERDICT write_paths: the manifest declares reckon/mcp.py, reckon/resources.py, tests/test_the_audit_shares_the_scan.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-audit-shares-the-scan.html; the delta touches only reckon/resources.py, inside that scope.\nVERDICT manifest: read run r-20261016T025139354260's manifest.md; it records status complete, head 5d8abfaf54cda07525e12164313d3dc1061cfbb2, the 6-passed gate at head-newtest.log, suite parity across three chunks on each arm, and three negative-control logs.\nVERDICT diff: read the delta 366b779831f5d320221107d96a0109c96a432d29..5d8abfaf54cda07525e12164313d3dc1061cfbb2 commit by commit \u2014 one file, reckon/resources.py, one line changed, the resource_scan_scope return annotation from Iterator[list[tuple[Path, str]]] to Iterator[dict[tuple[str, str], list[tuple[Path, str]]]]; the run's earlier commits were reviewed at heads 56563975b and 366b779831f5.\nCALL_SITES: reckon/mcp.py:2373, reckon/resources.py:544, reckon/resources.py:570, reckon/serve.py:2173, reckon/roadmap.py:2534, reckon/crew/picker/replay.py:63, reckon/crew/picker/__init__.py:360\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/resources.py:476 now declares the yielded mapping, matching the _SCAN_DROPPED type at reckon/resources.py:470 and the docstring at reckon/resources.py:488, completing the shared-scan change.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records the node's gate at head-newtest.log (6 passed) with suite parity and ruff, and the delta is a type-only line no runtime gate can observe.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 366b779831f5 5d8abfaf54c --stat names only reckon/resources.py, inside the declared write paths.\nSCORE durability: 12\nJUSTIFICATION durability: no test or static check fails if the annotation at reckon/resources.py:476 is reverted to Iterator[list[...]] \u2014 pyproject.toml declares no type checker and annotations have no runtime effect, so the correction is unguarded.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/resources.py:476 matches the file's @contextmanager Iterator[...] idiom and the docstring sentence beside it at reckon/resources.py:488.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no definition and extends no capability; it corrects the annotation of the existing owner resource_scan_scope at reckon/resources.py:464.",
+  "review_run_id": "legacy-f4978432e807",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "366b779831f5d320221107d96a0109c96a432d29",
+  "reviewed_head_sha": "5d8abfaf54cda07525e12164313d3dc1061cfbb2",
+  "reviewed_run_id": "r-20261016T025139354260-the-audit-shares-the-scan",
+  "reviewer_run_id": "r-20261016T044300425098-review-of-the-audit-shares-the-scan-5d8abfaf54cd",
+  "scores": {
+    "durability": 12,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T04:56:43.599618+00:00",
+  "total": 109
+}

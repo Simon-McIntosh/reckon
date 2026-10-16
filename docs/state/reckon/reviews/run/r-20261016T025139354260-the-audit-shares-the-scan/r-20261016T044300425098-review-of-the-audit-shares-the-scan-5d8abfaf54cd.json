@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite: both record completed=true, exit_status=0 and failure_count=0 across their chunk logs (suite-base-chunk*.log, suite-head-chunk*.log), so head adds no failing id over base.",
+  "backend": "local",
+  "base_log_revision": "dcdde9a8e7cb0a5e0da3ff4cf8de450bb42275d5",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/mcp.py:2373",
+    "reckon/mcp.py:2516",
+    "reckon/doccheck.py:426",
+    "reckon/crew/picker/__init__.py:360",
+    "reckon/roadmap.py:2534",
+    "reckon/serve.py:2173"
+  ],
+  "completed_at": "2026-10-16T04:57:36.118Z",
+  "dispatched_at": "2026-10-16T04:43:45Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "the-audit-shares-the-scan",
+      "recorded_at": "2026-10-16T04:37:38.260719+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/resources.py",
+      "line": "476",
+      "severity": "follow-on",
+      "text": "follow-on: the function annotation still says Iterator[list[tuple[Path, str]]] while resource_scan_scope now yields the dict keyed by (docs_dir, project), so the declared type is wrong for any reader that trusts it."
+    }
+  ],
+  "head_log_revision": "366b779831f5d320221107d96a0109c96a432d29",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit 366b779831f5 by line against its parent 56563975b8b2; four files, +64/-20, changing _SCAN_DROPPED from one scope-wide list to a (docs_dir, project)-keyed dict, the audit's consumption at reckon/mcp.py:2516, one new two-docs-tree test case, and the fragment prose.",
+    "done_when": "the done_when names tests/test_the_audit_shares_the_scan.py for walk count, findings equality on a clean and on an invalid-resource corpus, suite parity and ruff; the file now carries 6 cases and the manifest records 6 passed at head (head-newtest.log) plus three negative controls, the single-drop-record one being this delta's guard.",
+    "goal": "the source node goal is to make the audit read its resources through one shared resource scan instead of its own tree walk, and this delta keeps the record that scan shares keyed per docs tree; reckon/resources.py:470 keys _SCAN_DROPPED by (str(docs_dir), project), matching the scan cache at reckon/resources.py:507, and reckon/mcp.py:2516 reads it back with .get((str(docs_dir), project), []).",
+    "manifest": "read run r-20261016T025139354260's manifest.md; it records status complete, commit 366b779831f5, the 6-passed gate at head-newtest.log, six suite chunks at 0 failures, and three negative-control logs including negative-control-single-drop-record.log.",
+    "write_paths": "the manifest's declared paths are reckon/mcp.py, reckon/resources.py, tests/test_the_audit_shares_the_scan.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-audit-shares-the-scan.html; the delta touches exactly those four, with docs/figures/ unused."
+  },
+  "justifications": {
+    "durability": "the two-docs-tree case at tests/test_the_audit_shares_the_scan.py:227 reddens on the single-drop-record mutation (negative-control-single-drop-record.log, 1 failed, its seen[second] assert receiving the first tree's message), so it fails if the fix regresses.",
+    "evidence": "the manifest records 6 passed at head (head-newtest.log) and the three negative-control logs, and I re-ran tests/test_the_audit_shares_the_scan.py at head 366b77983 and got 6 passed.",
+    "fit": "the dict-keyed record at reckon/resources.py:470 follows the surrounding idiom, but the resource_scan_scope return annotation at reckon/resources.py:476 still reads Iterator[list[tuple[Path, str]]] while it now yields a dict.",
+    "goal_fidelity": "reckon/resources.py:470 keys the dropped record by (docs_dir, project) as the scan cache at reckon/resources.py:507 is, so the shared-scan read no longer crosses docs trees.",
+    "reuse": "the delta extends the owner reckon/resources.py:463 resource_scan_scope and its _SCAN_DROPPED record rather than forking a second mechanism, and my search over reckon/ found no other dropped-file owner.",
+    "scope_discipline": "git diff 56563975b 366b77983 --stat names only reckon/mcp.py, reckon/resources.py, tests/test_the_audit_shares_the_scan.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-audit-shares-the-scan.html, all inside the declared scope."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node goal is to make the audit read its resources through one shared resource scan instead of its own tree walk, and this delta keeps the record that scan shares keyed per docs tree; reckon/resources.py:470 keys _SCAN_DROPPED by (str(docs_dir), project), matching the scan cache at reckon/resources.py:507, and reckon/mcp.py:2516 reads it back with .get((str(docs_dir), project), []).\nVERDICT done_when: the done_when names tests/test_the_audit_shares_the_scan.py for walk count, findings equality on a clean and on an invalid-resource corpus, suite parity and ruff; the file now carries 6 cases and the manifest records 6 passed at head (head-newtest.log) plus three negative controls, the single-drop-record one being this delta's guard.\nVERDICT write_paths: the manifest's declared paths are reckon/mcp.py, reckon/resources.py, tests/test_the_audit_shares_the_scan.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-audit-shares-the-scan.html; the delta touches exactly those four, with docs/figures/ unused.\nVERDICT manifest: read run r-20261016T025139354260's manifest.md; it records status complete, commit 366b779831f5, the 6-passed gate at head-newtest.log, six suite chunks at 0 failures, and three negative-control logs including negative-control-single-drop-record.log.\nVERDICT diff: read commit 366b779831f5 by line against its parent 56563975b8b2; four files, +64/-20, changing _SCAN_DROPPED from one scope-wide list to a (docs_dir, project)-keyed dict, the audit's consumption at reckon/mcp.py:2516, one new two-docs-tree test case, and the fragment prose.\nCALL_SITES: reckon/mcp.py:2373, reckon/mcp.py:2516, reckon/doccheck.py:426, reckon/crew/picker/__init__.py:360, reckon/roadmap.py:2534, reckon/serve.py:2173\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/resources.py:470 keys the dropped record by (docs_dir, project) as the scan cache at reckon/resources.py:507 is, so the shared-scan read no longer crosses docs trees.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records 6 passed at head (head-newtest.log) and the three negative-control logs, and I re-ran tests/test_the_audit_shares_the_scan.py at head 366b77983 and got 6 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 56563975b 366b77983 --stat names only reckon/mcp.py, reckon/resources.py, tests/test_the_audit_shares_the_scan.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-audit-shares-the-scan.html, all inside the declared scope.\nSCORE durability: 19\nJUSTIFICATION durability: the two-docs-tree case at tests/test_the_audit_shares_the_scan.py:227 reddens on the single-drop-record mutation (negative-control-single-drop-record.log, 1 failed, its seen[second] assert receiving the first tree's message), so it fails if the fix regresses.\nSCORE fit: 17\nJUSTIFICATION fit: the dict-keyed record at reckon/resources.py:470 follows the surrounding idiom, but the resource_scan_scope return annotation at reckon/resources.py:476 still reads Iterator[list[tuple[Path, str]]] while it now yields a dict.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta extends the owner reckon/resources.py:463 resource_scan_scope and its _SCAN_DROPPED record rather than forking a second mechanism, and my search over reckon/ found no other dropped-file owner.\nFINDING reckon/resources.py:476 follow-on: the function annotation still says Iterator[list[tuple[Path, str]]] while resource_scan_scope now yields the dict keyed by (docs_dir, project), so the declared type is wrong for any reader that trusts it.\n",
+  "review_run_id": "r-20261016T044300425098-review-of-the-audit-shares-the-scan-5d8abfaf54cd",
+  "reviewed_base_sha": "56563975b8b2fd9237d3968ef31c86b813e76878",
+  "reviewed_head_sha": "366b779831f5d320221107d96a0109c96a432d29",
+  "reviewed_run_id": "r-20261016T025139354260-the-audit-shares-the-scan",
+  "reviewer_run_id": "r-20261016T042657960609-review-of-the-audit-shares-the-scan-366b779831f5",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T04:34:13.551699+00:00",
+  "total": 112
+}
