@@ -2061,7 +2061,11 @@ def _committed_review_rounds(
 
 
 def _delivered_review_payloads_for_commit(
-    record: Mapping[str, Any], project: str, run_id: str
+    record: Mapping[str, Any],
+    project: str,
+    run_id: str,
+    *,
+    root: str | Path | None = None,
 ) -> list[dict[str, Any]]:
     """Every stored review record a promoting review run should commit.
 
@@ -2096,6 +2100,11 @@ def _delivered_review_payloads_for_commit(
     the derived legacy id of its own bytes, the same derivation the host importer
     uses, and marked ``review_run_id_source: derived`` — so every round of the
     subject lands rather than surviving only in the staging store.
+
+    The committed tree a round is compared against is the caller's ``root`` —
+    the same root the landing writes into — so the already-committed skip and
+    the write agree on one tree even when that root differs from the run's own
+    repository; a caller that names no root falls back to the record's repo.
 
     Two staged rounds are the same round and are not filed twice. A reviewer
     writes its one record to both of the paths its dispatch grants, so the same
@@ -2146,8 +2155,12 @@ def _delivered_review_payloads_for_commit(
         except OSError:
             delivered_bytes = None
     reviewed_run_id = recovery._resolved_reviewed_run_id(record, project)
+    # The rounds are read from the same tree the caller will write them into,
+    # so the already-committed skip sees what the landing has already stored.
+    # A caller that names no root falls back to the run's own repository.
+    rounds_root = root if root is not None else record.get("repo")
     committed_ids, committed_heads = (
-        _committed_review_rounds(project, reviewed_run_id, record.get("repo"))
+        _committed_review_rounds(project, reviewed_run_id, rounds_root)
         if reviewed_run_id
         else (set(), set())
     )

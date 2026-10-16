@@ -107,17 +107,21 @@ def _review_pointer(
     *,
     run_id: str,
     declared: list[Path],
+    repo: Path | None = None,
 ) -> None:
     manifest = tmp_path / f"{run_id}.manifest.md"
     manifest.write_text(_manifest_body(), encoding="utf-8")
+    # ``repo`` names the checkout the run's own record carries, which a landing
+    # given an explicit root may differ from.
+    run_repo = repository if repo is None else repo
     _write_json(
         pointer_path(run_id),
         {
             "run_id": run_id,
             "project": PROJECT,
-            "repo": str(repository),
-            "worktree": str(repository),
-            "base_sha": _git(repository, "rev-parse", "HEAD"),
+            "repo": str(run_repo),
+            "worktree": str(run_repo),
+            "base_sha": _git(run_repo, "rev-parse", "HEAD"),
             "launch": "in-harness",
             "backend": "native",
             "created_at": DISPATCH_TS,
@@ -163,6 +167,23 @@ def _committed_run_dir(repository: Path) -> Path:
     committed = review_module.committed_review_root(PROJECT, root=repository)
     assert committed is not None
     return committed / review_module.COMMITTED_RUN_DIRNAME / SUBJECT
+
+
+def _other_checkout(tmp_path: Path, name: str) -> Path:
+    """A second checkout: a git repository holding no committed review tree."""
+    root = tmp_path / name
+    keep = root / "docs" / "state" / PROJECT / ".keep"
+    keep.parent.mkdir(parents=True)
+    keep.write_text("", encoding="utf-8")
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+        ("add", "docs"),
+        ("commit", "-q", "-m", "test: seed a second checkout"),
+    ):
+        _git(root, *arguments)
+    return root
 
 
 # One record, both granted paths -> one committed round, under the run's id ----
@@ -258,6 +279,56 @@ def test_a_disposition_survives_a_later_promotion(
     # head, and the second round is still staged for the subject.
     later = _write_staged(_complete_review(HEAD_THREE), head=HEAD_THREE)
     _review_pointer(repository, tmp_path, run_id=LATER_REVIEW, declared=[later])
+    crew.complete(LATER_REVIEW, gate="passed", root=repository)
+
+    after = _read(committed_round)
+    assert after[review_module.FINDING_DISPOSITIONS_KEY] == {
+        "0": {"kind": "folded", "recorded_at": "2026-10-06T12:30:00+00:00"}
+    }
+
+
+# The ledger root is the tree the skip reads, not the run's own repository -----
+
+
+def test_a_disposition_survives_when_the_ledger_root_differs_from_the_run_repo(
+    repository: Path, tmp_path: Path
+) -> None:
+    # The landing is committed in ``repository`` — the tree ``crew complete`` is
+    # given — while the run's own record names another checkout. The
+    # already-committed skip has to read the tree the write targets: read
+    # against the run's repository instead and the round committed here looks
+    # absent, is filed a second time, and its disposition is dropped.
+    run_repo = _other_checkout(tmp_path, "run-checkout")
+    _write_run_record(
+        repository, SUBJECT, dispatched=DISPATCH_TS, completed=COMPLETION_TS
+    )
+    record = _complete_review(HEAD_ONE)
+    plain = _write_staged(record)
+    sibling = _write_staged(record, head=HEAD_ONE)
+    other = _write_staged(_complete_review(HEAD_TWO), head=HEAD_TWO)
+    derived = review_module.derived_legacy_review_run_id(other.read_bytes())
+    _review_pointer(
+        repository,
+        tmp_path,
+        run_id=FIRST_REVIEW,
+        declared=[plain, sibling],
+        repo=run_repo,
+    )
+    crew.complete(FIRST_REVIEW, gate="passed", root=repository)
+
+    committed_round = _committed_run_dir(repository) / f"{derived}.json"
+    committed = _read(committed_round)
+    committed[review_module.FINDING_DISPOSITIONS_KEY] = {
+        "0": {"kind": "folded", "recorded_at": "2026-10-06T12:30:00+00:00"}
+    }
+    committed_round.write_text(json.dumps(committed), encoding="utf-8")
+    _git(repository, "add", str(committed_round.relative_to(repository)))
+    _git(repository, "commit", "-q", "-m", "chore: record a disposition")
+
+    later = _write_staged(_complete_review(HEAD_THREE), head=HEAD_THREE)
+    _review_pointer(
+        repository, tmp_path, run_id=LATER_REVIEW, declared=[later], repo=run_repo
+    )
     crew.complete(LATER_REVIEW, gate="passed", root=repository)
 
     after = _read(committed_round)
