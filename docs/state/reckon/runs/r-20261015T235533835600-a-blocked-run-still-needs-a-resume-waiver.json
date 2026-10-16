@@ -1,0 +1,404 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "d10e1af8ea9fcc87ff6f572dd9f808adb3c51ec0",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 2356495,
+      "input_tokens_cumulative": 2356495,
+      "output_tokens": 5254,
+      "output_tokens_cumulative": 5254,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 7,
+    "files": 1,
+    "removed": 4
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 943,
+        "name": "external_wait",
+        "path": "reckon/crew/recovery_liveness.py"
+      },
+      "run_function": {
+        "line": 87,
+        "name": "classify_pointer",
+        "path": "reckon/crew/recovery_classification.py"
+      },
+      "window_line": 382
+    }
+  ],
+  "commit_list_shortfall": {
+    "declared": 3,
+    "kind": "presented_commits_subset_of_manifest",
+    "message": "run 'r-20261015T235533835600-a-blocked-run-still-needs-a-resume-waiver' has a passing gate presenting 1 commit(s) of the 3 its manifest declares; missing: c662a4341c77b3b7c7e0461bda86e7fe164ae2f2, d0ccc51c372019fdd7507bd92359acbbf7e190e6. The out-of-scope boundary check runs against the presented commits, so an incomplete presentation narrows it. This is a report, not a refusal — present the full list, or the boundary check may not cover the node's work",
+    "missing": [
+      "c662a4341c77b3b7c7e0461bda86e7fe164ae2f2",
+      "d0ccc51c372019fdd7507bd92359acbbf7e190e6"
+    ],
+    "presented": 1
+  },
+  "commit_resolution": null,
+  "commits": [
+    "4f1d9c49864cf70521cead1fb57b08f4f98c7709"
+  ],
+  "completed_at": "2026-10-16T00:45:45.734Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-15T23:56:35Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest in",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "cd /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/a-blocked-run-still-needs-a-resume-waiver && PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/a-blocked-run-still-needs-a-resume-waiver /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_promotion.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T235533835600-a-blocked-run-still-needs-a-resume-waiver/gate/promotion-head.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.8043478260869565,
+    "plan": "the-monitor-shows-the-work-it-watches",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane": "clive",
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-16T00:55:40.604814+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-15T23:55:40Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 1,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 3,
+    "headroom": 8,
+    "mean_context": 120000,
+    "observed_at": "2026-10-15T23:55:50Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 1,
+      "aggregate_tokens_per_second": 261.02,
+      "detail": "",
+      "mean_tokens_per_second": 72.505,
+      "observed_at": "2026-10-15T23:55:50Z",
+      "runs": 3.6,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-16T00:45:45.734Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T235533835600-a-blocked-run-still-needs-a-resume-waiver/manifest.md",
+  "member": "disposable-r-20261015T235533835600-a-blocked-run-still-needs-a-resume-waiver",
+  "model_key": "flash",
+  "negative_control": {
+    "reason": "node-writes-no-test-path",
+    "verdict": "exempt"
+  },
+  "no_commit": null,
+  "node": "a-blocked-run-still-needs-a-resume-waiver",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 650,
+          "cached_input_tokens": 443114,
+          "input_tokens": 443766,
+          "output_tokens": 854,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 444620,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "f653840f-3ca8-4792-819c-9ee9708bdbac",
+      "session_id": "f653840f-3ca8-4792-819c-9ee9708bdbac"
+    },
+    "done_when": "tests/test_crew_promotion.py::test_a_session_only_in_the_stream_also_refuses and tests/test_crew_promotion.py::test_complete_command_accepts_a_reasoned_resume_path_waiver pass at head unchanged; tests/test_a_delivered_run_waits_for_the_reflex.py passes unchanged; the manifest records the classification the first test's fixture run reads at the first parent of e22d78980 and at head; the test files importing reckon/crew/promotion_checks.py or reckon/crew/recovery_classification.py give the same pass and fail ids at head as at base apart from those two tests now passing, run with /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest in foreground chunks of about ten files, each to a log under the run directory ending in EXIT=; ruff check and ruff format --check add no findings on the changed Python files against base",
+    "estimated_hours": null,
+    "goal": "Restore the resume-path refusal for a blocked run whose session is recoverable while the delivered-run hold reads it as running",
+    "id": "a-blocked-run-still-needs-a-resume-waiver",
+    "images": [],
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-15T23:55:40Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 1,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 3,
+      "headroom": 8,
+      "mean_context": 120000,
+      "observed_at": "2026-10-15T23:55:50Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 1,
+        "aggregate_tokens_per_second": 261.02,
+        "detail": "",
+        "mean_tokens_per_second": 72.505,
+        "observed_at": "2026-10-15T23:55:50Z",
+        "runs": 3.6,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T235533835600-a-blocked-run-still-needs-a-resume-waiver/manifest.md",
+    "negative_control": "with the fix reverted, the two test_crew_promotion.py tests must fail again",
+    "plan": "the-monitor-shows-the-work-it-watches",
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§35",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/promotion_checks.py",
+      "reckon/crew/recovery_classification.py",
+      "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-blocked-run-still-needs-a-resume-waiver.html",
+      "docs/figures/the-monitor-shows-the-work-it-watches/a-blocked-run-still-needs-a-resume-waiver"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 2647526.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "lift_id": null,
+    "member": null,
+    "node": "a-blocked-run-still-needs-a-resume-waiver",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-15T23:56:06.562344+00:00",
+    "score": 0.7375,
+    "session": null,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout in pick:snapshot",
+    "family": null,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 5005.559,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {
+      "budget-snapshot": 648.667,
+      "context-estimate": 26.524,
+      "records": 940.393,
+      "verdict-inputs": 1333.592
+    }
+  },
+  "plan": "the-monitor-shows-the-work-it-watches",
+  "plan_impl_at_dispatch": 0.8043478260869565,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "4f1d9c49864cf70521cead1fb57b08f4f98c7709",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "d10e1af8ea9fcc87ff6f572dd9f808adb3c51ec0",
+    "reviewed_head_sha": "4f1d9c49864cf70521cead1fb57b08f4f98c7709",
+    "scores": {
+      "durability": 18,
+      "evidence": 17,
+      "fit": 18,
+      "goal_fidelity": 19,
+      "reuse": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 112
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "shadow",
+  "run_id": "r-20261015T235533835600-a-blocked-run-still-needs-a-resume-waiver",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§35",
+  "session": "f653840f-3ca8-4792-819c-9ee9708bdbac",
+  "session_harness": "claude",
+  "session_id": "d99a0e6d-45db-4fa8-abac-14376f5c98f6",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 0,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 14444477,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 360.918,
+    "generated_tokens": 60330,
+    "generation_seconds": 78.419,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 80.5,
+    "machine_seconds": 282.499,
+    "peak_input_tokens": 185312,
+    "tokens_per_second": 769.33,
+    "wall_tokens_per_second": 167.16
+  },
+  "time_budget": "60m",
+  "tool_steps": 101.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 2950,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-10-16T00:45:50Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-16T00:39:40Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261015T235533835600-a-blocked-run-still-needs-a-resume-waiver",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 11168,
+    "worker_pid": 1997290
+  },
+  "worker_seconds": 2912,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
