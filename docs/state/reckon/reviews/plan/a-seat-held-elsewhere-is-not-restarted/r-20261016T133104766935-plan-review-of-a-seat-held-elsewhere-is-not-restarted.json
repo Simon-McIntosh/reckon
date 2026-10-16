@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T13:41:12.927Z",
+  "dispatched_at": "2026-10-16T13:31:49Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html:215",
+      "id": "done_when-1",
+      "reason": "the deliverable has two parts and the gate measures only one, so the node can be closed while half its deliverable is undone; adding a clause the unification must satisfy (the predicate defined once and referenced by both builders) closes it.",
+      "text": "\u00a721's done-when requires only that the file \"holds a case for the inline-rename branch, and every test in the file passes, the inventory test included with its expected set unchanged\"; it names no check that the exclusive-create predicate was actually collapsed from its two copies at `reckon/interface_counts.py:319` and `:382` to one, so a worker may add the test, leave the duplication untouched, and still pass every clause \u2014 closing the first of \u00a720's two follow-ons unaddressed",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8c6fb92f9d6230dd6273f086114ec66fffd3674c77c8b1b6648208043cabc3d2",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 98,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T133104766935-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "1c19843d865ef615145795dc6d8ac97ee2690fb5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited module `reckon/interface_counts.py` and test `tests/test_staged_write_inventory.py` both exist, and the new document-level evidence href resolves to `#s20-claim-move-aside-not-staged` in the landed archive.",
+    "done_when": "a finding \u2014 \u00a721's done-when measures only its second deliverable (the new inline-rename case and its control) and carries no clause that the duplicated exclusive-create predicate was collapsed to one.",
+    "evidence_paths": "pass \u2014 the negative control is logged under the run directory, a durable path a later reader can open, as every other section in this plan does.",
+    "naming": "pass \u2014 \u00a721 introduces no plan label, stage name, ticket number or version tag; its prose names mechanisms (`exclusive_creators`, `not_created`, `local - callers_not_staging[name]`).",
+    "reasoning": "pass \u2014 the stated root cause (a predicate spelled twice, and an untested inline branch) matches the \u00a720 review it cites and the code at `interface_counts.py:319`, `:362` and `:382`; the mechanism (a single predicate plus a new test case) can produce the done-when, and the test runs on the real path (`_staged_writes` over `tests/test_staged_write_inventory.py`).",
+    "single_goal": "pass \u2014 \u00a721's two items (collapse the duplicated predicate, add the inline-branch case) serve one goal, the delegated move-aside exemption expressed once and covered on both branches, and both are closeable on one verdict once the done-when clause is added.",
+    "wiring": "pass \u2014 \u00a721 is declared `implementable` and the sole open followup `f-ashenr-021` (`plan.html:267`) recommends `/reckon-build a-seat-held-elsewhere-is-not-restarted \u00a721`; \u00a720 it depends on is `done`, so no gate is owed."
+  },
+  "section_digests": {
+    "_document": "63f581e1ae7e5fb42ae9a70b53a20ba9cdb90b5a0eda5572bb5be6a69a853c53",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s10": "fd9ced512f1fc6a0610cb111ec8c734e3c55a84ea11034055f5f1c9e60e0c649",
+    "s11": "9d7552bb9a0f7179067d09a67e819e7194fbbac1e34cf450bb6dd2631508389d",
+    "s12": "41b7e2f138ff584e94cdef995cae4ab65e47e6e0efb43dc6d30b0045664f611d",
+    "s13": "441358f17906d8fa159ba5911fc62cfb32cabff650e9ae63b1300701b43f7b6d",
+    "s14": "15dd48418b8a42e818c6a6c93d4914efb531dc5439e368a148fd7168b3a89faa",
+    "s15": "707b8d39391cbd7e59f3dbd9cc4748c655d8870e48f237e84889148855f5b9e7",
+    "s16": "e185fa1e0f4aa25f213b2df34164fcfb48751f19156d05a48ec1118841ee463d",
+    "s17": "73a4699a4193793731da87cf3a489de8f9e91df7e596e68dad4897797177cb9e",
+    "s18": "8999758c87844624774b694fe81fcd076a62c6ef3bccc2334956bdae4b71957d",
+    "s19": "05cfac9a876e27aee75692ed6d7d2815bd728a33a3afadca32fcaaec730bcfc5",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s20": "cd0a0b3f8567f97846d7714a748891cd6d09203129332088a3be394654535d12",
+    "s21": "c59c8c937f3543cb885fda36a8b76d9a5c3384d3dd9819139b7ba468770684f6",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "96d5fc1c72a25970cab856a7dde0a3cab839fd87c83786b7b49ffc4c1dabb1ab",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad",
+    "s7": "d3e16f60d17ef3ee4666f9cd189aa6cd8e26f038173b65ee34b68f3f2cd822e7",
+    "s8": "b41130ef26282f759c1b7be0de0136701972d055ed7878e2f2d9cd21c96b4f63",
+    "s9": "a2cb7135c4bd3f1439c3ec948d6146c2f5b7527da59b1bbd4c7ce4c141ec3055"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T13:50:34.126912+00:00"
+}

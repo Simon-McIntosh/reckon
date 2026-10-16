@@ -26,7 +26,7 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.99">
-<meta name="plan-version" content="135">
+<meta name="plan-version" content="136">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -1961,6 +1961,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-s9-blast-radius" data-who="reckon-build" data-when="2026-10-16T12:10:00Z">
     <div class="r-comment-body"><p><strong>Measured blast radius</strong> (from the causing session's evidence): 648 run-id entries under the scratch root before the <code>rm</code>, 40 after, so 609 deleted. Of the 609, three belonged to non-terminal runs: the nova <code>fine-grid-convergence</code> run and the two blocked imas-codex <code>shc-*</code> runs. Those are the three the coordinator recreated. The rest were leftover scratch of finished runs. nova found no impact on its run, because its jobs read from GPFS and make their own temporary directories on the compute node. The evidence is in <code>~/.config/reckon/crew/reports/reckon/study/jev-wave-suite-delta/incident/</code>: <code>scratch-before.txt</code>, <code>scratch-after.txt</code>, <code>scratch-deleted.txt</code> and the pre-deletion root listing.</p><p>Contributing cause: the worker's brief told it to use <code>git worktree add</code>, which its fence refuses because the main repository's <code>.git</code> is read-only. Refused there, it improvised an extract-and-clean path in the shared root. The causing run was promoted as failed (work-rejected) with the incident in its outcome.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261016T133754296743-review-of-a-worker-cannot-remove-another-runs-scratch-86e937e476a7" data-who="reckon-build" data-when="2026-10-16T13:47:24.960Z">
+    <div class="r-comment-body"><p>reviewed run r-20261016T131016859512-a-worker-cannot-remove-another-runs-scratch (head 86e937e476a7, base 38e6b14ad) as 115/120: goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 20; the fence seals the shared scratch root and re-binds only the run&#x27;s own scratch, the executed negative control reddens the sibling-removal test, and base==head importer arms carry 0 added failures; no blocking findings.</p></div>
 </div>
 </section>
 </main>

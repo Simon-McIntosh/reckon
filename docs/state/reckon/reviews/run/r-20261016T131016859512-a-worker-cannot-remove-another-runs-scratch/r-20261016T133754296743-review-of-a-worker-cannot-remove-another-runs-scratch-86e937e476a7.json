@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite gate logs and their arm logs: baseline arm logs base-arm-1/2/3.log (rev 38e6b14ad) report 101 + 56 + 66 = 223 passed, 0 failed, EXIT=0 each, and after arm logs head-arm-1/2/3.log (rev 86e937e47) report 101 + 56 + 66 = 0 failed, EXIT=0 each; the manifest's baseline_suite and after_suite JSON each record failure_count 0 and failure_ids [], so the head-minus-base failure set is empty. The instrument saw tests (nonzero pass counts on both arms), so the zero is an absence observed, not an unread log.",
+  "base_log_revision": "38e6b14ad38fd0367b310ecae4974dc8829fe032",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/_backends.py:2214 fence_argv (the single fence application, all dialects and entry points)",
+    "reckon/crew/dispatch.py:1893 _fence_write_roots (fresh dispatch)",
+    "reckon/crew/dispatch_sessions.py:1143 _fence_write_roots (resume)",
+    "reckon/crew/dispatch_sessions.py:1595 _fence_write_roots (lane change)",
+    "reckon/crew/dispatch_launch.py:897 ensure_worker_scratch (creates the own scratch dir the seal re-binds)"
+  ],
+  "completed_at": "2026-10-16T13:47:24.960Z",
+  "dispatched_at": "2026-10-16T13:38:27Z",
+  "findings": [],
+  "head_log_revision": "86e937e476a7e65c00c40e4ef56613017f30fcd5",
+  "item_aggregate": 115,
+  "item_verdicts": {
+    "diff": "read commit by commit against 38e6b14ad; 86e937e47 adds worker_scratch_seal_root and the seal composition in reckon/_worker_fence.py, appends _run_scratch_directory(run_directory) to _fence_write_roots in reckon/crew/dispatch_admission.py, and adds the 3-test file; no other path changed.",
+    "done_when": "the done_when asks the test to find a --ro-bind of the scratch root followed by a --bind of the run's own scratch, an executed fenced sibling rm that exits non-zero with the sibling present while the own write/delete lands, a negative control that reddens under the strip mutation, base==head importer arms, and no ruff findings added; the manifest records the gate's 3 passed EXIT=0 (gate-new-test.log), the negative control's 1 failing id EXIT=1 (negative-control.log), 223-passed base and head arms, and ruff clean with one pre-existing base finding.",
+    "goal": "the node's goal is that the fence seals the worker scratch root read-only and re-binds only the run's own scratch directory writable; reckon/_worker_fence.py:1110 worker_scratch_seal_root returns the shared root when a granted root lies inside it, fence_argv appends it to the protected set at :1225 and creates it first at :1219, and the existing grant loop at :1250 re-binds only the run's own scratch directory writable, so sibling runs' scratch is sealed read-only while /tmp outside the root is untouched.",
+    "manifest": "read; it records the 3-passed gate with its log, the red negative control with its failing id and exit code, the three base and three head arm logs with their pass counts, the ruff head-vs-base comparison, and states the changed paths and the landed fence design.",
+    "write_paths": "the manifest declares reckon/_worker_fence.py, reckon/crew/dispatch_admission.py and tests/test_a_worker_cannot_remove_another_runs_scratch.py (the fragment and figure paths carry no file because the done-when names no artifact); git show --stat over 86e937e47 touches exactly those three Python files, all inside the declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_cannot_remove_another_runs_scratch.py:228 reddens under the declared strip mutation (negative-control.log) because the fenced sibling rm then exits 0, and :164 and :191 redden if the seal or the _fence_write_roots hand-off is removed, so the guards fail on the regressions they claim.",
+    "evidence": "gate-new-test.log names revision 86e937e47 and reports 3 passed EXIT=0, negative-control.log records the strip mutation reddening test_a_fenced_run_cannot_remove_a_siblings_scratch at 1 failed EXIT=1, and base-arm-1/2/3.log and head-arm-1/2/3.log agree 223 passed with 0 failures on each arm.",
+    "fit": "reckon/_worker_fence.py:1110 follows the module's lazy-import and small-helper idiom beside worktree_git_write_roots at :1064, and no added name carries a plan, ticket or stage label.",
+    "goal_fidelity": "reckon/_worker_fence.py:1225 seals the shared root among the protected paths and :1250's existing grant loop re-opens only the run's own scratch directory writable, exactly the deliverable the goal names.",
+    "reuse": "the seal extends the module's existing protected-read-only owner protected_read_only_binds at reckon/_worker_fence.py:1000 and the existing root owner worker_scratch_root at reckon/crew/dispatch_launch.py:704 rather than forking a sealing mechanism, and _fence_write_roots extends the one function every fenced launch already composes its roots through.",
+    "scope_discipline": "git show --stat 86e937e47 lists only reckon/_worker_fence.py, reckon/crew/dispatch_admission.py and tests/test_a_worker_cannot_remove_another_runs_scratch.py, every one inside the manifest's declared write paths, and the change carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the fence seals the worker scratch root read-only and re-binds only the run's own scratch directory writable; reckon/_worker_fence.py:1110 worker_scratch_seal_root returns the shared root when a granted root lies inside it, fence_argv appends it to the protected set at :1225 and creates it first at :1219, and the existing grant loop at :1250 re-binds only the run's own scratch directory writable, so sibling runs' scratch is sealed read-only while /tmp outside the root is untouched.\nVERDICT done_when: the done_when asks the test to find a --ro-bind of the scratch root followed by a --bind of the run's own scratch, an executed fenced sibling rm that exits non-zero with the sibling present while the own write/delete lands, a negative control that reddens under the strip mutation, base==head importer arms, and no ruff findings added; the manifest records the gate's 3 passed EXIT=0 (gate-new-test.log), the negative control's 1 failing id EXIT=1 (negative-control.log), 223-passed base and head arms, and ruff clean with one pre-existing base finding.\nVERDICT write_paths: the manifest declares reckon/_worker_fence.py, reckon/crew/dispatch_admission.py and tests/test_a_worker_cannot_remove_another_runs_scratch.py (the fragment and figure paths carry no file because the done-when names no artifact); git show --stat over 86e937e47 touches exactly those three Python files, all inside the declared write paths.\nVERDICT manifest: read; it records the 3-passed gate with its log, the red negative control with its failing id and exit code, the three base and three head arm logs with their pass counts, the ruff head-vs-base comparison, and states the changed paths and the landed fence design.\nVERDICT diff: read commit by commit against 38e6b14ad; 86e937e47 adds worker_scratch_seal_root and the seal composition in reckon/_worker_fence.py, appends _run_scratch_directory(run_directory) to _fence_write_roots in reckon/crew/dispatch_admission.py, and adds the 3-test file; no other path changed.\nCALL_SITES: reckon/_backends.py:2214 fence_argv (the single fence application, all dialects and entry points), reckon/crew/dispatch.py:1893 _fence_write_roots (fresh dispatch), reckon/crew/dispatch_sessions.py:1143 _fence_write_roots (resume), reckon/crew/dispatch_sessions.py:1595 _fence_write_roots (lane change), reckon/crew/dispatch_launch.py:897 ensure_worker_scratch (creates the own scratch dir the seal re-binds)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:1225 seals the shared root among the protected paths and :1250's existing grant loop re-opens only the run's own scratch directory writable, exactly the deliverable the goal names.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-new-test.log names revision 86e937e47 and reports 3 passed EXIT=0, negative-control.log records the strip mutation reddening test_a_fenced_run_cannot_remove_a_siblings_scratch at 1 failed EXIT=1, and base-arm-1/2/3.log and head-arm-1/2/3.log agree 223 passed with 0 failures on each arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 86e937e47 lists only reckon/_worker_fence.py, reckon/crew/dispatch_admission.py and tests/test_a_worker_cannot_remove_another_runs_scratch.py, every one inside the manifest's declared write paths, and the change carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_worker_cannot_remove_another_runs_scratch.py:228 reddens under the declared strip mutation (negative-control.log) because the fenced sibling rm then exits 0, and :164 and :191 redden if the seal or the _fence_write_roots hand-off is removed, so the guards fail on the regressions they claim.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/_worker_fence.py:1110 follows the module's lazy-import and small-helper idiom beside worktree_git_write_roots at :1064, and no added name carries a plan, ticket or stage label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the seal extends the module's existing protected-read-only owner protected_read_only_binds at reckon/_worker_fence.py:1000 and the existing root owner worker_scratch_root at reckon/crew/dispatch_launch.py:704 rather than forking a sealing mechanism, and _fence_write_roots extends the one function every fenced launch already composes its roots through.\n",
+  "review_run_id": "r-20261016T133754296743-review-of-a-worker-cannot-remove-another-runs-scratch-86e937e476a7",
+  "reviewed_base_sha": "38e6b14ad38fd0367b310ecae4974dc8829fe032",
+  "reviewed_head_sha": "86e937e476a7e65c00c40e4ef56613017f30fcd5",
+  "reviewed_run_id": "r-20261016T131016859512-a-worker-cannot-remove-another-runs-scratch",
+  "role": "review",
+  "rubric": "node",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T13:48:00.000000+00:00",
+  "total": 115
+}
