@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T14:43:50.595Z",
+  "dispatched_at": "2026-10-16T14:30:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:135",
+      "id": "reasoning-1",
+      "reason": "the sentence is the justification for treating a quiet-node run as decisive, and its premise is false against the plan's own record, so the reason the section gives for re-measuring on a quiet node has to be restated (the recent misses were load-affected; the 2026-10-12 misses were not).",
+      "text": "the changed done-when says \"Earlier figures that miss these targets were taken on the loaded shared fleet node, so this quiet-node measurement decides whether the targets are met\", but \u00a76's own first-measurement comment (c-run-r-20261012T210514131486, and c-s6-first-measurement-1012) records that head arm on the exclusive `all_debug` node 98dci4-clu-3141 missing all three targets on a quiet node (warm roadmap 18.4 s, warm audit 21.4 s, cold roadmap 100 s), so quietness is not what the earlier misses prove",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:135",
+      "id": "done_when-1",
+      "reason": "the three operative targets are named explicitly in the same sentence, so a worker marks those and the instruction is unambiguous enough to act on; this is a wording overstatement, not a changed measure.",
+      "text": "the done-when requires that \"Each median is marked against its target\" while listing targets for only three of the six medians it records (warm roadmap, warm audit, cold roadmap), leaving cold audit, warm discovery and cold discovery recorded with nothing to mark them against",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "46b39f6480689663113433d62fe11564de3d9fca168afda340174e79e9c8d69e",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 107,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T142924300008-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "43c29026029b3bc31bdfa632c7eb760c863a137c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the profiler's relative path resolves under the parent \u00a71 states (`~/.config/reckon/crew/reports/reckon/health-review-1010/health-tool-latency/`, line 38), `profile_reads.py` resolves there, and \u00a77, \u00a716 and \u00a717 resolve.",
+    "done_when": "a finding \u2014 the changed done-when asserts \"Each median is marked against its target\" but states targets for only three of the six medians it records (warm roadmap, warm audit, cold roadmap).",
+    "evidence_paths": "pass \u2014 the log, every `.prof` dump and the pinned corpus revision go to \"the run directory\", the term \u00a78, \u00a710, \u00a711, \u00a716 and \u00a718 use for the same durable location, and the changed commit resolved the earlier report/log split.",
+    "naming": "pass \u2014 s6's changed prose carries no plan label, stage name, ticket number or version tag into a symbol, path or comment.",
+    "reasoning": "a finding \u2014 the changed done-when's premise that earlier target-missing figures were taken on the loaded shared fleet node is contradicted by \u00a76's own first-measurement record on an exclusive node.",
+    "single_goal": "pass \u2014 s6 carries one deliverable, the measurement marked against its targets, with the attribution-and-repair clause as its defined outcome on a miss.",
+    "wiring": "pass \u2014 s6's deliverable names its predecessors (\u00a72\u2013\u00a75, \u00a78, \u00a710, \u00a711, \u00a712, \u00a713, \u00a714, \u00a716, \u00a717, all done) and the plan's single open route for it, f-araiid-remeasure, recommends `/reckon-build a-read-answers-inside-its-deadline \u00a76`."
+  },
+  "section_digests": {
+    "_document": "27e04b7ec4c7a4424eb7839ff032567efe8f2c9f504c5f09139c14dd3ec284e3",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "733913b3dedb1ef1cc477f9de69a70268609fa8885ee4469a1e804cbfc4b9375",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T14:52:26.060771+00:00"
+}
