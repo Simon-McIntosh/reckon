@@ -26,7 +26,7 @@
   <title>Jev Learns From Its Routes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -379,6 +379,9 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261016T065945475838-review-of-orchestrator-assessment-reaches-jev-93a919cc997a" data-who="reckon-build" data-when="2026-10-16T07:14:52.714Z">
     <div class="r-comment-body"><p>the review of r-20261016T061954014694-orchestrator-assessment-reaches-jev stores a parsed record at reviews/reckon/r-20261016T061954014694-orchestrator-assessment-reaches-jev.at-93a919cc997a137b183afcbc26866d13f24e6987.json and its bare sibling, scoring goal_fidelity 18, evidence 16, scope_discipline 17, durability 18, fit 16 and reuse 12 over the revision pair f13ae18cb740c056d88bd723f6969e0ead5fc609..93a919cc997a137b183afcbc26866d13f24e6987 with 3 follow-on findings and added_failure_count 0 (ids []).</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261016T061954014694-orchestrator-assessment-reaches-jev" data-who="reckon-build" data-when="2026-10-16T06:58:50.283Z">
+    <div class="r-comment-body"><p>`--assess KEY=VALUE` on `reckon crew dispatch` renders the coordinator&#x27;s own difficulty reading as `node.orchestrator_assessment` beside the section&#x27;s declared `node.capability` (never replacing it), and every run records the capability the section routing resolved; the gate is 6 passed.</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-s5-fold-sites" data-who="reckon-build" data-when="2026-10-16T06:20:00Z">
     <div class="r-comment-body"><p>Design review <code>r-20261016T060516832154</code>, duplicate_owner-2, answered acted: the section's "one function" covers every site that computes a candidate's staleness. Today the rule is computed in three places: <code>lane_context._budget_block</code> (the source-aware owner to extend with the document case), <code>snapshot.py</code> <code>_compose_budget_report</code>, and <code>snapshot.py</code> <code>_reage_budget_report</code>. Both snapshot sites fold onto the owner, and no fourth computation is added.</p></div>
 </div>
@@ -386,7 +389,7 @@
     <div class="r-comment-body"><p>review-of-one-staleness-rule-2a9f97191125: independent review of one-staleness-rule at head 2a9f97191 scores 19/15/18/15/18/17 over goal_fidelity/evidence/scope_discipline/durability/fit/reuse (total 102), with three follow-on findings and no blocking finding; the node's gate reproduces (tests/test_one_staleness_rule.py, 8 passed, EXIT=0)</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261016T061836633934-one-staleness-rule" data-who="reckon-build" data-when="2026-10-16T06:53:01.759Z">
-    <div class="r-comment-body"><p>one-staleness-rule: both surfaces derive a reading&#x27;s stale flag from lane_context._budget_block; account-surface never stale by age, document stale past its own published shelf life, ledger stale past the flight shelf life (commit 8b2182991)</p></div>
+    <div class="r-comment-body"><p>one-staleness-rule: both surfaces derive a reading's stale flag from lane_context._budget_block; account-surface never stale by age, document stale past its own published shelf life, ledger stale past the flight shelf life (commit 8b2182991)</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-s3-revise-before-dispatch" data-who="reckon-build" data-when="2026-10-16T06:20:00Z">
     <div class="r-comment-body"><p>Design review <code>r-20261016T060516832154</code>, duplicate_owner-3, deferred to this section's revision before dispatch. <code>reckon/crew/picker/outcomes.py</code> already groups routed outcomes by the requirement's risk, and <code>reckon/crew/lane_evidence.py</code> owns shape-conditioned lane evidence. The revision names both and states why the picker's per-candidate block remains a separate consumer, or extends one of them.</p></div>
