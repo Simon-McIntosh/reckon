@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite: baseline_suite (revision bef24898c30b6988d4ba40a522824bb03eeb9645, 2 failures, completed=True) and after_suite (revision bef24898c30b6988d4ba40a522824bb03eeb9645, 2 failures, completed=True) both record the same two ids (test_old_names_resolve.py::test_review_exclusions_match_pair_across_names[claude-opus-5-5] and [opus 5.5]), so head-minus-base is empty and the node's change adds no failing id.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/flight.py:declared_input_modalities",
+    "reckon/flight.py:missing_input_modalities",
+    "reckon/flight.py:select_profile_backend"
+  ],
+  "completed_at": "2026-10-16T15:03:53.468Z",
+  "dispatched_at": "2026-10-16T14:54:01Z",
+  "findings": [
+    {
+      "file": "docs/state/reckon/flight.yaml",
+      "line": "52",
+      "severity": "follow-on",
+      "text": "follow-on: the declaration is guarded by no test \u2014 tests/test_flight.py:1489 and its neighbours exercise a synthetic config, so removing input_modalities from the real project layer reddens nothing and a later edit can silently retract the claim the node measured."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T143204084432-codex-declares-image-input-on-a-shown-delivery/flight_tests_head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's \"# revision:\" header names the base commit bef24898c rather than the reviewed head 2af56b5bb, so the gate log alone does not name the revision it measured; the manifest's after_suite revision carries the same base value, and only the tree header and the manifest's commits line identify the head."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against bef24898c; the single commit 2af56b5bb adds 27 lines of evidence fragment and 7 lines (a six-line comment plus the input_modalities line) to flight.yaml, 34 insertions and no deletions.",
+    "done_when": "the done_when asks for verdict.md holding the claim table and verdict, declared_input_modalities returning image for codex, and no added failure in the flight.py-importing tests; the manifest records verdict.md (19 checks, delivered), declared_input_modalities_head.log returning ('text','image'), and identical head and base results (2 failed, 748 passed, 1 skipped each).",
+    "goal": "the node's goal is to declare input_modalities [text, image] on the codex backend in docs/state/reckon/flight.yaml iff the probe's verbatim description matches the figure, and commit 2af56b5bb adds exactly that line under backends.codex, so the goal is met.",
+    "manifest": "read; it states the verdict delivered with a 19-check claim table, the reader's output, the negative control, the base and head suite results, and names its logs on disk.",
+    "write_paths": "the manifest declares docs/state/reckon/flight.yaml, the figure-probe verdict.md, the evidence fragment and the figure directory; the diff touches only docs/state/reckon/flight.yaml and docs/evidence/fragments/a-review-can-see-the-figure/codex-declares-image-input-on-a-shown-delivery.html, both inside that scope."
+  },
+  "justifications": {
+    "durability": "no test asserts the real docs/state/reckon/flight.yaml declares image on codex, so deleting the landed line leaves the flight.py-importing suite green.",
+    "evidence": "declared_input_modalities_head.log ends EXIT=0 with declared ('text','image'), and flight_tests_head.log and flight_tests_base.log each end \"2 failed, 748 passed, 1 skipped\".",
+    "fit": "the comment beside docs/state/reckon/flight.yaml:52 follows the file's own comment-above-entry style, and the evidence fragment matches the fragments convention with no forbidden name.",
+    "goal_fidelity": "2af56b5bb:docs/state/reckon/flight.yaml declares input_modalities: [text, image] under backends.codex, exactly what the goal states.",
+    "reuse": "the change adds no definition, setting the existing input_modalities slot read by reckon/flight.py:1742 declared_input_modalities, so no capability is forked.",
+    "scope_discipline": "the diff's two paths, docs/state/reckon/flight.yaml and the codex-declares-image-input-on-a-shown-delivery.html evidence fragment, are both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to declare input_modalities [text, image] on the codex backend in docs/state/reckon/flight.yaml iff the probe's verbatim description matches the figure, and commit 2af56b5bb adds exactly that line under backends.codex, so the goal is met.\nVERDICT done_when: the done_when asks for verdict.md holding the claim table and verdict, declared_input_modalities returning image for codex, and no added failure in the flight.py-importing tests; the manifest records verdict.md (19 checks, delivered), declared_input_modalities_head.log returning ('text','image'), and identical head and base results (2 failed, 748 passed, 1 skipped each).\nVERDICT write_paths: the manifest declares docs/state/reckon/flight.yaml, the figure-probe verdict.md, the evidence fragment and the figure directory; the diff touches only docs/state/reckon/flight.yaml and docs/evidence/fragments/a-review-can-see-the-figure/codex-declares-image-input-on-a-shown-delivery.html, both inside that scope.\nVERDICT manifest: read; it states the verdict delivered with a 19-check claim table, the reader's output, the negative control, the base and head suite results, and names its logs on disk.\nVERDICT diff: read commit by commit against bef24898c; the single commit 2af56b5bb adds 27 lines of evidence fragment and 7 lines (a six-line comment plus the input_modalities line) to flight.yaml, 34 insertions and no deletions.\nCALL_SITES: reckon/flight.py:declared_input_modalities, reckon/flight.py:missing_input_modalities, reckon/flight.py:select_profile_backend\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: 2af56b5bb:docs/state/reckon/flight.yaml declares input_modalities: [text, image] under backends.codex, exactly what the goal states.\nSCORE evidence: 18\nJUSTIFICATION evidence: declared_input_modalities_head.log ends EXIT=0 with declared ('text','image'), and flight_tests_head.log and flight_tests_base.log each end \"2 failed, 748 passed, 1 skipped\".\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's two paths, docs/state/reckon/flight.yaml and the codex-declares-image-input-on-a-shown-delivery.html evidence fragment, are both inside the declared write paths.\nSCORE durability: 10\nJUSTIFICATION durability: no test asserts the real docs/state/reckon/flight.yaml declares image on codex, so deleting the landed line leaves the flight.py-importing suite green.\nSCORE fit: 19\nJUSTIFICATION fit: the comment beside docs/state/reckon/flight.yaml:52 follows the file's own comment-above-entry style, and the evidence fragment matches the fragments convention with no forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition, setting the existing input_modalities slot read by reckon/flight.py:1742 declared_input_modalities, so no capability is forked.\nFINDING docs/state/reckon/flight.yaml:52 follow-on: the declaration is guarded by no test \u2014 tests/test_flight.py:1489 and its neighbours exercise a synthetic config, so removing input_modalities from the real project layer reddens nothing and a later edit can silently retract the claim the node measured.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T143204084432-codex-declares-image-input-on-a-shown-delivery/flight_tests_head.log:1 follow-on: the head arm's \"# revision:\" header names the base commit bef24898c rather than the reviewed head 2af56b5bb, so the gate log alone does not name the revision it measured; the manifest's after_suite revision carries the same base value, and only the tree header and the manifest's commits line identify the head.",
+  "review_run_id": "r-20261016T145318419152-review-of-codex-declares-image-input-on-a-shown-delivery",
+  "reviewed_base_sha": "bef24898c30b6988d4ba40a522824bb03eeb9645",
+  "reviewed_head_sha": "2af56b5bbabea0fbb2d158e4f2846865ffab0dde",
+  "reviewed_run_id": "r-20261016T143204084432-codex-declares-image-input-on-a-shown-delivery",
+  "role": "review",
+  "scores": {
+    "durability": 10,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T15:03:03.515759+00:00",
+  "total": 107
+}
