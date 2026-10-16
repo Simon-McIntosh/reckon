@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:jev-learns-from-its-routes">
+  <meta name="plan-verifies" content="reckon:jev-learns-from-its-routes#s13">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-16">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-run-spans-all-its-attempts">
+  <h2>A promoted run's timing spans every attempt it made</h2>
+  <p id="a-run-spans-all-its-attempts-defect">
+    <strong>Defect.</strong> A run that moved lane or resumed many times keeps
+    one timestamped stream — its first, claude attempt — beside streams that
+    carry no event timestamps at all. The end and the span were read from the
+    first stream, so a morning of work was recorded as its opening two minutes.
+    The primary run <code>r-20261015T160647356198-fast-map-production</code>
+    ran from 2026-10-15T16:07Z to 2026-10-16T03:11Z, mostly on a codex client
+    with twenty resumes sharing one thread; its committed row records
+    <code>completed_at</code> 2026-10-15T16:08:25.469Z,
+    <code>wall_seconds</code> 76 and <code>worker_seconds</code> 18, all three
+    measured on the two minutes before its first lane change.
+  </p>
+  <p id="a-run-spans-all-its-attempts-change">
+    <strong>Change.</strong> <code>promotion_checks._terminal_stream_data</code>
+    now folds every attempt the run made. A timestamped stream contributes its
+    own event span and its last event's instant; a stream with no timestamps
+    contributes its file mtime as an attempt end and, where its codex session
+    has a rollout receipt, that receipt's <code>generation_seconds</code> plus
+    <code>machine_seconds</code> as that session's span. The run's end is the
+    latest attempt end, named by <code>completed_at_source</code>
+    (<code>terminal_event</code> or <code>stream_mtime</code>), and
+    <code>worker_seconds</code> is the sum, with
+    <code>worker_seconds_source</code> naming the composition
+    (<code>stream_events+rollout_receipts</code>). Sessions are counted once, so
+    two streams resuming one codex session do not double its span.
+    <code>rollout._locate_rollout</code> and
+    <code>rollout.read_rollout_receipt</code> take the run id through to the
+    run-home lookup, so a receipt is found under the run's own
+    <code>codex-home</code> and not only in the client's shared session home. A
+    run with a single attempt takes the path it always took: a claude stream
+    keeps <code>terminal_event</code> with <code>stream_events</code>, a codex
+    stream keeps <code>stream_mtime</code> with <code>rollout_receipt</code>.
+  </p>
+  <p id="a-run-spans-all-its-attempts-measure">
+    <strong>Measure.</strong> <code>tests/test_a_run_spans_all_its_attempts.py</code>
+    passes 4/4 with a temporary crew home: a timestamped first-attempt stream
+    ending at T1 beside two codex streams whose receipt-bearing sessions end at
+    T2 and T3 promotes with <code>completed_at</code> at T3, the wall span from
+    dispatch to T3, and <code>worker_seconds</code> the first stream's 19 s span
+    plus both receipts (120 s and 230 s) = 369 s under
+    <code>stream_events+rollout_receipts</code>; one session reached through two
+    streams is counted once; and a single-attempt claude run and a single-attempt
+    codex run each record what they record on the base revision. The negative
+    control reads timing from the first timestamped stream only, and the
+    multi-attempt tests then fail on the first attempt's end
+    (<code>assert '2026-10-15T16:08:25Z' == '2026-10-15T18:00:00Z'</code>).
+  </p>
+  <p id="a-run-spans-all-its-attempts-primary">
+    <strong>On the primary run.</strong> Read from its own run directory, the new
+    figures are <code>completed_at</code> 2026-10-16T03:11:49Z
+    (<code>completed_at_source</code> <code>stream_mtime</code>) and
+    <code>worker_seconds</code> <strong>39789</strong>
+    (<code>stream_events+rollout_receipts</code>) — beside the recorded 76 s and
+    18 s. Its twelve timestamps run 16:08:06.868Z to 16:08:25.469Z; the twenty
+    codex resume streams carry no timestamps and share one thread
+    <code>01a14052-ce89-7352-b4a9-4217bfda5ac0</code>, whose rollout under the
+    run home is the single receipt that measures the rest of the run.
+  </p>
+  <p id="a-run-spans-all-its-attempts-delta">
+    <strong>Delta.</strong> The test files importing
+    <code>promotion_checks.py</code>, <code>promotion.py</code> or
+    <code>rollout.py</code> were run at the base revision and at this change
+    with no added failure.
+  </p>
+</section>
+</main>
+</body>
+</html>
