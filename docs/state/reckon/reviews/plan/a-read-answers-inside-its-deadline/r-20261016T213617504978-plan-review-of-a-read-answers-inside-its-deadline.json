@@ -1,0 +1,86 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T21:46:59.282Z",
+  "dispatched_at": "2026-10-16T21:36:53Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:200",
+      "id": "anchors_resolve-1",
+      "reason": "the node would be dispatched with a nonexistent file in its write grant and told the ledger lives under `crew/`, so it either edits the wrong tree or blocks on a path that is not there.",
+      "text": "\u00a722's write paths name `reckon/crew/ledger.py`, which does not exist (`find reckon -name '*ledger*'` returns only `reckon/ledger.py`, and no module imports `crew.ledger`), so the node is granted a scope path it cannot open",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:204",
+      "id": "anchors_resolve-2",
+      "reason": "the section that must cache the ledger index points its worker at a path that resolves to nothing, so the repair would land in the wrong module or not at all.",
+      "text": "\u00a723's write paths likewise name `reckon/crew/ledger.py`, and its Why rests on `ledger.load` and `_index_payload`, both of which live in `reckon/ledger.py` (`def load` at line 1361, `def _index_payload` at line 1087)",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:196",
+      "id": "evidence_paths-1",
+      "reason": "the control the done-when depends on cannot be written to a path the node does not hold, so a worker either drops the evidence or widens its own scope; the fix is one clause on each write-path list.",
+      "text": "\u00a721, and likewise \u00a722 (line 200) and \u00a723 (line 204), require the negative-control log be \"logged under the run directory\", but none of the three lists the run directory among its write paths, while the sibling measurement sections \u00a719, \u00a720 and \u00a724 do; \u00a721 lists only `reckon/crew/obligations.py`, `reckon/crew/routing.py` and the test file",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:208",
+      "id": "reasoning-1",
+      "reason": "if the five passes are five fresh processes, \u00a722's fix contributes nothing to the measured number and \u00a724's \u226410 s node-local target gates the node on a value the mechanism cannot move; the measure must name its process shape (one process ticking, as the producer runs) or the result is uninterpretable.",
+      "text": "\u00a724 requires the head median on the node-local copy be \"at most 10 s\" over \"five timed passes per revision and per arm\", and \u00a720 the same \"five timed passes per arm\", but neither states whether those passes run in one long-lived process or each in a fresh one; \u00a718 measured \"one `obligation_snapshot.sweep` per fresh process\", and \u00a722's deliverable \u2014 a memo keyed on stat identity \u2014 only skips work in a *later* sweep of the *same* process",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "13d4f9f95e6f00659fff84b6431c37a500e432e3566cc3264fd2aec9646ab6d7",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 140,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T213617504978-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "f6adf889c0c80515ffc1447c2f6e44e361e5209c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a722's and \u00a723's write paths name `reckon/crew/ledger.py`, which does not exist; the ledger module is `reckon/ledger.py` \u2014 see FINDING.",
+    "done_when": "pass \u2014 each in-scope node names a negative control that can fail: \u00a720 and \u00a724 an A/A instrument check at 15 percent, and \u00a721, \u00a722 and \u00a723 a base-tree copy that must fail the count on unfixed code.",
+    "evidence_paths": "a finding \u2014 \u00a721, \u00a722 and \u00a723 log their negative control \"under the run directory\" but list no run directory among their write paths, unlike \u00a719, \u00a720 and \u00a724 \u2014 see FINDING.",
+    "naming": "pass \u2014 the new test files (`test_held_worktree_records_spawn_no_git_per_record.py`, `test_a_sweep_decodes_each_document_once.py`, `test_a_sweep_resolves_review_heads_once.py`) and the two evidence-fragment names are mechanism-named, and no stage label, ticket number or version tag reaches a symbol, comment or filename.",
+    "reasoning": "a finding \u2014 \u00a724's \u226410 s node-local target and \u00a720's five-timed-passes measure never state the process shape, and \u00a722's memo helps only a second sweep in the same process \u2014 see FINDING.",
+    "single_goal": "pass \u2014 each of \u00a720, \u00a721, \u00a722, \u00a723 and \u00a724 carries one deliverable (one split, one call-count repair, one re-measure), reviewable on one verdict.",
+    "wiring": "pass \u2014 the ordering the new units need is declared in the open followups: `f-araiid-020` names \u00a720 \u2192 \u00a721\u2013\u00a723 \u2192 \u00a724 (first \u00a720, the repairs in sequence because they share `obligations.py`, then \u00a724 re-measures), and no declared relationship points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "d4ddda961784c7a505897dfa112dcf8d73378167d498be05466e8103832740db",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "f6e2a8c3d1c90f4194ec9891635cef181cf62c62a5dbb39efd4c9832ac5d1e9b",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s20": "b9459bb2256bea22078eb6053967f6e45a6c7f3e3ef2443595edc9c3d1708f6b",
+    "s21": "4d93efb4f5d84adaeb9eea5dc423557ae897e4118bc313d1f7fc1e2839f2e2fb",
+    "s22": "a5e20022a49f6fe3b56ccc6d9bf3c537ed7be648240eee360fd6c3a8ee7d3e8c",
+    "s23": "b910e6ec358a90d4eaba9e4bbad72e00dacc35ba3387e6c6f112cb120791f8bc",
+    "s24": "29c9525a9ee2c5230814cee2ec546ce844a0d1efbbf59f29dc43a5a07167fd7e",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T21:49:07.977594+00:00"
+}
