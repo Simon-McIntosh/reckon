@@ -493,8 +493,18 @@ def classify_pointer(
     # and the deferral does not fire. An exited worker on another node therefore
     # reads ``scoring`` at once rather than waiting a quarter of an hour for its
     # stream to pass the stall window.
+    # The stream-aware deferral belongs to the delivered verdict alone. A run
+    # that wrote ``complete`` may still be in its final turn, so holding it at
+    # ``running`` keeps a review duty off a worker the reflex is about to
+    # release. A ``blocked`` or ``failed`` verdict is not a delivery: it is the
+    # stop itself, and holding it at ``running`` would hide that stop from every
+    # reader — most sharply from promotion, where it would carry a blocked run
+    # with a live session past the resume-path refusal it must still meet while
+    # deleting the pointer a resume needs. A superseded manifest is deferred
+    # whatever its word, because that verdict belongs to a previous attempt and
+    # says nothing about the one now running.
     deferred_outcome = manifest_status in TERMINAL_MANIFEST_STATUSES and (
-        not process_gone or superseded_manifest
+        superseded_manifest or (manifest_status == "complete" and not process_gone)
     )
     interruption = None
     interruption_commits = 0
