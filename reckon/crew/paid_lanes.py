@@ -100,6 +100,25 @@ TIMER_NAME = "reckon-paid-lanes.timer"
 BOOT_DELAY = "1min"
 REFRESH_INTERVAL = "5min"
 
+#: How many refresh intervals a published reading stays usable for. The document
+#: is republished on the timer's clock, so a reading is trusted for a small
+#: multiple of that interval: long enough to serve between two refreshes, short
+#: enough that a publisher which has stalled is noticed within a few cadences.
+SHELF_LIFE_INTERVALS = 2
+
+#: The seconds each systemd time-span suffix stands for, so the module reads its
+#: own refresh cadence once and derives from it rather than restating a figure.
+#: A bare number is seconds, as it is for systemd itself.
+_INTERVAL_UNIT_SECONDS = {
+    "": 1.0,
+    "s": 1.0,
+    "sec": 1.0,
+    "min": 60.0,
+    "h": 3600.0,
+    "hour": 3600.0,
+    "d": 86400.0,
+}
+
 SERVICE_TEMPLATE = """\
 [Unit]
 Description=publish the metered-backend headroom document
@@ -127,6 +146,34 @@ WantedBy=timers.target
 
 OBSERVED = "observed"
 UNKNOWN = "unknown"
+
+
+def refresh_interval_seconds(interval: str | None = None) -> float:
+    """The refresh cadence's length in seconds.
+
+    The argument defaults to ``None`` rather than to ``REFRESH_INTERVAL``, and
+    the module's own constant is read here at call time, so a caller that patches
+    the cadence sees the shelf life move with it.
+    """
+    span = (REFRESH_INTERVAL if interval is None else interval).strip()
+    index = 0
+    while index < len(span) and (span[index].isdigit() or span[index] == "."):
+        index += 1
+    number, unit = span[:index], span[index:].strip().lower()
+    return float(number or 0.0) * _INTERVAL_UNIT_SECONDS.get(unit, 1.0)
+
+
+def suggested_shelf_life_seconds(interval: str | None = None) -> float:
+    """How long the document's own readings stay usable, from its cadence.
+
+    The document is republished every ``REFRESH_INTERVAL``, so a reading is
+    trusted for ``SHELF_LIFE_INTERVALS`` of those intervals rather than for a
+    second figure written down beside the cadence. A reading served between two
+    refreshes is therefore not marked stale the moment it is read, and a
+    publisher which has stopped is noticed within a few cadences.
+    """
+    return refresh_interval_seconds(interval) * SHELF_LIFE_INTERVALS
+
 
 #: What ``--help`` and ``-h`` print. Asking what the command does must never be
 #: the same act as running it, so the text is emitted and the run stops here.
@@ -409,6 +456,7 @@ def compose_document(
         "document": "paid-lanes",
         "generated_by": "reckon.crew.paid_lanes",
         "observed_at": now.isoformat(),
+        "suggested_shelf_life_seconds": suggested_shelf_life_seconds(),
         "accounts": entries,
         "local_lane": dict(local_lane or {"state": UNKNOWN}),
     }
