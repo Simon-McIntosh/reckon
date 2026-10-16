@@ -1,0 +1,985 @@
+{
+  "agent": {
+    "alias": "sol6",
+    "backend": "codex",
+    "effort": "high",
+    "launch": "cli",
+    "model": "gpt-6-sol",
+    "sandbox": "worktree-full"
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "codex",
+  "base_sha": "e121b18eb26412acdcffb1a3386a15332e391d8f",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "detail": "backend reports token usage but no headroom",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_write_input_tokens": 0,
+      "cache_write_input_tokens_cumulative": 0,
+      "cached_input_tokens": 7422080,
+      "cached_input_tokens_cumulative": 7422080,
+      "input_tokens": 7534547,
+      "input_tokens_cumulative": 7534547,
+      "output_tokens": 20360,
+      "output_tokens_cumulative": 20360,
+      "reasoning_output_tokens": 8631,
+      "reasoning_output_tokens_cumulative": 8631
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 45,
+    "files": 2,
+    "removed": 4
+  },
+  "clone_matches": [],
+  "commit_resolution": null,
+  "commits": [
+    "be0d7712080803b243ea04cb2c04e1d5534b12c0"
+  ],
+  "completed_at": "2026-10-16T16:28:40Z",
+  "completed_at_source": "stream_mtime",
+  "dispatched_at": "2026-10-16T16:18:25Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": {
+    "reason": "model_span_unavailable_at_promotion",
+    "status": "underivable"
+  },
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": ".venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_killed_suite_run_reached_its_tests.py tests/test_standing_suite.py tests/test_standing_suite_holds_promotion.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T161708083824-a-killed-suite-run-reached-its-tests/merged-head-gate.log"
+  },
+  "impl_move": {
+    "at_complete": 1.0,
+    "at_dispatch": 0.9230769230769231,
+    "plan": "the-suite-tests-behaviour",
+    "verdict": "moved"
+  },
+  "lane": "codex",
+  "lane_advisory": {
+    "backend": "codex",
+    "burn_multiple": 3.7971054669982474,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'codex' is projected to exhaust at 2026-10-18T03:33:35Z, which is after this node's 2700s horizon ending 2026-10-16T17:02:17.685758+00:00",
+    "horizon_ends_at": "2026-10-16T17:02:17.685758+00:00",
+    "horizon_seconds": 2700,
+    "metered": true,
+    "observed_at": "2026-10-16T16:17:16Z",
+    "precedes_horizon": false,
+    "projected_exhaustion_at": "2026-10-18T03:33:35Z",
+    "resets_at": "2026-10-22T06:13:12Z",
+    "seconds_until_reset": 482155,
+    "state": "quiet",
+    "utilisation_pct": 77.0
+  },
+  "lane_declaration": {
+    "backend": "codex",
+    "headroom": "known",
+    "metered": true,
+    "observed_at": "2026-10-16T16:17:16Z",
+    "read_at": "2026-10-16T16:17:17Z",
+    "resolved_backend": "codex",
+    "utilisation_pct": 77.0
+  },
+  "lane_reading": {
+    "age_seconds": null,
+    "binding_observed": "unknown",
+    "detail": "backend declares no lane document",
+    "generating": "unknown",
+    "headroom": "unknown",
+    "mean_context": "unknown",
+    "observed_at": null,
+    "state": "unknown",
+    "suggested_shelf_life_seconds": null,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "backend declares no lane document",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": "unknown"
+  },
+  "lane_receipt": {
+    "effective_context_window": 380000,
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-16T16:28:40Z",
+    "quota_state": "measured",
+    "quota_windows": [
+      {
+        "observed_at": "2026-10-16T16:28:40Z",
+        "resets_at": 1792649592,
+        "used_percent": 77.0,
+        "window_minutes": 10080
+      }
+    ],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "notional_cost_usd": "no_dated_rate",
+      "rate_basis": "no_dated_rate"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T161708083824-a-killed-suite-run-reached-its-tests/manifest.md",
+  "member": "disposable-r-20261016T161708083824-a-killed-suite-run-reached-its-tests",
+  "model_key": "sol",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_a_killed_suite_run_reached_its_tests.py::test_a_budget_stopped_run_holds_only_for_overrun",
+      "tests/test_a_killed_suite_run_reached_its_tests.py::test_progress_proves_the_test_phase_was_reached[tests/test_sample.py"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_a_killed_suite_run_reached_its_tests.py::test_a_budget_stopped_run_holds_only_for_overrun",
+      "tests/test_a_killed_suite_run_reached_its_tests.py::test_progress_proves_the_test_phase_was_reached[tests/test_sample.py"
+    ],
+    "declaration": "remove the progress-evidence clause from _build_counts in reckon/crew/standing_suite.py; the 76% progress case must fail",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T161708083824-a-killed-suite-run-reached-its-tests/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T161708083824-a-killed-suite-run-reached-its-tests/negative-control.log",
+    "test_paths": [
+      "tests/test_a_killed_suite_run_reached_its_tests.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "a-killed-suite-run-reached-its-tests",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "general",
+      "requirements": {
+        "reasoning": "standard",
+        "risk": "low",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1383,
+          "cached_input_tokens": 448042,
+          "input_tokens": 449427,
+          "output_tokens": 312,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 449739,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "2df2b70e-e96e-4fa2-9e1b-c80f582a9f1c",
+      "session_id": "health-review-1010"
+    },
+    "done_when": "tests/test_a_killed_suite_run_reached_its_tests.py builds counts from three fixed logs: progress lines up to [ 76%] with EXIT=-9 reads collection_failed false and collected null; an ERROR collecting line with exit 2 reads collection_failed true; no progress line with EXIT=-9 reads collection_failed true; and the promotion hold message for a latest row that overran with progress evidence says 'overran its budget' and not 'failed to collect'. That file, tests/test_standing_suite.py and tests/test_standing_suite_holds_promotion.py pass with EXIT=0 in a log under the run directory; ruff check and ruff format --check report no findings on the touched paths, each logged with its EXIT=",
+    "estimated_hours": null,
+    "goal": "Count pytest progress output as evidence a suite run reached its tests in the standing-suite classifier",
+    "id": "a-killed-suite-run-reached-its-tests",
+    "images": [],
+    "lane_declaration": {
+      "backend": "codex",
+      "headroom": "known",
+      "metered": true,
+      "observed_at": "2026-10-16T16:17:16Z",
+      "read_at": "2026-10-16T16:17:17Z",
+      "resolved_backend": "codex",
+      "utilisation_pct": 77.0
+    },
+    "lane_reading": {
+      "age_seconds": null,
+      "binding_observed": "unknown",
+      "detail": "backend declares no lane document",
+      "generating": "unknown",
+      "headroom": "unknown",
+      "mean_context": "unknown",
+      "observed_at": null,
+      "state": "unknown",
+      "suggested_shelf_life_seconds": null,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "backend declares no lane document",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": "unknown"
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T161708083824-a-killed-suite-run-reached-its-tests/manifest.md",
+    "negative_control": "remove the progress-evidence clause from _build_counts in reckon/crew/standing_suite.py; the 76% progress case must fail",
+    "plan": "the-suite-tests-behaviour",
+    "requested_backend": "codex",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§10",
+    "spec_level": "guided",
+    "time_budget": "45m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/standing_suite.py",
+      "tests/test_a_killed_suite_run_reached_its_tests.py",
+      "docs/evidence/fragments/the-suite-tests-behaviour/a-killed-suite-run-reached-its-tests.html",
+      "docs/figures/the-suite-tests-behaviour/a-killed-suite-run-reached-its-tests"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": null,
+  "outcome": "",
+  "pace": {
+    "allowance": {
+      "burn_multiple": 3.7963599364440928,
+      "derived": 0.22310845498842585,
+      "drain_hours": 168.0,
+      "effective_limit": 0.22310845498842585,
+      "elapsed_fraction": 0.20282586817129622,
+      "elapsed_hours": 34.07474585277777,
+      "group": "codex-sub",
+      "lift": {
+        "ends_at": "2026-10-20T04:58:00+00:00",
+        "ends_on": "time",
+        "form": "uncapped",
+        "group": "codex-sub",
+        "id": "codex-sub-1792002586-64d825",
+        "pace_multiple": null,
+        "remaining_seconds": 304818.91493,
+        "scope": "global"
+      },
+      "lift_hold": {
+        "held": false,
+        "kind": "uncapped"
+      },
+      "limited_by": "allowance",
+      "observed_at": "2026-10-16T16:17:41+00:00",
+      "pace_multiple": 1.1,
+      "provider_ceiling": null,
+      "reason": null,
+      "remaining_budget": 0.22999999999999998,
+      "remaining_windows": null,
+      "resets_at": "2026-10-22T06:13:12Z",
+      "state": "observed",
+      "utilisation": 0.77,
+      "window_minutes": 10080
+    },
+    "bar": {
+      "bar": 0.8656339999999999,
+      "decided_by": "window",
+      "margin": -0.12813399999999986,
+      "name": "a-killed-suite-run-reached-its-tests",
+      "score": 0.7375,
+      "state": "observed",
+      "verdict": "split",
+      "window_fill": 0.77
+    },
+    "clocks": {
+      "five_hour": {
+        "age_seconds": 0.08507,
+        "observed_at": "2026-10-16T16:17:41+00:00",
+        "period": "primary",
+        "resets_at": "2026-10-22T06:13:12Z",
+        "state": "observed",
+        "utilisation": 0.77,
+        "window_minutes": 10080
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "not_published",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": "codex-sub",
+    "hold": null,
+    "lane": "codex",
+    "lift_id": "codex-sub-1792002586-64d825",
+    "member": "codex",
+    "node": "a-killed-suite-run-reached-its-tests",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": null,
+    "recorded_at": "2026-10-16T16:17:41.085070+00:00",
+    "score": 0.7375,
+    "session": null,
+    "source": "recorded",
+    "state": "observed"
+  },
+  "picker_selection": {
+    "action": "route",
+    "answering_model": "typesafe/jev-1.13-20260917",
+    "backend": "codex",
+    "comment": "",
+    "confidence": 0.59,
+    "decision_source": "jev",
+    "effort": "high",
+    "excluded": [
+      {
+        "availability": "not-probed",
+        "backend": "native",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "budget_source": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "context": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "in-harness",
+        "local": false,
+        "model": null,
+        "moved_in": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "moved_off": 0,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "outcomes_at_requirement": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "review_total_median": null,
+          "unknown": 0,
+          "unrecorded": 0,
+          "wall_seconds_median": null
+        },
+        "pace_allowance": null,
+        "reasons": [
+          "in-harness-backend"
+        ],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "fallback_reason": null,
+    "family": "codex",
+    "jev_latency_ms": 329.397,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 1947.25,
+    "model": "gpt-6-sol",
+    "offered": [
+      {
+        "availability": "unknown",
+        "backend": "claude",
+        "budget_age_s": 1245387.856755,
+        "budget_reason": null,
+        "budget_source": "ledger",
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 57045,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-haiku-4-5-20251001",
+        "moved_in": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "moved_off": 0,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "outcomes_at_requirement": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "review_total_median": null,
+          "unknown": 0,
+          "unrecorded": 0,
+          "wall_seconds_median": null
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude",
+        "budget_age_s": 1245387.856755,
+        "budget_reason": null,
+        "budget_source": "ledger",
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 57045,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-opus-5-5",
+        "moved_in": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "moved_off": 0,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "outcomes_at_requirement": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "review_total_median": null,
+          "unknown": 0,
+          "unrecorded": 0,
+          "wall_seconds_median": null
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude",
+        "budget_age_s": 1245387.856755,
+        "budget_reason": null,
+        "budget_source": "ledger",
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 57045,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "medium",
+        "family": "claude",
+        "local": false,
+        "model": "claude-sonnet-5-5",
+        "moved_in": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "moved_off": 0,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "outcomes_at_requirement": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "review_total_median": null,
+          "unknown": 0,
+          "unrecorded": 0,
+          "wall_seconds_median": null
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "clive",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "budget_source": null,
+        "burn_multiple": null,
+        "congestion": {
+          "admission_verdict": "congested",
+          "running": 12,
+          "slots_state": "measured",
+          "stale": false,
+          "waiting": 0
+        },
+        "context": {
+          "estimated_tokens": 57045,
+          "headroom_pct": 75.2,
+          "peak_utilisation_p50_pct": 69.5,
+          "peak_utilisation_p90_pct": 85.3,
+          "peak_utilisation_runs": 650,
+          "window_tokens": 230144
+        },
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "local",
+        "local": true,
+        "model": "deepseek-v4.1-flash",
+        "moved_in": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "moved_off": 0,
+        "outcomes": {
+          "failed": 8,
+          "not-run": 22,
+          "passed": 200,
+          "unknown": 0
+        },
+        "outcomes_at_requirement": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "review_total_median": null,
+          "unknown": 0,
+          "unrecorded": 230,
+          "wall_seconds_median": null
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": 0
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex",
+        "budget_age_s": 69.700755,
+        "budget_reason": null,
+        "budget_source": "document",
+        "burn_multiple": 3.7974588158579072,
+        "congestion": {
+          "lift": {
+            "ends_at": "2026-10-20T04:58:00+00:00",
+            "ends_on": "time",
+            "form": "uncapped",
+            "group": "codex-sub",
+            "id": "codex-sub-1792002586-64d825",
+            "pace_multiple": null,
+            "remaining_seconds": 304854.411966,
+            "scope": "global"
+          }
+        },
+        "context": {
+          "estimated_tokens": 57045,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 5.5806097945023145,
+        "effort": "xhigh",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-astra",
+        "moved_in": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "moved_off": 0,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "outcomes_at_requirement": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "review_total_median": null,
+          "unknown": 0,
+          "unrecorded": 0,
+          "wall_seconds_median": null
+        },
+        "pace_allowance": 0.22304389358035714,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-22T06:13:12+00:00",
+        "stale": false,
+        "utilisation_pct": 77.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex",
+        "budget_age_s": 69.700755,
+        "budget_reason": null,
+        "budget_source": "document",
+        "burn_multiple": 3.7974588158579072,
+        "congestion": {
+          "lift": {
+            "ends_at": "2026-10-20T04:58:00+00:00",
+            "ends_on": "time",
+            "form": "uncapped",
+            "group": "codex-sub",
+            "id": "codex-sub-1792002586-64d825",
+            "pace_multiple": null,
+            "remaining_seconds": 304854.411966,
+            "scope": "global"
+          }
+        },
+        "context": {
+          "estimated_tokens": 57045,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 5.5806097945023145,
+        "effort": "xhigh",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-luna",
+        "moved_in": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "moved_off": 0,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "outcomes_at_requirement": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "review_total_median": null,
+          "unknown": 0,
+          "unrecorded": 0,
+          "wall_seconds_median": null
+        },
+        "pace_allowance": 0.22304389358035714,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-22T06:13:12+00:00",
+        "stale": false,
+        "utilisation_pct": 77.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex",
+        "budget_age_s": 69.700755,
+        "budget_reason": null,
+        "budget_source": "document",
+        "burn_multiple": 3.7974588158579072,
+        "congestion": {
+          "lift": {
+            "ends_at": "2026-10-20T04:58:00+00:00",
+            "ends_on": "time",
+            "form": "uncapped",
+            "group": "codex-sub",
+            "id": "codex-sub-1792002586-64d825",
+            "pace_multiple": null,
+            "remaining_seconds": 304854.411966,
+            "scope": "global"
+          }
+        },
+        "context": {
+          "estimated_tokens": 57045,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 5.5806097945023145,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-sol",
+        "moved_in": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "moved_off": 0,
+        "outcomes": {
+          "failed": 1,
+          "not-run": 0,
+          "passed": 22,
+          "unknown": 0
+        },
+        "outcomes_at_requirement": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "review_total_median": null,
+          "unknown": 0,
+          "unrecorded": 23,
+          "wall_seconds_median": null
+        },
+        "pace_allowance": 0.22304389358035714,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-22T06:13:12+00:00",
+        "stale": false,
+        "utilisation_pct": 77.0,
+        "worker_slots": null
+      }
+    ],
+    "probabilities": {
+      "claude:claude-haiku-4-5-20251001:claude": 0,
+      "claude:claude-opus-5-5:claude": 0,
+      "claude:claude-sonnet-5-5:claude": 0.01,
+      "codex:gpt-6-astra:codex": 0,
+      "codex:gpt-6-luna:codex": 0,
+      "codex:gpt-6-sol:codex": 0.64,
+      "hold": 0.34,
+      "local:deepseek-v4.1-flash:clive": 0.01
+    },
+    "questions": {
+      "route": {
+        "criteria": {
+          "claude:claude-haiku-4-5-20251001:claude": {
+            "backend": "claude",
+            "effort": "high",
+            "lane": "claude",
+            "local": false,
+            "meaning": "Execute the node as this lane and model pair; read the lane's shared pressure from the lanes block and this pair's own fit and serving observation from the candidate table.",
+            "model": "claude-haiku-4-5-20251001"
+          },
+          "claude:claude-opus-5-5:claude": {
+            "backend": "claude",
+            "effort": "high",
+            "lane": "claude",
+            "local": false,
+            "meaning": "Execute the node as this lane and model pair; read the lane's shared pressure from the lanes block and this pair's own fit and serving observation from the candidate table.",
+            "model": "claude-opus-5-5"
+          },
+          "claude:claude-sonnet-5-5:claude": {
+            "backend": "claude",
+            "effort": "medium",
+            "lane": "claude",
+            "local": false,
+            "meaning": "Execute the node as this lane and model pair; read the lane's shared pressure from the lanes block and this pair's own fit and serving observation from the candidate table.",
+            "model": "claude-sonnet-5-5"
+          },
+          "codex:gpt-6-astra:codex": {
+            "backend": "codex",
+            "effort": "xhigh",
+            "lane": "codex",
+            "local": false,
+            "meaning": "Execute the node as this lane and model pair; read the lane's shared pressure from the lanes block and this pair's own fit and serving observation from the candidate table.",
+            "model": "gpt-6-astra"
+          },
+          "codex:gpt-6-luna:codex": {
+            "backend": "codex",
+            "effort": "xhigh",
+            "lane": "codex",
+            "local": false,
+            "meaning": "Execute the node as this lane and model pair; read the lane's shared pressure from the lanes block and this pair's own fit and serving observation from the candidate table.",
+            "model": "gpt-6-luna"
+          },
+          "codex:gpt-6-sol:codex": {
+            "backend": "codex",
+            "effort": "high",
+            "lane": "codex",
+            "local": false,
+            "meaning": "Execute the node as this lane and model pair; read the lane's shared pressure from the lanes block and this pair's own fit and serving observation from the candidate table.",
+            "model": "gpt-6-sol"
+          },
+          "hold": "Do not dispatch now; wait for pressure to ease. When the local lane is not admitting (full, paused or unavailable), well-defined, routine or deferrable work should usually hold for it rather than spend a pressed metered lane. On a sliding scale, hard, high-risk or urgent work may still take the metered lane; weigh expected wait against urgency without a numeric threshold. When exactly one lane can serve the node, a hold waits for that lane alone, as hold_waits_for states.",
+          "local:deepseek-v4.1-flash:clive": {
+            "backend": "clive",
+            "effort": "high",
+            "lane": "local",
+            "local": true,
+            "meaning": "Execute the node as this lane and model pair; read the lane's shared pressure from the lanes block and this pair's own fit and serving observation from the candidate table.",
+            "model": "deepseek-v4.1-flash"
+          }
+        },
+        "glossary": {
+          "budget_age_s": "Seconds since the budget reading was observed; null when unknown.",
+          "budget_source": "Where a budget reading came from: a document reading is taken from the published paid-lanes document, an account-surface reading describes now, and a ledger reading carries the age of the run behind it.",
+          "burn_multiple": "Metered spend so far divided by the lane's allowance for its window; above 1 is ahead of the pace that window plans for.",
+          "context": "A candidate's context block. window_tokens is the input window that gates the lane; estimated_tokens is this node's deterministic input estimate (standing instructions plus the repository files its brief loads) measured against that window; headroom_pct is the share of the window the estimate leaves free. peak_utilisation_p50_pct and peak_utilisation_p90_pct are the median and 90th-percentile peak input utilisation of recent passed runs on the lane, with peak_utilisation_runs behind them. A run whose input approaches its window risks dying mid-way, so a small headroom is a real risk to be weighed with pressure. A null figure is unknown, never zero.",
+          "days_to_reset": "Days until the lane's window resets; null when unknown.",
+          "expected_wait_profile_age_s": "The age in seconds of the oldest foreign project's run-time profile that contributed to expected_wait_s, counted from the instant its promotion published it; null when no foreign profile contributed. A pick reads a published profile rather than rebuilding one, so this names how stale the reading behind the wait is.",
+          "hold_waits_for": "What a hold waits on. When exactly one lane can serve the node a hold waits for that lane alone: waiting for any other lane to free changes nothing, because it cannot run this node. Null when no lane can serve the node.",
+          "lanes": "One pressure block per lane, however many models the lane holds. A lane is a subscription or host whose models share one account window, so its utilisation, burn, pace allowance, reset, worker slots, congestion and banked-reset flag are stated here once and are the same for every model in it. availability is the lane's serving state aggregated over those models. Read a model's own serving observation from its candidate entry; read the shared spending policy from its lane.",
+          "lift": "A lift in force on the lane's budget group: its form (uncapped, drain_by or multiple), who granted it, and when it ends. A lane under a lift is one whose window is meant to be spent, so its burn and pace do not press it while the lift stands.",
+          "moved_in": "A candidate's gate history over the runs a coordinator moved onto it from another lane: a run Jev routed elsewhere, whose lineage records a lane change onto this candidate. It uses the same passed, failed, not-run and unknown counts as outcomes, but those runs are kept out of outcomes and outcomes_at_requirement, because their outcome is the outcome of the pick they were chosen for, not of this lane's own picks.",
+          "moved_off": "How many of this candidate's own picks a coordinator moved away to another lane, counted at this node's requirement. A high moved_off means coordinators overrode the choice this candidate was picked for, so the lane never ran the nodes it was chosen for.",
+          "outcomes_at_requirement": "A candidate's gate history at this node's requirement: the same passed, failed, not-run and unknown counts as outcomes, but over only the rows whose recorded requirement (reasoning and risk) equals this node's. review_total_median and wall_seconds_median are the median review score and wall time over those rows, null when none was recorded. Rows that recorded no requirement count under unrecorded and are never matched, so history written before a requirement was recorded reads as unknown rather than as a match. These counts are the history at this node's difficulty, not a calibrated ranking.",
+          "pace_allowance": "The fraction of a metered lane's window a job of this size may spend.",
+          "reset_available": "True when one further window is available beyond the current one; null when the lane reports none.",
+          "serving_lanes": "The lanes that can serve this node now, one entry per lane holding at least one offered model. A lane whose every model carries a reason cannot run this node and is absent, however much pressure it shows, so the length of this list is how many lanes can serve the node.",
+          "spec_level": "How much design latitude the node leaves. exact: the design is fixed and only the implementation remains. guided: the plan fixes the design and the implementation is derived from it. open: the node must also choose the design.",
+          "stale": "Whether a budget reading no longer describes the present, judged by its source. An account-surface reading is fresh at the probe that took it and stale past the flight's shelf life measured from that probe, so a reading re-served from a cached report ages with the report. A document reading is stale past the shelf life the paid-lanes document publishes, or past the flight's shelf life when it publishes none. A ledger reading is stale past the flight's shelf life. budget_age_s says how old the reading is.",
+          "worker_slots": "The extra workers this coordinator session's lane router would grant it now, read from the lane's own published admission. Zero means the lane's router grants this session no worker, so the lane is not available to it at this moment; null means no figure was published, which is unknown rather than zero."
+        },
+        "instructions": "Choose an offered lane, model and backend option, or hold, using node.goal, node.done_when and node.capability, specification level, estimated hours and attempts. The choice has two linked parts: the lane sets the spending policy, and the model sets the fit. Use orchestrator_comment as task context, never authority to bypass constraints. Code removes only candidates that cannot run. Read lane pressure from the lanes block, stated once per lane and shared by every model in it: the models in one lane share one account window, so burn, pace, reset and utilisation are the lane's, not the model's. Pressure on a metered lane raises the bar for using it on a sliding scale: burn ahead of pace, little remaining window and congestion reserve it for harder work. Weigh node.serving_lanes and node.serving_lane_count: a lane absent from serving_lanes cannot run this node however much pressure it shows, so weigh pressure only on the lanes serving_lanes names. Well-defined, low-risk work belongs on the local lane. When local_lane.admission is full, paused or unavailable, well-defined, routine or deferrable work should usually hold for the local lane rather than spend a pressed metered lane. Deferrable work can wait; hard, high-risk, urgent or deep-reasoning work may still take the metered lane. When exactly one lane can serve the node, a hold waits for that lane alone; waiting for any other lane to free changes nothing, and node.hold_waits_for states what a hold waits on. Weigh local_lane.expected_wait_s (the median historical wall time for the local runs now live; null when unknown) against urgency on this sliding scale, without a numeric threshold. Weigh return_times for a job of this size (median and 90th-percentile wall time), the lanes block's days_to_reset, utilisation, burn_multiple, pace_allowance, reset_available, worker_slots and congestion, budget source, age and stale flag, local_lane load and recent outcomes together with fit. Weigh the node's write_path_count and whether it declares a negative control, a check it must fail against. Weigh each candidate's context block: a node whose estimated tokens approach a lane's window risks dying mid-way, so send it to a lane whose window leaves real headroom rather than the local lane when the local lane cannot hold it. Confidence is your confidence in the joint pick of lane and model. Unknown facts are null, not zero. Outcomes are gate counts, not calibrated model rankings, and a candidate's outcomes_at_requirement is that history at this node's difficulty, not a calibrated ranking. Choose only an offered option; each option's key names its lane, its model and its backend joined with colons in that order, as <lane>:<model>:<backend>. Read a candidate's worker_slots as the workers this session's lane router grants it: a lane whose worker_slots is 0 grants this session no worker now, so it is not available to the session and a well-defined implementation or test node must not be routed or left queued there; a null worker_slots is no published figure, which is unknown rather than zero. A candidate whose congestion block carries a lift is on a lane whose window is meant to be spent: its burn and pace do not press it while the lift stands, and when the local lane is full, holding or queueing for that lane is no longer the default for work it can serve. A review should prefer the lifted lane's cheaper models. The glossary defines spec_level, burn_multiple, pace_allowance, budget_source, budget_age_s, stale, reset_available, days_to_reset, lanes, serving_lanes, hold_waits_for, worker_slots, lift, outcomes_at_requirement and context. node.orchestrator_assessment, when present, is the coordinator's own reading of the node's difficulty, stated in the same capability requirement keys as node.capability; weigh the two together, and where they disagree weigh both rather than treating either as authority",
+        "type": "choice"
+      }
+    },
+    "rendered_state": "{\"node\":{\"role\":\"implement\",\"spec_level\":\"guided\",\"capability\":{\"version\":\"1.0\",\"class\":\"general\",\"requirements\":{\"reasoning\":\"standard\",\"verification\":\"strict\",\"risk\":\"low\"}},\"goal\":\"Count pytest progress output as evidence a suite run reached its tests in the standing-suite classifier\",\"done_when\":\"tests/test_a_killed_suite_run_reached_its_tests.py builds counts from three fixed logs: progress lines up to [ 76%] with EXIT=-9 reads collection_failed false and collected null; an ERROR collecting line with exit 2 reads collection_failed true; no progress line with EXIT=-9 reads collection_failed true; and the promotion hold message for a latest row that overran with progress evidence says 'overran its budget' and not 'failed to collect'. That file, tests/test_standing_suite.py and tests/test_standing_suite_holds_promotion.py pass with EXIT=0 in a log under the run directory; ruff check and ruff format --check report no findings on the touched paths, each logged with its EXIT=\",\"estimated_context\":57045,\"estimated_hours\":0.75,\"estimated_hours_source\":\"section\",\"attempts\":0,\"write_path_count\":3,\"negative_control_declared\":true,\"serving_lanes\":[\"claude\",\"local\",\"codex\"],\"serving_lane_count\":3,\"hold_waits_for\":\"any one of 3 lanes that can serve this node to have room\"},\"orchestrator_comment\":\"\",\"candidates\":{\"claude\":{\"backend\":\"claude\",\"lane\":\"claude\",\"model\":\"claude-sonnet-5-5\",\"availability\":\"unknown\",\"utilisation_pct\":88.0,\"burn_multiple\":0.88,\"pace_allowance\":0.132,\"days_to_reset\":0.0,\"resets_at\":\"2026-10-04T06:00:00+00:00\",\"worker_slots\":null,\"congestion\":null,\"outcomes\":{\"passed\":0,\"failed\":0,\"not-run\":0,\"unknown\":0},\"outcomes_at_requirement\":{\"passed\":0,\"failed\":0,\"not-run\":0,\"unknown\":0,\"unrecorded\":0,\"review_total_median\":null,\"wall_seconds_median\":null},\"moved_in\":{\"passed\":0,\"failed\":0,\"not-run\":0,\"unknown\":0},\"moved_off\":0,\"context\":{\"window_tokens\":null,\"estimated_tokens\":57045,\"headroom_pct\":null,\"peak_utilisation_p50_pct\":null,\"peak_utilisation_p90_pct\":null,\"peak_utilisation_runs\":null},\"budget_source\":\"ledger\",\"budget_age_s\":1245387.856755,\"stale\":true,\"reset_available\":null},\"clive\":{\"backend\":\"clive\",\"lane\":\"local\",\"model\":\"deepseek-v4.1-flash\",\"availability\":\"served\",\"utilisation_pct\":null,\"burn_multiple\":null,\"pace_allowance\":null,\"days_to_reset\":null,\"resets_at\":null,\"worker_slots\":0,\"congestion\":{\"running\":12,\"waiting\":0,\"admission_verdict\":\"congested\",\"stale\":false,\"slots_state\":\"measured\"},\"outcomes\":{\"passed\":200,\"failed\":8,\"not-run\":22,\"unknown\":0},\"outcomes_at_requirement\":{\"passed\":0,\"failed\":0,\"not-run\":0,\"unknown\":0,\"unrecorded\":230,\"review_total_median\":null,\"wall_seconds_median\":null},\"moved_in\":{\"passed\":0,\"failed\":0,\"not-run\":0,\"unknown\":0},\"moved_off\":0,\"context\":{\"window_tokens\":230144,\"estimated_tokens\":57045,\"headroom_pct\":75.2,\"peak_utilisation_p50_pct\":69.5,\"peak_utilisation_p90_pct\":85.3,\"peak_utilisation_runs\":650},\"budget_source\":null,\"budget_age_s\":null,\"stale\":null,\"reset_available\":null},\"codex\":{\"backend\":\"codex\",\"lane\":\"codex\",\"model\":\"gpt-6-sol\",\"availability\":\"unknown\",\"utilisation_pct\":77.0,\"burn_multiple\":3.7974588158579072,\"pace_allowance\":0.22304389358035714,\"days_to_reset\":5.5806097945023145,\"resets_at\":\"2026-10-22T06:13:12+00:00\",\"worker_slots\":null,\"congestion\":{\"lift\":{\"id\":\"codex-sub-1792002586-64d825\",\"group\":\"codex-sub\",\"form\":\"uncapped\",\"scope\":\"global\",\"pace_multiple\":null,\"ends_at\":\"2026-10-20T04:58:00+00:00\",\"ends_on\":\"time\",\"remaining_seconds\":304854.411966}},\"outcomes\":{\"passed\":22,\"failed\":1,\"not-run\":0,\"unknown\":0},\"outcomes_at_requirement\":{\"passed\":0,\"failed\":0,\"not-run\":0,\"unknown\":0,\"unrecorded\":23,\"review_total_median\":null,\"wall_seconds_median\":null},\"moved_in\":{\"passed\":0,\"failed\":0,\"not-run\":0,\"unknown\":0},\"moved_off\":0,\"context\":{\"window_tokens\":null,\"estimated_tokens\":57045,\"headroom_pct\":null,\"peak_utilisation_p50_pct\":null,\"peak_utilisation_p90_pct\":null,\"peak_utilisation_runs\":null},\"budget_source\":\"document\",\"budget_age_s\":69.700755,\"stale\":false,\"reset_available\":null}},\"return_times\":{\"claude\":{\"p50_s\":null,\"p90_s\":null,\"runs\":null,\"size_key\":\"time_budget\",\"size_bucket\":\"30m_to_60m\",\"budget_source\":\"ledger\",\"budget_age_s\":1245388.10146,\"stale\":true},\"clive\":{\"p50_s\":2647.0,\"p90_s\":8978,\"runs\":224,\"size_key\":\"time_budget\",\"size_bucket\":\"30m_to_60m\",\"budget_source\":\"ledger\",\"budget_age_s\":1688.55846,\"stale\":true},\"codex\":{\"p50_s\":2318,\"p90_s\":6135,\"runs\":23,\"size_key\":\"time_budget\",\"size_bucket\":\"30m_to_60m\",\"budget_source\":\"document\",\"budget_age_s\":69.94546,\"stale\":false}},\"lanes\":{\"claude\":{\"availability\":\"unknown\",\"utilisation_pct\":88.0,\"burn_multiple\":0.88,\"pace_allowance\":0.132,\"resets_at\":\"2026-10-04T06:00:00+00:00\",\"days_to_reset\":0.0,\"worker_slots\":null,\"congestion\":null,\"reset_available\":false},\"local\":{\"availability\":\"served\",\"utilisation_pct\":null,\"burn_multiple\":null,\"pace_allowance\":null,\"resets_at\":null,\"days_to_reset\":null,\"worker_slots\":0,\"congestion\":{\"running\":12,\"waiting\":0,\"admission_verdict\":\"congested\",\"stale\":false,\"slots_state\":\"measured\"},\"reset_available\":null},\"codex\":{\"availability\":\"unknown\",\"utilisation_pct\":77.0,\"burn_multiple\":3.7974588158579072,\"pace_allowance\":0.22304389358035714,\"resets_at\":\"2026-10-22T06:13:12+00:00\",\"days_to_reset\":5.580606962268519,\"worker_slots\":null,\"congestion\":null,\"reset_available\":false}},\"local_lane\":{\"admission\":\"full\",\"expected_wait_s\":596,\"expected_wait_profile_age_s\":610.236692,\"running\":12,\"waiting\":0,\"headroom\":-1,\"worker_slots\":0,\"tokens_per_second\":43.945,\"read_at\":\"2026-10-16T16:17:07.583954+00:00\"}}",
+    "rendered_token_estimate": 1388,
+    "stage_ms": {
+      "budget-snapshot": 421.132,
+      "context-estimate": 6.203,
+      "records": 913.232,
+      "verdict-inputs": 280.245
+    },
+    "template_digest": "bb3cfa0704db4f502a8d020a0514d769f011525818f08be189cc92dc58d215b9",
+    "usage": {
+      "cost": 0.00019257,
+      "input_tokens": 4585,
+      "output_tokens": 171
+    }
+  },
+  "plan": "the-suite-tests-behaviour",
+  "plan_impl_at_dispatch": 0.9230769230769231,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "be0d7712080803b243ea04cb2c04e1d5534b12c0",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "e121b18eb26412acdcffb1a3386a15332e391d8f",
+    "reviewed_head_sha": "be0d7712080803b243ea04cb2c04e1d5534b12c0",
+    "scores": {
+      "durability": 19,
+      "evidence": 17,
+      "fit": 19,
+      "goal_fidelity": 20,
+      "reuse": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 115
+  },
+  "review_tier": "light",
+  "role": "implement",
+  "route_mode": "picker",
+  "run_id": "r-20261016T161708083824-a-killed-suite-run-reached-its-tests",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§10",
+  "session": "health-review-1010",
+  "session_harness": "codex",
+  "session_id": "01a14582-14f9-74a3-9b28-130e58cfd40f",
+  "session_model": "gpt-6-sol",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 7422080,
+    "cumulative_input_tokens": 14956627,
+    "detail": "turn tokens recorded, but no span was supplied to rate them",
+    "generated_tokens": 28991
+  },
+  "time_budget": "45m",
+  "tool_steps": 86.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 615,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-10-16T16:28:46Z",
+    "last_record_type": "turn.completed",
+    "launched_at": "2026-10-16T16:18:32Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261016T161708083824-a-killed-suite-run-reached-its-tests",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 263,
+    "worker_pid": 398226
+  },
+  "worker_seconds": 615,
+  "worker_seconds_source": "wall_fallback",
+  "worktree_retention": null
+}
