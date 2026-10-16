@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+</head>
+<body>
+<section id="codex-declares-image-input-on-a-shown-delivery">
+<h2 id="codex-declares-image-input-on-a-shown-delivery-landed">The codex lane declares image input on a measured read</h2>
+<p id="codex-declares-image-input-on-a-shown-delivery-landing">
+The codex probe (<code>gpt-6-sol</code>, run
+<code>r-20261016T125551870973-a-codex-lane-describes-an-attached-figure</code>)
+described an unseen figure correctly, so
+<code>docs/state/reckon/flight.yaml</code> now declares
+<code>input_modalities: [text, image]</code> under <code>backends.codex</code>.
+Measure: a claim table in the probe report's <code>verdict.md</code> checks every
+title, axis label, legend entry, category label and bar value of the description
+against <code>docs/figures/unreviewed-promotion-exposure/exposure_counts.py</code>
+with no contradiction, and <code>reckon.flight.declared_input_modalities</code>
+on the resolved project config returns <code>('text', 'image')</code> for
+<code>codex</code> and <code>()</code> once the declaration is stripped; the 54
+test files importing <code>reckon/flight.py</code> show the same two failures at
+base and head.
+</p>
+</section>
+</body>
+</html>
