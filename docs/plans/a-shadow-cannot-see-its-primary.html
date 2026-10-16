@@ -26,7 +26,7 @@
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -209,14 +209,14 @@
     </ul>
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="shadow-isolation-scope" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="shadow-isolation-scope" data-choice="paired-dispatch" data-by="lead" data-when="2026-10-16T19:33:38+00:00">
     <p class="r-dec-q">Beyond detection and hiding reckon&#x27;s records, how should a shadow be kept from its primary&#x27;s landed result?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="paired-dispatch">Launch both arms together from one base (recommended)</button>
+      <button class="r-opt chosen" data-value="paired-dispatch">Launch both arms together from one base (recommended)</button>
       <button class="r-opt" data-value="mask-checkout">Mask the main checkout from a shadow</button>
       <button class="r-opt" data-value="detect-only">Detection only</button>
       </p>
-    <p class="r-dec-rat">Recommended: a paired dispatch removes the landed result rather than hiding it, and it matches how nova&#x27;s lead wants deep nodes run. Masking the checkout leaves git history open and risks breaking tools that read the checkout. Detection alone keeps every report honest but spends a run on each breach.</p>
+    <p class="r-dec-rat">A paired dispatch removes the landed result rather than hiding it: both arms start from one base before either lands, and the fence hides each arm&#x27;s records and worktree from the other. Masking the checkout leaves git history open and risks breaking tools that read it; detection alone spends a run on every breach. It matches how nova&#x27;s lead wants deep nodes run.</p>
     </div>
 </section>
 
@@ -243,6 +243,12 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s1" data-id="c-incident-reports-root-deleted" data-who="reckon-build" data-when="2026-10-16T19:40:00Z">
     <div class="r-comment-body"><p>Incident, 2026-10-16. The content re-review of this plan, run <code>r-20261016T190754696739-plan-review-of-a-shadow-cannot-see-its-primary</code>, deleted the whole <code>~/.config/reckon/crew/reports/reckon</code> tree at 19:18:11Z. The deletion is line 9658 of its stream: <code>rm -rf /home/ITER/mcintos/.config/reckon/crew/reports/reckon 2&gt;/dev/null</code>, described as removing a mistyped directory it had written at line 9603. Its worker fence bound the whole <code>crew/reports</code> and <code>crew/reviews</code> roots writable. The stream, prompt, brief, manifest and worker record are preserved under <code>~/.cache/reckon-incident-reports-root-20261016/</code>, and the session reckon-0e is filing the fence fix and the backup request. The review's <code>report.md</code> survived. Its two findings were read and acted on: §4 now looks up the primary's row before resolving its paths, and §2's positive control reads a committed fixture. Its sidecar was deleted, so the review could not be stored, and the plan needs a new content review before §2 to §4 dispatch. This session is holding its dispatches, reviews included, until the fence no longer grants those roots.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-hold-lifted" data-who="reckon-build" data-when="2026-10-16T19:50:00Z">
+    <div class="r-comment-body"><p>On 2026-10-16 the lead lifted the dispatch hold recorded in <code>c-incident-reports-root-deleted</code>. The content review and §2–§4 are dispatched before fence §10 of <code>a-worker-cannot-write-your-home</code> lands, so each run's stream is checked for an <code>rm</code> on a shared root before it is promoted.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-scope-locked" data-who="reckon-build" data-when="2026-10-16T19:50:00Z">
+    <div class="r-comment-body"><p>The lead locked <code>shadow-isolation-scope</code> as <code>paired-dispatch</code> on 2026-10-16. §5 stays deferred until it is rewritten as the paired-dispatch build: a dispatch-time pairing that starts the primary and the shadow from one base, with each arm's records and worktree masked from the other through the §4 fence.</p></div>
 </div>
 </section>
 </main>
