@@ -482,10 +482,13 @@ def classify_pointer(
     # issued the pid; a producer classifying the fleet from another node reads a
     # worker's liveness as unknown, so a delivered worker still in its final
     # turn read ``scoring`` and raised a review duty the reflex was about to
-    # discharge itself. The hoisted verdict already answers the question the
-    # deferral means to ask — is the worker gone — from the process table where
-    # it can and from the run's own stream where it cannot, so the deferral
-    # consults it rather than liveness alone.
+    # discharge itself. So for a delivered (``complete``) manifest the deferral
+    # consults the hoisted verdict rather than liveness alone: it answers the
+    # question the deferral means to ask — is the worker gone — from the process
+    # table where it can and from the run's own stream where it cannot. The
+    # stream-aware verdict holds only that verdict; every other terminal word
+    # defers on proven liveness alone, so a moving stream never hides a blocked
+    # or failed stop.
     #
     # The exit record is the other half of the question, and it crosses nodes on
     # the shared home where a pid cannot. It is folded into the hoisted verdict:
@@ -493,8 +496,26 @@ def classify_pointer(
     # and the deferral does not fire. An exited worker on another node therefore
     # reads ``scoring`` at once rather than waiting a quarter of an hour for its
     # stream to pass the stall window.
+    # A terminal verdict is provisional while its writer is provably alive: a
+    # worker that is still running outranks the status word on its file. A
+    # superseded manifest is deferred for the same reason whatever its word,
+    # because that verdict belongs to a previous attempt and says nothing about
+    # the one now running.
+    #
+    # The stream-aware term is the delivered verdict's alone. A ``complete``
+    # manifest whose worker sits on another node — liveness unknown, but the
+    # stream moving and no exit record — is still finishing its final turn, so
+    # holding it at ``running`` keeps a review duty off a worker the reflex is
+    # about to release. A ``blocked`` or ``failed`` verdict is not a delivery:
+    # it is the stop itself, and holding it at ``running`` on the strength of a
+    # moving stream would hide that stop from every reader — most sharply from
+    # promotion, where it would carry a blocked run with a live session past the
+    # resume-path refusal it must still meet while deleting the pointer a resume
+    # needs. Only a proven-alive process, not a moving stream, defers those.
     deferred_outcome = manifest_status in TERMINAL_MANIFEST_STATUSES and (
-        not process_gone or superseded_manifest
+        alive is True
+        or superseded_manifest
+        or (manifest_status == "complete" and not process_gone)
     )
     interruption = None
     interruption_commits = 0
