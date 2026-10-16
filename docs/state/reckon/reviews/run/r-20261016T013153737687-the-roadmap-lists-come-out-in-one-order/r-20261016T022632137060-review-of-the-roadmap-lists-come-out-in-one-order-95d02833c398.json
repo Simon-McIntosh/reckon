@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "7d64e331f138a1acbfbd8157263e8412e9678550",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/serve.py:2421",
+    "reckon/flight.py:2309",
+    "reckon/mcp.py:1561",
+    "reckon/mcp.py:2709",
+    "reckon/crew/plan_review.py:3074",
+    "reckon/roadmap.py:2167"
+  ],
+  "completed_at": "2026-10-16T02:35:46.875Z",
+  "dispatched_at": "2026-10-16T02:27:12Z",
+  "findings": [
+    {
+      "file": "tests/test_the_roadmap_lists_come_out_in_one_order.py",
+      "line": "121",
+      "severity": "follow-on",
+      "summary": "the order-key assertion covers decision_blockers only",
+      "text": "follow-on: the gained order-key assertion reads report[\"decision_blockers\"] alone, so wiring_findings order is guarded only indirectly by the cross-seed byte-equality at :124; a regression that ordered one list but not the other would not be named by a direct assertion."
+    }
+  ],
+  "head_log_revision": "95d02833c3984332e623238f1ad95228af16a8ce",
+  "item_verdicts": {
+    "diff": "read commit by commit against base 7d64e331f (the prior review's head, per the goal's 'since it was reviewed' scope); the single gained commit 95d02833c adds four lines to tests/test_the_roadmap_lists_come_out_in_one_order.py, an order-key assertion, and regenerates the head-arm and ruff logs.",
+    "done_when": "the done_when names a two-seed byte-identical render, row parity before/after, id-parity across the roadmap-importing files, and a ruff-clean clause; all four are now evidenced at head: gates/head-chunk0..3.log each end EXIT=0 (411 passed), gates/ruff.log ends EXIT=0 with no added findings, and the new test re-run at head gives 1 passed/EXIT=0.",
+    "goal": "the node's goal is a stable key order for the roadmap's decision-blocker and wiring lists; reckon/roadmap.py:1962 and :1994 now return sorted slug lists, so the visit at reckon/roadmap.py:2597 appends both lists in plan-identity order.",
+    "manifest": "read; it reports the new test 1 passed/EXIT=0, 411 passed each arm, the ruff delta clean, and the repair checkpoint at 95d02833c answering the prior review's two blocking findings (head-chunk3.log and gates/ruff.log).",
+    "write_paths": "the declared paths are reckon/roadmap.py, tests/test_the_roadmap_lists_come_out_in_one_order.py and the evidence fragment; every path in the diff is inside them; the incremental commit touches only the test file."
+  },
+  "justifications": {
+    "durability": "tests/test_the_roadmap_lists_come_out_in_one_order.py:121-122 reads report from an independent subprocess render and asserts plans == sorted(plans), which reddens if _scope_slugs returns an unsorted collection, as the recorded negative control shows.",
+    "evidence": "tests/test_the_roadmap_lists_come_out_in_one_order.py:124 asserts two independent subprocess renders are byte-identical and gates/head-chunk0..3.log each end EXIT=0 (411 passed), with gates/ruff.log:15 EXIT=0 and no added findings.",
+    "fit": "tests/test_the_roadmap_lists_come_out_in_one_order.py now ends in a newline and gates/ruff.log:15 records EXIT=0 with the two pre-existing roadmap.py findings on both arms, so the gained commit adds no finding.",
+    "goal_fidelity": "reckon/roadmap.py:1964 returns sorted(plans) and :1994 sorted(selected), so the loop at :2597 that appends decision_blockers and wiring_findings now visits plans in slug order; the gained assertion at tests/test_the_roadmap_lists_come_out_in_one_order.py:122 names that property directly.",
+    "reuse": "the fix uses the builtin sorted() already used at reckon/roadmap.py:1317 and :1406 rather than adding an ordering mechanism.",
+    "scope_discipline": "the gained commit 95d02833c changes only tests/test_the_roadmap_lists_come_out_in_one_order.py, one of the node's declared write paths, and nothing else."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a stable key order for the roadmap's decision-blocker and wiring lists; reckon/roadmap.py:1964 and :1994 now return sorted slug lists, so the visit at reckon/roadmap.py:2597 appends both lists in plan-identity order.\nVERDICT done_when: the done_when names a two-seed byte-identical render, row parity before/after, id-parity across the roadmap-importing files and a ruff-clean clause; all four are evidenced at head, with gates/head-chunk0..3.log each ending EXIT=0 (411 passed), gates/ruff.log EXIT=0 with no added findings, and the new test re-run at head 1 passed/EXIT=0.\nVERDICT write_paths: the declared paths are reckon/roadmap.py, tests/test_the_roadmap_lists_come_out_in_one_order.py and the evidence fragment; every path in the diff is inside them, and the gained commit touches only the test file.\nVERDICT manifest: read; it reports the new test 1 passed/EXIT=0, 411 passed each arm, the ruff delta clean, and the repair at 95d02833c answering the prior review's two blocking findings.\nVERDICT diff: read commit by commit against base 7d64e331f; the one gained commit 95d02833c adds four lines to tests/test_the_roadmap_lists_come_out_in_one_order.py and regenerates the head-arm and ruff logs.\nCALL_SITES: reckon/serve.py:2421, reckon/flight.py:2309, reckon/mcp.py:1561, reckon/mcp.py:2709, reckon/crew/plan_review.py:3074, reckon/roadmap.py:2167\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:1964 returns sorted(plans) and :1994 sorted(selected), so the loop at :2597 that appends decision_blockers and wiring_findings now visits plans in slug order, and the gained assertion at tests/test_the_roadmap_lists_come_out_in_one_order.py:122 names that property.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_the_roadmap_lists_come_out_in_one_order.py:124 asserts two independent subprocess renders are byte-identical and gates/head-chunk0..3.log each end EXIT=0 (411 passed), with gates/ruff.log:15 EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained commit 95d02833c changes only tests/test_the_roadmap_lists_come_out_in_one_order.py, one of the node's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_roadmap_lists_come_out_in_one_order.py:121-122 derives plans from an independent subprocess render and asserts plans == sorted(plans), which reddens if _scope_slugs returns an unsorted collection.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_the_roadmap_lists_come_out_in_one_order.py now ends in a newline and gates/ruff.log:15 records EXIT=0 with the two pre-existing roadmap.py findings on both arms.\nSCORE reuse: 20\nJUSTIFICATION reuse: the fix uses the builtin sorted() already used at reckon/roadmap.py:1317 and :1406 rather than adding an ordering mechanism.\nFINDING tests/test_the_roadmap_lists_come_out_in_one_order.py:121 follow-on: the order-key assertion reads decision_blockers alone, so wiring_findings order is guarded only indirectly by the cross-seed byte-equality at :124.\n",
+  "review_run_id": "r-20261016T022632137060-review-of-the-roadmap-lists-come-out-in-one-order-95d02833c398",
+  "reviewed_base_sha": "7d64e331f138a1acbfbd8157263e8412e9678550",
+  "reviewed_head_sha": "95d02833c3984332e623238f1ad95228af16a8ce",
+  "reviewed_run_id": "r-20261016T013153737687-the-roadmap-lists-come-out-in-one-order",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T02:32:41.063554+00:00",
+  "total": 117
+}
