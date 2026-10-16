@@ -1,0 +1,43 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T19:46:13.868Z",
+  "dispatched_at": "2026-10-16T19:35:47Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-shadow-cannot-see-its-primary.html:159",
+      "id": "reasoning-1",
+      "reason": "a node building \u00a74 must know whether the caller resolves the paths and passes them or passes the lineage for `launch_plan` to resolve, and the two readings yield different call-site signatures and write scopes.",
+      "text": "\u00a74 states both that `launch_plan` \"gains the paths to hide\" and that \"the launch looks up the primary's ledger row by the lineage's `primary_run_id` ... and passes that row to `promotion_scope._primary_read_targets`\", while `launch_plan` in `reckon/_backends.py` receives no project or ledger (its parameters are backend, prompt, worktree, manifest_path and fence inputs) and `_shadow_stream_contamination`, the lookup \u00a74 points at, runs in the crew layer with the loaded ledger passed in \u2014 so the two sentences place the resolution in different layers and one of them requires a new ledger parameter on every caller plus a crew import into a low-level composer",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e656d00688c1bd4e8943fdb8a15ec5d70d2f0c74c9e34c43fee2385ef971c604",
+  "plan_slug": "a-shadow-cannot-see-its-primary",
+  "plan_version": 7,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T193510730111-plan-review-of-a-shadow-cannot-see-its-primary",
+  "reviewed_blob_sha": "e4305722480cf5d9e76cd06ff2ed7699ff036681",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 in the changed units every code anchor resolves (`promotion_scope._primary_read_targets` at promotion_scope.py:1040, `_shadow_stream_contamination` at 1080, `ledger.shadow_primary_read` at ledger.py:2889, `runs.run_dir` at runs.py:81, `review.review_path` at review.py:1969, `pair_shadow_arms` at capabilities.py:984, `fence_argv` at _worker_fence.py:1143, `launch_plan` at _backends.py:2081 calling `fence_argv` at 2214), the three named launch callers all call `launch_plan` (dispatch.py:1902, dispatch_sessions.py:1135 and 1589, resumption.py:555), and the referenced plans `jev-learns-from-its-routes` and `a-worker-cannot-write-your-home` both exist.",
+    "done_when": "pass \u2014 \u00a72, \u00a73 and \u00a74 each name a mutation that must make an assertion fail, and the scan widening carries its own negative control (a call reading only the shadow's own worktree and run home gets none).",
+    "evidence_paths": "pass \u2014 the done-whens write to committed tests under `tests/` and a committed fixture; no gate log or artifact is placed on a session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the new symbols `primary_run_directory_read`, `primary_review_read` and `primary_worktree_read` name the read they detect, and the write paths and test filenames carry no plan, sprint or ticket identifiers.",
+    "reasoning": "a finding \u2014 \u00a72's root cause matches its evidence (nova's row carries `shadow_contaminated: primary_changed_path_read` while `shadow_controlled: True`, and `pair_shadow_arms` does read only `lineage.configuration`), and the fixture claim is grounded (the retained stream's tool inputs do name the primary's run directory and a primary-changed path), but \u00a74 names two different places for resolving the primary's paths, one of which `launch_plan` cannot reach.",
+    "single_goal": "pass \u2014 \u00a72 joins one control verdict to the existing contamination scan, \u00a73 renames one worktree session, \u00a74 composes one fence mask set.",
+    "wiring": "pass \u2014 `plan-section-depends-on` puts s4 on s2 and s3, and \u00a74 both masks the path set \u00a72's `_primary_read_targets` returns and shares `dispatch.py` with \u00a73, so the declared edges match the mechanism."
+  },
+  "section_digests": {
+    "_document": "6d4d074a5a6bd9f0c3a73714bf549cbd3193adb1eed57b26fa5de8feda5de36c",
+    "s1": "770768dc8c73c5fefe174fd6a4f867ad2b40854cb74c588f41848bd65b6600d3",
+    "s2": "2180ff0a03d627a0c6b67adf9242725afb8aa0cb334f88e11e542b36132ccc8f",
+    "s3": "330eeee9f8ec7d9d7cd19844afd555d06dcdd4b49c538f4118af635df0f0ce57",
+    "s4": "81e781c6f5152b3242d5f0901759201f52e8dfa74407f4ff777b750f63ea57d6",
+    "s5": "2a07858e7b91efc28681036938f28fdcdd126a02bd9a74f5ff583def6ac5699a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T19:48:11.649462+00:00"
+}
