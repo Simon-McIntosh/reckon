@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T16:19:30.391Z",
+  "dispatched_at": "2026-10-16T16:07:05Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:163",
+      "id": "done_when-1",
+      "reason": "the node is closed on a narrow population while its stated universal remains unverified, so the same defect can survive under a different test file.",
+      "text": "\u00a79 declares \"Every test that builds a ledger uses a temporary cache root\" but its gate runs only \"the test files that produced these indexes\", so a leak from any other ledger-building test file passes unobserved",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:24",
+      "id": "done_when-2",
+      "reason": "the declaration contradicts the plan's evidence, and a coordinator reading the declarations treats \u00a75 as closed and the unmet measure silently disappears from the roadmap.",
+      "text": "the section declarations mark s5 done while the plan's own record (comment c-close-s5 and the landed evidence at `#s5-backlog-reclaimed`) states \u00a75's done-when clause \"the combined size of the four stores is at least 100 GB lower than the \u00a71 figures\" is not met",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:188",
+      "id": "wiring-1",
+      "reason": "both sections are declared implementable, so \u00a79 is reached by section state and the invocation is an incomplete hint rather than a missing edge.",
+      "text": "f-tchhab-004's title and body cover \u00a78 and \u00a79 but its `data-recommends-skill` names only \"/reckon-build the-crew-home-has-a-bound \u00a78\", so \u00a79 has no dispatching invocation",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "c738e519f73f6af394df6bf41148fec3127d3eb1b817825ddb34508a77bd37e4",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 47,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T160620784519-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "27ca51ac4a33eb0ae67fe03af2a56765455dd539",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_run_index_path` resolves at reckon/ledger.py:987, `_store.cache_root(\"pick-input\")` at reckon/_store.py:148, and the evidence href `#s5-backlog-reclaimed` resolves to a section that exists in the landed evidence file.",
+    "done_when": "a finding \u2014 \u00a79's gate runs only \"the test files that produced these indexes\" while its deliverable claims a property of every ledger-building test; \u00a75 is also declared done while its own done-when clause is unmet.",
+    "evidence_paths": "pass \u2014 \u00a78 and \u00a79 name code and test write paths only; neither routes evidence to a scratchpad or node-local path (the plan's run-directory log convention covers their gate logs).",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the new symbols; \u00a78/\u00a79 name code and test files by mechanism.",
+    "reasoning": "pass \u2014 \u00a78's root cause matches the code and reproduces (a missing ledger's read builds an index that records the missing path); \u00a79's fix is capable of its measure. Verified by reproduction, not by an unread claim.",
+    "single_goal": "pass \u2014 \u00a78 (one reader path writes no index) and \u00a79 (tests write no real-cache index) each carry a single deliverable.",
+    "wiring": "pass \u2014 the two new sections declare no depends-on/gates, and both are marked implementable in the plan's section declarations, so \u00a79 is reached by section state; the only gap is that f-tchhab-004's recommends-skill names \u00a78 while its body covers \u00a78 and \u00a79 (recorded as a finding below)."
+  },
+  "section_digests": {
+    "_document": "c347dcdb160711c6f703f03e9e54952c16d0bf39512ec3c73fbe14f6489ea39b",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "ea437bee063bb05e8f8ddb6f7a30f7f066d66dff1770c1488e31b86a6f5c7ba8",
+    "s5": "75a8a336e2ee62426e5a8c3ed3310e0cf614b82a8cf7ae6a5985fcb99f2b1648",
+    "s6": "3f82b3311550663b1d18b1428203c2b44805aff91f1c998049de11dd82bfe201",
+    "s7": "d966e9dc54000fcf7d43d9d39567b2a791c2670b0224b881649472a126a8f106",
+    "s8": "07d9242815cd2c19cf76c9484aa28c908834190af477f204091de9d695b3e8a5",
+    "s9": "eb2e00e580a476092eb53a53e9c52bf5afbdcc1d87377e45745ea540dd0153dc"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T16:22:56.448394+00:00"
+}
