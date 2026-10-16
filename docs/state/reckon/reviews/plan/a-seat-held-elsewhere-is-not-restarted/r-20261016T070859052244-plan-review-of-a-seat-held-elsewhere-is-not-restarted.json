@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T07:19:56.559Z",
+  "dispatched_at": "2026-10-16T07:10:02Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html:244",
+      "id": "wiring-1",
+      "reason": "the followup block is the driving instruction for the next dispatch (the one open followup has repeatedly been the finding earlier reviews acted on), so leaving it closed while two implementable sections stand leaves the work unrouted and the plan's own state disagreeing with its code.",
+      "text": "the plan added \u00a718 and \u00a719 as data-status=\"implementable\" but left the followup chain closed: the last followup f-sheinr-006 is resolved and its outcome reads \"Done \u2014 no followup \u2026 every implementable section of this plan is done\", so no open followup names \u00a718 or \u00a719 and a dispatcher reading the plan's followups sees no work to run",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html:206",
+      "id": "done_when-1",
+      "reason": "a builder can land \u00a719 exactly as written, pass its done-when, and leave the cited session's line determined by the unchecked document branch (STALE_CODE still offers `--ensure`; STALE_SNAPSHOT offers follower-arming only when the separate producer-lease record at coordinator_obligations.py:702 is fresh), so the harm \u00a719 exists to stop would survive its own gate.",
+      "text": "\u00a719's done-when tests the no-snapshot case (\"For a session with no snapshot, the hook line names that host and the follower arming command\") and live_foreign_seat_host's return, but the incident it cites has a stale snapshot present (\u00a718 records that s21-nova's and s24-nova's snapshots were last written at 2026-10-15T11:26:51Z), which freshness_reading carries down its document branch to STALE_SNAPSHOT (age > FRESHNESS_WINDOW_SECONDS, 120 s) or STALE_CODE once a host is found, not to the NO_FOLLOWER route the done-when asserts",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e46deb4db5f45839ad2072626ee4cf9d15ec6cacd07897a9735cc0e8bf67e369",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 82,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T070859052244-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "3bea8332bf300cbb52d9340ea1c47eaf34751107",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves (renew_follower_lease, follower_lease_path, _follower_liveness, _seat_names_a_foreign_host at reckon/crew/follower_registration.py:100,88,537; watch_host_lease, _seat_host, _seat_names_a_foreign_host, _seat_stream_fresh, live_foreign_seat_host, seat_names_a_live_foreign_producer at reckon/crew/watch_unit.py:27,55,60,71,143,177; producer_live at reckon/crew/runs.py:2531; freshness_reading at reckon/crew/obligation_snapshot.py:393), the cited window is right (producer_lease_seconds 600 s, DEFAULT_WATCH_STALL_WINDOW \"15m\", LEASE_STALE_SECONDS 30 s), and the section cross-references (\u00a78, \u00a79, \u00a74) all resolve.",
+    "done_when": "a finding \u2014 \u00a719's done-when exercises only the no-snapshot route, while the incident it cites has a stale snapshot present, which takes a different branch of freshness_reading.",
+    "evidence_paths": "pass \u2014 both sections log their negative control \"under the run directory\" and route gate logs through the importing test files, not a session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the new test files are named by mechanism (tests/test_a_hostless_follower_is_judged_by_its_lease.py, tests/test_a_quiet_foreign_producer_reads_live.py) and no plan label, ticket number or version tag reaches a symbol or comment.",
+    "reasoning": "pass \u2014 both match cause to evidence (a hostless registration reads foreign=False and is judged by the node-local flock at follower_registration.py:568-616, so a producer on another node never reads its fresh lease; producer_live at runs.py:2570-2575 returns True on a fresh foreign host-lease holder before reading the stream, while watch_unit.live_foreign_seat_host at :143-175 reads only the seat's stream), the mechanism is reached on the real path (freshness_reading calls live_foreign_seat_host at obligation_snapshot.py:415 and :427, and the host lease is renewed only by the producer's own loop, runs.py:3111), and the mechanism does what the deliverable claims; the \u00a719 measure mismatch is filed under done_when.",
+    "single_goal": "pass \u2014 \u00a718 carries one deliverable (a lease that names its host, and a hostless registration judged by it) and \u00a719 one (live_foreign_seat_host honouring the host lease); \u00a718's lease host-write is the input its verdict reads, not a second deliverable.",
+    "wiring": "a finding \u2014 the document's followup chain is fully resolved with no open followup driving the two newly added implementable sections \u00a718 and \u00a719."
+  },
+  "section_digests": {
+    "_document": "dbb9ed267807e9c2b79c317f76f8bb8f99ada6fc4d521da33e6e471ae57f8d69",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s10": "fd9ced512f1fc6a0610cb111ec8c734e3c55a84ea11034055f5f1c9e60e0c649",
+    "s11": "9d7552bb9a0f7179067d09a67e819e7194fbbac1e34cf450bb6dd2631508389d",
+    "s12": "41b7e2f138ff584e94cdef995cae4ab65e47e6e0efb43dc6d30b0045664f611d",
+    "s13": "441358f17906d8fa159ba5911fc62cfb32cabff650e9ae63b1300701b43f7b6d",
+    "s14": "15dd48418b8a42e818c6a6c93d4914efb531dc5439e368a148fd7168b3a89faa",
+    "s15": "707b8d39391cbd7e59f3dbd9cc4748c655d8870e48f237e84889148855f5b9e7",
+    "s16": "e185fa1e0f4aa25f213b2df34164fcfb48751f19156d05a48ec1118841ee463d",
+    "s17": "73a4699a4193793731da87cf3a489de8f9e91df7e596e68dad4897797177cb9e",
+    "s18": "8999758c87844624774b694fe81fcd076a62c6ef3bccc2334956bdae4b71957d",
+    "s19": "ecdac2c2af2c4df14aef78ffdd601413d01388dd475d5e365c556a1d832f9695",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "96d5fc1c72a25970cab856a7dde0a3cab839fd87c83786b7b49ffc4c1dabb1ab",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad",
+    "s7": "d3e16f60d17ef3ee4666f9cd189aa6cd8e26f038173b65ee34b68f3f2cd822e7",
+    "s8": "b41130ef26282f759c1b7be0de0136701972d055ed7878e2f2d9cd21c96b4f63",
+    "s9": "a2cb7135c4bd3f1439c3ec948d6146c2f5b7527da59b1bbd4c7ce4c141ec3055"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T07:22:14.252803+00:00"
+}
