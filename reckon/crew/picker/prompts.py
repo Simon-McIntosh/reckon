@@ -98,6 +98,17 @@ _GLOSSARY: dict[str, str] = {
         "nothing, because it cannot run this node. Null when no lane can serve "
         "the node."
     ),
+    "outcomes_at_requirement": (
+        "A candidate's gate history at this node's requirement: the same passed, "
+        "failed, not-run and unknown counts as outcomes, but over only the rows "
+        "whose recorded requirement (reasoning and risk) equals this node's. "
+        "review_total_median and wall_seconds_median are the median review score "
+        "and wall time over those rows, null when none was recorded. Rows that "
+        "recorded no requirement count under unrecorded and are never matched, so "
+        "history written before a requirement was recorded reads as unknown "
+        "rather than as a match. These counts are the history at this node's "
+        "difficulty, not a calibrated ranking."
+    ),
     "context": (
         "A candidate's context block. window_tokens is the input window that "
         "gates the lane; estimated_tokens is this node's deterministic input "
@@ -170,6 +181,15 @@ def _candidate_state(candidate: Any) -> dict[str, Any]:
         "worker_slots": candidate.worker_slots,
         "congestion": candidate.congestion,
         "outcomes": candidate.outcomes,
+        # The block is rendered only when the request named a requirement to
+        # read history at; a pick that named none carries no such block, so the
+        # state keeps its shape for every pick that does not condition on
+        # difficulty.
+        **(
+            {"outcomes_at_requirement": candidate.outcomes_at_requirement}
+            if getattr(candidate, "outcomes_at_requirement", None)
+            else {}
+        ),
         "context": getattr(candidate, "context", None),
         "budget_source": getattr(candidate, "budget_source", None),
         "budget_age_s": getattr(candidate, "budget_age_s", None),
