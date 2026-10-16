@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest's baseline_suite and after_suite fields are empty, so the reviewed run names no base or head gate log and the added-failure count was not taken",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/runs.py:3243",
+    "reckon/crew/recovery_watch.py:2247",
+    "reckon/crew/recovery_repair_dispatch.py:1000",
+    "reckon/crew/recovery_review_acceptance.py:396",
+    "reckon/crew/follower_registration.py:721"
+  ],
+  "completed_at": "2026-10-16T17:29:53.856Z",
+  "dispatched_at": "2026-10-16T17:15:51Z",
+  "findings": [
+    {
+      "file": "tests/test_the_watcher_sweeps_unfollowed_sessions.py",
+      "line": "102",
+      "severity": "follow-on",
+      "text": "follow-on: _REGISTRATION_HOLD_SECONDS = 60 is the wall-clock ceiling on the attended registration's liveness, while the recorded gate ran the case in 25.55 s, so on a lane slower than 60 s the helper exits mid-case and releases the registration, turning the premise assertion at :433 and the offered assertion at :463 into flaky failures."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T164510600187-the-sweep-test-runs-as-the-watcher-does/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when names \"ruff check and ruff format --check add no findings on the changed file against base\", but the manifest's tests: field records only the pytest gate and logs/ holds only gate-sweep.log and negative-control-sweep.log, so the ruff measure is unrecorded; re-run here, ruff check reports 0 findings and ruff format --check reports \"1 file already formatted\", so the measure holds though the record does not show it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read c36688c8..c4e64672 commit by commit; the single commit c4e64672c changes only tests/test_the_watcher_sweeps_unfollowed_sessions.py (+165/-68 across the two files) and adds the evidence fragment, moving the attended registration into a helper process and adding the own==[] premise assertion.",
+    "done_when": "the done_when names the test asserting the tick's process holds no registration (:443) and that the reflex offers only the swept session's scoring run (:463), a passing file, the dropped-session control with its offered ids, and a ruff delta; the manifest records the gate (2 passed in 25.55s, EXIT=0) and the control (2 failed, EXIT=1, offered=['r-attended-review','r-late-review','r-scoring',...]) but records no ruff run.",
+    "goal": "the node's goal is that the watcher sweep test tick from a process holding no follower registration, as the production watcher does; the landed commit c4e64672c holds the attended session's registration in a helper subprocess (tests/test_the_watcher_sweeps_unfollowed_sessions.py:188) so the tick, run in the test process by _sweep_through_watch (:404) and _sweep_through_ticker (:412), carries none, and the case asserts it at :443.",
+    "manifest": "read manifest.md; status complete at c4e64672c, it records the gate command and result, the negative control and its log, the measurement module and cwd, and discloses the fixture's socket-not-pipe requirement, but its tests: field (line 11) records no ruff result and its baseline_suite/after_suite (lines 17-18) are empty.",
+    "write_paths": "the declared paths are tests/test_the_watcher_sweeps_unfollowed_sessions.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-sweep-test-runs-as-the-watcher-does.html and the figures directory under it; the diff touches the test file and the fragment, both inside them, and writes nothing under the figures path."
+  },
+  "justifications": {
+    "durability": "re-holding the registration in this process would put os.getpid() into the follower row and redden the new assert own == [] at tests/test_the_watcher_sweeps_unfollowed_sessions.py:443, and the offered assertion at :463 reddens under the recorded control.",
+    "evidence": "the gate (2 passed, EXIT=0) and the dropped-session control (2 failed, EXIT=1, offered carries r-attended-review and r-late-review) are recorded, but the done_when's ruff clause is unrecorded in the manifest and the reviewed run's baseline_suite/after_suite are empty, so added_failure_count is unmeasured rather than a taken zero.",
+    "fit": "the helper follows the fixture idiom of tests/test_the_watcher_sweeps_unfollowed_sessions.py:188 and the added names are mechanism words (_hold_a_live_registration, _helper_armed), carrying no plan label.",
+    "goal_fidelity": "tests/test_the_watcher_sweeps_unfollowed_sessions.py:188 spawns the registration in a helper and :443 asserts no follower row names the tick's process, which is exactly the state reckon/crew/recovery_repair_dispatch.py:1000 returns the empty session for.",
+    "reuse": "the helper reuses the owner's own primitives (reckon/crew/follower_registration.py:81 follower_lock_path and :721 list_followers) rather than a second registration store; the hand-rolled lock follows the file's pre-existing idiom.",
+    "scope_discipline": "every path in the diff \u2014 tests/test_the_watcher_sweeps_unfollowed_sessions.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-sweep-test-runs-as-the-watcher-does.html \u2014 is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the watcher sweep test tick from a process holding no follower registration, as the production watcher does; the landed commit c4e64672c holds the attended session's registration in a helper subprocess (tests/test_the_watcher_sweeps_unfollowed_sessions.py:188) so the tick, run in the test process by _sweep_through_watch (:404) and _sweep_through_ticker (:412), carries none, and the case asserts it at :443.\nVERDICT done_when: the done_when names the test asserting the tick's process holds no registration (:443) and that the reflex offers only the swept session's scoring run (:463), a passing file, the dropped-session control with its offered ids, and a ruff delta; the manifest records the gate (2 passed in 25.55s, EXIT=0) and the control (2 failed, EXIT=1, offered=['r-attended-review','r-late-review','r-scoring',...]) but records no ruff run.\nVERDICT write_paths: the declared paths are tests/test_the_watcher_sweeps_unfollowed_sessions.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-sweep-test-runs-as-the-watcher-does.html and the figures directory under it; the diff touches the test file and the fragment, both inside them, and writes nothing under the figures path.\nVERDICT manifest: read manifest.md; status complete at c4e64672c, it records the gate command and result, the negative control and its log, the measurement module and cwd, and discloses the fixture's socket-not-pipe requirement, but its tests: field (line 11) records no ruff result and its baseline_suite/after_suite (lines 17-18) are empty.\nVERDICT diff: read c36688c8..c4e64672 commit by commit; the single commit c4e64672c changes only tests/test_the_watcher_sweeps_unfollowed_sessions.py (+165/-68 across the two files) and adds the evidence fragment, moving the attended registration into a helper process and adding the own==[] premise assertion.\nCALL_SITES: reckon/crew/runs.py:3243, reckon/crew/recovery_watch.py:2247, reckon/crew/recovery_repair_dispatch.py:1000, reckon/crew/recovery_review_acceptance.py:396, reckon/crew/follower_registration.py:721\nreviewed_base_sha: c36688c828f59a7c584258c54d8d4629e9ab5f74\nreviewed_head_sha: c4e64672c424a62c2274b7bc8769a394b7cb70fe\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_the_watcher_sweeps_unfollowed_sessions.py:188 spawns the registration in a helper and :443 asserts no follower row names the tick's process, which is exactly the state reckon/crew/recovery_repair_dispatch.py:1000 returns the empty session for.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate (2 passed, EXIT=0) and the dropped-session control (2 failed, EXIT=1, offered carries r-attended-review and r-late-review) are recorded, but the done_when's ruff clause is unrecorded in the manifest and the reviewed run's baseline_suite/after_suite are empty, so added_failure_count is unmeasured rather than a taken zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff \u2014 tests/test_the_watcher_sweeps_unfollowed_sessions.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-sweep-test-runs-as-the-watcher-does.html \u2014 is inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: re-holding the registration in this process would put os.getpid() into the follower row and redden the new assert own == [] at tests/test_the_watcher_sweeps_unfollowed_sessions.py:443, and the offered assertion at :463 reddens under the recorded control.\nSCORE fit: 18\nJUSTIFICATION fit: the helper follows the fixture idiom of tests/test_the_watcher_sweeps_unfollowed_sessions.py:188 and the added names are mechanism words (_hold_a_live_registration, _helper_armed), carrying no plan label.\nSCORE reuse: 18\nJUSTIFICATION reuse: the helper reuses the owner's own primitives (reckon/crew/follower_registration.py:81 follower_lock_path and :721 list_followers) rather than a second registration store; the hand-rolled lock follows the file's pre-existing idiom.\nFINDING tests/test_the_watcher_sweeps_unfollowed_sessions.py:102 follow-on: _REGISTRATION_HOLD_SECONDS = 60 is the wall-clock ceiling on the attended registration's liveness, while the recorded gate ran the case in 25.55 s, so on a lane slower than 60 s the helper exits mid-case and releases the registration, turning the premise assertion at :433 and the offered assertion at :463 into flaky failures.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T164510600187-the-sweep-test-runs-as-the-watcher-does/manifest.md:11 follow-on: the done_when names \"ruff check and ruff format --check add no findings on the changed file against base\", but the manifest's tests: field records only the pytest gate and logs/ holds only gate-sweep.log and negative-control-sweep.log, so the ruff measure is unrecorded; re-run here, ruff check reports 0 findings and ruff format --check reports \"1 file already formatted\", so the measure holds though the record does not show it.\n",
+  "review_run_id": "r-20261016T171519893554-review-of-the-sweep-test-runs-as-the-watcher-does-c4e64672c424",
+  "reviewed_base_sha": "c36688c828f59a7c584258c54d8d4629e9ab5f74",
+  "reviewed_head_sha": "c4e64672c424a62c2274b7bc8769a394b7cb70fe",
+  "reviewed_run_id": "r-20261016T164510600187-the-sweep-test-runs-as-the-watcher-does",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T17:27:44.976866+00:00",
+  "total": 109
+}
