@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "both arms named by the reviewed run's baseline_suite and after_suite ran to their summary line and failed the same single id, tests/test_a_crashed_producer_is_restarted.py::test_repeated_crashes_reach_a_reported_limit (gate/second-base/base-chunk_00.log and gate/second-head/head-chunk_00.log, 1 failed / 65 passed either side), so the change adds no failing test; the wider nine-chunk arms in gate/base-suite-second.txt and gate/head-suite-second.txt carry the same one id and the same 8-of-9 EXIT=0 chunks.",
+  "base_log_revision": "cb279180626633e95276ce8bc8efc7fbacf54f37",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2411",
+    "reckon/crew/runs.py:3314"
+  ],
+  "completed_at": "2026-10-16T13:40:47.796Z",
+  "dispatched_at": "2026-10-16T13:27:26Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "the-watcher-sweeps-unfollowed-sessions",
+      "recorded_at": "2026-10-16T13:44:30.658780+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "the-watcher-sweeps-unfollowed-sessions",
+      "recorded_at": "2026-10-16T13:44:42.772620+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "3171",
+      "severity": "follow-on",
+      "text": "follow-on: the pointer fallback is reached only when the session has no registration file at all, so a session whose released registration remains on disk (release deliberately keeps the file, reckon/crew/follower_registration.py:404) still takes its grace from that registration and its lease, and a fresh dispatch on it can be swept within seconds -- exactly the defect the commit message claims to close; the new test's fresh session never registered, so this path is untested."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "3119",
+      "severity": "follow-on",
+      "text": "follow-on: `_pointer_activity_seconds` is a second implementation of \"how long since this run last showed activity\", which `_stream_quiet_seconds` already computes in this same module at reckon/crew/runs.py:3035 and `recovery_watch._quiet_clock_latest` recomputes at reckon/crew/recovery_watch.py:954; the source index and the null semantics differ, so it is a near-neighbour rather than a textual clone, but a single owner for the quantity would stop the three drifting."
+    }
+  ],
+  "head_log_revision": "bc4f2ccf173f3e3909b543f5f382e341e3906430",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read 91c7c6d8d..bc4f2ccf commit by commit; the increment is the single commit bc4f2ccf, +58/-7 in reckon/crew/runs.py (a new `_pointer_activity_seconds`, a `pointers` parameter threaded into `_follower_last_seen_seconds`, and the call site at reckon/crew/runs.py:3240) and +142/-58 in the test file, which replaces the three-session fleet with six sessions driven through both loops by one parametrised case.",
+    "done_when": "the done_when names tests/test_the_watcher_sweeps_unfollowed_sessions.py, a head/base parity over the tests importing reckon/crew/runs.py, and a ruff delta; the manifest records the committed-head gate at gate/watcher-sweep-committed.log (2 passed, EXIT=0) and both parity arms, and the reshaped six-session fleet still asserts every arm the done_when enumerates -- eleven-minute session swept, nine-minute session not swept, foreign pointer not swept, the nine-minute session's scoring run not reviewed.",
+    "goal": "the node goal is that the project watcher sweep each session with no live follower for the ten-minute window, passing that session explicitly; the increment reworks that judgement at reckon/crew/runs.py:3237 and reckon/crew/runs.py:3240 so a live registration excludes a session whatever its ages say and a session that never registered is measured from its own newest pointer rather than reading as unattended since forever.",
+    "manifest": "read manifest.md; status complete, it records the test command and its result, three negative controls with their logs, both parity arms with the same single failure either side, and the ruff delta on the changed files.",
+    "write_paths": "the node fence at prompt.txt names reckon/crew/runs.py, tests/test_the_watcher_sweeps_unfollowed_sessions.py, the \u00a737 evidence fragment and its figures directory; the increment touches only the first two, both inside the fence, in one commit."
+  },
+  "justifications": {
+    "durability": "tests/test_the_watcher_sweeps_unfollowed_sessions.py:289 asserts sorted(launched) == [\"r-lapsed\", \"r-stale\"] against the stub's own record, and dropping `pointers=pointers` at reckon/crew/runs.py:3241 would sweep r-fresh and redden it, while negative-control-three.log shows the same assertion reddening on the liveness exclusion at 2 failed / EXIT=1.",
+    "evidence": "gate/watcher-sweep-committed.log records the named gate at revision bc4f2ccf as 2 passed in 29.48s with EXIT=0, and both parity arms at gate/second-base/ and gate/second-head/ ran to their summary lines with the same single failing id, so no failure is added.",
+    "fit": "the new helper follows the module's idiom of `suppress(OSError)` and `parse_utc` beside it at reckon/crew/runs.py:3134-3137, and no symbol carries a plan, version or stage label; the commit message's claim that a live registration \"could still read stale\" overstates a change that was already made through `follower_state` (reckon/crew/follower_registration.py:712).",
+    "goal_fidelity": "reckon/crew/runs.py:3240 now passes the session's live pointers into the grace computation, so the fresh-dispatch case the commit names is fixed for a session that never armed a follower, though the sibling case at reckon/crew/runs.py:3164-3170 is left as it was.",
+    "reuse": "`_pointer_activity_seconds` at reckon/crew/runs.py:3119 reimplements a quantity this module already computes in `_stream_quiet_seconds` at reckon/crew/runs.py:3035 and which reckons again in `recovery_watch._quiet_clock_latest` at reckon/crew/recovery_watch.py:954; it neither extends nor wraps either, differing only in source index and null semantics.",
+    "scope_discipline": "git diff 91c7c6d8d..bc4f2ccf changes only reckon/crew/runs.py and tests/test_the_watcher_sweeps_unfollowed_sessions.py, both named in the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the project watcher sweep each session with no live follower for the ten-minute window, passing that session explicitly; the increment reworks that judgement at reckon/crew/runs.py:3237 and reckon/crew/runs.py:3240 so a live registration excludes a session whatever its ages say and a session that never registered is measured from its own newest pointer rather than reading as unattended since forever.\nVERDICT done_when: the done_when names tests/test_the_watcher_sweeps_unfollowed_sessions.py, a head/base parity over the tests importing reckon/crew/runs.py, and a ruff delta; the manifest records the committed-head gate at gate/watcher-sweep-committed.log (2 passed, EXIT=0) and both parity arms, and the reshaped six-session fleet still asserts every arm the done_when enumerates -- eleven-minute session swept, nine-minute session not swept, foreign pointer not swept, the nine-minute session's scoring run not reviewed.\nVERDICT write_paths: the node fence at prompt.txt names reckon/crew/runs.py, tests/test_the_watcher_sweeps_unfollowed_sessions.py, the \u00a737 evidence fragment and its figures directory; the increment touches only the first two, both inside the fence, in one commit.\nVERDICT manifest: read manifest.md; status complete, it records the test command and its result, three negative controls with their logs, both parity arms with the same single failure either side, and the ruff delta on the changed files.\nVERDICT diff: read 91c7c6d8d..bc4f2ccf commit by commit; the increment is the single commit bc4f2ccf, +58/-7 in reckon/crew/runs.py (a new `_pointer_activity_seconds`, a `pointers` parameter threaded into `_follower_last_seen_seconds`, and the call site at reckon/crew/runs.py:3240) and +142/-58 in the test file, which replaces the three-session fleet with six sessions driven through both loops by one parametrised case.\nCALL_SITES: reckon/crew/recovery_watch.py:2411, reckon/crew/runs.py:3314\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:3240 now passes the session's live pointers into the grace computation, so the fresh-dispatch case the commit names is fixed for a session that never armed a follower, though the sibling case at reckon/crew/runs.py:3164-3170 is left as it was.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate/watcher-sweep-committed.log records the named gate at revision bc4f2ccf as 2 passed in 29.48s with EXIT=0, and both parity arms at gate/second-base/ and gate/second-head/ ran to their summary lines with the same single failing id, so no failure is added.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 91c7c6d8d..bc4f2ccf changes only reckon/crew/runs.py and tests/test_the_watcher_sweeps_unfollowed_sessions.py, both named in the node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_watcher_sweeps_unfollowed_sessions.py:289 asserts sorted(launched) == [\"r-lapsed\", \"r-stale\"] against the stub's own record, and dropping `pointers=pointers` at reckon/crew/runs.py:3241 would sweep r-fresh and redden it, while negative-control-three.log shows the same assertion reddening on the liveness exclusion at 2 failed / EXIT=1.\nSCORE fit: 16\nJUSTIFICATION fit: the new helper follows the module's idiom of `suppress(OSError)` and `parse_utc` beside it at reckon/crew/runs.py:3134-3137, and no symbol carries a plan, version or stage label; the commit message's claim that a live registration \"could still read stale\" overstates a change that was already made through `follower_state` (reckon/crew/follower_registration.py:712).\nSCORE reuse: 12\nJUSTIFICATION reuse: `_pointer_activity_seconds` at reckon/crew/runs.py:3119 reimplements a quantity this module already computes in `_stream_quiet_seconds` at reckon/crew/runs.py:3035 and which reckons again in `recovery_watch._quiet_clock_latest` at reckon/crew/recovery_watch.py:954; it neither extends nor wraps either, differing only in source index and null semantics.\nFINDING reckon/crew/runs.py:3171 follow-on: the pointer fallback is reached only when the session has no registration file at all, so a session whose released registration remains on disk (release deliberately keeps the file, reckon/crew/follower_registration.py:404) still takes its grace from that registration and its lease, and a fresh dispatch on it can be swept within seconds -- exactly the defect the commit message claims to close; the new test's fresh session never registered, so this path is untested.\nFINDING reckon/crew/runs.py:3119 follow-on: `_pointer_activity_seconds` is a second implementation of \"how long since this run last showed activity\", which `_stream_quiet_seconds` already computes in this same module at reckon/crew/runs.py:3035 and `recovery_watch._quiet_clock_latest` recomputes at reckon/crew/recovery_watch.py:954; the source index and the null semantics differ, so it is a near-neighbour rather than a textual clone, but a single owner for the quantity would stop the three drifting.",
+  "review_run_id": "r-20261016T132644737949-review-of-the-watcher-sweeps-unfollowed-sessions-bc4f2ccf173f",
+  "reviewed_base_sha": "91c7c6d8db926c533dd12ec0f43dbe35ff70a4fe",
+  "reviewed_head_sha": "bc4f2ccf173f3e3909b543f5f382e341e3906430",
+  "reviewed_run_id": "r-20261016T104920878164-the-watcher-sweeps-unfollowed-sessions",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T13:35:44.735982+00:00",
+  "total": 100
+}
