@@ -66,6 +66,11 @@ class StreamMeasures:
     # budget comes from. It has to be carried out of here because the streams it
     # is derived from are the run's, and nothing downstream re-parses them.
     throughput: dict[str, Any] = field(default_factory=dict)
+    # The client rollout receipt's own wall span, in seconds: the same quantity
+    # clive's event span measures, read from the client's per-request record
+    # where an exec stream carries no timestamps to bound it from. None when no
+    # receipt measured the span, so an unmeasured run is never read as a zero.
+    rollout_seconds: int | None = None
 
 
 def _zone_aware_stream_timestamp(timestamp: object) -> datetime | None:
@@ -110,12 +115,19 @@ def _terminal_stream_data(
     # rather than claimed.
     record_session = str(record.get("session_id") or "").strip()
     receipt = None
+    rollout_seconds = None
     if record_session:
         candidate = rollout.read_rollout_receipt(record_session)
         if isinstance(
             getattr(candidate, "generation_seconds", None), float
         ) and isinstance(getattr(candidate, "machine_seconds", None), float):
             receipt = candidate
+            # The receipt's wall span is its own model seconds; the exec stream
+            # cannot separate inference from tool wait, so this is the figure a
+            # codex run's worker seconds must be read from.
+            rollout_seconds = int(
+                candidate.generation_seconds + candidate.machine_seconds
+            )
     for candidate in paths:
         observation = _backends.observe_log(
             backend_name=backend_name,
@@ -137,6 +149,14 @@ def _terminal_stream_data(
             timestamps.append(first)
         if last is not None:
             timestamps.append(last)
+    if receipt is not None:
+        # A span the receipt measured belongs on the row even where the stream
+        # reached no terminal record of its own: a killed codex run still has a
+        # measured model span, and the throughput block is where the span is
+        # read. A terminal observation's figures are already the receipt's, so
+        # this only fills the gap rather than overwriting one reading with another.
+        throughput.setdefault("generation_seconds", float(receipt.generation_seconds))
+        throughput.setdefault("machine_seconds", float(receipt.machine_seconds))
     if timestamps:
         first = min(timestamps, key=lambda item: item[0])
         last = max(timestamps, key=lambda item: item[0])
@@ -147,6 +167,7 @@ def _terminal_stream_data(
             budget,
             session_id,
             throughput,
+            rollout_seconds,
         )
 
     newest = max(candidate.stat().st_mtime for candidate in paths)
@@ -156,7 +177,13 @@ def _terminal_stream_data(
         .replace("+00:00", "Z")
     )
     return StreamMeasures(
-        completed, "stream_mtime", None, budget, session_id, throughput
+        completed,
+        "stream_mtime",
+        None,
+        budget,
+        session_id,
+        throughput,
+        rollout_seconds,
     )
 
 

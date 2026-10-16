@@ -36,6 +36,12 @@ from reckon.crew.quota_weight import RequestTokenUsage, UnknownQuotaWeight, quot
 
 CLIENT_SESSIONS_DIR = Path.home() / ".codex" / "sessions"
 
+# A fenced run writes its client rollout under its own run directory's harness
+# home rather than the client's session home.  One owner resolves that root for
+# every reader, so a receipt lookup and the paid-lanes account scan cannot drift
+# on where a fenced run keeps its rollout.
+RUN_HOME_SESSIONS = ("codex-home", "sessions")
+
 # The published rule counts only requests strictly above 272,000 input tokens.
 REQUEST_INPUT_CROSSING_THRESHOLD = 272_000
 
@@ -170,10 +176,44 @@ def _unmeasured(reason: Unmeasured) -> RolloutReceipt:
     return RolloutReceipt(*(reason for _ in RolloutReceipt.__dataclass_fields__))
 
 
+def run_home_sessions_root(run_dir: str | Path) -> Path:
+    """The client-session root inside one crew run's harness home."""
+    return Path(run_dir).joinpath(*RUN_HOME_SESSIONS)
+
+
+def run_home_rollout_paths(
+    session_id: str, *, run_id: str | None = None
+) -> list[Path]:
+    """Rollout files one session may occupy under the crew run homes.
+
+    A fenced run keeps its rollout in its own run directory, so a receipt
+    lookup that searched only the client's home missed it.  Both the receipt
+    itself and the paid-lanes account scan resolve this location through the
+    same two functions rather than each spelling the harness layout out.
+    """
+    from reckon.crew import runs as crew_runs
+
+    runs_root = crew_runs.runs_dir()
+    if run_id is not None:
+        run_dirs = [runs_root / run_id]
+    elif runs_root.is_dir():
+        run_dirs = [child for child in runs_root.iterdir() if child.is_dir()]
+    else:
+        run_dirs = []
+    pattern = f"*/*/*/rollout-*-{session_id}.jsonl"
+    paths: list[Path] = []
+    for run_dir in run_dirs:
+        root = run_home_sessions_root(run_dir)
+        if root.is_dir():
+            paths.extend(root.glob(pattern))
+    return paths
+
+
 def _locate_rollout(session_id: str) -> Path | None:
     if _SESSION_ID.fullmatch(session_id) is None:
         return None
-    candidates = CLIENT_SESSIONS_DIR.glob(f"*/*/*/rollout-*-{session_id}.jsonl")
+    candidates = list(CLIENT_SESSIONS_DIR.glob(f"*/*/*/rollout-*-{session_id}.jsonl"))
+    candidates.extend(run_home_rollout_paths(session_id))
     return max(candidates, key=str, default=None)
 
 
@@ -526,10 +566,13 @@ def read_rollout_receipt(
 
 __all__ = [
     "REQUEST_INPUT_CROSSING_THRESHOLD",
+    "RUN_HOME_SESSIONS",
     "WEEKLY_WINDOW_MINUTES",
     "QuotaReading",
     "RateBasis",
     "RolloutReceipt",
     "Unmeasured",
     "read_rollout_receipt",
+    "run_home_rollout_paths",
+    "run_home_sessions_root",
 ]

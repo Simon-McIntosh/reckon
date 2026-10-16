@@ -944,7 +944,6 @@ def _session_rollout_paths(session_id: str, run_id: str | None) -> list[Path]:
     searched and the newest event across them wins.
     """
     from reckon.crew import rollout as rollout_module
-    from reckon.crew import runs as crew_runs
 
     pattern = f"*/*/*/rollout-*-{session_id}.jsonl"
     isolated = os.environ.get(RECKON_HOME_ENV)
@@ -955,9 +954,7 @@ def _session_rollout_paths(session_id: str, run_id: str | None) -> list[Path]:
     )
     paths = list(sessions_root.glob(pattern)) if sessions_root.is_dir() else []
     if run_id:
-        run_sessions = crew_runs.runs_dir() / run_id / "codex-home" / "sessions"
-        if run_sessions.is_dir():
-            paths.extend(run_sessions.glob(pattern))
+        paths.extend(rollout_module.run_home_rollout_paths(session_id, run_id=run_id))
     return paths
 
 
@@ -993,6 +990,7 @@ def _codex_rollout_candidates(
 ) -> dict[str, Candidate]:
     """Read recent Codex rollouts from the main home and per-run harness homes."""
     from reckon import budget
+    from reckon.crew import rollout as rollout_module
 
     newest: dict[str, tuple[datetime, Candidate]] = {}
     base = Path(root).expanduser()
@@ -1013,7 +1011,7 @@ def _codex_rollout_candidates(
             ):
                 continue
             paths.extend(
-                (run / "codex-home" / "sessions").glob("*/*/*/rollout-*.jsonl")
+                rollout_module.run_home_sessions_root(run).glob("*/*/*/rollout-*.jsonl")
             )
     for path in paths:
         try:

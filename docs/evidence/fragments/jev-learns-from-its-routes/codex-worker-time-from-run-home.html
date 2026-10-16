@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:jev-learns-from-its-routes">
+  <meta name="plan-verifies" content="reckon:jev-learns-from-its-routes#s6">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-16">
+  <meta name="evidence-commit" content="a79e022dd">
+</head>
+<body>
+<main class="plan-doc">
+<section id="codex-worker-time-from-run-home">
+  <h2>A codex run's worker seconds come from the rollout in its own run home</h2>
+  <p>
+    A codex exec stream carries no timestamps, so its <code>worker_seconds</code>
+    was the wall time on a normal finish and absent on a stalled one, even
+    though the client rollout already measures the model span and promotion
+    already reads that receipt. The locator searched only the client session
+    home; a fenced run writes its rollout under its own run directory's
+    <code>codex-home</code>.
+  </p>
+  <p id="codex-worker-time-from-run-home-change">
+    <strong>Change.</strong> <code>rollout._locate_rollout</code> now searches
+    the run homes through one shared owner
+    (<code>run_home_sessions_root</code> / <code>run_home_rollout_paths</code>)
+    that the paid-lanes account scan also reads instead of spelling the harness
+    layout out itself. Promotion records <code>worker_seconds</code> as the
+    receipt's <code>generation_seconds</code> plus <code>machine_seconds</code>,
+    with <code>worker_seconds_source</code> <code>rollout_receipt</code>, and
+    its throughput block carries both figures on a normal finish and on a
+    stalled one. A codex run with no rollout keeps <code>wall_fallback</code>;
+    a claude stream is unchanged.
+  </p>
+  <p id="codex-worker-time-from-run-home-measure">
+    <strong>Measure.</strong> <code>tests/test_codex_worker_time_is_measured.py</code>
+    passes 4/4: the receipt-derived figure on a normal finish and on a stalled
+    one, <code>wall_fallback</code> with no rollout, and the claude stream's own
+    figure. For the named run
+    <code>r-20261016T055657532716-pick-state-render-slow-read</code>, whose
+    recorded wall time is 720 s, the receipt under its run home measures
+    590.953 s + 117.089 s = <strong>708 s</strong> — the row's new figure beside
+    that wall time. The negative control removes the run-home search, and both
+    receipt tests then record <code>wall_fallback</code> and fail.
+  </p>
+  <p id="codex-worker-time-from-run-home-delta">
+    <strong>Delta.</strong> The 33 test files importing
+    <code>rollout.py</code>, <code>paid_lanes.py</code> or
+    <code>promotion_checks.py</code> run 326 passed at head and 326 at the base
+    revision, with no added failure.
+  </p>
+</section>
+</main>
+</body>
+</html>
