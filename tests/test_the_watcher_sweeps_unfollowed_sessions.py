@@ -12,12 +12,18 @@ and leave the same five alone:
 
 * the eleven-minute session has had no follower and no run activity for longer
   than the grace window, and is swept;
-* the nine-minute session is still inside it, and is not;
+* the nine-minute session is still inside it, and is not. It also owns the
+  second run whose work is finished and whose review is composed, so a pass
+  that read no session would review a session it did not sweep: the sweep
+  hands the session it acts on to the reflex, and only that session's finished
+  run is offered;
 * the third session's pointer names another host, which sweeps its own runs;
 * the fourth has a live registration, held the way
   ``follower_registration`` judges one, so it is not swept whatever its ages
-  say -- its lease is unwritten, its registration file is eleven minutes old
-  and its own run is as old as the swept session's;
+  say -- its lease is unwritten, its registration file is eleven minutes old,
+  and both of its runs, the lapsed one and the finished one whose review is
+  composed, are as old as the swept session's, so the registration alone
+  holds it out and neither of its runs may be resumed or reviewed;
 * the fifth never armed a follower at all and dispatched two minutes ago, so it
   is not swept: the grace window is measured from its own newest pointer;
 * the sixth never armed a follower either and dispatched eleven minutes ago, so
@@ -256,7 +262,8 @@ def _arrange(config_home, repo, monkeypatch: pytest.MonkeyPatch) -> tuple:
     The unattended session holds a lapsed hold to resume and a finished run to
     review; so does the session nobody ever registered, and the session whose
     registration was released. The re-arming session holds a run the same pass
-    must leave alone, the third names another host, the fourth is attended by a
+    must leave alone and a finished run whose review the reflex must not offer
+    for it, the third names another host, the fourth is attended by a
     live registration, and the fifth and sixth dispatched too recently for the
     grace window to have run out -- one with no registration at all and one
     with a registration released two hours ago. Each session left alone holds a
@@ -273,11 +280,21 @@ def _arrange(config_home, repo, monkeypatch: pytest.MonkeyPatch) -> tuple:
         config_home, repo, "r-scoring", backend=OWNING_BACKEND, session=SWEPT_SESSION
     )
     _lapsed_run("r-late-scoring", repo=repo, session=LATE_SESSION)
+    _scoring_pointer(
+        config_home, repo, "r-late-review", backend=OWNING_BACKEND, session=LATE_SESSION
+    )
     _lapsed_run(
         "r-foreign", repo=repo, session=ELSEWHERE_SESSION, launcher_host=FOREIGN_HOST
     )
     _lapsed_run(
         "r-attended", repo=repo, session=ATTENDED_SESSION, idle_seconds_ago=LONG_AGO
+    )
+    _scoring_pointer(
+        config_home,
+        repo,
+        "r-attended-review",
+        backend=OWNING_BACKEND,
+        session=ATTENDED_SESSION,
     )
     _lapsed_run(
         "r-fresh", repo=repo, session=FRESH_SESSION, idle_seconds_ago=WITHIN_GRACE
@@ -305,6 +322,10 @@ def _arrange(config_home, repo, monkeypatch: pytest.MonkeyPatch) -> tuple:
     # pass has nothing recent of its own to read it as attended by.
     _age_run("r-lapsed", seconds=LONG_AGO)
     _age_run("r-scoring", seconds=LONG_AGO)
+    # The attended session's work is as old as its registration, so the
+    # liveness its registration reports is the only thing holding it out of
+    # the pass and not the grace window its own run would otherwise open.
+    _age_run("r-attended-review", seconds=LONG_AGO)
     return offered, launched, held
 
 
@@ -355,15 +376,17 @@ def test_the_watcher_sweeps_only_the_sessions_nobody_follows(
         events = _sweep_through_ticker(PROJECT)
         assert events, "the tick published no row for a fleet holding live runs"
 
+    # The reflex reviews a session's runs only for the session handed to it: the
+    # unattended session's finished run is offered, and the re-arming session's
+    # is not -- its work is finished and its review is composed too, so the
+    # session the sweep was given is the only thing that separates them, and a
+    # pass that read no filter would offer both.
+    assert offered == ["r-scoring"], offered
     # The three sessions past the grace window were resumed -- including the one
     # whose registration was released two hours ago and whose own newest run is
     # eleven minutes old -- and none of the runs of the five sessions left alone
     # was touched.
     assert sorted(launched) == ["r-lapsed", "r-released-stale", "r-stale"], launched
-    # The reflex reviews a session's runs only for the session handed to it: the
-    # unattended session's scoring run is offered, and the re-arming session's
-    # is not.
-    assert offered == ["r-scoring"], offered
     written = writer_sweep_status(PROJECT, WATCHER_SWEEP_WRITER)
     assert written is not None, "the watcher's sweep wrote no writer record"
     assert written["key"] == "watcher"
