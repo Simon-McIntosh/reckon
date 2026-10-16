@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T06:08:34.845Z",
+  "dispatched_at": "2026-10-16T05:56:31Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:157",
+      "id": "reasoning-1",
+      "reason": "a wrong repair site sends the fix past the code that actually loses the fields, and the node's declared control mutates a reshape that does not carry the described drop.",
+      "text": "\u00a723 blames `_dispatch_composed_review` for reshaping the dispatch result so \"the queued fields do not survive\", but on the current head that function preserves them: its `except LanePaused` branch sets `report[\"queued\"] = dict(queued)` (reckon/crew/recovery_review_dispatch.py:2038, landed as 47fadfcc8 on 2026-10-13), and every hold return from it also carries `run_id`, which the quoted answer \u2014 having no `run_id` at all \u2014 cannot have come from.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:157",
+      "id": "done_when-1",
+      "reason": "naming the queued id as `queued.run_id` stops a node passing its own gate by clobbering the reviewed run's identity.",
+      "text": "the done-when requires the output to carry \"a `run_id` naming a pointer in phase `queued`\" without naming the key, while the composed report already uses `run_id` for a different quantity: the reviewed run's id (`\"run_id\": run_id` in each hold return of `_dispatch_composed_review`, reckon/crew/recovery_review_dispatch.py:1774), with the queued run's own id at `report[\"queued\"][\"run_id\"]`. A builder reading the requirement literally can satisfy it by overwriting the reviewed-run key that `_record_review_dispatch` and the report's callers read.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a69198dc239aa61e3b61daa817bc24ae8ff70fa140b2c378e013c97b11c0fe42",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 127,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T055554883681-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "e6d2609832f0dc4fdec8bfdaaca5d30b62624bc5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_dispatch_composed_review` and `_queued_pointer_names_directory` both resolve in `reckon/crew/recovery_review_dispatch.py` (lines 1774 and 1721), the two write paths are the module that holds them and a new test file, and the cited run pointer is a since-recycled live pointer rather than a path a reader is meant to open.",
+    "done_when": "a finding \u2014 the done-when asks for \"a `run_id` naming a pointer in phase `queued`\" without saying which key the queued id occupies, while the composed report already gives `run_id` to the reviewed run.",
+    "evidence_paths": "pass \u2014 the gate log and the negative control are both declared under the run directory, and the gate log is required to name its revision and its literal command.",
+    "naming": "pass \u2014 s23 introduces no plan label, stage name, ticket number or version tag in any symbol or file it asks for, and describes the mechanism rather than the tracker entry.",
+    "reasoning": "a finding \u2014 the section's stated root cause is not the one the code it cites shows.",
+    "single_goal": "pass \u2014 s23 carries one deliverable, a composed review the lane holds answering `queued: true` with the queued run id and position on both the report and the `crew review` output.",
+    "wiring": "pass \u2014 s23 shares `reckon/crew/recovery_review_dispatch.py` only with sections that have already landed (\u00a79, \u00a710, \u00a715), so no ordering against an open section is owed, and its cites of \u00a72 and \u00a712 resolve to the sections that state the held-dispatch contract it leans on."
+  },
+  "section_digests": {
+    "_document": "4cf38047518fb0007669d36c7104379a1733b8a1b45259eb18331fad07afe1c0",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "f67610611bfb819007234cb2d266523cab773379dedf07c8b53feb8f9e78ef59",
+    "s19": "1a735ef01d42913d9085a7d2db7eb238ecd99450b1ee61e3702d9951b4be8b04",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s20": "27cbb7d66474dcc03ee947d28d02bf69241181f95114d64b5dfd64cece9a6d2d",
+    "s21": "9d6a0b0914d4b7c617f66b56c23c29f423e83783cee042a59efd0844e910758e",
+    "s22": "04e32404c6bd6fba4d019c4ac2feb930c097b69019a6b5feeab58d4c16120a94",
+    "s23": "9fa795f9b3d7acddf5479304c1cb61a2d663811bdd46a375824b501a452d5a60",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T06:10:43.756789+00:00"
+}
