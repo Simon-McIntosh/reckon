@@ -772,25 +772,6 @@ def readiness_from_state(state: Mapping, text: str) -> list:
     return [gates, decision_rows, followups, declarations]
 
 
-def parsed_state(path: Path) -> dict | None:
-    """Return a document's parsed semantic state, memoised on its bytes.
-
-    The state is the whole of ``_plan_html.read_state`` — sections, gates,
-    decisions, followups and section declarations — the parse a fresh process
-    would otherwise rebuild for every file. Deriving it here from the shared
-    per-file parse means a file already parsed for its row is not parsed again,
-    and that a persisted copy is the same value a live parse would produce.
-    ``None`` means the file could not be read; the caller then takes a direct
-    read's refusal rather than caching an empty document as the plan's state.
-    """
-
-    try:
-        state, _text = _plan_html.read_state_and_text_file(path)
-    except ValueError:
-        return None
-    return state
-
-
 def discovery_state(docs_dir: Path, project: str) -> dict[str, dict]:
     """Return each file's persisted discovery state whose bytes are unchanged.
 
