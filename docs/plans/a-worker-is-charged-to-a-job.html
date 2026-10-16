@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-runtime-positive-controls">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
   <title>A worker is charged to a job | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="71">
+<meta name="plan-version" content="72">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-impl" content="0.92">
 </head>
@@ -895,7 +895,7 @@ placement path, not as a whole-suite run.</p>
 <p>A case patches the route constant in memory and sees the host line and the digest sentence change with it. <code>python -m reckon.crew.worker_digest --check</code> reports no stale digest. Those two files and <code>tests/test_worker_digest.py</code> pass with <code>EXIT=0</code>, and <code>ruff check</code> and <code>ruff format --check</code> are clean on the touched Python paths. The negative control is executed and logged: with the route constant reverted to "a separate partition job", the refusal and host-line cases fail. Write paths: <code>reckon/nested_launch.py</code>, <code>reckon/crew/worker_digest.py</code>, <code>reckon/crew/dispatch_launch.py</code>, <code>reckon/crew/digests</code>, <code>tests/test_nested_refusal_names_the_route.py</code>, <code>tests/test_the_host_line_allows_a_separate_partition_job.py</code>.</p>
 
 <h2 id="s11">§11 — The worker-path test reads the host line §10 composed</h2>
-<section data-reckon="section" data-id="s11" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s11" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> §10 (commit <code>5637dfc6b</code>, merged as <code>904e2d720</code>) recomposed the worker host line in <code>reckon/crew/dispatch_launch.py</code> (<code>_worker_host_line</code>) from the <code>nested_launch</code> constants. It now reads "do not open an srun or salloc step in this job", because <code>sbatch</code> became the route out of the held job. That commit updated <code>tests/test_nested_refusal_names_the_route.py</code> and <code>tests/test_the_host_line_allows_a_separate_partition_job.py</code>. A third test still asserts the old literal, "do not open an srun or salloc step in this job or an sbatch into it": <code>tests/test_worker_path_carries_shims.py::test_inside_allocation_prompt_names_the_host_and_storage_contract</code>. It has failed on main since that merge. On 2026-10-16 an exclusive-node sweep found it red at both <code>6906a79e</code> and <code>a8cca7e1b</code>, 0 passes in 5 alone runs at each (run <code>r-20261016T201537573290-head-sweep-names-its-failure</code>). The host line is right and the assertion is stale.</p><p><strong>Deliverable.</strong> The test asserts the host line's in-place clause and its routes out as the line now composes them, reading the route sentence from <code>reckon/nested_launch.py</code> rather than restating it, as the two updated test files do. It also asserts that the line no longer forbids an <code>sbatch</code>: the stale clause "or an sbatch into it" is absent. That absence is what the negative control below must break, because presence checks alone stay true when the stale clause is re-added. No product code changes.</p><p><strong>Done when</strong> <code>tests/test_worker_path_carries_shims.py</code> passes at head, and the three test files that pin the host line pass together. Negative control: in a copy of the head tree, re-adding "or an sbatch into it" to the host line makes the updated test fail, logged under the run directory. That shows it no longer accepts the forbidden form. ruff check and ruff format --check add no findings on the changed file. Write paths: <code>tests/test_worker_path_carries_shims.py</code>.</p>
 
 <section data-reckon="followups" id="followups" class="r-followups">
@@ -971,10 +971,11 @@ placement path, not as a whole-suite run.</p>
     <pre class="r-fu-prompt">/reckon-build a-worker-is-charged-to-a-job</pre>
     <p class="r-fu-outcome">verify-gate's re-run bound now derives from the promoted run's recorded gate duration when no explicit timeout is passed: twice the recorded time, clamped between 300 s and 1800 s. An explicit --timeout-seconds still wins, a run with no recorded duration keeps 300 s, and the report records the bound's source, its seconds and the recorded duration (merged f9316ff46, commits 218eda1fd and 9d8bece25, review 93 with no findings). Gate: tests/test_replay_bound_follows_the_gate.py with the two verify-gate option files, 9 passed at head against 3 failed and 6 passed at base, the three new cases being the whole delta. The named control, restoring the fixed 300 s, fails the derived-bound case.</p>
     </article>
-<article class="r-fu" data-id="f-awcj-011-the-worker-path-test-reads-the-host-line" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build a-worker-is-charged-to-a-job §11" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-awcj-011-the-worker-path-test-reads-the-host-line" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build a-worker-is-charged-to-a-job §11" data-resolved-at="2026-10-16T22:41:22+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Repoint the stale host-line assertion (§11)</h4>
     <div class="r-fu-body"><p>One test still asserts the host line's pre-§10 wording and has been red on main since §10 merged. §11 repoints it at the composed sentence.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-is-charged-to-a-job §11</pre>
+    <p class="r-fu-outcome">§11 merged as 8a73f03b8: the host-line assertion reads the composed sentence and rejects the stale clause</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -1103,6 +1104,9 @@ placement path, not as a whole-suite run.</p>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261016T222815317708-review-of-the-worker-path-test-reads-the-host-line-a1cb176478ca" data-who="reckon-build" data-when="2026-10-16T22:34:06.380Z">
     <div class="r-comment-body"><p>review of run r-20261016T221856967072-the-worker-path-test-reads-the-host-line at head a1cb176478caa43c64cbbdfdf3bc1ec7af64818c (base 7da3aa6d32fb48dd4bf6cd101b8b5ae8819932ad): scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 18, fit 16, reuse 20 (total 113); one follow-on finding at tests/test_worker_path_carries_shims.py:233; added_failure_count unmeasured because the reviewed manifest declares no baseline_suite/after_suite arm.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-17T00:45:00Z">
+    <div class="r-comment-body"><p>§11 landed. The worker-path test reads the host line's clauses from the nested-launch declaration and asserts the stale sbatch clause is absent, so the test red on main since §10 passes (merged as <code>8a73f03b8</code>). Gate: 14 passed. The control is red. Review: 113. <a href="/reckon/evidence/archive/a-worker-is-charged-to-a-job-landed.html#s11">evidence</a></p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">

@@ -847,6 +847,11 @@
 <p>Run <code>r-20261016T145527130463-the-partition-route-names-sbatch</code>, commits <code>5637dfc6b</code>, <code>39afa6e0e</code> and <code>45430de76</code>, merged at <code>904e2d720</code>. At the merged head, the two route test files and <code>tests/test_worker_digest.py</code> pass, 32 tests, <code>EXIT=0</code>. The first review (110/120) found that the text checks still passed under the mutation, because the <code>srun</code> sentence also says <code>sbatch</code>. The repair pins every produced text to the route phrase itself. With the route's verb clause removed, 7 cases fail, covering all three refusals, both digest cases and the host line. The re-review scored 109/120, and its two follow-ons on test duplication were exempted with reasons.</p>
   </section>
 
+  <section id="s11">
+    <h2>§11 — The worker-path test reads the host line §10 composed</h2>
+    <p>Run <code>r-20261016T221856967072-the-worker-path-test-reads-the-host-line</code>, commit <code>a1cb17647</code>, merged as <code>8a73f03b8</code>. <code>test_inside_allocation_prompt_names_the_host_and_storage_contract</code> in <code>tests/test_worker_path_carries_shims.py</code> had asserted the host line's wording from before §10 and was red on main. It now reads the in-place clause and the routes out from <code>reckon/nested_launch.py</code>, and asserts that the stale clause "or an sbatch into it" is absent. The three files that pin the host line pass together: 14 passed. Negative control: re-adding the clause to the host line in a copy of the head tree turns the test red, EXIT=1. Review: 113, with one follow-on exempted, on an assertion that compares two constants.</p>
+  </section>
+
 </main>
 </body>
 </html>
