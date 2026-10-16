@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T22:44:03.794Z",
+  "dispatched_at": "2026-10-16T22:38:02Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:1667",
+      "id": "wiring-1",
+      "reason": "the stale precondition is the exact coordination input a dispatcher reads from the followup, so leaving it makes \u00a712 either skipped past or halted on a gate the plan no longer has; the followup body should record that the shape is chosen rather than require an unwired review.",
+      "text": "the open followup f-awcwyh-012 still records the precondition \"\u00a712 needs a design review first, because both repair shapes touch the store's layout or its filing step\", but \u00a712 has since chosen the shape (\"The shape is chosen\", line 1524) and is declared `implementable` (line 26), and no design-review node exists anywhere in the plan \u2014 so a coordinator reading the followup holds a dispatch-ready node for a review that the section says is already decided",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:1524",
+      "id": "done_when-1",
+      "reason": "the fallback is the only thing that keeps a run review's record from being silently orphaned when the supervisor dies before filing, and as written the gate never makes that path run; the done-when needs a clause (and a red arm) that reaches it.",
+      "text": "the deliverable relies on a second mechanism, \"A run whose supervisor did not file the record has it filed by the next `crew complete` or `crew observe` of that run\", and neither the done-when nor the negative control exercises it, so a node could ship the section with that fallback unimplemented and still satisfy the gate",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "17f31fb9662e52ed71def5ea972e4cdf6902080edba5234ce0e9d79b27ce7742",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 151,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T223724832774-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "8a236bbcea6cb40312fd291a324b6a7c8b66e1c9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `recovery_review_subject.py:610` composes `write_paths` from `review_module.review_path`, `review_path` is at `reckon/crew/review.py:1969`, `_fence_write_roots` at `reckon/crew/dispatch_admission.py:1842`, `delivery_write_roots` at `reckon/_backends.py:140`, `reckon/crew/supervisor_main.py` exists and is the launch entry module, `_supervisor_exit_record` is at `reckon/crew/dispatch_launch.py:2371`, and the cited comment `c-s10-review-store-gap` resolves at line 2018.",
+    "done_when": "a finding \u2014 \u00a712's measure and its negative control exercise the fence narrowing, but the record-filing fallback (\"filed by the next `crew complete` or `crew observe`\") is named in the deliverable and exercised by no clause of the done-when.",
+    "evidence_paths": "pass \u2014 the gate and its negative control are logged under the run directory (`~/.config/reckon/crew/runs/<run_id>`), a durable path, as \u00a79 and \u00a710 do.",
+    "naming": "pass \u2014 \u00a712's prose and symbols carry no plan labels, ticket numbers or version tags; the section references (\u00a79, \u00a710) are document structure, not code names.",
+    "reasoning": "pass \u2014 the stated cause matches the cited evidence (a declared record file that does not exist is granted through its parent, the project review store, which is what `--bind ~/.config/reckon/crew/reviews/reckon` in `c-s10-review-store-gap` shows), the chosen mechanism does produce the done-when's absence of a project-directory bind, and the callers are named (`recovery_review_subject.py:610` composes, `_fence_write_roots`/`delivery_write_roots` realise, the supervisor files beside `_supervisor_exit_record`), with the supervisor genuinely outside the fence because `fence_argv` wraps only the worker argv at `reckon/_backends.py:2214`.",
+    "single_goal": "pass \u2014 \u00a712 carries one deliverable, a run review's grant narrowed to its own records, with the supervisor filing as its means.",
+    "wiring": "a finding \u2014 \u00a710 landed and every caller \u00a712 names resolves, but the open followup f-awcwyh-012 (line 1667) still records \"\u00a712 needs a design review first\" while \u00a712 (line 1524) now states \"The shape is chosen\" and is declared implementable, and the plan wires no design-review node."
+  },
+  "section_digests": {
+    "_document": "675850e692c53fb3212fb53b4ef23c0602170c1625b9b315f019b301d3fea4a7",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "c5c7fe720643fd4e73b5f1c9fff30c26f8357f46808e3b91eb33b5271d3a19bc",
+    "s11": "f2f305292dacd47d88930479053d919c6bce05b3f863e60a502ce40a2b1c1239",
+    "s12": "eb2885588f4040c6edfba65faffb9e42cf985efb7a4a07f830f2e0ab3cf6ca5c",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T22:52:17.260993+00:00"
+}
