@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4abeafea05e04b82507dacd1b8ec8b7eddcb2f64",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1658",
+    "reckon/crew/watch_unit.py:188",
+    "reckon/crew/dispatch_watch.py:713",
+    "reckon/crew/recovery_watch.py:2639"
+  ],
+  "completed_at": "2026-10-16T09:06:47Z",
+  "dispatched_at": "2026-10-16T09:00:35Z",
+  "findings": [],
+  "head_log_revision": "bd0fa7d08a01d999d36775a2bb0b1e6c0cb0cc01",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit bd0fa7d08a01 against its parent 58238461308f; it consolidates lease validation and replaces the local home fixture with tests/conftest.py:1161's isolated_reckon_home.",
+    "done_when": "the plan's \u00a718 measure is exercised by tests/test_a_hostless_follower_is_judged_by_its_lease.py:13-62; reuse-gate-head.log records 9 passes, reuse-negative-control-head.log fails the foreign case, and the importer and Ruff receipts pass.",
+    "goal": "prompt.txt:29-30 requires fresh-lease host inference; reckon/crew/follower_registration.py:130-154 and :582-600 retain that decision through one validated lease reader.",
+    "manifest": "manifest.md names bd0fa7d08a01 and the two changed paths, with baseline_suite and after_suite recording 41 passes each and log paths whose summaries and EXIT=0 agree.",
+    "write_paths": "prompt.txt:68-72 grants reckon/crew/follower_registration.py and the hostless test; git show bd0fa7d08a01 changes only those two paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_hostless_follower_is_judged_by_its_lease.py:46 fails if the path escapes the isolated home, :51-53 fail if the fresh foreign lease stops deciding liveness, :59-60 fail if renewal omits or misnames the host, and :62 fails if renewal adds a real-home entry.",
+    "evidence": "reuse-gate-head.log records 9 passed, reuse-negative-control-head.log records the foreign case failing under the declared mutation, and imports-base.log and reuse-imports-head.log each record 41 passed with EXIT=0.",
+    "fit": "reckon/crew/follower_registration.py:130-154 centralises the existing atomic lease read, while tests/test_a_hostless_follower_is_judged_by_its_lease.py:21 and :56 use the shared isolated home fixture.",
+    "goal_fidelity": "reckon/crew/follower_registration.py:582-600 still infers a host only from a fresh named lease, then applies the existing foreign or local judgement.",
+    "reuse": "the capability search found the existing lease reader in reckon/crew/follower_registration.py:130 and home isolation in tests/conftest.py:1161; bd0fa7d08a01 extends the former and uses the latter.",
+    "scope_discipline": "bd0fa7d08a01 changes only reckon/crew/follower_registration.py and tests/test_a_hostless_follower_is_judged_by_its_lease.py, both granted by prompt.txt:68-72."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:29-30 requires fresh-lease host inference; reckon/crew/follower_registration.py:130-154 and :582-600 retain that decision through one validated lease reader.\nVERDICT done_when: the plan's \u00a718 measure is exercised by tests/test_a_hostless_follower_is_judged_by_its_lease.py:13-62; reuse-gate-head.log records 9 passes, reuse-negative-control-head.log fails the foreign case, and the importer and Ruff receipts pass.\nVERDICT write_paths: prompt.txt:68-72 grants reckon/crew/follower_registration.py and the hostless test; git show bd0fa7d08a01 changes only those two paths.\nVERDICT manifest: manifest.md names bd0fa7d08a01 and the two changed paths, with baseline_suite and after_suite recording 41 passes each and log paths whose summaries and EXIT=0 agree.\nVERDICT diff: read commit bd0fa7d08a01 against its parent 58238461308f; it consolidates lease validation and replaces the local home fixture with tests/conftest.py:1161's isolated_reckon_home.\nCALL_SITES: reckon/crew_follow_commands.py:1658, reckon/crew/watch_unit.py:188, reckon/crew/dispatch_watch.py:713, reckon/crew/recovery_watch.py:2639\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/follower_registration.py:582-600 still infers a host only from a fresh named lease, then applies the existing foreign or local judgement.\nSCORE evidence: 20\nJUSTIFICATION evidence: reuse-gate-head.log records 9 passed, reuse-negative-control-head.log records the foreign case failing under the declared mutation, and imports-base.log and reuse-imports-head.log each record 41 passed with EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: bd0fa7d08a01 changes only reckon/crew/follower_registration.py and tests/test_a_hostless_follower_is_judged_by_its_lease.py, both granted by prompt.txt:68-72.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_hostless_follower_is_judged_by_its_lease.py:46 fails if the path escapes the isolated home, :51-53 fail if the fresh foreign lease stops deciding liveness, :59-60 fail if renewal omits or misnames the host, and :62 fails if renewal adds a real-home entry.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/follower_registration.py:130-154 centralises the existing atomic lease read, while tests/test_a_hostless_follower_is_judged_by_its_lease.py:21 and :56 use the shared isolated home fixture.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found the existing lease reader in reckon/crew/follower_registration.py:130 and home isolation in tests/conftest.py:1161; bd0fa7d08a01 extends the former and uses the latter.\nreviewed_base_sha: 58238461308fecef65d48c63f6bb574cafecda89\nreviewed_head_sha: bd0fa7d08a01d999d36775a2bb0b1e6c0cb0cc01\n",
+  "review_run_id": "r-20261016T085904950800-review-of-a-hostless-follower-is-judged-by-its-lease-bd0fa7d08a01",
+  "reviewed_base_sha": "58238461308fecef65d48c63f6bb574cafecda89",
+  "reviewed_head_sha": "bd0fa7d08a01d999d36775a2bb0b1e6c0cb0cc01",
+  "reviewed_run_id": "r-20261016T075954221978-a-hostless-follower-is-judged-by-its-lease",
+  "role": "review",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T09:03:38.413010+00:00",
+  "total": 119
+}
