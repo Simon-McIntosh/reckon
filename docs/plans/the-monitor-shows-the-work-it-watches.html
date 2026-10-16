@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="207">
+<meta name="plan-version" content="208">
 <meta name="plan-modified" content="2026-10-16">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -453,10 +453,11 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches §14</pre>
     <p class="r-fu-outcome">§14 merged as 62cbcfbfb (c-close-s14): a run that moves across a producer reload is appended as a transition and wakes its session.</p>
     </article>
-<article class="r-fu" data-id="f-tmstwiw-open-sections" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-14" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tmstwiw-open-sections" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-14" data-recommends-skill="" data-resolved-at="2026-10-16T12:40:59+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build the open monitor sections (§7–§12) after §23</h4>
     <div class="r-fu-body"><p>§23, a lift drawn once per pane, is in flight from a peer session on <code>ticker.py</code> and <code>crew_follow_commands.py</code>. The open sections are §7–§12. Actionable round trips, such as cross-host <code>working → halted → working</code>, still draw, and wait on the lead's decision about holding actionable stops.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches §7</pre>
+    <p class="r-fu-outcome"><p>Superseded. §23 has landed. On 2026-10-16 the lead ruled that §29 settles actionable round trips. <code>RowPolicy</code> holds an actionable row for <code>SETTLE_WINDOW</code> (20 s). A return to the word the pane showed drops both halves, and a halt that lasts longer still draws. The open sections, §7–§12, carry on under <code>f-tmstwiw-007-012</code>.</p></p>
     </article>
 <article class="r-fu" data-id="f-tmstwiw-031-033" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build the-monitor-shows-the-work-it-watches §33" data-resolved-at="2026-10-15T23:34:27+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build the duration-override reader and the delivered-run duty window</h4>
@@ -498,6 +499,11 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <h4 class="r-fu-title">Build §37 — the watcher sweeps a session nobody is following</h4>
     <div class="r-fu-body"><p>§9 gave <code>sweep</code> an explicit session for both passes. §37 has the project watcher sweep a session that has had no live follower for ten minutes, passing that session explicitly.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches §37</pre>
+    </article>
+<article class="r-fu" data-id="f-tmstwiw-007-012" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the open monitor sections (§7–§12)</h4>
+    <div class="r-fu-body"><p>The open sections are §7–§12. No section is owed for actionable round trips: the lead ruled on 2026-10-16 that §29's settle hold covers them.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches §7</pre>
     </article>
 </section>
   <section data-reckon="decisions" id="decisions" class="r-decisions">
@@ -641,6 +647,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s16" data-id="c-close-s16" data-who="reckon-build" data-when="2026-10-14T12:05:00Z">
     <div class="r-comment-body"><p>§16 landed. A run that leaves the word the pane showed and comes back within the settle window now draws nothing. Round trips such as <code>queued → dropped → queued</code> no longer flicker on the pane, and the hold never makes a hidden row visible. Merged <code>85282f1c9</code> as <code>30e9605b9</code>; the gate replayed green there. Population: 703 → 708 passed, 0 failed. Review: 102. A regression in the first cut, a terminal echo delivered late, was caught by the coordinator's population arms and fixed before merge. Still open: actionable round trips, such as cross-host <code>working → halted → working</code>, which need a decision about holding actionable stops. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s16-no-round-trip">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-s16-actionable-round-trips-ruled" data-who="reckon-build" data-when="2026-10-16T12:41:00Z">
+    <div class="r-comment-body"><p>§16 left open whether to hold actionable stops. That question is now closed: §29 already holds them, and on 2026-10-16 the lead ruled that this behaviour stands. <code>RowPolicy._hold_settle</code> holds an actionable row for 20 s, capped at 120 s per chain. A later row that brings the run back to the word the pane showed drops both halves. A halt that lasts longer is drawn at most 20 s late. §27, §34 and §36 removed the main sources of false halts.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261013T050357966649-remembered-states-are-pane-words" data-who="reckon-build" data-when="2026-10-13T06:17:20.716Z">
     <div class="r-comment-body"><p>remembered states are mapped to pane words where the grid takes its memory in (ticker._remembered_word applied in _seed_ticker_memory); a run remembered as completed_unpromoted now draws `delivered` on the left, every internal state draws its pane word, and the reloaded-pane test now expects the pane word (halted) rather than the raw producer state</p></div>
