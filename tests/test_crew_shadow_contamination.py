@@ -24,6 +24,7 @@ from pathlib import Path
 
 from reckon import calibration, capabilities, ledger
 from reckon.crew import promotion, promotion_scope
+from reckon.crew.review import review_store_root
 from reckon.crew.runs import run_dir
 
 MAIN_CHECKOUT = "/home/ITER/mcintos/Code/reckon"
@@ -718,3 +719,146 @@ def test_build_record_marks_a_contaminated_shadow_uncontrolled() -> None:
     )
     assert row["shadow_contaminated"] == "primary_run_directory_read"
     assert row["shadow_controlled"] is False
+
+
+def _matched_shadow_lineage() -> dict:
+    """A configuration substituting only the backend and its model.
+
+    Those two differences are what a backend swap necessarily produces, so the
+    configuration predicate alone calls the pair controlled and only the scan's
+    answer can void it.
+    """
+    return {
+        "kind": "shadow",
+        "primary_run_id": "r-primary",
+        "configuration": {
+            "substituted": {
+                "backend": {"primary": "codex", "shadow": "clive", "via": "backend"},
+                "model": {
+                    "primary": "gpt-6-sol",
+                    "shadow": "claude-sonnet",
+                    "via": "backend",
+                },
+            }
+        },
+    }
+
+
+def _review_store(monkeypatch, tmp_path: Path, project: str) -> Path:
+    """Point the review store at a temporary home and return its project dir."""
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    directory = review_store_root() / project
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory
+
+
+def test_a_contaminated_shadow_row_stores_an_uncontrolled_verdict(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The row's verdict is taken where the scan's answer is known.
+
+    Promotion assembles the row before the stream is read, so a verdict taken
+    there judges the configuration alone and stores a contaminated arm as
+    controlled. Both halves are in hand at the marks, and the verdict there
+    follows the one predicate.
+    """
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    primary = {"run_id": "r-primary"}
+    primary_run_directory = str(run_dir("r-primary"))
+    shadow_dir = tmp_path / "shadow"
+    shadow_dir.mkdir()
+    stream = _stream_jsonl_calls(
+        [("bash", "cat " + primary_run_directory + "/manifest.md")], shadow_dir
+    )
+    lineage = _matched_shadow_lineage()
+    record = {"run_id": "r-shadow", "log_path": stream, "lineage": lineage}
+    marks = promotion._shadow_control_marks(record, [primary], None, lineage)
+    assert marks["shadow_contaminated"] == "primary_run_directory_read"
+    assert marks["shadow_controlled"] is False
+
+
+def test_a_clean_shadow_row_stores_a_controlled_verdict(tmp_path: Path) -> None:
+    """A shadow that read nothing of its primary keeps its configuration verdict."""
+    shadow_dir = tmp_path / "shadow"
+    shadow_dir.mkdir()
+    stream = _stream_jsonl_calls(
+        [("bash", "cd " + SHADOW_WORKTREE + " && git status --short")], shadow_dir
+    )
+    lineage = _matched_shadow_lineage()
+    record = {
+        "run_id": "r-shadow",
+        "log_path": stream,
+        "lineage": lineage,
+        "worktree": SHADOW_WORKTREE,
+    }
+    marks = promotion._shadow_control_marks(record, [], None, lineage)
+    assert "shadow_contaminated" not in marks
+    assert marks["shadow_controlled"] is True
+
+
+def test_the_read_surfaces_name_the_review_records_of_the_primary(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The review-record surface is the staging file and its per-head siblings."""
+    directory = _review_store(monkeypatch, tmp_path, "proj")
+    base = directory / "r-primary.json"
+    base.write_text("{}", encoding="utf-8")
+    sibling = directory / "r-primary.at-abc1234.json"
+    sibling.write_text("{}", encoding="utf-8")
+    _run_directory, records, _worktree = promotion_scope._primary_read_surfaces(
+        {"run_id": "r-primary"}, "proj"
+    )
+    assert str(base) in records
+    assert str(sibling) in records
+
+
+def test_a_review_sibling_is_readable_without_the_staging_file(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A staging file past its round still leaves a per-head record to read."""
+    directory = _review_store(monkeypatch, tmp_path, "proj")
+    sibling = directory / "r-primary.at-abc1234.json"
+    sibling.write_text("{}", encoding="utf-8")
+    primary = {"run_id": "r-primary"}
+    _run_directory, records, _worktree = promotion_scope._primary_read_surfaces(
+        primary, "proj"
+    )
+    assert records == (str(sibling),)
+    shadow_dir = tmp_path / "shadow"
+    shadow_dir.mkdir()
+    stream = _stream_jsonl_calls([("read", str(sibling))], shadow_dir)
+    record = {
+        "run_id": "r-shadow",
+        "project": "proj",
+        "log_path": stream,
+        "lineage": {"kind": "shadow", "primary_run_id": "r-primary"},
+    }
+    reason = promotion_scope._shadow_stream_contamination(record, [primary], None)
+    assert reason == "primary_review_read"
+
+
+def test_the_read_surfaces_name_the_worktree_the_primary_held(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The tree a primary's row retains is a surface a shadow can read from."""
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    worktree = tmp_path / "checkouts" / "xpoint-cell-owner"
+    worktree.mkdir(parents=True)
+    primary = {"run_id": "r-primary", "worktree_retention": {"worktree": str(worktree)}}
+    _run_directory, _records, resolved = promotion_scope._primary_read_surfaces(
+        primary, "proj"
+    )
+    assert resolved == str(worktree)
+    shadow_dir = tmp_path / "shadow"
+    shadow_dir.mkdir()
+    stream = _stream_jsonl_calls(
+        [("read", str(worktree / "reckon" / "x.py"))], shadow_dir
+    )
+    record = {
+        "run_id": "r-shadow",
+        "log_path": stream,
+        "lineage": {"kind": "shadow", "primary_run_id": "r-primary"},
+        "worktree": SHADOW_WORKTREE,
+    }
+    reason = promotion_scope._shadow_stream_contamination(record, [primary], None)
+    assert reason == "primary_worktree_read"

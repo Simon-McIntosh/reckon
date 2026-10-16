@@ -10,7 +10,9 @@
 <h3>A shadow's reads of its primary's run directory, review record or worktree void the pair</h3>
 <table>
 <tr><th>measure</th><th>figure</th></tr>
-<tr><td>gate</td><td><code>tests/test_crew_shadow_contamination.py</code> &mdash; 21 passed</td></tr>
+<tr><td>gate</td><td><code>tests/test_crew_shadow_contamination.py</code> &mdash; 26 passed</td></tr>
+<tr><td>the stored row</td><td>promotion re-takes the control verdict where the scan's answer is known, through the one predicate, so a contaminated shadow row stores <code>shadow_controlled</code> false and a clean one true</td></tr>
+<tr><td>the read surfaces</td><td>the primary's run directory, its review records (the staging file, and the <code>.at-&lt;sha&gt;</code> siblings behind it when the staging file is gone) and the worktree its row retains</td></tr>
 <tr><td>fixture, whole stream</td><td><code>primary_changed_path_read</code></td></tr>
 <tr><td>fixture, the run-directory calls alone</td><td><code>primary_run_directory_read</code></td></tr>
 <tr><td>both stream dialects</td><td>each surface marked in the message dialect and in the command-execution dialect</td></tr>
@@ -18,7 +20,7 @@
 <tr><td>no cited commit</td><td>the scan still runs and marks the read</td></tr>
 <tr><td>pair verdict</td><td>a contaminated row sets <code>shadow_controlled</code> false and the pair reports uncontrolled naming the read</td></tr>
 <tr><td>negative control</td><td>the control predicate's contamination guard removed &rarr; <code>test_a_contaminated_pair_is_uncontrolled</code> fails at <code>assert pair["controlled"] is False</code>; 1 failed, EXIT=1</td></tr>
-<tr><td>regression arm</td><td>244 importing test files, 1719 passed, 7 failed, 1 error; every failure reproduces at the base revision or passes in isolation, so zero added</td></tr>
+<tr><td>regression arm, four slices</td><td>1064 files importing <code>ledger</code>, <code>capabilities</code> or <code>promotion_scope</code>, 4 arms of 244/286/269/265 files &mdash; 7 failed 1719 passed 1 error, 2 failed 2761 passed, 4 failed 2473 passed, 1 failed 2765 passed. The 15 failed/errored ids are the same set at the base revision and at head, in isolation and under <code>-n 8</code>: zero added, zero fixed</td></tr>
 </table>
 </section>
 </body>

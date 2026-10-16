@@ -1110,9 +1110,11 @@ def _primary_review_record_paths(
     """The review record files stored for the primary run, when any exist.
 
     A review's staging path is ``<store>/<project>/<run-id>.json`` with an
-    ``.at-<sha>`` sibling per reviewed head, so both are named. Only files
-    present on disk are returned: a path that does not exist holds nothing a
-    shadow could have read, and includes no mask worth composing.
+    ``.at-<sha>`` sibling per reviewed head, so both are named. The siblings are
+    resolved on their own: the staging file is absent once a later round or a
+    promotion has moved past it, and the per-head records behind it still hold an
+    answer a shadow could have read. Only files present on disk are returned: a
+    path that does not exist holds nothing to read, and no mask worth composing.
     """
     run_id = str(primary.get("run_id") or "")
     if not run_id or not project:
@@ -1120,9 +1122,10 @@ def _primary_review_record_paths(
     base = review_path(project, run_id)
     records: list[str] = []
     if base.is_file():
-        directory = base.parent
         records.append(str(base))
-        records.extend(str(path) for path in sorted(directory.glob(f"{run_id}.at-*.json")))
+    records.extend(
+        str(path) for path in sorted(base.parent.glob(f"{run_id}.at-*.json"))
+    )
     return tuple(records)
 
 
