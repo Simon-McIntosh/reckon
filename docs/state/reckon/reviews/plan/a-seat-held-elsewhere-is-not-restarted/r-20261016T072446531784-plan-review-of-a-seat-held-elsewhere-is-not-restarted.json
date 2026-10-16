@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T07:35:57.901Z",
+  "dispatched_at": "2026-10-16T07:25:21Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s19",
+      "id": "reasoning-1",
+      "reason": "a worker implementing \u00a719 exactly and driving the hook (as \u00a713's done-when does) sees the assertion fail and must either amend the reload path \u00a719 does not own and does not list as a write path, or silently substitute a direct `not_fresh_line` unit call; the plan should say which, since the two are different measures.",
+      "text": "the done-when's last clause (\"With the seat's own stamp also other than the checkout's, the line says the producer is running older code, as today\") is not produced by either hook path: a seat-stamp mismatch yields `STALE_CODE`, and both the prompt path (reckon/hooks/coordinator_obligations.py:941) and the stop path (coordinator_obligations.py:1182) gate `not_fresh_line` behind `reload_in_progress`, which returns True unconditionally for `STALE_CODE` (reckon/crew/obligation_snapshot.py:524), so the coordinator sees the reloading line (\"producer reloading, last snapshot \u2026 old\"), never \"older code\"",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5a391b87ee8c7dc0b6bc8c1a9efb528ed6423e5ee6c194e7ea1b7b8a8398900e",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 84,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T072446531784-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "8ecff68aaf97fad8add7367a088ffae14f51d2fd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a719 cites resolves against `b71d5ff30`: `freshness_reading` (reckon/crew/obligation_snapshot.py:393), `live_foreign_seat_host` (:323 and reckon/crew/watch_unit.py:143), `producer_live` (reckon/crew/runs.py:2531), `watch_host_lease` (reckon/crew/watch_unit.py:27), `HostLease.holder` (reckon/crew/host_lease.py:49), the 30 s `LEASE_STALE_SECONDS` (:14) and the `15m` `DEFAULT_WATCH_STALL_WINDOW` (reckon/crew/node.py:51); the seat record's `code_stamp` is written at reckon/crew/runs.py:2805 and the referenced \u00a718 section id resolves.",
+    "done_when": "pass \u2014 \u00a719 declares a measurable negative control (\"with the lease reading removed, the first case must return an empty string\"), positive and negative cases for both readings, and a logged control under the run directory; the one defect in its assertions is filed under reasoning, where the mechanism-vs-measure check lives.",
+    "evidence_paths": "pass \u2014 the new test sits at `tests/test_a_quiet_foreign_producer_reads_live.py` and the negative control is logged under the run directory, both durable; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 \u00a719 introduces no plan labels, stage names, ticket numbers or changelog prose; `producer-stale-code`, `no-producer` and `no-follower` are the module's existing vocabulary constants.",
+    "reasoning": "a finding \u2014 the stated root causes match the code (the host lease is renewed in the producer loop at reckon/crew/runs.py:3111 into a record `HostLease.holder` reads stale after 30 s, and `producer_live` reads it before the stream), but the second done-when case asserts a hook line the described mechanism does not produce.",
+    "single_goal": "pass \u2014 \u00a719's two changes (the host-lease reading in `live_foreign_seat_host` and the seat-stamp comparison in `freshness_reading`) are one deliverable: the second exists only because the first makes the host non-empty and carries a stale snapshot into the code-stamp check, and both close the same symptom (the hook telling a coordinator to arm a producer that is running).",
+    "wiring": "pass \u2014 \u00a719 is `implementable`, the sole open followup `f-sheinr-007` names `/reckon-build a-seat-held-elsewhere-is-not-restarted \u00a718 \u00a719`, and \u00a719's only real dependency, \u00a79's `live_foreign_seat_host`, is already landed and `done`, so no unlanded node gates it."
+  },
+  "section_digests": {
+    "_document": "dbb9ed267807e9c2b79c317f76f8bb8f99ada6fc4d521da33e6e471ae57f8d69",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s10": "fd9ced512f1fc6a0610cb111ec8c734e3c55a84ea11034055f5f1c9e60e0c649",
+    "s11": "9d7552bb9a0f7179067d09a67e819e7194fbbac1e34cf450bb6dd2631508389d",
+    "s12": "41b7e2f138ff584e94cdef995cae4ab65e47e6e0efb43dc6d30b0045664f611d",
+    "s13": "441358f17906d8fa159ba5911fc62cfb32cabff650e9ae63b1300701b43f7b6d",
+    "s14": "15dd48418b8a42e818c6a6c93d4914efb531dc5439e368a148fd7168b3a89faa",
+    "s15": "707b8d39391cbd7e59f3dbd9cc4748c655d8870e48f237e84889148855f5b9e7",
+    "s16": "e185fa1e0f4aa25f213b2df34164fcfb48751f19156d05a48ec1118841ee463d",
+    "s17": "73a4699a4193793731da87cf3a489de8f9e91df7e596e68dad4897797177cb9e",
+    "s18": "8999758c87844624774b694fe81fcd076a62c6ef3bccc2334956bdae4b71957d",
+    "s19": "6701a7f29c8ec8b5d4ae84a50ce72d0a36ae513e495ad8a38b52ad42dffe46b6",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "96d5fc1c72a25970cab856a7dde0a3cab839fd87c83786b7b49ffc4c1dabb1ab",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad",
+    "s7": "d3e16f60d17ef3ee4666f9cd189aa6cd8e26f038173b65ee34b68f3f2cd822e7",
+    "s8": "b41130ef26282f759c1b7be0de0136701972d055ed7878e2f2d9cd21c96b4f63",
+    "s9": "a2cb7135c4bd3f1439c3ec948d6146c2f5b7527da59b1bbd4c7ce4c141ec3055"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T07:37:36.796305+00:00"
+}
