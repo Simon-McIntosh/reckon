@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest writes baseline_suite/after_suite as prose, so the store's own annotation reads them unmeasured; derived by hand from the run directory's importer-gate-clean-base-chunk*.log and importer-gate-clean-head-chunk*.log, both of which report zero failing ids",
+  "backend": "local",
+  "base_log_revision": "dcdde9a8e7cb0a5e0da3ff4cf8de450bb42275d5",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/obligations.py:_classified_rows",
+    "reckon/crew/query.py:project_live_rows",
+    "reckon/crew/runs.py:_drain_row",
+    "reckon/crew/recovery_watch.py:overdue_unreconciled_runs",
+    "reckon/crew/directory.py:_run_row",
+    "reckon/serve.py:_crew_rows"
+  ],
+  "completed_at": "2026-10-16T03:52:41.275Z",
+  "dispatched_at": "2026-10-16T03:38:16Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T024829950525-a-resume-is-not-drawn-halted/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite and after_suite are written as prose rather than the contract's JSON carrying log_path, so reckon/crew/review.py:2322 reads the sentence as a path, fails to open it, and the store's annotation records added_failure_count as unmeasured instead of the zero the two clean gate-log arms actually show."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-resume-is-not-drawn-halted.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the node authored a 128-line evidence fragment and a 1282-line figure although its dispatch said it writes no figure and no evidence prose; the paths are inside the granted fence, so this is scope the goal did not imply rather than a fence breach."
+    }
+  ],
+  "head_log_revision": "7b915b6e7",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read line by line; 7b915b6e7 adds the classification arm at recovery_classification.py:579 and its import at recovery_classification.py:1583, 2172ec268 adds the evidence fragment and figure, and the 329-line test file adds five cases.",
+    "done_when": "the done_when names tests/test_a_resume_is_not_drawn_halted.py and the manifest records its run with a declared negative control; I re-ran that file, which passes 5/5 at head 2172ec268 and fails 4/5 at base dcdde9a8e with the first case reading exited-unfinished.",
+    "goal": "the node goal is to stop a resumed run being read as halted before its new attempt has a stream or process record; the landed arm at reckon/crew/recovery_classification.py:579 defers to the attempt's own clock and reads the observed fixture as running, which I reproduced.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T024829950525-a-resume-is-not-drawn-halted/manifest.md; it names the gate, the negative control, both suite arms at zero failures and the observed run's follower history.",
+    "write_paths": "declared paths are reckon/crew/recovery_classification.py, reckon/crew/recovery_liveness.py, tests/test_a_resume_is_not_drawn_halted.py and the granted fragment/figure tree; the diff touches only recovery_classification.py, the new test file and the fragment/figure, leaving recovery_liveness.py unchanged."
+  },
+  "justifications": {
+    "durability": "tests/test_a_resume_is_not_drawn_halted.py:215 fails at base with classification exited-unfinished and the declared negative control records those same four ids red, so each assertion names the regression it catches.",
+    "evidence": "tests/test_a_resume_is_not_drawn_halted.py asserts the measure and I reproduced base-red and head-green, but the reviewed run's manifest at line 21 writes baseline_suite as prose, so reckon/crew/review.py:2322 cannot open a log and every reader sees the count unmeasured instead of the zero the clean gate logs show.",
+    "fit": "the arm follows the surrounding classify_pointer idiom at recovery_classification.py:578, its comment states the mechanism, and ruff check and ruff format --check add no finding against base.",
+    "goal_fidelity": "recovery_classification.py:579 reads a resumed attempt that has recorded no worker or exit of its own as running, which the reproduced fixture confirms as exited-unfinished at base and running at head.",
+    "reuse": "the arm reuses the existing owner _attempt_awaits_its_worker at reckon/crew/recovery_liveness.py:519 rather than forking a deferral predicate, so no capability is duplicated.",
+    "scope_discipline": "every diff path is inside the declared fence and recovery_liveness.py is untouched, but the 128-line fragment at docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-resume-is-not-drawn-halted.html:1 and its 1282-line figure were written against the dispatch's instruction that this node writes no figure and no evidence prose."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to stop a resumed run being read as halted before its new attempt has a stream or process record; the landed arm at reckon/crew/recovery_classification.py:579 defers to the attempt's own clock and reads the observed fixture as running, which I reproduced.\nVERDICT done_when: the done_when names tests/test_a_resume_is_not_drawn_halted.py and the manifest records its run with a declared negative control; I re-ran that file, which passes 5/5 at head 2172ec268 and fails 4/5 at base dcdde9a8e with the first case reading exited-unfinished.\nVERDICT write_paths: declared paths are reckon/crew/recovery_classification.py, reckon/crew/recovery_liveness.py, tests/test_a_resume_is_not_drawn_halted.py and the granted fragment/figure tree; the diff touches only recovery_classification.py, the new test file and the fragment/figure, leaving recovery_liveness.py unchanged.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T024829950525-a-resume-is-not-drawn-halted/manifest.md; it names the gate, the negative control, both suite arms at zero failures and the observed run's follower history.\nVERDICT diff: read line by line; 7b915b6e7 adds the classification arm at recovery_classification.py:579 and its import at recovery_classification.py:1583, 2172ec268 adds the evidence fragment and figure, and the 329-line test file adds five cases.\nCALL_SITES: reckon/crew/obligations.py:_classified_rows, reckon/crew/query.py:project_live_rows, reckon/crew/runs.py:_drain_row, reckon/crew/recovery_watch.py:overdue_unreconciled_runs, reckon/crew/directory.py:_run_row, reckon/serve.py:_crew_rows\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: recovery_classification.py:579 reads a resumed attempt that has recorded no worker or exit of its own as running, which the reproduced fixture confirms as exited-unfinished at base and running at head.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_resume_is_not_drawn_halted.py asserts the measure and I reproduced base-red and head-green, but the reviewed run's manifest at line 21 writes baseline_suite as prose, so reckon/crew/review.py:2322 cannot open a log and every reader sees the count unmeasured instead of the zero the clean gate logs show.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: every diff path is inside the declared fence and recovery_liveness.py is untouched, but the 128-line fragment at docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-resume-is-not-drawn-halted.html:1 and its 1282-line figure were written against the dispatch's instruction that this node writes no figure and no evidence prose.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_resume_is_not_drawn_halted.py:215 fails at base with classification exited-unfinished and the declared negative control records those same four ids red, so each assertion names the regression it catches.\nSCORE fit: 18\nJUSTIFICATION fit: the arm follows the surrounding classify_pointer idiom at recovery_classification.py:578, its comment states the mechanism, and ruff check and ruff format --check add no finding against base.\nSCORE reuse: 20\nJUSTIFICATION reuse: the arm reuses the existing owner _attempt_awaits_its_worker at reckon/crew/recovery_liveness.py:519 rather than forking a deferral predicate, so no capability is duplicated.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T024829950525-a-resume-is-not-drawn-halted/manifest.md:21 follow-on: baseline_suite and after_suite are written as prose rather than the contract's JSON carrying log_path, so reckon/crew/review.py:2322 reads the sentence as a path, fails to open it, and the store's annotation records added_failure_count as unmeasured instead of the zero the two clean gate-log arms actually show.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-resume-is-not-drawn-halted.html:1 follow-on: the node authored a 128-line evidence fragment and a 1282-line figure although its dispatch said it writes no figure and no evidence prose; the paths are inside the granted fence, so this is scope the goal did not imply rather than a fence breach.\n",
+  "review_run_id": "r-20261016T033728813398-review-of-a-resume-is-not-drawn-halted-2172ec268891",
+  "reviewed_base_sha": "dcdde9a8e7cb0a5e0da3ff4cf8de450bb42275d5",
+  "reviewed_head_sha": "2172ec268891f4082f68e73d00ed19ee13b890a8",
+  "reviewed_run_id": "r-20261016T024829950525-a-resume-is-not-drawn-halted",
+  "reviewer_run_id": "r-20261016T033728813398-review-of-a-resume-is-not-drawn-halted",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T03:48:26.408302+00:00",
+  "total": 108
+}

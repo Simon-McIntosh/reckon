@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="181">
+<meta name="plan-version" content="182">
 <meta name="plan-modified" content="2026-10-16">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -825,6 +825,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s35" data-id="c-run-r-20261015T235533835600-a-blocked-run-still-needs-a-resume-waiver" data-who="reckon-build" data-when="2026-10-16T00:45:45.734Z">
     <div class="r-comment-body"><p>deferred_outcome in recovery_classification.py now runs the stream-aware deferral only for a delivered (complete) verdict, so a fresh blocked manifest with a live session no longer reads running and promotion refuses it again; tests/test_crew_promotion.py is 50 passed at head against 48 passed / 2 failed at base.</p></div>
+</div>
+<div class="r-comment" data-section="s36" data-id="c-run-r-20261016T033728813398-review-of-a-resume-is-not-drawn-halted-2172ec268891" data-who="reckon-build" data-when="2026-10-16T03:52:41.275Z">
+    <div class="r-comment-body"><p>a resumed run that has recorded neither a worker record nor an exit of its own is read as running rather than through its predecessor&#x27;s end (reckon/crew/recovery_classification.py:579), confirmed by re-running tests/test_a_resume_is_not_drawn_halted.py (5 passed at head 2172ec268; 4 failed reading exited-unfinished at base dcdde9a8e); scored goal_fidelity 19, evidence 17, scope_discipline 15, durability 19, fit 18, reuse 20 (total 108) against reviewed_base_sha dcdde9a8e7cb0a5e0da3ff4cf8de450bb42275d5 and reviewed_head_sha 2172ec268891f4082f68e73d00ed19ee13b890a8, with added_failure_count 0 and added_failure_ids []</p></div>
 </div>
 </section>
 </main>
