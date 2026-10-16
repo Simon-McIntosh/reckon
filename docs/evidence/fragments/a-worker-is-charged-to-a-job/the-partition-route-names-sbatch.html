@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-is-charged-to-a-job">
+  <meta name="plan-title" content="The partition route names sbatch">
+  <meta name="plan-summary" content="The nested-launch partition route is declared with its submitting verb, sbatch, and a nested srun sentence; the refusals, the digest fleet-compute sentence and the host allocation line each compose both from those constants. 32 passed at the head, the in-memory route revert reddens eight ids including every refusal and the host-line case.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-is-charged-to-a-job">
+  <meta name="plan-verifies" content="reckon:a-worker-is-charged-to-a-job#s10">
+  <meta name="plan-commits" content="5637dfc6b">
+  <meta name="plan-artifacts" content="reckon/nested_launch.py,reckon/crew/worker_digest.py,reckon/crew/dispatch_launch.py,tests/test_nested_refusal_names_the_route.py,tests/test_the_host_line_allows_a_separate_partition_job.py">
+  <meta name="plan-recorded-at" content="2026-10-16">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,nested-launch,partition,sbatch">
+  <title>The partition route names sbatch — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-partition-route-names-sbatch" data-node="the-partition-route-names-sbatch" data-reckon="landed" data-when="2026-10-16">
+  <h2 id="the-partition-route-names-sbatch-heading">The partition route names sbatch</h2>
+  <section id="the-partition-route-names-sbatch-figures" data-reckon="section">
+    <ul>
+      <li>declared route: <code>PARTITION_ROUTE</code> carries <code>PARTITION_ROUTE_VERB</code> (<code>sbatch</code>) and the <code>sbatch --wait</code> form; <code>NESTED_SRUN_SENTENCE</code> states a nested <code>srun</code> runs as a step of the held job</li>
+      <li>composed by: the <code>srun</code>/<code>sbatch</code>/<code>salloc</code> refusals, <code>compute_routes_sentence()</code> in the digest, and <code>_worker_host_line</code></li>
+      <li>head arm: 32 passed, <code>EXIT=0</code> (log <code>gate-head.log</code>)</li>
+      <li>digest staleness: <code>python -m reckon.crew.worker_digest --check</code> reports <code>up to date: report, review, implement, test</code>, <code>EXIT=0</code> (log <code>digest-check.log</code>)</li>
+      <li>ruff delta: 1 baseline finding and 1 head finding, both the pre-existing <code>PYI034</code> in <code>dispatch_launch.py</code> (logs <code>ruff-check.log</code>, <code>ruff-check-baseline.log</code>)</li>
+      <li>negative control: route reverted in memory, 8 failed 2 passed, <code>EXIT=1</code> (log <code>negative-control.log</code>)</li>
+    </ul>
+  </section>
+</article>
+</body>
+</html>
