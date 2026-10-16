@@ -169,9 +169,61 @@ def _peak_input_utilisation(
     return _peak_summary(values)
 
 
+def _requirement_level(value: Any) -> str | None:
+    """A recorded requirement level, or None when it carries no value."""
+
+    if value is None or value == "":
+        return None
+    return str(value)
+
+
+def _recorded_requirement(
+    row: Mapping[str, Any],
+) -> tuple[str | None, str | None] | None:
+    """The (reasoning, risk) a row recorded, or None when it recorded none.
+
+    The requirement a dispatch weighed is stored under
+    ``node_definition.capability``; a row written before that recording, or one
+    whose capability carries neither level, recorded no requirement and reads as
+    ``None`` so it is counted as unrecorded rather than matched by default.
+    """
+
+    definition = row.get("node_definition")
+    if not isinstance(definition, Mapping):
+        return None
+    capability = definition.get("capability")
+    if not isinstance(capability, Mapping):
+        return None
+    requirements = capability.get("requirements")
+    if not isinstance(requirements, Mapping):
+        return None
+    reasoning = _requirement_level(requirements.get("reasoning"))
+    risk = _requirement_level(requirements.get("risk"))
+    if reasoning is None and risk is None:
+        return None
+    return (reasoning, risk)
+
+
+def _request_requirement(request: PickRequest) -> tuple[str | None, str | None] | None:
+    """The (reasoning, risk) the request names, or None when it names none."""
+
+    requirements = (request.capability or {}).get("requirements")
+    if not isinstance(requirements, Mapping):
+        return None
+    reasoning = _requirement_level(requirements.get("reasoning"))
+    risk = _requirement_level(requirements.get("risk"))
+    if reasoning is None and risk is None:
+        return None
+    return (reasoning, risk)
+
+
 def _candidates_scan(
     records: list[dict[str, Any]], request: PickRequest, *, now: datetime
-) -> tuple[dict[tuple[str, str | None], dict[str, int]], dict[str, list[float]]]:
+) -> tuple[
+    dict[tuple[str, str | None], dict[str, int]],
+    dict[str, list[float]],
+    dict[tuple[str, str | None], dict[str, Any]] | None,
+]:
     """One pass over the ledger rows: every candidate's outcomes and peaks.
 
     ``recent_outcomes`` and ``_peak_input_utilisation`` each read the whole row
@@ -180,11 +232,24 @@ def _candidates_scan(
     counts keyed by (backend, model) and the peak-utilisation values keyed by
     backend. The elision is pure -- every figure equals the per-backend reader's
     own figure for the same rows.
+
+    The same pass also conditions the outcome counts on the requirement each row
+    recorded: rows whose recorded (reasoning, risk) equals the request's feed a
+    per-candidate block, rows that recorded no requirement count under
+    ``unrecorded``, and rows that recorded a different requirement count in
+    neither. The block's review-total and wall-time medians are read over the
+    matched rows in the same walk, so no figure here costs a second pass. A
+    request that names no requirement has no difficulty to read history at, so
+    the third value is None and no block is built.
     """
 
     cutoff = now - timedelta(days=14)
+    request_requirement = _request_requirement(request)
     counts: dict[tuple[str, str | None], Counter[str]] = {}
     peaks: dict[str, list[float]] = {}
+    at_requirement: dict[tuple[str, str | None], dict[str, Any]] | None = (
+        {} if request_requirement is not None else None
+    )
     for row in records:
         stamp = parse_utc(
             str(row.get("completed_at") or row.get("dispatched_at") or "")
@@ -205,16 +270,56 @@ def _candidates_scan(
         ):
             continue
         model = (row.get("agent") or {}).get("model")
-        counts.setdefault((backend, model), Counter())[
-            str(row.get("gate") or "unknown")
-        ] += 1
-    return counts, peaks
+        key = (backend, model)
+        counts.setdefault(key, Counter())[str(row.get("gate") or "unknown")] += 1
+        if at_requirement is None:
+            continue
+        entry = at_requirement.setdefault(
+            key, {"counts": Counter(), "unrecorded": 0, "reviews": [], "walls": []}
+        )
+        recorded = _recorded_requirement(row)
+        if recorded is None:
+            entry["unrecorded"] += 1
+            continue
+        if recorded != request_requirement:
+            continue
+        entry["counts"][str(row.get("gate") or "unknown")] += 1
+        review = row.get("review")
+        total = review.get("total") if isinstance(review, Mapping) else None
+        if isinstance(total, (int, float)) and not isinstance(total, bool):
+            entry["reviews"].append(float(total))
+        wall = row.get("wall_seconds")
+        if isinstance(wall, (int, float)) and not isinstance(wall, bool):
+            entry["walls"].append(float(wall))
+    return counts, peaks, at_requirement
 
 
 def _outcome_counts(counts: Counter[str]) -> dict[str, int]:
     """The fixed outcome vocabulary, absent gates reading zero."""
 
     return {key: counts[key] for key in ("passed", "failed", "not-run", "unknown")}
+
+
+def _requirement_block(entry: Mapping[str, Any] | None) -> dict[str, Any]:
+    """One candidate's gate history at the request's requirement.
+
+    The block restates the outcome vocabulary over the rows whose recorded
+    requirement equals the request's, adds ``unrecorded``, the count of rows
+    that recorded no requirement, and carries the median review total and wall
+    seconds over the matched rows. A candidate with no matched row reads zero
+    gate counts and null medians, never a median over an empty sample.
+    """
+
+    entry = entry or {}
+    counts = entry.get("counts") or Counter()
+    reviews = entry.get("reviews") or []
+    walls = entry.get("walls") or []
+    return {
+        **_outcome_counts(counts),
+        "unrecorded": int(entry.get("unrecorded") or 0),
+        "review_total_median": round(median(reviews), 1) if reviews else None,
+        "wall_seconds_median": round(median(walls), 1) if walls else None,
+    }
 
 
 def _context_block(
@@ -269,7 +374,9 @@ def _lane(
     # candidate loop threads through, so a backend whose document another
     # backend also names reads it once. The parse goes through the routing
     # helper that reads the same published document ``local_lane_load`` reports.
-    document = routing.pick_lane_document(backend, {} if documents is None else documents)
+    document = routing.pick_lane_document(
+        backend, {} if documents is None else documents
+    )
     reading = lane_document.read_lane_document(document)
     # The shared allowance helper owns session/new-session/global precedence.
     admission = lane_document.read_lane_admission(document)
@@ -719,8 +826,7 @@ def budget_view(
 
     def stamp_of(value: Mapping[str, Any]) -> list[Any]:
         stamps: list[Any] = [
-            [path, capabilities.file_stamp(path)]
-            for path in (value.get("paths") or [])
+            [path, capabilities.file_stamp(path)] for path in (value.get("paths") or [])
         ]
         project_name, root = value["ledger"]
         stamps.append(["ledger", ledger.index_stamp(project_name, root)])
@@ -730,9 +836,12 @@ def budget_view(
         request_key = _budget_view_request_key(
             project, config, repo, records, cached_only=cached_only, session=session
         )
-        name = "budget-view-" + hashlib.sha256(
-            json.dumps(request_key, sort_keys=True, default=str).encode()
-        ).hexdigest()
+        name = (
+            "budget-view-"
+            + hashlib.sha256(
+                json.dumps(request_key, sort_keys=True, default=str).encode()
+            ).hexdigest()
+        )
         value = capabilities.cached_pick_input_stamped(
             name, request_key, stamp_of, build, root=cache_root
         )
@@ -810,7 +919,9 @@ def candidates(
     # One pass over the rows yields every backend's outcome counts and peak
     # utilisation, and one document cache is threaded through the loop so each
     # lane document is parsed once per pick.
-    outcome_counts, peak_values = _candidates_scan(rows, request, now=now)
+    outcome_counts, peak_values, requirement_counts = _candidates_scan(
+        rows, request, now=now
+    )
     lane_utilisation = {
         name: _peak_summary(peak_values.get(name, []))
         for name in config.get("backends", {})
@@ -1004,8 +1115,11 @@ def candidates(
                 days_to_reset=days_to_reset,
                 worker_slots=slots,
                 congestion=congestion,
-                outcomes=_outcome_counts(
-                    outcome_counts.get((name, model), Counter())
+                outcomes=_outcome_counts(outcome_counts.get((name, model), Counter())),
+                outcomes_at_requirement=(
+                    None
+                    if requirement_counts is None
+                    else _requirement_block(requirement_counts.get((name, model)))
                 ),
                 reasons=reasons,
                 budget_reason=budget_reason,

@@ -40,6 +40,11 @@ class Candidate:
     reasons: list[str] = field(default_factory=list)
     days_to_reset: float | None = None
     context: dict[str, Any] | None = None
+    # The candidate's gate history at the request's requirement: the same
+    # outcome vocabulary over the rows whose recorded requirement matches, plus
+    # the review-total and wall-time medians over those rows. A separate block
+    # from ``outcomes``, which stays pooled across every difficulty.
+    outcomes_at_requirement: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
