@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 4,
+  "added_failure_ids": [
+    "tests/test_a_resumed_worker_is_not_ended_as_delivered.py::test_a_completed_run_resumed_through_crew_resume_is_not_ended",
+    "tests/test_a_resumed_worker_is_not_ended_as_delivered.py::test_a_completed_run_resumed_through_the_launcher_is_not_ended",
+    "tests/test_a_terminal_worker_exits_within_its_grace.py::test_a_complete_manifest_ends_the_worker_within_the_grace",
+    "tests/test_a_terminal_worker_exits_within_its_grace.py::test_a_resumed_worker_is_not_ended_by_its_earlier_attempts_baseline"
+  ],
+  "added_failures_note": "derived from the reviewed run's regression chunk logs named by its manifest baseline_suite/after_suite (regress/base-*.log vs regress/head-*.log); the reviewed manifest reports the 4 head-only ids as parallel-load flakiness on partial arms, not regressions",
+  "base_log_revision": "e21947c41b449e8a611d9204ccfcea41fd2bd49d",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1152",
+    "reckon/crew/recovery_review_dispatch.py:1774",
+    "reckon/crew/queue_admission.py:770"
+  ],
+  "completed_at": "2026-10-16T11:12:59.143Z",
+  "dispatched_at": "2026-10-16T10:56:00Z",
+  "findings": [
+    {
+      "file": "tests/test_a_queued_run_waits_on_its_lane.py",
+      "line": "239",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion reads queued[0][\"local\"] is True, a field reckon/crew/dispatch.py:257 hardcodes and runs.queue_dispatch writes verbatim, so it holds whether or not the fix is present and cannot fail; it is a fixture precondition, not a guard."
+    },
+    {
+      "file": "tests/test_a_queued_run_waits_on_its_lane.py",
+      "line": "219",
+      "severity": "follow-on",
+      "text": "follow-on: the reproduction is a compose-then-redispatch substitution rather than the plan \u00a724 composition fixture (metered backend in review_excluded_backends beside a slotless local lane), so a coordinator must adjudicate the substitution the done_when directs the node to report rather than code around."
+    }
+  ],
+  "head_log_revision": "61e87955d2dee02c1749700033f5750281776dfd",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 61e87955 against its parent 3d651787; one file, +72/-33, replacing the post-admission backend assertion with a pre-admission queued-pointer assertion and a shared queue-then-redispatch helper.",
+    "done_when": "the done_when names tests/test_a_queued_run_waits_on_its_lane.py with a base reproduction and a head launch; head-gate.log records 2 passed EXIT=0, negative-control.log is red at EXIT=1 with 2 failed ids, and the regression arms are partial (head 15/22 chunks, base 17/22) carrying 4 head-only ids.",
+    "goal": "the node goal is that a review dispatched with local set queues with the local backend so the local admission can launch it; the gained change has the test read the re-queued pointer at tests/test_a_queued_run_waits_on_its_lane.py:263 before any admission pass and assert the local backend the fix at reckon/crew/dispatch.py:1152 keeps.",
+    "manifest": "read manifest.md; status complete with the head, control and chunk logs named, but its regression clause is partial and attributes the 4 head-only ids to parallel-load flakiness it re-ran alone.",
+    "write_paths": "the manifest declares tests/test_a_queued_run_waits_on_its_lane.py among its write paths, and git diff 3d651787..61e87955 changes only that file."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows tests/test_a_queued_run_waits_on_its_lane.py:263 and :283 redden when the fix is reverted, so the assertions fail on the regression they name.",
+    "evidence": "head-gate.log records 2 passed at EXIT=0 and negative-control.log is red at EXIT=1, but the done_when's regression clause is only partly recorded (head 15/22, base 17/22 chunks) with 4 head-only ids.",
+    "fit": "the helper and constants at tests/test_a_queued_run_waits_on_its_lane.py:219-248 follow the file's existing compose idiom, and no symbol carries a plan or version label.",
+    "goal_fidelity": "tests/test_a_queued_run_waits_on_its_lane.py:263 reads the re-queued request's backend before any admission pass, which is the value reckon/crew/dispatch.py:1152 stops the re-queue from rewriting.",
+    "reuse": "the helper calls the file's existing _compose at tests/test_a_queued_run_waits_on_its_lane.py:206, and the production carry extends _queued_request_record at reckon/crew/dispatch.py:225 rather than forking it.",
+    "scope_discipline": "git diff 3d651787..61e87955 changes only tests/test_a_queued_run_waits_on_its_lane.py, inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a review dispatched with local set queues with the local backend so the local admission can launch it; the gained change has the test read the re-queued pointer at tests/test_a_queued_run_waits_on_its_lane.py:263 before any admission pass and assert the local backend the fix at reckon/crew/dispatch.py:1152 keeps.\nVERDICT done_when: the done_when names tests/test_a_queued_run_waits_on_its_lane.py with a base reproduction and a head launch; head-gate.log records 2 passed EXIT=0, negative-control.log is red at EXIT=1 with 2 failed ids, and the regression arms are partial (head 15/22 chunks, base 17/22) carrying 4 head-only ids.\nVERDICT write_paths: the manifest declares tests/test_a_queued_run_waits_on_its_lane.py among its write paths, and git diff 3d651787..61e87955 changes only that file.\nVERDICT manifest: read manifest.md; status complete with the head, control and chunk logs named, but its regression clause is partial and attributes the 4 head-only ids to parallel-load flakiness it re-ran alone.\nVERDICT diff: read 61e87955 against its parent 3d651787; one file, +72/-33, replacing the post-admission backend assertion with a pre-admission queued-pointer assertion and a shared queue-then-redispatch helper.\nCALL_SITES: reckon/crew/dispatch.py:1152, reckon/crew/recovery_review_dispatch.py:1774, reckon/crew/queue_admission.py:770\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_a_queued_run_waits_on_its_lane.py:263 reads the re-queued request's backend before any admission pass, which is the value reckon/crew/dispatch.py:1152 stops the re-queue from rewriting.\nSCORE evidence: 14\nJUSTIFICATION evidence: head-gate.log records 2 passed at EXIT=0 and negative-control.log is red at EXIT=1, but the done_when's regression clause is only partly recorded (head 15/22, base 17/22 chunks) with 4 head-only ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 3d651787..61e87955 changes only tests/test_a_queued_run_waits_on_its_lane.py, inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log shows tests/test_a_queued_run_waits_on_its_lane.py:263 and :283 redden when the fix is reverted, so the assertions fail on the regression they name.\nSCORE fit: 19\nJUSTIFICATION fit: the helper and constants at tests/test_a_queued_run_waits_on_its_lane.py:219-248 follow the file's existing compose idiom, and no symbol carries a plan or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the helper calls the file's existing _compose at tests/test_a_queued_run_waits_on_its_lane.py:206, and the production carry extends _queued_request_record at reckon/crew/dispatch.py:225 rather than forking it.\nFINDING tests/test_a_queued_run_waits_on_its_lane.py:239 follow-on: the assertion reads queued[0][\"local\"] is True, a field reckon/crew/dispatch.py:257 hardcodes and runs.queue_dispatch writes verbatim, so it holds whether or not the fix is present and cannot fail; it is a fixture precondition, not a guard.\nFINDING tests/test_a_queued_run_waits_on_its_lane.py:219 follow-on: the reproduction is a compose-then-redispatch substitution rather than the plan \u00a724 composition fixture (metered backend in review_excluded_backends beside a slotless local lane), so a coordinator must adjudicate the substitution the done_when directs the node to report rather than code around.\n",
+  "review_run_id": "r-20261016T105431576315-review-of-a-queued-run-waits-on-its-lane-61e87955d2de",
+  "reviewed_base_sha": "3d651787d7f436727c0ec187ca1735bc0ebc191d",
+  "reviewed_head_sha": "61e87955d2dee02c1749700033f5750281776dfd",
+  "reviewed_run_id": "r-20261016T075029708252-a-queued-run-waits-on-its-lane",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T10:59:00+00:00",
+  "total": 108
+}
