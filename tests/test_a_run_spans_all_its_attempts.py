@@ -29,6 +29,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html, crew, ledger
+from reckon.crew import promotion_checks
 from reckon.crew.runs import _write_json, pointer_path, run_dir
 from tests.helpers.git import git as _git
 
@@ -367,6 +368,75 @@ def test_an_attempt_that_shared_a_session_is_counted_once(
     assert row["completed_at"] == THIRD_ATTEMPT_END
     assert row["worker_seconds"] == FIRST_ATTEMPT_SPAN_SECONDS + FIRST_CODEX_SPAN_SECONDS
     assert row["worker_seconds_source"] == "stream_events+rollout_receipts"
+
+
+def test_a_codex_attempts_session_is_credited_from_its_observation(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The session credited to a codex attempt is observe_log's own reading.
+
+    A codex attempt's span is found through the session its stream names, so the
+    credit must carry the session observe_log already read from that stream —
+    its ``thread_id`` as ``session_id``. The record's own session_id is set to a
+    different value with no receipt, so a credit taken from the record rather
+    than the stream would lose the receipt's span.
+    """
+    run_id = "r-20261015T160700000004-node-a"
+    directory = run_dir(run_id)
+    directory.mkdir(parents=True, exist_ok=True)
+
+    first = directory / "stream.jsonl"
+    _write_claude_stream(first, opened=FIRST_ATTEMPT_OPEN, closed=FIRST_ATTEMPT_END)
+    _touch(first, FIRST_ATTEMPT_END)
+
+    resumed = directory / "resume-1.jsonl"
+    _write_codex_stream(resumed, FIRST_CODEX_SESSION)
+    _touch(resumed, SECOND_ATTEMPT_END)
+
+    _write_rollout(
+        run_id,
+        FIRST_CODEX_SESSION,
+        opened="2026-10-15T16:20:00Z",
+        closed="2026-10-15T16:22:00Z",
+        tool_seconds=20,
+    )
+
+    _write_pointer(
+        repository,
+        run_id,
+        tmp_path / "manifests" / f"{run_id}.md",
+        log_path=first,
+        backend="codex",
+        argv=["codex", "exec", "--json"],
+        session_id=SECOND_CODEX_SESSION,
+    )
+
+    observed: list[str | None] = []
+    credited: list[str | None] = []
+    real_observe = promotion_checks._backends.observe_log
+    real_receipt = promotion_checks._measured_rollout_receipt
+
+    def spy_observe(*args, **kwargs):
+        observation = real_observe(*args, **kwargs)
+        observed.append(observation.session_id)
+        return observation
+
+    def spy_receipt(session_id, run_id):
+        credited.append(session_id)
+        return real_receipt(session_id, run_id)
+
+    monkeypatch.setattr(promotion_checks._backends, "observe_log", spy_observe)
+    monkeypatch.setattr(promotion_checks, "_measured_rollout_receipt", spy_receipt)
+
+    row = _promote(repository, run_id, tmp_path)
+
+    # observe_log read the codex attempt's session from its stream, and that same
+    # session is the one the attempt's span was credited through.
+    assert FIRST_CODEX_SESSION in observed
+    assert FIRST_CODEX_SESSION in credited
+    assert row["worker_seconds"] == (
+        FIRST_ATTEMPT_SPAN_SECONDS + FIRST_CODEX_SPAN_SECONDS
+    )
 
 
 # ── the single-attempt shapes must not move ─────────────────────────────────

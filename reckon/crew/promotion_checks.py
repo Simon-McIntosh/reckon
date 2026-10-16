@@ -115,26 +115,6 @@ def _measured_rollout_receipt(session_id: str, run_id: str | None) -> Any | None
     return None
 
 
-def _codex_session_of_stream(path: Path) -> str | None:
-    """The codex session a stream names, or ``None`` when it names none.
-
-    A codex client stream opens with a ``thread.started`` record carrying its
-    ``thread_id``, which every resume of that one session repeats, so the id is
-    read from the stream itself rather than from the client's global session
-    home. A claude event stream carries no such field and is dated from its own
-    timestamps instead, so the two attempt shapes are separated by which
-    measurement the stream affords rather than by the backend's name.
-    """
-    events, _malformed = _backends.cached_stream_events(path)
-    for event in events:
-        if not isinstance(event, Mapping):
-            continue
-        thread_id = event.get("thread_id")
-        if isinstance(thread_id, str) and thread_id.strip():
-            return thread_id.strip()
-    return None
-
-
 def _terminal_stream_data(
     record: Mapping[str, Any],
 ) -> StreamMeasures:
@@ -205,8 +185,11 @@ def _terminal_stream_data(
             continue
         # No event timestamps bound this attempt. Its file's own modification
         # time is the end its writer left, and its session's receipt carries the
-        # worker span the stream cannot.
-        stream_session = _codex_session_of_stream(candidate)
+        # worker span the stream cannot. The session is the one observe_log just
+        # read from this same stream — a codex client's thread_id, which the
+        # observation carries as its session_id — rather than a second reading
+        # of the stream's records.
+        stream_session = observation.session_id
         if stream_session:
             span_receipt = _measured_rollout_receipt(stream_session, run_id)
             if span_receipt is not None:
