@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1923",
+    "reckon/crew/dispatch_sessions.py:1221",
+    "reckon/crew/dispatch_sessions.py:1675",
+    "reckon/_backends.py:2223",
+    "reckon/_worker_fence.py:1320"
+  ],
+  "completed_at": "2026-10-16T23:51:40.803Z",
+  "dispatched_at": "2026-10-16T23:40:15Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the plan text was stale, not the change: resumption.py:555 is the fence=False lane probe and resumes launch through dispatch_sessions.resume_plan, which the change wires; recorded in the s4 landing",
+      "recorded_at": "2026-10-16T23:52:32.642061+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "record-only: the coordinator reproduced the ruff delta in the full tree (lint and format counts equal at base and head on all five changed files), as the reviewer did; recorded in the s4 landing",
+      "recorded_at": "2026-10-16T23:52:33.525838+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "555",
+      "severity": "follow-on",
+      "text": "the plan names resumption.py as the resume caller, but its only launch_plan call is the fence=False lane probe, so the resume launch lives in dispatch_sessions.resume_plan; the plan text is stale, not the change, which correctly wires resume_plan and change_lane."
+    },
+    {
+      "file": "manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "the done_when requires ruff check and ruff format --check to add no findings on every changed Python path, but the manifest records only the pytest run; I reproduced the rule and it holds (ruff check 4 findings at base == 4 at head, and dispatch_sessions.py is asked to reformat at both revisions), so only the record is missing."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the five production call sites that compose or consume the masks.",
+    "diff": "read commit by commit against base 9c93c6e55; six files changed with 472 insertions and no deletions, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_fence_hides_the_primary.py; the manifest records head 86 passed over the fence importers against base 82 passed, zero added failures, and the bwrap assertion executed (0 skipped on this host).",
+    "goal": "the node goal is to mask a primary's run directory, review records and worktree for a shadow on launch and resume; reckon/crew/dispatch_sessions.py:61 resolves those three surfaces and the launch, resume and lane-change callers all pass them.",
+    "manifest": "read; it records commits a0fbb86d9 and 856de5076, the six changed paths, the gate command and its 86-passed result, and the negative-control log path.",
+    "write_paths": "the manifest declares eight write paths; every path in the diff (six files) is inside them and no path outside them is touched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_fence_hides_the_primary.py:223 fails when the masks are dropped, proved by negative-control.log's failing id that the head arm does not fail.",
+    "evidence": "tests/test_a_fence_hides_the_primary.py:223 asserts the primary's run directory lists empty through a real bwrap run and the manifest records 86 passed head / 82 passed base, but the done_when's ruff clause is not recorded.",
+    "fit": "reckon/_worker_fence.py:1308 follows the module's mount-ordering rule and comment style, and no name carries a plan, version or ticket label.",
+    "goal_fidelity": "reckon/crew/dispatch_sessions.py:61 masks the primary's run directory, review records and worktree, and dispatch.py:1923, resume_plan and change_lane all pass masks, though the plan's named resumption.py caller is stale.",
+    "reuse": "reckon/crew/dispatch_sessions.py:74 calls promotion_scope._primary_read_surfaces, the one owner of a primary's readable surfaces, rather than re-deriving them; no prior path-masking capability exists in reckon/.",
+    "scope_discipline": "every changed path in the diff is inside the manifest's declared write_paths, with resumption.py and the figures dir left untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to mask a primary's run directory, review records and worktree for a shadow on launch and resume; reckon/crew/dispatch_sessions.py:61 resolves those three surfaces and the launch, resume and lane-change callers all pass them.\nVERDICT done_when: the done_when names tests/test_a_fence_hides_the_primary.py; the manifest records head 86 passed over the fence importers against base 82 passed, zero added failures, and the bwrap assertion executed (0 skipped on this host).\nVERDICT write_paths: the manifest declares eight write paths; every path in the diff (six files) is inside them and no path outside them is touched.\nVERDICT manifest: read; it records commits a0fbb86d9 and 856de5076, the six changed paths, the gate command and its 86-passed result, and the negative-control log path.\nVERDICT diff: read commit by commit against base 9c93c6e55; six files changed with 472 insertions and no deletions, all inside the declared scope.\nVERDICT call_sites: verified the five production call sites that compose or consume the masks.\nCALL_SITES: reckon/crew/dispatch.py:1923, reckon/crew/dispatch_sessions.py:1221, reckon/crew/dispatch_sessions.py:1675, reckon/_backends.py:2223, reckon/_worker_fence.py:1320\nSCORE goal_fidelity: 19\nSCORE evidence: 17\nSCORE scope_discipline: 20\nSCORE durability: 19\nSCORE fit: 18\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_sessions.py:61 masks the primary's run directory, review records and worktree, and dispatch.py:1923, resume_plan and change_lane all pass masks, though the plan's named resumption.py caller is stale.\nJUSTIFICATION evidence: tests/test_a_fence_hides_the_primary.py:223 asserts the primary's run directory lists empty through a real bwrap run and the manifest records 86 passed head / 82 passed base, but the done_when's ruff clause is not recorded.\nJUSTIFICATION scope_discipline: every changed path in the diff is inside the manifest's declared write_paths, with resumption.py and the figures dir left untouched.\nJUSTIFICATION durability: tests/test_a_fence_hides_the_primary.py:223 fails when the masks are dropped, proved by negative-control.log's failing id that the head arm does not fail.\nJUSTIFICATION fit: reckon/_worker_fence.py:1308 follows the module's mount-ordering rule and comment style, and no name carries a plan, version or ticket label.\nJUSTIFICATION reuse: reckon/crew/dispatch_sessions.py:74 calls promotion_scope._primary_read_surfaces, the one owner of a primary's readable surfaces, rather than re-deriving them; no prior path-masking capability exists in reckon/.\nFINDING reckon/crew/resumption.py:555 follow-on: the plan names resumption.py as the resume caller, but its only launch_plan call is the fence=False lane probe, so the resume launch lives in dispatch_sessions.resume_plan; the plan text is stale, not the change, which correctly wires resume_plan and change_lane.\nFINDING manifest.md:11 follow-on: the done_when requires ruff check and ruff format --check to add no findings on every changed Python path, but the manifest records only the pytest run; I reproduced the rule and it holds (ruff check 4 findings at base == 4 at head, and dispatch_sessions.py is asked to reformat at both revisions), so only the record is missing.",
+  "review_run_id": "r-20261016T233945944337-review-of-a-fence-hides-the-primary-856de5076be4",
+  "reviewed_base_sha": "9c93c6e55c368a68ed97d2d3590b571d01f7de6e",
+  "reviewed_head_sha": "856de5076be4d98f55a83e2c6e7cc9d6913364c4",
+  "reviewed_run_id": "r-20261016T230836611924-a-fence-hides-the-primary",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261016T233945944337-review-of-a-fence-hides-the-primary-856de5076be4",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T23:49:10.289477+00:00",
+  "total": 113
+}

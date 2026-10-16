@@ -26,7 +26,7 @@
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -293,6 +293,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-s4-resolution-layer" data-who="reckon-build" data-when="2026-10-16T19:52:00Z">
     <div class="r-comment-body"><p>Content review <code>r-20261016T193510730111</code>, finding <code>reasoning-1</code>: §4 puts the resolution of the primary's paths in two layers. One sentence has <code>launch_plan</code> gain the paths to hide. The other has the launch look up the primary's ledger row, but <code>launch_plan</code> in <code>reckon/_backends.py</code> takes no project or ledger. The fix, to be written into §4 before it dispatches: each crew-layer caller (dispatch, session launch, resume) looks up the primary's row from the lineage and calls <code>promotion_scope._primary_read_targets</code>. It passes the resolved paths to <code>launch_plan</code> as a plain list of paths to hide, and <code>launch_plan</code> hands them to <code>fence_argv</code>. <code>_backends.py</code> gains no ledger parameter and no crew import.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261016T233945944337-review-of-a-fence-hides-the-primary-856de5076be4" data-who="reckon-build" data-when="2026-10-16T23:51:40.803Z">
+    <div class="r-comment-body"><p>An independent review of r-20261016T230836611924-a-fence-hides-the-primary (head 856de5076be4d98f55a83e2c6e7cc9d6913364c4, base 9c93c6e55c368a68ed97d2d3590b571d01f7de6e) is stored at both review-store paths scoring all six dimensions (goal_fidelity 19, evidence 17, scope_discipline 20, durability 19, fit 18, reuse 20; total 113), recording the revision pair and added_failure_count 0 / added_failure_ids [] derived from the reviewed run&#x27;s own base and head gate logs; two follow-on findings, no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-16T20:36:00Z">
     <div class="r-comment-body"><p>§3 landed: a shadow's worktree session is <code>shadow-&lt;candidate&gt;-&lt;component&gt;</code>, so neither its path nor its prompt names the primary, and every pre-change naming still resolves (commit <code>d079e008</code>). 751 passed against base with no added failure; the negative control fails two ids; review scores 17–20. <a href="/reckon/evidence/archive/a-shadow-cannot-see-its-primary-landed.html#s3">evidence</a></p></div>
