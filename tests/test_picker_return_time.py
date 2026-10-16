@@ -245,6 +245,10 @@ def test_representative_nine_candidate_state_is_bounded(ledger, isolated_lane):
         encoding="utf-8",
     )
     ledger(_rows("clive", [200, 400, 900]))
+    # A pick serves a persisted profile rather than building one, so publish the
+    # project's profile first -- the act a promotion performs in the fleet.
+    lane_context._PROFILE_CACHE.clear()
+    lane_context.refresh_run_time_profile("reckon", now=NOW)
     congestion = {
         "running": 3,
         "waiting": 9,

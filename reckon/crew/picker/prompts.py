@@ -77,6 +77,13 @@ _GLOSSARY: dict[str, str] = {
         "when the lane reports none."
     ),
     "days_to_reset": "Days until the lane's window resets; null when unknown.",
+    "expected_wait_profile_age_s": (
+        "The age in seconds of the oldest foreign project's run-time profile "
+        "that contributed to expected_wait_s, counted from the instant its "
+        "promotion published it; null when no foreign profile contributed. A "
+        "pick reads a published profile rather than rebuilding one, so this "
+        "names how stale the reading behind the wait is."
+    ),
     "lanes": (
         "One pressure block per lane, however many models the lane holds. A lane "
         "is a subscription or host whose models share one account window, so its "

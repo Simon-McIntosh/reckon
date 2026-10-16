@@ -1,13 +1,14 @@
-"""Bound a pick's cost by the number of live foreign projects.
+"""A pick serves a published profile and never rebuilds a foreign ledger's.
 
 A pick's expected-wait figure counts every live local worker, including one
-from a project whose records the pick did not read, so it must profile those
-projects. Profiling a project decodes its whole ledger. A pick that re-reads
-every foreign project's ledger on every pass therefore grows with the number of
-projects live on the local lane -- up to five share it here -- and that cost is
-what pushes a pick past its five-second dispatch bound. A project's profile is a
-function of its ledger's contents, so a reading whose ledger has not moved is
-the same answer and is reused across picks rather than taken again.
+from a project whose records the pick did not read, so it needs those projects'
+profiles. Building a profile decodes the whole ledger, and a project's profile
+is a function of its ledger's contents. Building inside the pick made the pick's
+cost grow with the number of live projects -- up to five share the lane here --
+and a single synchronous rebuild is what pushed picks past their five-second
+dispatch bound. So the pick no longer builds at all: it serves the last profile
+a promotion published for the project, or it serves none when there is none fit
+to serve.
 """
 
 from __future__ import annotations
@@ -41,6 +42,23 @@ def _live_local_row(project: str) -> dict:
     }
 
 
+def _groups() -> dict:
+    """A profile whose one group's median is 420 s for the live shape."""
+
+    return {
+        "groups": [
+            {
+                "backend": "clive",
+                "effort": "standard",
+                "role": "implement",
+                "spec_level": "guided",
+                "runs": 3,
+                "wall_seconds_median": 420.0,
+            }
+        ]
+    }
+
+
 @pytest.fixture(autouse=True)
 def _empty_profile_cache():
     """Each case starts and ends with no memoized profile.
@@ -56,13 +74,14 @@ def _empty_profile_cache():
 
 
 def test_the_persisted_cache_prefers_reckon_home(tmp_path, monkeypatch):
-    """Both cache homes set: the entry lands under ``RECKON_HOME`` only.
+    """Both cache homes set: the refresh writes under ``RECKON_HOME`` only.
 
     The suite isolates ``RECKON_HOME``, but a host commonly has
     ``XDG_CACHE_HOME`` pointing at the real user cache. Resolving that first
     would put a fixture's profile in the live cache and, on a second run the
-    same day, read it back instead of calling the loader -- so the home the
-    caller isolated must win, and nothing may be written under the other.
+    same day, read it back -- so the home the caller isolated must win, and
+    nothing may be written under the other. The write under test is the
+    refresh's, since the pick no longer writes a cache entry at all.
     """
 
     reckon_home = tmp_path / "reckon-home"
@@ -72,7 +91,7 @@ def test_the_persisted_cache_prefers_reckon_home(tmp_path, monkeypatch):
     monkeypatch.delenv("RECKON_RUN_TIME_PROFILE_CACHE", raising=False)
     monkeypatch.setattr(lane_context, "run_time_profile", lambda _project, **_kw: {})
 
-    lane_context._cached_run_time_profile("cache-order-probe", now=NOW)
+    lane_context.refresh_run_time_profile("cache-order-probe", now=NOW)
 
     assert (
         reckon_home / "cache" / "run-time-profile" / "cache-order-probe.json"
@@ -80,13 +99,14 @@ def test_the_persisted_cache_prefers_reckon_home(tmp_path, monkeypatch):
     assert not xdg_home.exists()
 
 
-def test_two_picks_read_each_foreign_ledger_once(monkeypatch):
-    """Four foreign projects, two picks, one ledger read each.
+def test_two_picks_serve_a_persisted_foreign_profile(monkeypatch):
+    """Four foreign projects, two picks, no ledger read by either pick.
 
-    Nothing about any ledger changes between the picks, so each project's
-    profile is unchanged and is reused. The loader records the project on every
-    call; a pick that re-reads each foreign ledger doubles every count on the
-    second pass, which this assertion refuses.
+    A profile is published by the refresh (the promotion's own act) and then
+    reused. The loader records the project on every call; the refresh calls it
+    once per project, and neither pick calls it again, so the pick reads no
+    foreign ledger at all. A pick that rebuilt a profile would double every
+    count, which this assertion refuses.
     """
 
     projects = ["foreign-1", "foreign-2", "foreign-3", "foreign-4"]
@@ -97,84 +117,73 @@ def test_two_picks_read_each_foreign_ledger_once(monkeypatch):
 
     def profile(project, **_kwargs):
         reads.append(project)
-        return {
-            "groups": [
-                {
-                    "backend": "clive",
-                    "effort": "standard",
-                    "role": "implement",
-                    "spec_level": "guided",
-                    "runs": 3,
-                    "wall_seconds_median": 420.0,
-                }
-            ]
-        }
+        return _groups()
 
     monkeypatch.setattr(lane_context, "run_time_profile", profile)
 
+    for project in projects:
+        lane_context.refresh_run_time_profile(project, now=NOW)
+
     for _ in range(2):
-        wait = lane_context._expected_wait(
+        wait, age = lane_context._expected_wait(
             project="picker",
             records=[],
             local_backend="clive",
             now=NOW,
         )
         assert wait == 420.0
+        assert age == 0.0
 
     assert sorted(reads) == sorted(projects)
 
 
-def test_a_moved_ledger_is_read_against(monkeypatch):
-    """A foreign project whose ledger changes is profiled again.
+def test_a_moved_ledger_still_serves_the_persisted_profile(monkeypatch):
+    """A foreign project whose ledger moves is not rebuilt by the pick.
 
-    Reuse must not be a blind cache: the wait figure is only as good as the
-    ledger it was read from, so a stamp that moves has to force a fresh read.
-    The ledger stamp is patched to return a new value on the third pick and the
-    loader must be asked again for each project.
+    The pick must never build a profile, so a stamp that moves must still serve
+    the last published reading rather than force a fresh read. The ledger stamp
+    is patched to a new value and the loader is patched to raise, so a pick that
+    reached the loader would fail the case; the served profile must stand.
     """
 
     projects = ["foreign-1", "foreign-2"]
     monkeypatch.setattr(
         lane_context, "list_live", lambda: [_live_local_row(p) for p in projects]
     )
-    reads: list[str] = []
     stamp = {"value": ("first",)}
-
-    def profile(project, **_kwargs):
-        reads.append(project)
-        return {
-            "groups": [
-                {
-                    "backend": "clive",
-                    "effort": "standard",
-                    "role": "implement",
-                    "spec_level": "guided",
-                    "runs": 3,
-                    "wall_seconds_median": 420.0,
-                }
-            ]
-        }
-
-    monkeypatch.setattr(lane_context, "run_time_profile", profile)
+    monkeypatch.setattr(lane_context, "run_time_profile", lambda _p, **_kw: _groups())
     monkeypatch.setattr(lane_context, "_ledger_stamp", lambda _project: stamp["value"])
 
-    lane_context._expected_wait(
+    for project in projects:
+        lane_context.refresh_run_time_profile(project, now=NOW)
+
+    def refuse(_project, **_kwargs):
+        raise AssertionError("the pick rebuilt a profile")
+
+    monkeypatch.setattr(lane_context, "run_time_profile", refuse)
+    lane_context._PROFILE_CACHE.clear()
+
+    wait, _age = lane_context._expected_wait(
         project="picker", records=[], local_backend="clive", now=NOW
     )
-    assert sorted(reads) == sorted(projects)
+    assert wait == 420.0
 
     stamp["value"] = ("second",)
-    lane_context._expected_wait(
+    lane_context._PROFILE_CACHE.clear()
+    wait, _age = lane_context._expected_wait(
         project="picker", records=[], local_backend="clive", now=NOW
     )
-    assert sorted(reads) == sorted(projects * 2)
+    assert wait == 420.0
 
 
 #: A one-shot pick driven in its own interpreter. It puts four foreign
 #: projects' live local workers on the lane, replaces the profile loader with a
 #: spy that records every project it is asked for, and runs the expected-wait
-#: figure once. Pointed at a shared cache directory, two runs of this script are
-#: two separate processes asking for the same profiles.
+#: figure once. Each project's profile is published (through the refresh) only
+#: when no persisted entry is present yet, standing in for the promotion that
+#: publishes it; a pick itself never builds one. Pointed at a shared cache
+#: directory, two runs of this script are two separate processes asking for the
+#: same profiles.
 _DRIVER = """
 import json
 import os
@@ -184,6 +193,7 @@ from reckon.crew.picker import lane_context
 
 PROJECTS = ["foreign-1", "foreign-2", "foreign-3", "foreign-4"]
 SPY = os.environ["PICKER_FOREIGN_WAIT_SPY"]
+CACHE = os.environ["RECKON_RUN_TIME_PROFILE_CACHE"]
 # Create the spy file up front, so "no reads" is an empty file this process
 # made rather than a file its absence left missing.
 open(SPY, "a", encoding="utf-8").close()
@@ -220,20 +230,27 @@ def spy(project, **_kwargs):
 
 
 lane_context.run_time_profile = spy
-wait = lane_context._expected_wait(
+
+for project in PROJECTS:
+    if not os.path.exists(os.path.join(CACHE, project + ".json")):
+        lane_context.refresh_run_time_profile(
+            project, now=datetime(2026, 10, 3, 4, 0, tzinfo=UTC)
+        )
+
+wait, age = lane_context._expected_wait(
     project="picker",
     records=[],
     local_backend="clive",
     now=datetime(2026, 10, 3, 4, 0, tzinfo=UTC),
 )
-print(json.dumps({"expected_wait_s": wait}))
+print(json.dumps({"expected_wait_s": wait, "expected_wait_profile_age_s": age}))
 """
 
 
 #: A one-shot pick composed through ``build`` in its own interpreter, with no
-#: records handed in, so the pick's own project is profiled from its ledger as
-#: well as each live foreign project. It spies every profile it asks for, so two
-#: runs against one cache directory show what a fresh dispatch reads.
+#: records handed in, so the pick's own project is served from its persisted
+#: profile as well as each live foreign project. It spies every profile it asks
+#: for, so two runs against one cache directory show what a fresh dispatch reads.
 _BUILD_DRIVER = """
 import json
 import os
@@ -245,6 +262,7 @@ lane_context = importlib.import_module("reckon.crew.picker.lane_context")
 
 PROJECTS = ["own-project", "foreign-1", "foreign-2", "foreign-3", "foreign-4"]
 SPY = os.environ["PICKER_FOREIGN_WAIT_SPY"]
+CACHE = os.environ["RECKON_RUN_TIME_PROFILE_CACHE"]
 open(SPY, "a", encoding="utf-8").close()
 
 lane_context.list_live = lambda: [
@@ -280,6 +298,13 @@ def spy(project, **_kwargs):
 
 
 lane_context.run_time_profile = spy
+
+for project in PROJECTS:
+    if not os.path.exists(os.path.join(CACHE, project + ".json")):
+        lane_context.refresh_run_time_profile(
+            project, now=datetime(2026, 10, 3, 4, 0, tzinfo=UTC)
+        )
+
 composed = lane_context.build(
     node=SimpleNamespace(time_budget=""),
     candidates=[],
@@ -292,13 +317,13 @@ print(json.dumps({"expected_wait_s": composed["local_lane"]["expected_wait_s"]})
 
 
 def test_a_fresh_process_with_no_records_reads_no_ledger(tmp_path):
-    """The pick's own project is cached too, so a warm process reads nothing.
+    """The pick's own project is served too, so a warm process reads nothing.
 
-    ``build`` with no records used to profile the pick's own project straight
-    from its ledger, so a dispatch still decoded one ledger on every pick even
-    when nothing had changed. Both the own project and each live foreign project
-    now come from the persisted profile: the first process reads all five, and
-    the second must read none.
+    ``build`` with no records once profiled the pick's own project straight from
+    its ledger, so a dispatch decoded one ledger on every pick even when nothing
+    had changed. Both the own project and each live foreign project now come
+    from a persisted profile: the first process publishes all five, and the
+    second must build none.
     """
 
     worktree = Path(__file__).resolve().parents[1]
@@ -337,14 +362,13 @@ def test_a_fresh_process_with_no_records_reads_no_ledger(tmp_path):
 
 
 def test_reuse_survives_between_processes(tmp_path):
-    """Two fresh processes reuse one reading, so the second reads no ledger.
+    """Two fresh processes reuse one published reading, so the second builds none.
 
     A real dispatch is a fresh process, so an in-process memo cannot bound a
     pick: the persisted profile is what carries the reuse between dispatches.
-    Each process appends the projects it profiles to its own spy file, and both
-    point the cache at one shared directory. The first process reads all four
-    foreign ledgers; the second must read none, its figure coming from the
-    persisted profile.
+    Each process appends the projects it publishes to its own spy file, and both
+    point the cache at one shared directory. The first process publishes all
+    four foreign profiles; the second finds them persisted and builds none.
     """
 
     worktree = Path(__file__).resolve().parents[1]

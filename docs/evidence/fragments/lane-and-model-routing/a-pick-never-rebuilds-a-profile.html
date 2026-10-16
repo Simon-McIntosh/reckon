@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="lane-and-model-routing">
+  <meta name="plan-title" content="A pick reads a published run-time profile and never rebuilds one">
+  <meta name="plan-summary" content="A pick serves the last run-time profile a promotion published, with its age, or serves none; the rebuild moves to promotion's ledger-append moment.">
+  <meta name="plan-evidence-for" content="reckon:lane-and-model-routing">
+  <meta name="plan-verifies" content="reckon:lane-and-model-routing#s27">
+  <meta name="plan-recorded-at" content="2026-10-16">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,picker,profile,promotion,cache">
+  <title>A pick reads a published run-time profile and never rebuilds one — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-pick-never-rebuilds-a-profile-landing" data-node="a-pick-never-rebuilds-a-profile" data-reckon="landed" data-when="2026-10-16">
+  <h2>A pick reads a published run-time profile and never rebuilds one</h2>
+  <p id="a-pick-never-rebuilds-a-profile-summary">A pick no longer calls <code>run_time_profile</code>. <code>_cached_run_time_profile</code> serves the persisted profile when its key matches the current stamp; when the stamp has moved it serves the last persisted profile if younger than 24 hours; otherwise it serves none. A served profile's age runs from the instant the refresh persisted it, recorded inside the cached value as <code>persisted_at</code> and, in-process, beside the memo's key. A value without <code>persisted_at</code> reads as older than the bound. A cold cache, a profile past its age, a ledger whose index yields no stamp, a value under another cache version, and a project id that cannot form a cache filename each serve none without reading a ledger. Rebuilding moves to <code>refresh_run_time_profile</code>, owned beside the cache and called by promotion for the run's project after the ledger append; a refresh that fails never fails the promotion. <code>local_lane</code> gains <code>expected_wait_profile_age_s</code>, the age of the oldest foreign profile that contributed to the wait, and the glossary defines it.</p>
+  <p id="a-pick-never-rebuilds-a-profile-measure">Gate: 11 passed in <code>tests/test_a_pick_never_rebuilds_a_profile.py</code> (9 without the two promotion tests). The importer set over the picker and promotion test files reads 86 passed at head against 75 passed at the base revision — no added failure and no failure on either arm. The negative control restores the synchronous rebuild on a moved stamp; with the loader patched to raise, <code>test_a_moved_stamp_serves_the_persisted_profile_and_its_age</code> fails (<code>AssertionError: the pick rebuilt 'alpha'</code>) and the arm exits non-zero, while the same test passes at head.</p>
+  <p id="a-pick-never-rebuilds-a-profile-rewrites">Rewritten cases in the granted test files: <code>test_dispatch_speed.py</code> — <code>test_profile_reuses_marker_published_during_initial_read</code> → <code>test_profile_serves_what_the_refresh_published</code> (a persisted profile is served with its age and the loader is not called again) and <code>test_profile_does_not_cache_across_a_source_change</code> → <code>test_a_pick_with_no_persisted_profile_serves_none</code> (no entry serves none with the loader refusing); <code>test_picker_pick_within_bound.py</code> — <code>test_expected_wait_counts_a_foreign_projects_live_worker</code> now publishes then reads with the loader patched to raise; <code>test_picker_foreign_wait_is_bounded.py</code> — the five cases rewritten to publish a profile and read it, including a moved-stamp read and a between-processes reuse; <code>test_picker_holds.py</code> and <code>test_picker_return_time.py</code> — their wait cases publish first; <code>test_the_state_render_times_its_reads.py</code> — the stub returns the age beside the profile; <code>test_picker_helpers_have_one_owner.py</code> — the golden bytes carry the new <code>local_lane</code> field and the freeze publishes before rendering.</p>
+</article>
+</body>
+</html>

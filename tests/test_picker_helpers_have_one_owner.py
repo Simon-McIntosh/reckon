@@ -35,7 +35,7 @@ NOW = datetime(2026, 10, 2, 2, 1, 0, tzinfo=UTC)
 #: live-worker list all fixed); every other figure is byte-identical to the
 #: base. The bytes were produced by running the tree's own code, never
 #: transcribed by hand.
-GOLDEN_STATE = r"""{"node":{"role":"implement","spec_level":"guided","capability":{},"goal":"g","done_when":"d","estimated_context":0,"estimated_hours":null,"estimated_hours_source":null,"attempts":0,"write_path_count":0,"negative_control_declared":false,"serving_lanes":["f"],"serving_lane_count":1,"hold_waits_for":"the f lane, the only lane that can serve this node"},"orchestrator_comment":"one owner","candidates":{"clive":{"backend":"clive","lane":"f","model":"m","availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"days_to_reset":null,"resets_at":null,"worker_slots":null,"congestion":null,"outcomes":{"passed":0,"failed":0,"not-run":0,"unknown":0},"context":null,"budget_source":null,"budget_age_s":null,"stale":null,"reset_available":null},"amine":{"backend":"amine","lane":"f","model":"m","availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"days_to_reset":null,"resets_at":null,"worker_slots":null,"congestion":null,"outcomes":{"passed":0,"failed":0,"not-run":0,"unknown":0},"context":null,"budget_source":null,"budget_age_s":null,"stale":null,"reset_available":null}},"return_times":{"clive":{"p50_s":300,"p90_s":500,"runs":3,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false},"amine":{"p50_s":null,"p90_s":null,"runs":null,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false}},"lanes":{"f":{"availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"resets_at":null,"days_to_reset":null,"worker_slots":null,"congestion":null,"reset_available":null}},"local_lane":{"admission":"admitting","expected_wait_s":null,"running":2,"waiting":0,"headroom":14,"worker_slots":53,"tokens_per_second":89.425,"read_at":"2026-10-02T02:01:00+00:00"}}"""
+GOLDEN_STATE = r"""{"node":{"role":"implement","spec_level":"guided","capability":{},"goal":"g","done_when":"d","estimated_context":0,"estimated_hours":null,"estimated_hours_source":null,"attempts":0,"write_path_count":0,"negative_control_declared":false,"serving_lanes":["f"],"serving_lane_count":1,"hold_waits_for":"the f lane, the only lane that can serve this node"},"orchestrator_comment":"one owner","candidates":{"clive":{"backend":"clive","lane":"f","model":"m","availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"days_to_reset":null,"resets_at":null,"worker_slots":null,"congestion":null,"outcomes":{"passed":0,"failed":0,"not-run":0,"unknown":0},"context":null,"budget_source":null,"budget_age_s":null,"stale":null,"reset_available":null},"amine":{"backend":"amine","lane":"f","model":"m","availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"days_to_reset":null,"resets_at":null,"worker_slots":null,"congestion":null,"outcomes":{"passed":0,"failed":0,"not-run":0,"unknown":0},"context":null,"budget_source":null,"budget_age_s":null,"stale":null,"reset_available":null}},"return_times":{"clive":{"p50_s":300,"p90_s":500,"runs":3,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false},"amine":{"p50_s":null,"p90_s":null,"runs":null,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false}},"lanes":{"f":{"availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"resets_at":null,"days_to_reset":null,"worker_slots":null,"congestion":null,"reset_available":null}},"local_lane":{"admission":"admitting","expected_wait_s":null,"expected_wait_profile_age_s":null,"running":2,"waiting":0,"headroom":14,"worker_slots":53,"tokens_per_second":89.425,"read_at":"2026-10-02T02:01:00+00:00"}}"""
 
 #: Helper names that must not be re-defined inside the picker package, each
 #: mapped to the one function in run_time_profile that owns its behaviour.
@@ -174,6 +174,9 @@ def _freeze(tmp_path, monkeypatch):
     monkeypatch.setenv("RECKON_RUN_TIME_PROFILE_CACHE", str(tmp_path / "profile-cache"))
     monkeypatch.setattr(lane_context, "_ledger_stamp", lambda _project: ["ledger", 1])
     lane_context._PROFILE_CACHE.clear()
+    # A pick serves a persisted profile rather than building one, so the fixture
+    # publishes the profile first -- the act a promotion performs in the fleet.
+    lane_context.refresh_run_time_profile("reckon", now=NOW)
     monkeypatch.setattr(lane_context, "list_live", list)
     monkeypatch.setattr(lane_context, "local_lane_load", lambda: _FIXED_LOAD)
     # The base's reader resolves the lane document through a path; the head
@@ -222,30 +225,27 @@ def test_rendered_state_matches_the_base_revision_bytes(tmp_path, monkeypatch):
 
 
 def test_an_unsafe_project_name_never_forms_a_cache_path(tmp_path, monkeypatch):
-    """A project id that is not a safe file name is never cached.
+    """A project id that is not a safe file name is never cached or built.
 
     A guard must not be dropped when the reader and writer that carried it are
     deleted: the profile cache file name is built from the project string, and an
-    unsafe string must never form a path. The profile is then read without being
-    cached, exactly as before.
+    unsafe string must never form a path. A pick serves no profile for such an
+    id and never builds one either, so the unsafe name reaches neither the
+    loader nor the filesystem -- on the read or on the refresh.
     """
-
-    calls: list[str] = []
-
-    def profile(project, **kwargs):
-        calls.append(project)
-        return {"groups": []}
 
     cache = tmp_path / "profile-cache"
     monkeypatch.setenv("RECKON_RUN_TIME_PROFILE_CACHE", str(cache))
     monkeypatch.setattr(lane_context, "_ledger_stamp", lambda _project: ["ledger", 1])
-    monkeypatch.setattr(lane_context, "run_time_profile", profile)
+    monkeypatch.setattr(
+        lane_context,
+        "run_time_profile",
+        lambda project, **kw: (_ for _ in ()).throw(AssertionError(f"built {project}")),
+    )
     lane_context._PROFILE_CACHE.clear()
 
     for _ in range(2):
-        assert lane_context._cached_run_time_profile("../escape", now=NOW) == {
-            "groups": []
-        }
+        assert lane_context._cached_run_time_profile("../escape", now=NOW) == ({}, None)
 
-    assert calls == ["../escape", "../escape"], "an unsafe name was cached"
+    assert lane_context.refresh_run_time_profile("../escape", now=NOW) is None
     assert not list(cache.rglob("*")), "an unsafe name formed a cache path"

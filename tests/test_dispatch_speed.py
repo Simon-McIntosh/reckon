@@ -695,7 +695,16 @@ def test_projected_inputs_fall_back_when_index_is_unavailable(tmp_path, monkeypa
     assert ledger.picker_runs("sample", root) == [_row("first")]
 
 
-def test_profile_reuses_marker_published_during_initial_read(tmp_path, monkeypatch):
+def test_profile_serves_what_the_refresh_published(tmp_path, monkeypatch):
+    """The refresh publishes the profile; a later read serves it, rebuilding none.
+
+    The refresh builds once and persists under the stamp the build itself
+    settled at, which is what makes the read that follows a hit even though
+    reading the ledger moved the derived index. The pick never builds: with the
+    loader patched to raise, the read that follows the refresh must still return
+    the persisted profile rather than reach it.
+    """
+
     root, aggregate, directory = _fixture(tmp_path, monkeypatch)
     monkeypatch.setattr(ledger, "ledger_path", lambda *a, **kw: aggregate)
     _write(directory, _row("first"))
@@ -703,14 +712,21 @@ def test_profile_reuses_marker_published_during_initial_read(tmp_path, monkeypat
 
     def profile(project, **kwargs):
         calls.append(project)
-        ledger.load(project, root)
         return {"groups": []}
 
     lane_context._PROFILE_CACHE.clear()
     monkeypatch.setattr(lane_context, "run_time_profile", profile)
-    lane_context._cached_run_time_profile("sample", now=NOW)
-    lane_context._cached_run_time_profile("sample", now=NOW)
+    lane_context.refresh_run_time_profile("sample", now=NOW)
     assert calls == ["sample"]
+    monkeypatch.setattr(
+        lane_context,
+        "run_time_profile",
+        lambda *a, **kw: (_ for _ in ()).throw(AssertionError("rebuilt")),
+    )
+    lane_context._PROFILE_CACHE.clear()
+    served, age = lane_context._cached_run_time_profile("sample", now=NOW)
+    assert served == {"groups": [], "persisted_at": NOW.isoformat()}
+    assert age == 0.0
 
 
 @pytest.mark.parametrize("damage", ["schema", "picker"])
@@ -760,25 +776,28 @@ def test_atomic_run_edit_invalidates_profile_before_index_refresh(
     assert lane_context._ledger_stamp("sample") != first
 
 
-def test_profile_does_not_cache_across_a_source_change(tmp_path, monkeypatch):
+def test_a_pick_with_no_persisted_profile_serves_none(tmp_path, monkeypatch):
+    """A cold cache serves no profile and never builds one.
+
+    A source change during a pick no longer matters, because the pick never
+    builds a profile. With nothing persisted, the read returns no profile and
+    the loader is never called, so a cold cache costs a pick no ledger read at
+    all -- an unknown wait is preferred to a synchronous build.
+    """
+
     root, aggregate, directory = _fixture(tmp_path, monkeypatch)
     monkeypatch.setattr(ledger, "ledger_path", lambda *a, **kw: aggregate)
     _write(directory, _row("first"))
-    calls = []
-
-    def profile(project, **kwargs):
-        calls.append(project)
-        ledger.load(project, root)
-        if len(calls) == 1:
-            _write(directory, _row("appended"))
-        return {"groups": [], "count": len(calls)}
+    monkeypatch.setattr(
+        lane_context,
+        "run_time_profile",
+        lambda project, **kw: (_ for _ in ()).throw(AssertionError(f"built {project}")),
+    )
 
     lane_context._PROFILE_CACHE.clear()
-    monkeypatch.setattr(lane_context, "run_time_profile", profile)
-    assert lane_context._cached_run_time_profile("sample", now=NOW)["count"] == 1
-    assert lane_context._cached_run_time_profile("sample", now=NOW)["count"] == 2
-    assert lane_context._cached_run_time_profile("sample", now=NOW)["count"] == 2
-    assert calls == ["sample", "sample"]
+    served, age = lane_context._cached_run_time_profile("sample", now=NOW)
+    assert served == {}
+    assert age is None
 
 
 @pytest.mark.parametrize("with_run", [False, True])
