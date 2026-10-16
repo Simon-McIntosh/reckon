@@ -14,6 +14,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import threading
 from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -471,6 +472,26 @@ _SCAN_DROPPED: ContextVar[dict[tuple[str, str], list[tuple[Path, str]]] | None] 
     ContextVar("reckon_resource_scan_dropped", default=None)
 )
 
+#: The per-directory identity index a read shares across its resolves, as
+#: ``(docs_dir, project, directory) -> [Resource]``. A named resolve asks its
+#: canonical directory who else claims the identity, and without a scope the
+#: index is revalidated against the directory's listing and each sibling's
+#: stamp on every resolve. Inside the scope one build or reuse answers every
+#: resolve in the read, keyed as the scan cache is so several docs trees in one
+#: read never share an entry. Like the scan scope, the identity a read sees
+#: cannot span a write.
+_INDEX_SCOPE: ContextVar[dict[tuple[str, str, str], list[Resource]] | None] = (
+    ContextVar("reckon_resource_scope_identity_index", default=None)
+)
+
+#: Reusable identity indexes between reads, so a resident reader revalidates a
+#: directory against a listing and its siblings' stamps rather than
+#: re-identifying every file. The key is ``(docs_dir, project, directory)`` and
+#: the value carries the listing signature it was built from, so an entry is
+#: rebuilt when an entry moves or a sibling is written.
+_INDEX_MEMO: dict[tuple[str, str, str], tuple[tuple, list[Resource]]] = {}
+_INDEX_LOCK = threading.Lock()
+
 
 @contextmanager
 def resource_scan_scope() -> Iterator[dict[tuple[str, str], list[tuple[Path, str]]]]:
@@ -498,11 +519,13 @@ def resource_scan_scope() -> Iterator[dict[tuple[str, str], list[tuple[Path, str
     token = _SCAN_SCOPE.set({})
     dropped: dict[tuple[str, str], list[tuple[Path, str]]] = {}
     dropped_token = _SCAN_DROPPED.set(dropped)
+    index_token = _INDEX_SCOPE.set({})
     try:
         yield dropped
     finally:
         _SCAN_SCOPE.reset(token)
         _SCAN_DROPPED.reset(dropped_token)
+        _INDEX_SCOPE.reset(index_token)
 
 
 def iter_resources(
@@ -728,36 +751,92 @@ def _canonical_identity_is_unique(
     """Report whether the canonical file is the only claimant of its identity.
 
     A named read takes its canonical path without walking the tree, so a slug
-    filed twice — a second file in the same typed root classifying to the same
-    type and slug, as when two documents declare the same slug under different
-    filenames — would otherwise resolve to the canonical file while the
-    duplicate went unnoticed. Every non-legacy claimant of a typed identity
-    lives in that type's own root directory, so one listing of that directory
-    settles the question without the recursive walk the direct read avoids.
-    A directory that cannot be listed leaves the scan to own the collision rule.
+    filed twice — a second file in the same typed identity's root classifying
+    to the same type and slug, as when two documents declare the same slug
+    under different filenames — would otherwise resolve to the canonical file
+    while the duplicate went unnoticed. Every non-legacy claimant of a typed
+    identity
+    lives in that type's own root directory, so one index of that directory
+    settles the question without the recursive walk the direct read avoids, and
+    the index is held for the read rather than re-identified per resolve. A
+    directory that cannot be listed leaves the scan to own the collision rule.
     """
     key = (resource.type, resource.slug, resource.archived)
-    try:
-        entries = sorted(resource.path.parent.glob("*.html"))
-    except OSError:
-        return True
-    for path in entries:
-        if path == resource.path:
-            continue
-        try:
-            other = identify_resource(docs_dir, path, project)
-        except ValueError:
-            # A sibling that does not classify is not a claimant here; the
-            # resolve this defers to reads with ignore_invalid=True, so a file
-            # it would skip must not turn a direct hit into a raise.
-            continue
-        if other is None:
+    for other in _directory_identity_index(docs_dir, project, resource.path.parent):
+        if other.path == resource.path:
             continue
         if (other.type, other.slug, other.archived) == key and (
             _preferred_resource(resource, other) is None
         ):
             return False
     return True
+
+
+def _identity_listing(
+    directory: Path,
+) -> tuple[tuple[str, tuple[int, int, int, int, int] | None], ...]:
+    """Return each HTML entry of ``directory`` with the stamp that identifies it.
+
+    The listing is the key a held index is revalidated against: an entry added
+    or removed changes the set of names, and a sibling written in place changes
+    its own stamp. A file that cannot be stat'ed keeps its place in the listing
+    with no stamp, so the index is rebuilt rather than trusted.
+    """
+    try:
+        paths = sorted(directory.glob("*.html"))
+    except OSError:
+        return ()
+    listing: list[tuple[str, tuple[int, int, int, int, int] | None]] = []
+    for path in paths:
+        try:
+            signature = file_memo.file_signature(path)
+        except OSError:
+            signature = None
+        listing.append((str(path), signature))
+    return tuple(listing)
+
+
+def _directory_identity_index(
+    docs_dir: Path, project: str, directory: Path
+) -> list[Resource]:
+    """Return every identified claimant in one canonical directory.
+
+    A named resolve asks who else in the file's own directory classifies to the
+    same identity, and identifying every sibling on each resolve re-identified
+    the whole plan population per named read. The check is a lookup into one
+    index of the directory instead. The index is keyed on the directory's
+    listing and each sibling's stamp, so it is rebuilt when an entry moves or a
+    sibling is written, and a read's scope holds one build for every resolve in
+    it.
+    """
+    key = (str(docs_dir), project, str(directory))
+    scope = _INDEX_SCOPE.get()
+    if scope is not None:
+        held = scope.get(key)
+        if held is not None:
+            return held
+    listing = _identity_listing(directory)
+    with _INDEX_LOCK:
+        stored = _INDEX_MEMO.get(key)
+    if stored is not None and stored[0] == listing:
+        index = stored[1]
+    else:
+        index = []
+        for path_text, _signature in listing:
+            try:
+                other = identify_resource(docs_dir, Path(path_text), project)
+            except ValueError:
+                # A sibling that does not classify is not a claimant here; the
+                # resolve this defers to reads with ignore_invalid=True, so a
+                # file it would skip must not turn a direct hit into a raise.
+                continue
+            if other is not None:
+                index.append(other)
+        with _INDEX_LOCK:
+            _INDEX_MEMO[key] = (listing, index)
+    if scope is not None:
+        scope[key] = index
+    return index
 
 
 def resolve_resource(
