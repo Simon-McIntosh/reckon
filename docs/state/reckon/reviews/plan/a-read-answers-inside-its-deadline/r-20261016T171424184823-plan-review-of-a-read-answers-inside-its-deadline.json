@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T17:28:18.803Z",
+  "dispatched_at": "2026-10-16T17:15:02Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:130",
+      "id": "reasoning-1",
+      "reason": "the counts are load-bearing \u2014 the section asserts \"the counts are sized for the partition's one-hour limit\" off the three-cold figure, and the done-when requires \"the median of every read it ran\"; at the plan's own medians five cold runs per read per arm take the cold-read time from about 40 min to about 67 min, over `all_debug`'s 1:00:00 limit, so \u00a76 must either set the cold count to five and drop the one-hour sizing claim (or split the run), or not fix a cold count at all.",
+      "text": "\u00a76 fixes \"three cold runs and five warm runs of each read\" yet names `health-tool-latency/scripts/profile_reads.py`, whose `main` calls `timed(f\"{which}-cold\", fn)` then `timed(f\"{which}-warm\", fn)` in one process, so every invocation yields exactly one cold and one warm sample; five warm runs therefore require five invocations, which also yield five cold samples, so \"three cold runs\" cannot be produced, and running three invocations instead leaves the \"five warm runs\" unmet",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "29db7c68cb1fcbc6d36127ebdba1732ada4383455dc94ae94c282e480b44529b",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 120,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T171424184823-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "d1ed2737874acb9e2440b50011a2b7e5d9c8e2fc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the named profiler resolves at `~/.config/reckon/crew/reports/reckon/health-review-1010/health-tool-latency/scripts/profile_reads.py`, and the \u00a71 table the done-when records reading beside resolves with the cold/warm medians it needs.",
+    "done_when": "pass \u2014 the done-when is measurable and names a declared negative control (\"the base revision measured the same way in the same session, which must exceed the deadline for the comparison to count\"), and fixes three medians to targets against the head arm and three to comparison only.",
+    "evidence_paths": "pass \u2014 the log, every `.prof` dump and the pinned corpus revision are written to the run directory, a durable crew path, and explicitly not left in node-local scratch.",
+    "naming": "pass \u2014 \u00a76 is a measurement node carrying no code symbols, plan labels, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a76 fixes \"three cold runs and five warm runs of each read\" but the profiler it names emits exactly one cold and one warm timed read per invocation, so those counts are not producible.",
+    "single_goal": "pass \u2014 the measurement and its conditional attribution close on one verdict (\"a missed target attributed that way completes this node\").",
+    "wiring": "pass \u2014 \u00a76's declared predecessors (\u00a72\u2013\u00a75, \u00a78, \u00a710\u2013\u00a714, \u00a716, \u00a717) all exist and are done, and the only open route to \u00a76, `f-araiid-remeasure`, names \u00a76 with the same exclusive `all_debug` / one-frozen-corpus conditions the section now states."
+  },
+  "section_digests": {
+    "_document": "27e04b7ec4c7a4424eb7839ff032567efe8f2c9f504c5f09139c14dd3ec284e3",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "914ed01cf2515f5e12ce88238e802ef8ab66a5162007629c1792fa07cb16ca1a",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T17:30:02.336362+00:00"
+}
