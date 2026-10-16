@@ -3102,6 +3102,121 @@ def _watch_event(project: str, *, stall_seconds: int) -> dict[str, Any] | None:
     return None
 
 
+# The project watcher sweeps a session once it has had no live follower for this
+# long. A present coordinator re-arms fast -- median 12 seconds, 90 percent
+# within 9.7 minutes (measured 2026-09-22 over seven days and four projects) --
+# so a window just above the ninetieth percentile leaves a present
+# coordinator's re-arm alone and still sweeps the sessions nobody is watching.
+WATCHER_SWEEP_GRACE_SECONDS = 600.0
+
+# The watcher declares itself as the writer of every sweep it makes on a
+# session's behalf, so the per-writer sweep status can tell its pass apart from
+# a hand-run one. It holds no follower registration, so "other" is its kind; its
+# key is what a reader asks for by name.
+WATCHER_SWEEP_WRITER: Mapping[str, str] = {"kind": "other", "key": "watcher"}
+
+
+def _follower_last_seen_seconds(
+    project: str, session: str, *, now_seconds: float
+) -> float | None:
+    """Seconds since this session last had a live follower, or None if never.
+
+    The follower's own lease is the heartbeat a present follower renews on its
+    wait pass, and the registration file's mtime is when it attached, which is
+    the only evidence a follower that died before its first renewal leaves. With
+    neither file the session never armed a follower at all, which is itself an
+    absence of a live follower.
+    """
+    lock_path = follower_lock_path(project, session)
+    moments: list[float] = []
+    lease = _follower_lease_renewed_at(lock_path)
+    if lease is not None:
+        moments.append(lease)
+    with suppress(OSError):
+        moments.append(lock_path.stat().st_mtime)
+    if not moments:
+        return None
+    return now_seconds - max(moments)
+
+
+def sweep_unfollowed_sessions(
+    project: str,
+    *,
+    launcher: Callable[..., int] | None = None,
+    config: Mapping[str, Any] | None = None,
+    now: datetime | None = None,
+    dry_run: bool = False,
+    writer: Any = WATCHER_SWEEP_WRITER,
+) -> dict[str, Any]:
+    """Sweep each session with live runs that nobody is following.
+
+    A follower's sweep is confined to the session it serves, so a session that
+    armed no follower has no sweeper: its lapsed hold is never resumed and its
+    finished run is never reviewed by the reflex. The project watcher fills that
+    gap on its tick. It sweeps a session only when every one of its live runs
+    was launched on this host -- a resume restarts a process on the host it runs
+    on, so another host's pointers are left for that host -- and only once the
+    session has had no live follower for ``WATCHER_SWEEP_GRACE_SECONDS``.
+
+    The watcher holds no follower registration, so it passes the session to
+    ``sweep`` explicitly; without that the review reflex reads no filter and
+    reviews every session's runs. It records itself as the writer so the sweep
+    status names the watcher rather than an anonymous other caller.
+    """
+    from .recovery_liveness import _record_is_known_foreign
+    from .resumption import sweep
+
+    moment = datetime.now(tz=UTC) if now is None else now
+    now_seconds = moment.timestamp()
+
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for pointer in list_live(project=project):
+        session = str(pointer.get("session") or "")
+        if not session:
+            continue
+        grouped.setdefault(session, []).append(pointer)
+
+    swept: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+    for session in sorted(grouped):
+        pointers = grouped[session]
+        if any(_record_is_known_foreign(pointer) for pointer in pointers):
+            skipped.append({"session": session, "reason": "pointer-names-another-host"})
+            continue
+        if follower_state(project, session).get("live"):
+            skipped.append({"session": session, "reason": "follower-live"})
+            continue
+        unattended = _follower_last_seen_seconds(
+            project, session, now_seconds=now_seconds
+        )
+        if unattended is not None and unattended < WATCHER_SWEEP_GRACE_SECONDS:
+            skipped.append(
+                {
+                    "session": session,
+                    "reason": "follower-rearm-within-grace",
+                    "unattended_seconds": unattended,
+                }
+            )
+            continue
+        report = sweep(
+            project,
+            session=session,
+            config=config,
+            dry_run=dry_run,
+            launcher=launcher,
+            now=now,
+            writer=writer,
+        )
+        swept.append({"session": session, **report})
+
+    return {
+        "project": project,
+        "swept": swept,
+        "skipped": skipped,
+        "swept_at": _utc_now(),
+    }
+
+
 def watch(
     project: str,
     *,
@@ -3138,6 +3253,14 @@ def watch(
                     "event": "seat-lost",
                     "watcher_live": False,
                 }
+            # A session whose coordinator armed no follower has no sweeper, so
+            # the watcher sweeps it here: its lapsed hold is resumed and its
+            # finished run is reviewed without waiting for a coordinator. It is
+            # best-effort and never ends the seat -- a sweep that cannot run
+            # leaves the pane a reader is watching intact and the next tick
+            # tries again.
+            with suppress(CrewError):
+                sweep_unfollowed_sessions(project)
             event = _watch_event(project, stall_seconds=stall_seconds)
             if event is not None and (event["event"] != "empty" or exit_on_empty):
                 return event
@@ -3191,6 +3314,7 @@ from .follower_registration import (  # noqa: E402
     _RESOLVED_FOLLOWER_OWNER as _RESOLVED_FOLLOWER_OWNER,
     _descriptor_kind as _descriptor_kind,
     _follower_liveness as _follower_liveness,
+    _follower_lease_renewed_at as _follower_lease_renewed_at,
     _follower_source_digests as _follower_source_digests,
     _format_follower_owner as _format_follower_owner,
     _parse_follower_owner as _parse_follower_owner,
