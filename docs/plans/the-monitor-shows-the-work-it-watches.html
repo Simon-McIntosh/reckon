@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="186">
+<meta name="plan-version" content="187">
 <meta name="plan-modified" content="2026-10-16">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -178,14 +178,16 @@
     peer's run from the observing session's runtime. The sweep a follower runs must act only on the
     owning session's runs. <code>_sweep_lapsed_holds</code>, now in <code>reckon/crew_follow_commands.py</code>, calls
     <code>sweep</code> in <code>reckon/crew/resumption.py</code> with the project alone; pass the
-    owning session and filter the candidate runs by it, in both of the sweep's passes: the resume
-    pass over <code>list_live</code>, and the review-reflex pass,
-    <code>dispatch_awaiting_reviews(project=..., config=..., launcher=...)</code> in
-    <code>resumption.py</code>, which already accepts <code>session=</code>
-    (<code>recovery_review_acceptance.py</code>) and is called today without it. Confirmed on main on 2026-10-16:
-    the call is still <code>sweep(project, dry_run=dry_run)</code>. The same sweep also
-    launches the review reflex, so an observing follower can review a peer's run as well as
-    resume it. No watcher sweep of unfollowed sessions exists yet; the producer's loop is
+    owning session and filter the resume pass's candidate runs, from <code>list_live</code>, by it.
+    The sweep's other pass, the review reflex, has scoped itself since <code>5b98a1c2f</code>
+    (2026-09-23). <code>dispatch_awaiting_reviews</code> resolves an unset session through
+    <code>_sweeping_session</code> (<code>reckon/crew/recovery_repair_dispatch.py</code>), which
+    returns the session whose follower registration this process wrote.
+    <code>tests/test_review_lane_follows_its_run.py::test_the_sweep_bookends_only_its_own_sessions_runs</code>
+    holds that. So only the resume pass still crosses sessions. Scope it the same way, through
+    <code>_sweeping_session</code>, rather than adding a second mechanism. Confirmed on main on 2026-10-16:
+    the call is still <code>sweep(project, dry_run=dry_run)</code>. The review the incident
+    reports came from the reflex before it was scoped; the resume pass is the half still open. No watcher sweep of unfollowed sessions exists yet; the producer's loop is
     <code>watch</code> in <code>reckon/crew/runs.py</code>. The path map in
     <a href="/reckon/plans/the-monitor-under-measurement#s4">the measurement plan &sect;4</a> is
     stale: its <code>reckon/cli.py</code> line numbers predate the split of that file, and the
@@ -200,14 +202,13 @@
     sweep through a follower for one session over a fixture where both that session and an observed
     session each own one run whose hold has lapsed. Only the owning session's run is resumed, asserted
     through a stub launcher that records its calls. A second fixture gives each session one run
-    in the scoring state with a composed review brief; the same follower sweep dispatches the
-    review for the owning session's run only, and the observed session's run is not reviewed. Three further cases run through the watcher's
+    in the scoring state with a composed review brief. The same follower sweep dispatches the
+    review for the owning session's run only. That is a regression assertion on the scoping
+    the reflex already has, not a new guard. Three further cases run through the watcher's
     tick: a session unattended for eleven minutes is swept and its resumed run records the watcher
     as writer, a session unattended for nine minutes is not swept, and a session whose pointer names
     another host is not swept. The negative control is executed and logged:
-    calling the sweep without the session resumes both and the test fails. A second control
-    calls the review-reflex pass without the session, and the observed session's scoring run is
-    then reviewed and the test fails. The write paths are
+    calling the sweep without the session resumes both and the test fails. The write paths are
     <code>reckon/crew_follow_commands.py</code>, <code>reckon/crew/resumption.py</code>,
     <code>reckon/crew/runs.py</code> (the watcher's sweep of unfollowed sessions) and that test.</p>
 
