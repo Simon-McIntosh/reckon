@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T19:51:43.548Z",
+  "dispatched_at": "2026-10-16T19:36:15Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:188",
+      "id": "anchors_resolve-1",
+      "reason": "the node's central measurement names a tool that no longer exists, so the plan must name where the profiler comes from (a surviving copy, a git location, or a rebuild step) or the done-when is unachievable.",
+      "text": "\u00a719's done-when requires the cold roadmap be \"measured the way \u00a76 measures it\", and \u00a76's deliverable (line 128) fixes that method as the health-review profiler `health-tool-latency/scripts/profile_reads.py`; the companion plan `a-worker-cannot-write-your-home` \u00a710 records that this profiler was deleted at 19:18:11Z with \"No reachable snapshot holds them\", and the directory is absent (only `plan-review/` remains under the reports root) \u2014 so a \u00a719 node cannot run its declared headline measure as written",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:188",
+      "id": "evidence_paths-1",
+      "reason": "the root cause and the repair mechanism are unaffected by these magnitudes, so a node acting on this section is not sent down a wrong path; the imprecision is a provenance wart, not a wrong mechanism.",
+      "text": "\u00a719 asserts the attribution figures survive in \u00a76's landing record, \u00a76's reopen comment and the review-store record `r-20261016T180558240058-reads-remeasured-on-a-quiet-node*.json`, but only part is there: the reopen comment carries `read_state` 31.7 s and `_read_readiness_state` 19.8 s (not the \u00a719 values 31.4 s and 19.6 s), the landing record carries the \"399 plans\" clause, and the review record carries only `_discover_plans_uncached` 38.744 s = 277 % of excess \u2014 the figure \"36,571 soupsieve CSS selections\" and the range \"38.5\u201353.8 s\" appear on none of them",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "b95ca4c545c1457446defdbc979e3d4f9cfe1b358c88f98b82d70a86c58f6101",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 134,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T193540181348-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "6221ae93a081ac238a61ef40c4f1516deee81ce6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a719's done-when measures \"the way \u00a76 measures it\", and \u00a76's method is the health-review profiler, which the plan's companion document records as deleted with no reachable snapshot.",
+    "done_when": "pass \u2014 \u00a719 declares two falsifiable controls (the persisted-store bypass makes the new-process read parse every plan, and the same-job base arm at d249200c7 must exceed the 30 s deadline), and its counts (\"finding none\", \"exactly one parse\") can fail.",
+    "evidence_paths": "a finding \u2014 the plan states its attribution figures \"survive in \u00a76's landing record and its reopen comment, and in the run's claims review record\", but the specific figures \u00a719 relies on are not carried on those records.",
+    "naming": "pass \u2014 \u00a719 introduces no code symbol; its new test file is named by mechanism, and its internal \u00a7-references are plan-internal, not labels leaking into code.",
+    "reasoning": "pass \u2014 the stated root cause (a fresh process re-parses every plan; the persisted metadata index holds no discovery state) matches what \u00a76's landing record and reopen comment attribute, the persistence mechanism is capable of bringing cold roadmap under the 30 s deadline, and the caller is named (`discover_plans` \u2192 `_discover_plans_uncached` \u2192 `_read_readiness_state`).",
+    "single_goal": "pass \u2014 one deliverable: persist the parsed discovery/readiness state across processes.",
+    "wiring": "pass \u2014 \u00a719's only cross-section relationship, that its in-session base arm supplies the control \u00a76's reopened done-when requires, is stated in \u00a719's done-when and in \u00a76's reopen comment, and f-araiid-019 wires it to the skill; no dependency it needs is missing."
+  },
+  "section_digests": {
+    "_document": "ad7fc49262aab7b5663c83b5378f2e62811896b490bd02f25112205eb7195f29",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "e6692b6d5469665cd96f9011ea1c3a1ea5623e937604a51e865ac3272f920ebd",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T19:53:29.691748+00:00"
+}
