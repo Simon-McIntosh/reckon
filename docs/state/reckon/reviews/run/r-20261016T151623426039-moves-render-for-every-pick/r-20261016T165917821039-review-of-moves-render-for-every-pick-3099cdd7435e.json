@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own suite arms. baseline_suite (gate-armed-base.log) never reaches its summary line (exit_status 137, completed false), so it retires no id; after_suite (gate-armed-head.log) completes at revision 3099cdd74 with 456 passed and zero failures. The head arm carries no failing id, so added_failure_count is 0 whatever the base contributes.",
+  "base_log_revision": "75aa6abd1a5a199d22bca35953ac4c37e52da47a",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:409 prompts.render(\"state.jinja\", ...) in def pick - the pick path that renders the candidate state Jev weighs",
+    "reckon/crew/picker/__init__.py:472 prompts.render(\"questions.jinja\", candidates=offered) - the question payload Jev answers",
+    "reckon/crew/picker/prompts.py:365 build_state -> _candidate_state(candidate) at prompts.py:212, fed by the snapshot that sets Candidate.moved_in/moved_off"
+  ],
+  "completed_at": "2026-10-16T17:14:31.655Z",
+  "dispatched_at": "2026-10-16T16:59:48Z",
+  "findings": [
+    {
+      "file": "gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate log's header names revision cbb15ee1a while its body runs the working tree that carries the sparse-render change - the body includes tests/test_a_move_counts_against_the_pick.py's amine assertions at lines 345-346, which do not exist at cbb15ee1a - so the header names a revision that does not contain the test it reports and a reader cannot reconcile the arm's revision from its own header; negative_control.log:1 carries the sparse-render body with the same stale cbb15ee1a header."
+    },
+    {
+      "file": "manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite records completed false with exit_status 137 (gate-armed-base.log stopped by the background time limit before its summary line at 79% of the picker set), so the base arm retires no id and the done_when's against-the-base clause is not established by the base arm; the head arm is wholly green (456 passed at 3099cdd74), so added_failure_count is 0 regardless of the base, but the comparison rests on the head arm alone."
+    }
+  ],
+  "head_log_revision": "3099cdd7435e95e70e896dbd1410f0643510fd5d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s): reckon/crew/picker/__init__.py:409 (def pick, state.jinja render), reckon/crew/picker/__init__.py:472 (questions.jinja render) and reckon/crew/picker/prompts.py:365 build_state -> _candidate_state:212; no production consumer reads moved_in/moved_off back out of the rendered state.",
+    "diff": "read commit by commit against cbb15ee1a; the single gained commit 3099cdd74 renders the figures sparsely at reckon/crew/picker/prompts.py:253-262, adds _holds_a_move at prompts.py:199, states the sparsity in the glossary and in the prompts.py/types.py comments, reverts the two size bounds at tests/test_picker.py:262 and tests/test_picker_pressure.py:477, and updates the evidence fragment - seven files, all inside the extended scope.",
+    "done_when": "the done_when's core measure is met: tests/test_a_move_counts_against_the_pick.py:293 renders a no-requirement request over one moved row and asserts the receiving candidate's moved_in (line 343), the chosen candidate's moved_off (line 344) and that a move-free candidate carries neither key (lines 345-346); its final against-the-base clause is not established by the incomplete base arm, and its GOLDEN_STATE clause is superseded by the coordinator's repair advice (the fixture has no moves, so the golden carries no move keys), which the head satisfies.",
+    "goal": "the goal is to render each candidate's move counts for every pick; reckon/crew/picker/prompts.py:253-262 now renders moved_in/moved_off for every candidate regardless of a named requirement, hoisted out of the outcomes_at_requirement block, so the deliverable holds for a no-requirement pick.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T151623426039-moves-render-for-every-pick/manifest.md; status complete, four commits listed, after_suite at revision 3099cdd74 completes green, gate (gate-head.log, 12 passed) and control (negative_control.log, EXIT=1) recorded, but baseline_suite records completed false (exit 137).",
+    "write_paths": "the original fence named reckon/crew/picker/prompts.py, reckon/crew/picker/types.py, tests/test_a_move_counts_against_the_pick.py, tests/test_picker_helpers_have_one_owner.py, the evidence fragment and its figure directory; the coordinator's repair advice extended the scope to tests/test_picker.py and tests/test_picker_pressure.py, and the gained commit touches only those plus the fragment, every path inside the extended scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_move_counts_against_the_pick.py:345-346 reddens under unconditional rendering (negative_control.log, EXIT=1), and the moved_in/moved_off-on-every-candidate regression is caught by the key-set guard at tests/test_picker.py:264 and the char bound at :262, while the positive arm at :343-344 reddens if rendering drops the figures.",
+    "evidence": "gate-head.log (12 passed), negative_control.log (EXIT=1) and gate-armed-head.log (456 passed, EXIT=0 at 3099cdd74) are recorded and the control shows the added assertion reddens, but gate-armed-base.log is incomplete (exit 137) and gate-head.log:1 names revision cbb15ee1a while its body carries the change.",
+    "fit": "_holds_a_move at reckon/crew/picker/prompts.py:199 follows the module's long-comment placement and introduces no plan label, version suffix or forbidden name.",
+    "goal_fidelity": "reckon/crew/picker/prompts.py:253-262 renders moved_in/moved_off for every candidate regardless of a named requirement, which is the node goal.",
+    "reuse": "no owner exists for a gate-vocabulary block holding a nonzero count (search over reckon/crew found only plan_review._holds_run/_holds_other_run, unrelated), so _holds_a_move extends the rendering owner _candidate_state at reckon/crew/picker/prompts.py:212 rather than duplicating it.",
+    "scope_discipline": "the delta touches only the seven files the coordinator's repair advice names, and tests/test_picker.py:262 and tests/test_picker_pressure.py:477 are restored to their base bytes."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to render each candidate's move counts for every pick; reckon/crew/picker/prompts.py:253-262 now hoists moved_in/moved_off out of the at-requirement block and renders them for every candidate, so the deliverable holds for a no-requirement pick.\nVERDICT done_when: the done_when's core measure is met -- tests/test_a_move_counts_against_the_pick.py:293 renders a no-requirement request over one moved row and asserts the receiving candidate's moved_in (.failed==1, line 343), the chosen candidate's moved_off (line 344), and that a move-free candidate carries neither key (lines 345-346) -- and its GOLDEN_STATE clause is superseded by the coordinator's repair advice (\"its fixture has no moves, so it should carry no move keys\"), which the head satisfies.\nVERDICT write_paths: the node was fenced to prompts.py, types.py, tests/test_a_move_counts_against_the_pick.py, tests/test_picker_helpers_have_one_owner.py, the evidence fragment and its figure dir; the repair advice extended the scope to tests/test_picker.py and tests/test_picker_pressure.py, and the gained commit touches only those plus the fragment, all inside the extended scope.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T151623426039-moves-render-for-every-pick/manifest.md; status complete, after_suite now names revision 3099cdd74 and completes (456 passed), the gate (gate-head.log, 12 passed) and the control (negative_control.log, EXIT=1) are recorded, but baseline_suite records completed false (exit 137).\nVERDICT diff: read commit by commit against cbb15ee1a; the gained commit 3099cdd74 renders the figures sparsely in prompts.py, states the sparsity in the glossary and in prompts.py/types.py comments, reverts the two size bounds in tests/test_picker.py and tests/test_picker_pressure.py, and updates the evidence fragment -- seven files, all inside the extended scope.\nCALL_SITES: reckon/crew/picker/__init__.py:409 prompts.render(\"state.jinja\", ...) in def pick (the pick path that feeds Jev), reckon/crew/picker/__init__.py:472 prompts.render(\"questions.jinja\", candidates=offered), reckon/crew/picker/prompts.py:365 build_state -> _candidate_state at prompts.py:212\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/prompts.py:253-262 renders moved_in/moved_off for every candidate regardless of a named requirement, which is the node goal.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log (12 passed), negative_control.log (EXIT=1) and gate-armed-head.log (456 passed, EXIT=0 at 3099cdd74) are recorded and the control shows the added assertion reddens, but gate-armed-base.log is incomplete (exit 137) and gate-head.log:1 names revision cbb15ee1a while its body carries the change.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta touches only the seven files the coordinator's repair advice names, and tests/test_picker.py:262 and tests/test_picker_pressure.py:477 are restored to their base bytes.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_move_counts_against_the_pick.py:345-346 reddens under unconditional rendering (negative_control.log, EXIT=1), and the moved_in/moved_off-on-every-candidate regression is caught by the key-set guard at tests/test_picker.py:264 and the char bound at :262.\nSCORE fit: 19\nJUSTIFICATION fit: _holds_a_move at reckon/crew/picker/prompts.py:199 follows the module's long-comment placement and introduces no plan label, version suffix or forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner exists for a \"gate-vocabulary block holds a nonzero count\" predicate (search over reckon/crew found only plan_review._holds_run/_holds_other_run, unrelated), so _holds_a_move extends the rendering owner _candidate_state at reckon/crew/picker/prompts.py:212 rather than duplicating it.\nFINDING gate-head.log:1 follow-on: the gate's header names revision cbb15ee1a while its body runs the working tree carrying the sparse-render change (its own body includes test_a_move_counts_against_the_pick.py's amine assertions at lines 345-346, absent at cbb15ee1a), so the header names a revision that does not contain the test it reports and a reader cannot reconcile the arm's revision; negative_control.log:1 carries the sparse-render body with the same stale header.\nFINDING manifest.md:15 follow-on: baseline_suite records completed false with exit_status 137 (gate-armed-base.log stopped before its summary at 79% of the picker set), so the base arm retires no id and the done_when's against-the-base clause is not established by the base arm; the head arm is wholly green (456 passed), so added_failure_count is 0 regardless, but the comparison rests on the head alone.\nREVIEWED_BASE_SHA: cbb15ee1a4399f603e9177498707237266be676e\nREVIEWED_HEAD_SHA: 3099cdd7435e95e70e896dbd1410f0643510fd5d",
+  "review_run_id": "r-20261016T165917821039-review-of-moves-render-for-every-pick-3099cdd7435e",
+  "reviewed_base_sha": "cbb15ee1a4399f603e9177498707237266be676e",
+  "reviewed_head_sha": "3099cdd7435e95e70e896dbd1410f0643510fd5d",
+  "reviewed_run_id": "r-20261016T151623426039-moves-render-for-every-pick",
+  "role": "review",
+  "rubric": "node",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T17:10:00.000000+00:00",
+  "total": 113
+}
