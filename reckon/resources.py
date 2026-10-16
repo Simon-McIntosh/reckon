@@ -473,7 +473,7 @@ _SCAN_DROPPED: ContextVar[dict[tuple[str, str], list[tuple[Path, str]]] | None] 
 
 
 @contextmanager
-def resource_scan_scope() -> Iterator[list[tuple[Path, str]]]:
+def resource_scan_scope() -> Iterator[dict[tuple[str, str], list[tuple[Path, str]]]]:
     """Reuse one tree scan for every resource lookup inside a read-only pass.
 
     Resolving a slug scans the whole docs tree, and a roadmap resolves one slug
