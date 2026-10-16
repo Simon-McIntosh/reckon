@@ -147,6 +147,20 @@ _GLOSSARY: dict[str, str] = {
 }
 
 
+def encode(value: Any) -> str:
+    """The state's one encoder.
+
+    Every rendered prompt is a JSON document, so one function serialises it and
+    a rendered state is exactly what this returns for the mapping
+    ``build_state`` assembled. A value the template left undefined raises here
+    rather than serialising to a silently missing field.
+    """
+
+    if isinstance(value, Undefined):
+        str(value)
+    return json.dumps(value, separators=(",", ":"))
+
+
 @lru_cache(maxsize=1)
 def environment() -> Environment:
     env = Environment(
@@ -159,12 +173,6 @@ def environment() -> Environment:
         undefined=StrictUndefined,
         autoescape=False,  # noqa: S701 - JSON prompts, never HTML
     )
-
-    def encode(value: Any) -> str:
-        if isinstance(value, Undefined):
-            str(value)
-        return json.dumps(value, separators=(",", ":"))
-
     env.filters["json"] = encode
     env.filters["tojson"] = encode
     return env
@@ -268,6 +276,7 @@ def build_state(
     attempts: Any = 0,
     estimated_hours: Any = None,
     estimated_hours_source: Any = None,
+    orchestrator_assessment: Any = None,
 ) -> dict[str, Any]:
     """Assemble the whole routing judgment as one mapping.
 
@@ -279,6 +288,11 @@ def build_state(
     the section, or the plan. The source is rendered unconditionally, null when
     nothing resolved, so the node's shape does not vary with which facts a pick
     could read.
+
+    ``orchestrator_assessment`` is the coordinator's own difficulty reading. It
+    is placed beside the declared ``capability`` rather than in place of it, so
+    the whole state is built here and encoded once by one encoder. A pick that
+    supplied no reading carries no such key, so the node block keeps its shape.
     """
 
     serving_lanes = _serving_lanes(candidates)
@@ -286,6 +300,11 @@ def build_state(
         "role": node.role,
         "spec_level": node.spec_level,
         "capability": capability,
+        **(
+            {"orchestrator_assessment": orchestrator_assessment}
+            if orchestrator_assessment
+            else {}
+        ),
         "goal": node.goal,
         "done_when": node.done_when,
         "estimated_context": estimated_context,
@@ -409,6 +428,7 @@ def _render_state(name: str, context: Mapping[str, Any]) -> str:
         candidates=context.get("candidates") or [],
         lane=lane,
         attempts=context["attempts"] if context.get("attempts") is not None else 0,
+        orchestrator_assessment=context.get("orchestrator_assessment"),
     )
     with lane_context.timed_read("template_load"):
         template = environment().get_template(name)

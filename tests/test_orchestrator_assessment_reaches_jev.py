@@ -368,3 +368,72 @@ def test_record_carries_capability_on_the_picker_route(
         "reasoning": "deep",
         "risk": "critical",
     }
+
+
+# The lane blocks are carried straight through into the state, so the render's
+# equality with build_state's mapping is what is under test rather than any
+# figure inside them. The live lane document and the ledger are read by
+# ``lane_context.build``, which the test replaces, so nothing outside the
+# repository is read.
+_FIXED_LANE = {
+    "return_times": {"local": {"p50_s": 900.0, "n": 3}},
+    "lanes": {"local": {"models": ["local-model"]}},
+    "local_lane": {"admission": "open", "worker_slots": 2},
+    "read_at": "2026-10-16T12:00:00+00:00",
+}
+
+# The comment carries an apostrophe and an ampersand, which one encoder escapes
+# and the other leaves alone, so a state spliced after the render cannot pass
+# for one built once even where the two encoders agreed on their separators.
+_COMMENT = "weigh the lane's pace & the node's own risk"
+
+
+def test_rendered_state_is_build_states_mapping_encoded_once(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The state Jev is shown is the picker's own mapping through one encoder.
+
+    The comparison is made against the rendered state the pick records rather
+    than against the state ``prompts.render`` returns in isolation: a splice
+    applied after the render leaves the latter untouched, so only the state that
+    actually travels can show whether one encoder built it.
+    """
+
+    monkeypatch.setattr(
+        picker_package.prompts.lane_context, "build", lambda **_kwargs: _FIXED_LANE
+    )
+    recorded: dict = {}
+    real_build_state = picker_package.prompts.build_state
+
+    def recording_build_state(**kwargs):
+        mapping = real_build_state(**kwargs)
+        recorded["mapping"] = mapping
+        return mapping
+
+    monkeypatch.setattr(picker_package.prompts, "build_state", recording_build_state)
+    _config, result, seen = _invoke(
+        dispatch_repo,
+        monkeypatch,
+        node="assessed-node",
+        extra=["--assess", "reasoning=deep", "--assess", "risk=critical"],
+    )
+    assert result.exit_code == 0, result.output
+    mapping = recorded["mapping"]
+    assert mapping["node"]["orchestrator_assessment"] == {
+        "reasoning": "deep",
+        "risk": "critical",
+    }
+    rendered = _payload(result)["picker_selection"]["rendered_state"]
+    assert rendered == picker_package.prompts.encode(mapping)
+    # The client saw the same bytes the state records, so the encoder under test
+    # is the one whose output Jev weighs.
+    assert seen["state"] == json.loads(rendered)
+
+
+def test_no_post_render_encoder_remains_in_the_picker() -> None:
+    """The picker no longer re-encodes a rendered state after building it."""
+
+    source = (
+        Path(__file__).parents[1] / "reckon" / "crew" / "picker" / "__init__.py"
+    ).read_text(encoding="utf-8")
+    assert "htmlsafe_json_dumps" not in source

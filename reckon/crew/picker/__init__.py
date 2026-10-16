@@ -261,41 +261,6 @@ def _declared_difficulty(
     return capability, hours, hours_source
 
 
-def _state_beside_assessment(rendered: str, assessment: Mapping[str, Any]) -> str:
-    """Add the coordinator's assessment to the rendered state's node block.
-
-    The state template renders one mapping, so the assessment is placed beside
-    ``node.capability`` in that mapping rather than appended onto the rendered
-    text. The state is parsed, the node block rebuilt with the key directly
-    after ``capability``, and the mapping re-serialised through the same
-    function the template uses, so a pick with an assessment differs from one
-    without it only by the added key and the declared capability is left
-    exactly as it was resolved. A rendered state that does not parse, or that
-    carries no node block, is returned unchanged rather than losing its other
-    facts to a malformed insert.
-    """
-    from jinja2.utils import htmlsafe_json_dumps
-
-    try:
-        state = json.loads(rendered)
-    except ValueError:
-        return rendered
-    if not isinstance(state, dict):
-        return rendered
-    node = state.get("node")
-    if not isinstance(node, dict):
-        return rendered
-    rebuilt: dict[str, Any] = {}
-    for key, value in node.items():
-        rebuilt[key] = value
-        if key == "capability":
-            rebuilt["orchestrator_assessment"] = dict(assessment)
-    if "capability" not in node:
-        rebuilt["orchestrator_assessment"] = dict(assessment)
-    state["node"] = rebuilt
-    return htmlsafe_json_dumps(state)
-
-
 def _answer(
     payload: dict[str, Any], offered: list[Candidate]
 ) -> tuple[str, float, dict[str, float]]:
@@ -461,15 +426,14 @@ def pick(
                 and row.get("plan") == request.node.plan
                 for row in rows
             ),
+            # The coordinator's own reading is built into the state's node block
+            # beside the declared capability, so the whole state is encoded once
+            # by one encoder and the declared requirement is never displaced.
+            orchestrator_assessment=request.orchestrator_assessment,
         )
     finally:
         stages["state_render_ms"] = _milliseconds(state_started)
         unmark()
-    if request.orchestrator_assessment:
-        # The coordinator's own reading is placed beside the declared
-        # capability in the state Jev is shown, so the two are weighed together
-        # and the declared requirement is never displaced by it.
-        rendered = _state_beside_assessment(rendered, request.orchestrator_assessment)
     # The estimate stage times the context estimate itself, wherever it ran. The
     # scan reports the duration of a measurement it made; a caller hands in the
     # duration of one it made before the pick, so the five-second bound Dispatch
