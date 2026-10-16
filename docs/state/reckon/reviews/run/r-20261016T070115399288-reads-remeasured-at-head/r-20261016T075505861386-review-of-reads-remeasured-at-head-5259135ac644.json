@@ -1,0 +1,98 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest declares baseline_suite and after_suite null; its profiler timings are not test suite gate logs",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:1385",
+    "reckon/mcp.py:2357",
+    "reckon/mcp_discovery.py:149",
+    "reckon/mcp.py:2953"
+  ],
+  "completed_at": "2026-10-16T08:02:08Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "reads-remeasured-at-head",
+      "recorded_at": "2026-10-16T08:04:10.397531+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-16T07:56:09Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "reads-remeasured-at-head",
+      "recorded_at": "2026-10-16T08:04:12.858933+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "reads-remeasured-at-head",
+      "recorded_at": "2026-10-16T08:04:15.050502+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "reads-remeasured-at-head",
+      "recorded_at": "2026-10-16T08:04:17.014302+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/driver.sh",
+      "line": "20",
+      "severity": "blocking",
+      "text": "blocking: the read logs claim PYTHONPATH=5259135ac644ec7289c20ae2906039d48d0475a9.. while the executed command sets PYTHONPATH to the worktree at line 24, and line 27 follows EXIT, so they fail the brief's literal-command and final-EXIT evidence contract even though their module paths and measurements are readable."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest claims 30 profiler invocations and 32 commands, but the named logs show 15 profiler processes yielding 30 timed reads plus one MCP probe; this overstates the independently executed sample count."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-at-head/report.md",
+      "line": "65",
+      "severity": "follow-on",
+      "text": "follow-on: the report calls the warm profile kept, but the profiler dumps were written under the removed scratch directory and the persisted report directory contains only report.md, leaving its detailed attribution uncheckable."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "git diff 5259135ac644ec7289c20ae2906039d48d0475a9..5259135ac644ec7289c20ae2906039d48d0475a9 is empty and the source worktree HEAD is 5259135ac644ec7289c20ae2906039d48d0475a9; I read the run-directory driver and MCP probe instead of attributing a nonexistent repository commit.",
+    "done_when": "docs/plans/a-read-answers-inside-its-deadline.html \u00a76 requires warm roadmap at most 2 s, warm audit at most 3 s, cold roadmap under 30 s and MCP roadmap without storage-slow; /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-at-head/report.md:90-93 and the logs show 16.912 s, 47.258 s, 90.726 s and storage-slow, so the thresholds fail.",
+    "goal": "docs/plans/a-read-answers-inside-its-deadline.html \u00a76 asks for cold and warm measurements of roadmap, audit and discovery plus an MCP roadmap call; /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-at-head/report.md:28-60 records five samples per read at head and a storage-slow MCP reply.",
+    "manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/manifest.md:5-23 reports complete with no commits, cites the head logs, and declares baseline_suite and after_suite null; its claims of 30 invocations and 32 commands exceed the 15 profiler invocations plus one MCP probe shown by its log list.",
+    "write_paths": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/manifest.md:3 grants the report directory; the read-only run has no repository diff, the report is in that directory and the manifest, scripts and logs are in its assigned run directory."
+  },
+  "justifications": {
+    "durability": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/driver.sh:23-27 records profiler exit codes but contains no assertion on a latency threshold or MCP refusal, so a later slowdown would leave the driver green.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/logs/reads-roadmap-r5.log and the other 14 read logs reproduce every median, but /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/driver.sh:20 records an inaccurate command and line 27 puts text after EXIT.",
+    "fit": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/mcp_driver.py:44-63 follows the stdio request and response shape used by the registered roadmap tool at reckon/mcp.py:2953, while /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/driver.sh:20-27 misses the required literal command and final EXIT line.",
+    "goal_fidelity": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-at-head/report.md:28-60 gives the five cold and warm measurements and one fresh MCP reply the head-arm brief requests, while the measured values fail the plan's deadline.",
+    "reuse": "git diff 5259135ac644ec7289c20ae2906039d48d0475a9..5259135ac644ec7289c20ae2906039d48d0475a9 adds no definitions to the repository; the measurement reuses the existing health profiler at health-tool-latency/scripts/profile_reads.py:22, and no new runtime capability needs an owner.",
+    "scope_discipline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/manifest.md:3 names the report directory and git diff 5259135ac644ec7289c20ae2906039d48d0475a9..5259135ac644ec7289c20ae2906039d48d0475a9 changes no repository path; the report and run records stay in their assigned locations."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: docs/plans/a-read-answers-inside-its-deadline.html \u00a76 asks for cold and warm measurements of roadmap, audit and discovery plus an MCP roadmap call; /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-at-head/report.md:28-60 records five samples per read at head and a storage-slow MCP reply.\nVERDICT done_when: docs/plans/a-read-answers-inside-its-deadline.html \u00a76 requires warm roadmap at most 2 s, warm audit at most 3 s, cold roadmap under 30 s and MCP roadmap without storage-slow; /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-at-head/report.md:90-93 and the logs show 16.912 s, 47.258 s, 90.726 s and storage-slow, so the thresholds fail.\nVERDICT write_paths: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/manifest.md:3 grants the report directory; the read-only run has no repository diff, the report is in that directory and the manifest, scripts and logs are in its assigned run directory.\nVERDICT manifest: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/manifest.md:5-23 reports complete with no commits, cites the head logs, and declares baseline_suite and after_suite null; its claims of 30 invocations and 32 commands exceed the 15 profiler invocations plus one MCP probe shown by its log list.\nVERDICT diff: git diff 5259135ac644ec7289c20ae2906039d48d0475a9..5259135ac644ec7289c20ae2906039d48d0475a9 is empty and the source worktree HEAD is 5259135ac644ec7289c20ae2906039d48d0475a9; I read the run-directory driver and MCP probe instead of attributing a nonexistent repository commit.\nCALL_SITES: reckon/mcp.py:1385, reckon/mcp.py:2357, reckon/mcp_discovery.py:149, reckon/mcp.py:2953\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-at-head/report.md:28-60 gives the five cold and warm measurements and one fresh MCP reply the head-arm brief requests, while the measured values fail the plan's deadline.\nSCORE evidence: 14\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/logs/reads-roadmap-r5.log and the other 14 read logs reproduce every median, but /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/driver.sh:20 records an inaccurate command and line 27 puts text after EXIT.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/manifest.md:3 names the report directory and git diff 5259135ac644ec7289c20ae2906039d48d0475a9..5259135ac644ec7289c20ae2906039d48d0475a9 changes no repository path; the report and run records stay in their assigned locations.\nSCORE durability: 2\nJUSTIFICATION durability: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/driver.sh:23-27 records profiler exit codes but contains no assertion on a latency threshold or MCP refusal, so a later slowdown would leave the driver green.\nSCORE fit: 14\nJUSTIFICATION fit: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/mcp_driver.py:44-63 follows the stdio request and response shape used by the registered roadmap tool at reckon/mcp.py:2953, while /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/driver.sh:20-27 misses the required literal command and final EXIT line.\nSCORE reuse: 20\nJUSTIFICATION reuse: git diff 5259135ac644ec7289c20ae2906039d48d0475a9..5259135ac644ec7289c20ae2906039d48d0475a9 adds no definitions to the repository; the measurement reuses the existing health profiler at health-tool-latency/scripts/profile_reads.py:22, and no new runtime capability needs an owner.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/driver.sh:20 blocking: the read logs claim PYTHONPATH=5259135ac644ec7289c20ae2906039d48d0475a9.. while the executed command sets PYTHONPATH to the worktree at line 24, and line 27 follows EXIT, so they fail the brief's literal-command and final-EXIT evidence contract even though their module paths and measurements are readable.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T070115399288-reads-remeasured-at-head/manifest.md:15 follow-on: the manifest claims 30 profiler invocations and 32 commands, but the named logs show 15 profiler processes yielding 30 timed reads plus one MCP probe; this overstates the independently executed sample count.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/reads-remeasured-at-head/report.md:65 follow-on: the report calls the warm profile kept, but the profiler dumps were written under the removed scratch directory and the persisted report directory contains only report.md, leaving its detailed attribution uncheckable.\n",
+  "review_run_id": "r-20261016T075505861386-review-of-reads-remeasured-at-head-5259135ac644",
+  "reviewed_base_sha": "5259135ac644ec7289c20ae2906039d48d0475a9",
+  "reviewed_head_sha": "5259135ac644ec7289c20ae2906039d48d0475a9",
+  "reviewed_run_id": "r-20261016T070115399288-reads-remeasured-at-head",
+  "reviewer_run_id": "r-20261016T075505861386-review-of-reads-remeasured-at-head-5259135ac644",
+  "scores": {
+    "durability": 2,
+    "evidence": 14,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T08:00:26.903391+00:00",
+  "total": 88
+}
