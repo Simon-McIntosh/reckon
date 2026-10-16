@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
-from pathlib import Path
 
 import pytest
 
@@ -157,9 +156,7 @@ def test_a_replay_carries_the_recorded_assessment(home, monkeypatch):
     records = [_record("assessed", definition)]
 
     seen: list[dict] = []
-    payload = _replay_rendering(
-        monkeypatch, home, config, records, count=1, seen=seen
-    )
+    payload = _replay_rendering(monkeypatch, home, config, records, count=1, seen=seen)
 
     assert _rendered_node(payload)["orchestrator_assessment"] == ASSESSMENT
     # The pick's client saw the same state the row records, so the reading
@@ -175,9 +172,7 @@ def test_a_replay_without_an_assessment_renders_no_key(home, monkeypatch):
     records = [_record("unassessed", _base_definition())]
 
     seen: list[dict] = []
-    payload = _replay_rendering(
-        monkeypatch, home, config, records, count=1, seen=seen
-    )
+    payload = _replay_rendering(monkeypatch, home, config, records, count=1, seen=seen)
 
     assert "orchestrator_assessment" not in _rendered_node(payload)
     assert "orchestrator_assessment" not in seen[0]["node"]
