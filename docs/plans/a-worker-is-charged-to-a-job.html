@@ -25,7 +25,7 @@
   <title>A worker is charged to a job | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="72">
+<meta name="plan-version" content="73">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-impl" content="0.92">
 </head>
@@ -1107,6 +1107,9 @@ placement path, not as a whole-suite run.</p>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-17T00:45:00Z">
     <div class="r-comment-body"><p>§11 landed. The worker-path test reads the host line's clauses from the nested-launch declaration and asserts the stale sbatch clause is absent, so the test red on main since §10 passes (merged as <code>8a73f03b8</code>). Gate: 14 passed. The control is red. Review: 113. <a href="/reckon/evidence/archive/a-worker-is-charged-to-a-job-landed.html#s11">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261016T221856967072-the-worker-path-test-reads-the-host-line" data-who="reckon-build" data-when="2026-10-16T22:27:26.399Z">
+    <div class="r-comment-body"><p>repointed the stale host-line assertion in the worker-path test at the composed sentence: it now asserts the in-place clause, reads the partition route and held-step sentence from reckon/nested_launch.py rather than restating them, and asserts &quot;or an sbatch into it&quot; is absent. Head gate 14 passed; negative control re-adding the clause to the host line fails EXIT=1 with 1 failed, 3 passed.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
