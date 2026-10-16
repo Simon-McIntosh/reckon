@@ -13,6 +13,10 @@ timeout, a spawn error, or any other exit says nothing about the tree, and
 remembering one would freeze a wrong answer into a long-lived server: a docs
 directory below its repository's root has no ``.git`` at that level, so a
 single storage-slow lookup would make every later age there read as untracked.
+
+Git translates the message that verdict is read from, so the one query function
+every git process goes through pins the C locale itself and the classification
+matches one text wherever the server runs.
 """
 
 from __future__ import annotations
@@ -105,25 +109,19 @@ def _isolated_state(tmp_path: Path, monkeypatch):
 def _counting_git_spawns(monkeypatch):
     """Count every git process the read starts, whatever its call site.
 
-    A plan's age reaches git through the shared ``_run_git`` query and, for
-    HEAD, through ``_run_git_head``. Each call is exactly one subprocess, so a
-    counter wrapped around both counts processes without a shim on ``PATH``.
+    A plan's age and the HEAD lookup both reach git through the shared
+    ``_run_git`` query, and each call is exactly one subprocess, so a counter
+    wrapped around it counts processes without a shim on ``PATH``.
     """
 
     calls = {"count": 0}
     real_run_git = serve._run_git
-    real_run_git_head = serve._run_git_head
 
-    def run_git(args, repo_dir, *, operation):
+    def run_git(*args, **kwargs):
         calls["count"] += 1
-        return real_run_git(args, repo_dir, operation=operation)
-
-    def run_git_head(repo_dir):
-        calls["count"] += 1
-        return real_run_git_head(repo_dir)
+        return real_run_git(*args, **kwargs)
 
     monkeypatch.setattr(serve, "_run_git", run_git)
-    monkeypatch.setattr(serve, "_run_git_head", run_git_head)
     yield lambda: calls["count"]
 
 
@@ -190,6 +188,70 @@ def test_timeout_is_not_remembered_as_outside(tmp_path, monkeypatch):
         with _counting_git_spawns(monkeypatch) as spawns:
             assert _git_head(repo_dir) is None
             assert spawns() == 1, "the root must be asked again after a timeout"
+
+
+def test_outside_root_is_remembered_under_a_non_c_locale(tmp_path, monkeypatch):
+    """A translated environment does not stop the verdict being remembered.
+
+    The verdict is read from git's own stderr, which git translates when the
+    environment asks for a language, so an environment naming one must not cost
+    the outside answer. This holds on a host with no such catalogue installed,
+    because what it exercises is the code setting the locale, not the host
+    supplying one.
+    """
+
+    with _isolated_state(tmp_path, monkeypatch):
+        monkeypatch.setenv("LC_ALL", "fr_FR.UTF-8")
+        monkeypatch.setenv("LANGUAGE", "fr")
+        monkeypatch.delenv("LANG", raising=False)
+        docs = _build_tree(tmp_path / "loose")
+        repo_dir = docs.parent
+        assert not (repo_dir / ".git").exists()
+
+        with _counting_git_spawns(monkeypatch) as spawns:
+            assert _git_head(repo_dir) is None
+            assert spawns() == 1
+
+        assert serve._GIT_OUTSIDE_MEMO, "the outside verdict must be remembered"
+
+        with _counting_git_spawns(monkeypatch) as spawns:
+            assert _git_head(repo_dir) is None
+            assert spawns() == 0, "a remembered outside root must not spawn git again"
+
+
+def test_git_is_asked_in_the_c_locale(tmp_path, monkeypatch):
+    """The message the verdict is read from is never a translated one.
+
+    Git translates the text the classification matches, so a message from a
+    translated catalogue would read as a different failure and the outside
+    verdict would be lost. The query pins the locale on the spawn itself while
+    leaving the rest of the environment alone, which is what this asserts; it
+    is meaningful on a host with no catalogue installed, since it checks the
+    request rather than the answer.
+    """
+
+    seen: list[dict] = []
+    real_run = subprocess.run
+
+    def capturing(args, *rest, **kwargs):
+        argv = list(args) if isinstance(args, (list, tuple)) else [args]
+        if argv and os.path.basename(str(argv[0])) == "git":
+            seen.append(dict(kwargs.get("env") or {}))
+        return real_run(args, *rest, **kwargs)
+
+    with _isolated_state(tmp_path, monkeypatch):
+        monkeypatch.setenv("LC_ALL", "fr_FR.UTF-8")
+        monkeypatch.setenv("LANGUAGE", "fr")
+        monkeypatch.setattr(subprocess, "run", capturing)
+        docs = _build_tree(tmp_path / "loose")
+
+        assert _git_head(docs.parent) is None
+
+    assert seen, "the HEAD lookup must spawn git"
+    assert all(env.get("LC_ALL") == "C" for env in seen), seen
+    assert all(env.get("LANGUAGE") == "fr" for env in seen), (
+        "the rest of the environment must reach git unchanged"
+    )
 
 
 def test_repository_root_ages_are_commit_derived(tmp_path, monkeypatch):
