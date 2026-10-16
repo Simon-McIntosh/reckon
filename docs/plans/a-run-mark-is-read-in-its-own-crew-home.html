@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="plan-slug" content="a-run-mark-is-read-in-its-own-crew-home">
+<meta name="reckon-type" content="plan">
+<title>a-run-mark-is-read-in-its-own-crew-home</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-standalone" content="It narrows one matcher that a-run-has-one-live-writer introduced and is complete; no live plan waits on it, and it waits on none.">
+<meta name="plan-title" content="A Run Mark Is Read In Its Own Crew Home">
+<meta name="plan-summary" content="The environment-mark scan names any process carrying a run id, whatever crew home it belongs to, so liveness and stop can reach another home&#x27;s process.">
+<meta name="plan-status" content="active">
+<meta name="plan-roi" content="high">
+<meta name="plan-sprint" content="S26">
+<meta name="plan-owner" content="Simon McIntosh">
+<meta name="plan-tags" content="crew,reckon-tooling">
+<meta name="plan-effort-hours" content="1.25">
+<meta name="plan-capability-version" content="1.0">
+<meta name="plan-capability-class" content="general">
+<meta name="plan-capability-reasoning" content="deep">
+<meta name="plan-capability-verification" content="strict">
+<meta name="plan-capability-risk" content="moderate">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-17">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="s1">§1 — A run&#x27;s environment mark is read only within its own crew home</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> <code>_processes_owning_run</code> in <code>reckon/crew/process_signal.py</code> names every process of this user whose environment carries <code>RECKON_RUN_ID</code> equal to a run id. Two doors read it. <code>local_liveness</code> in <code>reckon/crew/recovery_liveness.py</code> uses it, through <code>_env_scan_run_pid</code>, as the last reach for a reparented worker. The stop path uses it to end a run's whole process tree. a-run-has-one-live-writer §2 introduced both, and that plan is complete. Neither door asks which crew home the process belongs to. On 2026-10-16, the exclusive-node population run of the fence reports seal (run <code>r-20261016T212841719818</code>, job 1287701) hit this. <code>tests/test_resume_anchors_the_run_harness_home.py::test_a_resume_reaches_the_home_the_dispatch_composed[codex]</code> failed under <code>-n 10</code> with "run 'r-resume-codex' reads 'alive' for a lift … (pid 3666792)", although its fixture records only a pid beyond <code>pid_max</code>. It passed 5 of 5 alone at base and at head. Nine test files use run ids of the form <code>r-resume-*</code>, each under its own temporary crew home. A child that one test launched, carrying that id, was read as the worker of another test's run. The same match would let a stop signal a process belonging to another crew home.</p><p><strong>Deliverable.</strong> A process is named for a run only when its environment also places it in the caller's crew home. That home is <code>RECKON_HOME</code> resolved, with an absent <code>RECKON_HOME</code> standing for the default home a launcher without it used. Both doors inherit the narrowing by going through <code>_processes_owning_run</code>, with no second matcher.</p><p><strong>Done when</strong> a new test, <code>tests/test_a_run_mark_is_read_in_its_own_crew_home.py</code>, starts two live child processes carrying the same <code>RECKON_RUN_ID</code> under two different <code>RECKON_HOME</code> values. Called under the first home, <code>_processes_owning_run</code> names only the first child. A record whose own pids are gone and whose run id only the second home's child carries reads not alive from <code>local_liveness</code>. A child carrying no <code>RECKON_HOME</code> is named when the caller's home is the default one, and not otherwise. Negative control: with the crew-home comparison removed, the test names the second home's child and fails, logged under the run directory. ruff check and ruff format --check add no findings on the changed Python files. The coordinator runs the importer population at merge. Write paths: <code>reckon/crew/process_signal.py</code> and the test file.</p>
+
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-armricch-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-create" data-written-at="2026-10-17" data-recommends-skill="/reckon-build a-run-mark-is-read-in-its-own-crew-home §1" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Narrow the environment-mark scan to the caller&#x27;s crew home (§1)</h4>
+    <div class="r-fu-body"><p>A process carrying another crew home's run id is read as this run's worker, and a stop could signal it. §1 narrows the one matcher both doors use.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-run-mark-is-read-in-its-own-crew-home §1</pre>
+    </article>
+</section>
+</main>
+</body>
+</html>
