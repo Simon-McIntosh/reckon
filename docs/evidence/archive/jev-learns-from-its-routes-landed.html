@@ -75,6 +75,21 @@
     <p>Run <code>r-20261016T123411374160-a-reserved-account-reading-ages</code> (clive, picked by Jev at 0.66), commits <code>490c93875</code> and <code>dfe0a84db</code>, merged at <code>e0eacfcaa</code>. An account-surface reading is fresh when probed and stale past the flight's shelf life measured from its probe, so a cached report re-served after its publisher stops no longer feeds the utilisation ceiling a stale figure. The re-age case now sits between the two bounds (445 s against 300 s and 900 s), where only a source-aware rule keeps a document reading fresh. The superseded case in <code>test_picker_return_time.py</code> was flipped and renamed under a widened fence. Gate: 10 passed; the negative control reddens three tests. Over the importer sweep, 426 passed at head against 424 at base, so 0 failures were added. Independent review <code>r-20261016T131939416938</code> totals 114. Its follow-on: the ceiling case asserts no exclusion after re-age, but never shows the ceiling firing on a fresh 95% reading, so that absence could pass vacuously.</p>
   </section>
 
+  <section id="s11">
+    <h2>§11 — the assessment renders through build_state</h2>
+    <p>Run <code>r-20261016T133648229771-assessment-renders-through-build-state</code> (clive, picked by Jev at 0.93), commits <code>69ba4d692</code>, <code>9b96726b5</code> and <code>5d8318ba7</code>, merged at <code>1ac1643f5</code>. <code>build_state</code> places <code>orchestrator_assessment</code> inside <code>node</code> beside the declared capability. The post-render splice in <code>picker/__init__.py</code> is deleted (44 lines out, 7 in), and the state is encoded once by <code>prompts.encode</code>. Gate: 8 passed; the negative control, restoring the splice, reddens the byte-identity test. The importer arms show the same pre-existing failures on both sides (head 2 failed, base 3), all in a live-lane congestion test and a conftest collection error, so none was added. Independent review <code>r-20261016T140655736428</code> totals 114.</p>
+  </section>
+
+  <section id="s14">
+    <h2>§14 — a codex attempt&#x27;s session is read from its observation</h2>
+    <p>Run <code>r-20261016T135224460143-codex-session-from-the-observation</code> (clive, picked by Jev at 0.87), commit <code>706bc2840</code>, merged at <code>bef24898c</code>. The attempt loop credits a codex attempt with <code>observe_log</code>'s <code>session_id</code>, and <code>_codex_session_of_stream</code> is deleted (27 lines to 5). Gate: 5 passed; the negative control, crediting no session, drops the receipt spans and reddens three tests. Independent review <code>r-20261016T141326523037</code> totals 104.</p>
+  </section>
+
+  <section id="s17">
+    <h2>§17 — an unknown refresh-interval unit is refused</h2>
+    <p>Run <code>r-20261016T135552049429-unknown-interval-unit-refused</code> (clive, picked by Jev at 0.94), commit <code>712a78a09</code>, merged at <code>fbb5d893b</code>. <code>refresh_interval_seconds</code> raises <code>ValueError</code> for a unit missing from <code>_INTERVAL_UNIT_SECONDS</code>, naming the interval and the accepted units. Gate: 6 passed; the negative control, restoring the seconds fallback, makes the refusal test report "DID NOT RAISE". Independent review <code>r-20261016T140927636937</code> totals 105.</p>
+  </section>
+
 </main>
 </body>
 </html>
