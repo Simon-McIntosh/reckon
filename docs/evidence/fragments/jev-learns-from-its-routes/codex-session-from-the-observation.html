@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:jev-learns-from-its-routes">
+  <meta name="plan-verifies" content="reckon:jev-learns-from-its-routes#s14">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-16">
+</head>
+<body>
+<main class="plan-doc">
+<section id="codex-session-from-the-observation">
+  <h2>A codex attempt's session is read from its observation</h2>
+  <p id="codex-session-from-the-observation-landing">
+    The attempt loop in <code>promotion_checks._terminal_stream_data</code> now
+    credits each codex attempt with the <code>session_id</code> of the
+    <code>observe_log</code> observation it already took of the same stream —
+    the codex client's <code>thread_id</code> — and the second reading
+    <code>_codex_session_of_stream</code> is deleted. A new assertion in
+    <code>tests/test_a_run_spans_all_its_attempts.py</code> pins the credited
+    session to <code>observe_log</code>'s <code>session_id</code> for that
+    stream.
+  </p>
+</section>
+</main>
+</body>
+</html>
