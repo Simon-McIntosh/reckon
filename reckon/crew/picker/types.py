@@ -15,6 +15,11 @@ class PickRequest:
     comment: str = ""
     session: str = ""
     attempts: int | None = None
+    # The coordinator's own reading of the node's difficulty, in the same
+    # capability requirement keys the section declares. It travels on the
+    # request and renders beside the declared capability, never in place of it,
+    # so a pick weighs the two readings where they disagree.
+    orchestrator_assessment: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

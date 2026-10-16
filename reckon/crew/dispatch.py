@@ -197,7 +197,6 @@ from reckon.crew.runs import (
 )
 
 
-
 def _queued_share_cap(backend: Mapping[str, Any]) -> object:
     """Read the lane document's published fair share, or ``None`` when absent.
 
@@ -673,6 +672,39 @@ def shadow(
     )
 
 
+def _recorded_capability(
+    resolution: Any,
+    *,
+    config: Mapping[str, Any],
+    node: TaskNode,
+    project: str,
+    repo_root: Path,
+    authority: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    """The capability requirement the section routing resolved for this run.
+
+    A route that resolved its lane from the section's own record already
+    carries the capability, so it is read back rather than resolved a second
+    time. An explicit backend bypasses section routing for the lane while the
+    plan's declaration still stands, so the section routing is resolved for the
+    record alone there; a declaration that cannot be read leaves the field null
+    rather than failing a dispatch that has already chosen its lane.
+    """
+    evidence = getattr(resolution, "section_routing", None)
+    if isinstance(evidence, Mapping) and evidence.get("failure") is None:
+        capability = evidence.get("capability")
+        if capability:
+            return dict(capability)
+    resolved = _dispatch_section_routing(
+        config, node=node, project=project, repo=repo_root, authority=authority
+    )
+    if isinstance(resolved, Mapping) and resolved.get("failure") is None:
+        capability = resolved.get("capability")
+        if capability:
+            return dict(capability)
+    return None
+
+
 def dispatch(
     *,
     node: TaskNode,
@@ -783,6 +815,12 @@ def dispatch(
     # the input that failed and the picker is left to fall back, so a picker
     # meant only to inform the dispatch can never abort the dispatch itself.
     resolved_route = resolve_dispatch_route(config, route)
+    # The coordinator's reading of the node's difficulty rides the dispatch
+    # options, which survive onto the pointer the queue replays, so a run the
+    # admission gate launches later carries the same assessment its request did.
+    orchestrator_assessment = dict(
+        (dispatch_options or {}).get("orchestrator_assessment") or {}
+    )
     deferred_shadow_selection = (
         picker_selection is None
         and resolved_route != "picker"
@@ -819,6 +857,7 @@ def dispatch(
             verdict_inputs=picker_inputs,
             budget_snapshot=picker_budget,
             input_errors=picker_input_errors,
+            orchestrator_assessment=orchestrator_assessment,
         )
     # A hold whose offered candidates include the local lane is a wait for that
     # lane, not a refusal: the request is validated and continued there, and the
@@ -1582,6 +1621,22 @@ def dispatch(
         # fields. The authored node definition is one of those durable fields,
         # so attribution lives there as well as at the pointer's top level.
         node_definition["coordinator"] = coordinator
+        # The requirement Jev weighed, recorded on the run so a later reader can
+        # condition history on difficulty. ``capability`` is the section
+        # routing's own resolution and stands on every route, including one
+        # whose lane an explicit --backend fixed; ``orchestrator_assessment``
+        # is the coordinator's own reading when one was given, stored beside it
+        # rather than in place of it.
+        node_definition["capability"] = _recorded_capability(
+            resolution,
+            config=config,
+            node=node,
+            project=project,
+            repo_root=repo_root,
+            authority=authority,
+        )
+        if orchestrator_assessment:
+            node_definition["orchestrator_assessment"] = dict(orchestrator_assessment)
 
         # The pace this dispatch was judged against, composed by the module that
         # owns every figure in it and carried on the record the run already
@@ -2054,6 +2109,7 @@ def dispatch(
             spawned_start_time = _process_start_time(spawned_pid)
             record["pid"] = spawned_pid
             record["pid_start_time"] = spawned_start_time
+
             # The supervisor may already have advanced this pointer's phase.
             # Merge the launch identity under the same lock as that advance so
             # neither writer replaces the other's newer fields with its copy.
@@ -2162,6 +2218,7 @@ def dispatch(
             record["picker_selection"] = selection
             _attach_shadow_picker_selection(run_id, selection)
     return record
+
 
 from .dispatch_accounting import (  # noqa: E402
     _ancestor_processes as _ancestor_processes,
@@ -2593,7 +2650,6 @@ from .dispatch_watch import (  # noqa: E402
     _watcher_delivery_admission as _watcher_delivery_admission,
     watch_arming_suppressed as watch_arming_suppressed,
 )
-
 
 
 # The supervisor entry point. This guard sits at the end of the module because

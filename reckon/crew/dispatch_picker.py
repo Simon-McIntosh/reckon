@@ -13,6 +13,7 @@ from pathlib import (
 from typing import (
     Any,
     Callable,
+    Iterable,
     Mapping,
 )
 from reckon import (
@@ -37,8 +38,46 @@ from reckon.crew.runs import (
 )
 
 
-
 PICKER_DISPATCH_TIMEOUT_SECONDS = 5.0
+
+
+def parse_orchestrator_assessments(statements: Iterable[str]) -> dict[str, str]:
+    """Parse repeatable ``KEY=VALUE`` assessment statements, refusing by name.
+
+    KEY must be a capability requirement key the schema declares and VALUE one
+    of the values that key accepts. A statement naming neither is refused with
+    the offending key and the accepted vocabulary in the message, so a caller
+    corrects it because of what it's told rather than by reading the source. A
+    repeated key takes its last value: later statements override earlier ones,
+    the way a command line's later flag wins.
+    """
+    from reckon.capability import REQUIREMENT_LEVELS
+
+    accepted_keys = sorted(REQUIREMENT_LEVELS)
+    parsed: dict[str, str] = {}
+    for statement in statements:
+        key, separator, value = str(statement).partition("=")
+        key = key.strip()
+        value = value.strip()
+        if not separator or not key or not value:
+            raise ValueError(
+                f"--assess {statement!r} must be KEY=VALUE; accepted keys "
+                f"{accepted_keys}"
+            )
+        levels = REQUIREMENT_LEVELS.get(key)
+        if levels is None:
+            raise ValueError(
+                f"--assess {key!r}: unknown requirement key; accepted keys "
+                f"{accepted_keys}"
+            )
+        if value not in levels:
+            raise ValueError(
+                f"--assess {key}={value!r}: {value!r} is not an accepted value "
+                f"for {key!r}; accepted values {list(levels)!r}"
+            )
+        parsed[key] = value
+    return parsed
+
 
 # The dispatcher's own stages, in the order they run: the three inputs the
 # dispatcher reads once (records, the verdict inputs, the budget snapshot) and
@@ -302,6 +341,7 @@ def dispatch_picker_selection(
     input_errors: Mapping[str, str] | None = None,
     authority: Mapping[str, Any] | None = None,
     authority_error: str | None = None,
+    orchestrator_assessment: Mapping[str, Any] | None = None,
     stage_ms: dict[str, float | None] | None = None,
     _allow_reask: bool = True,
 ) -> dict[str, Any]:
@@ -457,6 +497,7 @@ def dispatch_picker_selection(
                     comment=comment,
                     session=session,
                     estimated_context=estimated_context,
+                    orchestrator_assessment=dict(orchestrator_assessment or {}),
                 ),
                 dict(config),
                 repo=repo,
@@ -487,6 +528,7 @@ def dispatch_picker_selection(
             comment=comment,
             authority=authority,
             authority_error=authority_error,
+            orchestrator_assessment=orchestrator_assessment,
             allow=_allow_reask,
         )
     error = result.get("error") or "picker returned no selection"
@@ -634,6 +676,7 @@ def _ask_excluding_lane(
     comment: str = "",
     authority: Mapping[str, Any] | None = None,
     authority_error: str | None = None,
+    orchestrator_assessment: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Ask Jev once more with one lane left out of the offering, keeping both asks.
 
@@ -653,6 +696,7 @@ def _ask_excluding_lane(
         comment=comment,
         authority=authority,
         authority_error=authority_error,
+        orchestrator_assessment=orchestrator_assessment,
         _allow_reask=False,
     )
     return {**second, "asks": [dict(first_ask), _ask_summary(second)]}
@@ -669,6 +713,7 @@ def _reask_off_zero_slot_lane(
     comment: str,
     authority: Mapping[str, Any] | None,
     authority_error: str | None,
+    orchestrator_assessment: Mapping[str, Any] | None,
     allow: bool,
 ) -> dict[str, Any]:
     """Re-ask Jev once with a zero-slot lane excluded, for well-defined work.
@@ -704,6 +749,7 @@ def _reask_off_zero_slot_lane(
         comment=comment,
         authority=authority,
         authority_error=authority_error,
+        orchestrator_assessment=orchestrator_assessment,
     )
     return {
         **second,

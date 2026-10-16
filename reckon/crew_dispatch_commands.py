@@ -981,6 +981,18 @@ def crew_preflight(
 )
 @click.option("--comment", default="", help="Context passed verbatim to the picker.")
 @click.option(
+    "--assess",
+    "assessments",
+    multiple=True,
+    metavar="KEY=VALUE",
+    help=(
+        "The coordinator's own reading of the node's difficulty, in a "
+        "capability requirement key (reasoning, verification, risk, context, "
+        "tool_autonomy) and one of that key's accepted values; repeat for each. "
+        "Rendered beside the section's declared capability, which stands."
+    ),
+)
+@click.option(
     "--spec-level",
     type=click.Choice(["exact", "guided", "open"]),
     default=None,
@@ -1172,6 +1184,7 @@ def crew_dispatch(
     model_name,
     route,
     comment,
+    assessments,
     spec_level,
     negative_control,
     node_id,
@@ -1227,6 +1240,12 @@ def crew_dispatch(
 
     base_config = None
     try:
+        from reckon.crew.dispatch_picker import parse_orchestrator_assessments
+
+        try:
+            orchestrator_assessment = parse_orchestrator_assessments(assessments)
+        except ValueError as exc:
+            raise click.ClickException(str(exc)) from exc
         if overrides:
             base_config = _layer_flight_config(flight_module, project, checkout_path)
             _require_configured_override_paths(flight_module, overrides, base_config)
@@ -1401,6 +1420,7 @@ def crew_dispatch(
             input_errors=picker_input_errors,
             authority=picker_authority,
             authority_error=picker_authority_error,
+            orchestrator_assessment=orchestrator_assessment,
         )
 
     availability_refusal = _model_availability_refusal(
@@ -1689,9 +1709,12 @@ def crew_dispatch(
             route=route,
             comment=comment,
             picker_selection=picker_selection,
-            dispatch_options=json.loads(
-                json.dumps(click.get_current_context().params, default=str)
-            ),
+            dispatch_options={
+                **json.loads(
+                    json.dumps(click.get_current_context().params, default=str)
+                ),
+                "orchestrator_assessment": dict(orchestrator_assessment),
+            },
         )
     except crew_module.PlanVisibilityError as exc:
         _emit(
