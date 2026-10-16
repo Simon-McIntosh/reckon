@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T12:37:11.226Z",
+  "dispatched_at": "2026-10-16T12:26:24Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html:211",
+      "id": "reasoning-1",
+      "reason": "the done-when pins the outcome by requiring the expected set unchanged and the other inventory tests to keep passing, so a node implementing the narrow clauses lands correctly without a plan edit.",
+      "text": "\u00a720's deliverable exempts any \"function whose only rename source is a path it never wrote\", but `_release_worktree_whole` (reckon/crew/routing.py:1184, `os.rename(tree, trash)` at :1218, the only rename in its body) renames a path it never wrote and must still be reported per the same deliverable's \"It still reports every staged write it reports today\" and per the inventory's unchanged expected set; only the two narrowing clauses (\"a claim path created exclusively by a helper, or one it renames aside after that helper reported the file already present\") exclude it, so the general sentence and the required-unchanged behaviour disagree",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "c5b7787ebbe762758a3f9f1a693c49ddba7043e5611ed65cd1a3d87750f5a06c",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 94,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T122516303427-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "e36ab4b923eabd765db6a14e11226780cfc85a23",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a720 names exists in the tree (`_staged_writes` reckon/interface_counts.py:209, `claim_next_attempt`/`_move_attempt_claim_aside`/`_create_attempt_claim` reckon/crew/resumption.py:310/343/380) and its cited merge `474754591` resolves; the comment anchors `#s18`/`#s19` resolve in `docs/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html`.",
+    "done_when": "pass \u2014 \u00a720's done-when names a measure that can fail (`test_every_staged_write_reaches_the_owner` currently reddens with the extra item `('reckon/crew/resumption.py', 'claim_next_attempt')`, reproduced at base 6f50f50ec) and declares a negative control that falsifies the fix itself (with the new exemption removed the move-aside case is reported and the inventory reddens again).",
+    "evidence_paths": "pass \u2014 \u00a720's gate log and its logged negative control go to the run directory, a durable path; it names no session scratchpad or node-local temporary.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or changelog prose appear in the changed units; \u00a720 names mechanisms and real symbols.",
+    "reasoning": "a finding \u2014 \u00a720's deliverable states its rule too broadly, so as written the mechanism does not produce the done-when it asserts (see the FINDING below).",
+    "single_goal": "pass \u2014 \u00a720 carries one deliverable, and its done-when's three detector cases plus the inventory assertion all measure that one instrument correction.",
+    "wiring": "pass \u2014 \u00a720 is declared `data-status=\"implementable\"` and is driven by the sole open followup `f-ashenr-020` (prompt `/reckon-build a-seat-held-elsewhere-is-not-restarted \u00a720`, plan.html:257-260); it depends on nothing unbuilt, \u00a716 stays `deferred` with its reason in c-s16-deferred, and the `done` states newly recorded for \u00a718/\u00a719 (plan.html:197,203) match their close comments c-close-s18/c-close-s19 and the merges they cite (`c109920ca`, `da7f430b4`) each resolve in the checkout."
+  },
+  "section_digests": {
+    "_document": "23e6737ec7ffcb71207b1a005bf541149e5849cfe737a0b7cfe46aafa2a54ec9",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s10": "fd9ced512f1fc6a0610cb111ec8c734e3c55a84ea11034055f5f1c9e60e0c649",
+    "s11": "9d7552bb9a0f7179067d09a67e819e7194fbbac1e34cf450bb6dd2631508389d",
+    "s12": "41b7e2f138ff584e94cdef995cae4ab65e47e6e0efb43dc6d30b0045664f611d",
+    "s13": "441358f17906d8fa159ba5911fc62cfb32cabff650e9ae63b1300701b43f7b6d",
+    "s14": "15dd48418b8a42e818c6a6c93d4914efb531dc5439e368a148fd7168b3a89faa",
+    "s15": "707b8d39391cbd7e59f3dbd9cc4748c655d8870e48f237e84889148855f5b9e7",
+    "s16": "e185fa1e0f4aa25f213b2df34164fcfb48751f19156d05a48ec1118841ee463d",
+    "s17": "73a4699a4193793731da87cf3a489de8f9e91df7e596e68dad4897797177cb9e",
+    "s18": "8999758c87844624774b694fe81fcd076a62c6ef3bccc2334956bdae4b71957d",
+    "s19": "05cfac9a876e27aee75692ed6d7d2815bd728a33a3afadca32fcaaec730bcfc5",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s20": "415dab50ec62cc6b4027e886181cefac0c4517d8ba62776ce369570a1b74b5fb",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "96d5fc1c72a25970cab856a7dde0a3cab839fd87c83786b7b49ffc4c1dabb1ab",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad",
+    "s7": "d3e16f60d17ef3ee4666f9cd189aa6cd8e26f038173b65ee34b68f3f2cd822e7",
+    "s8": "b41130ef26282f759c1b7be0de0136701972d055ed7878e2f2d9cd21c96b4f63",
+    "s9": "a2cb7135c4bd3f1439c3ec948d6146c2f5b7527da59b1bbd4c7ce4c141ec3055"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T12:41:43.876226+00:00"
+}
