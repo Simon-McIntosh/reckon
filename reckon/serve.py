@@ -1642,13 +1642,47 @@ def _head_identity(repo_dir: Path) -> tuple | None:
     return (_file_identity(head_path), head_text, ref_name, ref_identity)
 
 
+#: Roots git has answered as outside any repository, keyed by path to the
+#: directory stamp at which that answer was given. A docs tree served from an
+#: archive, an extraction or a mount without its repository pays one failed
+#: spawn to learn that, then every later age and HEAD lookup returns no commit
+#: without starting git again.
+_GIT_OUTSIDE_MEMO: dict[str, tuple[int, int, int]] = {}
+
+
+def _root_outside_repository(repo_dir: Path) -> bool:
+    """True when this root was confirmed outside any repository at its stamp.
+
+    The stamp is the directory's own identity, so a ``.git`` later created at
+    the root moves it and the next lookup resolves afresh rather than reusing
+    a remembered answer.
+    """
+
+    stamp = _file_identity(repo_dir)
+    if stamp is None:
+        return False
+    return _GIT_OUTSIDE_MEMO.get(str(repo_dir)) == stamp
+
+
+def _remember_root_outside_repository(repo_dir: Path) -> None:
+    """Record a root as outside any repository, keyed by its directory stamp."""
+
+    if _git_directory(repo_dir) is not None:
+        return
+    stamp = _file_identity(repo_dir)
+    if stamp is not None:
+        _GIT_OUTSIDE_MEMO[str(repo_dir)] = stamp
+
+
 def _git_head(repo_dir: Path) -> str | None:
     """The repository's HEAD commit, resolved once per commit.
 
     The sha is memoised on the identity of ``HEAD`` and the ref it names, so
     repeated lookups against an unchanged checkout reuse the first answer and
     start no git process. A new commit changes that identity, and the next
-    lookup resolves afresh.
+    lookup resolves afresh. A root with no ``.git`` is resolved by git once,
+    and a failure there is remembered so a tree outside any repository answers
+    every later lookup without spawning again.
     """
 
     key = str(repo_dir)
@@ -1657,8 +1691,11 @@ def _git_head(repo_dir: Path) -> str | None:
         memo = _GIT_HEAD_MEMO.get(key)
         if memo is not None and memo[0] == identity:
             return memo[1]
+    elif _root_outside_repository(repo_dir):
+        return None
     result = _run_git(["git", "rev-parse", "HEAD"], repo_dir, operation="HEAD lookup")
     if result is None:
+        _remember_root_outside_repository(repo_dir)
         return None
     head = result.stdout.strip()
     if not head:
