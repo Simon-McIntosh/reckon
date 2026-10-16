@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T20:22:03.525Z",
+  "dispatched_at": "2026-10-16T20:12:29Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:188",
+      "id": "reasoning-1",
+      "reason": "the deliverable's own requirement is a store \"persisted across processes\", and the alternative it offers is a request-scoped in-memory memo, so the wording invites a node to build a store its own new-process test will fail.",
+      "text": "\u00a719's Deliverable says \"Extend the existing persisted metadata index, or the file memo it uses, rather than adding a second cache\", but `reckon/file_memo.py` is in-memory only (module-level `_CACHE` with `memoized`/`clear`, no disk write) and `reckon/metadata_index.py` imports only `file_signature` from it, so a node that extends \"the file memo it uses\" gets no store that survives a fresh process",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e600e3f0c3c6dacd6a05290c5a460500e948de89c0ef7f2eeb20f8da565edec6",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 138,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T201154933235-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "57530e9254312ec1d8f83bfbc47eeb6452253c59",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `mcp_discovery._discover_project` (`reckon/mcp_discovery.py:149`), `mcp._roadmap`/`mcp._audit` (`reckon/mcp.py`), `_discover_plans_uncached` (`reckon/serve.py:2255`), `_DISC_CACHE` (`reckon/serve.py:1276`), schema `reckon.metadata-index` (`reckon/metadata_index.py:69`), the review-store record `r-20261016T180558240058-reads-remeasured-on-a-quiet-node.json`, \u00a76's landing anchor and `fence \u00a710` of `a-worker-cannot-write-your-home` all resolve.",
+    "done_when": "pass \u2014 \u00a719 declares a non-vacuous unit negative control (store bypassed, new process parses every plan) and an in-session base-arm control (`d249200c7` cold roadmap must exceed 30 s), both measurable.",
+    "evidence_paths": "pass \u2014 the measurement and control logs sit in the run directory and the test is a committed path, both durable.",
+    "naming": "pass \u2014 \u00a719 adds only `tests/test_a_fresh_process_reuses_the_plan_parse.py` and reuses existing symbols; no plan labels or ticket numbers reach code.",
+    "reasoning": "a finding \u2014 \u00a719's mechanism names an in-memory memo as a persistence vehicle, so that option cannot produce the cross-process store the section requires.",
+    "single_goal": "pass \u2014 \u00a719 carries one deliverable, the cross-process persisted parse, with the node measurement as its verification rather than a second goal.",
+    "wiring": "pass \u2014 \u00a719 is recommended by `f-araiid-019` (open) and supplies the missing in-session control \u00a76's reopened done-when waits on, and every node it names resolves."
+  },
+  "section_digests": {
+    "_document": "ad7fc49262aab7b5663c83b5378f2e62811896b490bd02f25112205eb7195f29",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "fc0b6f6292647b9918745320e262a88b850cfc6a3699b6a7e3c93e0c4209c4ec",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T20:23:47.954001+00:00"
+}
