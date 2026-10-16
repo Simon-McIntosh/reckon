@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T19:52:52.706Z",
+  "dispatched_at": "2026-10-16T19:44:51Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html#s10",
+      "id": "done_when-1",
+      "reason": "the review-store sibling-deletion check already fails on the unfixed code (the whole root is granted writable at `_backends.py:170`), so vacuous implementation is already caught; a second control improves rigour without changing what the section does.",
+      "text": "the done-when's negative control removes only the reports root from the sealed set, so the review-store half of the deliverable (sealing `~/.config/reckon/crew/reviews`) has no falsifier: a node that implements the reports seal and leaves the review store granted whole would still pass every stated check",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "dd59c247c73a2b99e8edf1e5da87010c03c712e98ed3402abb166568e0ba7649",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 141,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T194321685476-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "b35460237715fb49b08393c377885d307a5277cb",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified in this session: the preserved incident directory `~/.cache/reckon-incident-reports-root-20261016/` exists and its `stream.jsonl` sha256 is `dd3277a08601efa3fce5fe93a53bb13d107b551796f518c59b644ad3962ffc43`, exactly the value \u00a710 quotes; `worker.json` there carries `run_id r-20261016T190754696739-plan-review-of-a-shadow-cannot-see-its-primary`, matching the run \u00a710 names, and the stream holds the quoted command `rm -rf /home/ITER/mcintos/.config/reckon/crew/reports/reckon 2>/dev/null`; `reports/reckon` today holds only the two recreated subdirectories, consistent with the deletion; the cross-plan anchors `a-read-answers-inside-its-deadline` \u00a76, \u00a718 and \u00a719 exist and \u00a76 references `profile_reads.py`.",
+    "done_when": "a finding \u2014 \u00a710's done-when declares a negative control only for the reports-root seal; the review-store half of the same deliverable has none.",
+    "evidence_paths": "pass \u2014 the gate and negative control are \"logged under the run directory\" (`~/.config/reckon/crew/runs/<run>`, durable).",
+    "naming": "pass \u2014 \u00a710 names no plan label, stage, ticket or version in code; the new test path `tests/test_a_worker_cannot_remove_another_runs_reports.py` and the cited symbols (`worker_scratch_root`, `delivery_write_roots`, `reports_dir`) name the mechanism.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence, checked in the tree: `delivery_write_roots` (`reckon/_backends.py:140`) unconditionally adds `Path(reports_directory)` and `Path(review_store_directory)` whole \u2014 at `reckon/crew/dispatch_admission.py:1865-1866` these are `reports_dir()` and `review_store_root()`, so every fenced launch re-grants each entire shared root writable; the deleting run's `worker.json` confirms the whole `crew/reviews` and `crew/reports` grants. The mechanism (seal each root read-only, re-bind only declared paths beneath it) is capable of producing the done-when, and its caller is named.",
+    "single_goal": "pass \u2014 \u00a710 carries one change (stop granting each shared root whole, seal it, re-grant only declared paths) applied to two roots of the same class; both roots share one mechanism, one file set and one closure verdict.",
+    "wiring": "pass \u2014 \u00a710 declares no `depends-on`, and the one relationship it leans on resolves: it names \u00a79's existing scratch-root seal as its pattern (`worker_scratch_seal_root`, `reckon/_worker_fence.py:1110`), which is landed, so no missing precedent; the plan's `plan-informs` (new-work-gets-a-new-worker, worker-death-is-recorded) is unchanged and unaffected by this unit."
+  },
+  "section_digests": {
+    "_document": "94f33494f6c8d622c3c493e812ffec3ee38e76c0ca5624eee2052b51711c211a",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "c5c7fe720643fd4e73b5f1c9fff30c26f8357f46808e3b91eb33b5271d3a19bc",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T19:57:16.765928+00:00"
+}
