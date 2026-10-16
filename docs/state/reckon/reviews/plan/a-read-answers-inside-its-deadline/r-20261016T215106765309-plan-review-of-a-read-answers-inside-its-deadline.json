@@ -1,0 +1,86 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T21:59:05.993Z",
+  "dispatched_at": "2026-10-16T21:51:43Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:192",
+      "id": "reasoning-1",
+      "reason": "the second sweep must be forced due (advance `now` past FLOOR_TICK_SECONDS or pass transition_fired=True) or the node times a no-op and its \"steady state\" figure is unsupported.",
+      "text": "\u00a720's added shape says \"The second is the steady state of the producer\", but a back-to-back second call to obligation_snapshot.sweep from the same fresh process is not due: its `due` gate requires transition_fired, a new identity, or FLOOR_TICK_SECONDS (60 s) elapsed since the first publish (obligation_snapshot.py:997-1015), so it returns `[]` immediately (measured here: first sweep 0.0717 s writing one snapshot, second 0.0001 s writing none)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:208",
+      "id": "done_when-1",
+      "reason": "a done-when that cannot fail measures nothing, and \u00a724 is the only node that verifies \u00a721\u2013\u00a723 actually brought the pass inside the window.",
+      "text": "\u00a724 sets a head target \"the second sweep's median on GPFS in place is under 30 s\" as the figure the freshness window depends on, but that arm is the same non-due early return, so it passes however the repaired code behaves",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:208",
+      "id": "reasoning-2",
+      "reason": "\u00a722 is the largest single contributor to the first sweep after \u00a721, so the bound's attribution is wrong and a reader would mis-place where the cold saving comes from.",
+      "text": "\u00a724 credits the cold bound \"the first sweep's median on the node-local copy is at most 10 s, which \u00a721 and \u00a723 bound\" and states \"\u00a722's memo moves only the second sweep\", yet \u00a722's deliverable bounds decodes within one sweep (\"Within one sweep each crew document is decoded at most once\") and \u00a718's profile put 262,359 json.loads / 8.54 s in that single cold pass",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:192",
+      "id": "reasoning-3",
+      "reason": "as written the worker either corrupts the live snapshots live readers consume or must add an unstated redirect of the snapshot output, and the plan should state which.",
+      "text": "\u00a720's done-when constrains the in-place arm to \"write nothing under ~/.config/reckon\", but sweep publishes every session's snapshot through write_snapshot into crew_home()/obligations/<project> (obligation_snapshot.py:151, 225, 728), and crew_home resolves from RECKON_HOME / ~/.config/reckon, so reading the live crew state in place requires setting that root to the live path and the described mechanism then writes into the live snapshot directory",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8d9f8a3ca7c142dcbe60e538869ef0c3db8fa8b75c78b82b69b760654f66120f",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 142,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T215106765309-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "7fd485499e5d497167ce674bbb38717419fde659",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 obligation_snapshot.sweep (reckon/crew/obligation_snapshot.py:968), FRESHNESS_WINDOW_SECONDS (:51), reckon/ledger.py, and the fragment directory all resolve; \u00a721\u2013\u00a723's cited symbols (_held_worktree_records obligations.py:519, _worktree_registrations routing.py:516, _aggregate_rows obligations.py:451, _index_payload ledger.py:1087, load ledger.py:1361, _reviewed_run_head recovery_review_subject.py:155) are present.",
+    "done_when": "a finding \u2014 \u00a720's \"both medians are reported per arm\" and \u00a724's head bound \"the second sweep's median on GPFS in place is under 30 s\" both rest on a second sweep that performs no work, so the bound cannot fail.",
+    "evidence_paths": "pass \u2014 both nodes write their gate and control logs to the run directory and their reports to docs/evidence/fragments/a-read-answers-inside-its-deadline/, which exists on disk.",
+    "naming": "pass \u2014 no plan label, ticket number or version tag reaches a symbol; the sections name mechanisms (sweep, stat identity, held-worktree records, ledger index).",
+    "reasoning": "a finding \u2014 the two-sweep shape the changed units add times a second sweep that returns early without deriving anything, so \u00a720's \"steady state of the producer\" claim and \u00a724's first-sweep bound do not follow from the mechanism; \u00a724 also mis-attributes the cold bound to \u00a721 and \u00a723 by asserting \"\u00a722's memo moves only the second sweep\"; and \u00a720's in-place arm constrains a write its described mechanism performs.",
+    "single_goal": "pass \u2014 \u00a720 carries one deliverable (split the production lag) and \u00a724 one (measure the repaired pass); each node's A/A check is its negative control, not a second deliverable.",
+    "wiring": "pass \u2014 the plan declares no depends-on/informs/gates edges, every section s1\u2013s24 carries a declaration, and the ordering the followups carry (f-araiid-020 sequences \u00a721\u2192\u00a723 then \u00a724) names nodes that exist."
+  },
+  "section_digests": {
+    "_document": "d4ddda961784c7a505897dfa112dcf8d73378167d498be05466e8103832740db",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "f6e2a8c3d1c90f4194ec9891635cef181cf62c62a5dbb39efd4c9832ac5d1e9b",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s20": "9574353ac2a5f2b568bfbeccd9ab71dfcd5da1c807d542107ce1bc5f816077d7",
+    "s21": "4d93efb4f5d84adaeb9eea5dc423557ae897e4118bc313d1f7fc1e2839f2e2fb",
+    "s22": "6266f82976abf2a572694b2f91bf0143ff9a02ea484166e79b8197bde4e1a5e6",
+    "s23": "19ab14ea99e986a9e91a521cccdf725d2ca25f3119b1b53c489aa0fb3cc24dd1",
+    "s24": "de25259a148854108235fefaa3d0f54c5a1398d64d8b27b597ff64dd7c4a2358",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T22:08:02.966210+00:00"
+}
