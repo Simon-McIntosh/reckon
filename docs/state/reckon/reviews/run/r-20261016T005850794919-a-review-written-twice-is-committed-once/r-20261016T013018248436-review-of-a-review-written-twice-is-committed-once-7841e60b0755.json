@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:954",
+    "reckon/crew/promotion.py:1662"
+  ],
+  "completed_at": "2026-10-16T01:41:37.827Z",
+  "dispatched_at": "2026-10-16T01:31:21Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-review-written-twice-is-committed-once",
+      "recorded_at": "2026-10-16T01:42:38.710795+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "line": "2150",
+      "severity": "follow-on",
+      "text": "follow-on: _committed_review_rounds reads the already-committed rounds from record.get(\"repo\") while the sibling write at reckon/crew/promotion.py:1264 stores them under ledger_root (promotion.py:656), an explicit root when crew complete is given one; when those differ the already-committed skip reads a different tree than the one being written, so a committed round can still be rewritten and its disposition dropped \u2014 the defect this node fixes."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read commit by commit against base b329ee744; 2e8ec66af adds _committed_review_rounds and the two skips in _delivered_review_payloads_for_commit and adds the test file, and 7841e60b adds the evidence fragment.",
+    "done_when": "The done_when names tests/test_a_review_written_twice_is_committed_once.py; the manifest records that file at 3 passed and the base/head arms at 55 and 58 passed, each to a named log.",
+    "goal": "The node goal is that review promotion commits each staged round once and never rewrites a round already committed; reckon/crew/promotion_checks.py:2166 skips a staged record whose bytes equal the delivered record's and :2175 skips a round the committed tree already holds, so the landed change does what the goal states.",
+    "manifest": "Read; it reads status: complete, names commits 2e8ec66af and 7841e60b, and records the 3-passed own gate, the red negative control (3 failed) and the base/head arms at 55/58 passed.",
+    "write_paths": "The declared write paths are reckon/crew/promotion_checks.py, tests/test_a_review_written_twice_is_committed_once.py, the evidence fragment and the figures directory; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "the declared negative control reddens all three cases (negative-control.log: 3 failed, EXIT=1) \u2014 the byte-identity removal files legacy-17c189f35223.json twice and the already-committed removal drops the disposition with KeyError \u2014 so each assertion is shown to fire.",
+    "evidence": "tests/test_a_review_written_twice_is_committed_once.py and the base/head arms are logged (tests-new-node.log 3 passed; gate-base.log 55 passed; gate-head.log 58 passed) and the ruff figure is recorded in the manifest artefacts line, though no ruff log is on disk.",
+    "fit": "reckon/crew/promotion_checks.py:2026 names the helper by the mechanism it returns and the new locals (delivered_bytes, committed_ids, committed_heads) carry no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/promotion_checks.py:2166 drops the twin staged record by byte identity and :2175 drops a round the committed tree already holds, which is exactly the once-only, never-rewrite goal.",
+    "reuse": "_committed_review_rounds extends the review-module owner (committed_review_root, COMMITTED_RUN_DIRNAME, carried_revision_pair, derived_legacy_review_run_id) and no existing function enumerates a run's committed rounds into id/head sets.",
+    "scope_discipline": "every path in the diff (-checks.py, the new test, the fragment) is inside the declared write paths; the figures directory is correctly left unused."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that review promotion commits each staged round once and never rewrites a round already committed; reckon/crew/promotion_checks.py:2166 skips a staged record whose bytes equal the delivered record's and :2175 skips a round the committed tree already holds, so the landed change does what the goal states.\nVERDICT done_when: The done_when names tests/test_a_review_written_twice_is_committed_once.py; the manifest records that file at 3 passed and the base/head arms at 55 and 58 passed, each to a named log.\nVERDICT write_paths: The declared write paths are reckon/crew/promotion_checks.py, tests/test_a_review_written_twice_is_committed_once.py, the evidence fragment and the figures directory; every path in the diff is inside them.\nVERDICT manifest: Read; it reads status: complete, names commits 2e8ec66af and 7841e60b, and records the 3-passed own gate, the red negative control (3 failed) and the base/head arms at 55/58 passed.\nVERDICT diff: Read commit by commit against base b329ee744; 2e8ec66af adds _committed_review_rounds and the two skips in _delivered_review_payloads_for_commit and adds the test file, and 7841e60b adds the evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:954, reckon/crew/promotion.py:1662\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_checks.py:2166 drops the twin staged record by byte identity and :2175 drops a round the committed tree already holds, which is exactly the once-only, never-rewrite goal.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_review_written_twice_is_committed_once.py and the base/head arms are logged (tests-new-node.log 3 passed; gate-base.log 55 passed; gate-head.log 58 passed) and the ruff figure is recorded in the manifest artefacts line, though no ruff log is on disk.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (-checks.py, the new test, the fragment) is inside the declared write paths; the figures directory is correctly left unused.\nSCORE durability: 18\nJUSTIFICATION durability: the declared negative control reddens all three cases (negative-control.log: 3 failed, EXIT=1) \u2014 the byte-identity removal files legacy-17c189f35223.json twice and the already-committed removal drops the disposition with KeyError \u2014 so each assertion is shown to fire.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion_checks.py:2026 names the helper by the mechanism it returns and the new locals (delivered_bytes, committed_ids, committed_heads) carry no plan or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: _committed_review_rounds extends the review-module owner (committed_review_root, COMMITTED_RUN_DIRNAME, carried_revision_pair, derived_legacy_review_run_id) and no existing function enumerates a run's committed rounds into id/head sets.\nFINDING reckon/crew/promotion_checks.py:2150 follow-on: _committed_review_rounds reads the already-committed rounds from record.get(\"repo\") while the writes that land them use ledger_root (reckon/crew/promotion.py:656, an explicit root when crew complete is given one), so when those differ the skip reads a different tree than the one being written and a committed round can be rewritten with its disposition dropped.\n",
+  "review_run_id": "r-20261016T013018248436-review-of-a-review-written-twice-is-committed-once-7841e60b0755",
+  "reviewed_base_sha": "b329ee7444422d74688668500d23c8438e42531f",
+  "reviewed_head_sha": "7841e60b0755137c6566bc21e2a505893486e2e5",
+  "reviewed_run_id": "r-20261016T005850794919-a-review-written-twice-is-committed-once",
+  "reviewer_run_id": "r-20261016T013018248436-review-of-a-review-written-twice-is-committed-once-7841e60b0755",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T005850794919-a-review-written-twice-is-committed-once/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/a-review-written-twice-is-committed-once",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T01:37:45.651311+00:00",
+  "total": 112
+}

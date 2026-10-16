@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="160">
+<meta name="plan-version" content="161">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -638,7 +638,10 @@
     <div class="r-comment-body"><p>§19 landed. Promotion reads a ctest gate log through the same reader as the review, so a ctest-gated run that adds failures is no longer admitted against a red base, and an unread head log refuses the red-base clause. Merged as <code>44053aa1a</code>. Results are identical at base and head across 112 importing test files. Review: 111/120. <a href="/reckon/evidence/archive/every-review-is-kept-as-a-committed-record-landed.html#s19">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s19" data-id="c-run-r-20261015T230911549134-a-ctest-gate-is-read-at-promotion" data-who="reckon-build" data-when="2026-10-15T23:37:01.838Z">
-    <div class="r-comment-body"><p>promotion now reads a ctest head log through the review module&#x27;s format-aware reader: a new shared gate_log_failure_ids in review.py names a log&#x27;s failing ids in either format and returns None for a log in neither; the head-arm reader returns None there so the red-base admission refuses, and the control reader reads a ctest control&#x27;s failure block; own gate 24 passed EXIT=0, negative control EXIT=1 with test_a_ctest_head_log_widens_a_red_base failing as declared.</p></div>
+    <div class="r-comment-body"><p>promotion now reads a ctest head log through the review module's format-aware reader: a new shared gate_log_failure_ids in review.py names a log's failing ids in either format and returns None for a log in neither; the head-arm reader returns None there so the red-base admission refuses, and the control reader reads a ctest control's failure block; own gate 24 passed EXIT=0, negative control EXIT=1 with test_a_ctest_head_log_widens_a_red_base failing as declared.</p></div>
+</div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20261016T013018248436-review-of-a-review-written-twice-is-committed-once-7841e60b0755" data-who="reckon-build" data-when="2026-10-16T01:41:37.827Z">
+    <div class="r-comment-body"><p>review-of-a-review-written-twice-is-committed-once-7841e60b0755: stored a parsed review of run r-20261016T005850794919 at reviewed_base_sha b329ee7444422d74688668500d23c8438e42531f and reviewed_head_sha 7841e60b0755137c6566bc21e2a505893486e2e5, scoring goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 19, reuse 19 (total 112), added_failure_count 0 with added_failure_ids deriving from the reviewed run&#x27;s gate-base.log/gate-head.log</p></div>
 </div>
 </section>
 </main>
