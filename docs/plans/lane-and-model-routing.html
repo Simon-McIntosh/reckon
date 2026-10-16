@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="183">
+<meta name="plan-version" content="184">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -587,6 +587,9 @@
 </div>
 <div class="r-comment" data-section="s25" data-id="c-close-s25" data-who="reckon-build" data-when="2026-10-16T06:35:00Z">
     <div class="r-comment-body"><p>§25 landed: the run-time profile rebuild is 99.5% of slow-render read time against 41.0% in fast renders (commit <code>06cfdc898</code>, merge <code>466144a71</code>, review 101). The fix is §27. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s25">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s28" data-id="c-s28-review-reasoning" data-who="reckon-build" data-when="2026-10-16T08:22:00Z">
+    <div class="r-comment-body"><p>Content review <code>r-20261016T080859746478</code>, reasoning-1, answered as deferred to this section's revision before dispatch. The route where a review's lane follows its run already filters the owning lane through the exclusion: <code>_ordered_review_lanes</code> in <code>reckon/crew/recovery_review_dispatch.py</code>, about lines 1207 to 1214, with <code>owning_lane</code> set from the reviewed run's backend at about line 1862. <code>tests/test_review_lane_follows_its_run.py</code> asserts that exclusion. Three of the four cited runs are <code>route_mode: explicit</code>, which this section's own deliverable honours. So the evidence does not separate a lane that followed its run from one a caller named. The revision should verify the existing guard and locate the real site, likely the explicit dispatch path that honours <code>requested_backend: codex</code>. That module is not among the section's named write paths.</p></div>
 </div>
 </section>
 </main>
