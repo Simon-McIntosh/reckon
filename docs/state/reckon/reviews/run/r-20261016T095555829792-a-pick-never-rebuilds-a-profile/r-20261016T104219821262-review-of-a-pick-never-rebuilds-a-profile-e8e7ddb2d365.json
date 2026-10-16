@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "7333c32192ee0449a6cd5e8a098ca05460923b67",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:1248",
+    "reckon/crew/picker/lane_context.py:833",
+    "reckon/crew/picker/lane_context.py:901",
+    "reckon/crew/picker/lane_context.py:956",
+    "reckon/crew/picker/prompts.py:371"
+  ],
+  "completed_at": "2026-10-16T10:59:00.739Z",
+  "dispatched_at": "2026-10-16T10:46:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/lane_context.py",
+      "line": "846",
+      "severity": "follow-on",
+      "text": "follow-on: owner_age is set only on the row that first loads a foreign owner's profile (line 836) and appended only when that same row's shape yields a wall (line 844), so a foreign project with two live local workers whose earlier row matches no profile group reports expected_wait_profile_age_s null, or drops that owner from the maximum, though its profile contributed a wall on the later row."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T095555829792-a-pick-never-rebuilds-a-profile/base-arm.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm's header records its command with a prose tree description and <scratch> and $T placeholders rather than the literal invocation, so the arm's own record does not let a later reader reproduce the run."
+    }
+  ],
+  "head_log_revision": "e8e7ddb2d365274267e26d8b089e4e810f0dee42",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 7333c32192; e8e7ddb2d changes lane_context.py, prompts.py, promotion.py, the new test file, seven rewritten test files and one evidence fragment, all inside the declared scope.",
+    "done_when": "the done-when names tests/test_a_pick_never_rebuilds_a_profile.py; its eleven cases assert the served-or-none read, the 24 h bound, the missing-persisted_at and other-version refusals, the foreign profile's age and the promotion refresh; head-arm.log records 86 passed and base-arm.log 75 passed, and negative-control.log is red at EXIT=1.",
+    "goal": "the goal is that a pick never calls run_time_profile; reckon/crew/picker/lane_context.py:678-716 serves a persisted profile and its age without building, and the sole rebuild owner refresh_run_time_profile (lane_context.py:719) is reached in production only from reckon/crew/promotion.py:1248.",
+    "manifest": "read; it reports status complete, records the gate file plus the eight importer files at 86 passed head and 75 passed base, names head-arm.log, base-arm.log and negative-control.log, and lists every rewritten case with the behaviour it now asserts.",
+    "write_paths": "the manifest declares twelve write paths covering every file the node changed, and git diff 7333c32192..e8e7ddb2d touches only those paths."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows restoring the synchronous rebuild on a moved stamp reddens the first case (EXIT=1), and the fresh-process cases assert an empty second spy at tests/test_picker_foreign_wait_is_bounded.py:350, but no case exercises the age accounting across two live rows of one foreign owner, where lane_context.py:846 drops it.",
+    "evidence": "head-arm.log records 86 passed at e8e7ddb2d and base-arm.log 75 passed at 7333c32192, and the new file's cases mirror the done-when, but the arms' own command lines carry <scratch>, <base> and $T placeholders so the invocations are not literally reproducible.",
+    "fit": "the added names PROFILE_MAX_AGE_S, refresh_run_time_profile and expected_wait_profile_age_s are mechanism names in the surrounding style of lane_context.py:559 and carry no plan label, ticket number or version.",
+    "goal_fidelity": "lane_context.py:678-716 returns ({}, None) rather than building for a cold cache, a moved stamp past the bound, a ledger with no stamp and an unsafe project id, so a pick never reaches run_time_profile, and the rebuild is reached only from promotion.py:1248.",
+    "reuse": "the diff reuses capabilities._read_pick_entry, cached_pick_input_rekeyed and pick_input_cache_path and extends the existing _profile_stamp, _profile_filename and _profile_cache_root owners rather than forking them; the search over reckon/crew/picker found no existing aged profile reader.",
+    "scope_discipline": "every path in git diff 7333c32192..e8e7ddb2d lies inside the declared write paths, but tests/test_picker_helpers_have_one_owner.py changes its _freeze fixture and its unsafe-id case where the plan text said only its GOLDEN_STATE literal would change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a pick never calls run_time_profile; reckon/crew/picker/lane_context.py:678-716 serves a persisted profile and its age without building, and the sole rebuild owner refresh_run_time_profile (lane_context.py:719) is reached in production only from reckon/crew/promotion.py:1248.\nVERDICT done_when: the done-when names tests/test_a_pick_never_rebuilds_a_profile.py; its eleven cases assert the served-or-none read, the 24 h bound, the missing-persisted_at and other-version refusals, the foreign profile's age and the promotion refresh; head-arm.log records 86 passed and base-arm.log 75 passed, and negative-control.log is red at EXIT=1.\nVERDICT write_paths: the manifest declares twelve write paths covering every file the node changed, and git diff 7333c32192..e8e7ddb2d touches only those paths.\nVERDICT manifest: read; it reports status complete, records the gate file plus the eight importer files at 86 passed head and 75 passed base, names head-arm.log, base-arm.log and negative-control.log, and lists every rewritten case with the behaviour it now asserts.\nVERDICT diff: read commit by commit against 7333c32192; e8e7ddb2d changes lane_context.py, prompts.py, promotion.py, the new test file, seven rewritten test files and one evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/promotion.py:1248, reckon/crew/picker/lane_context.py:833, reckon/crew/picker/lane_context.py:901, reckon/crew/picker/lane_context.py:956, reckon/crew/picker/prompts.py:371\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: lane_context.py:678-716 returns ({}, None) rather than building for a cold cache, a moved stamp past the bound, a ledger with no stamp and an unsafe project id, so a pick never reaches run_time_profile, and the rebuild is reached only from promotion.py:1248.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-arm.log records 86 passed at e8e7ddb2d and base-arm.log 75 passed at 7333c32192, and the new file's cases mirror the done-when, but the arms' own command lines carry <scratch>, <base> and $T placeholders so the invocations are not literally reproducible.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in git diff 7333c32192..e8e7ddb2d lies inside the declared write paths, but tests/test_picker_helpers_have_one_owner.py changes its _freeze fixture and its unsafe-id case where the plan text said only its GOLDEN_STATE literal would change.\nSCORE durability: 16\nJUSTIFICATION durability: negative-control.log shows restoring the synchronous rebuild on a moved stamp reddens the first case (EXIT=1), and the fresh-process cases assert an empty second spy at tests/test_picker_foreign_wait_is_bounded.py:350, but no case exercises the age accounting across two live rows of one foreign owner, where lane_context.py:846 drops it.\nSCORE fit: 18\nJUSTIFICATION fit: the added names PROFILE_MAX_AGE_S, refresh_run_time_profile and expected_wait_profile_age_s are mechanism names in the surrounding style of lane_context.py:559 and carry no plan label, ticket number or version.\nSCORE reuse: 19\nJUSTIFICATION reuse: the diff reuses capabilities._read_pick_entry, cached_pick_input_rekeyed and pick_input_cache_path and extends the existing _profile_stamp, _profile_filename and _profile_cache_root owners rather than forking them; the search over reckon/crew/picker found no existing aged profile reader.\nFINDING reckon/crew/picker/lane_context.py:846 follow-on: owner_age is set only on the row that first loads a foreign owner's profile (line 836) and appended only when that same row's shape yields a wall (line 844), so a foreign project with two live local workers whose earlier row matches no profile group reports expected_wait_profile_age_s null, or drops that owner from the maximum, though its profile contributed a wall on the later row.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T095555829792-a-pick-never-rebuilds-a-profile/base-arm.log:1 follow-on: the base arm's header records its command with a prose tree description and <scratch> and $T placeholders rather than the literal invocation, so the arm's own record does not let a later reader reproduce the run.",
+  "review_run_id": "r-20261016T104219821262-review-of-a-pick-never-rebuilds-a-profile-e8e7ddb2d365",
+  "reviewed_base_sha": "7333c32192ee0449a6cd5e8a098ca05460923b67",
+  "reviewed_head_sha": "e8e7ddb2d365274267e26d8b089e4e810f0dee42",
+  "reviewed_run_id": "r-20261016T095555829792-a-pick-never-rebuilds-a-profile",
+  "role": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T10:55:33.094522+00:00",
+  "total": 105
+}
