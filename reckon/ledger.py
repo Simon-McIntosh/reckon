@@ -403,7 +403,7 @@ def normalize_section(value: Any) -> str:
     return f"§{match.group(1)}" if match else section
 
 
-def shadow_controlled(lineage: Any) -> bool:
+def shadow_controlled(lineage: Any, *, contaminated: Any = None) -> bool:
     """Return whether a shadow's recorded lineage reproduced its primary's configuration.
 
     The sole definition of the control predicate: read ``lineage.configuration``
@@ -414,7 +414,16 @@ def shadow_controlled(lineage: Any) -> bool:
     budget means the pair also varied on a dimension the shadow ladder is not
     measuring, so the comparison is confounded. Lineage carrying no recorded
     configuration cannot be verified either way and is not controlled.
+
+    A row whose stream read the primary's landed answer or its records is not
+    controlled whatever the configuration: a matched configuration compares
+    nothing when the shadow copied the answer instead of deriving it.
+    ``contaminated`` carries that verdict (the run row's ``shadow_contaminated``,
+    written by promotion's scan) and makes the pair uncontrolled whenever it
+    holds a reason.
     """
+    if contaminated:
+        return False
     if not isinstance(lineage, Mapping) or lineage.get("kind") != "shadow":
         return False
     configuration = lineage.get("configuration")
@@ -2620,7 +2629,9 @@ def build_record(
         isinstance(stored_lineage, Mapping) and stored_lineage.get("kind") == "shadow"
     )
     stored_shadow_controlled = (
-        shadow_controlled(stored_lineage) if is_shadow_lineage else None
+        shadow_controlled(stored_lineage, contaminated=shadow_contaminated)
+        if is_shadow_lineage
+        else None
     )
     record: dict[str, Any] = {
         "run_id": str(run_id),
@@ -2852,6 +2863,14 @@ def stream_tool_calls(paths: Iterable[str | Path]) -> list[tuple[str, str]]:
     file from a command that merely mentions it. An unparsable line or a call
     without a payload is skipped: a malformed record answers nothing rather
     than poisoning the whole stream.
+
+    Two stream dialects are read, because the backends record a shell call
+    differently and a scan written for one sees nothing in the other. A message
+    stream carries tool calls as ``message.content`` blocks, a bash call under
+    the ``Bash`` tool and a file read under a path tool. A codex stream carries
+    them as completed items, a shell call as a ``command_execution`` whose
+    ``command`` is the same text a bash call would hold. Reading only the first
+    dialect leaves every codex run unscanned and silently clean.
     """
     calls: list[tuple[str, str]] = []
     for path in paths:
@@ -2862,6 +2881,15 @@ def stream_tool_calls(paths: Iterable[str | Path]) -> list[tuple[str, str]]:
                 except (TypeError, ValueError):
                     continue
                 if not isinstance(event, Mapping):
+                    continue
+                item = event.get("item")
+                if (
+                    event.get("type") == "item.completed"
+                    and isinstance(item, Mapping)
+                    and str(item.get("type") or "") == "command_execution"
+                    and str(item.get("command") or "").strip()
+                ):
+                    calls.append(("bash", str(item["command"]).strip()))
                     continue
                 message = event.get("message")
                 if not isinstance(message, Mapping):
@@ -2893,33 +2921,52 @@ def shadow_primary_read(
     primary_paths: Iterable[str] = (),
     repo_root: str = "",
     worktree: str = "",
+    primary_run_dir: str = "",
+    primary_review_paths: Iterable[str] = (),
+    primary_worktree: str = "",
 ) -> str | None:
     """Return how a shadow's tool calls read its primary's answer, or None.
 
-    Two reads give the answer away: naming the primary's landed commit in a git
-    read (the object store is shared with the integration branch, so the
-    commit resolves from anywhere), and reading a primary changed file where
-    it is checked out at that landed state — the main checkout. A command that
-    merely mentions a shared path (running the primary's own tests on the
-    shadow's copy of that file, or reading the shadow's own worktree via a
-    ``git -C`` against it) resolves nothing about the landed answer and never
-    triggers. The main-checkout context is decided per git invocation: an
-    explicit ``-C <dir>`` wins over the working directory the stream's earlier
-    commands left behind, so a changed-path read that names the worktree stays
-    clean even when the command also contains a stray ``cd`` into the main
-    checkout.
+    Five reads give the answer away. Naming the primary's landed commit in a
+    git read (the object store is shared with the integration branch, so the
+    commit resolves from anywhere) and reading a primary changed file where it
+    is checked out at that landed state — the main checkout — are the two the
+    landed result itself betrays. The other three are the primary's own
+    records, which hold its reasoning and its numbers rather than its files:
+    its run directory (manifest, prompt, stream), its review records, and its
+    worktree. A change to a shared path that merely mentions it (running the
+    primary's own tests on the shadow's copy of that file, or reading the
+    shadow's own worktree via a ``git -C`` against it) resolves nothing about
+    the landed answer and never triggers. The main-checkout context is decided
+    per git invocation: an explicit ``-C <dir>`` wins over the working
+    directory the stream's earlier commands left behind, so a changed-path read
+    that names the worktree stays clean even when the command also contains a
+    stray ``cd`` into the main checkout.
+
+    The verdict names the single most specific reason the stream shows, and is
+    decided by reason rather than by the call order the stream happens to
+    record: a stream that reads both a changed path and the primary's run
+    directory is a changed-path read. An empty string for any surface means the
+    caller could not resolve it and it is not looked for.
     """
     prefixes = _sha_prefixes(str(primary_commit or "").strip())
     paths = tuple(str(path).strip() for path in primary_paths if str(path).strip())
     main_root = str(repo_root or "").strip().rstrip("/")
     work_root = str(worktree or "").strip().rstrip("/")
+    run_directory = str(primary_run_dir or "").strip().rstrip("/")
+    review_records = tuple(
+        str(path).strip() for path in primary_review_paths if str(path).strip()
+    )
+    primary_work = str(primary_worktree or "").strip().rstrip("/")
+
+    found: set[str] = set()
     cwd = ""
     variables: dict[str, str] = {}
     for kind, payload in calls:
         if kind == "bash":
             cwd, variables = _absorb_shell_state(payload, cwd, variables)
             if _command_reads_primary_commit(payload, prefixes):
-                return "primary_commit_read"
+                found.add("primary_commit_read")
             if _command_reads_primary_path(
                 payload,
                 paths,
@@ -2927,13 +2974,115 @@ def shadow_primary_read(
                 cwd=cwd,
                 variables=variables,
             ):
-                return "primary_changed_path_read"
+                found.add("primary_changed_path_read")
+            if run_directory and _command_references_under(
+                payload, run_directory, variables
+            ):
+                found.add("primary_run_directory_read")
+            if review_records and _command_references_any(
+                payload, review_records, variables
+            ):
+                found.add("primary_review_read")
+            if primary_work and _command_references_under(
+                payload, primary_work, variables, exclude=work_root
+            ):
+                found.add("primary_worktree_read")
         elif kind in _SHADOW_PATH_CALL_KINDS:
             if _path_reads_primary_changed(
                 payload, paths, main_root=main_root, work_root=work_root
             ):
-                return "primary_changed_path_read"
+                found.add("primary_changed_path_read")
+            if run_directory and _path_under(payload, run_directory):
+                found.add("primary_run_directory_read")
+            if any(_path_under(payload, record) for record in review_records):
+                found.add("primary_review_read")
+            if (
+                primary_work
+                and _path_under(payload, primary_work)
+                and not (work_root and _path_under(payload, work_root))
+            ):
+                found.add("primary_worktree_read")
+    for reason in _SHADOW_READ_REASON_PRIORITY:
+        if reason in found:
+            return reason
     return None
+
+
+# The specific-read reasons, most specific first. A stream that shows several
+# is named by the first: a copy of the landed result is a stronger statement
+# than a read of the records around it.
+_SHADOW_READ_REASON_PRIORITY = (
+    "primary_commit_read",
+    "primary_changed_path_read",
+    "primary_run_directory_read",
+    "primary_review_read",
+    "primary_worktree_read",
+)
+
+
+def _path_under(path: str, root: str) -> bool:
+    """Whether ``path`` names ``root`` itself or a path beneath it."""
+    return bool(root) and (path == root or path.startswith(root + "/"))
+
+
+def _expand_variables(text: str, variables: Mapping[str, str]) -> str:
+    """Substitute tracked shell variables, leaving unknown ones in place."""
+    if not variables:
+        return text
+    return re.sub(
+        r"\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?",
+        lambda match: variables.get(match.group(1), match.group(0)),
+        text,
+    )
+
+
+# Characters that continue a path name, so a match ending on one of them is a
+# different path and must not read as the target: ``.../r-x`` must not match
+# inside ``.../r-x-extra``.
+_PATH_NAME_CHARS = frozenset(
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-"
+)
+
+
+def _text_references_under(text: str, root: str) -> bool:
+    """Whether ``text`` names ``root`` at a path boundary."""
+    if not root:
+        return False
+    start = 0
+    while True:
+        index = text.find(root, start)
+        if index < 0:
+            return False
+        following = text[index + len(root) : index + len(root) + 1]
+        if following == "" or following not in _PATH_NAME_CHARS:
+            return True
+        start = index + 1
+
+
+def _command_references_under(
+    command: str,
+    root: str,
+    variables: Mapping[str, str],
+    *,
+    exclude: str = "",
+) -> bool:
+    """Whether a shell command names a path under ``root``.
+
+    ``exclude`` is the caller's own root: a command that names a path the
+    caller's own root contains is reading its own copy, not the caller's peer,
+    so a target that lives under the excluded root never reads as a peer's.
+    """
+    if not root or (exclude and root.startswith(exclude + "/")):
+        return False
+    return _text_references_under(_expand_variables(command, variables), root)
+
+
+def _command_references_any(
+    command: str, targets: tuple[str, ...], variables: Mapping[str, str]
+) -> bool:
+    """Whether a shell command names any of ``targets`` at a path boundary."""
+    expanded = _expand_variables(command, variables)
+    return any(_text_references_under(expanded, target) for target in targets)
 
 
 _CD_TARGET = re.compile(r"(?:^|&&|;|\||\n)\s*cd\s+([^\s;&|]+)")
