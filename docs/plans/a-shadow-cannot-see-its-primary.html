@@ -26,7 +26,7 @@
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -249,6 +249,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-s5-scope-locked" data-who="reckon-build" data-when="2026-10-16T19:50:00Z">
     <div class="r-comment-body"><p>The lead locked <code>shadow-isolation-scope</code> as <code>paired-dispatch</code> on 2026-10-16. §5 stays deferred until it is rewritten as the paired-dispatch build: a dispatch-time pairing that starts the primary and the shadow from one base, with each arm's records and worktree masked from the other through the §4 fence.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-resolution-layer" data-who="reckon-build" data-when="2026-10-16T19:52:00Z">
+    <div class="r-comment-body"><p>Content review <code>r-20261016T193510730111</code>, finding <code>reasoning-1</code>: §4 puts the resolution of the primary's paths in two layers. One sentence has <code>launch_plan</code> gain the paths to hide. The other has the launch look up the primary's ledger row, but <code>launch_plan</code> in <code>reckon/_backends.py</code> takes no project or ledger. The fix, to be written into §4 before it dispatches: each crew-layer caller (dispatch, session launch, resume) looks up the primary's row from the lineage and calls <code>promotion_scope._primary_read_targets</code>. It passes the resolved paths to <code>launch_plan</code> as a plain list of paths to hide, and <code>launch_plan</code> hands them to <code>fence_argv</code>. <code>_backends.py</code> gains no ledger parameter and no crew import.</p></div>
 </div>
 </section>
 </main>
