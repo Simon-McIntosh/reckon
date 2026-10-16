@@ -1,0 +1,4 @@
+<article class="r-fragment" id="a-queued-run-waits-on-its-lane">
+  <h3 id="a-queued-run-waits-on-its-lane-title">A queued review waits on the lane that queued it</h3>
+  <p id="a-queued-run-waits-on-its-lane-landing">The site where a queued review's recorded backend parts from the lane that admits it is the in-place update of an already-queued request: a re-dispatch recomposed the request onto its own resolved lane (reckon/crew/dispatch.py, the <code>_answer_existing_node_run</code> call), so a request queued on the local lane came to record the metered lane while keeping <code>local: true</code>. The re-queue now keeps the lane the request is already queued on. Reproduced at base (queued backend <code>codex</code> against local <code>clive</code>) and verified at head by tests/test_a_queued_run_waits_on_its_lane.py, whose local admission pass launches the request through a stub once a slot frees.</p>
+</article>

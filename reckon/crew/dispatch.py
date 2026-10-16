@@ -1142,6 +1142,18 @@ def dispatch(
         # working, so the caller hears the member is busy rather than the lane.
         # A queued copy is still updated in place, where no member refusal applies.
         member_refuses = bool(member) and existing_phase != "queued"
+        # A request already queued stays on the lane that queued it, which is the
+        # lane whose admission launches it. This dispatch's resolved backend may
+        # be a different lane — a re-dispatch naming one, or a lift that makes it
+        # eligible — and recording that lane on the waiting request strands it:
+        # the admission pass keeps only the requests whose backend equals the lane
+        # it drains, so nothing would ever launch it. The lane already on the
+        # waiting request is kept for the re-queue.
+        queued_backend_name = (
+            str(existing.get("backend") or "").strip()
+            if existing_phase == "queued"
+            else ""
+        ) or backend_name
         if (
             existing is not None
             and not member_refuses
@@ -1155,7 +1167,7 @@ def dispatch(
                     node=node,
                     repo_root=repo_root,
                     session=session,
-                    backend_name=backend_name,
+                    backend_name=queued_backend_name,
                     launch_kind=launch_kind,
                     lane_allowance=lane_allowance,
                     dispatch_options=dispatch_options,
