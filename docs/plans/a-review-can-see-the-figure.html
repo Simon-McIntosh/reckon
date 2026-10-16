@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-10-16">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="f2ea9301,5b1759ab,428477c7">
@@ -236,10 +236,16 @@
     <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §2</pre>
     <p class="r-fu-outcome">§2's argv half landed (launch_plan emits one -i per image; dialects that cannot carry one refuse). The dispatch wiring moved to §6 and the codex declaration to §7, which follows a measured delivery.</p>
     </article>
-<article class="r-fu" data-id="f-arcstf-003" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arcstf-003" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="2026-10-16T15:10:50+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Carry a node&#x27;s figures through dispatch (§6), then measure delivery on codex (§7)</h4>
     <div class="r-fu-body"><p>§6 is spend-free. §7 sends one prompt on a metered codex lane and declares image input only if the figure arrived. §3's pairs follow §7. §4 is deferred until the lead decides whether a figure review may run on a metered lane.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §6</pre>
+    <p class="r-fu-outcome"><p>§6 and §7 have landed. A node's figures now reach every launch path (§6, <code>f69ac2ae7</code>). The codex lane receives an attached figure and declares image input (§7, <code>81e7d55ed</code>), so §8's pairs can run on it.</p></p>
+    </article>
+<article class="r-fu" data-id="f-arcstf-004" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Run the five known pairs on codex (§8), on the lead&#x27;s go-ahead</h4>
+    <div class="r-fu-body"><p>§7 declared image input on codex. §8 sends 20 figure prompts and 5 image-withheld controls on that metered lane, so it waits for the lead's go-ahead. §7's review also left a follow-on: nothing tests the real project declaration, so an edit could retract it without anything turning red.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §8</pre>
     </article>
 </section>
 
@@ -294,6 +300,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261016T145318419152-review-of-codex-declares-image-input-on-a-shown-delivery" data-who="reckon-build" data-when="2026-10-16T15:03:53.468Z">
     <div class="r-comment-body"><p>stored a parsed review of r-20261016T143204084432-codex-declares-image-input-on-a-shown-delivery at reviewed_base_sha bef24898c30b6988d4ba40a522824bb03eeb9645 / reviewed_head_sha 2af56b5bbabea0fbb2d158e4f2846865ffab0dde, scoring all six dimensions (goal_fidelity 20, evidence 18, scope_discipline 20, durability 10, fit 19, reuse 20; total 107) with two follow-on findings and added_failure_count 0</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-16T15:12:00Z">
+    <div class="r-comment-body"><p>§7 landed. One metered prompt to codex (<code>gpt-6-sol</code>), carrying a figure its prompt did not describe, came back with every title, label and bar value correct, and nothing was read before it answered. A local node, which spent nothing, matched that answer to <code>exposure_counts.py</code> on all 19 claims and declared <code>input_modalities: [text, image]</code> on codex. Merged as <code>81e7d55ed</code>, and <code>verify-gate</code> passed. Over 54 flight test files there are 0 added failures. Reviews: the probe's claims all reproduced, and the declaration scored 107/120. Spend: about 1% of the codex weekly window. <a href="/reckon/evidence/archive/a-review-can-see-the-figure-landed.html#s7-codex-declares-image-input">evidence</a></p></div>
 </div>
 </section>
 </main>
