@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-tests-behaviour">
+  <meta name="plan-title" content="The browser population measured on a quiet node">
+  <meta name="plan-summary" content="Both arms of the browser population run on one exclusive all_debug node at a 60 s timeout: the base arm resolves a browser through a chromium symlink to the Playwright headless shell, the head arm resolves the shell itself with no such PATH entry and skips nothing.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-tests-behaviour">
+  <meta name="plan-verifies" content="reckon:the-suite-tests-behaviour#s7">
+  <meta name="plan-commits" content="723616aab">
+  <meta name="plan-recorded-at" content="2026-10-16">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="browser,population,suite-row,quiet-node,measurement">
+  <title>The browser population measured on a quiet node — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="browser-population-quiet-measure" data-node="browser-population-quiet-measure" data-reckon="landed" data-when="2026-10-16">
+  <h2>The browser population measured on a quiet node</h2>
+
+  <p>Both arms ran the browser population
+  (<code>pytest -m browser -n 8 -p no:cacheprovider -rs -rf --timeout=60 tests/</code>)
+  back to back in one window on an exclusive <code>all_debug</code> node
+  (job <code>1287398</code>, node <code>98dci4-clu-3141</code>). The base arm
+  (<code>26173171b</code>) resolved a browser through a PATH directory holding a
+  <code>chromium</code> symlink to Playwright's headless shell; the head arm
+  (<code>723616aab</code>) resolved the shell itself with no such PATH entry.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>collected</th><th>passed</th><th>failed</th><th>errored</th><th>skipped</th><th>duration</th><th>exit</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>26173171b</code></td><td>224</td><td>201</td><td>19</td><td>4</td><td>0</td><td>170 s</td><td>1</td></tr>
+      <tr><td>head</td><td><code>723616aab</code></td><td>227</td><td>207</td><td>20</td><td>0</td><td>0</td><td>239 s</td><td>1</td></tr>
+      <tr><td>negative control</td><td><code>26173171b</code></td><td>224</td><td>147</td><td>1</td><td>4</td><td>72</td><td>42 s</td><td>1</td></tr>
+    </tbody>
+  </table>
+
+  <p>The head arm skips nothing: 0 skips for a missing browser against 72 in the
+  negative control, which is the base revision with the <code>chromium</code>
+  symlink removed from PATH. Its skip reason names the gap —
+  <em>SPA composition check requires an installed browser; tried google-chrome,
+  chromium, chromium-browser</em>. So the head harness reaches the population
+  the base arm can only reach through the symlink.</p>
+
+  <p>Failing ids at base (19):</p>
+  <ul>
+    <li><code>tests/test_build.py::test_served_and_static_pages_request_only_their_own_origin</code></li>
+    <li><code>tests/test_build.py::test_build_carries_directions_into_the_project_surfaces</code></li>
+    <li><code>tests/test_build.py::test_build_without_directions_preserves_the_unlabelled_shape</code></li>
+    <li><code>tests/test_build.py::test_served_component_edit_is_visible_on_the_next_load</code></li>
+    <li><code>tests/test_build.py::test_release_tag_match_reports_when_no_release_tags_exist</code></li>
+    <li><code>tests/test_spa_composition.py::test_plans_surface_never_exceeds_its_window[1280]</code></li>
+    <li><code>tests/test_spa_plans_geometry.py::test_rendered_plan_index_fills_the_window[1280]</code></li>
+    <li><code>tests/test_spa_project_visibility.py::test_first_visit_renders_live_runs_from_every_mounted_project</code></li>
+    <li><code>tests/test_spa_project_visibility.py::test_topbar_keeps_one_ordered_row_with_tools_flush_right[1280]</code></li>
+    <li><code>tests/test_spa_project_visibility.py::test_topbar_keeps_one_ordered_row_with_tools_flush_right[1440]</code></li>
+    <li><code>tests/test_spa_project_visibility.py::test_topbar_keeps_one_ordered_row_with_tools_flush_right[1920]</code></li>
+    <li><code>tests/test_spa_rendered_semantics.py::test_compact_progress_renders_label_tooltip_and_navigation_target</code></li>
+    <li><code>tests/test_spa_rendered_semantics.py::test_handoff_renders_live_source_and_loaded_plan_version</code></li>
+    <li><code>tests/test_spa_rendered_semantics.py::test_overview_renders_every_active_sprint_and_focus_conflict</code></li>
+    <li><code>tests/test_spa_rendered_semantics.py::test_plan_row_renders_authored_to_effective_transition_and_open_gate_count</code></li>
+    <li><code>tests/test_spa_rendered_semantics.py::test_refresh_revalidates_discovery_without_document_navigation</code></li>
+    <li><code>tests/test_spa_rendered_semantics.py::test_shell_renders_snapshot_source_resource_count_load_time_and_refresh</code></li>
+    <li><code>tests/test_spa_rendered_semantics.py::test_sprint_view_renders_composed_metrics_findings_order_and_priority</code></li>
+    <li><code>tests/test_spa_rendered_semantics.py::test_sprint_view_without_review_has_no_review_affordances</code></li>
+  </ul>
+  <p>Failing ids at head (20): the base set above, plus
+  <code>tests/test_spa_figure_reader.py::test_figure_reloads_after_a_dropped_connection</code>
+  and
+  <code>tests/test_spa_viewport_containment.py::test_stale_readiness_selector_is_reported_loudly</code>.</p>
+
+  <p>Ids failing only at head (2):
+  <code>tests/test_spa_figure_reader.py::test_figure_reloads_after_a_dropped_connection</code>
+  and
+  <code>tests/test_spa_viewport_containment.py::test_stale_readiness_selector_is_reported_loudly</code>.
+  A re-run of those two at head (logged under the run directory) shows
+  <code>test_stale_readiness_selector_is_reported_loudly</code> failing again, so it
+  reproduces at head, while
+  <code>test_figure_reloads_after_a_dropped_connection</code> passed, so it is flaky
+  rather than head-specific. Both are browser tests this node does not own; the
+  failure list is handed to the coordinator to record on
+  <code>the-suite-is-green-at-head</code>.</p>
+
+  <p>The head arm's whole log is recorded as the browser population's own suite row
+  through <code>reckon.crew.standing_suite.record_from_log</code> with population
+  <code>browser</code> and a <code>SuiteDeclaration</code> carrying the head arm's
+  command and a 20 m budget; the row file is committed under
+  <code>docs/state/reckon/suite-runs/</code>. The row carries
+  <code>collected=227 passed=207 failed=20 skipped=0</code>.</p>
+</article>
+</body>
+</html>
