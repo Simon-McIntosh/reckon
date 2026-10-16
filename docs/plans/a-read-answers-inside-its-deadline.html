@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="87">
+<meta name="plan-version" content="88">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -127,7 +127,10 @@
 <section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> A measurement node, run after §2 to §5 and the read fixes §8, §10, §11, §12, §13, §14, §16 and §17 are promoted: the health review's profiler
       (<code>health-tool-latency/scripts/profile_reads.py</code>) runs roadmap, audit and discovery on the live reckon corpus on a compute
-      node with no other reckon worker on it, cold and warm, five times each, and records the medians.</p>
+      node with no other reckon worker on it, cold and warm, five times each, and records the medians. The node is obtained by
+      naming the partition: each arm runs through <code>srun --partition=all_debug --exclusive</code>, and its done-when names
+      <code>all_debug</code>. The dispatch host submits a separate partition job only when the done-when names one. Without
+      that, both arms of the 2026-10-16 measurement ran on the shared fleet node under load.</p>
     <p><strong>Done when</strong> the log under the run directory records warm medians of at most 2 s for roadmap and 3 s for audit, and a
       cold roadmap under the 30 s MCP deadline, beside the §1 figures; and <code>roadmap(project="reckon")</code> through the MCP server,
       restarted on the promoted code, returns without <code>storage-slow</code>. The negative control is the base revision measured the
