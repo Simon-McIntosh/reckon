@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T22:15:20.580Z",
+  "dispatched_at": "2026-10-16T22:06:46Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-shadow-cannot-see-its-primary.html:217",
+      "id": "reasoning-1",
+      "reason": "without a stated ordering or a pre-created run directory the primary arm's mask set is empty at launch, so \u00a75's own empty-listing assertion cannot hold for that arm and the node would have to invent the sequencing the plan leaves open.",
+      "text": "\u00a75 has the primary arm resolve the shadow's run directory, review records and worktree \"reading the shadow's live pointer, which carries the same `run_id` and `worktree` fields as a ledger row\", but on the real code path a shadow lineage publishes no launch pointer: `reckon/crew/dispatch.py:1313` sets `claim_published = not shadow_lineage`, and `dispatch_claims._publish_launch_claim` states in its own docstring that a shadow \"publishes nothing and reads no claims\", so no run directory or pointer exists at the moment the partner arm's fence is composed; the full record (with `worktree`, `base`, `base_sha`) is written only at `reckon/crew/dispatch.py:2046`, at the end of that arm's own dispatch, and \u00a75 orders neither arm's launch against the other \u2014 it says only that \"both run ids are allocated before either arm launches\" \u2014 while its done-when asserts that a stub launch of *each* arm \"lists its partner's run directory as empty\"",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-shadow-cannot-see-its-primary.html:239",
+      "id": "reasoning-2",
+      "reason": "the node cannot reach its done-when (\"promoting a paired arm whose partner's pointer is `working` is refused\") without editing a file it is not granted, which is a scope blocker surfaced only at dispatch.",
+      "text": "\u00a76 says its check is \"one `_require_*` check in `reckon/crew/promotion_checks.py`, run with the others through `_require_independently`, beside `_require_worker_stopped_before_promotion`\", but `_require_independently` has exactly one call site \u2014 the composed list of lambdas at `reckon/crew/promotion.py:388`, which is where `_require_worker_stopped_before_promotion` is actually registered (`reckon/crew/promotion.py:399`) \u2014 and \u00a76's write paths are only `reckon/crew/promotion_checks.py` and `tests/test_a_paired_arm_waits_for_its_partner.py`, so the file the new check must be registered in is outside the declared scope",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "930e6b0ffeba9aad9bb37101b53aa37c864c8310c5db49a22b5cc4e20e12c20f",
+  "plan_slug": "a-shadow-cannot-see-its-primary",
+  "plan_version": 13,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T220610157206-plan-review-of-a-shadow-cannot-see-its-primary",
+  "reviewed_blob_sha": "06fc6f2615c051f3264273558bd247bc49b26414",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited module and symbol resolves in the assigned tree (`fence_argv` `reckon/_worker_fence.py:1174`, `launch_plan` `reckon/_backends.py:2081`, `_primary_read_targets` `reckon/crew/promotion_scope.py:1040`, `_shadow_stream_contamination` `:1080`, `_shadow_dispatch_config` `reckon/crew/dispatch.py:465`, `_shadow_worktree_records` `reckon/crew/routing.py:890`, `_require_worker_stopped_before_promotion` `reckon/crew/promotion_checks.py:517`, `_require_independently` `:931`, `runs.run_dir` `reckon/crew/runs.py:81`, `review.review_path` `reckon/crew/review.py:1969`), the three named launch callers exist on the real path (`reckon/crew/dispatch.py:1909`, `dispatch_sessions.py:1135,1589`, `resumption.py:555`), the cited commit `d079e008` is a real commit, and the evidence href `/reckon/evidence/archive/a-shadow-cannot-see-its-primary-landed.html#s3` resolves to a file present in `docs/evidence/archive/`.",
+    "done_when": "pass \u2014 each of \u00a74, \u00a75 and \u00a76 names a measurable assertion plus a negative control that must fail when its guard is removed, and each control names the arm it falsifies.",
+    "evidence_paths": "pass \u2014 no gate or control is written to a session scratchpad or node-local temporary path; the two negative-control logs are placed \"under the run directory\", a durable per-run path.",
+    "naming": "pass \u2014 the new symbols the plan names (`--pair-backend`, `paired_shadow_run_id`, `primary_run_directory_read`, `primary_review_read`, `primary_worktree_read`) are named by what they do, and no stage label, ticket number or version tag reaches code or comment.",
+    "reasoning": "findings \u2014 \u00a75 resolves the primary arm's masks from a shadow's live pointer that the dispatch path only writes at the end of that shadow's own dispatch, and \u00a76 attributes its check to `promotion_checks.py` while the only `_require_independently` list it must join lives in `promotion.py`.",
+    "single_goal": "pass \u2014 each node carries one deliverable: \u00a74 the fence's masks, \u00a75 the paired dispatch, \u00a76 the promotion hold.",
+    "wiring": "pass \u2014 \u00a74 depends on \u00a72 and \u00a73, \u00a75 on \u00a74 and \u00a76 on \u00a75 (`plan-section-depends-on`), matching f-ascp-003's ordering, and the declared `plan-after` anchor `jev-learns-from-its-routes` resolves to `docs/plans/jev-learns-from-its-routes.html`."
+  },
+  "section_digests": {
+    "_document": "9c08b3b024bf6957fba4c17e99186cd85c9a7b2743c9f6b582e2686d1b143cda",
+    "s1": "770768dc8c73c5fefe174fd6a4f867ad2b40854cb74c588f41848bd65b6600d3",
+    "s2": "2180ff0a03d627a0c6b67adf9242725afb8aa0cb334f88e11e542b36132ccc8f",
+    "s3": "330eeee9f8ec7d9d7cd19844afd555d06dcdd4b49c538f4118af635df0f0ce57",
+    "s4": "245acb54a7de55ba36f6836b91f3492357be74a21e1889b9d9f24aa0cfd79c84",
+    "s5": "f366195b16b4ba8adc6ab3ceac883a90b7188dd576dfae0d85de0894b9900603",
+    "s6": "e7dfe42700c91c80bff4d411bf8a997daad9e03ff02b519dc73ba913302c164b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T22:17:15.221916+00:00"
+}
