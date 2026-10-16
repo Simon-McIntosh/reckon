@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite: logs/base-arm.log reports '221 passed' and logs/head-arm.log '223 passed', both at EXIT=0 with no failing id, so head-minus-base is empty over the same importer set; the head arm ran two more tests than the base because the node added two, and both arms ran to their summary line.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:353 snapshotter=snapshot.candidates",
+    "reckon/crew/picker/__init__.py:444-452 prompts.render of the offered candidates",
+    "reckon/crew/picker/prompts.py:205-218 payload emission of the move figures",
+    "reckon/crew/picker/__init__.py:568 offered recorded on the Selection"
+  ],
+  "completed_at": "2026-10-16T14:37:49.497Z",
+  "dispatched_at": "2026-10-16T14:24:30Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/prompts.py",
+      "line": "215",
+      "severity": "follow-on",
+      "text": "follow-on: the payload emits moved_in and moved_off only inside the `if outcomes_at_requirement` block, under a comment stating the two are stated together because a move is counted at the request's requirement; the landed change makes both figures non-null and counts every move when the request names none, so that rationale is now false and the new no-requirement figures still never reach Jev \u2014 the branch the change added is exercised by the test but has no consumer-visible effect through prompts.py."
+    },
+    {
+      "file": "reckon/crew/picker/types.py",
+      "line": "53",
+      "severity": "follow-on",
+      "text": "follow-on: the field comment reads \"Both are null when the request names no requirement\", which the landed change makes untrue; the annotation is now stale where the change it describes landed elsewhere."
+    },
+    {
+      "file": "logs/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: all four of the node's logs open with `# rev <sha> tree=...`, a shape reckon/crew/review.py:1331 _LOGGED_REVISION_RE does not parse (it requires the word `revision` on the first line), so annotate_review_of_run reads base_log_revision and head_log_revision as None for this run and the revision each arm measured is lost to every reader - verified by calling recorded_log_revision on logs/base-arm.log and logs/head-arm.log, both None, against a sibling run whose `revision: <sha> (base)` headers parse. The header also names 8ed7958f9 while the tree it measured carried the landed change at 983bff9f9. The added-failure count itself is unaffected (it reads the summary lines) and the review record carries the revision pair independently."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 8ed7958f9; 983bff9f9 makes moved_in/moved_off non-optional locals in _candidates_scan, replaces the two `is not None` guards with one shared requirement test, rewrites the docstring, makes both figures non-null in candidates(), adds the two tests and their header, and adds the evidence fragment; 127 insertions, 39 deletions, three files, all inside the declared scope.",
+    "done_when": "the done_when asks for a two-moved-row test giving the receiving candidate moved_in of one and the chosen candidate moved_off of one, two and two when the request names no requirement, and a negative control that drops the filter and reads two; tests/test_a_move_counts_against_the_pick.py:302-373 adds exactly those two cases and logs/negative-control.log shows the dropped filter reddening the first of them at EXIT=1.",
+    "goal": "the node's goal is to count moved_in at the request's requirement as moved_off already was; reckon/crew/picker/snapshot.py:328-338 now gates the moved_in tally and the moved_off credit on the same test (`request_requirement is None or _recorded_requirement(row) == request_requirement`), and candidates() at :1196-1197 emits both non-null, so a moved row recorded at another requirement counts in neither figure.",
+    "manifest": "read; it records the single commit, the three changed paths, the gate (7 passed, EXIT=0) with its log, the base and head arms (221 and 223 passed, 0 failures) with their logs, the negative control with its failing id and EXIT=1, the scratch base-arm module path and cwd, and one landing line, under status complete.",
+    "write_paths": "the manifest declares reckon/crew/picker/snapshot.py, tests/test_a_move_counts_against_the_pick.py and docs/evidence/fragments/jev-learns-from-its-routes/moved-in-at-the-requirement.html; git show --stat 983bff9f9 lists those three and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_move_counts_against_the_pick.py:302 asserts an exact gate dict and :373 asserts moved_off of 2, both against literals rather than a value the test handed in, and logs/negative-control.log shows reinstating the dropped filter reddens the first.",
+    "evidence": "logs/gate-head.log reports \"7 passed\" at EXIT=0 and logs/negative-control.log reports \"1 failed, 6 passed\" at EXIT=1 with the id the head arm passes, but the reader cannot tie either to the commit it measured because all four logs name their revision in a shape reckon/crew/review.py:1331 does not parse.",
+    "fit": "reckon/crew/picker/snapshot.py:325-338 keeps the one-pass idiom and reuses _picked_backend_away and _recorded_requirement, and the added names carry no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:334-337 counts a moved row in neither figure when its recorded requirement differs from the request's, which is the \u00a715 deliverable.",
+    "reuse": "the change extends the existing _candidates_scan rather than adding a mechanism, reusing _recorded_requirement at reckon/crew/picker/snapshot.py:244 for the filter that at_requirement already uses.",
+    "scope_discipline": "git show --stat 983bff9f9 touches only reckon/crew/picker/snapshot.py, tests/test_a_move_counts_against_the_pick.py and the evidence fragment, every one of them a declared write path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to count moved_in at the request's requirement as moved_off already was; reckon/crew/picker/snapshot.py:328-338 now gates the moved_in tally and the moved_off credit on the same test (`request_requirement is None or _recorded_requirement(row) == request_requirement`), and candidates() at :1196-1197 emits both non-null, so a moved row recorded at another requirement counts in neither figure.\nVERDICT done_when: the done_when asks for a two-moved-row test giving the receiving candidate moved_in of one and the chosen candidate moved_off of one, two and two when the request names no requirement, and a negative control that drops the filter and reads two; tests/test_a_move_counts_against_the_pick.py:302-373 adds exactly those two cases and logs/negative-control.log shows the dropped filter reddening the first of them at EXIT=1.\nVERDICT write_paths: the manifest declares reckon/crew/picker/snapshot.py, tests/test_a_move_counts_against_the_pick.py and docs/evidence/fragments/jev-learns-from-its-routes/moved-in-at-the-requirement.html; git show --stat 983bff9f9 lists those three and nothing else.\nVERDICT manifest: read; it records the single commit, the three changed paths, the gate (7 passed, EXIT=0) with its log, the base and head arms (221 and 223 passed, 0 failures) with their logs, the negative control with its failing id and EXIT=1, the scratch base-arm module path and cwd, and one landing line, under status complete.\nVERDICT diff: read commit by commit against 8ed7958f9; 983bff9f9 makes moved_in/moved_off non-optional locals in _candidates_scan, replaces the two `is not None` guards with one shared requirement test, rewrites the docstring, makes both figures non-null in candidates(), adds the two tests and their header, and adds the evidence fragment; 127 insertions, 39 deletions, three files, all inside the declared scope.\nCALL_SITES: reckon/crew/picker/__init__.py:353 snapshotter=snapshot.candidates, reckon/crew/picker/__init__.py:444-452 prompts.render of the offered candidates, reckon/crew/picker/prompts.py:205-218 payload emission of the move figures, reckon/crew/picker/__init__.py:568 offered recorded on the Selection\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:334-337 counts a moved row in neither figure when its recorded requirement differs from the request's, which is the \u00a715 deliverable.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-head.log reports \"7 passed\" at EXIT=0 and logs/negative-control.log reports \"1 failed, 6 passed\" at EXIT=1 with the id the head arm passes, but the reader cannot tie either to the commit it measured because all four logs name their revision in a shape reckon/crew/review.py:1331 does not parse.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 983bff9f9 touches only reckon/crew/picker/snapshot.py, tests/test_a_move_counts_against_the_pick.py and the evidence fragment, every one of them a declared write path.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_move_counts_against_the_pick.py:302 asserts an exact gate dict and :373 asserts moved_off of 2, both against literals rather than a value the test handed in, and logs/negative-control.log shows reinstating the dropped filter reddens the first.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/picker/snapshot.py:325-338 keeps the one-pass idiom and reuses _picked_backend_away and _recorded_requirement, and the added names carry no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing _candidates_scan rather than adding a mechanism, reusing _recorded_requirement at reckon/crew/picker/snapshot.py:244 for the filter that at_requirement already uses.\nFINDING reckon/crew/picker/prompts.py:215 follow-on: the payload emits moved_in and moved_off only inside the `if outcomes_at_requirement` block, under a comment stating the two are stated together because a move is counted at the request's requirement; the landed change makes both figures non-null and counts every move when the request names none, so that rationale is now false and the new no-requirement figures still never reach Jev \u2014 the branch the change added is exercised by the test but has no consumer-visible effect through prompts.py.\nFINDING reckon/crew/picker/types.py:53 follow-on: the field comment reads \"Both are null when the request names no requirement\", which the landed change makes untrue; the annotation is now stale where the change it describes landed elsewhere.\nFINDING logs/gate-head.log:1 follow-on: all four of the node's logs open with `# rev <sha> tree=...`, a shape reckon/crew/review.py:1331 _LOGGED_REVISION_RE does not parse (it requires the word `revision` on the first line), so annotate_review_of_run reads base_log_revision and head_log_revision as None for this run and the revision each arm measured is lost to every reader - verified by calling recorded_log_revision on logs/base-arm.log and logs/head-arm.log, both None, against a sibling run whose `revision: <sha> (base)` headers parse. The header also names 8ed7958f9 while the tree it measured carried the landed change at 983bff9f9. The added-failure count itself is unaffected (it reads the summary lines) and the review record carries the revision pair independently.\n",
+  "review_run_id": "r-20261016T142327430065-review-of-moved-in-at-the-requirement-983bff9f96f9",
+  "reviewed_base_sha": "8ed7958f9ba1561515f913bfcb8e648640afb5c1",
+  "reviewed_head_sha": "983bff9f96f9f9fc74ab3413cb880aef4aa73073",
+  "reviewed_run_id": "r-20261016T135405558096-moved-in-at-the-requirement",
+  "role": "review",
+  "rubric": "node",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T14:37:25.424005+00:00",
+  "total": 113
+}
