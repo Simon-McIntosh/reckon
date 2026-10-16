@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "eea36bacd2653c168105cd0282a51eb2aad7346a",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_picker.py:411",
+    "reckon/crew/picker/replay.py:91",
+    "reckon/crew_dispatch_commands.py:812"
+  ],
+  "completed_at": "2026-10-16T11:07:46.917Z",
+  "dispatched_at": "2026-10-16T10:52:42Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "963",
+      "severity": "follow-on",
+      "text": "follow-on: handing the scan a request carrying the capability also changes the capability_class the live path passes to resolve_role_override, so every candidate's model/effort can be re-resolved through the class overlay for a live pick (previously \"\"); the commit body and manifest describe only the outcomes_at_requirement effect and no added test covers this candidate-construction change."
+    }
+  ],
+  "head_log_revision": "f7f51d1fb0e4bc0764dfc0cc7591d6fff1c6de02",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base eea36bacd2653c168105cd0282a51eb2aad7346a; 6e9a3a97b reorders the capability resolve before the scan and adds the snapshot_request, f7f51d1fb adds only the evidence fragment, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_live_pick_reads_outcomes_at_its_requirement.py and a no-added-failure comparison over the files importing reckon/crew/picker/__init__.py; the manifest records the gate at 4 passed EXIT=0 (independently re-run) but the importer comparison only over an 11-file change-relevant subset, not the full 62-file set.",
+    "goal": "the node's goal is to resolve the declared capability before the pick builds its candidates; reckon/crew/picker/__init__.py:405-418 moves the _declared_difficulty call ahead of the snapshotter and hands it a request carrying the resolved capability, so the goal lands.",
+    "manifest": "read; it reports the gate 4 passed at negative_control_log logs/negative_control.txt (1 failed, EXIT=1), an 11-file importer subset with the same single pre-existing failure on both arms, and is honest that the 62-file importer sweep did not complete.",
+    "write_paths": "the manifest declares reckon/crew/picker/__init__.py, tests/test_a_live_pick_reads_outcomes_at_its_requirement.py, docs/evidence/fragments/jev-learns-from-its-routes/a-live-pick-reads-outcomes-at-its-capability.html and a figures directory; the diff's three files are exactly the first three and no path outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_live_pick_reads_outcomes_at_its_requirement.py:236-247 fails whenever the scan receives a capability-less request (the recorded negative control reinstates the old order and reddens it with KeyError), though the carried-capability assertion at :264 restates a value the test supplied at :261.",
+    "evidence": "the manifest and logs/head_gate.txt record the gate 4 passed and logs/negative_control.txt reddens it, but the done_when's importer comparison was met only on an 11-file subset (logs/base_subset.txt and logs/head_subset.txt) rather than the 62-file importing set the done_when names.",
+    "fit": "the reorder follows the module's own time.perf_counter/mark idiom at reckon/crew/picker/__init__.py:405-410 and uses dataclasses.replace; no plan, ticket or stage label appears in the code, comments or filenames.",
+    "goal_fidelity": "reckon/crew/picker/__init__.py:405-421 resolves _declared_difficulty before snapshotter and passes snapshot_request carrying the resolved capability, and the state render at :449 keeps the same capability, so the block filters on the capability the state renders.",
+    "reuse": "the change reuses the existing request.capability filter (_request_requirement at reckon/crew/picker/snapshot.py:207) and stdlib replace rather than adding a mechanism, so it extends the owner of the capability filter and forks nothing.",
+    "scope_discipline": "the diff's three files (reckon/crew/picker/__init__.py, tests/test_a_live_pick_reads_outcomes_at_its_requirement.py, the evidence fragment) are exactly the product, test and fragment paths the manifest declares, with no figure and no path outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to resolve the declared capability before the pick builds its candidates; reckon/crew/picker/__init__.py:405-418 moves the _declared_difficulty call ahead of the snapshotter and hands it a request carrying the resolved capability, so the goal lands.\nVERDICT done_when: the done_when names tests/test_a_live_pick_reads_outcomes_at_its_requirement.py and a no-added-failure comparison over the files importing reckon/crew/picker/__init__.py; the manifest records the gate at 4 passed EXIT=0 (independently re-run) but the importer comparison only over an 11-file change-relevant subset, not the full 62-file set.\nVERDICT write_paths: the manifest declares reckon/crew/picker/__init__.py, tests/test_a_live_pick_reads_outcomes_at_its_requirement.py, docs/evidence/fragments/jev-learns-from-its-routes/a-live-pick-reads-outcomes-at-its-capability.html and a figures directory; the diff's three files are exactly the first three and no path outside them.\nVERDICT manifest: read; it reports the gate 4 passed at negative_control_log logs/negative_control.txt (1 failed, EXIT=1), an 11-file importer subset with the same single pre-existing failure on both arms, and is honest that the 62-file importer sweep did not complete.\nVERDICT diff: read commit by commit against base eea36bacd2653c168105cd0282a51eb2aad7346a; 6e9a3a97b reorders the capability resolve before the scan and adds the snapshot_request, f7f51d1fb adds only the evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch_picker.py:411, reckon/crew/picker/replay.py:91, reckon/crew_dispatch_commands.py:812\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/picker/__init__.py:405-421 resolves _declared_difficulty before snapshotter and passes snapshot_request carrying the resolved capability, and the state render at :449 keeps the same capability, so the block filters on the capability the state renders.\nSCORE evidence: 15\nJUSTIFICATION evidence: the manifest and logs/head_gate.txt record the gate 4 passed and logs/negative_control.txt reddens it, but the done_when's importer comparison was met only on an 11-file subset (logs/base_subset.txt and logs/head_subset.txt) rather than the 62-file importing set the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's three files (reckon/crew/picker/__init__.py, tests/test_a_live_pick_reads_outcomes_at_its_requirement.py, the evidence fragment) are exactly the product, test and fragment paths the manifest declares, with no figure and no path outside them.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_live_pick_reads_outcomes_at_its_requirement.py:236-247 fails whenever the scan receives a capability-less request (the recorded negative control reinstates the old order and reddens it with KeyError), though the carried-capability assertion at :264 restates a value the test supplied at :261.\nSCORE fit: 19\nJUSTIFICATION fit: the reorder follows the module's own time.perf_counter/mark idiom at reckon/crew/picker/__init__.py:405-410 and uses dataclasses.replace; no plan, ticket or stage label appears in the code, comments or filenames.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change reuses the existing request.capability filter (_request_requirement at reckon/crew/picker/snapshot.py:207) and stdlib replace rather than adding a mechanism, so it extends the owner of the capability filter and forks nothing.\nFINDING reckon/crew/picker/snapshot.py:963 follow-on: handing the scan a request carrying the capability also changes the capability_class the live path passes to resolve_role_override, so every candidate's model/effort can be re-resolved through the class overlay for a live pick (previously \"\"); the commit body and manifest describe only the outcomes_at_requirement effect and no added test covers this candidate-construction change.\nreviewed_base_sha: eea36bacd2653c168105cd0282a51eb2aad7346a\nreviewed_head_sha: f7f51d1fb0e4bc0764dfc0cc7591d6fff1c6de02\n",
+  "review_run_id": "r-20261016T105103848923-review-of-a-live-pick-reads-outcomes-at-its-capability-f7f51d1fb0e4",
+  "reviewed_base_sha": "eea36bacd2653c168105cd0282a51eb2aad7346a",
+  "reviewed_head_sha": "f7f51d1fb0e4bc0764dfc0cc7591d6fff1c6de02",
+  "reviewed_run_id": "r-20261016T095813341068-a-live-pick-reads-outcomes-at-its-capability",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261016T105103848923-review-of-a-live-pick-reads-outcomes-at-its-capability-f7f51d1fb0e4",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T11:03:19.339198+00:00",
+  "total": 113
+}
