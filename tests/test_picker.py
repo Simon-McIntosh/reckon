@@ -257,11 +257,9 @@ def test_representative_state_is_bounded_and_comment_verbatim(
         comment=request_node.comment,
         candidates=[c for c in options if not c.reasons],
     )
-    # Each candidate now carries its own context block and its own move
-    # figures, so the representative state is larger; the bound still holds the
-    # whole prompt to a few KB. Eight candidates at 8086 characters leave a
-    # small margin under 1500 * 6.
-    assert len(rendered) <= 1500 * 6
+    # Each candidate now carries its own context block, so the representative
+    # state is larger; the bound still holds the whole prompt to a few KB.
+    assert len(rendered) <= 1500 * 5
     assert json.loads(rendered)["orchestrator_comment"] == request_node.comment
     assert set(json.loads(rendered)["candidates"]["remote"]) == {
         "backend",
@@ -276,8 +274,6 @@ def test_representative_state_is_bounded_and_comment_verbatim(
         "worker_slots",
         "congestion",
         "outcomes",
-        "moved_in",
-        "moved_off",
         "context",
         "budget_source",
         "budget_age_s",

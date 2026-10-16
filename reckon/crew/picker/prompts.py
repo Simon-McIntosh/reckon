@@ -126,14 +126,18 @@ _GLOSSARY: dict[str, str] = {
         "outcomes and outcomes_at_requirement, because their outcome is the "
         "outcome of the pick they were chosen for, not of this lane's own picks. "
         "Read at the request's requirement when it names one, and over every "
-        "move when it names none."
+        "move when it names none. Present only when at least one such move "
+        "exists; an absent key means no coordinator moved a run onto this "
+        "candidate in the window."
     ),
     "moved_off": (
         "How many of this candidate's own picks a coordinator moved away to "
         "another lane. Read at the request's requirement when it names one, and "
         "over every move when it names none. A high moved_off "
         "means coordinators overrode the choice this candidate was picked for, "
-        "so the lane never ran the nodes it was chosen for."
+        "so the lane never ran the nodes it was chosen for. Present only when it "
+        "is greater than zero; an absent key means no coordinator moved this "
+        "candidate's pick away in the window."
     ),
     "context": (
         "A candidate's context block. window_tokens is the input window that "
@@ -192,6 +196,19 @@ def _negative_control_declared(node: Any) -> bool:
     return bool(declared) and not declared.lower().startswith("none")
 
 
+def _holds_a_move(moved_in: Any) -> bool:
+    """Whether a candidate's ``moved_in`` block holds at least one move.
+
+    ``moved_in`` uses the gate vocabulary, so a candidate no coordinator moved a
+    run onto carries a block of zeros. Those carry no information, so the state
+    renders neither the block nor ``moved_off`` for such a candidate.
+    """
+
+    if not isinstance(moved_in, dict):
+        return False
+    return any(int(value or 0) > 0 for value in moved_in.values())
+
+
 def _candidate_state(candidate: Any) -> dict[str, Any]:
     """One candidate's weighable facts, keyed for the judgment.
 
@@ -224,14 +241,25 @@ def _candidate_state(candidate: Any) -> dict[str, Any]:
             if getattr(candidate, "outcomes_at_requirement", None)
             else {}
         ),
-        # The move figures are rendered whenever they are computed, which is
-        # every pick: the snapshot reads them at the request's requirement when
-        # it names one, and over every move when it names none. So they travel
-        # beside the at-requirement block when there is one, and stand on their
-        # own when there is not -- a pick that names no requirement still shows
-        # Jev which picks a coordinator overrode and where the runs landed.
-        "moved_in": getattr(candidate, "moved_in", None),
-        "moved_off": getattr(candidate, "moved_off", None),
+        # The move figures are rendered sparsely, for every pick: moved_in only
+        # when a coordinator moved a run onto this candidate, moved_off only
+        # when one moved this candidate's pick away, whether or not the request
+        # names a requirement. A candidate with no moves in the window carries
+        # neither key, so a state with no moves is exactly as large as it
+        # was before the move figures existed and the prompt keeps within its
+        # size budget. An absent key means no coordinator moved a run onto, or
+        # off, this candidate in the window. When the request names a requirement
+        # the figures are read at it, and otherwise over every move.
+        **(
+            {"moved_in": candidate.moved_in}
+            if _holds_a_move(getattr(candidate, "moved_in", None))
+            else {}
+        ),
+        **(
+            {"moved_off": candidate.moved_off}
+            if (getattr(candidate, "moved_off", 0) or 0) > 0
+            else {}
+        ),
         "context": getattr(candidate, "context", None),
         "budget_source": getattr(candidate, "budget_source", None),
         "budget_age_s": getattr(candidate, "budget_age_s", None),
