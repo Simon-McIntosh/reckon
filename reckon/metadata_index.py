@@ -113,6 +113,7 @@ _CACHE: dict[tuple[str, str, bool], IndexBuild] = {}
 #: file whose bytes changed has a new digest and is parsed again.
 _META_LOCK = threading.Lock()
 _META_BY_DIGEST: dict[tuple[str, str | None], dict] = {}
+_META_HEAD_BY_DIGEST: dict[tuple[str, str | None], dict] = {}
 _META_MAX_ENTRIES = 50_000
 
 
@@ -123,36 +124,61 @@ def clear() -> None:
         _CACHE.clear()
     with _META_LOCK:
         _META_BY_DIGEST.clear()
+        _META_HEAD_BY_DIGEST.clear()
 
 
-def parse_meta_shared(path: Path, slug: str | None = None) -> dict:
-    """Parse ``path``'s metadata, reusing a parse of byte-identical content.
+def _digest_memo(
+    cache: dict[tuple[str, str | None], dict],
+    parse: Callable[[Path, str | None], dict],
+    path: Path,
+    slug: str | None,
+) -> dict:
+    """Reuse one parse across trees holding byte-identical copies of a file.
 
-    ``_plan_html.parse_meta`` memoises per path, so the same document reached
-    through two trees is parsed once per tree. Keying the parse on the file's
-    content digest instead lets a second tree's identical bytes reuse the first
-    tree's parse; a changed file has a new digest and is parsed afresh. A file
-    that cannot be hashed falls back to the path-keyed parse, so an unreadable
+    ``_plan_html``'s parsers memoise per path, so the same document reached
+    through two trees is parsed once per tree. Keying on the file's content
+    digest instead lets a second tree's identical bytes reuse the first tree's
+    parse; a changed file has a new digest and is parsed afresh. A file that
+    cannot be hashed falls back to the path-keyed parse, so an unreadable
     file's error path is unchanged.
     """
-
-    from reckon import _plan_html
 
     try:
         digest = _content_digest(path)
     except OSError:
-        return _plan_html.parse_meta(path, slug)
+        return parse(path, slug)
     key = (digest, slug)
     with _META_LOCK:
-        cached = _META_BY_DIGEST.get(key)
+        cached = cache.get(key)
         if cached is not None:
             return copy.deepcopy(cached)
-    value = _plan_html.parse_meta(path, slug)
+    value = parse(path, slug)
     with _META_LOCK:
-        _META_BY_DIGEST[key] = copy.deepcopy(value)
-        while len(_META_BY_DIGEST) > _META_MAX_ENTRIES:
-            _META_BY_DIGEST.pop(next(iter(_META_BY_DIGEST)))
+        cache[key] = copy.deepcopy(value)
+        while len(cache) > _META_MAX_ENTRIES:
+            cache.pop(next(iter(cache)))
     return value
+
+
+def parse_meta_shared(path: Path, slug: str | None = None) -> dict:
+    """Parse ``path``'s metadata, reusing a parse of byte-identical content."""
+
+    from reckon import _plan_html
+
+    return _digest_memo(_META_BY_DIGEST, _plan_html.parse_meta, path, slug)
+
+
+def _parse_meta_head_shared(path: Path, slug: str | None = None) -> dict:
+    """Parse ``path``'s head metadata, reusing a parse of identical bytes.
+
+    Identification reads a document's head and nothing else, so it shares the
+    head parse — not the record parse that derives ``impl`` — across the trees
+    holding byte-identical copies of a document.
+    """
+
+    from reckon import _plan_html
+
+    return _digest_memo(_META_HEAD_BY_DIGEST, _plan_html._parse_meta_head, path, slug)
 
 
 def invalidate_tree(docs_dir: Path) -> None:

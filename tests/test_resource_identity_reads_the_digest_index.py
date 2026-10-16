@@ -1,15 +1,16 @@
-"""Resource identification reuses one parse of byte-identical content.
+"""Resource identification reuses one head parse of byte-identical content.
 
 A promotion resolves resources across several docs trees — the main checkout,
 the run's worktree and the tip tree — each holding a copy of the same
 documents. The metadata parse is memoised per file path, so identical bytes in
-a second tree were parsed again, and the parsed read dominates the cost of the
-whole promotion. Keying the parse on the file's content digest lets the trees
-share one parse; a file whose bytes changed is parsed afresh.
+a second tree were parsed again, and the parse dominates the cost of the whole
+promotion. Keying the parse on the file's content digest lets the trees share
+one parse; a file whose bytes changed is parsed afresh.
 
-The negative control keys the same reuse by path again, under which the
-cross-tree case parses identical content once per tree and this file's
-``read_state`` count fails.
+Identification reads only the head, so the parse it shares is the head parse
+``metadata_index._parse_meta_head_shared`` keys on the digest. The negative
+control keys the same reuse by path again, under which the cross-tree case
+parses identical content once per tree and this file's head-parse count fails.
 """
 
 from __future__ import annotations
@@ -22,9 +23,9 @@ import reckon.resources as resources_module
 from reckon import _plan_html, file_memo, metadata_index
 from reckon.resources import ResourceCollision, identify_resource
 
-#: A plan document carrying an opted-in section record: its presence makes
-#: ``parse_meta`` hand the document to the parsed ``read_state`` read, which is
-#: the cost this node's change shares across trees.
+#: A plan document carrying an opted-in section record. Identity comes from the
+#: head, so the record does not enter identification's head parse; the section
+#: keeps the document a record carrier for the readers that derive ``impl``.
 _PLAN_DOC = """<!doctype html><html><head>
 <meta name="docs-project" content="proj">
 <meta name="reckon-type" content="{type}">
@@ -61,16 +62,16 @@ def _write_plan(
     return path
 
 
-def _counting_read_state(monkeypatch: pytest.MonkeyPatch) -> dict:
-    """Count the parsed reads ``parse_meta`` performs, without changing them."""
+def _counting_head_parse(monkeypatch: pytest.MonkeyPatch) -> dict:
+    """Count the head parses identification performs, without changing them."""
     calls = {"count": 0}
-    real = _plan_html.read_state
+    real = _plan_html._parse_meta_head_uncached
 
-    def counting(text: str) -> dict:
+    def counting(path: Path, slug: str | None) -> dict:
         calls["count"] += 1
-        return real(text)
+        return real(path, slug)
 
-    monkeypatch.setattr(_plan_html, "read_state", counting)
+    monkeypatch.setattr(_plan_html, "_parse_meta_head_uncached", counting)
     return calls
 
 
@@ -88,7 +89,7 @@ def test_identical_content_parses_once_across_trees(tmp_path, monkeypatch):
         path_c
     )
 
-    calls = _counting_read_state(monkeypatch)
+    calls = _counting_head_parse(monkeypatch)
     a = identify_resource(tree_a, path_a, "proj")
     b = identify_resource(tree_b, path_b, "proj")
     c = identify_resource(tree_c, path_c, "proj")
@@ -98,7 +99,7 @@ def test_identical_content_parses_once_across_trees(tmp_path, monkeypatch):
     assert a is not None and b is not None and c is not None
     assert a.identity.key == b.identity.key == c.identity.key == "proj:plan:alpha"
     assert (a.path, b.path, c.path) == (path_a, path_b, path_c)
-    # Two distinct contents, so two parsed reads: identical bytes once across
+    # Two distinct contents, so two head parses: identical bytes once across
     # the two trees, and the changed file once on its own.
     assert calls["count"] == 2
 
@@ -109,7 +110,7 @@ def test_changed_bytes_are_parsed_again(tmp_path, monkeypatch):
     tree_b = tmp_path / "b" / "docs"
     path_a = _write_plan(tree_a, "alpha", "Alpha")
     path_b = _write_plan(tree_b, "alpha", "Alpha")
-    calls = _counting_read_state(monkeypatch)
+    calls = _counting_head_parse(monkeypatch)
 
     identify_resource(tree_a, path_a, "proj")
     identify_resource(tree_b, path_b, "proj")
@@ -124,7 +125,7 @@ def test_changed_bytes_are_parsed_again(tmp_path, monkeypatch):
 
 def test_type_conflict_still_raises_across_trees(tmp_path, monkeypatch):
     """Sharing a parse does not weaken the location/type collision check."""
-    _counting_read_state(monkeypatch)
+    _counting_head_parse(monkeypatch)
     tree_a = tmp_path / "a" / "docs"
     tree_b = tmp_path / "b" / "docs"
     path_a = _write_plan(tree_a, "alpha", "Alpha", artifact_type="research")
@@ -138,24 +139,24 @@ def test_type_conflict_still_raises_across_trees(tmp_path, monkeypatch):
 
 def test_parse_memo_is_keyed_on_content_not_path(tmp_path, monkeypatch):
     """The shared parse answers a second path from the first path's bytes."""
-    calls = _counting_read_state(monkeypatch)
+    calls = _counting_head_parse(monkeypatch)
     tree_a = tmp_path / "a" / "docs"
     tree_b = tmp_path / "b" / "docs"
     path_a = _write_plan(tree_a, "alpha", "Alpha")
     path_b = _write_plan(tree_b, "alpha", "Alpha")
 
-    first = metadata_index.parse_meta_shared(path_a)
-    second = metadata_index.parse_meta_shared(path_b)
+    first = metadata_index._parse_meta_head_shared(path_a)
+    second = metadata_index._parse_meta_head_shared(path_b)
     assert first == second
     assert calls["count"] == 1
     # A caller mutating its copy cannot poison the entry the next tree reads.
     first["slug"] = "poisoned"
-    assert metadata_index.parse_meta_shared(path_b)["slug"] == "alpha"
+    assert metadata_index._parse_meta_head_shared(path_b)["slug"] == "alpha"
 
 
 def test_identical_content_bounds_the_path_walk(tmp_path, monkeypatch):
     """A resource walk over two identical trees parses each content once."""
-    calls = _counting_read_state(monkeypatch)
+    calls = _counting_head_parse(monkeypatch)
     tree_a = tmp_path / "a" / "docs"
     tree_b = tmp_path / "b" / "docs"
     for index in range(4):
@@ -166,5 +167,5 @@ def test_identical_content_bounds_the_path_walk(tmp_path, monkeypatch):
     found_b = resources_module.iter_resources(tree_b, "proj")
     assert {r.slug for r in found_a} == {f"plan-{i}" for i in range(4)}
     assert {r.slug for r in found_b} == {f"plan-{i}" for i in range(4)}
-    # Four distinct contents across both trees: four parsed reads, not eight.
+    # Four distinct contents across both trees: four head parses, not eight.
     assert calls["count"] == 4
