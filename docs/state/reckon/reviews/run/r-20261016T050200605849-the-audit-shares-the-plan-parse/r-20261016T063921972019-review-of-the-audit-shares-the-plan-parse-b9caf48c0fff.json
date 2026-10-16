@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived by this reviewer from the reviewed run's own head and base gate-log cohorts (26 logs each) via reckon.crew.review.added_failures_from_gate_logs(base=<logs/base/*>, head=<logs/head/*>) -> (0, []); the reviewed manifest carries no armed baseline_suite/after_suite JSON, so the store's read-path annotation would otherwise report the run unmeasured. Positive control: one injected 'FAILED tests/test_injected.py::test_red' line yields (count=1, ids=['tests/test_injected.py::test_red']), logged in added-failure-derivation.log.",
+  "backend": "clive",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/mcp.py:2497",
+    "reckon/mcp_discovery.py:167",
+    "reckon/serve.py:2211",
+    "reckon/resources.py:842",
+    "reckon/crew/routing.py:225"
+  ],
+  "completed_at": "2026-10-16T06:51:05.402Z",
+  "dispatched_at": "2026-10-16T06:39:50Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T050200605849-the-audit-shares-the-plan-parse/manifest.md",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "follow-on: the test_logs list names .../logs/head_validation_memo_file.log, an intermediate log whose own header reads \"f0a6bb711 + uncommitted test-file rewrite\" and which ends \"1 failed ... EXIT=1\"; the landed head passes 7/7 (re-run this review), but the manifest files this red log among the head logs with no note that it was superseded, so a reader can take the head as red."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T050200605849-the-audit-shares-the-plan-parse/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the tests field records the pointer \"see logs\" rather than the gate command that ran and its result, so the manifest states no command or result where the field is meant to carry them."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base 2857f0742; five files change \u2014 the two production route swaps, the five re-pointed memo tests, the new soup-count test, and a landing evidence fragment \u2014 and the production hunks at reckon/mcp.py:2353 and reckon/_plan_html.py:2254 are exactly the route change the goal names.",
+    "done_when": "the done_when names a new tests/test_the_audit_shares_the_plan_parse.py counting soups per plan file, an output-equality case against the replaced route, and same-pass/fail arms; the new file's two cases pass (2 passed, EXIT=0, re-run at head), the re-pointed memo file passes 7/7 (re-run at head), head/base arms both report 64 passed in the audit cohort and the 255-file chunk cohorts add no failure, and the declared negative control fails the count case (logs/negative_control_own_parse.log, 1 failed, EXIT=1).",
+    "goal": "the goal is that the audit take its plan state from the shared parse so a cold audit builds each plan's soup once; reckon/mcp.py:2353 now returns PlanState.model_validate(_plan_html.read_state_file(path)) and reckon/_plan_html.py:2254 routes the metadata figure the same way, so both readers the audit's validation loop and its discovery reach, so the deliverable the goal names is produced.",
+    "manifest": "read; it names status complete, six commits, the head/base arms and their 26 chunk logs, the two negative controls, and the ruff delta, but the tests field is the pointer \"see logs\" and the test_logs list carries head_validation_memo_file.log, an intermediate run ending 1 failed EXIT=1 that the landed head supersedes.",
+    "write_paths": "read the node's six declared write paths; every path the diff touches \u2014 reckon/mcp.py, reckon/_plan_html.py, tests/test_the_audit_shares_the_plan_parse.py, tests/test_mcp_validation_reads_through_memo.py, and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-audit-shares-the-plan-parse.html \u2014 is inside them, and no path outside them is touched."
+  },
+  "justifications": {
+    "durability": "the count assertion at tests/test_the_audit_shares_the_plan_parse.py:128 compares the instrumented soup count against the literal 1 and would redden if _audit_plan_state reverted to its own from_html parse (the declared control shows 1 failed, EXIT=1), and the five re-pointed memo tests all fail under the reverted route (logs/negative_control_own_parse_rewritten_tests.log, 5 failed, EXIT=1).",
+    "evidence": "the new test counts soups per file and the declared negative-control log (logs/negative_control_own_parse.log, 1 failed, EXIT=1) shows the count case reddens on the reverted route, but the reviewed manifest's own tests field is the pointer \"see logs\" and it lists one superseded failing head log, so the run's own statement of the gate is weaker than the logs it cites.",
+    "fit": "the change follows the module's memoised-reader idiom set at reckon/_plan_html.py:1395 and introduces no name the repository naming rules forbid.",
+    "goal_fidelity": "reckon/mcp.py:2353 derives the audit's PlanState from _plan_html.read_state_file, and reckon/_plan_html.py:2254 derives the metadata figure the same way, so a cold audit builds each plan file's soup once through the shared parse.",
+    "reuse": "_audit_plan_state and _parse_meta_uncached both delegate to read_state_file, the owner of the shared parse also reached by reckon/crew/routing.py:225, so the change removes a duplicated soup build rather than forking a capability.",
+    "scope_discipline": "every path in the diff (reckon/mcp.py, reckon/_plan_html.py, tests/test_the_audit_shares_the_plan_parse.py, tests/test_mcp_validation_reads_through_memo.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/the-audit-shares-the-plan-parse.html) is inside the node's six declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the audit take its plan state from the shared parse so a cold audit builds each plan's soup once; reckon/mcp.py:2353 now returns PlanState.model_validate(_plan_html.read_state_file(path)) and reckon/_plan_html.py:2254 routes the metadata figure the same way, so both readers the audit's validation loop and its discovery reach, so the deliverable the goal names is produced.\nVERDICT done_when: the done_when names a new tests/test_the_audit_shares_the_plan_parse.py counting soups per plan file, an output-equality case against the replaced route, and same-pass/fail arms; the new file's two cases pass (2 passed, EXIT=0, re-run at head), the re-pointed memo file passes 7/7 (re-run at head), head/base arms both report 64 passed in the audit cohort and the 255-file chunk cohorts add no failure, and the declared negative control fails the count case (logs/negative_control_own_parse.log, 1 failed, EXIT=1).\nVERDICT write_paths: read the node's six declared write paths; every path the diff touches \u2014 reckon/mcp.py, reckon/_plan_html.py, tests/test_the_audit_shares_the_plan_parse.py, tests/test_mcp_validation_reads_through_memo.py, and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-audit-shares-the-plan-parse.html \u2014 is inside them, and no path outside them is touched.\nVERDICT manifest: read; it names status complete, six commits, the head/base arms and their 26 chunk logs, the two negative controls, and the ruff delta, but the tests field is the pointer \"see logs\" and the test_logs list carries head_validation_memo_file.log, an intermediate run ending 1 failed EXIT=1 that the landed head supersedes.\nVERDICT diff: read commit by commit against base 2857f0742; five files change \u2014 the two production route swaps, the five re-pointed memo tests, the new soup-count test, and a landing evidence fragment \u2014 and the production hunks at reckon/mcp.py:2353 and reckon/_plan_html.py:2254 are exactly the route change the goal names.\nCALL_SITES: reckon/mcp.py:2497, reckon/mcp_discovery.py:167, reckon/serve.py:2211, reckon/resources.py:842, reckon/crew/routing.py:225\nSCORE goal_fidelity: 19\nSCORE evidence: 16\nSCORE scope_discipline: 18\nSCORE durability: 18\nSCORE fit: 17\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: reckon/mcp.py:2353 derives the audit's PlanState from _plan_html.read_state_file, and reckon/_plan_html.py:2254 derives the metadata figure the same way, so a cold audit builds each plan file's soup once through the shared parse.\nJUSTIFICATION evidence: the new test counts soups per file and the declared negative-control log (logs/negative_control_own_parse.log, 1 failed, EXIT=1) shows the count case reddens on the reverted route, but the reviewed manifest's own tests field is the pointer \"see logs\" and it lists one superseded failing head log, so the run's own statement of the gate is weaker than the logs it cites.\nJUSTIFICATION scope_discipline: every path in the diff (reckon/mcp.py, reckon/_plan_html.py, tests/test_the_audit_shares_the_plan_parse.py, tests/test_mcp_validation_reads_through_memo.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/the-audit-shares-the-plan-parse.html) is inside the node's six declared write paths.\nJUSTIFICATION durability: the count assertion at tests/test_the_audit_shares_the_plan_parse.py:128 compares the instrumented soup count against the literal 1 and would redden if _audit_plan_state reverted to its own from_html parse (the declared control shows 1 failed, EXIT=1), and the five re-pointed memo tests all fail under the reverted route (logs/negative_control_own_parse_rewritten_tests.log, 5 failed, EXIT=1).\nJUSTIFICATION fit: the change follows the module's memoised-reader idiom set at reckon/_plan_html.py:1395 and introduces no name the repository naming rules forbid.\nJUSTIFICATION reuse: _audit_plan_state and _parse_meta_uncached both delegate to read_state_file, the owner of the shared parse also reached by reckon/crew/routing.py:225, so the change removes a duplicated soup build rather than forking a capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T050200605849-the-audit-shares-the-plan-parse/manifest.md:12 follow-on: the test_logs list names .../logs/head_validation_memo_file.log, an intermediate log whose own header reads \"f0a6bb711 + uncommitted test-file rewrite\" and which ends \"1 failed ... EXIT=1\"; the landed head passes 7/7 (re-run this review), but the manifest files this red log among the head logs with no note that it was superseded, so a reader can take the head as red.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T050200605849-the-audit-shares-the-plan-parse/manifest.md:11 follow-on: the tests field records the pointer \"see logs\" rather than the gate command that ran and its result, so the manifest states no command or result where the field is meant to carry them.\nreviewed_base_sha: 2857f0742b0dc0bef28677e7ff97e7453b3a2226\nreviewed_head_sha: b9caf48c0fff3e66a20e5c31f8e08c8a0c2f7e28",
+  "review_run_id": "r-20261016T063921972019-review-of-the-audit-shares-the-plan-parse-b9caf48c0fff",
+  "reviewed_base_sha": "2857f0742b0dc0bef28677e7ff97e7453b3a2226",
+  "reviewed_head_sha": "b9caf48c0fff3e66a20e5c31f8e08c8a0c2f7e28",
+  "reviewed_run_id": "r-20261016T050200605849-the-audit-shares-the-plan-parse",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T06:50:18.527286+00:00",
+  "total": 108
+}
