@@ -30,6 +30,7 @@ from reckon.crew.reports import (
     parse_manifest,
     path_within_declared_scope,
 )
+from reckon.crew.review import review_path
 from reckon.crew.routing import (
     _boundary_tree_roots,
     _git,
@@ -1077,6 +1078,57 @@ def _primary_read_targets(
     return commit, tuple(line for line in result.stdout.splitlines() if line.strip())
 
 
+def _primary_read_surfaces(
+    primary: Mapping[str, Any], project: str
+) -> tuple[str, tuple[str, ...], str]:
+    """The primary's run directory, review records and worktree, when known.
+
+    The primary's committed *files* are one channel to its answer; its own
+    records are another, and they hold its reasoning and its numbers rather
+    than its landed code. Three surfaces carry them: the run directory under
+    the crew runs root, the review record files stored for the run, and the
+    worktree its row names. A surface that cannot be resolved answers empty and
+    is simply not looked for — a shadow cannot read a record that is not there.
+
+    This and :func:`_primary_read_targets` are the one place a primary's
+    readable paths are resolved; the contamination scan and the launch fence
+    both read them from here so the two cannot drift.
+    """
+    run_id = str(primary.get("run_id") or "")
+    run_directory = str(run_dir(run_id)) if run_id else ""
+    review_records = _primary_review_record_paths(primary, project)
+    retention = primary.get("worktree_retention")
+    worktree = ""
+    if isinstance(retention, Mapping):
+        worktree = str(retention.get("worktree") or "").strip()
+    return run_directory, review_records, worktree
+
+
+def _primary_review_record_paths(
+    primary: Mapping[str, Any], project: str
+) -> tuple[str, ...]:
+    """The review record files stored for the primary run, when any exist.
+
+    A review's staging path is ``<store>/<project>/<run-id>.json`` with an
+    ``.at-<sha>`` sibling per reviewed head, so both are named. The siblings are
+    resolved on their own: the staging file is absent once a later round or a
+    promotion has moved past it, and the per-head records behind it still hold an
+    answer a shadow could have read. Only files present on disk are returned: a
+    path that does not exist holds nothing to read, and no mask worth composing.
+    """
+    run_id = str(primary.get("run_id") or "")
+    if not run_id or not project:
+        return ()
+    base = review_path(project, run_id)
+    records: list[str] = []
+    if base.is_file():
+        records.append(str(base))
+    records.extend(
+        str(path) for path in sorted(base.parent.glob(f"{run_id}.at-*.json"))
+    )
+    return tuple(records)
+
+
 def _shadow_stream_contamination(
     record: Mapping[str, Any],
     ledger_runs: Iterable[Mapping[str, Any]],
@@ -1086,9 +1138,11 @@ def _shadow_stream_contamination(
 
     Detection runs at promotion, where both halves are already in hand: the
     primary's row in the ledger this promotion loaded and the run's own stream.
-    A run that cannot see the primary's commit — its row absent, its stream
-    gone, or its primary never cited one — answers clean rather than refusing,
-    because an instrument that fails must not become a refusal of its own.
+    A run that cannot see the run's row — its primary absent, or its stream
+    gone — answers clean rather than refusing, because an instrument that fails
+    must not become a refusal of its own. The scan runs even when the primary
+    cites no commit, because a primary that landed nothing still has a run
+    directory and review records a shadow can read.
     """
     lineage = record.get("lineage")
     primary_run_id = str((lineage or {}).get("primary_run_id") or "")
@@ -1101,8 +1155,9 @@ def _shadow_stream_contamination(
     if primary is None:
         return None
     commit, paths = _primary_read_targets(primary, tree)
-    if not commit:
-        return None
+    run_directory, review_records, primary_worktree = _primary_read_surfaces(
+        primary, str(record.get("project") or "")
+    )
     stream_paths = _record_stream_paths(record)
     if not stream_paths:
         return None
@@ -1113,6 +1168,9 @@ def _shadow_stream_contamination(
         primary_paths=paths,
         repo_root=str(record.get("repo") or ""),
         worktree=str(record.get("worktree") or ""),
+        primary_run_dir=run_directory,
+        primary_review_paths=review_records,
+        primary_worktree=primary_worktree,
     )
 
 

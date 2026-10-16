@@ -20,9 +20,12 @@ from __future__ import annotations
 
 import json
 import subprocess
+from pathlib import Path
 
-from reckon import calibration, ledger
-from reckon.crew import promotion
+from reckon import calibration, capabilities, ledger
+from reckon.crew import promotion, promotion_scope
+from reckon.crew.review import review_store_root
+from reckon.crew.runs import run_dir
 
 MAIN_CHECKOUT = "/home/ITER/mcintos/Code/reckon"
 
@@ -439,3 +442,423 @@ def test_primary_read_targets_are_resolved_from_the_primarys_own_commit(
     assert commit == commits[0]
     assert paths == ("reckon/calibration.py", "reckon/capabilities.py")
     assert all((repo / path).exists() for path in paths)
+
+
+# ── The primary's records, and the two stream dialects that name them ───────
+#
+# The xpoint-cell-owner shadow reached its primary's answer three ways beyond
+# the landed files: the primary's run directory under the crew runs root (its
+# manifest, its numbers), the primary's review record, and the primary's
+# worktree whose path the shadow's own worktree stem names. The committed
+# fixture holds that stream's tool-call records, reproduced from the run
+# directory so the control survives ``crew gc``.
+
+XPOINT_FIXTURE = (
+    Path(__file__).parent
+    / "fixtures"
+    / "shadow_contamination"
+    / "xpoint-cell-owner-calls.jsonl"
+)
+XPOINT_PRIMARY_COMMIT = "952bfcfa44508a45b58ff05d6cf2d8fbb6d84532"
+XPOINT_PRIMARY_PATHS = (
+    "docs/evidence/fragments/converged-forward-solve/xpoint-cell-owner.html",
+    "docs/figures/converged-forward-solve/xpoint-cell-owner/map-error.svg",
+    "docs/research/xpoint-cell-owner.html",
+    "scripts/prototypes/xpoint_cell_owner/render.py",
+)
+XPOINT_MAIN_CHECKOUT = "/home/ITER/mcintos/Code/nova"
+XPOINT_PRIMARY_RUN_DIR = (
+    "/home/ITER/mcintos/.config/reckon/crew/runs/"
+    "r-20261016T145650209779-xpoint-cell-owner"
+)
+
+# Synthetic surfaces for the argument-level checks. The shadow worktree names
+# the primary in its stem but is a different tree, so a read of the shadow's
+# own copy must not read as a read of the primary's.
+PRIMARY_RUN_DIR = "/records/runs/r-primary"
+PRIMARY_REVIEW_RECORD = "/records/reviews/proj/r-primary.at-abc1234.json"
+PRIMARY_WORKTREE = "/checkouts/s21/xpoint-cell-owner"
+SHADOW_WORKTREE = "/checkouts/shadow-shadow-r-primary-clive-abc/xpoint-cell-owner"
+SHADOW_RUN_HOME = "/records/runs/r-shadow"
+
+
+def _codex_stream_jsonl(commands: list[str], directory: Path) -> str:
+    """Write a codex-dialect stream: one completed shell item per command.
+
+    The second dialect records a tool call as an ``item.completed`` event whose
+    item is a ``command_execution`` holding the shell command, where the
+    message dialect records a ``Bash`` tool block. A scan written for one
+    dialect sees nothing in the other.
+    """
+    path = directory / "stream.jsonl"
+    with path.open("w", encoding="utf-8") as handle:
+        for command in commands:
+            event = {
+                "type": "item.completed",
+                "item": {"type": "command_execution", "command": command},
+            }
+            handle.write(json.dumps(event) + "\n")
+    return str(path)
+
+
+def _calls_in_both_dialects(
+    calls: list[tuple[str, str]], tmp_path: Path
+) -> dict[str, list[tuple[str, str]]]:
+    """The same tool calls read back through each stream dialect.
+
+    A path read becomes the ``cat`` that performs it in the codex dialect,
+    which records no separate file-read tool.
+    """
+    messages_dir = tmp_path / "messages"
+    messages_dir.mkdir()
+    codex_dir = tmp_path / "codex"
+    codex_dir.mkdir()
+    codex_commands = [
+        payload if kind == "bash" else "cat " + payload for kind, payload in calls
+    ]
+    return {
+        "messages": ledger.stream_tool_calls(
+            [_stream_jsonl_calls(calls, messages_dir)]
+        ),
+        "codex": ledger.stream_tool_calls(
+            [_codex_stream_jsonl(codex_commands, codex_dir)]
+        ),
+    }
+
+
+def test_a_run_directory_read_is_marked_in_both_dialects(tmp_path: Path) -> None:
+    """Reading the primary's run directory names the record that was read."""
+    calls = [("read", PRIMARY_RUN_DIR + "/manifest.md")]
+    for dialect, stream in _calls_in_both_dialects(calls, tmp_path).items():
+        reason = ledger.shadow_primary_read(
+            stream, primary_commit="", primary_run_dir=PRIMARY_RUN_DIR
+        )
+        assert reason == "primary_run_directory_read", dialect
+
+
+def test_a_review_record_read_is_marked_in_both_dialects(tmp_path: Path) -> None:
+    calls = [("read", PRIMARY_REVIEW_RECORD)]
+    for dialect, stream in _calls_in_both_dialects(calls, tmp_path).items():
+        reason = ledger.shadow_primary_read(
+            stream,
+            primary_commit="",
+            primary_review_paths=(PRIMARY_REVIEW_RECORD,),
+        )
+        assert reason == "primary_review_read", dialect
+
+
+def test_a_primary_worktree_read_is_marked_in_both_dialects(tmp_path: Path) -> None:
+    calls = [("read", PRIMARY_WORKTREE + "/reckon/x.py")]
+    for dialect, stream in _calls_in_both_dialects(calls, tmp_path).items():
+        reason = ledger.shadow_primary_read(
+            stream,
+            primary_commit="",
+            primary_worktree=PRIMARY_WORKTREE,
+            worktree=SHADOW_WORKTREE,
+        )
+        assert reason == "primary_worktree_read", dialect
+
+
+def test_reading_only_the_shadows_own_worktree_and_run_home_is_clean(
+    tmp_path: Path,
+) -> None:
+    """A shadow's own copy shares no path with its primary's records."""
+    calls = [
+        ("read", SHADOW_WORKTREE + "/reckon/x.py"),
+        ("read", SHADOW_RUN_HOME + "/manifest.md"),
+        ("bash", "cd " + SHADOW_WORKTREE + " && git status --short"),
+    ]
+    for dialect, stream in _calls_in_both_dialects(calls, tmp_path).items():
+        reason = ledger.shadow_primary_read(
+            stream,
+            primary_commit=CONTAMINATED_PRIMARY_COMMIT,
+            primary_paths=CONTAMINATED_PRIMARY_PATHS,
+            repo_root=MAIN_CHECKOUT,
+            worktree=SHADOW_WORKTREE,
+            primary_run_dir=PRIMARY_RUN_DIR,
+            primary_review_paths=(PRIMARY_REVIEW_RECORD,),
+            primary_worktree=PRIMARY_WORKTREE,
+        )
+        assert reason is None, dialect
+
+
+def test_the_committed_fixture_still_yields_the_changed_path_read() -> None:
+    """The recorded xpoint arm copied a landed file, so its mark is unchanged."""
+    calls = ledger.stream_tool_calls([str(XPOINT_FIXTURE)])
+    assert calls
+    reason = ledger.shadow_primary_read(
+        calls,
+        primary_commit=XPOINT_PRIMARY_COMMIT,
+        primary_paths=XPOINT_PRIMARY_PATHS,
+        repo_root=XPOINT_MAIN_CHECKOUT,
+        primary_run_dir=XPOINT_PRIMARY_RUN_DIR,
+    )
+    assert reason == "primary_changed_path_read"
+
+
+def test_the_committed_fixture_run_directory_calls_yield_the_run_directory_reason() -> (
+    None
+):
+    """The fixture's own run-directory reads name that record on their own."""
+    calls = ledger.stream_tool_calls([str(XPOINT_FIXTURE)])
+    run_directory_calls = [call for call in calls if XPOINT_PRIMARY_RUN_DIR in call[1]]
+    assert run_directory_calls
+    reason = ledger.shadow_primary_read(
+        run_directory_calls,
+        primary_commit="",
+        primary_run_dir=XPOINT_PRIMARY_RUN_DIR,
+    )
+    assert reason == "primary_run_directory_read"
+
+
+def test_the_scan_runs_when_the_primary_cites_no_commit(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A primary that landed nothing still has a run directory to read."""
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    primary = {"run_id": "r-primary-no-commit"}
+    primary_run_directory = str(run_dir("r-primary-no-commit"))
+    shadow_dir = tmp_path / "shadow"
+    shadow_dir.mkdir()
+    stream = _stream_jsonl_calls(
+        [("bash", "cat " + primary_run_directory + "/manifest.md")], shadow_dir
+    )
+    record = {
+        "run_id": "r-shadow-no-commit",
+        "log_path": stream,
+        "lineage": {"kind": "shadow", "primary_run_id": "r-primary-no-commit"},
+    }
+    reason = promotion_scope._shadow_stream_contamination(record, [primary], None)
+    assert reason == "primary_run_directory_read"
+
+
+def _shadow_pair(contaminated: bool) -> dict:
+    """A shadow row with a matched configuration, paired to its primary.
+
+    The configuration substitutes only the backend and its model, the two
+    differences a backend swap necessarily produces, so the configuration
+    predicate alone calls the pair controlled and only the contamination mark
+    can void it.
+    """
+    primary = ledger.build_record(
+        run_id="r-primary",
+        plan="plan-a",
+        gate="passed",
+        completed_at_source="provided",
+        worker_seconds=600,
+        worker_seconds_source="provided",
+        backend="codex",
+        agent={"backend": "codex", "model": "gpt-6-sol"},
+    )
+    lineage = {
+        "kind": "shadow",
+        "primary_run_id": "r-primary",
+        "configuration": {
+            "substituted": {
+                "backend": {"primary": "codex", "shadow": "clive", "via": "backend"},
+                "model": {
+                    "primary": "gpt-6-sol",
+                    "shadow": "claude-sonnet",
+                    "via": "backend",
+                },
+            }
+        },
+    }
+    shadow = ledger.build_record(
+        run_id="r-shadow",
+        plan="plan-a",
+        gate="passed",
+        completed_at_source="provided",
+        worker_seconds=600,
+        worker_seconds_source="provided",
+        backend="clive",
+        agent={"backend": "clive", "model": "claude-sonnet"},
+        lineage=lineage,
+        **({"shadow_contaminated": "primary_commit_read"} if contaminated else {}),
+    )
+    shadow.update({"attempt": 1, "attempt_kind": "dispatch"})
+    paired, _unpaired = capabilities.pair_shadow_arms([primary, shadow])
+    return paired[0]
+
+
+def test_a_contaminated_pair_is_uncontrolled() -> None:
+    """A shadow that read its primary is not a controlled arm."""
+    pair = _shadow_pair(contaminated=True)
+    assert pair["controlled"] is False
+    assert pair["uncontrolled_reason"] == "primary_commit_read"
+
+
+def test_a_matched_configuration_pair_is_controlled() -> None:
+    """Configuration alone still controls a pair the scan found clean."""
+    pair = _shadow_pair(contaminated=False)
+    assert pair["controlled"] is True
+    assert pair["uncontrolled_reason"] is None
+
+
+def test_build_record_marks_a_contaminated_shadow_uncontrolled() -> None:
+    """The stored verdict follows the predicate, not the configuration alone."""
+    row = ledger.build_record(
+        run_id="r-shadow-stored",
+        plan="plan-a",
+        gate="passed",
+        completed_at_source="provided",
+        worker_seconds=600,
+        worker_seconds_source="provided",
+        backend="clive",
+        agent={"backend": "clive", "model": "claude-sonnet"},
+        lineage={
+            "kind": "shadow",
+            "primary_run_id": "r-primary",
+            "configuration": {
+                "substituted": {
+                    "backend": {"primary": "codex", "shadow": "clive"},
+                }
+            },
+        },
+        shadow_contaminated="primary_run_directory_read",
+    )
+    assert row["shadow_contaminated"] == "primary_run_directory_read"
+    assert row["shadow_controlled"] is False
+
+
+def _matched_shadow_lineage() -> dict:
+    """A configuration substituting only the backend and its model.
+
+    Those two differences are what a backend swap necessarily produces, so the
+    configuration predicate alone calls the pair controlled and only the scan's
+    answer can void it.
+    """
+    return {
+        "kind": "shadow",
+        "primary_run_id": "r-primary",
+        "configuration": {
+            "substituted": {
+                "backend": {"primary": "codex", "shadow": "clive", "via": "backend"},
+                "model": {
+                    "primary": "gpt-6-sol",
+                    "shadow": "claude-sonnet",
+                    "via": "backend",
+                },
+            }
+        },
+    }
+
+
+def _review_store(monkeypatch, tmp_path: Path, project: str) -> Path:
+    """Point the review store at a temporary home and return its project dir."""
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    directory = review_store_root() / project
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory
+
+
+def test_a_contaminated_shadow_row_stores_an_uncontrolled_verdict(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The row's verdict is taken where the scan's answer is known.
+
+    Promotion assembles the row before the stream is read, so a verdict taken
+    there judges the configuration alone and stores a contaminated arm as
+    controlled. Both halves are in hand at the marks, and the verdict there
+    follows the one predicate.
+    """
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    primary = {"run_id": "r-primary"}
+    primary_run_directory = str(run_dir("r-primary"))
+    shadow_dir = tmp_path / "shadow"
+    shadow_dir.mkdir()
+    stream = _stream_jsonl_calls(
+        [("bash", "cat " + primary_run_directory + "/manifest.md")], shadow_dir
+    )
+    lineage = _matched_shadow_lineage()
+    record = {"run_id": "r-shadow", "log_path": stream, "lineage": lineage}
+    marks = promotion._shadow_control_marks(record, [primary], None, lineage)
+    assert marks["shadow_contaminated"] == "primary_run_directory_read"
+    assert marks["shadow_controlled"] is False
+
+
+def test_a_clean_shadow_row_stores_a_controlled_verdict(tmp_path: Path) -> None:
+    """A shadow that read nothing of its primary keeps its configuration verdict."""
+    shadow_dir = tmp_path / "shadow"
+    shadow_dir.mkdir()
+    stream = _stream_jsonl_calls(
+        [("bash", "cd " + SHADOW_WORKTREE + " && git status --short")], shadow_dir
+    )
+    lineage = _matched_shadow_lineage()
+    record = {
+        "run_id": "r-shadow",
+        "log_path": stream,
+        "lineage": lineage,
+        "worktree": SHADOW_WORKTREE,
+    }
+    marks = promotion._shadow_control_marks(record, [], None, lineage)
+    assert "shadow_contaminated" not in marks
+    assert marks["shadow_controlled"] is True
+
+
+def test_the_read_surfaces_name_the_review_records_of_the_primary(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The review-record surface is the staging file and its per-head siblings."""
+    directory = _review_store(monkeypatch, tmp_path, "proj")
+    base = directory / "r-primary.json"
+    base.write_text("{}", encoding="utf-8")
+    sibling = directory / "r-primary.at-abc1234.json"
+    sibling.write_text("{}", encoding="utf-8")
+    _run_directory, records, _worktree = promotion_scope._primary_read_surfaces(
+        {"run_id": "r-primary"}, "proj"
+    )
+    assert str(base) in records
+    assert str(sibling) in records
+
+
+def test_a_review_sibling_is_readable_without_the_staging_file(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A staging file past its round still leaves a per-head record to read."""
+    directory = _review_store(monkeypatch, tmp_path, "proj")
+    sibling = directory / "r-primary.at-abc1234.json"
+    sibling.write_text("{}", encoding="utf-8")
+    primary = {"run_id": "r-primary"}
+    _run_directory, records, _worktree = promotion_scope._primary_read_surfaces(
+        primary, "proj"
+    )
+    assert records == (str(sibling),)
+    shadow_dir = tmp_path / "shadow"
+    shadow_dir.mkdir()
+    stream = _stream_jsonl_calls([("read", str(sibling))], shadow_dir)
+    record = {
+        "run_id": "r-shadow",
+        "project": "proj",
+        "log_path": stream,
+        "lineage": {"kind": "shadow", "primary_run_id": "r-primary"},
+    }
+    reason = promotion_scope._shadow_stream_contamination(record, [primary], None)
+    assert reason == "primary_review_read"
+
+
+def test_the_read_surfaces_name_the_worktree_the_primary_held(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The tree a primary's row retains is a surface a shadow can read from."""
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    worktree = tmp_path / "checkouts" / "xpoint-cell-owner"
+    worktree.mkdir(parents=True)
+    primary = {"run_id": "r-primary", "worktree_retention": {"worktree": str(worktree)}}
+    _run_directory, _records, resolved = promotion_scope._primary_read_surfaces(
+        primary, "proj"
+    )
+    assert resolved == str(worktree)
+    shadow_dir = tmp_path / "shadow"
+    shadow_dir.mkdir()
+    stream = _stream_jsonl_calls(
+        [("read", str(worktree / "reckon" / "x.py"))], shadow_dir
+    )
+    record = {
+        "run_id": "r-shadow",
+        "log_path": stream,
+        "lineage": {"kind": "shadow", "primary_run_id": "r-primary"},
+        "worktree": SHADOW_WORKTREE,
+    }
+    reason = promotion_scope._shadow_stream_contamination(record, [primary], None)
+    assert reason == "primary_worktree_read"

@@ -1009,13 +1009,23 @@ def pair_shadow_arms(
                 {"shadow": _arm_figures(run), "primary_run_id": primary_run_id}
             )
             continue
+        contamination = str(run.get("shadow_contaminated") or "").strip()
+        controlled = ledger.shadow_controlled(
+            lineage, contaminated=contamination or None
+        )
         paired.append(
             {
                 "shadow": _arm_figures(run),
                 "primary": _arm_figures(primary),
                 # The sole control predicate, so a confounded pair is never
-                # listed as a matched one.
-                "controlled": ledger.shadow_controlled(lineage),
+                # listed as a matched one. A pair is uncontrolled either
+                # because its configuration varied on a dimension the shadow
+                # ladder does not measure, or because the shadow read the
+                # primary's answer or records; the reason names which.
+                "controlled": controlled,
+                "uncontrolled_reason": (
+                    None if controlled else (contamination or "configuration")
+                ),
             }
         )
     return paired, unpaired
@@ -1112,7 +1122,11 @@ def derive_capabilities(
                         "controlled": (
                             bool(pair["controlled"])
                             if pair is not None
-                            else ledger.shadow_controlled(lineage)
+                            else ledger.shadow_controlled(
+                                lineage,
+                                contaminated=str(run.get("shadow_contaminated") or "")
+                                or None,
+                            )
                         ),
                     }
                 )

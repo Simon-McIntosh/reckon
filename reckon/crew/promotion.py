@@ -590,6 +590,32 @@ def _attach_shadow_pick_timeout(run_id: str) -> None:
         _write_existing_pointer(run_id, pointer)
 
 
+def _shadow_control_marks(
+    record: Mapping[str, Any],
+    ledger_runs: Iterable[Mapping[str, Any]],
+    tree: Path | None,
+    lineage: Any,
+) -> dict[str, Any]:
+    """The marks a shadow's row stores about contamination and control.
+
+    The row is assembled before the stream has been read, so the control verdict
+    taken there can only judge the configuration; the scan needs the primary's
+    row and the run's own stream, and both are in hand here. The verdict is
+    re-taken through the one predicate with the scan's answer, so a contaminated
+    row is never stored as a controlled arm, and a reason is recorded only when
+    there is one.
+    """
+    contamination = _shadow_stream_contamination(record, ledger_runs, tree)
+    marks: dict[str, Any] = {
+        "shadow_controlled": ledger.shadow_controlled(
+            lineage, contaminated=contamination
+        )
+    }
+    if contamination:
+        marks["shadow_contaminated"] = contamination
+    return marks
+
+
 def _complete_locked(
     run_id: str,
     *,
@@ -1178,9 +1204,9 @@ def _complete_locked(
     # trusting a worker's self-report. Contamination recreates the primary's
     # answer from the object store, never from the shadow's own patch.
     if shadow:
-        contamination = _shadow_stream_contamination(record, ledger_data["runs"], tree)
-        if contamination:
-            run["shadow_contaminated"] = contamination
+        run.update(
+            _shadow_control_marks(record, ledger_data["runs"], tree, run.get("lineage"))
+        )
     # A terminal run's stream is immutable, so its two figures are computed once
     # here, from the run's own stream, and recorded on the row; a later derive
     # then reads the ledger instead of reopening the stream. A stream that is
