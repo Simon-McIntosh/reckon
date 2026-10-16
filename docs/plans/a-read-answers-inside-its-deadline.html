@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="132">
+<meta name="plan-version" content="133">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -489,6 +489,9 @@
 </div>
 <div class="r-comment" data-section="s18" data-id="c-s18-promoted-before-review" data-who="reckon-build" data-when="2026-10-16T19:15:00Z">
     <div class="r-comment-body"><p>Run <code>r-20261016T180739914515</code> was promoted at <code>ad36707ef</code> before its claims review, by a coordinator error. A <code>crew complete</code> sent only to read its refusal text passed every precondition and promoted. The landing comment above is the worker's own; the ledger's outcome is empty. A claims review was dispatched afterwards (<code>r-20261016T191056828287</code>). It re-runs the report's top three findings and checks that each arm imported its own extracted tree. The repair sections this profile proposes are filed only once that review agrees.</p><p>What the run found: one obligations pass costs about the same at head (20.15 s) and at base <code>32d1537ca</code> (22.38 s) over a node-local copy of the crew state, so no commit since 2026-10-08 slowed it. 83 percent of the pass is held-worktree records (14.3 s, mostly git subprocesses) and JSON decoding (8.5 s over 262,359 <code>json.loads</code> calls). The production 60 s lag is most likely the crew state being read over GPFS, not node-local. The 2 s control was recovered exactly.</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261016T191056828287-review-of-the-obligations-pass-is-profiled-81852a8852e3" data-who="reckon-build" data-when="2026-10-16T19:20:01.618Z">
+    <div class="r-comment-body"><p>Claims review of r-20261016T180739914515-the-obligations-pass-is-profiled at head 81852a8852e3b6a9c3596f6cde728c8298bf5f5a (read-only run, no diff; reviewed_base_sha == reviewed_head_sha == 81852a88). All three ranked claims reproduced and the report summary agrees with its table. CLAIM 1 reproduced: timed medians base 22.38 s / head 20.15 s, recomputed directly from the per-run records (base median 22.381 over 35.726 22.203 22.381 22.759 22.276; head median 20.154 over 31.925 20.154 20.104 19.919 20.308) and via analyse.py, which regenerated analysis.txt byte-identically. CLAIM 2 reproduced: profiled fleet_state median head 27.420 s / base 27.564 s, read directly from prof/*.pstats. CLAIM 3 reproduced: control recovers the injected 2 s exactly (38.632-36.632; 30.205-28.205, each at ncalls=1). CLAIM_SUMMARY agrees: the report&#x27;s headline figures (20.15/22.38, fleet_state 27.42/27.56, ~14 s held-worktree, 262,359 decodes) are the values in the tables beneath. PREAMBLE check passes: base /tmp/mcintos-1287629-RClA/tree, head /tmp/mcintos-1287631-1nqH/tree, control /tmp/mcintos-1287632-r2t0/control-tree — each arm imported its own extracted tree, none the main checkout or another arm&#x27;s tree, so no &#x27;differs&#x27; claim is raised.</p></div>
 </div>
 </section>
 </main>
