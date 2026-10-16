@@ -2023,8 +2023,49 @@ def _require_plan_review_delivered_in_its_directory(
     )
 
 
+def _committed_review_rounds(
+    project: str, reviewed_run_id: str, root: str | Path | None
+) -> tuple[set[str], set[str]]:
+    """The review ids and reviewed heads already committed for a reviewed run.
+
+    A promotion commits every staged round of the subject, so a later promotion
+    of the same subject meets rounds it has already landed. The committed files
+    are the record of that: each carries the review run id it was filed under —
+    the named id of the run that produced it, or the derived legacy id of an
+    unnamed round — and the reviewed head it read. Both are returned so a staged
+    round already present is recognised whatever id it was filed under and is
+    not written again, which is what keeps a disposition or an answer recorded
+    on its committed copy from being overwritten by the staging bytes. A project
+    with no committed tree, or a reviewed run with no committed directory, has
+    nothing committed and returns two empty sets.
+    """
+    ids: set[str] = set()
+    heads: set[str] = set()
+    committed_root = review_module.committed_review_root(project, root=root)
+    if committed_root is None:
+        return ids, heads
+    directory = (
+        Path(committed_root) / review_module.COMMITTED_RUN_DIRNAME / reviewed_run_id
+    )
+    if not directory.is_dir():
+        return ids, heads
+    for path in directory.glob("*.json"):
+        ids.add(path.stem)
+        stored = _read_json_object(path)
+        if stored is None:
+            continue
+        _, _, head_carried, head_sha = review_module.carried_revision_pair(stored)
+        if head_carried and head_sha:
+            heads.add(head_sha.strip().lower())
+    return ids, heads
+
+
 def _delivered_review_payloads_for_commit(
-    record: Mapping[str, Any], project: str, run_id: str
+    record: Mapping[str, Any],
+    project: str,
+    run_id: str,
+    *,
+    root: str | Path | None = None,
 ) -> list[dict[str, Any]]:
     """Every stored review record a promoting review run should commit.
 
@@ -2060,6 +2101,22 @@ def _delivered_review_payloads_for_commit(
     uses, and marked ``review_run_id_source: derived`` — so every round of the
     subject lands rather than surviving only in the staging store.
 
+    The committed tree a round is compared against is the caller's ``root`` —
+    the same root the landing writes into — so the already-committed skip and
+    the write agree on one tree even when that root differs from the run's own
+    repository; a caller that names no root falls back to the record's repo.
+
+    Two staged rounds are the same round and are not filed twice. A reviewer
+    writes its one record to both of the paths its dispatch grants, so the same
+    bytes sit at the delivered path and at a sibling; a staged record whose
+    bytes equal the delivered record's is not filed again. And a staged round
+    the committed tree already holds for the subject — under the named id of
+    the run that produced it, or under the derived legacy id of its bytes — is
+    not written again, so a disposition or an answer recorded on its committed
+    copy survives the promotion rather than being rewritten from the staging
+    bytes. A staged round not yet committed is committed as before, under its
+    derived legacy id.
+
     The store refuses a record it cannot key or time; this function does not
     filter such a record out, because the refusal must reach the caller as a
     rolled-back landing rather than as a silently dropped round.
@@ -2085,6 +2142,7 @@ def _delivered_review_payloads_for_commit(
         record, str(record.get("project") or "")
     )
     delivered_path = delivered[1] if delivered is not None else None
+    delivered_bytes: bytes | None = None
     if delivered_path is not None:
         delivered_payload = _read_json_object(delivered_path)
         if delivered_payload and not str(
@@ -2092,28 +2150,72 @@ def _delivered_review_payloads_for_commit(
         ).strip():
             delivered_payload = {**delivered_payload, "review_run_id": run_id}
         include(delivered_payload)
+        try:
+            delivered_bytes = Path(delivered_path).read_bytes()
+        except OSError:
+            delivered_bytes = None
     reviewed_run_id = recovery._resolved_reviewed_run_id(record, project)
+    # The rounds are read from the same tree the caller will write them into,
+    # so the already-committed skip sees what the landing has already stored.
+    # A caller that names no root falls back to the run's own repository.
+    rounds_root = root if root is not None else record.get("repo")
+    committed_ids, committed_heads = (
+        _committed_review_rounds(project, reviewed_run_id, rounds_root)
+        if reviewed_run_id
+        else (set(), set())
+    )
     if reviewed_run_id:
         for path, stored in review_module.stored_records_for_run(
             project, reviewed_run_id
         ):
-            if delivered_path is not None and Path(path) == Path(delivered_path):
+            staged_path = Path(path)
+            if delivered_path is not None and staged_path == Path(delivered_path):
                 continue
-            round_payload = stored
-            if not str(stored.get("review_run_id") or "").strip():
-                # The round carries no review run id of its own, so it cannot be
-                # keyed by one. Its bytes key it stably instead: file it under
-                # the derived legacy id — the same derivation the host importer
-                # uses — so the round is committed rather than surviving only in
-                # the staging store.
-                round_payload = {
+            # The reviewer wrote one record to both granted paths, so the same
+            # bytes sit at the delivered path and at a sibling. A staged record
+            # whose bytes equal the delivered record's is that same round and is
+            # not filed again; without this the one round itself is filed twice.
+            if delivered_bytes is not None:
+                try:
+                    if staged_path.read_bytes() == delivered_bytes:
+                        continue
+                except OSError:
+                    pass
+            # A round the committed tree already holds for this subject — under
+            # the named id of the run that produced it, or under the derived
+            # legacy id of its bytes — is not written again, so a disposition or
+            # an answer recorded on its committed copy survives the promotion
+            # rather than being rewritten from the staging bytes.
+            _, _, head_carried, head_sha = review_module.carried_revision_pair(stored)
+            if (
+                head_carried
+                and head_sha
+                and head_sha.strip().lower() in committed_heads
+            ):
+                continue
+            named_id = str(stored.get("review_run_id") or "").strip()
+            if named_id:
+                if named_id in committed_ids:
+                    continue
+                include(stored)
+                continue
+            # The round carries no review run id of its own, so it cannot be
+            # keyed by one. Its bytes key it stably instead: file it under the
+            # derived legacy id — the same derivation the host importer uses —
+            # so the round is committed rather than surviving only in the staging
+            # store. A round already committed under that id is skipped.
+            derived_id = review_module.derived_legacy_review_run_id(
+                staged_path.read_bytes()
+            )
+            if derived_id in committed_ids:
+                continue
+            include(
+                {
                     **stored,
-                    "review_run_id": review_module.derived_legacy_review_run_id(
-                        Path(path).read_bytes()
-                    ),
+                    "review_run_id": derived_id,
                     "review_run_id_source": "derived",
                 }
-            include(round_payload)
+            )
     if not payloads:
         # A plan review names no reviewed run and its own round was not found
         # through the delivered lookup, so the store index for the review run

@@ -952,7 +952,7 @@ def _complete_locked(
     committed_review_payloads: list[dict[str, Any]] = []
     if not shadow:
         committed_review_payloads = _delivered_review_payloads_for_commit(
-            record, project, run_id
+            record, project, run_id, root=ledger_root
         )
     committed_review_payload = next(
         (
