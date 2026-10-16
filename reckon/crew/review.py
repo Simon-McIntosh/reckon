@@ -1277,6 +1277,13 @@ _GATE_FAILURE_RE = re.compile(r"^(?:FAILED|ERROR)\s+(\S+)", re.MULTILINE)
 _CTEST_FAILED_HEADER_RE = re.compile(r"^The following tests FAILED:\s*$", re.MULTILINE)
 _CTEST_ENTRY_RE = re.compile(r"^\s*\d+\s*-\s*(.+?)\s+\(([^)]*)\)\s*$")
 
+# A ctest id copied from a run's summary, ``157 - XPOINT_BASELINE/ITER/imas/corsica``.
+# The leading index is the test's position in that one run's list, not part of
+# its identity, so an id carrying it names the same test as the reader that
+# takes the name alone out of a log's failure block. A pytest node id never
+# opens this way and is left untouched.
+_CTEST_INDEX_RE = re.compile(r"^\d+\s+-\s+")
+
 # The lines a log carries when it is a ctest run, with or without failures. A
 # green ctest log has no failure block, so its format is recognised from the
 # run summary ctest always prints; without one the extractor cannot tell a
@@ -1491,7 +1498,12 @@ def canonical_node_id(node_id: str, arm_directory: str | Path | None = None) -> 
     spelling is kept whole: reducing it would merge a package's own
     ``pkg/tests/x.py`` into ``tests/x.py``, and an addition under one would read
     as one the other already had. Separators are normalised to ``/`` in every
-    case. The ``::`` segments and parametrisation brackets are returned
+    case. A ctest id copied from a run's summary opens with the test's index in
+    that run (``157 - XPOINT_BASELINE/ITER/imas/corsica``), which is a position
+    and not part of the name, so a leading ctest index is dropped before the
+    rest is reduced; the name alone is what a ctest log's failure block carries,
+    and the two spellings are one test. The ``::`` segments and parametrisation
+    brackets are returned
     untouched, because they are what tells apart two tests sharing a file. An id
     carrying no ``tests`` component cannot be resolved against the repository and
     is kept verbatim: it is still compared, under the spelling its own log used,
@@ -1499,6 +1511,7 @@ def canonical_node_id(node_id: str, arm_directory: str | Path | None = None) -> 
     """
     path, separator, segments = node_id.partition("::")
     path = path.replace("\\", "/")
+    path = _CTEST_INDEX_RE.sub("", path, count=1)
     path = _strip_recorded_directory(path, arm_directory)
     components = path.split("/")
     if len(components) > 1 and components[0] == _REPO_DIRECTORY_NAME:
