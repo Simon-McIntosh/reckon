@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite arm and no after_suite arm (both null), so no base/head gate-log pair exists to reduce and the added-failure count was not taken. The reviewed run's only gate, gate-figures.log over draw_pairs.py, is a custom log with EXIT=0 and no failing test id, so there are no added failures to derive; the reviewed run also changed no test file, so there is nothing for a base/head comparison to hold.",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-16T19:43:31.448Z",
+  "dispatched_at": "2026-10-16T19:27:14Z",
+  "findings": [
+    {
+      "file": "docs/figures/figure-review-pairs/draw_pairs.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the node ships no test, so nothing fails if the committed figure set regresses \u2014 a missing SVG or PNG, a re-introduced role word, or a swapped bad letter would land silently. The only executable guard is draw_pairs.py itself, which nothing runs automatically, and the declared negative control is none, so the artefact set is protected only by the coordinator's own view against pairs.json."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T162010998484-the-five-figure-pairs-are-drawn/gate-figures.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate log records svg_count, png_count, banned_words_hits and EXIT, but not the done-when's clean-re-run clause; the reproduction the node measured is asserted only in the manifest's prose, so a reader of the log alone cannot see that the file set reproduces. I reproduced it independently (a scratch copy of draw_pairs.py re-run twice left the ten SVGs and pairs.json byte-identical to the committed tree; only pair-2's colour-only pair and the declared PNG tIME chunk differ), so the claim holds \u2014 it is the record, not the fact, that is thin."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T162010998484-the-five-figure-pairs-are-drawn/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the brief's step 4 asks the worker to say in the manifest whether it viewed each PNG against pairs.json (and to write that it could not, if the harness shows no images); the manifest states neither, so the visual reconciliation is unrecorded. I viewed all ten PNGs and each matches pairs.json \u2014 the five bad figures carry exactly their named defect and their twins do not \u2014 so the gap is a recording omission, not a defect in the figures."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none \u2014 the landed change is a standalone drawing script under docs/figures/ with no importer, and a search over reckon/, scripts/, tests/ and docs/ found it referenced only by the plan page, no production runtime code.",
+    "diff": "read commit by commit \u2014 1ecc4bc5 adds draw_pairs.py, pairs.json and the ten SVGs and ten PNGs (29674 insertions); 7438afac adds the 24-line evidence fragment. Both carry a conventional subject and a body; git log -2 --format=%B is free of any attribution trailer.",
+    "done_when": "the done_when names ten SVGs, ten PNGs, draw_pairs.py and pairs.json, a clean re-run reproducing the file set, one-rule-difference per pair, no role word, ruff clean and a conventional commit. I verified each: the directory holds exactly 10 SVG + 10 PNG + draw_pairs.py + pairs.json; a scratch re-run reproduces the ten SVGs and pairs.json byte-identically; pair 2's twins differ by one fill-colour line, pair 3 by tick/label font size, pair 4 by decoration, pair 5 by the colour-axis label and pair 1 is table-versus-plot, so each bad twin differs only by its pair's rule; an independent grep of pair-*.svg returns 0 hits for bad|good|wrong|pair; ruff check and ruff format --check are clean on the script; both commits carry a subject and a body.",
+    "goal": "the goal is five known-bad/known-good figure pairs of \u00a73 under docs/figures/figure-review-pairs/, each kept as the SVG it was drawn in and as a PNG rendered from it, with a key naming the rule each pair tests and which twin is bad. docs/figures/figure-review-pairs/pairs.json records rule, bad letter and defect for all five pairs, and the directory holds the ten SVGs and ten PNGs rendered from them.",
+    "manifest": "read; it records status complete, commits 1ecc4bc5 and 7438afac, the gate gate-figures.log over draw_pairs.py (EXIT=0, 10 SVG + 10 PNG, banned_words_hits 0, largest file 221934 bytes), bad letters a,b,b,b,a, an unarmed negative control stated as none, and a PNG-timestamp follow-on. Its reproduction claim is true \u2014 I re-ran the script from a scratch copy and the SVGs and pairs.json came back byte-identical.",
+    "write_paths": "the dispatch fenced the node to docs/figures/figure-review-pairs, docs/evidence/fragments/a-review-can-see-the-figure/the-five-figure-pairs-are-drawn.html and docs/figures/a-review-can-see-the-figure/the-five-figure-pairs-are-drawn. Every path in the diff 1ecc4bc5..7438afac is inside the first two of those; the third is unused and nothing outside the three changed."
+  },
+  "justifications": {
+    "durability": "no test under tests/ reaches docs/figures/figure-review-pairs/, so a regression \u2014 a deleted figure, a re-introduced role word, a swapped bad letter \u2014 would redden nothing, and draw_pairs.py:1 is exercised only by hand.",
+    "evidence": "docs/figures/figure-review-pairs/gate-figures.log records svg_count 10, png_count 10, banned_words_hits 0 and EXIT=0 over draw_pairs.py:1, and I reproduced the ten SVGs and pairs.json byte-identically from a scratch copy, but the log carries no reproduction clause so the done-when's file-set claim rests on the manifest's prose alone.",
+    "fit": "docs/figures/figure-review-pairs/draw_pairs.py:1 follows the repo's self-contained per-figure matplotlib idiom that docs/figures/unreviewed-promotion-exposure/exposure_counts.py:1 also uses, and introduces no plan, stage, sprint or version label in a name, filename or comment.",
+    "goal_fidelity": "docs/figures/figure-review-pairs/pairs.json:1 records the rule, the bad letter and the single defect for each of the five \u00a73 pairs, and docs/figures/figure-review-pairs/ holds exactly the ten SVGs and ten PNGs the goal names.",
+    "reuse": "no owner for a figure-style module or an SVG rasteriser exists in reckon \u2014 a search by capability over reckon/, scripts/, tests/ and docs/figures/ found only per-script definitions, which docs/figures/figure-review-pairs/draw_pairs.py:82 (_rasterise) and :105 (_save) reuse the repo's idiom for rather than forking an owner.",
+    "scope_discipline": "the diff 1ecc4bc5..7438afac touches 23 files, every one inside the dispatch-granted docs/figures/figure-review-pairs or docs/evidence/fragments/a-review-can-see-the-figure/the-five-figure-pairs-are-drawn.html, with nothing outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is five known-bad/known-good figure pairs of \u00a73 under docs/figures/figure-review-pairs/, each kept as the SVG it was drawn in and as a PNG rendered from it, with a key naming the rule each pair tests and which twin is bad; docs/figures/figure-review-pairs/pairs.json:1 records rule, bad letter and defect for all five pairs and the directory holds ten SVGs and ten PNGs.\nVERDICT done_when: the done_when names ten SVGs, ten PNGs, draw_pairs.py and pairs.json, a clean re-run reproducing the file set, one-rule-difference per pair, no role word, ruff clean and a conventional commit; I verified each \u2014 the directory holds exactly those files, a scratch re-run reproduces the ten SVGs and pairs.json byte-identically, pair 2's twins differ by one fill-colour line (pair-2-a.svg:1545), pair 3 by font size, pair 4 by decoration, pair 5 by the colour-axis label and pair 1 is table-versus-plot, an independent grep of pair-*.svg returns 0 role-word hits, and ruff check and ruff format --check are clean on draw_pairs.py:1.\nVERDICT write_paths: the dispatch fenced docs/figures/figure-review-pairs, docs/evidence/fragments/a-review-can-see-the-figure/the-five-figure-pairs-are-drawn.html and docs/figures/a-review-can-see-the-figure/the-five-figure-pairs-are-drawn; every path in the diff 1ecc4bc5..7438afac is inside the first two, and the third is unused.\nVERDICT manifest: read; it records status complete, commits 1ecc4bc5 and 7438afac, the gate gate-figures.log over draw_pairs.py (EXIT=0, 10 SVG + 10 PNG, banned_words_hits 0), bad letters a,b,b,b,a and an unarmed negative control; its reproduction claim is true \u2014 re-running the script from a scratch copy left the SVGs and pairs.json byte-identical.\nVERDICT diff: read commit by commit \u2014 1ecc4bc5 adds draw_pairs.py, pairs.json and the ten SVGs and ten PNGs (29674 insertions), 7438afac adds the 24-line evidence fragment; both carry a conventional subject and a body and no attribution trailer.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/figures/figure-review-pairs/pairs.json:1 records the rule, the bad letter and the single defect for each of the five \u00a73 pairs, and docs/figures/figure-review-pairs/ holds exactly the ten SVGs and ten PNGs the goal names.\nSCORE evidence: 16\nJUSTIFICATION evidence: docs/figures/figure-review-pairs/gate-figures.log records svg_count 10, png_count 10, banned_words_hits 0 and EXIT=0 over draw_pairs.py:1, and I reproduced the ten SVGs and pairs.json byte-identically from a scratch copy, but the log carries no reproduction clause so the done-when's file-set claim rests on the manifest's prose alone.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 1ecc4bc5..7438afac touches 23 files, every one inside the dispatch-granted docs/figures/figure-review-pairs or docs/evidence/fragments/a-review-can-see-the-figure/the-five-figure-pairs-are-drawn.html, with nothing outside them.\nSCORE durability: 7\nJUSTIFICATION durability: no test under tests/ reaches docs/figures/figure-review-pairs/, so a regression \u2014 a deleted figure, a re-introduced role word, a swapped bad letter \u2014 would redden nothing, and draw_pairs.py:1 is exercised only by hand.\nSCORE fit: 18\nJUSTIFICATION fit: docs/figures/figure-review-pairs/draw_pairs.py:1 follows the repo's self-contained per-figure matplotlib idiom that docs/figures/unreviewed-promotion-exposure/exposure_counts.py:1 also uses, and introduces no plan, stage, sprint or version label in a name, filename or comment.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner for a figure-style module or an SVG rasteriser exists in reckon \u2014 a search by capability over reckon/, scripts/, tests/ and docs/figures/ found only per-script definitions, which docs/figures/figure-review-pairs/draw_pairs.py:82 (_rasterise) and :105 (_save) reuse the repo's idiom for rather than forking an owner.\nFINDING docs/figures/figure-review-pairs/draw_pairs.py:1 follow-on: the node ships no test, so nothing fails if the committed figure set regresses \u2014 a missing SVG or PNG, a re-introduced role word, or a swapped bad letter would land silently; the only executable guard is draw_pairs.py itself, which nothing runs automatically, and the declared negative control is none.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T162010998484-the-five-figure-pairs-are-drawn/gate-figures.log:1 follow-on: the gate log records counts and role-word hits but not the done-when's clean-re-run clause, so the reproduction it does not carry is asserted only in the manifest's prose.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T162010998484-the-five-figure-pairs-are-drawn/manifest.md:1 follow-on: the manifest does not state whether the worker viewed each PNG against pairs.json (the brief's step 4), so the visual reconciliation is unrecorded; I viewed all ten PNGs and each matches pairs.json.\n",
+  "review_run_id": "r-20261016T192639355318-review-of-the-five-figure-pairs-are-drawn-7438afac96e3",
+  "reviewed_base_sha": "abee30304413e90a6e83daf0c78ed6a859023c7e",
+  "reviewed_head_sha": "7438afac96e3ab0ce666bbdcc9d5e91f04f726c7",
+  "reviewed_run_id": "r-20261016T162010998484-the-five-figure-pairs-are-drawn",
+  "role": "review",
+  "scores": {
+    "durability": 7,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T19:37:45Z",
+  "total": 99
+}
