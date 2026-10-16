@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="163">
+<meta name="plan-version" content="164">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -649,6 +649,9 @@
 </div>
 <div class="r-comment" data-section="s20" data-id="c-close-s20" data-who="reckon-build" data-when="2026-10-16T04:18:00Z">
     <div class="r-comment-body"><p>§20 landed. A review saved to both of its paths is committed once, and a later review promotion no longer rewrites an earlier round, so the dispositions committed on it stay. Merged as <code>98d26a09b</code>. Review: 103/120 after one repair round. <a href="/reckon/evidence/archive/every-review-is-kept-as-a-committed-record-landed.html#s20">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20261016T005850794919-a-review-written-twice-is-committed-once" data-who="reckon-build" data-when="2026-10-16T02:02:33.777Z">
+    <div class="r-comment-body"><p>reckon/crew/promotion_checks.py files each staged review round once (a staged record whose bytes equal the delivered record&#x27;s is not filed again) and never rewrites a round the committed tree already holds, and the committed tree it reads is the landing&#x27;s own root — the same root promotion.py writes into — so a finding disposition on a committed round survives the subject&#x27;s next review even when the run&#x27;s own repository is a different checkout; tests/test_a_review_written_twice_is_committed_once.py gives 4 passed, negative control 3 failed, and the differing-root case 1 failed when the reader is pointed back at the run&#x27;s repo</p></div>
 </div>
 </section>
 </main>
