@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T12:58:28.107Z",
+  "dispatched_at": "2026-10-16T12:51:43Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:131",
+      "id": "done_when-1",
+      "reason": "without the partition in the done-when the \u00a76 node cannot obtain the quiet node its measure requires, so the whole measurement repeats the confound it intends to fix.",
+      "text": "\u00a76's deliverable asserts \"its done-when names `all_debug`\", but the section's done-when (line 134) names no partition, and the dispatch host submits a separate partition job only \"when the done-when names one\", so the re-measure would again run on the shared fleet node under load \u2014 the exact 2026-10-16 confound this change was made to remove",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:186",
+      "id": "done_when-2",
+      "reason": "without a control (e.g. the base arm must be faster than head, or a repeat head pass must reproduce the same leading functions) the node's whole measure rests on an attribution that could be a plausible artifact.",
+      "text": "\u00a718's done-when declares no negative control, where \u00a76, \u00a77 and \u00a79 each name one, so its \"at least 80 percent of the difference attributed\" claim has no stated control a dispatch can run and a reviewer can check",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:262",
+      "id": "wiring-1",
+      "reason": "a route naming a done section sends the next \u00a717 dispatch to already-landed work and leaves \u00a717 without a live dispatch route.",
+      "text": "f-araiid-013 stays data-status=\"open\" and recommends (/reckon-build \u2026 \u00a716), yet \u00a716 is now declared done (line 24 declarations, line 177 section) and only \u00a717 remains implementable, so the plan's open route for \u00a717 dispatches a builder at a completed section",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "399a7a6b279333d21a9d2389752cbf2d590fdb83b0249ac2df4e2c23e9edb2bc",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 94,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T125040653830-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "33b2ecfc995eaa2e8739fd0736517bf3fa169460",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 reckon/crew/obligation_snapshot.py resolves with FRESHNESS_WINDOW_SECONDS = 120.0 (line 51), the obligations snapshot directory ~/.config/reckon/crew/obligations/reckon/, the health-review profiler (health-tool-latency/scripts/profile_reads.py) and the fragments directory all exist.",
+    "done_when": "a finding \u2014 \u00a76's deliverable claims its done-when names the partition but the done-when does not, and \u00a718 declares no negative control.",
+    "evidence_paths": "pass \u2014 \u00a76 writes under the run's log directory and \u00a718 under the run directory plus docs/evidence/fragments/a-read-answers-inside-its-deadline/, all durable paths.",
+    "naming": "pass \u2014 the changed text carries no plan labels, stage names, ticket numbers or version tags, and no changelog prose.",
+    "reasoning": "pass \u2014 \u00a718 declines to name a root cause its evidence cannot support (\"Nothing yet names where the minute goes\") and its base/head profiling produces its done-when; \u00a76's busy-node claim matches the run record, though the partition mechanism it adds does not reach the done-when (raised under done_when).",
+    "single_goal": "pass \u2014 \u00a76 measures the reads; \u00a718 profiles the changed obligations pass; each carries one deliverable.",
+    "wiring": "a finding \u2014 f-araiid-013, the only open route to \u00a717, still recommends \u00a716, which the changed declarations now mark done."
+  },
+  "section_digests": {
+    "_document": "27e04b7ec4c7a4424eb7839ff032567efe8f2c9f504c5f09139c14dd3ec284e3",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "03e3964a2a0050822514ca4346336660a69942df32ced848dcddac6047e3ef05",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "a761ac465a0e6e971c0a8646038fb1c0c65b6e78118436b95a2a94df7c26b25b",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T13:05:03.023797+00:00"
+}
