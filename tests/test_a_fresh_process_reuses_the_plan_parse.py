@@ -265,3 +265,46 @@ def test_the_store_carries_the_body_state(tmp_path, tree, config_home):
     reused = _run(script, tree, "probe", config_home)
     assert reused["parses"] == 0
     assert reused["plans"]["p00"]["followups"] == 1
+
+
+def _status_of(inventory: list[dict], slug: str) -> str | None:
+    for row in inventory:
+        if row.get("slug") == slug:
+            return row.get("status")
+    return None
+
+
+def test_an_in_process_edit_is_not_answered_from_the_store(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A file changed in this process must not be answered from the stored parse.
+
+    A state edit read back through the roadmap, and a review composed after its
+    fixture moved, both write a plan and read discovery again with no change
+    watch reporting it. The stored parse is keyed by the file's bytes, so the
+    read that follows the edit must see the new bytes whichever route it takes
+    to the store — a reader that answers from a parse of the file as it was is
+    serving the stale state this store exists to avoid.
+    """
+
+    from reckon import metadata_index, serve
+
+    docs = _build_tree(tmp_path / "edited")
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    monkeypatch.setattr(serve, "load_mounts", lambda: {"probe": docs})
+    monkeypatch.setattr(serve, "_STATE_ROOT", None)
+
+    first = serve.discover_plans(docs, "probe", None)
+    assert _status_of(first["inventory"], "p03") == "active", (
+        "the read that establishes the store did not answer for the plan"
+    )
+
+    (docs / "plans" / "p03.html").write_text(
+        _plan_html("p03", status="done"), encoding="utf-8"
+    )
+
+    second = serve.discover_plans(docs, "probe", None)
+    assert _status_of(second["inventory"], "p03") == "done", (
+        "the read after the edit answered from a parse of the file as it was"
+    )
+    assert metadata_index.index_rows(docs, "probe")

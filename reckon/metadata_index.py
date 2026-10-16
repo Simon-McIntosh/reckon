@@ -788,13 +788,15 @@ def discovery_state(docs_dir: Path, project: str) -> dict[str, dict]:
     re-derived by a full build rather than read as a stale answer. A file the
     store does not cover is left out too, so the caller parses it rather than
     inventing an entry.
+
+    The store is read afresh on every call rather than served from the in-process
+    index cache: a caller that edits a plan and reads discovery again in the same
+    process reports nothing to a change watch, so that cache still holds a parse
+    of the file as it was. The digest check is what makes an entry current, and it
+    runs only over the persisted entries.
     """
 
     key = _cache_key(docs_dir, project, False)
-    with _LOCK:
-        build = _CACHE.get(key)
-    if build is not None:
-        return {relative: dict(entry) for relative, entry in build.discovery.items()}
     known = _load_persisted(docs_dir, project)
     if not known:
         built = _build_and_cache(key, docs_dir, project, repo_dir=None)
