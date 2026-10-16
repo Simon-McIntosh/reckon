@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T14:03:13.030Z",
+  "dispatched_at": "2026-10-16T13:55:28Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:274",
+      "id": "wiring-1",
+      "reason": "\u00a717 landed at 13:50 after f-araiid-017 was written at 13:08, so the plan has since changed what the finding describes and the followup must be resolved and a new one written routing the \u00a76 re-measure alone.",
+      "text": "`f-araiid-017` is the only open followup that carries the \u00a76 re-measure (its body: \"Once it lands, re-measure \u00a76\"), yet its `data-recommends-skill` and prompt read `/reckon-build a-read-answers-inside-its-deadline \u00a717` and its premise \u2014 \"\u00a717 is in its repair round\" \u2014 is now false, because \u00a717 is declared `done` (line 24 declarations, line 182 section) and its outcome comment records it landed at `e893c84e6` (line 445). A builder dispatched on the followup's own route reaches a completed section and never reaches \u00a76, the plan's only implementable read-repair section \u2014 the same stale-open-followup pattern an earlier review raised against f-araiid-011 and f-araiid-013 and the plan acted on.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:126",
+      "id": "evidence_paths-1",
+      "reason": "a missed \u00a76 that keeps no dumps and names no revision forces another measurement round rather than an attribution, repeating the loss \u00a77's Why exists to prevent.",
+      "text": "\u00a76 requires the medians be logged under the run directory, but says nothing about where the profiler's `.prof` dumps or the pinned corpus revision go, while the corpus is extracted \"into node-local scratch\" and its sibling measurement section \u00a77 (line 143) explicitly keeps \"every `.prof` dump under its run's report directory\". \u00a76's target has been missed on each of its three attempts so far, so the profile dumps are the evidence a later reader would attribute from, and the loss of exactly that evidence to node-local scratch is recorded in \u00a77's own Why and again in \u00a716's head-arm note.",
+      "type": "evidence_paths",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2a4a7f95915f060115c5ae13cc092c31cb8548e753bc43ad3b87c1cfd3dc1ee7",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 104,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T135434506298-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "96be62a2b86e712db90420ac9ae10c520dfb2a7f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `health-tool-latency/scripts/profile_reads.py` resolves (under the `health-review-1010` report directory \u00a71 fully qualifies), and \u00a71 and \u00a77, which \u00a76 cites, both exist and say what \u00a76 attributes to them.",
+    "done_when": "pass \u2014 \u00a76's done-when names warm roadmap \u22642 s, warm audit \u22643 s, a cold roadmap under the 30 s MCP deadline, an MCP read returning without `storage-slow`, and a declared negative control (the base revision must exceed the deadline for the comparison to count).",
+    "evidence_paths": "a finding \u2014 \u00a76 places the medians in the run log but leaves the profiler's dumps and the pinned corpus revision unplaced, so the only evidence that would attribute a missed target dies with node-local scratch.",
+    "naming": "pass \u2014 the section names no code symbols and carries no ticket numbers, stage labels or changelog prose; its commit shas are plan prose.",
+    "reasoning": "pass \u2014 \u00a76 is a measurement node; its frozen-corpus mechanism (one extraction at one pinned revision, read by both arms) is exactly what \u00a77 requires, its root-cause frame is \u00a71's, and the mechanism runs on the real path the plan relies on \u2014 the health review's profiler, dispatched as its own `all_debug` job by the host whose contract submits a separate partition job when the done-when names one.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable, a cold/warm measurement of the three reads against a base arm.",
+    "wiring": "a finding \u2014 the only open followup carrying the \u00a76 re-measure, `f-araiid-017` (`docs/plans/a-read-answers-inside-its-deadline.html:274`), recommends a section that is already done."
+  },
+  "section_digests": {
+    "_document": "27e04b7ec4c7a4424eb7839ff032567efe8f2c9f504c5f09139c14dd3ec284e3",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "5e04b46c0f1346935e8e40ae78a495cd781ce5e65475c4e28e33ae754e94155c",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T14:05:39.751158+00:00"
+}
