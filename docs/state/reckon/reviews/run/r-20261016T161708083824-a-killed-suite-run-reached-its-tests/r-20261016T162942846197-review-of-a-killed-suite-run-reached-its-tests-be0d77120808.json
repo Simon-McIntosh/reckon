@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1100",
+    "reckon/crew/promotion_checks.py:891"
+  ],
+  "completed_at": "2026-10-16T16:37:12Z",
+  "dispatched_at": "2026-10-16T16:30:45Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T161708083824-a-killed-suite-run-reached-its-tests/final-focused-gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the 20-test gate header names the base commit although the tested worktree held the uncommitted change, so that log alone cannot identify the code revision it exercised; the landed-head control arm confirms only the five new tests."
+    }
+  ],
+  "head_log_revision": "be0d7712080803b243ea04cb2c04e1d5534b12c0",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "the single commit e121b18eb26412acdcffb1a3386a15332e391d8f..be0d7712080803b243ea04cb2c04e1d5534b12c0 changes two files, adding signed EXIT parsing and progress recognition in reckon/crew/standing_suite.py:69,88,404 and five fixed-log checks in tests/test_a_killed_suite_run_reached_its_tests.py:5-38.",
+    "done_when": "the source done_when names three fixed-log classifications, an overrun-only hold, three focused test files, Ruff, and a red mutation; final-focused-gate.log records 20 passed with EXIT=0, ruff-gate.log records both checks EXIT=0, and negative-control.log records three expected failures with EXIT=1.",
+    "goal": "the source goal asks standing_suite to count pytest progress as evidence tests began; reckon/crew/standing_suite.py:404 makes progress clear the collection-failure flag after explicit collection errors take precedence.",
+    "manifest": "the reviewed manifest.md records status complete, commit be0d7712080803b243ea04cb2c04e1d5534b12c0, both changed paths, the passing gate and red control logs, an absent baseline_suite, and a completed five-test after_suite.",
+    "write_paths": "prompt.txt:68-72 grants reckon/crew/standing_suite.py and tests/test_a_killed_suite_run_reached_its_tests.py among its paths, and both changed paths in the commit are granted."
+  },
+  "justifications": {
+    "durability": "tests/test_a_killed_suite_run_reached_its_tests.py:18 fails if signed EXIT parsing loses -9, line 20 fails if progress, collection-error precedence, or no-progress classification regresses, line 21 fails if an unknown count becomes zero, and lines 36-38 fail if the overrun hold disappears, loses its phrase, or regains a false collection phrase; negative-control.log proves the progress regression reddens three cases.",
+    "evidence": "final-focused-gate.log records 20 passes and negative-control.log records three mutation failures, while final-focused-gate.log:1 still names the precommit base SHA and only head-control-arm.log directly names the landed head.",
+    "fit": "reckon/crew/standing_suite.py:88 keeps the new progress regex beside the existing pytest log regexes, and its test uses the neighboring pytest parameterization style without plan or version labels in source names.",
+    "goal_fidelity": "reckon/crew/standing_suite.py:397-414 lets progress prove the test phase while collection errors and exit 5 still take precedence, and the existing hold_reason at line 547 then emits only the overrun reason.",
+    "reuse": "a capability search for pytest progress parsing in reckon and tests found no other owner, and reckon/crew/standing_suite.py:88 extends the existing suite-log parser rather than creating another parser module.",
+    "scope_discipline": "git show of be0d7712080803b243ea04cb2c04e1d5534b12c0 changes only reckon/crew/standing_suite.py and tests/test_a_killed_suite_run_reached_its_tests.py, both listed at prompt.txt:69-70."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: e121b18eb26412acdcffb1a3386a15332e391d8f\nreviewed_head_sha: be0d7712080803b243ea04cb2c04e1d5534b12c0\nVERDICT goal: the source goal asks standing_suite to count pytest progress as evidence tests began; reckon/crew/standing_suite.py:404 makes progress clear the collection-failure flag after explicit collection errors take precedence.\nVERDICT done_when: the source done_when names three fixed-log classifications, an overrun-only hold, three focused test files, Ruff, and a red mutation; final-focused-gate.log records 20 passed with EXIT=0, ruff-gate.log records both checks EXIT=0, and negative-control.log records three expected failures with EXIT=1.\nVERDICT write_paths: prompt.txt:68-72 grants reckon/crew/standing_suite.py and tests/test_a_killed_suite_run_reached_its_tests.py among its paths, and both changed paths in the commit are granted.\nVERDICT manifest: the reviewed manifest.md records status complete, commit be0d7712080803b243ea04cb2c04e1d5534b12c0, both changed paths, the passing gate and red control logs, an absent baseline_suite, and a completed five-test after_suite.\nVERDICT diff: the single commit e121b18eb26412acdcffb1a3386a15332e391d8f..be0d7712080803b243ea04cb2c04e1d5534b12c0 changes two files, adding signed EXIT parsing and progress recognition in reckon/crew/standing_suite.py:69,88,404 and five fixed-log checks in tests/test_a_killed_suite_run_reached_its_tests.py:5-38.\nCALL_SITES: reckon/crew_run_commands.py:1100, reckon/crew/promotion_checks.py:891\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/standing_suite.py:397-414 lets progress prove the test phase while collection errors and exit 5 still take precedence, and the existing hold_reason at line 547 then emits only the overrun reason.\nSCORE evidence: 17\nJUSTIFICATION evidence: final-focused-gate.log records 20 passes and negative-control.log records three mutation failures, while final-focused-gate.log:1 still names the precommit base SHA and only head-control-arm.log directly names the landed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show of be0d7712080803b243ea04cb2c04e1d5534b12c0 changes only reckon/crew/standing_suite.py and tests/test_a_killed_suite_run_reached_its_tests.py, both listed at prompt.txt:69-70.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_killed_suite_run_reached_its_tests.py:18 fails if signed EXIT parsing loses -9, line 20 fails if progress, collection-error precedence, or no-progress classification regresses, line 21 fails if an unknown count becomes zero, and lines 36-38 fail if the overrun hold disappears, loses its phrase, or regains a false collection phrase; negative-control.log proves the progress regression reddens three cases.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/standing_suite.py:88 keeps the new progress regex beside the existing pytest log regexes, and its test uses the neighboring pytest parameterization style without plan or version labels in source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: a capability search for pytest progress parsing in reckon and tests found no other owner, and reckon/crew/standing_suite.py:88 extends the existing suite-log parser rather than creating another parser module.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T161708083824-a-killed-suite-run-reached-its-tests/final-focused-gate.log:1 follow-on: the 20-test gate header names the base commit although the tested worktree held the uncommitted change, so that log alone cannot identify the code revision it exercised; the landed-head control arm confirms only the five new tests.\n",
+  "review_run_id": "r-20261016T162942846197-review-of-a-killed-suite-run-reached-its-tests-be0d77120808",
+  "reviewed_base_sha": "e121b18eb26412acdcffb1a3386a15332e391d8f",
+  "reviewed_head_sha": "be0d7712080803b243ea04cb2c04e1d5534b12c0",
+  "reviewed_run_id": "r-20261016T161708083824-a-killed-suite-run-reached-its-tests",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T16:34:42.509247+00:00",
+  "total": 115
+}

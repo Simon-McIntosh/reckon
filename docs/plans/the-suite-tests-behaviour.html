@@ -26,7 +26,7 @@
   <title>The Suite Tests Behaviour | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="66">
+<meta name="plan-version" content="67">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -253,7 +253,7 @@
     <div class="r-comment-body"><p>§2 landed: the harness finds Playwright's headless shell (commits <code>c2c060c05</code> and <code>9e45ca5a4</code>, run <code>r-20261010T203540295453-browser-harness-finds-playwright</code>). It was merged at <code>e6b265996</code> with §7's measurement, which satisfies gate <code>g-tstb-browser-row</code>. <a href="/reckon/evidence/archive/the-suite-tests-behaviour-landed.html#s2">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261010T203540295453-browser-harness-finds-playwright" data-who="reckon-build" data-when="2026-10-10T21:33:03.821Z">
-    <div class="r-comment-body"><p>fixed(tests): installed_browser() now resolves RECKON_BROWSER, the three PATH names, then Playwright&#x27;s headless shell newest-first; browser population skips 66-&gt;0 for a missing browser</p></div>
+    <div class="r-comment-body"><p>fixed(tests): installed_browser() now resolves RECKON_BROWSER, the three PATH names, then Playwright's headless shell newest-first; browser population skips 66-&gt;0 for a missing browser</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261010T231215125913-browser-population-own-row" data-who="reckon-build" data-when="2026-10-10T23:29:47.149Z">
     <div class="r-comment-body"><p>Marked the browser population at collection (223 tests in modules importing tests/spa_browser_harness.py now carry the `browser` marker) and gave it its own suite row: the standing-suite command in flight.yaml deselects the marker and a log recorded under the `browser` population name writes a row carrying that name, its own budget and its pass/fail/skip counts, while the promotion hold reads only the standing suite's own rows.</p></div>
@@ -344,6 +344,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-14T07:40:00Z">
     <div class="r-comment-body"><p>§8 closed after three nodes (merges <code>6c1518d21</code>, <code>e400cbf43</code>, <code>45c5db175</code>). Every module the census classed as unfiltered is on <code>tests/real_home_traces.py</code>, and no copy of <code>_home_fingerprint</code>, <code>_own_traces</code> or <code>fixture_pointers</code> remains. The last node's review raised two follow-ons, triaged here. First, <code>_real_store_traces</code> is a two-line wrapper over <code>traces_naming</code>, repeated in <code>test_ledger</code> and <code>test_run_store</code>, each beside its own module's <code>_real_store_path</code>. That is an adapter rather than a second copy of the search, so it is accepted as is. Second, the six fingerprint guards now watch only <code>crew/live</code> and <code>crew/watch</code>. The old top-level listing could not see a write under <code>crew/runs</code> or <code>crew/reports</code> either, because those land below <code>crew/</code>'s own entries, so no coverage was lost. Two snapshot guards fall outside the census scope of the config home and the checkout's <code>docs/state</code>. <code>test_gc_sweeps_ledger_indexes</code> lists <code>~/.cache/reckon/pick-input</code>, which is empty and unchanged since 2026-10-08. <code>test_worker_stop_hook</code> stamps <code>~/.claude/settings.json</code>, unchanged since 2026-10-10. Both are dormant in practice and are recorded here, not dispatched. <a href="/reckon/evidence/archive/the-suite-tests-behaviour-landed.html#s8-home-fingerprint-guards-third-node">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261016T162942846197-review-of-a-killed-suite-run-reached-its-tests-be0d77120808" data-who="reckon-build" data-when="2026-10-16T16:37:12Z">
+    <div class="r-comment-body"><p>Reviewed e121b18eb26412acdcffb1a3386a15332e391d8f..be0d7712080803b243ea04cb2c04e1d5534b12c0 with parsed scores 20,17,20,19,19,20, one follow-on finding, and added failures unmeasured because the reviewed run records no baseline_suite arm.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
