@@ -1,0 +1,43 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T22:03:12.934Z",
+  "dispatched_at": "2026-10-16T21:57:20Z",
+  "findings": [],
+  "plan_fingerprint": "4a9d7cf8257a0fdc9452af2d76b2e66af9866cae9b8d6482ec2af3e4a1094f82",
+  "plan_slug": "a-worker-is-charged-to-a-job",
+  "plan_version": 70,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T215644187343-plan-review-of-a-worker-is-charged-to-a-job",
+  "reviewed_blob_sha": "e8a33915f02918130df21b9c76cadecb627e72e6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 commits `5637dfc6b` (\"name sbatch as the partition route in the nested-launch texts\"), its merge `904e2d720`, and the sampled revisions `6906a79e`/`a8cca7e1b` all resolve and are ancestors of HEAD; run `r-20261016T201537573290-head-sweep-names-its-failure` exists and records the cited 0-passes-in-5 at each revision; files `reckon/nested_launch.py`, `reckon/crew/dispatch_launch.py`, `tests/test_worker_path_carries_shims.py`, `tests/test_nested_refusal_names_the_route.py` and `tests/test_the_host_line_allows_a_separate_partition_job.py` all exist.",
+    "done_when": "pass \u2014 \u00a711's done-when names a falsifiable negative control (\"in a copy of the head tree, re-adding \\\"or an sbatch into it\\\" to the host line makes the updated test fail\"), and the deliverable supplies the assertion that makes the control bite (the stale clause is asserted absent), which I confirmed is necessary: line 223 of `tests/test_worker_path_carries_shims.py` currently asserts that exact literal while `_worker_host_line` (reckon/crew/dispatch_launch.py:569) no longer composes it.",
+    "evidence_paths": "pass \u2014 the negative-control log is directed \"under the run directory\", a durable crew path, and the section writes only to `tests/test_worker_path_carries_shims.py`.",
+    "naming": "pass \u2014 \u00a711 introduces no plan label, stage name, ticket number or version tag into any symbol, filename or comment; the section's own \u00a710/\u00a711 identifiers appear only in plan prose, and the test names it writes are mechanism-named.",
+    "reasoning": "pass \u2014 the stated root cause matches the evidence: `git show 5637dfc6b` removes \"or an sbatch into it\" from `_worker_host_line` and updates only the two sibling test files, leaving the third test's literal at `tests/test_worker_path_carries_shims.py:223` stale, which I reproduced red at HEAD (1 failed, `EXIT=1`); the mechanism produces the done-when (an absence assertion read alongside the `nested_launch` route sentence fails exactly when the mutated clause is restored), and it runs on the real code path \u2014 the test's `_prompt` helper (lines 68-79) composes through `compose_prompt` with the real `dispatch_module._worker_host_line`, named as the caller.",
+    "single_goal": "pass \u2014 \u00a711 states one deliverable, repointing a single stale assertion in `tests/test_worker_path_carries_shims.py`, with \"No product code changes.\"",
+    "wiring": "pass \u2014 \u00a711 carries a `<section data-reckon=\"section\" data-id=\"s11\">` element and is listed as `s11: implementable` in `plan-section-declarations`, so the roadmap resolves and dispatches it; it declares no `depends-on`/`informs`/`gates` edge because its predecessor \u00a710 is already `done`, and the driving followup `f-awcj-011` targets `/reckon-build \u2026 \u00a711`."
+  },
+  "section_digests": {
+    "_document": "bbb77150a6744c29a95721209df75a15c436f887bc64cdfd30347c9500b752f7",
+    "s-contract": "6c2b86636b5d6c1f87051d9d3f776896057e3f539cd1ddacd2be71dcb8a94200",
+    "s0": "684e9d028bd94c15a6f23c838815a01d6f51c5f3100fa847b8134ec9232ec0df",
+    "s1": "e5f377a019315c5f8e8d019bf5caed7ee4eb0ee12f35bbc0bc0a9889940cda85",
+    "s10": "bb83ceb5fa0455b401cc70e106fd1c709dee32357bc8258f635417008f72fa53",
+    "s11": "d23b69334fa91ffaab10aec58a8416d929b5898bc2bd8b4c324d01f346577319",
+    "s2": "d2a6c7aa20c956f1d5cfbfabc0fec3210fad1df400fe0ea8e73c163e6a9a8b51",
+    "s2b": "fedf3e8e34497454f9ed3ad04693376d980447b2290b0216701ed1a6858cbbd8",
+    "s3": "4581863bc7044f5e9e9677ce3a54c9b5aaf92025cf2b32c4d4973e4e6b8881a0",
+    "s4": "6c1927e32109c00db5fdccd88bee4f743f8e9828e62490c11c4ad46a74720f44",
+    "s5": "0838626070b0f7c934aa09ee6663f71434a715619089d65e487ab76bf8d0c8df",
+    "s6": "5bea8900e9fded0b44d31c5f9267cd7550998d8c6861398aa5ba9e61dd27d228",
+    "s7": "a8e38789e85f0eb9fc677ba1ebe1ceb231d9333df7660618a1198313f10bb213",
+    "s8": "bce275f8870a562d83a7640171c814c79e6cb0ab0e2eaa8252ed072f522b3be0",
+    "s9": "e929fc5d2971a64d971ebfa0dc025df6808da0b054d096bcb39f3d5f2b0ba841"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T22:09:53.760691+00:00"
+}
