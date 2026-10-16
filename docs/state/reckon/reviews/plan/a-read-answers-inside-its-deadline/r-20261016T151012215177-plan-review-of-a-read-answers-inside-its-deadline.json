@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T15:21:18.099Z",
+  "dispatched_at": "2026-10-16T15:10:52Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:135",
+      "id": "done_when-1",
+      "reason": "the total remains well under the hour even at 24.6 min plus the warm runs, so the choice of three cold runs still holds and only the quoted figure is off.",
+      "text": "the deliverable states \"the plan's own cold medians put three runs of each read at about 16 minutes at head and 23 minutes at base\", but the base medians the section cites elsewhere (c-s6-second-measurement-1016: roadmap 150.7 s, audit 222.7 s, discovery 117.9 s) sum to 491.3 s per cold pass, so three runs are 24.6 minutes, not 23; and the same sentence claims \"both arms inside the partition's one-hour limit\" while totalling only the cold runs, omitting the \"five warm runs of each read\" it schedules for each arm in the same hour",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:135",
+      "id": "anchors_resolve-1",
+      "reason": "the inline clause already states the requirement, so no work changes, but the citation should name \u00a718 alone or state the requirement without attributing it to \u00a79, and a later editor trusting \u00a79 to carry it would delete the only place it lives.",
+      "text": "the done-when says each log's fields are required \"as \u00a79 and \u00a718 require\", but \u00a79's done-when (line 148) requires only the attribution tables, the producing script and a paragraph, naming no log format, so the pointer names a section that does not carry the requirement",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:135",
+      "id": "reasoning-1",
+      "reason": "a node measuring \"whether those fixes meet the targets\" compares against these figures, and 1.683 s meets the 2 s roadmap target while 18.435 s misses it by 9\u00d7, so the section cannot be read to say whether the quiet-node warm baseline is inside or outside its target; the author should name which figure is the baseline or record the method difference between the two runs.",
+      "text": "the changed sentence \"The last quiet-node measurements, \u00a76's first and \u00a77's, both on 2026-10-12, predate every fix from \u00a78 to \u00a717\" groups two head measurements from the same day on the same class of exclusive `all_debug` node that disagree by an order of magnitude on the warm reads the section targets: \u00a76's own first-measurement record (c-run-r-20261012T210514131486) gives warm roadmap 18.435 s, audit 21.434 s, discovery 14.095 s, while \u00a77's record (c-run-r-20261012T225207500362) gives warm roadmap 1.683 s, audit 4.908 s, discovery 0.379 s \u2014 11\u00d7 on roadmap and 37\u00d7 on discovery, both at head, with no later note reconciling them",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b1000720e60c760dd4e70ccedf7e67b32fc9580ff3d710728a75bbf81dd62d66",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 111,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T151012215177-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "7cd348ef60dad0330440d3a53d2b629b6003832f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the \"as \u00a79 and \u00a718 require\" citation points at \u00a79, whose done-when imposes no log format.",
+    "done_when": "a finding \u2014 the one-hour budget's base figure is understated against the plan's own base cold medians, and the sentence that claims \"both arms inside the partition's one-hour limit\" accounts only for cold runs.",
+    "evidence_paths": "pass \u2014 the medians, every `.prof` dump and the pinned corpus revision all land in the run directory, not the node-local scratch the run reads from.",
+    "naming": "pass \u2014 \u00a76 introduces no code symbol and writes only its run directory; the `\u00a7` numbers in its prose are plan-internal references, not code labels or tracker ids.",
+    "reasoning": "a finding \u2014 the changed premise sentence leans on two same-day quiet-node head measurements that disagree by roughly an order of magnitude on the very warm reads the section marks against targets.",
+    "single_goal": "pass \u2014 \u00a76 is one measurement node; a met target or a missed target attributed to named functions is its single exit, the same shape as \u00a77's and \u00a79's done-whens.",
+    "wiring": "pass \u2014 \u00a76 names as its prerequisites \u00a72\u2013\u00a75 and the read fixes \u00a78, \u00a710, \u00a711, \u00a712, \u00a713, \u00a714, \u00a716 and \u00a717, all declared `done` in the declarations, and the two open followups route correctly (f-araiid-remeasure recommends `/reckon-build \u2026 \u00a76`, f-araiid-018 recommends `\u2026 \u00a718`, both `implementable`)."
+  },
+  "section_digests": {
+    "_document": "27e04b7ec4c7a4424eb7839ff032567efe8f2c9f504c5f09139c14dd3ec284e3",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "3590b8ff1d0a1e040d3ad5e7a232b090df35d17be836dcee4781c435ec58cae4",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T15:23:14.780869+00:00"
+}
