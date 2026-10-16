@@ -24,6 +24,11 @@ from reckon.host import HostFacts
 
 dispatch_module = import_module("reckon.crew.dispatch")
 
+# The declaration this file pins, captured once at import so a route changed
+# later in the process cannot move the expectation the prompt is read against.
+DECLARED_ROUTE = nested.PARTITION_ROUTE
+DECLARED_SENTENCE = nested.NESTED_SRUN_SENTENCE
+
 # The declared mutation, printed verbatim as the red log's first line.
 DECLARED_MUTATION = (
     "restore the unconditional 'do not use srun, sbatch or salloc' prohibition "
@@ -31,6 +36,10 @@ DECLARED_MUTATION = (
 )
 
 MUTATION_ENV = "RECKON_HOST_LINE_NEGATIVE_CONTROL"
+
+# Environment gate for the route mutation shared with the refusal cases: drop
+# the partition route's verb clause in memory, leaving the srun sentence intact.
+ROUTE_MUTATION_ENV = "RECKON_PARTITION_ROUTE_NEGATIVE_CONTROL"
 
 NODE = "98dci4-clu-2058"
 JOB = "1277272"
@@ -104,6 +113,18 @@ def _declared_negative_control(monkeypatch: pytest.MonkeyPatch) -> None:
         )
 
 
+@pytest.fixture(autouse=True)
+def _declared_route_mutation(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Drop the partition route's verb clause in memory when the control asks.
+
+    Applied after this module has captured the declaration, so the composed
+    host line no longer carries the declared route and the case below fails on
+    its own text assertion rather than on a comparison against a changed value.
+    """
+    if os.environ.get(ROUTE_MUTATION_ENV) == "1":
+        monkeypatch.setattr(nested, "PARTITION_ROUTE", "a separate partition job")
+
+
 def test_in_allocation_prompt_permits_a_separate_partition_job(
     tmp_path: Path,
 ) -> None:
@@ -120,11 +141,11 @@ def test_in_allocation_prompt_permits_a_separate_partition_job(
     # The prohibition is scoped to this job, not to every scheduler verb.
     assert "the work runs in place" in prompt
     assert "do not open an srun or salloc step in this job" in prompt
-    # The sanctioned route is named with its submitting verb, and the line says
-    # an srun stays a step of the held job whatever partition it names.
-    assert nested.PARTITION_ROUTE_VERB in nested.PARTITION_ROUTE
-    assert nested.PARTITION_ROUTE in prompt
-    assert nested.NESTED_SRUN_SENTENCE in prompt
+    # The line carries the declared route, which names its submitting verb,
+    # verbatim, and separately says an srun stays a step of the held job.
+    assert DECLARED_ROUTE in prompt
+    assert nested.PARTITION_ROUTE_VERB in DECLARED_ROUTE
+    assert DECLARED_SENTENCE in prompt
     assert "betelgeuse" in prompt
     assert "RECKON_ALLOW_NESTED_LAUNCH=1" in prompt
     # The node, job, scratch and log clauses are kept.

@@ -17,13 +17,16 @@ composed over states the fleet rule and names neither route, which is what
 makes the digest's own sentence visible: the canonical file lives outside this
 repository and stays untouched.
 
-The declared negative control reverts :data:`reckon.nested_launch.PARTITION_ROUTE`
-to its bare "a separate partition job" in memory, dropping the ``sbatch`` verb;
-every case that asserts the verb is carried must fail there.
+The declared negative control drops the partition route's verb clause in
+memory, leaving :data:`reckon.nested_launch.NESTED_SRUN_SENTENCE` untouched and
+still mentioning ``sbatch``. Each text case then fails on its own assertion
+that the declared route phrase appears verbatim, because the composed text no
+longer carries it.
 """
 
 from __future__ import annotations
 
+import os
 import re
 
 import pytest
@@ -55,8 +58,30 @@ FLEET_BODY = (
     "its heavy gates directly and never submits them to a debug partition.\n"
 )
 
+# The declaration this file pins, captured once at import. A route changed
+# later in the process cannot move this expectation, so a text that stops
+# carrying the declared route fails the case on the text itself rather than on a
+# comparison against the changed value.
+DECLARED_ROUTE = nested.PARTITION_ROUTE
+DECLARED_SENTENCE = nested.NESTED_SRUN_SENTENCE
+
 # The two routes, by the module's own names.
-ROUTES = frozenset({nested.PARTITION_ROUTE, nested.OVERRIDE_ENV})
+ROUTES = frozenset({DECLARED_ROUTE, nested.OVERRIDE_ENV})
+
+# Environment gate for the declared negative control.
+ROUTE_MUTATION_ENV = "RECKON_PARTITION_ROUTE_NEGATIVE_CONTROL"
+
+
+@pytest.fixture(autouse=True)
+def _declared_route_mutation(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Drop the partition route's verb clause in memory when the control asks.
+
+    Applied after this module has imported and captured the declaration, so the
+    composed texts diverge from ``DECLARED_ROUTE`` and the per-text cases fail
+    on their own text assertion.
+    """
+    if os.environ.get(ROUTE_MUTATION_ENV) == "1":
+        monkeypatch.setattr(nested, "PARTITION_ROUTE", "a separate partition job")
 
 
 def named_routes(text: str) -> set[str]:
@@ -67,32 +92,23 @@ def named_routes(text: str) -> set[str]:
     appears.
     """
     named: set[str] = set()
-    if nested.PARTITION_ROUTE in text and any(
+    if DECLARED_ROUTE in text and any(
         example in text for example in nested.PARTITION_EXAMPLES
     ):
-        named.add(nested.PARTITION_ROUTE)
+        named.add(DECLARED_ROUTE)
     if nested.OVERRIDE_ENV in text:
         named.add(nested.OVERRIDE_ENV)
     return named
 
 
-def names_sbatch_as_the_submission(text: str) -> bool:
-    """Whether ``text`` names the partition route together with its verb.
-
-    The route counts only when the declared phrase appears *and* the
-    declaration itself carries the submitting verb, so reverting the route to a
-    bare "a separate partition job" fails here however else the text may
-    mention ``sbatch``.
-    """
-    return (
-        nested.PARTITION_ROUTE in text
-        and nested.PARTITION_ROUTE_VERB in nested.PARTITION_ROUTE
-    )
+def names_the_partition_route(text: str) -> bool:
+    """Whether ``text`` carries the declared partition route verbatim."""
+    return DECLARED_ROUTE in text
 
 
 def says_a_nested_srun_is_a_step(text: str) -> bool:
     """Whether ``text`` says a nested ``srun`` runs as a step of the held job."""
-    return nested.NESTED_SRUN_SENTENCE in text
+    return DECLARED_SENTENCE in text
 
 
 def block(text: str, header: str) -> str:
@@ -104,9 +120,15 @@ def block(text: str, header: str) -> str:
     return rest if following is None else rest[: following.start()]
 
 
-def test_the_partition_route_carries_its_submitting_verb() -> None:
-    """The declaration names the verb, so no text can restate the route wrongly."""
+def test_the_partition_route_declaration_names_its_submitting_verb() -> None:
+    """The one case about the declaration: the route spells out its own verb.
+
+    The per-text cases read the verb from the composed text; this case holds the
+    declaration they depend on, so a route that stops naming a verb is caught in
+    one place rather than being inferred from the texts.
+    """
     assert nested.PARTITION_ROUTE_VERB == "sbatch"
+    assert nested.PARTITION_ROUTE_VERB in DECLARED_ROUTE
     assert nested.PARTITION_ROUTE_VERB in nested.PARTITION_ROUTE
 
 
@@ -115,7 +137,7 @@ def test_the_refusal_names_both_routes_and_the_submitting_verb(tool: str) -> Non
     text = nested.refusal_message(tool, INSIDE)
 
     assert named_routes(text) == set(ROUTES), text
-    assert names_sbatch_as_the_submission(text), text
+    assert names_the_partition_route(text), text
     assert says_a_nested_srun_is_a_step(text), text
 
 
@@ -131,20 +153,18 @@ def test_the_digested_compute_section_names_both_routes_and_the_verb() -> None:
 
     section = block(text, digest.FLEET_COMPUTE_HEADER)
     assert named_routes(section) == set(ROUTES), section
-    assert names_sbatch_as_the_submission(section), section
+    assert names_the_partition_route(section), section
     assert says_a_nested_srun_is_a_step(section), section
 
 
 def test_patching_the_route_constant_moves_the_host_line_and_the_sentence(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A route declared changed in memory moves both composed texts with it."""
+    """A route changed in memory moves both composed texts with it."""
     run_directory = "/runs/route-constant"
     original = nested.PARTITION_ROUTE
-    assert names_sbatch_as_the_submission(
-        dispatch_launch._worker_host_line(INSIDE, run_directory)
-    )
-    assert names_sbatch_as_the_submission(digest.compute_routes_sentence())
+    assert original in dispatch_launch._worker_host_line(INSIDE, run_directory)
+    assert original in digest.compute_routes_sentence()
 
     patched = "a distinct partition route named zz9"
     monkeypatch.setattr(nested, "PARTITION_ROUTE", patched)
@@ -170,7 +190,7 @@ def test_the_role_digests_name_both_routes_in_their_compute_section() -> None:
         text = digest.generate(role, canonical)
         section = block(text, digest.FLEET_COMPUTE_HEADER)
         assert named_routes(section) == set(ROUTES), role
-        assert names_sbatch_as_the_submission(section), role
+        assert names_the_partition_route(section), role
         assert says_a_nested_srun_is_a_step(section), role
 
 
