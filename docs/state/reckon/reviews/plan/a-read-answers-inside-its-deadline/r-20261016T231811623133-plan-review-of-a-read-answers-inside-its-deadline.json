@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T23:32:02.600Z",
+  "dispatched_at": "2026-10-16T23:18:50Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-answers-inside-its-deadline/r-20261016T231811623133-plan-review-of-a-read-answers-inside-its-deadline/plan.html:196",
+      "id": "done_when-1",
+      "reason": "a node that builds the described fixture reddens its gate on the ledger fallback it is explicitly told not to change, and cannot make the bound green within the section's declared scope.",
+      "text": "\u00a721's done-when counts calls of `routing.record_names_worktree` \"during one `_held_worktree_records` call\" and bounds them by records plus trees, but that call also runs the whole-ledger fallback at `reckon/crew/obligations.py:586-589` (`for record in ledger.runs(...): for worktree in unresolved: if _names_worktree(...)`), which the section's own Why leaves unchanged (\"stays \u00a723's\"); every inspected tree no source names adds `len(ledger.runs) \u00d7 |unresolved|` counted calls, and the run \u00a721 cites shows that fallback firing inside `_held_worktree_records` (its `fleet_state_subprocess_callers.log` records one `ledger.py runs` call at 8.146 s under obligations.py:519), so on a fixture holding two or more trees no record names the head exceeds the records-plus-trees bound by the fallback alone",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-answers-inside-its-deadline/r-20261016T231811623133-plan-review-of-a-read-answers-inside-its-deadline/plan.html:206",
+      "id": "reasoning-1",
+      "reason": "head would miss the 10 s bound on a cost \u00a723 does remove in production, and the miss clause would file a redundant repair against a scope \u00a723 already covers.",
+      "text": "\u00a724's headline head bound (\"the first call's median on the node-local copy is at most 10 s\") is justified as \"\u00a721, \u00a722 and \u00a723 each bound part of it\", but \u00a724 inherits \u00a720's harness of calling `obligation_snapshot.fleet_state` directly to dodge the sweep's due gate, while \u00a723's deliverable grants its single ledger-index build and per-run reviewed-head resolution to \"every reader in the sweep\" and states \"Readers outside a sweep keep their current behaviour\" \u2014 so the review-and-ledger share of the first call, the largest item \u00a723 targets, is not observable on the path \u00a724 times",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "30e626c3c7965fef6f8a4832aa0a8ff10c5fdd60f2c040292c806763c33b7629",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 154,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T231811623133-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "4ddbd445f86ba3e2101e6bc2b9c2fb2a971886c9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every file, symbol and cited log in \u00a721 and \u00a724 resolves in the tree",
+    "done_when": "a finding \u2014 \u00a721's counted call includes the whole-ledger fallback its own Why leaves to \u00a723",
+    "evidence_paths": "pass \u2014 \u00a721's control log and \u00a724's logs and report sit under the run directory, and \u00a724's fragment path resolves",
+    "naming": "pass \u2014 \u00a721's test name and \u00a724's fragment name carry no plan label, ticket number or changelog prose",
+    "reasoning": "a finding \u2014 \u00a724 times a path \u00a723's own deliverable excludes from its memo",
+    "single_goal": "pass \u2014 \u00a721 delivers one index, \u00a724 one measurement, each with its own gate",
+    "wiring": "pass \u2014 \u00a721's and \u00a724's ordering is stated in the section text and in followup f-araiid-020 (the shared-`obligations.py` sequence \u00a721\u2192\u00a723, \u00a724 after \u00a720's copies), and no declared relationship points at a wrong node"
+  },
+  "section_digests": {
+    "_document": "d4ddda961784c7a505897dfa112dcf8d73378167d498be05466e8103832740db",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "f6e2a8c3d1c90f4194ec9891635cef181cf62c62a5dbb39efd4c9832ac5d1e9b",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s20": "81e1ff125ddfc6955aa9bfbaae255b04b8bd03b75e9a4bbaec4a6e2de4790a39",
+    "s21": "636adae8384b8cba207a8736883e7da35541e6ebdc9678ff5545b1bce06fe95a",
+    "s22": "6266f82976abf2a572694b2f91bf0143ff9a02ea484166e79b8197bde4e1a5e6",
+    "s23": "19ab14ea99e986a9e91a521cccdf725d2ca25f3119b1b53c489aa0fb3cc24dd1",
+    "s24": "321ad2d463c387730c6dd7dd790e9dcb871a912f6cea79856885f3b15e8da7c3",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T23:34:56.050196+00:00"
+}
