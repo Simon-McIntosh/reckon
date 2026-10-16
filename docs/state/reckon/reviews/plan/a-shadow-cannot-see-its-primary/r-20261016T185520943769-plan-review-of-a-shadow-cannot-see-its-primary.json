@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T19:01:22.239Z",
+  "dispatched_at": "2026-10-16T18:56:17Z",
+  "findings": [
+    {
+      "anchor": "reckon/ledger.py:2889",
+      "id": "reuse_search-1",
+      "reason": "the plan should extend `shadow_primary_read` (and its caller `promotion_scope._shadow_stream_contamination`) to the wider path set, not create a parallel scanner whose premise is false.",
+      "text": "\u00a72 builds a new scanner in `reckon/crew/shadow_isolation.py` for exactly the read-detection `ledger.shadow_primary_read` already performs, and its \u00a71 premise (\"nothing checks what the shadow could read\") is contradicted by the wired promotion scan at `reckon/crew/promotion.py:1181`",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/shadow_isolation.py",
+      "id": "deep_module-1",
+      "reason": "Naming `reckon/ledger.py` as the owner collapses \u00a72's new module back into the module that already holds the record shape, the call extractor and the detector.",
+      "text": "a new module holding a scan that `reckon/ledger.py` already owns adds a second home for one mechanism rather than deepening the existing one",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/shadow_isolation.py:1",
+      "id": "thin_wrapper-1",
+      "reason": "\u00a72 must justify a new module over widening the existing detector, or delete the module and widen it; the Review-record and run-directory kinds are additions to `shadow_primary_read`'s path set, not a new mechanism.",
+      "text": "the module would forward the stream tool calls (`ledger.stream_tool_calls`, `reckon/ledger.py:2847`) to a near-identical detector while claiming new capability, with no line saying why `stream_tool_calls`/`shadow_primary_read` cannot gain the run-directory, review-record and main-checkout cases",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/ledger.py:2889",
+      "id": "duplicate_owner-1",
+      "reason": "naming each owner lets the author extend the detector once and derive the mask set from it, so \u00a72 and \u00a74 share one path set instead of each resolving paths the run/review/routing owners already know.",
+      "text": "\u00a72's `primary_paths` set duplicates path resolution and detection owned elsewhere: the scan/detector in `reckon/ledger.py` (`shadow_primary_read`), the promotion hook in `reckon/crew/promotion_scope.py:1080`, the primary's run directory in `reckon/crew/runs.py:81` (`run_dir`), its review records in `reckon/crew/review.py:1969` (`review_path`; root at `reckon/crew/review.py:1828`), and its worktree in `reckon/crew/routing.py:863` (`shadow_worktree_session`); \u00a74 at `reckon/_worker_fence.py:1143` then consumes the same duplicated set \u2014 the census of every site of this type is the five mechanisms listed in this line",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/shadow_isolation.py:99",
+      "id": "interface_budget-1",
+      "reason": "the section must state that it extends `shadow_contaminated`/`measurement_exclusion_reason` rather than adding a second contamination record, or name which of the two it retires.",
+      "text": "\u00a72 adds public definitions (the new module, `primary_paths`, the scan) and a `lineage.isolation` record (`clean`/`breached` plus kinds/counts/examples) beside the existing `shadow_contaminated` field (`reckon/ledger.py:2546`, consumed at `reckon/ledger.py:2792`), with no text naming what it retires or merges",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "eee67eef4b40ad69ae79ddd867cdaf90715b1320144ac2975efb6aa8e0a7ce45",
+  "plan_slug": "a-shadow-cannot-see-its-primary",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T185520943769-plan-review-of-a-shadow-cannot-see-its-primary",
+  "reviewed_blob_sha": "f04316b24e5b9cb0622f63a7eb0f9e76b1f71889",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a72's new module `reckon/crew/shadow_isolation.py` would hide the same behaviour `reckon/ledger.py` already hides, spreading one mechanism across two modules instead of deepening the existing one.",
+    "duplicate_owner": "a finding \u2014 \u00a72 re-implements a scan owned by `reckon/ledger.py` (hook owned by `reckon/crew/promotion_scope.py`) and re-resolves paths owned by `reckon/crew/runs.py:run_dir`, `reckon/crew/review.py:review_path` and `reckon/crew/routing.py:863`; \u00a74 then threads that duplicated path set into `launch_plan`.",
+    "interface_budget": "a finding \u2014 public_definitions 1756, cli_options 355, mcp_views 34, refusal_families 23; \u00a72 adds public definitions (a new module plus `primary_paths` and a ledger record) and a second contamination record shape (`lineage.isolation`) beside the existing `shadow_contaminated`, and names nothing it retires or merges, nor why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a72 proposes a new scanner and a `primary_paths` set without citing the existing shadow-contamination scan at `reckon/ledger.py:2889` (`shadow_primary_read`) and its promotion hook `reckon/crew/promotion_scope.py:1080`; the plan's own \u00a72 write-paths line concedes it by asking the review to name an owner to extend.",
+    "thin_wrapper": "a finding \u2014 \u00a72 adds a thin path-scan layer over `ledger.stream_tool_calls`/`shadow_primary_read` with no statement of why those cannot be extended; the honest change is to widen `shadow_primary_read`'s path set and its caller."
+  },
+  "section_digests": {
+    "_document": "9780a21959490e72e74c2e78090f3ee64c4c78e5908b79afafb681bbccfa44bc",
+    "s1": "9e56f831addf6a2b05b5f4df96b4465793a6856e74c7f7a88b62b15846e1252f",
+    "s2": "3bb72d52187483e698ef8b3a6d33bf361e5d998a62712ed2a3c7d2d6e66d613d",
+    "s3": "330eeee9f8ec7d9d7cd19844afd555d06dcdd4b49c538f4118af635df0f0ce57",
+    "s4": "9c3a15051460fa09c6f92ea133a703a5525e9ebaccd9746da9254e63327da30a",
+    "s5": "2a07858e7b91efc28681036938f28fdcdd126a02bd9a74f5ff583def6ac5699a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T19:03:51.563259+00:00"
+}
