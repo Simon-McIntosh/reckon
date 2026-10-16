@@ -117,4 +117,8 @@ def test_roadmap_output_is_identical_under_two_hash_seeds(tmp_path: Path) -> Non
     assert report["decision_blockers"], "tree produced no decision blockers"
     assert report["wiring_findings"], "tree produced no wiring findings"
 
+    # The order is keyed by plan identity, so the rows come out by slug.
+    plans = [row["plan"] for row in report["decision_blockers"]]
+    assert plans == sorted(plans)
+
     assert first == second
