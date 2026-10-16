@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner"
+  ],
+  "added_failures_note": "derived from the reviewed run's base arm logs/parity-base-b.log and head arm logs/parity-head-b.log; the single added id is verified pre-existing on main, not caused by this change",
+  "backend": "clive",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/roadmap.py:158",
+    "reckon/serve.py:2821",
+    "reckon/_store.py:297",
+    "reckon/mcp.py:736",
+    "reckon/resources.py:912"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-16T10:44:51Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T103721056795-a-slug-uniqueness-is-one-lookup/manifest.md",
+      "line": "tests",
+      "severity": "follow-on",
+      "text": "follow-on: the `tests:` line claims \"chunk B same failing and error ids both arms\", but parity-base-b.log reports FAILED tests/test_schema.py::test_well_formed_evidence_record_with_resolving_shas_is_quiet while parity-head-b.log reports FAILED tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner, so the arms do not share failing ids and the done_when's parity clause is unmet as recorded; the added id is separately verified pre-existing on main (tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner fails there naming reckon/crew/resumption.py::claim_next_attempt, a file this node does not touch), so the defect is in the record, not the change."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T103721056795-a-slug-uniqueness-is-one-lookup/manifest.md",
+      "line": "test_logs",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's `tests:` line asserts \"ruff check and ruff format --check add no finding on the changed Python files over base\", but test_logs names no ruff log; re-running ruff shows the delta is in fact zero (2 pre-existing N818/SIM114 findings on both base and head rule, and resources.py needs reformatting at both base and head), so the claim is true but the evidence for one done_when clause is unrecorded."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit from base 6583d7b7f; d597894fd adds the identity index to reckon/resources.py (the _INDEX_SCOPE/_INDEX_MEMO/_identity_listing/_directory_identity_index definitions, resources.py:483-840, and the call site at resources.py:765) plus the 111-line new test, and 84c4995f adds the 23-line evidence fragment; three files, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_slug_uniqueness_is_one_lookup.py over a >=20-plan tree, a two-claimant refusal, a base/head warm-roadmap timing pair, head/base parity of the resource-importing test files, and a ruff delta; the manifest records the new-file gate (3 passed) and the timing pair (2.575 s head, 19.889 s base), but the parity clause did not hold as stated (see findings).",
+    "goal": "the goal is \"Make a slug resolve answer its uniqueness check from one identity index of the plan's root instead of scanning every sibling\"; at reckon/resources.py:765 `_canonical_identity_is_unique` now iterates `_directory_identity_index` (reckon/resources.py:799) built once and then held, rather than globbing the root and identifying every sibling on each resolve, so the resolve answers its uniqueness question from one index.",
+    "manifest": "read; status complete, it states the gate ran (tests/test_a_slug_uniqueness_is_one_lookup.py -> 3 passed, EXIT=0), names its logs, reports the bounded count (24 vs 480) and the head/base warm timings, and its `tests:` line overstates the chunk-B parity which its own logs contradict.",
+    "write_paths": "the declared paths are reckon/resources.py, tests/test_a_slug_uniqueness_is_one_lookup.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/a-slug-uniqueness-is-one-lookup.html and a figures directory; every path the diff touches is inside them, and the figures directory is correctly left unwritten because the done_when names no figure."
+  },
+  "justifications": {
+    "durability": "the guard at tests/test_a_slug_uniqueness_is_one_lookup.py:79 fails on the reinstated pre-index shape (the recorded negative control counts 480 identifications against the bound of 24), so the assertion reddens exactly on the regression it guards.",
+    "evidence": "the bounded-identification and timing measurements are recorded in the run's logs (logs/test-new-file.log 3 passed, logs/negative-control.log 480 vs 24, logs/timing-head.log vs logs/timing-base.log), but the manifest's `tests:` line claims the chunk-B arms share failing ids when the logs do not.",
+    "fit": "the change mirrors the existing per-read scope idiom (_SCAN_SCOPE at reckon/resources.py:459) and introduces only mechanism names (_directory_identity_index, _identity_listing) with no plan, ticket or version label in any symbol.",
+    "goal_fidelity": "reckon/resources.py:765 replaces the per-resolve sibling scan with one held directory index built at reckon/resources.py:799, so a named resolve answers its uniqueness check from a single index as the goal states.",
+    "reuse": "the search over reckon found no existing per-directory identity index (the nearest owners are file_memo.memoized at reckon/file_memo.py:43, which keys on a single file's stat and cannot express a directory listing, and the resource scan scope at reckon/resources.py:497), and the change reuses file_memo.file_signature rather than forking it.",
+    "scope_discipline": "every changed path in `git diff 6583d7b7f 84c4995f6` (reckon/resources.py, tests/test_a_slug_uniqueness_is_one_lookup.py, the evidence fragment) is inside the manifest's declared write paths and nothing else is touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"Make a slug resolve answer its uniqueness check from one identity index of the plan's root instead of scanning every sibling\"; at reckon/resources.py:765 `_canonical_identity_is_unique` now iterates `_directory_identity_index` (reckon/resources.py:799) built once and then held, rather than globbing the root and identifying every sibling on each resolve, so the resolve answers its uniqueness question from one index.\nVERDICT done_when: the done_when names tests/test_a_slug_uniqueness_is_one_lookup.py over a >=20-plan tree, a two-claimant refusal, a base/head warm-roadmap timing pair, head/base parity of the resource-importing test files, and a ruff delta; the manifest records the new-file gate (3 passed) and the timing pair (2.575 s head, 19.889 s base), but the parity clause did not hold as stated (see findings).\nVERDICT write_paths: the declared paths are reckon/resources.py, tests/test_a_slug_uniqueness_is_one_lookup.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/a-slug-uniqueness-is-one-lookup.html and a figures directory; every path the diff touches is inside them, and the figures directory is correctly left unwritten because the done_when names no figure.\nVERDICT manifest: read; status complete, it states the gate ran (tests/test_a_slug_uniqueness_is_one_lookup.py -> 3 passed, EXIT=0), names its logs, reports the bounded count (24 vs 480) and the head/base warm timings, and its `tests:` line overstates the chunk-B parity which its own logs contradict.\nVERDICT diff: read commit by commit from base 6583d7b7f; d597894fd adds the identity index to reckon/resources.py (the _INDEX_SCOPE/_INDEX_MEMO/_identity_listing/_directory_identity_index definitions, resources.py:483-840, and the call site at resources.py:765) plus the 111-line new test, and 84c4995f adds the 23-line evidence fragment; three files, all inside the declared scope.\nCALL_SITES: reckon/roadmap.py:158, reckon/serve.py:2821, reckon/_store.py:297, reckon/mcp.py:736, reckon/resources.py:912\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/resources.py:765 replaces the per-resolve sibling scan with one held directory index built at reckon/resources.py:799, so a named resolve answers its uniqueness check from a single index as the goal states.\nSCORE evidence: 15\nJUSTIFICATION evidence: the bounded-identification and timing measurements are recorded in the run's logs (logs/test-new-file.log 3 passed, logs/negative-control.log 480 vs 24, logs/timing-head.log vs logs/timing-base.log), but the manifest's `tests:` line claims the chunk-B arms share failing ids when the logs do not.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path in `git diff 6583d7b7f 84c4995f6` (reckon/resources.py, tests/test_a_slug_uniqueness_is_one_lookup.py, the evidence fragment) is inside the manifest's declared write paths and nothing else is touched.\nSCORE durability: 19\nJUSTIFICATION durability: the guard at tests/test_a_slug_uniqueness_is_one_lookup.py:79 fails on the reinstated pre-index shape (the recorded negative control counts 480 identifications against the bound of 24), so the assertion reddens exactly on the regression it guards.\nSCORE fit: 18\nJUSTIFICATION fit: the change mirrors the existing per-read scope idiom (_SCAN_SCOPE at reckon/resources.py:459) and introduces only mechanism names (_directory_identity_index, _identity_listing) with no plan, ticket or version label in any symbol.\nSCORE reuse: 18\nJUSTIFICATION reuse: the search over reckon found no existing per-directory identity index (the nearest owners are file_memo.memoized at reckon/file_memo.py:43, which keys on a single file's stat and cannot express a directory listing, and the resource scan scope at reckon/resources.py:497), and the change reuses file_memo.file_signature rather than forking it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T103721056795-a-slug-uniqueness-is-one-lookup/manifest.md:tests follow-on: the `tests:` line claims \"chunk B same failing and error ids both arms\", but parity-base-b.log reports FAILED tests/test_schema.py::test_well_formed_evidence_record_with_resolving_shas_is_quiet while parity-head-b.log reports FAILED tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner, so the arms do not share failing ids and the done_when's parity clause is unmet as recorded; the added id is separately verified pre-existing on main (tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner fails there naming reckon/crew/resumption.py::claim_next_attempt, a file this node does not touch), so the defect is in the record, not the change.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T103721056795-a-slug-uniqueness-is-one-lookup/manifest.md:test_logs follow-on: the manifest's `tests:` line asserts \"ruff check and ruff format --check add no finding on the changed Python files over base\", but test_logs names no ruff log; re-running ruff shows the delta is in fact zero (2 pre-existing N818/SIM114 findings on both base and head rule, and resources.py needs reformatting at both base and head), so the claim is true but the evidence for one done_when clause is unrecorded.",
+  "review_run_id": "legacy-8fa0ac95d99d",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "6583d7b7f26e27a3bb9e753fc45fcf3dd9ddab4f",
+  "reviewed_head_sha": "84c4995f6732734731c16a365507b7f5e26ea635",
+  "reviewed_run_id": "r-20261016T103721056795-a-slug-uniqueness-is-one-lookup",
+  "reviewer_run_id": "r-20261016T114947811465-review-of-a-slug-uniqueness-is-one-lookup-84c4995f6732",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T103721056795-a-slug-uniqueness-is-one-lookup/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/a-slug-uniqueness-is-one-lookup",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T12:06:18.449724+00:00",
+  "total": 110
+}
