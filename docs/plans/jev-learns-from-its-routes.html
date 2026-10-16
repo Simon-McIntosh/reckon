@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="lane-and-model-routing">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;jev-learns-from-its-routes#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;jev-learns-from-its-routes#s2&quot;, &quot;jev-learns-from-its-routes#s5&quot;], &quot;s4&quot;: [&quot;jev-learns-from-its-routes#s3&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>Jev Learns From Its Routes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -263,7 +263,7 @@
     </p>
 
     <h2 id="s6">§6 — Codex worker time is measured from its rollout receipt</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="deferred" data-links=""></section>
     <p>
       <strong>Why.</strong> The lead's direction asks Jev to weigh recent throughput per lane and model. A codex run's
       <code>worker_seconds</code> is the run's wall time on a normal finish and absent on a stalled one. The stream
@@ -347,6 +347,11 @@
     <pre class="r-fu-prompt">/reckon-build jev-learns-from-its-routes §2</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s6" data-id="c-s6-revise-before-dispatch" data-who="reckon-build" data-when="2026-10-16T06:05:00Z">
+    <div class="r-comment-body"><p>Held out of the first wave until revised. The content re-review <code>r-20261016T054343669477</code> found three defects, answered as deferred to this revision. <strong>reasoning-1:</strong> <code>read_rollout_receipt</code>'s locator <code>_locate_rollout</code> globs only <code>~/.codex/sessions</code>, so it cannot find a fenced run's rollout under its own harness home. The revision names the run-home-aware locator (<code>_codex_rollout_candidates</code> in <code>reckon/crew/paid_lanes.py</code>) and adds its file to the write paths. <strong>reasoning-2:</strong> the receipt's <code>machine_seconds</code> is the merged tool-wait span, and <code>generation_seconds</code> is wall minus machine. Worker time must therefore be their sum, the same wall quantity as clive's event span. <strong>done_when-1:</strong> the test must inject the locator or a temporary run home, never write under <code>~/.codex</code>.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
