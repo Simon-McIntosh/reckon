@@ -23,7 +23,7 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="250">
+<meta name="plan-version" content="251">
 <meta name="plan-modified" content="2026-10-16">
 <meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;deferred&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;,&quot;s34&quot;:&quot;done&quot;}">
 </head>
@@ -690,6 +690,9 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
 </div>
 <div class="r-comment" data-section="s34" data-id="c-run-r-20261016T184118127566-discarded-run-test-at-base-and-head" data-who="reckon-build" data-when="2026-10-16T20:09:00Z">
     <div class="r-comment-body"><p>Measured tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated at base 6906a79e and head a8cca7e1b: 20 of 20 focused runs pass at both, and it passed both 204-file sweeps (base complete, one unrelated failure; head cap-cut at 2108 of 2109 completions with its region clean); the prior head-arm failure at code-equivalent e320fa63c did not reproduce on any head run — verdict: reproduces in neither arm.</p></div>
+</div>
+<div class="r-comment" data-section="s34" data-id="c-s34-sweep-complete" data-who="reckon-build" data-when="2026-10-16T21:45:00Z">
+    <div class="r-comment-body"><p>The importer parity c-s34-sweep-coverage left open is now complete. The corrected pattern matches both <code>importlib.import_module</code> and a bare <code>import_module</code>, and finds 214 test files importing <code>dispatch.py</code> or <code>recovery_review_dispatch.py</code>: the earlier 206 plus exactly 8. At head <code>a8cca7e1b</code> the 206 pass (2114 passed, 2 skipped, exclusive node, job 1287675). The 8 give 1 failed and 54 passed at head and at base <code>6906a79e</code> alike. The one failure, <code>test_worker_path_carries_shims.py::test_inside_allocation_prompt_names_the_host_and_storage_contract</code>, passes 0 of 5 alone at each revision. It is a stale assertion left by a-worker-is-charged-to-a-job §10 and is filed there as §11. §34 adds no failing id. <code>test_a_discarded_run_is_not_recreated</code> reproduces in neither arm (20 of 20 at each). Both runs are promoted: <code>r-20261016T201537573290</code> and <code>r-20261016T184118127566</code>.</p></div>
 </div>
 </section>
 </main>
