@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T13:45:29.281Z",
+  "dispatched_at": "2026-10-16T13:36:30Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-suite-tests-behaviour.html:152",
+      "id": "wiring-1",
+      "reason": "the plan's only open followup f-tstb-003 orders \u00a77 with no mention of \u00a79, so a coordinator working it would close \u00a77 with the population unrecorded and no declared edge explaining why.",
+      "text": "\u00a79 restores the declaration \u00a77's deliverable depends on (\"recorded as its own row ... with its own time bound\"), yet \u00a79's section element declares no link (`data-links=\"\"`) and the gates block names only `g-tstb-browser-row` for s2/s7, so no relationship records that \u00a77's row and its bound are unreachable until \u00a79 opens",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-suite-tests-behaviour.html:133",
+      "id": "reasoning-1",
+      "reason": "\u00a77 can pass its own gate while a clause of its deliverable is unmet, so the section would close on a measure that cannot see the gap.",
+      "text": "\u00a77's deliverable requires the browser population's own row to carry \"its own time bound\", but \u00a79 (line 154) states that with the declaration withdrawn \"reckon crew suite run records no browser row, so the population has no declared time bound\", and \u00a77's done-when measures only \"a row with that name and its counts\", so the bound clause is unmeetable and unmeasured",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-suite-tests-behaviour.html:156",
+      "id": "done_when-1",
+      "reason": "without a control that removes the block and shows the row or the declaration disappear, the node cannot demonstrate the guard it restores actually fires.",
+      "text": "\u00a79's done-when lists four positive observations (`resolve` succeeds, `review_populations` returns the declaration, a `browser` row is written, a fresh `mcp` server answers) and no negative control, where every other implementable section (\u00a72, \u00a73, \u00a74, \u00a75, \u00a77, \u00a78) states one",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f6af0b51bf43850028bdf8563e6bbaa11cca46e78cb1cde8f1fc37795ac6eb69",
+  "plan_slug": "the-suite-tests-behaviour",
+  "plan_version": 55,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T133547645396-plan-review-of-the-suite-tests-behaviour",
+  "reviewed_blob_sha": "909817fb8dc7e228b100cd4c00d326d08c2bf8b3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor in the changed unit resolves: merge `f76612774` (02:11:52 +0200) and `725454470` (02:14:48 +0200) both exist and are 2m56s apart, matching \u00a79's \"three minutes later\"; `docs/state/reckon/flight.yaml` exists and carries no `populations` key; `reckon.flight.review_populations` and `ReviewPopulation` exist in `reckon/flight.py` and `reckon/_flight_schema.py`.",
+    "done_when": "a finding \u2014 \u00a79's done-when names no negative control, so nothing in the node shows the check would fail if the restored block were absent or malformed.",
+    "evidence_paths": "pass \u2014 \u00a79's only evidence is the process listing and the gate logs, both directed to the run directory under `~/.config/reckon/crew/runs/`, not a scratch path.",
+    "naming": "pass \u2014 \u00a79 names only existing code (`reckon.flight.review_populations`, `reckon crew suite run`), a config path and time units; no plan labels, stage names or ticket numbers reach a symbol or comment.",
+    "reasoning": "a finding \u2014 \u00a77's deliverable requires the browser row to carry \"its own time bound\" while the plan's own new \u00a79 says that without the restored declaration \"reckon crew suite run records no browser row\", so the two sections disagree about the state \u00a77 will close in.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable (restore the withdrawn `review.populations` block), and the other implementable sections (\u00a72, \u00a77) each carry one.",
+    "wiring": "a finding \u2014 the newly added \u00a79 restores the `review.populations` declaration \u00a77's deliverable needs, but declares no relationship to \u00a77 and the plan's only open followup orders \u00a77 without it."
+  },
+  "section_digests": {
+    "_document": "30239abe7f7f8c3daf98f163a0df086a153904d1a7c52d9dc97c14fbd014f7eb",
+    "s1": "1d6184c53af837617ac7ee370d7b6d622f0b187f5ac5e8f8d90a1dda6a98b5b2",
+    "s2": "0a2190864603950ade3af9b2de4b53b463e747cc8dc4c1f6e9175cdd5a4ee623",
+    "s3": "b54ea6f02bf0468b0b6f22c4317ef1f30b269045ffcaa9c19ae6abd2d175e96b",
+    "s4": "0bbb53f80bd6f9eb08c166f5e54fdde7bd5678c29b455fd39e15555bcbc17e35",
+    "s5": "ab2721f7547c999de436c1bb3551c6fe1aff3bbe51e9d92c2f44f5f91ce4123d",
+    "s6": "2ab2547ce36adce1b8926643bbc4604f1d6d1695d52434c1e8849e50f80c4b9d",
+    "s7": "6923b90ad2de1d3c7d21b7d4aa204ae8d2b445425f13415254e324f7452ce801",
+    "s8": "62593f92e5fae32f09b44fa99f06a95716d5b469914f43bc6d0a97c03d6c2831",
+    "s9": "17e30938b157c54dd847eb6d3fc11a7ee9c9b97ffaafda148fc26849b3a09a50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T13:48:25.236839+00:00"
+}
