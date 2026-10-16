@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:296",
+    "reckon/crew/obligations.py:167",
+    "reckon/crew/directory.py:71",
+    "reckon/crew/query.py:187",
+    "reckon/serve.py:1053",
+    "reckon/mcp_views.py:1867",
+    "reckon/crew/recovery_watch.py:306",
+    "reckon/crew/recovery_watch.py:1140",
+    "reckon/crew_run_commands.py:190"
+  ],
+  "completed_at": "2026-10-16T00:38:22.382Z",
+  "dispatched_at": "2026-10-16T00:27:28Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-blocked-run-still-needs-a-resume-waiver",
+      "recorded_at": "2026-10-16T00:39:16.108270+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "488",
+      "severity": "follow-on",
+      "text": "follow-on: the retained paragraph says the deferral consults process_gone rather than liveness alone, but the landed expression at :512 consults `alive is True` for every terminal verdict, so a blocked or failed manifest with a proven-live process now defers on liveness alone and the sentence misdescribes the code beneath it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "Read c662a4341 and d0ccc51c3 against base d10e1af8e; both touch only reckon/crew/recovery_classification.py, replacing `not process_gone or superseded_manifest` with `alive is True or superseded_manifest or (manifest_status == \"complete\" and not process_gone)`.",
+    "done_when": "The done_when's two tests pass at head and tests/test_a_delivered_run_waits_for_the_reflex.py passes unchanged, both recorded in the run's gate logs, but the classification readings it asks the manifest to record are prose in evidence_inputs with no probe log under the run directory.",
+    "goal": "The node purpose is to give back the resume-path refusal for a blocked run with a recoverable session while the delivered-run hold reads it as running; reckon/crew/recovery_classification.py:512 narrows deferred_outcome so a blocked verdict no longer defers on a moving stream, and tests/test_crew_promotion.py::test_a_session_only_in_the_stream_also_refuses refuses again.",
+    "manifest": "Read manifest.md; it reads status: complete, names commits c662a4341 and d0ccc51c3, records head 50 passed against base 2 failed / 48 passed for tests/test_crew_promotion.py, the red negative control and the 61-file population with one pre-existing failure.",
+    "write_paths": "The declared write paths are reckon/crew/promotion_checks.py and reckon/crew/recovery_classification.py; every path in the diff is inside them, and only recovery_classification.py is changed."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_promotion.py:905 and :977 are pre-existing and independent \u2014 they assert a raised CrewError, pointer retention and an empty ledger, not a value the test handed in \u2014 and negative-control.log shows reverting the fix reddens both, so a regression re-opens them.",
+    "evidence": "promotion-head.log records 50 passed EXIT=0 against promotion-base.log 2 failed / 48 passed EXIT=1 and negative-control.log EXIT=1 with both target tests red, but the classification readings the done_when asks the manifest to record sit in evidence_inputs as prose with no log from probe_classification.py under the run directory.",
+    "fit": "reckon/crew/recovery_classification.py:512 keeps the module's boolean-expression-and-prose idiom with no plan label in the added text, but the retained paragraph at :488 now misdescribes the landed expression.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:512 reads a blocked manifest with unknown liveness and a moving stream as blocked rather than running, so promotion_checks.py:321 refuses it again, exactly the node goal, while the complete-verdict hold is preserved at :514.",
+    "reuse": "no owner for a manifest-deferral decision exists besides this expression \u2014 a search of reckon/ for deferred_outcome and process_gone finds it only at recovery_classification.py:496 \u2014 so the change edits the owner in place rather than forking a second deferral.",
+    "scope_discipline": "the diff at reckon/crew/recovery_classification.py:496 is the sole changed path and lies inside the declared scope, with promotion_checks.py left untouched because the fix belongs at the classification layer."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node purpose is to give back the resume-path refusal for a blocked run with a recoverable session while the delivered-run hold reads it as running; reckon/crew/recovery_classification.py:512 narrows deferred_outcome so a blocked verdict no longer defers on a moving stream, and tests/test_crew_promotion.py::test_a_session_only_in_the_stream_also_refuses refuses again.\nVERDICT done_when: The done_when's two tests pass at head and tests/test_a_delivered_run_waits_for_the_reflex.py passes unchanged, both recorded in the run's gate logs, but the classification readings it asks the manifest to record are prose in evidence_inputs with no probe log under the run directory.\nVERDICT write_paths: The declared write paths are reckon/crew/promotion_checks.py and reckon/crew/recovery_classification.py; every path in the diff is inside them, and only recovery_classification.py is changed.\nVERDICT manifest: Read manifest.md; it reads status: complete, names commits c662a4341 and d0ccc51c3, records head 50 passed against base 2 failed / 48 passed for tests/test_crew_promotion.py, the red negative control and the 61-file population with one pre-existing failure.\nVERDICT diff: Read c662a4341 and d0ccc51c3 against base d10e1af8e; both touch only reckon/crew/recovery_classification.py, replacing `not process_gone or superseded_manifest` with `alive is True or superseded_manifest or (manifest_status == \"complete\" and not process_gone)`.\nCALL_SITES: reckon/crew/promotion_checks.py:296, reckon/crew/obligations.py:167, reckon/crew/directory.py:71, reckon/crew/query.py:187, reckon/serve.py:1053, reckon/mcp_views.py:1867, reckon/crew/recovery_watch.py:306, reckon/crew/recovery_watch.py:1140, reckon/crew_run_commands.py:190\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:512 reads a blocked manifest with unknown liveness and a moving stream as blocked rather than running, so promotion_checks.py:321 refuses it again, exactly the node goal, while the complete-verdict hold is preserved at :514.\nSCORE evidence: 17\nJUSTIFICATION evidence: promotion-head.log records 50 passed EXIT=0 against promotion-base.log 2 failed / 48 passed EXIT=1 and negative-control.log EXIT=1 with both target tests red, but the classification readings the done_when asks the manifest to record sit in evidence_inputs as prose with no log from probe_classification.py under the run directory.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff at reckon/crew/recovery_classification.py:496 is the sole changed path and lies inside the declared scope, with promotion_checks.py left untouched because the fix belongs at the classification layer.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_crew_promotion.py:905 and :977 are pre-existing and independent \u2014 they assert a raised CrewError, pointer retention and an empty ledger, not a value the test handed in \u2014 and negative-control.log shows reverting the fix reddens both, so a regression re-opens them.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/recovery_classification.py:512 keeps the module's boolean-expression-and-prose idiom with no plan label in the added text, but the retained paragraph at :488 now misdescribes the landed expression.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner for a manifest-deferral decision exists besides this expression \u2014 a search of reckon/ for deferred_outcome and process_gone finds it only at recovery_classification.py:496 \u2014 so the change edits the owner in place rather than forking a second deferral.\nFINDING reckon/crew/recovery_classification.py:488 follow-on: the retained paragraph says the deferral consults process_gone rather than liveness alone, but the landed expression at :512 consults `alive is True` for every terminal verdict, so a blocked or failed manifest with a proven-live process now defers on liveness alone and the sentence misdescribes the code beneath it.",
+  "review_run_id": "r-20261016T002656468973-review-of-a-blocked-run-still-needs-a-resume-waiver-d0ccc51c3720",
+  "reviewed_base_sha": "d10e1af8ea9fcc87ff6f572dd9f808adb3c51ec0",
+  "reviewed_head_sha": "d0ccc51c372019fdd7507bd92359acbbf7e190e6",
+  "reviewed_run_id": "r-20261015T235533835600-a-blocked-run-still-needs-a-resume-waiver",
+  "reviewer_run_id": "r-20261016T002656468973-review-of-a-blocked-run-still-needs-a-resume-waiver-d0ccc51c3720",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T235533835600-a-blocked-run-still-needs-a-resume-waiver/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/a-blocked-run-still-needs-a-resume-waiver",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T00:36:21.480890+00:00",
+  "total": 110
+}
