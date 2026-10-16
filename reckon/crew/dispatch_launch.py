@@ -545,9 +545,16 @@ def _worker_git_shim_directory() -> Path:
 
 
 def _worker_host_line(facts: Any, run_directory: str | Path) -> str:
-    """State the compute-host contract in one worker-prompt line."""
+    """State the compute-host contract in one worker-prompt line.
+
+    The forbidden form and both routes out are composed from the nested-launch
+    declaration rather than restated here, so the line, the shim's refusal and
+    the role digests never disagree about which verb leaves the held job.
+    """
     if not facts.in_allocation:
         return ""
+    from reckon import nested_launch as nested
+
     node = facts.node or "unknown"
     job = facts.job_id or "unknown"
     scratch = "/tmp"  # noqa: S108 — the host probe's explicit scratch path
@@ -556,13 +563,15 @@ def _worker_host_line(facts: Any, run_directory: str | Path) -> str:
         if facts.tmp_is_node_local
         else f"{scratch} is not node-local"
     )
+    examples = " or ".join(nested.PARTITION_EXAMPLES)
     return (
         f"HOST — ALLOCATION: node {node}; job {job}; {tmp_clause}; the work "
-        "runs in place — do not open an srun or salloc step in this job or an "
-        "sbatch into it; a separate partition job (for example betelgeuse or a "
-        "*_debug partition) is submitted with RECKON_ALLOW_NESTED_LAUNCH=1 when "
-        "the done-when names one; logs a later reader needs go under "
-        f"{run_directory}."
+        "runs in place — do not open an srun or salloc step in this job. "
+        f"Heavy work that does not belong here goes to {nested.PARTITION_ROUTE} "
+        f"(for example on {examples}) when the done-when names one. "
+        f"{nested.NESTED_SRUN_SENTENCE} A deliberate nested launch is enabled "
+        f"by setting {nested.OVERRIDE_ENV}=1. Logs a later reader needs go "
+        f"under {run_directory}."
     )
 
 

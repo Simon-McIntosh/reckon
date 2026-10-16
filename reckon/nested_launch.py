@@ -20,8 +20,11 @@ is refused with status 97 unless one of two things holds:
 
 Every refusal also names both routes out, so a worker that reads it does not
 take it for "no route exists": heavy work that does not belong in this
-allocation goes to a separate partition job, and a launch that is meant to be
-nested is the deliberate discharge above.
+allocation goes to a separate partition job, submitted with ``sbatch``, and a
+launch that is meant to be nested is the deliberate discharge above. It says
+plainly that an ``srun`` from inside the allocation runs as a step of the held
+job whatever partition it names, so the opt-in is never mistaken for the way
+to reach a separate partition.
 
 Outside the allocation, and for every argv that is not refused, the shim
 forwards to the real binary with the argv unchanged. The real binary is the
@@ -58,12 +61,30 @@ MISSING_BINARY_STATUS = 127
 OVERRIDE_ENV = "RECKON_ALLOW_NESTED_LAUNCH"
 
 # The other route, and the partitions that show what a separate partition job
-# looks like here. The opt-in above is for a launch that is meant to be nested;
-# work that simply does not belong inside this allocation goes to a job of its
-# own. Both are named in every refusal, so a reader learns where the work
-# should go rather than only that it was refused.
-PARTITION_ROUTE = "a separate partition job"
+# looks like here. The verb is part of the route: a separate partition job is
+# submitted with ``sbatch``, and with ``sbatch --wait`` when the caller needs
+# the result before it continues. The opt-in above is for a launch that is
+# meant to be nested; work that simply does not belong inside this allocation
+# goes to a job of its own, which is this route. Both are named in every
+# refusal, so a reader learns where the work should go rather than only that it
+# was refused.
+PARTITION_ROUTE = (
+    "a separate partition job, submitted with sbatch "
+    "(sbatch --wait when the caller needs the result before it continues)"
+)
+PARTITION_ROUTE_VERB = "sbatch"
 PARTITION_EXAMPLES = ("all_debug", "betelgeuse")
+
+# What an ``srun`` does from inside the allocation, whatever partition it names
+# and whether or not the opt-in is set: it opens a step inside this job rather
+# than a job of its own, so it cannot move the work off the node it already
+# runs on. Naming this beside the route above is what keeps a reader from
+# taking the opt-in as the way to reach a separate partition.
+NESTED_SRUN_SENTENCE = (
+    "An srun from inside the allocation runs as a step of the held job, with "
+    "or without the opt-in and whatever partition it names; only sbatch "
+    "submits a job of its own."
+)
 
 # Truthy values that are not the discharge. Anything else non-empty enables it.
 _OFF = frozenset({"", "0", "false", "no"})
@@ -158,6 +179,7 @@ def refusal_message(tool: str, facts: HostFacts) -> str:
             f"{PARTITION_ROUTE} instead (for example on "
             f"{' or '.join(PARTITION_EXAMPLES)})."
         ),
+        NESTED_SRUN_SENTENCE,
     ]
     if tool == _SRUN:
         lines.append(

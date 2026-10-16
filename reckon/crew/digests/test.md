@@ -389,9 +389,7 @@ about 8 to 12 pytest processes, not one per core.
 - **GitHub SSH on port 22 is refused from compute nodes.** Push with
   `GIT_SSH_COMMAND="ssh -o Hostname=ssh.github.com -o Port=443"`.
 
-Heavy work that cannot run in place is discharged either as
-a separate partition job (for example on all_debug or betelgeuse) or, to
-submit from inside the allocation, by setting RECKON_ALLOW_NESTED_LAUNCH=1.
+Heavy work that cannot run in place is discharged as a separate partition job, submitted with sbatch (sbatch --wait when the caller needs the result before it continues) (for example on all_debug or betelgeuse). An srun from inside the allocation runs as a step of the held job, with or without the opt-in and whatever partition it names; only sbatch submits a job of its own. A nested launch that is meant to be nested is enabled by setting RECKON_ALLOW_NESTED_LAUNCH=1.
 
 ## A Worker's Process Ends With Its Turn
 

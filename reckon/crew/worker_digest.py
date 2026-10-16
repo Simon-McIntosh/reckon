@@ -48,11 +48,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import re
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-
-from reckon.nested_launch import OVERRIDE_ENV, PARTITION_EXAMPLES, PARTITION_ROUTE
 
 CANONICAL_SOURCE = "~/.agents/AGENTS.md"
 
@@ -123,17 +121,33 @@ DROPPED_BLOCKS: tuple[str, ...] = (
 # digest itself states both routes.
 FLEET_COMPUTE_HEADER = "### On the fleet allocation, run heavy work in place"
 
-COMPUTE_ROUTES_SENTENCE = (
-    "Heavy work that cannot run in place is discharged either as\n"
-    f"{PARTITION_ROUTE} (for example on {' or '.join(PARTITION_EXAMPLES)}) or, to\n"
-    f"submit from inside the allocation, by setting {OVERRIDE_ENV}=1."
-)
 
-# Canonical header -> the sentence the digest appends after that block's own
-# text. Keyed by header, so a role that does not retain the block receives no
-# sentence.
-ADDED_SENTENCES: dict[str, str] = {
-    FLEET_COMPUTE_HEADER: COMPUTE_ROUTES_SENTENCE,
+def compute_routes_sentence() -> str:
+    """The routes out, composed from the nested-launch declaration at call time.
+
+    The partition route carries its verb and the nested-``srun`` fact beside it,
+    so a reader learns that heavy work leaves the held job through ``sbatch``
+    while an ``srun`` stays a step of it. Reading the declaration here rather
+    than restating it keeps the digest, the shim's refusal and the host line in
+    step when the route changes.
+    """
+    from reckon import nested_launch as nested
+
+    examples = " or ".join(nested.PARTITION_EXAMPLES)
+    return (
+        "Heavy work that cannot run in place is discharged as "
+        f"{nested.PARTITION_ROUTE} (for example on {examples}). "
+        f"{nested.NESTED_SRUN_SENTENCE} A nested launch that is meant to be "
+        f"nested is enabled by setting {nested.OVERRIDE_ENV}=1."
+    )
+
+
+# Canonical header -> the builder of the sentence the digest appends after that
+# block's own text. A builder rather than a literal so the sentence is composed
+# from the nested-launch declaration each time the digest is generated. Keyed
+# by header, so a role that does not retain the block receives no sentence.
+ADDED_SENTENCES: dict[str, Callable[[], str]] = {
+    FLEET_COMPUTE_HEADER: compute_routes_sentence,
 }
 
 EXCERPTS: dict[str, Excerpt] = {
@@ -412,10 +426,10 @@ def _excerpt_chunk(name: str, blocks: Mapping[str, str]) -> str:
 
 def _with_added_sentence(header: str, chunk: str) -> str:
     """A retained block, followed by the sentence the digest adds for it."""
-    sentence = ADDED_SENTENCES.get(header)
-    if sentence is None:
+    builder = ADDED_SENTENCES.get(header)
+    if builder is None:
         return chunk
-    return f"{chunk.rstrip()}\n\n{sentence}\n\n"
+    return f"{chunk.rstrip()}\n\n{builder()}\n\n"
 
 
 def select_blocks(keys: Iterable[str], text: str) -> list[tuple[str, str]]:

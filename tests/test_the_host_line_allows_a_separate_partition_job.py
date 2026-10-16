@@ -1,11 +1,12 @@
 """An in-allocation worker may still submit a separate partition job.
 
 The HOST line forbids only a step inside this allocation: an ``srun`` or
-``salloc`` opened in this job, or an ``sbatch`` into it. Heavy work that does
-not belong here is discharged as a separate partition job, submitted with
-``RECKON_ALLOW_NESTED_LAUNCH=1`` when the node's done-when names one. The line
-must name both, so it never contradicts the role digests or a done-when that
-requires a separate partition job.
+``salloc`` opened in this job. Heavy work that does not belong here is
+discharged as a separate partition job, submitted with ``sbatch`` when the
+node's done-when names one, and the line says that a nested ``srun`` runs as a
+step of the held job whatever partition it names. The line must name the route
+with its verb and the step fact, so it never contradicts the role digests or a
+done-when that requires a separate partition job.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon import nested_launch as nested
 from reckon.crew.node import TaskNode
 from reckon.crew.prompts import compose_prompt
 from reckon.host import HostFacts
@@ -105,31 +107,31 @@ def _declared_negative_control(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_in_allocation_prompt_permits_a_separate_partition_job(
     tmp_path: Path,
 ) -> None:
-    """The prompt forbids an in-place step and names the separate-job route.
+    """The prompt forbids an in-place step and names the route out with its verb.
 
-    Following the old unconditional prohibition, a worker blocked a done-when
-    that required an H200 job submitted with ``RECKON_ALLOW_NESTED_LAUNCH=1``.
-    The line must forbid a step inside this allocation and name the sanctioned
-    route out, so a done-when requiring a separate partition job is never
-    contradicted.
+    A worker that reads only a prohibition against every scheduler verb
+    concludes that no submission route exists and blocks a done-when that
+    requires a separate partition job. The line must forbid a step inside this
+    allocation and name the sanctioned route with the verb that reaches it.
     """
     run_directory = tmp_path / "runs" / "host-line"
     prompt = " ".join(_prompt(_facts(), run_directory).split())
 
     # The prohibition is scoped to this job, not to every scheduler verb.
     assert "the work runs in place" in prompt
-    assert (
-        "do not open an srun or salloc step in this job or an sbatch into it" in prompt
-    )
-    # The sanctioned route for a separate partition job is named.
-    assert "a separate partition job" in prompt
+    assert "do not open an srun or salloc step in this job" in prompt
+    # The sanctioned route is named with its submitting verb, and the line says
+    # an srun stays a step of the held job whatever partition it names.
+    assert nested.PARTITION_ROUTE_VERB in nested.PARTITION_ROUTE
+    assert nested.PARTITION_ROUTE in prompt
+    assert nested.NESTED_SRUN_SENTENCE in prompt
     assert "betelgeuse" in prompt
     assert "RECKON_ALLOW_NESTED_LAUNCH=1" in prompt
     # The node, job, scratch and log clauses are kept.
     assert f"node {NODE}" in prompt
     assert f"job {JOB}" in prompt
     assert f"{SCRATCH} is node-local" in prompt
-    assert f"logs a later reader needs go under {run_directory}" in prompt
+    assert f"a later reader needs go under {run_directory}" in prompt
     # The old unconditional wording, which contradicted the done-when, is gone.
     assert "do not use srun, sbatch or salloc" not in prompt
 
