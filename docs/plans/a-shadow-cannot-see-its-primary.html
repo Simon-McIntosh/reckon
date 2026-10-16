@@ -26,7 +26,7 @@
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -35,10 +35,15 @@
 <section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
     <p>
       <code>reckon crew shadow</code> re-runs a promoted node at its original base on a second backend, so the two
-      arms can be compared as a matched pair. That is the lead's test of Jev's lane against codex. The pair is
-      reported as controlled by <code>ledger.shadow_controlled</code>, which reads only the shadow's recorded
-      configuration: it is controlled when nothing but the backend, its model and its launch differ. Nothing
-      checks what the shadow could read.
+      arms can be compared as a matched pair. That is the lead's test of Jev's lane against codex. Reckon records two
+      verdicts on a shadow's ledger row. <code>shadow_controlled</code>, from <code>ledger.shadow_controlled</code>,
+      reads only the recorded configuration: a pair is controlled when nothing but the backend, its model and its
+      launch differ. <code>shadow_contaminated</code>, written at promotion by
+      <code>promotion_scope._shadow_stream_contamination</code> through <code>ledger.shadow_primary_read</code>,
+      records whether the shadow's tool calls read the primary's landed commit or a file that commit changed. A
+      contaminated row is excluded from calibration by <code>ledger.measurement_exclusion_reason</code>, but the two
+      verdicts never meet: <code>pair_shadow_arms</code> in <code>reckon/capabilities.py</code> reports a pair as
+      controlled from configuration alone.
     </p>
     <p>
       On 2026-10-16 nova ran a clive shadow, <code>r-20261016T165229949973-xpoint-cell-owner</code>, of the promoted
@@ -66,58 +71,59 @@
       arms until this plan lands.
     </p>
     <p>
-      The fix has two halves. Detection (§2) makes every report honest whatever channel a shadow used, so it comes
-      first. Prevention (§3, §4) removes the cheap channels: the primary's name and reckon's records of it. The main
-      checkout and git history still hold a landed primary's result. Closing those is a design choice with real
-      costs, held as the decision in §5.
+      nova's row carries both verdicts at once: <code>shadow_contaminated: primary_changed_path_read</code> and
+      <code>shadow_controlled: True</code>. The scan caught the copied files, yet the pair still reads as controlled.
+      The scan also does not look for the primary's run directory, review records or worktree. Those hold the
+      primary's reasoning and its numbers, not its landed files. The fix has two halves. Detection (§2) joins the
+      two verdicts and widens the existing scan to those paths. Prevention (§3, §4) removes the cheap channels: the
+      primary's name and reckon's records of it. The main checkout and git history still hold a landed primary's
+      result. Closing those is a design choice with real costs, held as the decision in §5.
     </p>
 
     <h2 id="s2">§2 — A shadow's reads of its primary make the pair uncontrolled</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p>
-      <strong>Deliverable.</strong> When a shadow run is promoted, reckon scans its stream for tool inputs that name a
-      path outside the shadow's own reach. That means the primary's run directory, any of the primary's review
-      records, the primary's worktree, or the project's main checkout outside its <code>.venv</code>. Reckon records
-      the result on the shadow's ledger row as <code>lineage.isolation</code>. The record holds a verdict,
-      <code>clean</code> or <code>breached</code>, and for a breach each kind of path read with its count and
-      first example. The set of a primary's paths is defined once, as <code>primary_paths</code> in the new module,
-      so §4's fence hides exactly the set this scan detects. <code>ledger.shadow_controlled</code> returns false unless the isolation verdict is
-      <code>clean</code>. The paired report in <code>reckon/capabilities.py</code> (<code>pair_shadow_arms</code>)
-      names the reason a pair is uncontrolled, whether configuration or isolation. A row with no isolation
-      record reads as <code>isolation unmeasured</code> and is not controlled. That follows the existing rule that
-      lineage with no recorded configuration is not controlled, because a pair whose isolation was never measured
-      cannot be claimed as matched.
+      <strong>Deliverable.</strong> The existing contamination scan is widened, and its verdict is joined to the
+      control verdict. No second scanner or record is added.
+    </p>
+    <ul>
+      <li><code>promotion_scope._primary_read_targets</code> also returns the primary's run directory (through
+        <code>runs.run_dir</code>), its review record paths (through <code>review.review_path</code>) and its
+        worktree when its row names one. This is the one place a primary's readable paths are resolved; §4's fence
+        reads the same function.</li>
+      <li><code>ledger.shadow_primary_read</code> returns a new reason for each of those kinds:
+        <code>primary_run_directory_read</code>, <code>primary_review_read</code> and
+        <code>primary_worktree_read</code>. They are written to the existing <code>shadow_contaminated</code> field.
+        The scan still runs when the primary cites no commit, because a primary that landed nothing still has a run
+        directory to read.</li>
+      <li>A contaminated row is not controlled. The predicate behind both the stored <code>shadow_controlled</code>
+        field and <code>pair_shadow_arms</code> returns false when <code>shadow_contaminated</code> is set. The
+        paired report names the reason a pair is uncontrolled, whether configuration or contamination with its
+        reason.</li>
+    </ul>
+    <p>
+      <strong>Write paths.</strong> <code>reckon/ledger.py</code>, <code>reckon/capabilities.py</code>,
+      <code>reckon/crew/promotion_scope.py</code> and <code>tests/test_crew_shadow_contamination.py</code>.
     </p>
     <p>
-      The scan reads both stream dialects through the backend module's existing stream reader
-      (<code>reckon/_backends.py</code>), so a codex shadow is scanned like a claude one. The main checkout is the
-      project's repository root as reckon resolves it for dispatch. The instrument is deliberately conservative:
-      the worker contract already says to work only in its own worktree, so any main-checkout read outside
-      <code>.venv</code> breaches isolation. The breach names the path, so a reader can judge a benign one.
+      <strong>Done when</strong> <code>tests/test_crew_shadow_contamination.py</code> shows the following, with tool
+      calls in both stream dialects:
     </p>
-    <p>
-      <strong>Write paths.</strong> <code>reckon/ledger.py</code>, <code>reckon/capabilities.py</code>, the shadow
-      branch of promotion in <code>reckon/crew/promotion.py</code> (where it calls <code>_write_shadow_patch</code>,
-      which is defined in <code>reckon/crew/promotion_scope.py</code>), one new
-      module <code>reckon/crew/shadow_isolation.py</code> holding the scan unless the design review names an owner
-      to extend, and <code>tests/test_a_shadow_reads_nothing_of_its_primary.py</code>.
-    </p>
-    <p>
-      <strong>Done when</strong> tests with synthetic streams in both dialects show the following. A shadow whose
-      stream reads only its own worktree and run home is <code>clean</code> and controlled. Reading the primary's
-      run directory, a primary review record, the primary's worktree or the main checkout each gives
-      <code>breached</code> with that kind named, and the pair is not controlled. A read of the main checkout's
-      <code>.venv</code> stays clean. A row without <code>lineage.isolation</code> reports
-      <code>isolation unmeasured</code> and is not controlled. Run on the retained stream of
-      <code>r-20261016T165229949973-xpoint-cell-owner</code>, the scan reports <code>breached</code>, naming the
-      primary's run directory and the main checkout. That run is the positive control. It never opened the
-      primary's review records, whose paths appear only in output it read from the run directory, so the
-      review-record case is shown by the synthetic tests. The
-      negative control makes <code>shadow_controlled</code> ignore isolation, and the breached pair must then read
-      as controlled and fail its test. The test files importing <code>ledger.py</code>,
-      <code>capabilities.py</code> and <code>promotion.py</code> show no added failure against the base revision.
-      <code>ruff format --check</code> is clean on the written paths.
-    </p>
+    <ul>
+      <li>A shadow whose calls read the primary's run directory, a primary review record or the primary's worktree
+        gets the matching reason. A call reading only the shadow's own worktree and run home gets none.</li>
+      <li>A row with <code>shadow_contaminated</code> set has <code>shadow_controlled</code> false, and
+        <code>pair_shadow_arms</code> reports the pair uncontrolled with the contamination reason.</li>
+      <li>The existing tests in that file pass unchanged.</li>
+      <li>The retained stream of <code>r-20261016T165229949973-xpoint-cell-owner</code> still yields
+        <code>primary_changed_path_read</code>, and its run-directory calls yield
+        <code>primary_run_directory_read</code> when scanned on their own.</li>
+      <li>The negative control lets the control predicate ignore <code>shadow_contaminated</code>, and the
+        contaminated-pair assertion must then fail.</li>
+      <li>The test files importing <code>ledger.py</code>, <code>capabilities.py</code> and
+        <code>promotion_scope.py</code> show no added failure against the base revision, and <code>ruff format
+        --check</code> exits 0 on the written paths.</li>
+    </ul>
 
     <h2 id="s3">§3 — A shadow's worktree path and prompt do not name its primary</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -147,8 +153,8 @@
       <strong>Deliverable.</strong> When the launched run is a shadow, <code>fence_argv</code> in
       <code>reckon/_worker_fence.py</code> masks the primary's records. Today <code>fence_argv</code> is composed
       only by <code>launch_plan</code> in <code>reckon/_backends.py</code>, which receives no lineage. So
-      <code>launch_plan</code> gains the paths to hide, computed by §2's <code>primary_paths</code> from the run's
-      lineage. Each caller that launches a run passes that lineage: first launch in
+      <code>launch_plan</code> gains the paths to hide, resolved by <code>promotion_scope._primary_read_targets</code>, the function §2
+      extends, from the run's lineage. Each caller that launches a run passes that lineage: first launch in
       <code>reckon/crew/dispatch.py</code>, session launch in <code>reckon/crew/dispatch_sessions.py</code>, and
       resume in <code>reckon/crew/resumption.py</code>. It mounts an empty tmpfs over the primary's
       run directory, and over the primary's worktree when that still exists. It binds <code>/dev/null</code> over
@@ -217,9 +223,15 @@
     <pre class="r-fu-prompt">/reckon-build a-shadow-cannot-see-its-primary §2</pre>
     <p class="r-fu-outcome">superseded by f-ascp-002: the content review showed §4 also reads §2's path set and shares dispatch.py with §3, so §4 follows both</p>
     </article>
-<article class="r-fu" data-id="f-ascp-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build a-shadow-cannot-see-its-primary §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ascp-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build a-shadow-cannot-see-its-primary §2" data-resolved-at="2026-10-16T19:06:47+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build §2 and §3 together; §4 after both; decide §5</h4>
     <div class="r-fu-body"><p>§2 (ledger, capabilities, promotion and the new isolation module) and §3 (routing) write disjoint files and run together. §4 masks the path set §2 defines, from the lineage §3 settles, and shares <code>dispatch.py</code> with §3, so it follows both. nova is holding all shadow arms until §2 and §4 land; tell nova-2c when they do. The lead decides <code>shadow-isolation-scope</code> before §5 is built.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-shadow-cannot-see-its-primary §2</pre>
+    <p class="r-fu-outcome">superseded by f-ascp-003: the design review showed reckon already scans shadow streams, so §2 extends that scan rather than adding a module</p>
+    </article>
+<article class="r-fu" data-id="f-ascp-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build a-shadow-cannot-see-its-primary §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2 and §3 together; §4 after both; decide §5</h4>
+    <div class="r-fu-body"><p>§2 widens the existing contamination scan in <code>ledger.py</code> and <code>promotion_scope.py</code> and joins it to the control verdict; §3 renames the shadow worktree in <code>routing.py</code>. They write disjoint files and run together. §4 masks the paths §2's extended <code>_primary_read_targets</code> resolves, from the lineage §3 settles, and shares <code>dispatch.py</code> with §3, so it follows both. nova is holding all shadow arms until §2 and §4 land; tell nova-2c when they do. The lead decides <code>shadow-isolation-scope</code> before §5 is built.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-shadow-cannot-see-its-primary §2</pre>
     </article>
 </section>
