@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f13ae18cb740c056d88bd723f6969e0ead5fc609",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1246",
+    "reckon/crew_dispatch_commands.py:1420",
+    "reckon/crew/dispatch.py:1630",
+    "reckon/crew/picker/__init__.py:452",
+    "reckon/crew/queue_admission.py:197",
+    "reckon/crew/picker/replay.py:77"
+  ],
+  "completed_at": "2026-10-16T07:14:52.714Z",
+  "dispatched_at": "2026-10-16T07:00:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/__init__.py",
+      "line": "269",
+      "severity": "follow-on",
+      "text": "follow-on: the docstring claims the mapping is re-serialised through the same function the template uses so an assessed state differs from an unassessed one only by the added key, but the template encodes through prompts.encode at reckon/crew/picker/prompts.py:126-132 with separators ',', ':' while the addition uses jinja2.utils.htmlsafe_json_dumps, which emits ', ' and ': ' separators and escapes the four HTML characters; the state Jev reads is still valid JSON and unchanged in meaning, but the claimed byte-identity does not hold and every assessed dispatch's recorded rendered_state and rendered_token_estimate differ from the unassessed shape by more than that key."
+    },
+    {
+      "file": "reckon/crew/picker/__init__.py",
+      "line": "263",
+      "severity": "follow-on",
+      "text": "follow-on: plan section 2 names build_state at reckon/crew/picker/prompts.py:208, described at prompts.py:222 as the only source of the rendered state, as the extension point, and the landed change instead splices the key into the rendered JSON string after the render, outside that owner; the fence omitted prompts.py and the concurrent one-staleness-rule node holds it, so the deviation was forced and the manifest discloses it, but the assessment now sits outside the state's single source of truth and a later change to the node block carries it nowhere."
+    },
+    {
+      "file": "reckon/crew/picker/replay.py",
+      "line": "77",
+      "severity": "follow-on",
+      "text": "follow-on: the replayed pick rebuilds PickRequest from the run's node_definition and does not pass orchestrator_assessment, so a replay weighs the declared capability without the coordinator's reading even though reckon/crew/dispatch.py:1639 now records that reading beside it; the file is outside this node's write scope and the manifest names the replay gap itself."
+    }
+  ],
+  "head_log_revision": "f13ae18cb740c056d88bd723f6969e0ead5fc609",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit 93a919cc9 against base f13ae18cb, seven files, 547 insertions and 7 deletions, all inside the declared scope; the production change is the --assess parse, its carriage on the pick request and on dispatch options, and the two node_definition writes.",
+    "done_when": "the done_when names tests/test_orchestrator_assessment_reaches_jev.py, and the gate log records 6 passed with its closing EXIT line at 0, with baseline_suite.log at 249 passed and after_suite.log at 255 passed, all three logs on disk.",
+    "goal": "the goal is to carry the coordinator's --assess difficulty reading to Jev beside the declared capability while the run records both, and reckon/crew/picker/__init__.py:452 renders it into the state Jev is shown while reckon/crew/dispatch.py:1630-1639 records both fields on node_definition.",
+    "manifest": "read; it states the gate ran 6 passed with its exit line at 0, names its three gate logs and its negative-control log, and discloses both the build_state deviation and the replay.py follow-on.",
+    "write_paths": "read the seven paths declared at prompt.txt:69-75 of the source run; every path in the diff is inside them and no path outside them is touched."
+  },
+  "justifications": {
+    "durability": "negative_control_log shows the explicit-route assertion reddening as KeyError: 'capability' at tests/test_orchestrator_assessment_reaches_jev.py:334 when the write is removed, and tests/test_orchestrator_assessment_reaches_jev.py:266 fails if the key is rendered unconditionally, though the null-capability path at reckon/crew/dispatch.py:706 is untested.",
+    "evidence": "gate.log records 6 passed ending EXIT=0 for tests/test_orchestrator_assessment_reaches_jev.py and negative_control_log records the mutant failing with EXIT=1, though the done_when's importing-files clause rests on a chosen 20-file arm whose completeness I did not verify.",
+    "fit": "the new names describe their mechanism and the function-local import at reckon/crew/dispatch_picker.py:53 matches the module's own idiom, but the docstring at reckon/crew/picker/__init__.py:269 states an invariant the code does not hold.",
+    "goal_fidelity": "reckon/crew/picker/__init__.py:452 and reckon/crew/dispatch.py:1630-1639 deliver both halves of the goal on the picker, explicit-backend and queued routes, missing only the build_state extension point the plan named.",
+    "reuse": "reckon/crew/dispatch_picker.py:53 reads its vocabulary from the owner at reckon/capability.py:23 and extends PickRequest rather than adding a second request type, but reckon/crew/picker/__init__.py:263 wraps the state its owner builds instead of extending build_state.",
+    "scope_discipline": "all seven changed files are inside the declared write paths and no evidence fragment or figure was written, but reckon/crew/dispatch.py:2109 and :2219 carry blank-line reformatting the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to carry the coordinator's --assess difficulty reading to Jev beside the declared capability while the run records both, and reckon/crew/picker/__init__.py:452 renders it into the state Jev is shown while reckon/crew/dispatch.py:1630-1639 records both fields on node_definition.\nVERDICT done_when: the done_when names tests/test_orchestrator_assessment_reaches_jev.py, and the gate log records 6 passed with its closing EXIT line at 0, with baseline_suite.log at 249 passed and after_suite.log at 255 passed, all three logs on disk.\nVERDICT write_paths: read the seven paths declared at prompt.txt:69-75 of the source run; every path in the diff is inside them and no path outside them is touched.\nVERDICT manifest: read; it states the gate ran 6 passed with its exit line at 0, names its three gate logs and its negative-control log, and discloses both the build_state deviation and the replay.py follow-on.\nVERDICT diff: read commit 93a919cc9 against base f13ae18cb, seven files, 547 insertions and 7 deletions, all inside the declared scope; the production change is the --assess parse, its carriage on the pick request and on dispatch options, and the two node_definition writes.\nCALL_SITES: reckon/crew_dispatch_commands.py:1246, reckon/crew_dispatch_commands.py:1420, reckon/crew/dispatch.py:1630, reckon/crew/picker/__init__.py:452, reckon/crew/queue_admission.py:197, reckon/crew/picker/replay.py:77\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/picker/__init__.py:452 and reckon/crew/dispatch.py:1630-1639 deliver both halves of the goal on the picker, explicit-backend and queued routes, missing only the build_state extension point the plan named.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate.log records 6 passed ending EXIT=0 for tests/test_orchestrator_assessment_reaches_jev.py and negative_control_log records the mutant failing with EXIT=1, though the done_when's importing-files clause rests on a chosen 20-file arm whose completeness I did not verify.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: all seven changed files are inside the declared write paths and no evidence fragment or figure was written, but reckon/crew/dispatch.py:2109 and :2219 carry blank-line reformatting the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: negative_control_log shows the explicit-route assertion reddening as KeyError: 'capability' at tests/test_orchestrator_assessment_reaches_jev.py:334 when the write is removed, and tests/test_orchestrator_assessment_reaches_jev.py:266 fails if the key is rendered unconditionally, though the null-capability path at reckon/crew/dispatch.py:706 is untested.\nSCORE fit: 16\nJUSTIFICATION fit: the new names describe their mechanism and the function-local import at reckon/crew/dispatch_picker.py:53 matches the module's own idiom, but the docstring at reckon/crew/picker/__init__.py:269 states an invariant the code does not hold.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew/dispatch_picker.py:53 reads its vocabulary from the owner at reckon/capability.py:23 and extends PickRequest rather than adding a second request type, but reckon/crew/picker/__init__.py:263 wraps the state its owner builds instead of extending build_state.\nFINDING reckon/crew/picker/__init__.py:269 follow-on: the docstring claims the mapping is re-serialised through the same function the template uses so an assessed state differs from an unassessed one only by the added key, but the template encodes through prompts.encode at reckon/crew/picker/prompts.py:126-132 with separators ',', ':' while the addition uses jinja2.utils.htmlsafe_json_dumps, which emits ', ' and ': ' separators and escapes the four HTML characters; the state Jev reads is still valid JSON and unchanged in meaning, but the claimed byte-identity does not hold and every assessed dispatch's recorded rendered_state and rendered_token_estimate differ from the unassessed shape by more than that key.\nFINDING reckon/crew/picker/__init__.py:263 follow-on: plan section 2 names build_state at reckon/crew/picker/prompts.py:208, described at prompts.py:222 as the only source of the rendered state, as the extension point, and the landed change instead splices the key into the rendered JSON string after the render, outside that owner; the fence omitted prompts.py and the concurrent one-staleness-rule node holds it, so the deviation was forced and the manifest discloses it, but the assessment now sits outside the state's single source of truth and a later change to the node block carries it nowhere.\nFINDING reckon/crew/picker/replay.py:77 follow-on: the replayed pick rebuilds PickRequest from the run's node_definition and does not pass orchestrator_assessment, so a replay weighs the declared capability without the coordinator's reading even though reckon/crew/dispatch.py:1639 now records that reading beside it; the file is outside this node's write scope and the manifest names the replay gap itself.",
+  "review_run_id": "r-20261016T065945475838-review-of-orchestrator-assessment-reaches-jev-93a919cc997a",
+  "reviewed_base_sha": "f13ae18cb740c056d88bd723f6969e0ead5fc609",
+  "reviewed_head_sha": "93a919cc997a137b183afcbc26866d13f24e6987",
+  "reviewed_run_id": "r-20261016T061954014694-orchestrator-assessment-reaches-jev",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 12,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T07:12:25.881863+00:00",
+  "total": 97
+}
