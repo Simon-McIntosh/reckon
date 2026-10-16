@@ -1674,15 +1674,66 @@ def _remember_root_outside_repository(repo_dir: Path) -> None:
         _GIT_OUTSIDE_MEMO[str(repo_dir)] = stamp
 
 
+def _run_git_head(repo_dir: Path) -> tuple[str, str | None]:
+    """Resolve HEAD, distinguishing an outside root from a failed spawn.
+
+    The outcome is one of three. ``("head", sha)`` is git's answer with a
+    commit; ``("outside", None)`` is git's own verdict that this root is under
+    no repository, which is a durable fact about the tree and may be
+    remembered; ``("failed", None)`` is every other failure — a timeout, a
+    spawn error, or an exit that says something else — which says nothing
+    about the tree and must never be remembered.
+
+    The distinction needs the exit code and stderr, and ``_run_git`` returns
+    neither to its existing callers, so the one spawn a HEAD lookup makes is
+    made here rather than by widening that contract.
+    """
+
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            cwd=repo_dir,
+            timeout=10,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        LOGGER.warning("Git HEAD lookup timed out after 10 seconds in %s", repo_dir)
+        return ("failed", None)
+    except OSError as exc:
+        LOGGER.warning("Git HEAD lookup could not start in %s: %s", repo_dir, exc)
+        return ("failed", None)
+    if result.returncode != 0:
+        detail = result.stderr.strip()
+        suffix = f": {detail}" if detail else ""
+        LOGGER.warning(
+            "Git HEAD lookup failed with exit code %d in %s%s",
+            result.returncode,
+            repo_dir,
+            suffix,
+        )
+        if "not a git repository" in (result.stderr or "").lower():
+            return ("outside", None)
+        return ("failed", None)
+    head = result.stdout.strip()
+    if not head:
+        LOGGER.warning("Git HEAD lookup returned no commit in %s", repo_dir)
+        return ("failed", None)
+    return ("head", head)
+
+
 def _git_head(repo_dir: Path) -> str | None:
     """The repository's HEAD commit, resolved once per commit.
 
     The sha is memoised on the identity of ``HEAD`` and the ref it names, so
     repeated lookups against an unchanged checkout reuse the first answer and
     start no git process. A new commit changes that identity, and the next
-    lookup resolves afresh. A root with no ``.git`` is resolved by git once,
-    and a failure there is remembered so a tree outside any repository answers
-    every later lookup without spawning again.
+    lookup resolves afresh. When git answers that the root is under no
+    repository at all, that answer is remembered, so a tree outside any
+    repository resolves once and every later age and HEAD lookup returns no
+    commit without spawning again. Any other failure is not an answer about the
+    tree and is never remembered.
     """
 
     key = str(repo_dir)
@@ -1693,17 +1744,14 @@ def _git_head(repo_dir: Path) -> str | None:
             return memo[1]
     elif _root_outside_repository(repo_dir):
         return None
-    result = _run_git(["git", "rev-parse", "HEAD"], repo_dir, operation="HEAD lookup")
-    if result is None:
+    outcome, head = _run_git_head(repo_dir)
+    if outcome == "head":
+        if identity is not None and head is not None:
+            _GIT_HEAD_MEMO[key] = (identity, head)
+        return head
+    if outcome == "outside":
         _remember_root_outside_repository(repo_dir)
-        return None
-    head = result.stdout.strip()
-    if not head:
-        LOGGER.warning("Git HEAD lookup returned no commit in %s", repo_dir)
-        return None
-    if identity is not None:
-        _GIT_HEAD_MEMO[key] = (identity, head)
-    return head
+    return None
 
 
 def _parse_first_committed(output: str) -> dict[str, int]:

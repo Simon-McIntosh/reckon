@@ -7,6 +7,12 @@ failure, so the read paid one failed process per plan. The HEAD lookup now
 records a root git reports as outside any repository, keyed by the root's path
 and directory stamp, so later age and HEAD lookups return no commit without
 spawning again.
+
+Only git's own verdict that a root is under no repository is remembered. A
+timeout, a spawn error, or any other exit says nothing about the tree, and
+remembering one would freeze a wrong answer into a long-lived server: a docs
+directory below its repository's root has no ``.git`` at that level, so a
+single storage-slow lookup would make every later age there read as untracked.
 """
 
 from __future__ import annotations
@@ -56,70 +62,13 @@ def _git(cwd: Path, *args: str, env: dict | None = None) -> None:
     subprocess.run(["git", *args], cwd=cwd, check=True, env=env)
 
 
-def _run_audit(docs: Path) -> list:
-    return doccheck.audit_lifecycle(project="probe", docs_dir=docs, now_ts=COMMIT_TS)
-
-
-@contextlib.contextmanager
-def _counting_git_spawns(monkeypatch):
-    """Count every git process the read starts, whatever its call site.
-
-    ``reckon.serve._run_git`` is the one place that spawns git for a plan's age
-    or HEAD, so a counter wrapped around it counts one per subprocess and needs
-    no shim on ``PATH``.
-    """
-
-    calls = {"count": 0}
-    real = serve._run_git
-
-    def wrapper(args, repo_dir, *, operation):
-        calls["count"] += 1
-        return real(args, repo_dir, operation=operation)
-
-    monkeypatch.setattr(serve, "_run_git", wrapper)
-    yield lambda: calls["count"]
-
-
-def test_no_repository_root_asks_git_at_most_once(tmp_path, monkeypatch):
-    """A no-repo docs root starts at most one git process for the whole audit."""
-
-    monkeypatch.setattr("reckon.serve._GIT_OUTSIDE_MEMO", {})
-    docs = _build_tree(tmp_path / "loose")
-    assert not (tmp_path / "loose" / ".git").exists()
-
-    with _counting_git_spawns(monkeypatch) as spawns:
-        _run_audit(docs)
-        count = spawns()
-
-    assert count <= 1, f"the no-repository audit started {count} git processes"
-
-
-def test_no_repository_root_answers_no_commit_without_spawning(tmp_path, monkeypatch):
-    """A remembered outside root answers HEAD with no commit and no process."""
-
-    monkeypatch.setattr("reckon.serve._GIT_OUTSIDE_MEMO", {})
-    docs = _build_tree(tmp_path / "loose")
-    repo_dir = docs.parent
-
-    assert _git_head(repo_dir) is None
-
-    with _counting_git_spawns(monkeypatch) as spawns:
-        assert _git_head(repo_dir) is None
-        assert _git_head(repo_dir) is None
-        assert spawns() == 0, "a remembered outside root must not spawn git again"
-
-
-def test_repository_root_ages_are_commit_derived(tmp_path, monkeypatch):
-    """A docs root inside a repository still reads commit-derived ages."""
-
-    monkeypatch.setattr("reckon.serve._GIT_OUTSIDE_MEMO", {})
-    repo = tmp_path / "checkout"
-    docs = _build_tree(repo)
+def _commit_docs(repo: Path, subtree: str) -> None:
+    """Commit ``subtree`` at ``COMMIT_TS``, giving the plans a known date."""
 
     _git(repo, "init", "-q")
     _git(repo, "config", "user.email", "probe@example.invalid")
     _git(repo, "config", "user.name", "Probe")
-    _git(repo, "add", "docs")
+    _git(repo, "add", subtree)
     stamp = f"{int(COMMIT_TS)} +0000"
     _git(
         repo,
@@ -130,15 +79,176 @@ def test_repository_root_ages_are_commit_derived(tmp_path, monkeypatch):
         env={**os.environ, "GIT_AUTHOR_DATE": stamp, "GIT_COMMITTER_DATE": stamp},
     )
 
-    docs = docs.resolve()
-    plan = docs / "plans" / "p00.html"
-    age_days, source = derived_plan_age(
-        "2026-01-05",
-        fallback_path=plan,
-        repo_dir=docs.parent,
-        docs_dir=docs,
-        today=TODAY,
-    )
-    committed_day = datetime.fromtimestamp(COMMIT_TS, tz=UTC).date()
-    assert source == "commit"
-    assert age_days == (TODAY - committed_day).days
+
+def _run_audit(docs: Path) -> list:
+    return doccheck.audit_lifecycle(project="probe", docs_dir=docs, now_ts=COMMIT_TS)
+
+
+@contextlib.contextmanager
+def _isolated_state(tmp_path: Path, monkeypatch):
+    """Point every persisted cache and in-process memo at this test's tmp tree.
+
+    The caches default to the operator's config home. A test that reads or
+    writes it reports on the machine rather than on the code, so the config
+    home is redirected into the temporary tree and the memos are cleared.
+    """
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    monkeypatch.setattr("reckon.serve._GIT_OUTSIDE_MEMO", {})
+    monkeypatch.setattr("reckon.serve._GIT_HEAD_MEMO", {})
+    monkeypatch.setattr("reckon.serve._GIT_LAST_MODIFIED_CACHE", {})
+    monkeypatch.setattr("reckon.serve._GIT_CREATION_CACHE", {})
+    yield
+
+
+@contextlib.contextmanager
+def _counting_git_spawns(monkeypatch):
+    """Count every git process the read starts, whatever its call site.
+
+    A plan's age reaches git through the shared ``_run_git`` query and, for
+    HEAD, through ``_run_git_head``. Each call is exactly one subprocess, so a
+    counter wrapped around both counts processes without a shim on ``PATH``.
+    """
+
+    calls = {"count": 0}
+    real_run_git = serve._run_git
+    real_run_git_head = serve._run_git_head
+
+    def run_git(args, repo_dir, *, operation):
+        calls["count"] += 1
+        return real_run_git(args, repo_dir, operation=operation)
+
+    def run_git_head(repo_dir):
+        calls["count"] += 1
+        return real_run_git_head(repo_dir)
+
+    monkeypatch.setattr(serve, "_run_git", run_git)
+    monkeypatch.setattr(serve, "_run_git_head", run_git_head)
+    yield lambda: calls["count"]
+
+
+@contextlib.contextmanager
+def _git_that_times_out_once(monkeypatch):
+    """Make the next git process raise ``TimeoutExpired``, then behave normally."""
+
+    real_run = subprocess.run
+    state = {"pending": 1}
+
+    def flaky(args, *rest, **kwargs):
+        argv = list(args) if isinstance(args, (list, tuple)) else [args]
+        if state["pending"] and argv and os.path.basename(str(argv[0])) == "git":
+            state["pending"] -= 1
+            raise subprocess.TimeoutExpired(cmd=str(argv[0]), timeout=1)
+        return real_run(args, *rest, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", flaky)
+    yield
+
+
+def test_no_repository_root_asks_git_at_most_once(tmp_path, monkeypatch):
+    """A no-repo docs root starts at most one git process for the whole audit."""
+
+    with _isolated_state(tmp_path, monkeypatch):
+        docs = _build_tree(tmp_path / "loose")
+        assert not (tmp_path / "loose" / ".git").exists()
+
+        with _counting_git_spawns(monkeypatch) as spawns:
+            _run_audit(docs)
+            count = spawns()
+
+        assert count <= 1, f"the no-repository audit started {count} git processes"
+
+
+def test_no_repository_root_answers_no_commit_without_spawning(tmp_path, monkeypatch):
+    """A remembered outside root answers HEAD with no commit and no process."""
+
+    with _isolated_state(tmp_path, monkeypatch):
+        docs = _build_tree(tmp_path / "loose")
+        repo_dir = docs.parent
+
+        assert _git_head(repo_dir) is None
+        assert serve._GIT_OUTSIDE_MEMO, "git's outside verdict must be remembered"
+
+        with _counting_git_spawns(monkeypatch) as spawns:
+            assert _git_head(repo_dir) is None
+            assert _git_head(repo_dir) is None
+            assert spawns() == 0, "a remembered outside root must not spawn git again"
+
+
+def test_timeout_is_not_remembered_as_outside(tmp_path, monkeypatch):
+    """A timed-out HEAD lookup is not an answer, so nothing is remembered."""
+
+    with _isolated_state(tmp_path, monkeypatch):
+        docs = _build_tree(tmp_path / "loose")
+        repo_dir = docs.parent
+
+        with _git_that_times_out_once(monkeypatch):
+            assert _git_head(repo_dir) is None
+
+        assert serve._GIT_OUTSIDE_MEMO == {}, "a timeout must not be remembered"
+
+        with _counting_git_spawns(monkeypatch) as spawns:
+            assert _git_head(repo_dir) is None
+            assert spawns() == 1, "the root must be asked again after a timeout"
+
+
+def test_repository_root_ages_are_commit_derived(tmp_path, monkeypatch):
+    """A docs root inside a repository still reads commit-derived ages."""
+
+    with _isolated_state(tmp_path, monkeypatch):
+        repo = tmp_path / "checkout"
+        docs = _build_tree(repo)
+        _commit_docs(repo, "docs")
+
+        docs = docs.resolve()
+        plan = docs / "plans" / "p00.html"
+        age_days, source = derived_plan_age(
+            "2026-01-05",
+            fallback_path=plan,
+            repo_dir=docs.parent,
+            docs_dir=docs,
+            today=TODAY,
+        )
+        committed_day = datetime.fromtimestamp(COMMIT_TS, tz=UTC).date()
+        assert source == "commit"
+        assert age_days == (TODAY - committed_day).days
+
+
+def test_nested_docs_root_below_repository_keeps_resolving_head(tmp_path, monkeypatch):
+    """A docs root below its repository's root keeps resolving HEAD after a timeout.
+
+    The repository's ``.git`` sits one level above the directory the server is
+    handed, so no HEAD identity can be read there and every lookup consults
+    git. Git resolves this root to the repository's commit, and a timed-out
+    lookup must not be taken for its verdict that the root is under no
+    repository: remembering one would replace that commit with none for the
+    life of the server.
+    """
+
+    with _isolated_state(tmp_path, monkeypatch):
+        repo = tmp_path / "checkout"
+        docs = _build_tree(repo / "code")
+        repo_dir = docs.parent
+        assert not (repo_dir / ".git").exists()
+        _commit_docs(repo, "code")
+
+        expected = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo_dir,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        assert expected
+        assert _git_head(repo_dir) == expected
+
+        with _git_that_times_out_once(monkeypatch):
+            assert _git_head(repo_dir) is None
+
+        assert serve._GIT_OUTSIDE_MEMO == {}, "a timeout must not be remembered"
+
+        with _counting_git_spawns(monkeypatch) as spawns:
+            assert _git_head(repo_dir) == expected
+            assert spawns() == 1, (
+                "the root must be asked again rather than read as outside"
+            )
