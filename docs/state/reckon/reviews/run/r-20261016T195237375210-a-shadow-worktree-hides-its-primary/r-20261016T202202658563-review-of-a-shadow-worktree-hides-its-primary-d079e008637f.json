@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:661",
+    "reckon/crew/gc.py:325",
+    "reckon/crew/promotion_scope.py:760"
+  ],
+  "completed_at": "2026-10-16T20:32:20.408Z",
+  "dispatched_at": "2026-10-16T20:22:33Z",
+  "findings": [
+    {
+      "file": "tests/test_a_shadow_worktree_hides_its_primary.py",
+      "line": "189",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares the worktree path against a string built from the component read out of the same dispatch result's own lineage (line 179), so both sides move with the code under test and it passes for any token that merely contains shadow-candidate-a-<component>; the independent anti-regression load is carried by lines 184-185."
+    },
+    {
+      "file": "tests/test_a_shadow_worktree_hides_its_primary.py",
+      "line": "213",
+      "severity": "follow-on",
+      "text": "follow-on: assert session == f\"shadow-candidate-a-{component}\" builds its right side from the resolution's own lineage component (line 205), so it too is a self-consistency check rather than an independent expectation of the session form."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T195237375210-a-shadow-worktree-hides-its-primary/manifest.md",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "follow-on: after_suite records revision aa211077614a39eee5a13621cde9ba4b44aef229, the same value as baseline_suite at line 17, so a reader comparing revisions alone sees base equal head; the head arm's own log header (gate-head.log:2) states it ran at that rev plus a working-tree change to routing.py, and the measured 751-passed head arm did include the 5 new cases."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read d079e008 against its base aa2110776; three files changed (routing.py 16 removed / 43 added, a new 280-line test file, an 86-line evidence fragment), and the change is the session-stem rename plus the additive legacy resolution in _shadow_worktree_records.",
+    "done_when": "the done_when (docs/plans/a-shadow-cannot-see-its-primary.html:147-151) asks for a dry-run worktree; the gate run is recorded in gate-head.log (rev aa2110776, tree named, EXIT=0) and gate-base.log (744 passed, 2 scaffolding errors), with the 5-case new file in the head arm.",
+    "goal": "the node's goal is that a new shadow's worktree path and composed prompt name no primary run id; the diff at reckon/crew/routing.py:873 builds the session stem from the candidate backend alone and the new test at tests/test_a_shadow_worktree_hides_its_primary.py:184-185 asserts the primary id is absent from both the launched worktree path and the composed prompt.",
+    "manifest": "read r-20261016T195237375210-a-shadow-worktree-hides-its-primary/manifest.md; it records status complete, a head arm of 751 passed / 1 skipped at EXIT=0, a base arm of 744 passed / 2 scaffolding errors, and the negative control at EXIT=1 with two failing ids.",
+    "write_paths": "read the manifest's declared write_paths (reckon/crew/routing.py, tests/test_a_shadow_worktree_hides_its_primary.py, the evidence fragment and the figures dir); every path in the node change is inside them, and reckon/crew/dispatch.py is untouched exactly as the brief required."
+  },
+  "justifications": {
+    "durability": "tests/test_a_shadow_worktree_hides_its_primary.py:184 reddens under the recorded negative control (negative-control.log EXIT=1), while the two naming assertions at lines 189 and 213 derive their expected string from the code's own output and cannot fail on a renaming.",
+    "evidence": "gate-head.log ends \"751 passed, 1 skipped, 8 warnings\" with EXIT=0, but manifest.md:18 records after_suite.revision as the base sha aa2110776, so the two arms are indistinguishable by that field alone.",
+    "fit": "reckon/crew/routing.py:866-875 keeps the module's docstring idiom and the added resolution comment at routing.py:903-910 follows the surrounding comment style, introducing no plan or ticket name.",
+    "goal_fidelity": "reckon/crew/routing.py:873 builds the session from the candidate backend and component alone, and tests/test_a_shadow_worktree_hides_its_primary.py:184-185 shows the primary id absent from the worktree path and the composed prompt.",
+    "reuse": "reckon/crew/routing.py:863 shadow_worktree_session is the sole owner of the shadow session token (no other module composes a shadow-named session), and the change extends it and its two consumers rather than forking a second naming.",
+    "scope_discipline": "every path in the d079e008 change (reckon/crew/routing.py, tests/test_a_shadow_worktree_hides_its_primary.py, docs/evidence/fragments/a-shadow-cannot-see-its-primary/a-shadow-worktree-hides-its-primary.html) is a declared write path and dispatch.py is untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a new shadow's worktree path and composed prompt name no primary run id; the diff at reckon/crew/routing.py:873 builds the session stem from the candidate backend alone and the new test at tests/test_a_shadow_worktree_hides_its_primary.py:184-185 asserts the primary id is absent from both the launched worktree path and the composed prompt.\nVERDICT done_when: the done_when (docs/plans/a-shadow-cannot-see-its-primary.html:147-151) asks for a dry-run worktree; the gate run is recorded in gate-head.log (rev aa2110776, tree named, EXIT=0) and gate-base.log (744 passed, 2 scaffolding errors), with the 5-case new file in the head arm.\nVERDICT write_paths: read the manifest's declared write_paths (reckon/crew/routing.py, tests/test_a_shadow_worktree_hides_its_primary.py, the evidence fragment and the figures dir); every path in the node change is inside them, and reckon/crew/dispatch.py is untouched exactly as the brief required.\nVERDICT manifest: read r-20261016T195237375210-a-shadow-worktree-hides-its-primary/manifest.md; it records status complete, a head arm of 751 passed / 1 skipped at EXIT=0, a base arm of 744 passed / 2 scaffolding errors, and the negative control at EXIT=1 with two failing ids.\nVERDICT diff: read d079e008 against its base aa2110776; three files changed (routing.py 16 removed / 43 added, a new 280-line test file, an 86-line evidence fragment), and the change is the session-stem rename plus the additive legacy resolution in _shadow_worktree_records.\nCALL_SITES: reckon/crew/dispatch.py:661, reckon/crew/gc.py:325, reckon/crew/promotion_scope.py:760\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:873 builds the session from the candidate backend and component alone, and tests/test_a_shadow_worktree_hides_its_primary.py:184-185 shows the primary id absent from the worktree path and the composed prompt.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log ends \"751 passed, 1 skipped, 8 warnings\" with EXIT=0, but manifest.md:18 records after_suite.revision as the base sha aa2110776, so the two arms are indistinguishable by that field alone.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the d079e008 change (reckon/crew/routing.py, tests/test_a_shadow_worktree_hides_its_primary.py, docs/evidence/fragments/a-shadow-cannot-see-its-primary/a-shadow-worktree-hides-its-primary.html) is a declared write path and dispatch.py is untouched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_shadow_worktree_hides_its_primary.py:184 reddens under the recorded negative control (negative-control.log EXIT=1), while the two naming assertions at lines 189 and 213 derive their expected string from the code's own output and cannot fail on a renaming.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/routing.py:866-875 keeps the module's docstring idiom and the added resolution comment at routing.py:903-910 follows the surrounding comment style, introducing no plan or ticket name.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/routing.py:863 shadow_worktree_session is the sole owner of the shadow session token (no other module composes a shadow-named session), and the change extends it and its two consumers rather than forking a second naming.\nFINDING tests/test_a_shadow_worktree_hides_its_primary.py:189 follow-on: the assertion compares the worktree path against a string built from the component read out of the same dispatch result's own lineage (line 179), so both sides move with the code under test and it passes for any token that merely contains shadow-candidate-a-<component>; the independent anti-regression load is carried by lines 184-185.\nFINDING tests/test_a_shadow_worktree_hides_its_primary.py:213 follow-on: assert session == f\"shadow-candidate-a-{component}\" builds its right side from the resolution's own lineage component (line 205), so it too is a self-consistency check rather than an independent expectation of the session form.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T195237375210-a-shadow-worktree-hides-its-primary/manifest.md:18 follow-on: after_suite records revision aa211077614a39eee5a13621cde9ba4b44aef229, the same value as baseline_suite at line 17, so a reader comparing revisions alone sees base equal head; the head arm's own log header (gate-head.log:2) states it ran at that rev plus a working-tree change to routing.py, and the measured 751-passed head arm did include the 5 new cases.",
+  "review_run_id": "r-20261016T202202658563-review-of-a-shadow-worktree-hides-its-primary-d079e008637f",
+  "reviewed_base_sha": "aa211077614a39eee5a13621cde9ba4b44aef229",
+  "reviewed_head_sha": "d079e008637fcd8f9f5ca8e04cef2a68becbade1",
+  "reviewed_run_id": "r-20261016T195237375210-a-shadow-worktree-hides-its-primary",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T20:31:30.470414+00:00",
+  "total": 113
+}
