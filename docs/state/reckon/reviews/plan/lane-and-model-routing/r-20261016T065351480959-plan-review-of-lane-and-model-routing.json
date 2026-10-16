@@ -1,0 +1,82 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T07:03:13.873Z",
+  "dispatched_at": "2026-10-16T06:54:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:164",
+      "id": "reasoning-1",
+      "reason": "a node implementing the sentence literally must either edit a file it is not granted or guess where the instant lives, and a wrong guess leaves `expected_wait_profile_age_s` null on every memo hit.",
+      "text": "the deliverable requires the refresh to record the persist instant \"in the persisted entry\" while persisting \"through the existing `capabilities.cached_pick_input_rekeyed` writer\", but that writer builds the entry itself as `{\"version\", \"key\", \"value\"}` (reckon/capabilities.py:1318-1326) and `capabilities.py` is not among s27's write paths, so the instant can only be carried if it rides inside the cached profile value \u2014 and the in-process memo (`_PROFILE_CACHE`, lane_context.py:591-593) keeps the age only if it does",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:164",
+      "id": "reasoning-2",
+      "reason": "unnamed, the direct read can serve an entry written under an older schema as a run-time profile, which is the exact failure the version marker exists to prevent.",
+      "text": "the moved-stamp serve reads the cached file \"directly, through `capabilities.pick_input_cache_path`\", which drops the two guards that function's sibling owns: the `PICK_INPUT_CACHE_VERSION` marker and the absent/unreadable/corrupt-entry handling in `_read_pick_entry` (reckon/capabilities.py:1226-1241), and the deliverable does not say the direct read keeps them",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:164",
+      "id": "reasoning-3",
+      "reason": "a node told the pick never rebuilds must either delete a working fallback or stop on an unsettled decision, so the section should scope the invariant to a cacheable stamp or state what an unreadable ledger does.",
+      "text": "the deliverable's invariant \"A pick never computes a run-time profile\" is contradicted by two paths it retains in the same function: a ledger whose index cannot be read yields no stamp and `run_time_profile` is then called synchronously (reckon/crew/picker/lane_context.py:588-590), as it is for a project id that cannot form a cache filename (lane_context.py:594-599), both of which rebuild the 14-day profile inside the pick",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5dd22fd0977aea1b62749c2c1a6267616ed95a4271029837407cd22e70155649",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 178,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T065351480959-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "032584e90255fd429a76abf7595a555ad0e5c1a6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_cached_run_time_profile` (`reckon/crew/picker/lane_context.py:570`), `capabilities.cached_pick_input_rekeyed` (`reckon/capabilities.py:1285`), `capabilities.pick_input_cache_path` (`reckon/capabilities.py:1193`), the glossary (`_GLOSSARY`, `reckon/crew/picker/prompts.py:34`), the cited \u00a725 document and the `jev-learns-from-its-routes` \u00a75 write paths all resolve.",
+    "done_when": "pass \u2014 the gate names concrete assertions (a 25 h profile not served, an age under 60 s after the refresh, the refresh called once with the promoted run's project after the ledger append) and declares a negative control that restores the synchronous rebuild so the patched `run_time_profile` raises.",
+    "evidence_paths": "pass \u2014 the gate is an in-repo test file, not a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 `expected_wait_profile_age_s` is named by what it measures, and no ticket, stage or version label reaches it.",
+    "reasoning": "findings \u2014 the Why's figures match \u00a725's document exactly (99.5%/41.0%, 169 and 716 renders, 164 calls over 2 s, 6,555 reads joined to 1,254 picks), and promotion is named as the refresh caller, but three mechanism claims are underspecified against the code they name.",
+    "single_goal": "pass \u2014 one deliverable, moving the profile rebuild off the pick, with the new `local_lane` field as its observable.",
+    "wiring": "pass \u2014 s27 declares `lane-and-model-routing#s25` and `jev-learns-from-its-routes#s5`, both resolve, and the prose names the same ordering because jev \u00a75 writes `lane_context.py` and `prompts.py` too."
+  },
+  "section_digests": {
+    "_document": "fffc06e8335a03eb127211abe8a2b6d7a7a285287e37bd740351f117b5151b28",
+    "s0": "6e04ec2c2da6b7aa6a120157e2ea4f499c385f6c8f599c9dd4e1fcb27ceb84d5",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9f3b98da9be42bc1d1dad77d11079186c59e62315308454b2f442bdfffa7755c",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s12": "8a7841af15c5beacc75bf716eab0a317f722daab3a302ec190299ce0c3315350",
+    "s13": "6cc9f5f5d1d9a0d7a981363b2961d554bc1670d016cf5da011e18fd20d24b604",
+    "s14": "f4192a6b66ca1a9df3c0c8b84d6a76f9b7e2708145600fc43403217b7a52c540",
+    "s15": "f771307d6c5f071d884953878a527fd166185d3d25c88171a3028f27f2a174b8",
+    "s16": "f223e6b5a96e8c6195a47af2261f3ffdb2da6592ac65ab36dc87669411b7f75d",
+    "s17": "db5f3a60a7771988ff06ffcf6122eeedf774dd3127c63cb5d2553e30aff138df",
+    "s18": "a8fdaccbcc00dea2d881e6f33dbca396f55ac9a48a784860531f01f14666d645",
+    "s19": "e1a470831773831c7253aa2402eab63c6a03e418004a6c140215f11e2aff3722",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s20": "9dca86a7ea316e5b22b94c70024ba182f82622bb73f8243655562dc2cb4fc8d3",
+    "s21": "8dc7453f756c4d2310baaa5a97b36e69467be72d1cb4221107161ac2abe26293",
+    "s22": "c2832f2414aa82a4d518b901109aa3a292240391671daa2eb3236c0f26e099ee",
+    "s23": "10a05db6298f320a13762d348e0d6fc166aad25921753c17b3936ee7f9e25239",
+    "s24": "d5f6d292f47236016559d0a135c6fbf9b38d6a20fc8fa81171485a3df0c421e8",
+    "s25": "920b34eadfee3c45ff4fc70d5068b05eafe4f5b5961fbeeb5d82489660139cbd",
+    "s26": "72f1cee40ef0441bc758c97eb285db4beeaca94cc5bc7136636f2b5260cb20c5",
+    "s27": "c66023f58591249e60f086f88571793e309eb79547d0f750ef03710dc8d23c8b",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "0c546f1c0ce99eb4f03333edf6955f597fcb37c49baa31305dfd52c6b03364d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T07:06:15.067886+00:00"
+}
