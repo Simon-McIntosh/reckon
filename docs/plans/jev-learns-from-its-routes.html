@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="lane-and-model-routing">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;jev-learns-from-its-routes#s2&quot;, &quot;jev-learns-from-its-routes#s5&quot;], &quot;s4&quot;: [&quot;jev-learns-from-its-routes#s3&quot;], &quot;s8&quot;: [&quot;jev-learns-from-its-routes#s2&quot;], &quot;s9&quot;: [&quot;jev-learns-from-its-routes#s4&quot;, &quot;jev-learns-from-its-routes#s5&quot;, &quot;lane-and-model-routing#s27&quot;], &quot;s10&quot;: [&quot;jev-learns-from-its-routes#s5&quot;, &quot;jev-learns-from-its-routes#s6&quot;], &quot;s11&quot;: [&quot;jev-learns-from-its-routes#s2&quot;, &quot;jev-learns-from-its-routes#s9&quot;, &quot;jev-learns-from-its-routes#s12&quot;], &quot;s12&quot;: [&quot;jev-learns-from-its-routes#s3&quot;], &quot;s13&quot;: [&quot;jev-learns-from-its-routes#s6&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
   <title>Jev Learns From Its Routes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="39">
+<meta name="plan-version" content="41">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -196,7 +196,7 @@
     </p>
 
     <h2 id="s4">§4 — A coordinator's move off Jev's pick counts against that pick, not for the lane it landed on</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>
       <strong>Why.</strong> A run that Jev routed to clive and a coordinator then moved to codex is credited to codex as
       if codex had been chosen for it. Its lineage records the move, and nothing that builds Jev's evidence reads that
@@ -495,7 +495,13 @@
     <div class="r-comment-body"><p>Correction, from content review <code>r-20261016T112931464702</code> (reasoning-1). The primary's run directory holds <code>stream.jsonl</code>, <code>lane-change-2.jsonl</code> and <code>resume-1.jsonl</code> to <code>resume-18.jsonl</code>: twenty attempts and nineteen codex sessions, not twenty resumes. The mechanism and done-when are unchanged.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261016T120756937620-review-of-a-move-counts-against-the-pick-faa09d078cdd" data-who="reckon-build" data-when="2026-10-16T12:24:00.546Z">
-    <div class="r-comment-body"><p>An independent review of run r-20261016T112409473679-a-move-counts-against-the-pick is stored at the head-keyed review path for head faa09d078cdd15c474d86aa2fcc7888fd52f9ecd: a parsed record scoring all six dimensions (goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 18, reuse 20; total 117), carrying reviewed_base_sha 8044ba654bdd00758676cc232f98cd1eb7e246c4 and reviewed_head_sha faa09d078cdd15c474d86aa2fcc7888fd52f9ecd, with added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite/after_suite gate logs. One follow-on finding at reckon/crew/picker/types.py:53; no blocking finding.</p></div>
+    <div class="r-comment-body"><p>An independent review of run r-20261016T112409473679-a-move-counts-against-the-pick is stored at the head-keyed review path for head faa09d078cdd15c474d86aa2fcc7888fd52f9ecd: a parsed record scoring all six dimensions (goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 18, reuse 20; total 117), carrying reviewed_base_sha 8044ba654bdd00758676cc232f98cd1eb7e246c4 and reviewed_head_sha faa09d078cdd15c474d86aa2fcc7888fd52f9ecd, with added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own baseline_suite/after_suite gate logs. One follow-on finding at reckon/crew/picker/types.py:53; no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-16T12:30:00Z">
+    <div class="r-comment-body"><p>§4 landed: a coordinator's move counts against Jev's pick (merge <code>da7f8f65c</code>, review 117, 0 added failures). Open follow-on: filter <code>moved_in</code> by requirement as <code>moved_off</code> is. <a href="/reckon/evidence/archive/jev-learns-from-its-routes-landed.html#s4">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261016T112409473679-a-move-counts-against-the-pick" data-who="reckon-build" data-when="2026-10-16T12:03:45.900Z">
+    <div class="r-comment-body"><p>A coordinator&#x27;s move off Jev&#x27;s pick is now counted against the pick rather than the receiving lane: a row whose lineage records a lane change away from the backend its picker_selection chose is kept out of the receiving candidate&#x27;s outcomes and outcomes_at_requirement and tallied under that candidate&#x27;s moved_in, while the candidate Jev chose gains moved_off, reported at the request&#x27;s requirement when the requirement block is present; a lane change with no picker_selection still counts under its final lane as before. Gate tests/test_a_move_counts_against_the_pick.py 5 passed; snapshot-importer set 206 passed at head against 201 at base (no added failure); negative control (move detection disabled) 3 failed EXIT=1.</p></div>
 </div>
 </section>
 </main>
