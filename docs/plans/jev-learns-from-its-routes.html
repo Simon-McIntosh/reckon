@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="jev-learns-from-its-routes">
+  <meta name="plan-title" content="Jev Learns From Its Routes">
+  <meta name="plan-summary" content="Jev weighs a node's requirement against outcomes read at that requirement, counts coordinator moves against its picks, and reads staleness one way.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="9.25">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="unattended-execution">
+  <meta name="plan-after" content="lane-and-model-routing">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;jev-learns-from-its-routes#s2&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <title>Jev Learns From Its Routes | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: Jev is shown the node's requirement but no evidence it can weigh against it</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>
+      On 2026-10-16 the lead directed, through the nova coordinator, that coordinators trust Jev and stop routine
+      lane overrides. Jev is to be given the full context, including the orchestrator's own reading of a node's
+      difficulty and openness. It is to balance the node's needs against lane congestion, subscription drawdown
+      and recent throughput per lane and model, and to learn from its previous decisions. The next one or two deep
+      nodes are to run as a matched pair, Jev's lane against codex.
+    </p>
+    <p>
+      Evidence came from two nova sessions. One covered 64 implement runs on nova's converged-forward-solve plan;
+      the other covered 22 dispatches in nova's S24, and its author has since withdrawn its proposal of a
+      deterministic difficulty floor. Read against the run records and this repository's picker code on
+      2026-10-16, the evidence locates the defect in what Jev is shown, not in what it is asked:
+    </p>
+    <table>
+      <thead><tr><th>Measured</th><th>What it shows</th><th>Where it lives</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>The requirement reaches Jev</td>
+          <td>The rendered state of nova's <code>fused-convergence</code> pick
+          (<code>r-20261015T115843362666-fused-convergence</code>) carries <code>node.capability</code> reasoning deep,
+          verification strict, risk critical, and the orchestrator's comment "critical risk, deepest reasoning". Jev
+          answered local 0.56, codex sol 0.29, at confidence 0.50.</td>
+          <td><code>reckon/crew/picker/__init__.py</code> <code>_declared_difficulty</code></td>
+        </tr>
+        <tr>
+          <td>The outcome evidence ignores the requirement</td>
+          <td>For that same pick Jev was shown clive 78 passed / 4 failed and codex 10 passed / 7 failed. These are gate
+          counts over 14 days, filtered by role and spec level only. Coordinators had moved 34 of nova's hardest nodes
+          from clive to codex under a standing rule, so codex carries the hard nodes' failures and the long wall times
+          (return-time p50 7,640 s against clive's 2,517 s). The evidence then argues against the lane the hard work
+          went to.</td>
+          <td><code>reckon/crew/picker/snapshot.py</code> <code>_candidates_scan</code></td>
+        </tr>
+        <tr>
+          <td>A coordinator's move is recorded but never read</td>
+          <td>Each move is stored in <code>lineage.lanes[]</code> with <code>from_backend</code>, <code>to_backend</code>
+          and the reason. The moved run keeps <code>route_mode</code> picker and Jev's original pick, and its outcome is
+          credited to the lane it was moved to. <code>orchestrator_lane_override</code> is a different field: it is the
+          permission to run on an orchestrator lane.</td>
+          <td><code>reckon/crew/dispatch.py</code> lineage, <code>_candidates_scan</code></td>
+        </tr>
+        <tr>
+          <td>The run does not record the requirement</td>
+          <td><code>node_definition.capability</code> is null on every nova run checked, including those whose pick
+          rendered a capability. So no reader can condition history on difficulty.</td>
+          <td><code>reckon/crew/dispatch.py</code>, where <code>node_definition</code> is built</td>
+        </tr>
+        <tr>
+          <td>Two staleness readings of one figure disagree</td>
+          <td>In the same pick, the codex candidate reads <code>stale: true</code> at a reading age of 345.8 s, with
+          <code>budget_source</code> null. Its return-time block reads the same document-sourced reading at 347.3 s as
+          <code>stale: false</code>. The host flight sets <code>evidence_shelf_life_minutes: 5</code>, and the
+          candidate's flag applies that shelf life to every source. The glossary Jev is given says a stale reading is a
+          ledger-only reading past its shelf life.</td>
+          <td><code>snapshot.py</code> <code>budget_view</code>, <code>lane_context.py</code> <code>_budget_block</code></td>
+        </tr>
+        <tr>
+          <td>Codex worker time is a wall-clock stand-in</td>
+          <td>Of nova's codex-lane implement runs this month, 66 record <code>worker_seconds_source</code>
+          <code>wall_fallback</code>, 36 record none (<code>stalled</code>) and 6 record <code>stream_events</code>.
+          All 136 clive runs record <code>stream_events</code>. Throughput per lane cannot be compared.</td>
+          <td><code>reckon/crew/promotion_checks.py</code> <code>_terminal_stream_data</code></td>
+        </tr>
+        <tr>
+          <td>A paired arm exists but nothing compares it</td>
+          <td><code>reckon crew shadow --run &lt;committed run&gt; --backend &lt;lane&gt;</code> re-runs a committed run at
+          its base on another lane (verified as a dry run on <code>fused-convergence</code>). The outcomes report
+          excludes shadow rows, and nothing sets a primary beside its shadow.</td>
+          <td><code>reckon/crew/picker/outcomes.py</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      A seventh defect is owned elsewhere. Three of nova's deep nodes never received a Jev answer: each recorded
+      <code>timeout in pick:state-render</code> and fell to the deterministic default lane. Picks exceeding the 5 s
+      dispatch bound rose from 7.6% of picks since 2026-10-12 to 21% since 2026-10-15 12Z. The state render's read
+      counter attributes 97% of its read time to the run-time profile read. That measurement is
+      <a href="/reckon/plans/lane-and-model-routing.html#s25">lane-and-model-routing §25</a>, and its fix is a section
+      of that plan. This plan is ordered after it because a pick that times out weighs nothing this plan adds.
+    </p>
+    <p>
+      The sections below add evidence Jev can weigh and remove one inconsistency. None adds a rule that decides the
+      lane. Staleness qualifies a figure and does not choose a route. The node's requirement is an input, and Jev
+      balances it against pressure and history.
+    </p>
+
+    <h2 id="s2">§2 — The orchestrator's difficulty assessment reaches Jev, and the run records the requirement Jev weighed</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      <strong>Why.</strong> A coordinator's reading of a node's difficulty travels only inside <code>--comment</code>
+      prose. Openness already has a structured carrier, <code>--spec-level</code>. Difficulty has none for a brief node,
+      and for a section node the coordinator cannot say that it reads the node as harder or easier than the section
+      declared. The resolved requirement is not stored on the run either, so §3 has nothing to condition on.
+    </p>
+    <p>
+      <strong>Deliverable.</strong> <code>reckon crew dispatch</code> accepts a repeatable
+      <code>--assess KEY=VALUE</code>, where KEY is a capability requirement key the capability schema declares
+      (<code>reasoning</code>, <code>verification</code>, <code>risk</code>, <code>context</code>,
+      <code>tool_autonomy</code>). VALUE is validated against that key's declared values, and an undeclared key or value
+      is refused by name. The assessment travels on the pick request and renders as
+      <code>node.orchestrator_assessment</code> beside <code>node.capability</code>. It does not replace the declared
+      capability (decision <code>assessment-beside-declared</code>). The questions' instructions name it as the
+      coordinator's own reading, to be weighed with the declared capability. The run's
+      <code>node_definition</code> records <code>capability</code> as the section routing resolved it, and
+      <code>orchestrator_assessment</code> when one was given. Both are stored on the explicit and fallback routes as
+      well as on a Jev route.
+    </p>
+    <p>
+      <strong>Write paths.</strong> <code>reckon/crew_dispatch_commands.py</code>, <code>reckon/crew/dispatch_picker.py</code>,
+      <code>reckon/crew/picker/types.py</code>, <code>reckon/crew/picker/__init__.py</code>,
+      <code>reckon/crew/picker/templates/questions.jinja</code>, <code>reckon/crew/dispatch.py</code> and
+      <code>tests/test_orchestrator_assessment_reaches_jev.py</code>. Extend <code>PickRequest</code> and
+      <code>build_state</code>; add no second request type.
+    </p>
+    <p>
+      <strong>Done when</strong> a dry-run dispatch with <code>--assess reasoning=deep --assess risk=critical</code> renders a
+      state whose <code>node.orchestrator_assessment</code> is <code>{"reasoning": "deep", "risk": "critical"}</code>
+      and whose <code>node.capability</code> is the section's declared capability unchanged. <code>--assess risk=extreme</code>
+      and <code>--assess colour=red</code> are each refused, naming the key and the accepted values. A dispatch with no
+      <code>--assess</code> renders no <code>orchestrator_assessment</code> key. A promoted run record built through
+      the ledger's record builder carries <code>node_definition.capability</code> equal to the section routing's
+      capability, on a picker route and on an explicit <code>--backend</code> route. The negative control removes the
+      write to <code>node_definition.capability</code>, and the explicit-route assertion must then fail. The test files
+      importing any written module show no added failure against the base revision.
+    </p>
+
+    <h2 id="s3">§3 — Jev's outcome evidence is read at the node's requirement</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      <strong>Why.</strong> <code>_candidates_scan</code> counts gate outcomes per lane and model filtered by role and
+      spec level alone, so a deep, critical node is shown the same history as a one-constant fix. That history is
+      shaped by which nodes went where. Jev cannot learn from previous decisions when the decisions it sees are pooled
+      across every difficulty.
+    </p>
+    <p>
+      <strong>Deliverable.</strong> Each candidate keeps its existing <code>outcomes</code> counts and gains an
+      <code>outcomes_at_requirement</code> block. The block counts the same gate vocabulary over the rows whose recorded
+      requirement (§2's <code>node_definition.capability</code> reasoning and risk) equals the request's, and carries
+      <code>review_total_median</code> and <code>wall_seconds_median</code> over those rows. Rows that recorded no
+      requirement count under <code>unrecorded</code>. They are never matched by default, so history written before §2
+      reads as unknown rather than as a match. The figures come from the same single pass over the rows. The glossary
+      gains one entry defining the block, and the instructions tell Jev that these counts are the history at this
+      node's difficulty, not a calibrated ranking.
+    </p>
+    <p>
+      <strong>Write paths.</strong> <code>reckon/crew/picker/snapshot.py</code>, <code>reckon/crew/picker/types.py</code>,
+      <code>reckon/crew/picker/prompts.py</code>, <code>reckon/crew/picker/templates/questions.jinja</code> and
+      <code>tests/test_outcomes_at_requirement.py</code>. §4 and §5 also write <code>snapshot.py</code>, so the three
+      run one at a time, §5 first.
+    </p>
+    <p>
+      <strong>Done when</strong> a test builds ledger rows for two lanes: lane A passes four standard-reasoning rows and fails
+      two deep-critical rows; lane B fails one standard row and passes three deep-critical rows. A pick request for a
+      deep, critical node shows A's <code>outcomes_at_requirement</code> as 0 passed / 2 failed and B's as 3 passed /
+      0 failed, with the pooled <code>outcomes</code> unchanged. A row with no recorded requirement is counted under
+      <code>unrecorded</code> only. The rendered state carries the block, and its glossary entry is present. The
+      negative control drops the requirement filter, so both lanes' blocks equal their pooled counts and the
+      assertion on A must fail. The test files importing <code>snapshot.py</code> or <code>prompts.py</code> show no
+      added failure against the base revision, and a pick's <code>snapshot_ms</code> on the test fixture is within 10%
+      of the base revision's figure.
+    </p>
+
+    <h2 id="s4">§4 — A coordinator's move off Jev's pick counts against that pick, not for the lane it landed on</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      <strong>Why.</strong> A run that Jev routed to clive and a coordinator then moved to codex is credited to codex as
+      if codex had been chosen for it. Its lineage records the move, and nothing that builds Jev's evidence reads that
+      lineage. Jev therefore never sees that a coordinator disagreed with it, and the lane the moves land on collects
+      outcomes it was never picked for.
+    </p>
+    <p>
+      <strong>Deliverable.</strong> A row whose lineage records a lane change away from the backend its
+      <code>picker_selection</code> chose is a move. Its outcome is removed from the receiving candidate's
+      <code>outcomes</code> and <code>outcomes_at_requirement</code>, and counted instead under that candidate's
+      <code>moved_in</code> in the same gate vocabulary. The candidate Jev chose gains <code>moved_off</code>, the number
+      of its picks a coordinator moved away within the window, at the request's requirement when §3's block is present.
+      The glossary defines both. Jev's own pick and probabilities stay on the moved run's
+      <code>picker_selection</code> unchanged.
+    </p>
+    <p>
+      <strong>Write paths.</strong> <code>reckon/crew/picker/snapshot.py</code>, <code>reckon/crew/picker/types.py</code>,
+      <code>reckon/crew/picker/prompts.py</code> and <code>tests/test_a_move_counts_against_the_pick.py</code>. This
+      section runs after §3.
+    </p>
+    <p>
+      <strong>Done when</strong> a test builds three rows: one Jev-routed clive run that stayed on clive and passed; one
+      run whose <code>picker_selection</code> chose clive, whose lineage moves it to codex with a reason, and which
+      failed; and one codex run that Jev routed there and that passed. The clive candidate reads 1 passed and
+      <code>moved_off</code> 1. The codex candidate reads 1 passed and <code>moved_in</code> 1 failed. A row with a
+      lane change but no picker selection (an explicit route that was later moved) counts under its final lane as
+      today. The negative control ignores lineage, and the codex candidate must then read 1 passed / 1 failed with no
+      <code>moved_in</code>. The test files importing <code>snapshot.py</code> show no added failure against the base
+      revision.
+    </p>
+
+    <h2 id="s5">§5 — A candidate's stale flag follows one rule, the one the glossary states</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      <strong>Why.</strong> Two readers in one pick judge one reading differently. <code>budget_view</code> marks a
+      group's reading expired once its age passes the flight's <code>evidence_shelf_life_minutes</code>, whatever its
+      source, and the candidate's <code>stale</code> flag follows that. <code>lane_context._budget_block</code>, which
+      feeds the return-time block, marks only a ledger reading stale. With the host shelf life at 5 minutes and the
+      paid-lanes document republished on a similar cadence, a metered lane routinely reads stale beside a local lane
+      that reads served. That is an asymmetry in evidence, not a fact about the lanes. The candidate also carries no
+      <code>budget_source</code>, so Jev cannot see which kind of reading it is being told is stale.
+    </p>
+    <p>
+      <strong>Deliverable.</strong> One function judges a reading's staleness from its source. An account-surface
+      reading is never stale by age. A paid-lanes document reading is stale past the shelf life the document publishes
+      (<code>suggested_shelf_life_seconds</code>), and past the flight's shelf life when it publishes none. A ledger
+      reading is stale past the flight's shelf life. The candidate's <code>stale</code> and the return-time block both
+      call that function, and the candidate carries <code>budget_source</code>. The glossary's <code>stale</code> entry
+      states the three cases. Where the ceiling gate acts only on a fresh reading, it keeps acting only on a fresh one
+      under the new rule.
+    </p>
+    <p>
+      <strong>Write paths.</strong> <code>reckon/crew/picker/snapshot.py</code>, <code>reckon/crew/picker/lane_context.py</code>,
+      <code>reckon/crew/picker/prompts.py</code> and <code>tests/test_one_staleness_rule.py</code>.
+    </p>
+    <p>
+      <strong>Done when</strong> a test builds one document reading 345 s old from a document publishing a 900 s shelf life,
+      under a flight shelf life of 5 minutes. The candidate and the return-time block both read <code>stale: false</code>
+      with <code>budget_source</code> <code>document</code>. The same reading at 1,000 s reads stale in both. A ledger
+      reading at 400 s reads stale in both. An account-surface reading at any age reads fresh in both. The negative
+      control restores the source-blind expiry in <code>budget_view</code>, and the candidate's flag must then disagree
+      with the return-time block at 345 s. The test files importing <code>snapshot.py</code> or
+      <code>lane_context.py</code> show no added failure against the base revision.
+    </p>
+
+    <h2 id="s6">§6 — Codex worker time is measured from its own stream</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p>
+      <strong>Why.</strong> The lead's direction asks Jev to weigh recent throughput per lane and model. A codex run's
+      <code>worker_seconds</code> is the run's wall time on a normal finish and absent on a stalled one, because the
+      stream measures find no worker time in the codex event schema. Nova's codex-lane implement runs this month record
+      <code>stream_events</code> on 6 of 108. So codex throughput is either wall time or unknown, while clive's is
+      measured.
+    </p>
+    <p>
+      <strong>Deliverable.</strong> The stream measures read worker time from a codex stream's own events and record
+      <code>worker_seconds_source</code> <code>stream_events</code>, as they already do for the claude-format streams
+      clive and claude write. A codex stream that carries no usable timing still falls back as today.
+    </p>
+    <p>
+      <strong>Write paths.</strong> <code>reckon/crew/promotion_checks.py</code> and
+      <code>tests/test_codex_worker_time_is_measured.py</code>. Read the codex stream shape from a real run's
+      <code>stream.jsonl</code> under the crew home before writing the fixture, and cite that run in the test's
+      docstring.
+    </p>
+    <p>
+      <strong>Done when</strong> a test promotes a fixture codex stream, copied in shape from a real codex run with its
+      content trimmed, and finds <code>worker_seconds</code> equal to the span the stream's own events state and
+      <code>worker_seconds_source</code> <code>stream_events</code>. A claude-format fixture still yields its existing
+      figure. The negative control removes the codex branch, and the codex fixture must then record
+      <code>wall_fallback</code>. The test files importing <code>promotion_checks.py</code> show no added failure
+      against the base revision.
+    </p>
+
+    <h2 id="s7">§7 — The outcomes report sets a primary run beside its shadow arm</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p>
+      <strong>Why.</strong> The lead asked for a matched comparison of Jev's lane against codex on the next deep nodes.
+      <code>reckon crew shadow</code> runs the second arm, and its committed row names its primary in
+      <code>lineage.primary_run_id</code>. The outcomes report excludes shadow rows, so neither the coordinator nor Jev
+      can read the pair as a pair.
+    </p>
+    <p>
+      <strong>Deliverable.</strong> <code>reckon crew pick --outcomes</code> gains a <code>paired_arms</code> block. It
+      has one entry per committed shadow row whose primary is committed, giving each arm's lane, model, route mode,
+      gate, review total, wall seconds, worker seconds and worker-seconds source. A shadow whose primary is not
+      committed is listed under <code>unpaired</code> with the missing primary named.
+    </p>
+    <p>
+      <strong>Write paths.</strong> <code>reckon/crew/picker/outcomes.py</code> and <code>tests/test_paired_arms_are_reported.py</code>.
+    </p>
+    <p>
+      <strong>Done when</strong> a test builds a primary row and a shadow row naming it, plus a shadow row naming a primary
+      absent from the ledger. The report pairs the first two with both arms' figures and lists the third under
+      <code>unpaired</code>. The existing outcome counts, which exclude shadow rows, are unchanged. The negative control
+      drops the lineage join, and the pair must then be absent. The test files importing <code>outcomes.py</code> show
+      no added failure against the base revision.
+    </p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="assessment-beside-declared" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Does the orchestrator's difficulty assessment sit beside the section's declared capability in Jev's state, or replace it for the pick?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="beside">Beside the declared capability (recommended)</button>
+          <button class="r-opt" data-value="replace">Replace the declared capability</button>
+        </p>
+        <p class="r-dec-rat">Beside keeps both facts visible: the plan's authored requirement and the coordinator's reading at dispatch. Jev weighs the disagreement, and §3 can still condition history on the declared requirement, which is the stable, reviewed one. Replacing would let one dispatch flag silently rewrite the requirement that history is keyed on.</p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-jlr-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-16">
+        <h4 class="r-fu-title">Build §2, §5, §6 and §7 in parallel; §3 after §2; §4 after §3</h4>
+        <div class="r-fu-body"><p>§2, §5, §6 and §7 write disjoint files. §3 reads the requirement §2 records and shares <code>snapshot.py</code> with §5, so it runs after both. §4 shares <code>snapshot.py</code> with §3 and runs last. The decision on the orchestrator assessment settles §2's shape.</p></div>
+        <pre class="r-fu-prompt">/reckon-build jev-learns-from-its-routes §2</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
