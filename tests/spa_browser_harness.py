@@ -26,6 +26,12 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSITION_PROBE = ROOT / "tests" / "spa_render_capture.mjs"
 BROWSER_NAMES = ("google-chrome", "chromium", "chromium-browser")
+PLAYWRIGHT_HEADLESS_SHELL_RELATIVE = (
+    "chrome-headless-shell-linux64/chrome-headless-shell"
+)
+PLAYWRIGHT_HEADLESS_SHELL_GLOB = (
+    "chromium_headless_shell-*/" + PLAYWRIGHT_HEADLESS_SHELL_RELATIVE
+)
 NAVIGATION_FAULT_REPORT = (
     "/home/ITER/mcintos/.config/reckon/crew/reports/browser-navigation-probe.md"
 )
@@ -529,11 +535,53 @@ def temporary_browser_profile(tmp_path: Path) -> Iterator[Path]:
             raise TimeoutError(f"browser profile did not remain removed: {profile}")
 
 
+def playwright_browsers_root() -> Path:
+    """The directory Playwright installs browsers under."""
+
+    configured = os.environ.get("PLAYWRIGHT_BROWSERS_PATH")
+    if configured:
+        return Path(configured).expanduser()
+    return Path.home() / ".cache" / "ms-playwright"
+
+
+def _headless_shell_revision(shell: Path) -> tuple[int, str]:
+    name = shell.parents[1].name
+    suffix = name.rsplit("-", 1)[-1]
+    try:
+        return (int(suffix), name)
+    except ValueError:
+        return (-1, name)
+
+
+def playwright_headless_shells() -> tuple[Path, ...]:
+    """Executable Playwright headless shells, newest revision first."""
+
+    root = playwright_browsers_root()
+    try:
+        revisions = tuple(root.glob("chromium_headless_shell-*"))
+    except OSError:
+        revisions = ()
+    shells = [
+        binary
+        for revision in revisions
+        if (binary := revision / PLAYWRIGHT_HEADLESS_SHELL_RELATIVE).is_file()
+        and os.access(binary, os.X_OK)
+    ]
+    return tuple(sorted(shells, key=_headless_shell_revision, reverse=True))
+
+
 def installed_browser() -> str | None:
-    return next(
-        (path for name in BROWSER_NAMES if (path := shutil.which(name))),
-        None,
-    )
+    """Resolve an explicit override, a browser on PATH, or Playwright's shell."""
+
+    configured = os.environ.get("RECKON_BROWSER")
+    if configured:
+        return configured
+    for name in BROWSER_NAMES:
+        path = shutil.which(name)
+        if path:
+            return path
+    shells = playwright_headless_shells()
+    return str(shells[0]) if shells else None
 
 
 def installed_browser_or_skip() -> str:
@@ -544,6 +592,8 @@ def installed_browser_or_skip() -> str:
         raise SkipTest(
             "no supported browser binary is installed; tried "
             + ", ".join(BROWSER_NAMES)
+            + "; also checked $RECKON_BROWSER and Playwright's headless shell at "
+            + f"{playwright_browsers_root()}/{PLAYWRIGHT_HEADLESS_SHELL_GLOB}"
         )
     return browser
 

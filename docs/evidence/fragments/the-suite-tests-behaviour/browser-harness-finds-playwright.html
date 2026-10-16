@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-tests-behaviour">
+  <meta name="plan-title" content="The browser harness finds the browser that is installed">
+  <meta name="plan-summary" content="installed_browser() resolves RECKON_BROWSER, the three PATH names, then Playwright's Chromium headless shell newest-first, so the browser population no longer skips for a missing browser.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-tests-behaviour">
+  <meta name="plan-verifies" content="reckon:the-suite-tests-behaviour#s2">
+  <meta name="plan-commits" content="c2c060c0">
+  <meta name="plan-recorded-at" content="2026-10-10">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="browser,playwright,harness,skip">
+  <title>The browser harness finds the browser that is installed — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="browser-harness-finds-playwright" data-reckon="landed" data-when="2026-10-10">
+  <h2>The browser harness finds the browser that is installed</h2>
+  <p><code>installed_browser()</code> resolves, in order, <code>RECKON_BROWSER</code>, the three
+  names on <code>PATH</code>, and Playwright's Chromium headless shell under
+  <code>$PLAYWRIGHT_BROWSERS_PATH</code> or
+  <code>~/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell</code>,
+  newest installed revision first. Its skip message names every location it checked.</p>
+  <p>Measured on the compute allocation (node 98dci4-clu-2002, job 1281970). The browser
+  population is the 56 test ids reaching <code>installed_browser_or_skip</code>, derived from
+  the head tree. At the base revision (<code>fef8ae2da</code>) the population skipped 66 times
+  with <em>no supported browser binary is installed</em>; at head (<code>c2c060c0</code>) the same
+  population runs with no such skip. The negative control removes the Playwright clause from
+  <code>installed_browser()</code>; the population then skips 67 times again and
+  <code>tests/test_browser_harness_finds_playwright.py</code> fails its two resolution checks.
+  <code>tests/test_browser_harness_finds_playwright.py</code> and
+  <code>tests/test_browser_skip_is_not_vacuous.py</code> pass with <code>EXIT=0</code>.</p>
+</article>
+</body>
+</html>
