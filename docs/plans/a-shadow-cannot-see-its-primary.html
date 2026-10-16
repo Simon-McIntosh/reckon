@@ -21,11 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="jev-learns-from-its-routes">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;a-shadow-cannot-see-its-primary#s3&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;a-shadow-cannot-see-its-primary#s2&quot;, &quot;a-shadow-cannot-see-its-primary#s3&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;deferred&quot;}">
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="2">
+<meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
   <main class="plan-doc">
@@ -45,8 +47,9 @@
     </p>
     <ul>
       <li><strong>Reckon's records of the primary.</strong> 138 references to the primary's run directory under
-        <code>~/.config/reckon/crew/runs/</code>, and 10 to its review records under
-        <code>~/.config/reckon/crew/reviews/nova/</code>.</li>
+        <code>~/.config/reckon/crew/runs/</code>, and 10 references to its review records under
+        <code>~/.config/reckon/crew/reviews/nova/</code>, all inside output it read from that run directory rather
+        than files it opened.</li>
       <li><strong>The project's main checkout.</strong> The shadow ran <code>git log --oneline 4e852a31e..HEAD</code>
         in <code>/home/ITER/mcintos/Code/nova</code>. It then copied the primary's 37 prototype files from that
         checkout into its own worktree with <code>cp -n</code>. The primary had already landed, so main held its
@@ -70,14 +73,15 @@
     </p>
 
     <h2 id="s2">§2 — A shadow's reads of its primary make the pair uncontrolled</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="2" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p>
       <strong>Deliverable.</strong> When a shadow run is promoted, reckon scans its stream for tool inputs that name a
       path outside the shadow's own reach. That means the primary's run directory, any of the primary's review
       records, the primary's worktree, or the project's main checkout outside its <code>.venv</code>. Reckon records
       the result on the shadow's ledger row as <code>lineage.isolation</code>. The record holds a verdict,
       <code>clean</code> or <code>breached</code>, and for a breach each kind of path read with its count and
-      first example. <code>ledger.shadow_controlled</code> returns false unless the isolation verdict is
+      first example. The set of a primary's paths is defined once, as <code>primary_paths</code> in the new module,
+      so §4's fence hides exactly the set this scan detects. <code>ledger.shadow_controlled</code> returns false unless the isolation verdict is
       <code>clean</code>. The paired report in <code>reckon/capabilities.py</code> (<code>pair_shadow_arms</code>)
       names the reason a pair is uncontrolled, whether configuration or isolation. A row with no isolation
       record reads as <code>isolation unmeasured</code> and is not controlled. That follows the existing rule that
@@ -93,7 +97,8 @@
     </p>
     <p>
       <strong>Write paths.</strong> <code>reckon/ledger.py</code>, <code>reckon/capabilities.py</code>, the shadow
-      branch of promotion in <code>reckon/crew/promotion.py</code> (beside <code>_write_shadow_patch</code>), one new
+      branch of promotion in <code>reckon/crew/promotion.py</code> (where it calls <code>_write_shadow_patch</code>,
+      which is defined in <code>reckon/crew/promotion_scope.py</code>), one new
       module <code>reckon/crew/shadow_isolation.py</code> holding the scan unless the design review names an owner
       to extend, and <code>tests/test_a_shadow_reads_nothing_of_its_primary.py</code>.
     </p>
@@ -105,7 +110,9 @@
       <code>.venv</code> stays clean. A row without <code>lineage.isolation</code> reports
       <code>isolation unmeasured</code> and is not controlled. Run on the retained stream of
       <code>r-20261016T165229949973-xpoint-cell-owner</code>, the scan reports <code>breached</code>, naming the
-      primary's run directory, its review records and the main checkout. That run is the positive control. The
+      primary's run directory and the main checkout. That run is the positive control. It never opened the
+      primary's review records, whose paths appear only in output it read from the run directory, so the
+      review-record case is shown by the synthetic tests. The
       negative control makes <code>shadow_controlled</code> ignore isolation, and the breached pair must then read
       as controlled and fail its test. The test files importing <code>ledger.py</code>,
       <code>capabilities.py</code> and <code>promotion.py</code> show no added failure against the base revision.
@@ -138,7 +145,12 @@
 <section data-reckon="section" data-id="s4" data-effort-hours="1.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p>
       <strong>Deliverable.</strong> When the launched run is a shadow, <code>fence_argv</code> in
-      <code>reckon/_worker_fence.py</code> masks the primary's records. It mounts an empty tmpfs over the primary's
+      <code>reckon/_worker_fence.py</code> masks the primary's records. Today <code>fence_argv</code> is composed
+      only by <code>launch_plan</code> in <code>reckon/_backends.py</code>, which receives no lineage. So
+      <code>launch_plan</code> gains the paths to hide, computed by §2's <code>primary_paths</code> from the run's
+      lineage. Each caller that launches a run passes that lineage: first launch in
+      <code>reckon/crew/dispatch.py</code>, session launch in <code>reckon/crew/dispatch_sessions.py</code>, and
+      resume in <code>reckon/crew/resumption.py</code>. It mounts an empty tmpfs over the primary's
       run directory, and over the primary's worktree when that still exists. It binds <code>/dev/null</code> over
       each of the primary's review record files present at launch. The masks are composed from the shadow's
       lineage, so they apply on launch, resume and redispatch alike. Each mask comes before any writable grant that
@@ -146,21 +158,22 @@
       directory and worktree stay writable.
     </p>
     <p>
-      <strong>Write paths.</strong> <code>reckon/_worker_fence.py</code>, the launch composition in
-      <code>reckon/crew/dispatch_launch.py</code> that passes the shadow's lineage to the fence, and
-      <code>tests/test_a_fence_hides_the_primary.py</code>.
+      <strong>Write paths.</strong> <code>reckon/_worker_fence.py</code>, <code>reckon/_backends.py</code>,
+      <code>reckon/crew/dispatch.py</code>, <code>reckon/crew/dispatch_sessions.py</code>,
+      <code>reckon/crew/resumption.py</code> and <code>tests/test_a_fence_hides_the_primary.py</code>.
     </p>
     <p>
       <strong>Done when</strong> a fenced stub launch of a shadow (<code>bwrap</code> on this host) lists the
       primary's run directory as empty, and reads each of the primary's review records as empty. The same stub can
-      still write its own run directory and worktree. A non-shadow launch composes no masks. The negative control
+      still write its own run directory and worktree. A resume of the shadow composes the same masks as its launch, and a non-shadow launch composes none. The
+      negative control
       drops the masks for a shadow, and the empty-listing assertion must then fail. The test files importing
       <code>_worker_fence.py</code> show no added failure against the base revision. <code>ruff format
       --check</code> is clean on the written paths.
     </p>
 
     <h2 id="s5">§5 — How far a shadow's isolation reaches beyond reckon's records</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="2" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
     <p>
       §3 and §4 remove the shadow's cheap routes to its primary. A shadow dispatched after its primary has landed
       can still find the result in the project's main checkout or in git history: the worktree shares the main
@@ -184,6 +197,7 @@
         today requires a promoted primary to copy the configuration from.</li>
     </ul>
     <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="shadow-isolation-scope" data-choice="" data-by="" data-when="">
     <p class="r-dec-q">Beyond detection and hiding reckon&#x27;s records, how should a shadow be kept from its primary&#x27;s landed result?</p>
     <p class="r-dec-opts">
@@ -197,9 +211,15 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-ascp-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-create" data-written-at="2026-10-16" data-recommends-skill="/reckon-build a-shadow-cannot-see-its-primary §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ascp-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-create" data-written-at="2026-10-16" data-recommends-skill="/reckon-build a-shadow-cannot-see-its-primary §2" data-resolved-at="2026-10-16T18:54:59+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build §2 and §3 together; §4 after §3; decide §5</h4>
     <div class="r-fu-body"><p>§2 (ledger, capabilities, promotion) and §3 (routing) write disjoint files and run together. §4 composes its masks from the shadow lineage §3 settles, so it follows §3. nova is holding all shadow arms until §2 and §4 land; tell nova-2c when they do. The lead decides <code>shadow-isolation-scope</code> before §5 is built.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-shadow-cannot-see-its-primary §2</pre>
+    <p class="r-fu-outcome">superseded by f-ascp-002: the content review showed §4 also reads §2's path set and shares dispatch.py with §3, so §4 follows both</p>
+    </article>
+<article class="r-fu" data-id="f-ascp-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build a-shadow-cannot-see-its-primary §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2 and §3 together; §4 after both; decide §5</h4>
+    <div class="r-fu-body"><p>§2 (ledger, capabilities, promotion and the new isolation module) and §3 (routing) write disjoint files and run together. §4 masks the path set §2 defines, from the lineage §3 settles, and shares <code>dispatch.py</code> with §3, so it follows both. nova is holding all shadow arms until §2 and §4 land; tell nova-2c when they do. The lead decides <code>shadow-isolation-scope</code> before §5 is built.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-shadow-cannot-see-its-primary §2</pre>
     </article>
 </section>
