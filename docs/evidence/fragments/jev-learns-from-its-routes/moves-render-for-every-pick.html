@@ -27,7 +27,14 @@
       <code>tests/test_picker_helpers_have_one_owner.py</code> 12 passed;
       negative control (requirement-gated rendering restored) 1 failed
       (<code>test_a_request_naming_no_requirement_renders_the_move_figures</code>,
-      EXIT=1).
+      EXIT=1). Carrying the two figures on every candidate grows the prompt the
+      picker hands Jev, so the two representative-state guards move with it: the
+      expected candidate key set in <code>tests/test_picker.py</code> gains
+      <code>moved_in</code> and <code>moved_off</code> and its character bound
+      moves to <code>1500 * 6</code> (the eight-candidate render is 8086
+      characters), and the nine-candidate token bound in
+      <code>tests/test_picker_pressure.py</code> moves to 2400 (the pick
+      estimates 2230 tokens).
     </p>
   </section>
 </body>
