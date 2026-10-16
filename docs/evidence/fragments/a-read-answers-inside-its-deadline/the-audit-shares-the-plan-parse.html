@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s13">
+  <meta name="plan-recorded-at" content="2026-10-16">
+  <meta name="plan-verdict" content="blocked">
+  <title>The audit takes its plan state from the shared parse | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-audit-shares-the-plan-parse-landing" data-node="the-audit-shares-the-plan-parse" data-reckon="landed" data-when="2026-10-16">
+  <h2>The audit derives its plan state from the shared parse, but the measure needs one more file</h2>
+  <p><code>_audit_plan_state</code> built a <code>BeautifulSoup</code> of every plan file itself, through <code>_plan_html.from_html(_plan_html._read_plan_text(path))</code>, beside the memoised shared parse the rest of the read reaches through <code>read_state_file</code>. It now returns <code>PlanState.model_validate(_plan_html.read_state_file(path))</code>, so its <code>PlanState</code> derives from the one shared parse and the audit adds no soup of its own. The validation reads the same state dict the parser produces, so the audit's output is unchanged: a temporary six-plan corpus carrying section records gives identical <code>findings</code>, <code>checked</code> and <code>violations</code> on the shared route and on the replaced <code>from_html</code> route.</p>
+  <p><strong>The measure is not yet met, and the remaining step is outside this node's write scope.</strong> A cold <code>mcp._audit</code> of that corpus still builds each plan file's soup <em>twice</em>, because the audit's discovery (<code>_discover_project</code> → <code>discover_plans</code>) reaches <code>parse_meta</code>, whose <code>_parse_meta_uncached</code> builds its own soup through the bare <code>read_state(text)</code> for any document carrying records. Since the metadata parser began deriving <code>impl</code> from section records, <code>parse_meta</code> is no longer the soup-free regex read earlier sections assumed. Routing that one call through the memoised <code>read_state_file(path)</code> — a one-line change in <code>reckon/_plan_html.py</code> — shares the soup and drops the count to one; measured: base 2, head 2, head plus that line 1, findings identical in all three. <code>reckon/_plan_html.py</code> is not among this node's declared write paths, so the change is requested rather than taken; the exact patch and the prototype measurement are in the run directory (<code>logs/requested_plan_html_patch.txt</code>).</p>
+  <p>The audit's own half is verified: 64 tests pass on the basearm and 64 on the head arm across the ten audit test files apart from the new file, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on <code>reckon/mcp.py</code>. <code>tests/test_the_audit_shares_the_plan_parse.py</code> holds the soup-count case (currently red at 2, pending the requested line) and the output-equality case (green). The declared negative control — giving <code>_audit_plan_state</code> its own <code>from_html</code> parse again — is logged at <code>logs/negative_control_own_parse.log</code>, EXIT=1.</p>
+</article>
+</body>
+</html>
