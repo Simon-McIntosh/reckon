@@ -124,11 +124,14 @@ _GLOSSARY: dict[str, str] = {
         "lane change onto this candidate. It uses the same passed, failed, "
         "not-run and unknown counts as outcomes, but those runs are kept out of "
         "outcomes and outcomes_at_requirement, because their outcome is the "
-        "outcome of the pick they were chosen for, not of this lane's own picks."
+        "outcome of the pick they were chosen for, not of this lane's own picks. "
+        "Read at the request's requirement when it names one, and over every "
+        "move when it names none."
     ),
     "moved_off": (
         "How many of this candidate's own picks a coordinator moved away to "
-        "another lane, counted at this node's requirement. A high moved_off "
+        "another lane. Read at the request's requirement when it names one, and "
+        "over every move when it names none. A high moved_off "
         "means coordinators overrode the choice this candidate was picked for, "
         "so the lane never ran the nodes it was chosen for."
     ),
@@ -212,21 +215,23 @@ def _candidate_state(candidate: Any) -> dict[str, Any]:
         "worker_slots": candidate.worker_slots,
         "congestion": candidate.congestion,
         "outcomes": candidate.outcomes,
-        # The block is rendered only when the request named a requirement to
-        # read history at; a pick that named none carries no such block, so the
-        # state keeps its shape for every pick that does not condition on
-        # difficulty. The move figures travel with the block for the same reason:
-        # a move is counted at the request's requirement, so the two are stated
-        # together or neither is.
+        # The at-requirement block is rendered only when the request named a
+        # requirement to read history at; a pick that named none carries no such
+        # block, so the state keeps its shape for every pick that does not
+        # condition on difficulty.
         **(
-            {
-                "outcomes_at_requirement": candidate.outcomes_at_requirement,
-                "moved_in": getattr(candidate, "moved_in", None),
-                "moved_off": getattr(candidate, "moved_off", None),
-            }
+            {"outcomes_at_requirement": candidate.outcomes_at_requirement}
             if getattr(candidate, "outcomes_at_requirement", None)
             else {}
         ),
+        # The move figures are rendered whenever they are computed, which is
+        # every pick: the snapshot reads them at the request's requirement when
+        # it names one, and over every move when it names none. So they travel
+        # beside the at-requirement block when there is one, and stand on their
+        # own when there is not -- a pick that names no requirement still shows
+        # Jev which picks a coordinator overrode and where the runs landed.
+        "moved_in": getattr(candidate, "moved_in", None),
+        "moved_off": getattr(candidate, "moved_off", None),
         "context": getattr(candidate, "context", None),
         "budget_source": getattr(candidate, "budget_source", None),
         "budget_age_s": getattr(candidate, "budget_age_s", None),

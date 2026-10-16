@@ -279,6 +279,50 @@ def test_the_rendered_state_carries_the_move_figures_and_the_glossary(picker_env
     assert "moved_off" in glossary
 
 
+def test_a_request_naming_no_requirement_renders_the_move_figures(picker_env):
+    """A pick that names no requirement still renders the move figures.
+
+    There is no at-requirement block to carry them, so the receiving
+    candidate's ``moved_in`` and the chosen candidate's ``moved_off`` must stand
+    on their own -- otherwise a node dispatched with no declared capability,
+    such as a brief, shows Jev no coordinator moves at all.
+    """
+
+    rows = [
+        _row(
+            backend="codex",
+            model="m-codex",
+            gate="failed",
+            requirement=_DEEP_CRITICAL,
+            picker_selection=_selection("clive", "m-clive"),
+            lineage=_lineage("clive", "codex"),
+        ),
+    ]
+    candidates = [
+        candidate
+        for candidate in _candidates(
+            rows, picker_env, request=_request(requirements=None)
+        )
+        if not candidate.reasons
+    ]
+    state = prompts.build_state(
+        node=_request(requirements=None).node,
+        capability={},
+        estimated_context=0,
+        comment="",
+        candidates=candidates,
+        lane={"return_times": {}, "lanes": {}, "local_lane": {}},
+        attempts=0,
+    )
+    codex = state["candidates"]["codex"]
+    clive = state["candidates"]["clive"]
+    # No requirement was named, so no at-requirement block is rendered...
+    assert "outcomes_at_requirement" not in codex
+    # ...yet the move figures are, read over every move.
+    assert codex["moved_in"]["failed"] == 1
+    assert clive["moved_off"] == 1
+
+
 def test_ignoring_lineage_leaves_the_move_counted_for_the_lane(picker_env, monkeypatch):
     """The negative control's fix: with move detection off, the moved row counts
     under the receiving lane and no moved_in is reported."""
