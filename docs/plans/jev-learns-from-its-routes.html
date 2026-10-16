@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="lane-and-model-routing">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;jev-learns-from-its-routes#s2&quot;, &quot;jev-learns-from-its-routes#s5&quot;], &quot;s4&quot;: [&quot;jev-learns-from-its-routes#s3&quot;], &quot;s8&quot;: [&quot;jev-learns-from-its-routes#s2&quot;], &quot;s9&quot;: [&quot;jev-learns-from-its-routes#s5&quot;, &quot;lane-and-model-routing#s27&quot;], &quot;s10&quot;: [&quot;jev-learns-from-its-routes#s5&quot;, &quot;jev-learns-from-its-routes#s6&quot;], &quot;s11&quot;: [&quot;jev-learns-from-its-routes#s2&quot;, &quot;jev-learns-from-its-routes#s9&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
   <title>Jev Learns From Its Routes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-10-16">
 </head>
 <body>
@@ -342,7 +342,7 @@
     </p>
 
     <h2 id="s8">§8 — A replayed pick carries the orchestrator&#x27;s assessment</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> §2's worker reported that <code>reckon/crew/picker/replay.py</code> rebuilds a <code>PickRequest</code> from a run's <code>node_definition</code> without the <code>orchestrator_assessment</code> §2 now records. A replayed pick therefore weighs the declared capability alone, and a replay meant to show what Jev saw shows less than Jev saw.</p><p><strong>Deliverable.</strong> A replayed pick's request carries the recorded <code>orchestrator_assessment</code>, so its rendered state matches the recorded one in that field.</p><p><strong>Write paths.</strong> <code>reckon/crew/picker/replay.py</code> and <code>tests/test_a_replay_carries_the_assessment.py</code>.</p><p><strong>Done when</strong> a test replays a recorded run whose <code>node_definition</code> carries <code>orchestrator_assessment</code> <code>{"reasoning": "deep"}</code>. The replayed request renders <code>node.orchestrator_assessment</code> equal to it. A recorded run without one renders no such key. The negative control drops the field from the rebuilt request, and the first assertion must then fail. The test files importing <code>replay.py</code> show no added failure against the base revision.</p>
 
     <h2 id="s9">§9 — A re-served account-surface reading ages like any other reading</h2>
@@ -425,6 +425,12 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261016T080820643630-review-of-replay-carries-the-assessment-f1b77a668bf0" data-who="reckon-build" data-when="2026-10-16T08:21:03.792Z">
     <div class="r-comment-body"><p>An independent review of r-20261016T074527305349-replay-carries-the-assessment scores all six dimensions (goal_fidelity 20, evidence 20, fit 19, durability 18, reuse 20, scope_discipline 20; total 117) over the revision pair f33b8db0..f1b77a668, with one follow-on finding and no blocking finding; the record carries reviewed_base_sha f33b8db0ab9fcf2c80718c11352424e2af82368f and reviewed_head_sha f1b77a668bf0de9b600d60a468f681b299a70547.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-16T08:30:00Z">
+    <div class="r-comment-body"><p>§8 landed: a replay carries the recorded assessment (merge <code>2d6347284</code>, review 117, 0 added failures). <a href="/reckon/evidence/archive/jev-learns-from-its-routes-landed.html#s8">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261016T074527305349-replay-carries-the-assessment" data-who="reckon-build" data-when="2026-10-16T08:06:13.482Z">
+    <div class="r-comment-body"><p>a replayed pick&#x27;s rebuilt PickRequest now passes the recorded node_definition.orchestrator_assessment through, so the rendered node block carries it (gate 2 passed; base 46 / after 48, no added failure; negative control drops the field and the first assertion fails with KeyError)</p></div>
 </div>
 </section>
 </main>
