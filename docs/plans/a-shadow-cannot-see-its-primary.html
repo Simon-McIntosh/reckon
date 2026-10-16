@@ -26,7 +26,7 @@
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -213,9 +213,10 @@
     </p>
     <p>
       Each arm's fence hides the other. Neither partner can be read from a store at launch. The primary of a
-      paired dispatch has no ledger row until it is promoted. A shadow lineage publishes no launch pointer
-      (<code>claim_published = not shadow_lineage</code> in <code>dispatch.py</code>), and its record is written
-      only at the end of its own dispatch. So the paired dispatch allocates both run ids, creates both run
+      paired dispatch has no ledger row until it is promoted. A shadow lineage publishes no pre-launch claim
+      (<code>claim_published = not shadow_lineage</code> in <code>dispatch.py</code>), and its live pointer is
+      written only at the end of its own dispatch, so it is absent while the other arm is being composed. From then
+      until the shadow is promoted the pointer is present, which is what §6's hold reads. So the paired dispatch allocates both run ids, creates both run
       directories and fixes both worktree paths before either arm launches. It composes each arm's masks from its
       partner's allocated run id and worktree path, resolved through <code>promotion_scope._primary_read_surfaces</code>,
       the function §2 added, and passes them to <code>launch_plan</code> as §4 does. A resume or redispatch of
