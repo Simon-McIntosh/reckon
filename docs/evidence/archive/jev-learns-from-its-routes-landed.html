@@ -35,6 +35,21 @@
     <p>Run <code>r-20261016T074527305349-replay-carries-the-assessment</code> (clive, picked by Jev at 0.93), commits <code>e4f821246</code>, <code>6087a3c91</code> and <code>f1b77a668</code>, merged at <code>2d6347284</code>. <code>replay</code> passes the recorded <code>node_definition.orchestrator_assessment</code> into the rebuilt <code>PickRequest</code>. Gate: 2 passed, plus the four replay and picker test files that import the module, with 0 added failures. The negative control, which removes the argument, reddens the first assertion. Independent review <code>r-20261016T080820643630</code> totals 117, with one follow-on: the expected value is the fixture's own constant.</p>
   </section>
 
+  <section id="s3">
+    <h2>§3 — outcomes at the node&#x27;s requirement</h2>
+    <p>Run <code>r-20261016T074119831873-outcomes-at-requirement</code>, picked by Jev for codex at 0.50 with clive at 0.45. Codex refused with "Selected model is at capacity" two minutes in, with no work done, so the run moved to clive, Jev's second choice. Commits <code>a0f7f050d</code> and <code>31a87ffe0</code>, merged at <code>1d2c84e5e</code>. Each candidate carries <code>outcomes_at_requirement</code>: gate counts, review median and wall median over rows whose recorded capability matches the request's reasoning and risk. Rows with no recorded requirement count under <code>unrecorded</code>, all from the same single pass. Gate: 250 passed over the 33 files importing <code>snapshot.py</code> or <code>prompts.py</code>, against 244 on base, so 0 added failures; the negative control reddens lane A's assertion. Independent review <code>r-20261016T082920895849</code> totals 105. Its follow-ons: a live pick passes no capability, so the block appears only on replay (now §12), and the no-requirement fallback is undecided.</p>
+  </section>
+
+  <section id="s6">
+    <h2>§6 — codex worker time from the run home</h2>
+    <p>Run <code>r-20261016T074251461237-codex-worker-time-from-run-home</code> (clive, picked by Jev at 0.90), commits <code>a79e022dd</code> and <code>2644e0c5f</code>, merged at <code>41a0d82d0</code>. <code>rollout._locate_rollout</code> now searches each run's <code>codex-home</code> through <code>run_home_rollout_paths</code>, which the paid-lanes reader shares. Promotion records <code>worker_seconds</code> as the receipt's generation plus machine seconds, with source <code>rollout_receipt</code>. The real run <code>r-20261016T055657532716-pick-state-render-slow-read</code> reads 708 s beside its recorded wall time of 720 s. Gate: 4 passed; the negative control falls back to wall time. Independent review <code>r-20261016T083529563842</code> totals 110. Its follow-ons: the rollout figure is read before the stream's own span, and the <code>codex-home/sessions</code> path is still spelled literally at two paid-lanes sites.</p>
+  </section>
+
+  <section id="s7">
+    <h2>§7 — paired arms reported</h2>
+    <p>Run <code>r-20261016T074411563724-paired-arms-reported</code> (clive, picked by Jev at 0.83), commit <code>8d6a65133</code>, merged at <code>90988acaf</code>. The shadow-to-primary join moves into <code>capabilities.pair_shadow_arms</code>, which <code>derive_capabilities</code> calls. <code>crew pick --outcomes</code> gains <code>paired_arms</code>, carrying the <code>shadow_controlled</code> verdict and both arms' figures, and <code>unpaired</code>. Gate: 6 passed, and the head arm of the 28-file affected sweep has 672 passed and 0 failed; the negative control reddens the confounded pair's assertion. Independent review <code>r-20261016T083329568694</code> totals 108. Its follow-ons: a shadow whose primary predates the <code>since</code> window reads as unpaired, and the base arm covered three of the fourteen affected files.</p>
+  </section>
+
 </main>
 </body>
 </html>
