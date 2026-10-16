@@ -160,7 +160,13 @@ def refresh_interval_seconds(interval: str | None = None) -> float:
     while index < len(span) and (span[index].isdigit() or span[index] == "."):
         index += 1
     number, unit = span[:index], span[index:].strip().lower()
-    return float(number or 0.0) * _INTERVAL_UNIT_SECONDS.get(unit, 1.0)
+    if unit not in _INTERVAL_UNIT_SECONDS:
+        accepted = ", ".join(name for name in sorted(_INTERVAL_UNIT_SECONDS) if name)
+        raise ValueError(
+            f"unknown refresh interval unit {unit!r} in {span!r}; accepted units "
+            f"are {accepted}; a bare number means seconds"
+        )
+    return float(number or 0.0) * _INTERVAL_UNIT_SECONDS[unit]
 
 
 def suggested_shelf_life_seconds(interval: str | None = None) -> float:
