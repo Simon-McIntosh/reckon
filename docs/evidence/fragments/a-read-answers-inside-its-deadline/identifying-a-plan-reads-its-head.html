@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="identifying-a-plan-reads-its-head">
+  <meta name="plan-title" content="Identifying a plan reads its head, not its body — node evidence">
+  <meta name="plan-summary" content="Node evidence for a-read-answers-inside-its-deadline §14: identification reads a document's head metadata and builds no soup, so a slug resolve parses no plan body.">
+  <meta name="plan-evidence-for" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="a-read-answers-inside-its-deadline#s14">
+  <meta name="plan-recorded-at" content="2026-10-16">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux compute node 98dci4-clu-2002 (SLURM job 1281970); a detached worktree with the main checkout's virtualenv reached through PYTHONPATH and pytest -p no:cacheprovider; the base and negative-control arms ran in archive trees under TMPDIR; suite run in foreground chunks of ten files with -n 8">
+  <meta name="plan-commits" content="b9359c39">
+  <meta name="plan-artifacts" content="reckon/_plan_html.py,reckon/metadata_index.py,reckon/resources.py,tests/test_identifying_a_plan_reads_its_head.py,tests/test_resource_identity_reads_the_digest_index.py">
+  <title>Identifying a plan reads its head, not its body — node evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>&sect;14 &mdash; Identifying a plan reads its head, not its body</h1>
+    <p class="plan-summary">One node's evidence: identity &mdash; type, slug and
+    archived &mdash; is declared in the head, so identification reads the head and
+    builds no soup. A slug resolve, its uniqueness check included, parses no plan
+    body.</p>
+  </header>
+
+  <section id="identifying-a-plan-reads-its-head-outcome">
+    <h2>Outcome</h2>
+    <p>The metadata parse is split into a head-only reader
+    (<code>_plan_html.parse_meta_head</code>, whose fields come from
+    <code>_meta_head_fields</code>) and the section-derived <code>impl</code> tail
+    that <code>parse_meta</code> keeps. Identification
+    (<code>resources.identify_resource</code>, its digest-shared
+    <code>metadata_index.parse_meta_head_shared</code>, and the canonical-path
+    checks in <code>resources.py</code>) now reads the head only.
+    <code>parse_meta</code> is unchanged: a reader asking for <code>impl</code>
+    still receives the figure derived through the parser.</p>
+  </section>
+
+  <section id="identifying-a-plan-reads-its-head-measure">
+    <h2>Measure</h2>
+    <p>A cold <code>resources.resolve_resource</code> of a record-carrying plan
+    enters <code>_plan_html.read_state</code> <strong>zero</strong> times (it
+    entered once per sibling at base), and <code>identify_resource</code> of a
+    record-carrying plan enters it zero times. <code>parse_meta</code> of the same
+    plan still returns <code>impl</code> and <code>impl_source</code> derived
+    through the parser. A cold-process
+    <code>resolve_resource('reckon','lane-and-model-routing','plan')</code> with
+    empty memos fell from <strong>5.1226&nbsp;s</strong> at base to
+    <strong>0.4627&nbsp;s</strong> at head.</p>
+  </section>
+
+  <section id="identifying-a-plan-reads-its-head-negative-control">
+    <h2>Negative control</h2>
+    <p>Identification routed back through the full <code>parse_meta</code>
+    (<code>metadata_index.parse_meta_shared</code>): the two zero-entry cases fail
+    (assert 1 == 0), <code>EXIT=1</code>. Log:
+    <code>negative-control.log</code> under the run directory.</p>
+  </section>
+</main>
+</body>
+</html>
