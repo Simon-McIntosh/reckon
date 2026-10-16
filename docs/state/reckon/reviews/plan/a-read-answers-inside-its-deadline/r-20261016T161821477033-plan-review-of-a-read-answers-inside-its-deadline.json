@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T16:47:05.172Z",
+  "dispatched_at": "2026-10-16T16:23:36Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:130",
+      "id": "reasoning-1",
+      "reason": "the inter-arm order the new clause relies on is unenforceable unless the plan says the arms run sequentially, so a worker following the section's own precedent would run them concurrently and report contended medians.",
+      "text": "\u00a76 now states a single inter-arm read order (\"Both arms' cold roadmaps run first, the base arm's and then the head arm's. The warm reads of both arms follow\u2026\") and the done-when fixes the node at \"an exclusive `all_debug` node\" with \"no other reckon worker on it\", but the plan nowhere requires the two arms to run one after the other, and \u00a76's own record c-s6-second-measurement-1016 has both arms running concurrently on `98dci4-clu-2002`, so the medians the three targets are marked against were never the quiet-node figures the section claims to produce",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a2772640883d99de1337ef399ca33a5bbc3b31970c96b35293189b09a4f2bad0",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 116,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T161821477033-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "a704ecbb10b699a23374921fe2ef1bd3db9054a0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `health-tool-latency/scripts/profile_reads.py` resolves under the \u00a71-cited health review directory `~/.config/reckon/crew/reports/reckon/health-review-1010/health-tool-latency \u2192 health-tool-latency/`, the \"\u00a71 figures\" and \"\u00a77 requires\"/\"\u00a77 keeps its dumps\" pointers resolve in \u00a71 and \u00a77 (line 140), and every \u00a7-reference resolves to a section that exists.",
+    "done_when": "pass \u2014 \u00a76's done-when names an executable negative control (\"the base revision measured the same way in the same session, which must exceed the deadline for the comparison to count\"), which can fail if base cold roadmap falls under 30 s, and the floor now names the control and all three targets.",
+    "evidence_paths": "pass \u2014 \"Write paths: the run directory\", with each log, every `.prof` dump and the pinned corpus revision copied into the changed run directory before the job ends, and the scratch extraction confined to node-local scratch.",
+    "naming": "pass \u2014 \u00a76 names no code symbol, file or path carrying a plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 the changed clause fixes an inter-arm read order (\"Both arms' cold roadmaps run first, the base arm's and then the head arm's\") but the plan still does not settle whether the two arms run sequentially on the shared quiet node, and the section's own dated record has them concurrent.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable (measure the cold and warm medians of the three reads at both arms and decide the targets, attributing any miss).",
+    "wiring": "pass \u2014 \u00a76's prerequisite set (\u00a72\u2013\u00a75, \u00a78, \u00a710\u2013\u00a714, \u00a716, \u00a717) names only sections that exist and are `done`; the open followup `f-araiid-remeasure` carries the \u00a76 re-measure and its `data-recommends-skill` is `/reckon-build a-read-answers-inside-its-deadline \u00a76`, and no declared relationship points at a superseded node."
+  },
+  "section_digests": {
+    "_document": "27e04b7ec4c7a4424eb7839ff032567efe8f2c9f504c5f09139c14dd3ec284e3",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "83cf1115b0c29c249b01a7f975cd93b059ffcf435c346e4d6a73b3bc9d7f2311",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T16:48:48.031901+00:00"
+}
