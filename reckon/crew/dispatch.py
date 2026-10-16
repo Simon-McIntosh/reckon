@@ -1451,6 +1451,7 @@ def dispatch(
         ]
         lineage = shadow_lineage
         attempt = 1
+        primary = None
         if shadow_lineage:
             primary = next(
                 (
@@ -1919,6 +1920,9 @@ def dispatch(
                         fence=compose_fence,
                         fence_config=config,
                         fence_waiver=fence_waiver or None,
+                        masked_paths=_shadow_mask_paths(
+                            shadow_lineage, primary, project
+                        ),
                     ),
                     facts=dispatch_host,
                 )
@@ -2622,6 +2626,7 @@ from .dispatch_sessions import (  # noqa: E402
     _restate_time_fence as _restate_time_fence,
     _reviewed_run_id as _reviewed_run_id,
     _run_stream_path as _run_stream_path,
+    _shadow_mask_paths as _shadow_mask_paths,
     _session_too_large_to_continue as _session_too_large_to_continue,
     _stored_phase_survives as _stored_phase_survives,
     _task_identity as _task_identity,

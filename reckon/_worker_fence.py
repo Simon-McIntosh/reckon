@@ -1180,6 +1180,7 @@ def fence_argv(
     home: str | Path | None = None,
     read_only_binds: Iterable[tuple[str | Path, str | Path]] = (),
     read_write_binds: Iterable[tuple[str | Path, str | Path]] = (),
+    masked_paths: Iterable[str | Path] = (),
     config: Mapping[str, Any] | None = None,
 ) -> list[str]:
     """Wrap a launch argv so protected paths are read-only to the worker.
@@ -1216,6 +1217,17 @@ def fence_argv(
     write back — the codex login, which the harness rewrites in place on a
     token refresh — and are mounted after the read-only pair so the writable
     one is the last word on its path.
+
+    ``masked_paths`` are a run's readable surfaces to hide outright rather
+    than merely seal: each existing path is unmounted by what is mounted over
+    it, so a directory the run would otherwise read as its own records is
+    overlaid with an empty tmpfs and a file is bound to ``/dev/null``, and the
+    path reads as absent. They are emitted after the protected overlays — those
+    overlay an ancestor directory and would otherwise re-expose the path they
+    cover — and before the writable grants, which never contain a masked path
+    because a mask is another run's surface and a grant is this run's own. A
+    path that does not exist has nothing to hide and composes no mount, so a
+    caller may hand the whole resolved set without filtering.
 
     When a writable root falls beneath the shared run-scratch root, that root is
     sealed read-only among the protected paths and created first, so the run's
@@ -1293,6 +1305,19 @@ def fence_argv(
     fenced = [FENCE_BINARY, "--dev-bind", "/", "/"]
     for source, destination in binds:
         fenced += ["--ro-bind", str(source), str(destination)]
+    # A masked path is hidden, not sealed: the protected overlay above still
+    # exposes its content read-only, so a directory gets an empty tmpfs and a
+    # file gets /dev/null, both of which read as absent. Emitted after the
+    # protected overlays and before the writable grants, and only for a path
+    # that exists — a surface that is not there holds nothing to read.
+    for raw in masked_paths:
+        target = resolved_destination(raw)
+        if not target.exists():
+            continue
+        if target.is_dir():
+            fenced += ["--tmpfs", str(target)]
+        else:
+            fenced += ["--ro-bind", os.devnull, str(target)]
     granted: set[str] = set()
     for root in roots:
         target = resolved_destination(root)
