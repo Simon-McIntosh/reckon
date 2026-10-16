@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-16T12:46:19Z",
+  "findings": [
+    {
+      "file": "reckon/interface_counts.py",
+      "line": "319",
+      "severity": "follow-on",
+      "text": "follow-on: the exclusive-open predicate for the move-aside exemption (an os.open guarded by O_EXCL, inside a try that catches FileExistsError) is written a second time here, where the identical comprehension already sits in the not_created loop at :382; the diff extracted catches_file_exists for the handler test but not this open predicate, so a change to what counts as an exclusive create must be made in two places in one function."
+    },
+    {
+      "file": "tests/test_staged_write_inventory.py",
+      "line": "152",
+      "severity": "follow-on",
+      "text": "follow-on: the new case exercises only the rename-in-a-helper branch; the plan's other named branch \u2014 an inline rename of a path a helper created, handled at reckon/interface_counts.py:362 by local - callers_not_staging[name] \u2014 has no case, so a regression of that half of the exemption would pass the whole gate."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit from adea717b3 to 9481c9371; f9ea0650 changes reckon/interface_counts.py (extracts resolve_callee, catches_file_exists and bind_arguments, adds exclusive_creators and callers_not_staging, subtracts the exempted locals) and tests/test_staged_write_inventory.py (one new case, +32 lines), and 9481c9371 adds the 30-line evidence fragment.",
+    "done_when": "the done_when names tests/test_staged_write_inventory.py's test_every_staged_write_reaches_the_owner (expected set unchanged), a new three-function case, and a logged negative control; the worker ran all seven interface_counts importers and recorded head 119 passed EXIT=0, base 117 passed 1 failed EXIT=1, and the control 2 failed 48 passed EXIT=1.",
+    "goal": "read the source node goal (\"Make the census detector exempt a claim move-aside whose exclusive create or rename sits one helper away\") and the landed code at reckon/interface_counts.py:259-334; the detector now resolves each call's callee, recognises a helper that exclusively creates one of its own parameters, and excludes the argument a caller hands such a helper, so a later rename of that path \u2014 inline or through a helper \u2014 is not reported, while a renamed parameter from a non-exclusive helper is still reported.",
+    "manifest": "read; it records status complete, commits f9ea0650 and 9481c9371, the head/base/control logs, the measurement module and cwd for the scratch base arm, and the five-entry inventory figure.",
+    "write_paths": "the declared write paths are reckon/interface_counts.py, tests/test_staged_write_inventory.py, the plan fragment, and the figures dir; the two commits touch exactly those first three, and no path outside the fence is modified."
+  },
+  "justifications": {
+    "durability": "the new case pins the delegated move-aside against a literal expected set and the recorded control reddens it (EXIT=1, 2 failed) when the exemption is removed, but the branch at reckon/interface_counts.py:362 is exercised by no case.",
+    "evidence": "tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner and the new case re-run green in the reviewed worktree at 9481c9371 (EXIT=0), and added_failure_count 0 is a measured zero \u2014 the base log yields the one failure id and the head none, computed with reckon/crew/review.py:2100.",
+    "fit": "the new helpers follow the module's existing nested-helper idiom (reckon/interface_counts.py:232 source_name, :245 rename_source) and the test is mechanism-named; the branches, comments and fragment carry no plan label, ticket id or author attribution.",
+    "goal_fidelity": "reckon/interface_counts.py:362 exempts a local a helper exclusively created and :400-402 exempts the forwarded parameter, so the delegated claim move-aside is unreported while reckon/crew/routing.py::_release_worktree_whole stays reported (re-run inventory still lists all five entries, EXIT=0).",
+    "reuse": "no other owner of AST callee-resolution or argument-binding exists (grep for posonlyargs/kwonlyargs over reckon/ returns only reckon/interface_counts.py), so the helpers extend their own module rather than forking one; the only duplication is the exclusive-open predicate repeated within the function.",
+    "scope_discipline": "git diff adea717b3..9481c9371 touches only reckon/interface_counts.py, tests/test_staged_write_inventory.py and the node's own fragment, every one inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the source node goal (\"Make the census detector exempt a claim move-aside whose exclusive create or rename sits one helper away\") and the landed code at reckon/interface_counts.py:259-334; the detector now resolves each call's callee, recognises a helper that exclusively creates one of its own parameters, and excludes the argument a caller hands such a helper, so a later rename of that path \u2014 inline or through a helper \u2014 is not reported, while a renamed parameter from a non-exclusive helper is still reported.\nVERDICT done_when: the done_when names tests/test_staged_write_inventory.py's test_every_staged_write_reaches_the_owner (expected set unchanged), a new three-function case, and a logged negative control; the worker ran all seven interface_counts importers and recorded head 119 passed EXIT=0, base 117 passed 1 failed EXIT=1, and the control 2 failed 48 passed EXIT=1.\nVERDICT write_paths: the declared write paths are reckon/interface_counts.py, tests/test_staged_write_inventory.py, the plan fragment, and the figures dir; the two commits touch exactly those first three, and no path outside the fence is modified.\nVERDICT manifest: read; it records status complete, commits f9ea0650 and 9481c9371, the head/base/control logs, the measurement module and cwd for the scratch base arm, and the five-entry inventory figure.\nVERDICT diff: read commit by commit from adea717b3 to 9481c9371; f9ea0650 changes reckon/interface_counts.py (extracts resolve_callee, catches_file_exists and bind_arguments, adds exclusive_creators and callers_not_staging, subtracts the exempted locals) and tests/test_staged_write_inventory.py (one new case, +32 lines), and 9481c9371 adds the 30-line evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/interface_counts.py:362 exempts a local a helper exclusively created and :400-402 exempts the forwarded parameter, so the delegated claim move-aside is unreported while reckon/crew/routing.py::_release_worktree_whole stays reported (re-run inventory still lists all five entries, EXIT=0).\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner and the new case re-run green in the reviewed worktree at 9481c9371 (EXIT=0), and added_failure_count 0 is a measured zero \u2014 the base log yields the one failure id and the head none, computed with reckon/crew/review.py:2100.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff adea717b3..9481c9371 touches only reckon/interface_counts.py, tests/test_staged_write_inventory.py and the node's own fragment, every one inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: the new case pins the delegated move-aside against a literal expected set and the recorded control reddens it (EXIT=1, 2 failed) when the exemption is removed, but the branch at reckon/interface_counts.py:362 is exercised by no case.\nSCORE fit: 19\nJUSTIFICATION fit: the new helpers follow the module's existing nested-helper idiom (reckon/interface_counts.py:232 source_name, :245 rename_source) and the test is mechanism-named; the branches, comments and fragment carry no plan label, ticket id or author attribution.\nSCORE reuse: 18\nJUSTIFICATION reuse: no other owner of AST callee-resolution or argument-binding exists (grep for posonlyargs/kwonlyargs over reckon/ returns only reckon/interface_counts.py), so the helpers extend their own module rather than forking one; the only duplication is the exclusive-open predicate repeated within the function.\nFINDING reckon/interface_counts.py:319 follow-on: the exclusive-open predicate for the move-aside exemption (an os.open guarded by O_EXCL, inside a try that catches FileExistsError) is written a second time here, where the identical comprehension already sits in the not_created loop at :382; the diff extracted catches_file_exists for the handler test but not this open predicate, so a change to what counts as an exclusive create must be made in two places in one function.\nFINDING tests/test_staged_write_inventory.py:152 follow-on: the new case exercises only the rename-in-a-helper branch; the plan's other named branch \u2014 an inline rename of a path a helper created, handled at reckon/interface_counts.py:362 by local - callers_not_staging[name] \u2014 has no case, so a regression of that half of the exemption would pass the whole gate.",
+  "review_run_id": "legacy-65fa53e6895f",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "adea717b34b041d58d7150d8d580b188a0f39921",
+  "reviewed_head_sha": "9481c937122810be0cde0f0e0eb3b6d5ebedf30e",
+  "reviewed_run_id": "r-20261016T124446836742-a-claims-move-aside-is-not-a-staged-write",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261016T131557734773-review-of-a-claims-move-aside-is-not-a-staged-write-9481c9371228",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T13:30:00+00:00",
+  "total": 113
+}
