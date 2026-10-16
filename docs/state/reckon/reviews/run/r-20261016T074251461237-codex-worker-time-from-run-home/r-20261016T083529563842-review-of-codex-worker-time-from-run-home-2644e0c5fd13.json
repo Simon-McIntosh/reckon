@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f33b8db0ab9fcf2c80718c11352424e2af82368f",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/crew/promotion_checks.py:_terminal_stream_data",
+    "reckon/crew/promotion_release.py:_harvest_lane_receipt",
+    "reckon/crew/paid_lanes.py:_session_rollout_paths",
+    "reckon/crew/paid_lanes.py:_codex_rollout_candidates",
+    "reckon/budget.py:3672"
+  ],
+  "completed_at": "2026-10-16T08:51:30.843Z",
+  "dispatched_at": "2026-10-16T08:36:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "842",
+      "severity": "follow-on",
+      "text": "follow-on: stream.rollout_seconds is read before stream.worker_seconds, so a non-codex stream carrying a rollout receipt would have its own measured event span replaced by the receipt's; the claude-unchanged requirement holds only because no claude session id resolves to a codex rollout, so the ordering encodes an assumption rather than a guard."
+    },
+    {
+      "file": "reckon/crew/paid_lanes.py",
+      "line": "951",
+      "severity": "follow-on",
+      "text": "follow-on: the harness layout codex-home/sessions is still spelled literally here and at paid_lanes.py:784 rather than through the new rollout.run_home_sessions_root owner, so the single-owner intent the plan states is not fully consolidated for the isolated-home client search."
+    }
+  ],
+  "head_log_revision": "a79e022dd7c35fb0c87cb558671a4a0baec1255f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against f33b8db0; a79e022dd adds the run-home locator owner, its shared use in paid_lanes, the receipt-sourced span in promotion_checks and promotion, and the test; 2644e0c5f adds the evidence fragment.",
+    "done_when": "the done-when's fixture gate is tests/test_codex_worker_time_is_measured.py; the manifest records 4 passed at head with a 326-vs-326 arm delta and a negative control that reddens both receipt tests, which is the measure the done-when names.",
+    "goal": "the node's goal is to record a codex run's worker time from the rollout in its own run home at promotion; rollout.py:_locate_rollout now searches that home and promotion.py:842 records stream.rollout_seconds.",
+    "manifest": "read; it records the named run's 708 s beside its 720 s wall time, both gate arms at 326 passed, and the negative-control log with EXIT=1 and two failing receipt tests.",
+    "write_paths": "the node's declared scope is reckon/crew/rollout.py, reckon/crew/paid_lanes.py, reckon/crew/promotion_checks.py, reckon/crew/promotion.py, tests/test_codex_worker_time_is_measured.py, the evidence fragment and a figures directory; every path in the diff lies inside it."
+  },
+  "justifications": {
+    "durability": "the negative-control log at negative-control.log shows removing run_home_rollout_paths reddens both receipt tests to wall_fallback (2 failed, EXIT=1), so the assertions fail if the change regresses.",
+    "evidence": "tests/test_codex_worker_time_is_measured.py covers receipt, wall-fallback and claude cases, the manifest records 4 passed at head and 326-vs-326 across the arms, and gate-head.log ends 326 passed EXIT=0.",
+    "fit": "the added names run_home_sessions_root and run_home_rollout_paths are capability-descriptive and the comments at rollout.py:39 read in the surrounding style.",
+    "goal_fidelity": "reckon/crew/promotion.py:842 sets worker_seconds from stream.rollout_seconds with source rollout_receipt, so a codex run's worker time comes from its run-home receipt.",
+    "reuse": "the new locator at rollout.py:184 extends the owner and paid_lanes.py:957 now shares it, but paid_lanes.py:951 still spells codex-home/sessions literally.",
+    "scope_discipline": "every path in the diff (rollout.py, paid_lanes.py, promotion_checks.py, promotion.py, the test, the fragment) is inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to record a codex run's worker time from the rollout in its own run home at promotion; rollout.py:_locate_rollout now searches that home and promotion.py:842 records stream.rollout_seconds.\nVERDICT done_when: the done-when's fixture gate is tests/test_codex_worker_time_is_measured.py; the manifest records 4 passed at head with a 326-vs-326 arm delta and a negative control that reddens both receipt tests, which is the measure the done-when names.\nVERDICT write_paths: the node's declared scope is reckon/crew/rollout.py, reckon/crew/paid_lanes.py, reckon/crew/promotion_checks.py, reckon/crew/promotion.py, tests/test_codex_worker_time_is_measured.py, the evidence fragment and a figures directory; every path in the diff lies inside it.\nVERDICT manifest: read; it records the named run's 708 s beside its 720 s wall time, both gate arms at 326 passed, and the negative-control log with EXIT=1 and two failing receipt tests.\nVERDICT diff: read commit by commit against f33b8db0; a79e022dd adds the run-home locator owner, its shared use in paid_lanes, the receipt-sourced span in promotion_checks and promotion, and the test; 2644e0c5f adds the evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked, reckon/crew/promotion_checks.py:_terminal_stream_data, reckon/crew/promotion_release.py:_harvest_lane_receipt, reckon/crew/paid_lanes.py:_session_rollout_paths, reckon/crew/paid_lanes.py:_codex_rollout_candidates, reckon/budget.py:3672\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:842 sets worker_seconds from stream.rollout_seconds with source rollout_receipt, so a codex run's worker time comes from its run-home receipt.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_codex_worker_time_is_measured.py covers receipt, wall-fallback and claude cases, the manifest records 4 passed at head and 326-vs-326 across the arms, and gate-head.log ends 326 passed EXIT=0.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (rollout.py, paid_lanes.py, promotion_checks.py, promotion.py, the test, the fragment) is inside the node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the negative-control log at negative-control.log shows removing run_home_rollout_paths reddens both receipt tests to wall_fallback (2 failed, EXIT=1), so the assertions fail if the change regresses.\nSCORE fit: 18\nJUSTIFICATION fit: the added names run_home_sessions_root and run_home_rollout_paths are capability-descriptive and the comments at rollout.py:39 read in the surrounding style.\nSCORE reuse: 17\nJUSTIFICATION reuse: the new locator at rollout.py:184 extends the owner and paid_lanes.py:957 now shares it, but paid_lanes.py:951 still spells codex-home/sessions literally.\nFINDING reckon/crew/promotion.py:842 follow-on: stream.rollout_seconds is read before stream.worker_seconds, so a non-codex stream carrying a rollout receipt would have its own measured event span replaced by the receipt's; the claude-unchanged requirement holds only because no claude session id resolves to a codex rollout, so the ordering encodes an assumption rather than a guard.\nFINDING reckon/crew/paid_lanes.py:951 follow-on: the harness layout codex-home/sessions is still spelled literally here and at paid_lanes.py:784 rather than through the new rollout.run_home_sessions_root owner, so the single-owner intent the plan states is not fully consolidated for the isolated-home client search.",
+  "review_run_id": "r-20261016T083529563842-review-of-codex-worker-time-from-run-home-2644e0c5fd13",
+  "reviewed_base_sha": "f33b8db0ab9fcf2c80718c11352424e2af82368f",
+  "reviewed_head_sha": "2644e0c5fd13c10475a5472a5e6aa5aea88fac53",
+  "reviewed_run_id": "r-20261016T074251461237-codex-worker-time-from-run-home",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-16T08:54:14.074484+00:00",
+  "total": 110
+}
