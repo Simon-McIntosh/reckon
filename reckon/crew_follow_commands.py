@@ -1,5 +1,4 @@
 import hashlib
-import inspect
 import json
 import os
 import re
@@ -109,26 +108,6 @@ def _sweep_lapsed_holds(
     from reckon.crew.resumption import sweep
 
     return sweep(project, session=session, dry_run=dry_run)
-
-
-def _sweep_accepts_a_session(sweep: Callable[..., Any]) -> bool:
-    """Whether a follower's sweep callable declares the session it sweeps.
-
-    The follower's own sweep takes the session so a sweep it runs is confined
-    to the session it serves, but a sweep injected by a test may still be the
-    older single-argument form. The session is offered only to a callable that
-    declares it, so the call shape follows the callable's own signature rather
-    than the identity of one function object.
-    """
-    try:
-        parameters = inspect.signature(sweep).parameters
-    except (TypeError, ValueError):
-        return False
-    return "session" in parameters or any(
-        parameter.kind is inspect.Parameter.VAR_KEYWORD
-        for parameter in parameters.values()
-    )
-
 
 
 _FOLLOWER_CHECKPOINT_ENV = "RECKON_FOLLOWER_CHECKPOINT"
@@ -1719,9 +1698,11 @@ def _follow_watch_lines(
 
     def _sweep_quietly() -> None:
         try:
-            if _sweep_accepts_a_session(sweep):
-                # The follower's own sweep takes the session it serves, so a
-                # sweep armed here never reaches another session's runs.
+            # The follower's own sweep takes the session it serves, so a sweep
+            # armed here never reaches another session's runs. A sweep injected
+            # by a test may still keep the older single-argument shape, so the
+            # session is offered only to a callable that declares it.
+            if runs.accepts_keyword(sweep, "session"):
                 sweep(project, session=session)
             else:
                 sweep(project)

@@ -26,11 +26,9 @@ from pathlib import Path
 import pytest
 
 from reckon.crew.resumption import sweep
-from reckon.crew.runs import _write_json, pointer_path
-from reckon.crew_follow_commands import (
-    _sweep_accepts_a_session,
-    _sweep_lapsed_holds,
-)
+from reckon.crew.runs import _write_json, accepts_keyword, pointer_path
+from reckon.crew_follow_commands import _sweep_lapsed_holds
+from tests.test_follow_sweep_cadence import Follower_session, _Follower
 from tests.test_review_lane_follows_its_run import (  # noqa: F401 - fixture
     CONFIG,
     OWNING_BACKEND,
@@ -216,6 +214,50 @@ def test_the_followers_sweep_carries_the_session_it_serves(
 
 def test_a_single_argument_sweep_is_still_called_without_a_session() -> None:
     """The follower offers the session only to a sweep whose signature takes it."""
-    assert _sweep_accepts_a_session(_sweep_lapsed_holds) is True
-    assert _sweep_accepts_a_session(lambda project: {}) is False
-    assert _sweep_accepts_a_session(lambda project, **_kw: {}) is True
+    assert accepts_keyword(_sweep_lapsed_holds, "session") is True
+    assert accepts_keyword(lambda project: {}, "session") is False
+    assert accepts_keyword(lambda project, **_kw: {}, "session") is True
+    assert accepts_keyword(lambda project, *, session: {}, "session") is True
+    assert accepts_keyword(object(), "session") is False, (
+        "a signature that cannot be read must report that it takes nothing"
+    )
+
+
+class _KeywordRecordingFollower(_Follower):
+    """The cadence follower, recording how the sweep it is given was called.
+
+    The forwarding case above drives ``_sweep_lapsed_holds``, one call below the
+    follower's own cadence, so a regression at the cadence's own call site would
+    leave it green. This follower records the call shape the cadence produces,
+    which is the site that dropped the session before.
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.sweep_calls: list[dict] = []
+
+    def _sweep(self, project: str, **keywords) -> dict:
+        self.sweep_calls.append({"project": project, **keywords})
+        self.sweep_moments.append(self.clock())
+        return {"resumed": [], "skipped": []}
+
+
+def test_the_followers_cadence_calls_its_sweep_with_the_session_it_serves(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The cadence's own call carries the session the follower serves.
+
+    A sweep that keeps the older single-argument shape is called as before; the
+    follower's own sweep, which declares the session, is called with it. Only
+    the second is asserted here, because dropping ``session`` from the cadence's
+    call is what leaves an observing session sweeping a peer's runs.
+    """
+    follower = _KeywordRecordingFollower(tmp_path, monkeypatch, sweep=None).start()
+    assert follower.wait_sweeps(1) == 1, "the follower never reached its cadence"
+    follower.stop_and_join()
+
+    assert follower.sweep_calls, "the cadence surfaced no sweep call"
+    assert follower.sweep_calls[0] == {
+        "project": follower.project,
+        "session": Follower_session,
+    }
