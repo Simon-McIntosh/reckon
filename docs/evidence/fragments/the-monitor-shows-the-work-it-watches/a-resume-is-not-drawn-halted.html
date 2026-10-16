@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s36">
+  <title>Resume window landing</title>
+</head>
+<body>
+<article id="a-resume-is-not-drawn-halted-landing" data-node="a-resume-is-not-drawn-halted" data-reckon="landed"></article>
+
+<section>
+  <h3>What changed</h3>
+  <p>A resume advances a run in three steps: it publishes the new attempt's
+  identity in <code>attempt.json</code> and retires the previous attempt's
+  canonical records, its supervisor spawns the new worker, and that worker
+  registers. For the seconds between the first and the last, the run directory
+  holds an attempt record naming the new attempt, no worker record at all, and
+  the previous attempt's exit record still under its canonical name — while the
+  pointer still carries the previous attempt's pid and phase, because nothing has
+  rewritten them yet.</p>
+
+  <p>Read from that evidence the predecessor's recorded end is drawn as this
+  attempt's. The classifier's <code>exited_unfinished</code> arm asks four
+  questions — is the pointer's process gone, is there an exit record, does the
+  manifest still carry a non-terminal word, and does the worktree hold commits
+  past its base — and a resume answers every one of them from the attempt that
+  already ran: its dead pid, its exit record, the status word the resume's
+  manifest reset left behind, and its committed work. So a run that is only
+  starting is drawn <code>exited-unfinished</code>, the pane renders that word
+  halted, and a reader is sent to repair work that is already resuming. The
+  halted row below lasted three seconds.</p>
+
+  <p>The reading now defers to the attempt's own clock. An attempt that has
+  recorded neither a process nor an end of its own is read as
+  <code>running</code>, which the pane draws as starting — the same deferral the
+  producer's death branch already applies to this window. The definition is
+  narrow in two ways, so the deferral cannot outlive its meaning: past
+  <code>STRANDED_LAUNCH_BOUND_SECONDS</code> (900 s) with still no worker record
+  and no stream of its own, the existing stranded-launch rule reports the resume
+  that never launched; and a manifest carrying a verdict word of its own
+  outranks the arm entirely, so a delivered run is read as delivered exactly as
+  before.</p>
+
+  <figure>
+    <img src="/reckon/figures/the-monitor-shows-the-work-it-watches/a-resume-is-not-drawn-halted/resume-window.svg"
+         alt="Two lanes over ten seconds of a resumed run. Top lane, the pane word: at 02:09:29 the pane drew delivered to halted, holding halted for three seconds until 02:09:32 when it drew halted to working. Bottom lane, attempt 2's own records: attempt.json appears at 02:09:29, worker.json at 02:09:38, and the worker's stream resume-1.jsonl at 02:09:51.">
+    <figcaption>The halted row is drawn at the resume's attempt write, three
+    seconds before anything of the new attempt exists; the pane corrects to
+    working at 02:09:32, well ahead of the worker's own registration at
+    02:09:38. Every record the halted reading rested on in that window belongs
+    to the attempt that had already run.</figcaption>
+  </figure>
+
+  <h3>The branch the fixture reaches, named from observation</h3>
+  <p>The case file builds the live run's shape with no worker record of its own
+  and reports the branch it reaches rather than assuming one. At base the
+  fixture reads <code>state='exited-unfinished'</code>,
+  <code>recovery_classification='exited-unfinished'</code>,
+  <code>process_alive=False</code>, with the detail "the worker exited with code
+  0 with 1 commit beyond its recorded base, but the manifest at … still reads
+  'in-progress'" — byte-for-byte the shape of the follower-history row at
+  2026-10-16T02:09:29Z. The four properties the arm rests on are asserted
+  directly in <code>test_the_fixture_is_the_shape_that_read_halted</code>: the
+  canonical exit record still names the previous attempt with
+  <code>exit_code: 0</code>, the manifest reads <code>status: in-progress</code>,
+  <code>_current_attempt_number(pointer)</code> is the new attempt while
+  <code>_attempt_awaits_its_worker(pointer)</code> is <code>True</code>, and
+  <code>_commits_beyond_base(pointer) &gt; 0</code>.</p>
+
+  <h3>Gate — the node's own change, at base and at head</h3>
+  <p>Both arms run every test file that imports
+  <code>reckon/crew/recovery_classification.py</code> or
+  <code>reckon/crew/recovery_liveness.py</code> — 62 at base
+  <code>dcdde9a8e</code>, 63 at head once this node's own case file exists —
+  with <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest</code>,
+  in chunks of about ten files, each to a log under the run directory ending in
+  <code>EXIT=</code>.</p>
+  <table>
+    <thead><tr><th>arm</th><th>files</th><th>result</th><th><code>EXIT=</code></th></tr></thead>
+    <tbody>
+      <tr><td>base <code>dcdde9a8e</code></td><td>62</td><td>552 passed, 0 failed</td><td>0 (all seven chunks)</td></tr>
+      <tr><td>head <code>7b915b6e7</code></td><td>63</td><td>557 passed, 0 failed</td><td>0 (all seven chunks)</td></tr>
+    </tbody>
+  </table>
+  <p>Neither arm produces a failing id, and the head arm carries exactly five
+  more passes than the base — the five cases in this node's own file — so the
+  comparison holds in the strongest form: the id set is equal apart from the new
+  file. Logs: <code>importer-gate-clean-head-chunk1.log</code> through
+  <code>-chunk7.log</code>, and the same names with <code>base</code>, under the
+  run directory.</p>
+
+  <p>A first pass at this gate ran with <code>TMPDIR</code> pointed at the
+  scratch root the two arm copies live under, whose name ends in this node's
+  slug. One case there,
+  <code>test_causes_with_opposite_recoveries_have_distinct_types</code>, asserts
+  that word is absent from a message built out of its own basetemp path, so it
+  failed for a reason that had nothing to do with the code under test — the
+  <code>resume</code> it found was in
+  <code>/tmp/reckon-crew-scratch/…-a-resume-is-not-drawn-halted/pytest-…/</code>.
+  Re-run with <code>TMPDIR</code> on a neutral path it passes (19 passed), and
+  the whole gate above was re-run that way; the artifact logs are kept beside
+  the clean ones as <code>importer-gate-head-chunk5.log</code>.</p>
+
+  <h3>Negative control</h3>
+  <p>The declared control restores the arm to its base behaviour — the deferral
+  is switched off and the classifier reads from the pointer's evidence again, so
+  a predecessor's recorded end is drawn as this attempt's. The first case must
+  then read halted again, and it does: four of the five cases fail
+  (<code>test_a_resumed_attempt_with_no_worker_yet_is_not_drawn_halted</code>,
+  <code>test_a_resumed_attempt_without_the_predecessors_exit_record_is_not_halted</code>,
+  <code>test_a_resumed_attempt_past_the_bound_reads_as_today</code>,
+  <code>test_the_resumed_attempt_owes_no_duty</code>) and the arm exits
+  non-zero. Log: <code>negative_control.log</code>, ending
+  <code>EXIT=1</code>.</p>
+
+  <h3>Lint</h3>
+  <p><code>ruff check</code> and <code>ruff format --check</code> add no findings
+  and no formatting diff on the changed Python files against base.
+  <code>reckon/crew/recovery_classification.py</code> carries the same one
+  pre-existing UP017 finding at line 565 at both arms,
+  <code>reckon/crew/recovery_liveness.py</code> carries the same one pre-existing
+  formatting diff at both arms, and the new test file is clean under both.</p>
+</section>
+</body>
+</html>
