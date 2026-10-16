@@ -55,6 +55,11 @@
     <p>Run <code>r-20261016T100026658612-paid-lanes-document-states-its-shelf-life</code> (clive, picked by Jev at 0.94), commit <code>36264f6ab</code>, merged at <code>080fc82c7</code>. <code>compose_document</code> publishes <code>suggested_shelf_life_seconds</code> as <code>SHELF_LIFE_INTERVALS</code> (2) times <code>REFRESH_INTERVAL</code>, 600 s at the 5-minute timer. A document reading 345 s old now reads fresh through §5's rule, and one 700 s old reads stale. Gate: 4 passed; the negative control, which omits the key, makes the 345 s reading stale. Independent review <code>r-20261016T102759029006</code> totals 111. Its follow-on: an interval unit missing from <code>_INTERVAL_UNIT_SECONDS</code> silently reads as seconds, so <code>5m</code> would give a 5-second shelf life; it should refuse instead.</p>
   </section>
 
+  <section id="s12">
+    <h2>§12 — a live pick reads outcomes at the capability it resolved</h2>
+    <p>Run <code>r-20261016T095813341068-a-live-pick-reads-outcomes-at-its-capability</code> (clive, picked by Jev at 0.73), commits <code>6e9a3a97b</code> and <code>f7f51d1fb</code>, merged at <code>83f43ad19</code>. <code>pick()</code> resolves the declared capability before building candidates, so a live pick now renders <code>outcomes_at_requirement</code>. Gate: 4 passed; the negative control, restoring the old order, leaves the block absent. Over an 11-file importer subset, both arms show the same single pre-existing failure, so 0 failures were added. The full 62-file importer sweep did not fit the node's 45-minute fence, and its status was repaired to complete with that reason. Independent review <code>r-20261016T105103848923</code> totals 113. Its follow-on: the capability now also reaches the role-override class lookup. No flight layer declares <code>by_capability_class</code>, so that has no effect under today's configuration.</p>
+  </section>
+
 </main>
 </body>
 </html>
