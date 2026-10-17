@@ -16,6 +16,7 @@ from typing import Any
 from reckon import (
     _store,
     ledger,
+    shadow_reads,
 )
 from reckon._plan_html import section_anchor
 from reckon._timestamps import parse_iso, parse_utc
@@ -1189,8 +1190,8 @@ def _shadow_stream_contamination(
     stream_paths = _record_stream_paths(record)
     if not stream_paths:
         return None
-    calls = ledger.stream_tool_calls(stream_paths)
-    return ledger.shadow_primary_read(
+    calls = shadow_reads.stream_tool_calls(stream_paths)
+    return shadow_reads.shadow_primary_read(
         calls,
         primary_commit=commit,
         primary_paths=paths,

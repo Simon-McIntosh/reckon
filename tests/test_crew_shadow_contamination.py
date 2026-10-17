@@ -22,7 +22,7 @@ import json
 import subprocess
 from pathlib import Path
 
-from reckon import calibration, capabilities, ledger
+from reckon import calibration, capabilities, ledger, shadow_reads
 from reckon.crew import promotion, promotion_scope
 from reckon.crew.review import review_store_root
 from reckon.crew.runs import run_dir
@@ -85,10 +85,10 @@ def _stream_jsonl(lines: list[str], tmp_path) -> str:
 def test_recorded_contaminated_stream_is_marked(tmp_path) -> None:
     """A shadow that ran ``git show`` of its primary's sha is contaminated."""
     stream = _stream_jsonl(_recorded_bash_commands(), tmp_path)
-    calls = ledger.stream_tool_calls([stream])
+    calls = shadow_reads.stream_tool_calls([stream])
     assert [kind for kind, _ in calls] == ["bash"] * 3
 
-    reason = ledger.shadow_primary_read(
+    reason = shadow_reads.shadow_primary_read(
         calls,
         primary_commit=CONTAMINATED_PRIMARY_COMMIT,
         primary_paths=CONTAMINATED_PRIMARY_PATHS,
@@ -243,7 +243,7 @@ def _stream_jsonl_calls(calls: list[tuple[str, str]], tmp_path) -> str:
 def test_recorded_clean_stream_is_not_marked(tmp_path) -> None:
     """A shadow that entered the main checkout but read nothing stays clean."""
     stream = _stream_jsonl_calls(_recorded_clean_commands(), tmp_path)
-    calls = ledger.stream_tool_calls([stream])
+    calls = shadow_reads.stream_tool_calls([stream])
     assert [kind for kind, _ in calls] == [
         "bash",
         "bash",
@@ -254,7 +254,7 @@ def test_recorded_clean_stream_is_not_marked(tmp_path) -> None:
         "read",
     ]
 
-    reason = ledger.shadow_primary_read(
+    reason = shadow_reads.shadow_primary_read(
         calls,
         primary_commit=CLEAN_PRIMARY_COMMIT,
         primary_paths=CLEAN_PRIMARY_PATHS,
@@ -274,8 +274,8 @@ def test_a_path_mention_without_a_git_read_is_clean(tmp_path) -> None:
             "-q tests/test_fleet_rollup_surfaces.py",
         ),
     ]
-    calls = ledger.stream_tool_calls([_stream_jsonl_calls(commands, tmp_path)])
-    reason = ledger.shadow_primary_read(
+    calls = shadow_reads.stream_tool_calls([_stream_jsonl_calls(commands, tmp_path)])
+    reason = shadow_reads.shadow_primary_read(
         calls,
         primary_commit=CLEAN_PRIMARY_COMMIT,
         primary_paths=CLEAN_PRIMARY_PATHS,
@@ -297,8 +297,8 @@ def test_reading_own_worktree_via_git_c_is_clean(tmp_path) -> None:
             + '\ngit -C "$W" show "HEAD:tests/test_fleet_rollup_surfaces.py"',
         ),
     ]
-    calls = ledger.stream_tool_calls([_stream_jsonl_calls(commands, tmp_path)])
-    reason = ledger.shadow_primary_read(
+    calls = shadow_reads.stream_tool_calls([_stream_jsonl_calls(commands, tmp_path)])
+    reason = shadow_reads.shadow_primary_read(
         calls,
         primary_commit=CLEAN_PRIMARY_COMMIT,
         primary_paths=CLEAN_PRIMARY_PATHS,
@@ -318,8 +318,8 @@ def test_changed_path_read_from_main_checkout_is_marked(tmp_path) -> None:
             + ' && git show "HEAD:reckon/calibration.py" | head -40',
         ),
     ]
-    calls = ledger.stream_tool_calls([_stream_jsonl_calls(commands, tmp_path)])
-    reason = ledger.shadow_primary_read(
+    calls = shadow_reads.stream_tool_calls([_stream_jsonl_calls(commands, tmp_path)])
+    reason = shadow_reads.shadow_primary_read(
         calls,
         primary_commit=CONTAMINATED_PRIMARY_COMMIT,
         primary_paths=CONTAMINATED_PRIMARY_PATHS,
@@ -334,9 +334,9 @@ def test_an_abbreviated_sha_is_marked_but_a_short_fragment_is_not(tmp_path) -> N
     abbreviated = [
         ("bash", "cd " + MAIN_CHECKOUT + " && git show 7572d83 --stat | head"),
     ]
-    calls = ledger.stream_tool_calls([_stream_jsonl_calls(abbreviated, tmp_path)])
+    calls = shadow_reads.stream_tool_calls([_stream_jsonl_calls(abbreviated, tmp_path)])
     assert (
-        ledger.shadow_primary_read(
+        shadow_reads.shadow_primary_read(
             calls,
             primary_commit=CONTAMINATED_PRIMARY_COMMIT,
             primary_paths=CONTAMINATED_PRIMARY_PATHS,
@@ -349,9 +349,9 @@ def test_an_abbreviated_sha_is_marked_but_a_short_fragment_is_not(tmp_path) -> N
     fragment = [
         ("bash", 'echo "a 7572d8 fragment" && git status --short'),
     ]
-    calls = ledger.stream_tool_calls([_stream_jsonl_calls(fragment, tmp_path)])
+    calls = shadow_reads.stream_tool_calls([_stream_jsonl_calls(fragment, tmp_path)])
     assert (
-        ledger.shadow_primary_read(
+        shadow_reads.shadow_primary_read(
             calls,
             primary_commit=CONTAMINATED_PRIMARY_COMMIT,
             primary_paths=CONTAMINATED_PRIMARY_PATHS,
@@ -372,8 +372,8 @@ def test_primary_sha_in_a_non_git_command_is_clean(tmp_path) -> None:
             + ' && echo "trace 7572d83 seen" > manifest-notes.txt',
         ),
     ]
-    calls = ledger.stream_tool_calls([_stream_jsonl_calls(commands, tmp_path)])
-    reason = ledger.shadow_primary_read(
+    calls = shadow_reads.stream_tool_calls([_stream_jsonl_calls(commands, tmp_path)])
+    reason = shadow_reads.shadow_primary_read(
         calls,
         primary_commit=CONTAMINATED_PRIMARY_COMMIT,
         primary_paths=CONTAMINATED_PRIMARY_PATHS,
@@ -389,8 +389,8 @@ def test_file_read_of_changed_path_in_main_is_marked_worktree_is_clean(
     """File-path reads discriminate by which checkout they target."""
     from_main = [("read", MAIN_CHECKOUT + "/reckon/calibration.py")]
     assert (
-        ledger.shadow_primary_read(
-            ledger.stream_tool_calls([_stream_jsonl_calls(from_main, tmp_path)]),
+        shadow_reads.shadow_primary_read(
+            shadow_reads.stream_tool_calls([_stream_jsonl_calls(from_main, tmp_path)]),
             primary_commit=CONTAMINATED_PRIMARY_COMMIT,
             primary_paths=CONTAMINATED_PRIMARY_PATHS,
             repo_root=MAIN_CHECKOUT,
@@ -403,8 +403,8 @@ def test_file_read_of_changed_path_in_main_is_marked_worktree_is_clean(
         ("read", CONTAMINATED_WORKTREE + "/reckon/calibration.py"),
     ]
     assert (
-        ledger.shadow_primary_read(
-            ledger.stream_tool_calls([_stream_jsonl_calls(from_worktree, tmp_path)]),
+        shadow_reads.shadow_primary_read(
+            shadow_reads.stream_tool_calls([_stream_jsonl_calls(from_worktree, tmp_path)]),
             primary_commit=CONTAMINATED_PRIMARY_COMMIT,
             primary_paths=CONTAMINATED_PRIMARY_PATHS,
             repo_root=MAIN_CHECKOUT,
@@ -517,10 +517,10 @@ def _calls_in_both_dialects(
         payload if kind == "bash" else "cat " + payload for kind, payload in calls
     ]
     return {
-        "messages": ledger.stream_tool_calls(
+        "messages": shadow_reads.stream_tool_calls(
             [_stream_jsonl_calls(calls, messages_dir)]
         ),
-        "codex": ledger.stream_tool_calls(
+        "codex": shadow_reads.stream_tool_calls(
             [_codex_stream_jsonl(codex_commands, codex_dir)]
         ),
     }
@@ -530,7 +530,7 @@ def test_a_run_directory_read_is_marked_in_both_dialects(tmp_path: Path) -> None
     """Reading the primary's run directory names the record that was read."""
     calls = [("read", PRIMARY_RUN_DIR + "/manifest.md")]
     for dialect, stream in _calls_in_both_dialects(calls, tmp_path).items():
-        reason = ledger.shadow_primary_read(
+        reason = shadow_reads.shadow_primary_read(
             stream, primary_commit="", primary_run_dir=PRIMARY_RUN_DIR
         )
         assert reason == "primary_run_directory_read", dialect
@@ -539,7 +539,7 @@ def test_a_run_directory_read_is_marked_in_both_dialects(tmp_path: Path) -> None
 def test_a_review_record_read_is_marked_in_both_dialects(tmp_path: Path) -> None:
     calls = [("read", PRIMARY_REVIEW_RECORD)]
     for dialect, stream in _calls_in_both_dialects(calls, tmp_path).items():
-        reason = ledger.shadow_primary_read(
+        reason = shadow_reads.shadow_primary_read(
             stream,
             primary_commit="",
             primary_review_paths=(PRIMARY_REVIEW_RECORD,),
@@ -550,7 +550,7 @@ def test_a_review_record_read_is_marked_in_both_dialects(tmp_path: Path) -> None
 def test_a_primary_worktree_read_is_marked_in_both_dialects(tmp_path: Path) -> None:
     calls = [("read", PRIMARY_WORKTREE + "/reckon/x.py")]
     for dialect, stream in _calls_in_both_dialects(calls, tmp_path).items():
-        reason = ledger.shadow_primary_read(
+        reason = shadow_reads.shadow_primary_read(
             stream,
             primary_commit="",
             primary_worktree=PRIMARY_WORKTREE,
@@ -569,7 +569,7 @@ def test_reading_only_the_shadows_own_worktree_and_run_home_is_clean(
         ("bash", "cd " + SHADOW_WORKTREE + " && git status --short"),
     ]
     for dialect, stream in _calls_in_both_dialects(calls, tmp_path).items():
-        reason = ledger.shadow_primary_read(
+        reason = shadow_reads.shadow_primary_read(
             stream,
             primary_commit=CONTAMINATED_PRIMARY_COMMIT,
             primary_paths=CONTAMINATED_PRIMARY_PATHS,
@@ -584,9 +584,9 @@ def test_reading_only_the_shadows_own_worktree_and_run_home_is_clean(
 
 def test_the_committed_fixture_still_yields_the_changed_path_read() -> None:
     """The recorded xpoint arm copied a landed file, so its mark is unchanged."""
-    calls = ledger.stream_tool_calls([str(XPOINT_FIXTURE)])
+    calls = shadow_reads.stream_tool_calls([str(XPOINT_FIXTURE)])
     assert calls
-    reason = ledger.shadow_primary_read(
+    reason = shadow_reads.shadow_primary_read(
         calls,
         primary_commit=XPOINT_PRIMARY_COMMIT,
         primary_paths=XPOINT_PRIMARY_PATHS,
@@ -600,10 +600,10 @@ def test_the_committed_fixture_run_directory_calls_yield_the_run_directory_reaso
     None
 ):
     """The fixture's own run-directory reads name that record on their own."""
-    calls = ledger.stream_tool_calls([str(XPOINT_FIXTURE)])
+    calls = shadow_reads.stream_tool_calls([str(XPOINT_FIXTURE)])
     run_directory_calls = [call for call in calls if XPOINT_PRIMARY_RUN_DIR in call[1]]
     assert run_directory_calls
-    reason = ledger.shadow_primary_read(
+    reason = shadow_reads.shadow_primary_read(
         run_directory_calls,
         primary_commit="",
         primary_run_dir=XPOINT_PRIMARY_RUN_DIR,
