@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs for this commit: the after arm logs/b-shared-n10-run1.log (14 passed, EXIT=0, two modules under -n 10) and the baseline arm logs/c-base-shared-n10.log (1 failed, 11 passed, 2 skipped, EXIT=1); the after-minus-baseline set difference is empty, so the reviewed commit adds no failing test.",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T02:08:36.534Z",
+  "dispatched_at": "2026-10-17T01:58:19Z",
+  "findings": [
+    {
+      "file": "tests/test_held_worktree_records_match_each_record_once.py",
+      "line": "40",
+      "severity": "follow-on",
+      "text": "follow-on: the local _git duplicates tests/helpers/git.py:9, the shared git runner 120 test modules import as _git, and only adds an environment scrub, so the owner is neither extended nor fixed and every other module keeps the shim-refusal exposure this helper was written to avoid; adding the scrub to the shared helper would serve them all."
+    },
+    {
+      "file": "tests/test_held_worktree_records_match_each_record_once.py",
+      "line": "96",
+      "severity": "follow-on",
+      "text": "follow-on: no test asserts that _fleet_build restores the two home keys it names, so re-introducing a module-scoped redirect passes this file's own five tests and reddens only tests/test_held_worktrees_read_run_files.py when xdist happens to place both modules in one worker, leaving the regression guard dependent on scheduling."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read ccaa592e against its parent d795d5aa; one file changed, splitting the module-scoped fleet fixture into a module-scoped _fleet_build that names RECKON_HOME and RECKON_MOUNTS_PATH only for the length of its build and restores them in a finally, plus a function-scoped fleet that redirects the home per test, and replacing the shared tests.helpers.git import with a local _git that strips RECKON_RUN_ID.",
+    "done_when": "the done-when (prompt.txt:94) names tests/test_held_worktree_records_match_each_record_once.py with at least 20 trees and 500 records, the records-plus-trees call bound, index/base parity, and the base arm failing on the count; the manifest's gate logs b-shared-n10-run1..5.log record \"14 passed\" with EXIT=0 five times, a-run-id-set.log records \"5 passed in 56.76s\" with a run id set, and c-base-shared-n10.log records \"1 failed, 11 passed, 2 skipped\" with EXIT=1.",
+    "goal": "the node's goal (prompt.txt:30) is to match each held-worktree record once through one index of the trees its records name; the reviewed commit changes only tests/test_held_worktree_records_match_each_record_once.py (git show --stat ccaa592e), repairing the harness that measures the goal and leaving the delivered path in reckon/crew/obligations.py and reckon/crew/routing.py untouched.",
+    "manifest": "read; it reads status complete, names both commits d795d5aa and ccaa592e, records the head arms (14 passed five times, 5 passed with a run id set), the base arm (1 failed, 11 passed, 2 skipped) and each log path.",
+    "write_paths": "the manifest declares reckon/crew/obligations.py, reckon/crew/routing.py and tests/test_held_worktree_records_match_each_record_once.py plus the fragment and figure paths; git show --stat ccaa592e touches only tests/test_held_worktree_records_match_each_record_once.py, inside that scope."
+  },
+  "justifications": {
+    "durability": "the reviewed commit adds no assertion of its own, so the module-scoped environment leak it repairs returns unnoticed unless tests/test_held_worktrees_read_run_files.py is scheduled into the same xdist worker (logs/b-shared-n10-run1.log), making the guard scheduling-dependent.",
+    "evidence": "logs/b-shared-n10-run1.log records \"14 passed in 182.38s\" with EXIT=0 over the two-module -n 10 population, and logs/c-base-shared-n10.log records \"1 failed, 11 passed, 2 skipped\" with EXIT=1, which is the done-when's base-arm claim.",
+    "fit": "the fixture split at tests/test_held_worktree_records_match_each_record_once.py:96 follows the module's existing docstring style, but the local _git at line 40 departs from the `from tests.helpers.git import git as _git` alias 120 sibling test modules use.",
+    "goal_fidelity": "git show --stat ccaa592e lists only tests/test_held_worktree_records_match_each_record_once.py, so the commit repairs the goal's measuring harness without altering the delivered call in reckon/crew/obligations.py.",
+    "reuse": "tests/test_held_worktree_records_match_each_record_once.py:40 re-implements tests/helpers/git.py:9 without extending it, so the shared owner is neither amended nor replaced and the duplication is the finding below.",
+    "scope_discipline": "git show --stat ccaa592e changes one file, tests/test_held_worktree_records_match_each_record_once.py, every path inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: d795d5aa6a56253a0ea3c026f109ac3c2b095ab2\nreviewed_head_sha: ccaa592e68309a5d5e49e7553a3313046a4815cf\nVERDICT goal: the node's goal (prompt.txt:30) is to match each held-worktree record once through one index of the trees its records name; the reviewed commit changes only tests/test_held_worktree_records_match_each_record_once.py (git show --stat ccaa592e), repairing the harness that measures the goal and leaving the delivered path in reckon/crew/obligations.py and reckon/crew/routing.py untouched.\nVERDICT done_when: the done-when (prompt.txt:94) names tests/test_held_worktree_records_match_each_record_once.py with at least 20 trees and 500 records, the records-plus-trees call bound, index/base parity, and the base arm failing on the count; the manifest's gate logs b-shared-n10-run1..5.log record \"14 passed\" with EXIT=0 five times, a-run-id-set.log records \"5 passed in 56.76s\" with a run id set, and c-base-shared-n10.log records \"1 failed, 11 passed, 2 skipped\" with EXIT=1.\nVERDICT write_paths: the manifest declares reckon/crew/obligations.py, reckon/crew/routing.py and tests/test_held_worktree_records_match_each_record_once.py plus the fragment and figure paths; git show --stat ccaa592e touches only tests/test_held_worktree_records_match_each_record_once.py, inside that scope.\nVERDICT manifest: read; it reads status complete, names both commits d795d5aa and ccaa592e, records the head arms (14 passed five times, 5 passed with a run id set), the base arm (1 failed, 11 passed, 2 skipped) and each log path.\nVERDICT diff: read ccaa592e against its parent d795d5aa; one file changed, splitting the module-scoped fleet fixture into a module-scoped _fleet_build that names RECKON_HOME and RECKON_MOUNTS_PATH only for the length of its build and restores them in a finally, plus a function-scoped fleet that redirects the home per test, and replacing the shared tests.helpers.git import with a local _git that strips RECKON_RUN_ID.\nCALL_SITES: none\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: git show --stat ccaa592e lists only tests/test_held_worktree_records_match_each_record_once.py, so the commit repairs the goal's measuring harness without altering the delivered call in reckon/crew/obligations.py.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/b-shared-n10-run1.log records \"14 passed in 182.38s\" with EXIT=0 over the two-module -n 10 population, and logs/c-base-shared-n10.log records \"1 failed, 11 passed, 2 skipped\" with EXIT=1, which is the done-when's base-arm claim.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat ccaa592e changes one file, tests/test_held_worktree_records_match_each_record_once.py, every path inside the manifest's declared write paths.\nSCORE durability: 12\nJUSTIFICATION durability: the reviewed commit adds no assertion of its own, so the module-scoped environment leak it repairs returns unnoticed unless tests/test_held_worktrees_read_run_files.py is scheduled into the same xdist worker (logs/b-shared-n10-run1.log), making the guard scheduling-dependent.\nSCORE fit: 15\nJUSTIFICATION fit: the fixture split at tests/test_held_worktree_records_match_each_record_once.py:96 follows the module's existing docstring style, but the local _git at line 40 departs from the `from tests.helpers.git import git as _git` alias 120 sibling test modules use.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_held_worktree_records_match_each_record_once.py:40 re-implements tests/helpers/git.py:9 without extending it, so the shared owner is neither amended nor replaced and the duplication is the finding below.\nFINDING tests/test_held_worktree_records_match_each_record_once.py:40 follow-on: the local _git duplicates tests/helpers/git.py:9, the shared git runner 120 test modules import as _git, and only adds an environment scrub, so the owner is neither extended nor fixed and every other module keeps the shim-refusal exposure this helper was written to avoid; adding the scrub to the shared helper would serve them all.\nFINDING tests/test_held_worktree_records_match_each_record_once.py:96 follow-on: no test asserts that _fleet_build restores the two home keys it names, so re-introducing a module-scoped redirect passes this file's own five tests and reddens only tests/test_held_worktrees_read_run_files.py when xdist happens to place both modules in one worker, leaving the regression guard dependent on scheduling.\n",
+  "review_run_id": "r-20261017T015732206089-review-of-held-worktree-records-match-each-record-once-ccaa592e6830",
+  "reviewed_base_sha": "d795d5aa6a56253a0ea3c026f109ac3c2b095ab2",
+  "reviewed_head_sha": "ccaa592e68309a5d5e49e7553a3313046a4815cf",
+  "reviewed_run_id": "r-20261016T235407409458-held-worktree-records-match-each-record-once",
+  "role": "review",
+  "scores": {
+    "durability": 12,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T02:07:37.814666+00:00",
+  "total": 84
+}
