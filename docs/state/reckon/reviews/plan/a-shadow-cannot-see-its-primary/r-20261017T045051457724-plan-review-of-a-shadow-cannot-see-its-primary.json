@@ -1,0 +1,83 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T04:58:37.561Z",
+  "dispatched_at": "2026-10-17T04:52:14Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-shadow-cannot-see-its-primary.html:250",
+      "id": "reasoning-1",
+      "reason": "the start anchor must be `_SHADOW_GIT_READ_VERBS` (or the section banner), because the extent the plan names does not contain a module that imports, so the instruction as written cannot be followed.",
+      "text": "\u00a77 calls the shadow-read scan \"one self-contained block in `ledger.py`, from `_SHADOW_SHA_PREFIX_MIN` through `_path_reads_primary_changed`\", but `_SHADOW_GIT_READ_VERBS` (ledger.py:2821) and `_SHADOW_GIT_CONTENT_READ_VERBS` (ledger.py:2837) are defined above that start, under the same section banner, and are used only by the block's own functions (`_command_reads_primary_commit` at ledger.py:3147, `_path_reads_primary_changed` at ledger.py:3163, confirmed by an AST pass over ledger.py: the only names the stated range 2845\u20133203 loads from outside itself are those two constants) \u2014 a worker moving exactly the stated range leaves them behind and `reckon/shadow_reads.py` cannot be imported, which the node's SPEC (\"exact \u2014 implement as written\") forbids it from silently repairing",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-shadow-cannot-see-its-primary.html:288",
+      "id": "wiring-1",
+      "reason": "the section that un-reds main has no route to dispatch, so it would sit undelivered until a reader noticed the declarations map on its own.",
+      "text": "\u00a77 was added to `plan-section-declarations` as `implementable` while the followup chain still ends at `f-ascp-004`, whose prompt routes `/reckon-build a-shadow-cannot-see-its-primary \u00a75` and whose body names only \u00a76, so \u00a77 has no one-line invocation naming it and the plan's own lifecycle rule (a new followup must be written for whatever comes next) is unmet for the section that fixes main's red width test",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c83b82a74787458507d3846e73a46927eee2d3ebafa7df5dfe25efd28512994d",
+  "plan_slug": "a-shadow-cannot-see-its-primary",
+  "plan_version": 32,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-17T04:59:22.390679+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-17T04:59:27.977165+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T04:59:22.390679+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T04:59:27.977165+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-shadow-cannot-see-its-primary.v32.json",
+  "review_run_id": "r-20261017T045051457724-plan-review-of-a-shadow-cannot-see-its-primary",
+  "reviewed_blob_sha": "bf165e6401324321b29a96f4ec8a3fee470d04c9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/ledger.py`, `reckon/crew/promotion_scope.py`, `tests/test_crew_shadow_contamination.py` and `tests/test_every_module_fits_a_worker_window.py` all exist, `promotion_scope._shadow_stream_contamination` is defined at promotion_scope.py:1160, `ledger.shadow_controlled`, `_SHADOW_SHA_PREFIX_MIN` and `_path_reads_primary_changed` all resolve, and `reckon/shadow_reads.py` is correctly the new file to be created.",
+    "done_when": "pass \u2014 \u00a77 names a measurable check (`tests/test_every_module_fits_a_worker_window.py` passes) with a declared negative control (replacing the block in `ledger.py` turns the width test red again).",
+    "evidence_paths": "pass \u2014 the gate and negative-control logs are directed to the run directory, and no gate is placed in a session scratchpad.",
+    "naming": "pass \u2014 s7's prose and the new module name carry no plan labels, ticket numbers or version tags, and name the mechanism (the shadow-read scan) rather than the section that added it.",
+    "reasoning": "a finding \u2014 \u00a77's root cause and caller claim hold, but its stated block boundary omits two constants the block uses, so the extent it names is not the self-contained range it claims.",
+    "single_goal": "pass \u2014 \u00a77 carries one deliverable, moving the shadow-read scan into its own module.",
+    "wiring": "a finding \u2014 \u00a77 is declared `implementable` in `plan-section-declarations` (plan.html:25) but no followup routes to it; the only open followup, `f-ascp-004` (plan.html:288), names \u00a75 and \u00a76."
+  },
+  "section_digests": {
+    "_document": "f6e013af2383ad1c3a04c63caa17ccdd5113647e2e163a06f22f7996074ec484",
+    "s1": "770768dc8c73c5fefe174fd6a4f867ad2b40854cb74c588f41848bd65b6600d3",
+    "s2": "2180ff0a03d627a0c6b67adf9242725afb8aa0cb334f88e11e542b36132ccc8f",
+    "s3": "330eeee9f8ec7d9d7cd19844afd555d06dcdd4b49c538f4118af635df0f0ce57",
+    "s4": "f36740b9079eda6c3a3f73311884c21dc4eed14e7940bad6b7ad8794bd90c329",
+    "s5": "4452b4cfe0fb5e05e70013cf1a292042bbf9e4fca4ff97f05606faac77307043",
+    "s6": "9228dda06539bc3d981efea74e54fc5413be3939fb26a628ad9f1407c1508b83",
+    "s7": "83af43dda5e4fd7477c7ced5d1cf3fdc8ee8a374a8cf1fde77ff871243abd598"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T04:59:19.693894+00:00"
+}
