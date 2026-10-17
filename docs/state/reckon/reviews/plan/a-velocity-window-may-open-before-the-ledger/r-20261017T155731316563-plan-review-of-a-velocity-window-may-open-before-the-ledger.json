@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T16:07:48.248Z",
+  "dispatched_at": "2026-10-17T15:58:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-velocity-window-may-open-before-the-ledger.html:124",
+      "id": "done_when-1",
+      "reason": "the value and its timing are still delivered and the coordinator's item 4 exercises the default edge on the real `--since 2026-08-01` and `--since 2026-09-01` windows, so no node takes a different path; the gap is in where the measurement is declared, not in the mechanism.",
+      "text": "\u00a72's first remedy bullet requires the worker to \"record the value and the measured worst slice time in the manifest\", which needs a slice of the real window's search timed on the real repository, but none of the four done-when items (plan.html:132-138) requires that measurement, and item 4 assigns the real-window run to the coordinator and states it \"is not part of the worker's gate\" \u2014 so the worker's declared gate can close the node without ever showing that the chosen default slice size fits `run_git`'s 180-second bound",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "79168b18bf5a5b24cdcbc51be54ba0c41ab0420e07e758e4f9c7b10845775eae",
+  "plan_slug": "a-velocity-window-may-open-before-the-ledger",
+  "plan_version": 20,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "the finding records no plan change: the node's dispatch done-when requires the manifest to record the chosen slice size and its measured worst slice time, and the coordinator's post-merge runs of both real windows exercise that default against the 180-second bound",
+      "when": "2026-10-17T16:08:37.879989+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the finding records no plan change: the node's dispatch done-when requires the manifest to record the chosen slice size and its measured worst slice time, and the coordinator's post-merge runs of both real windows exercise that default against the 180-second bound",
+      "when": "2026-10-17T16:08:37.879989+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-velocity-window-may-open-before-the-ledger.v20.json",
+  "review_run_id": "r-20261017T155731316563-plan-review-of-a-velocity-window-may-open-before-the-ledger",
+  "reviewed_blob_sha": "0c4636d727301e0ec75aed6999ad5ad175e46631",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `run_git` at `reckon/velocity.py:149`, the search's `raw = git(` call at `reckon/velocity.py:1217`, and `promotion_clock_sources` at `reckon/velocity.py:2149` all resolve, as do `e080ed967` (2026-09-25) and the two cited revisions in the logs.",
+    "done_when": "a finding \u2014 \u00a72's remedy requires a measured worst-slice time, and no done-when item requires it (plan.html:132-138).",
+    "evidence_paths": "pass \u2014 \u00a72's evidence is `~/.cache/reckon-velocity-window-check/`, a durable path on the home filesystem, and both named logs exist and are readable.",
+    "naming": "pass \u2014 `_LEDGER_SEARCH_SLICE_COMMITS` and `first_primary_record_file_addition_upper_bound` name the mechanism they implement, and no plan label, ticket number or version tag reaches a symbol or a filename.",
+    "reasoning": "pass \u2014 the cited logs show the same `-G -p` search raising `TimeoutExpired` at `440ce55a6` (window 2026-08-01) and `534f6536e` (window 2026-09-01, `EXIT=1 seconds=410`), so the stated root cause matches the evidence; slicing bounds each `git` call under `run_git`'s 180-second timeout and the per-run-file addition scan removes the pre-2026-09-25 placement work without patch generation, so the mechanism can reach done-when item 4; and `recover_ledger_clocks` is reached from `reckon/velocity.py:2537` and `:2958`, both on the path the cited command runs.",
+    "single_goal": "pass \u2014 \u00a72 carries one goal, \"a long window's ledger search stays inside its git bound\", served by two mechanisms whose single test file proves both.",
+    "wiring": "pass \u2014 the plan's only declared relationship is `plan-blocks` `the-ledger-is-one-file-per-run#s4`, and that target resolves (`docs/plans/the-ledger-is-one-file-per-run.html` carries `id=\"s4\"`); the followups agree with section state, `f-avwmobl-001` resolved against \u00a71 and `f-avwmobl-002` open recommending \u00a72."
+  },
+  "section_digests": {
+    "_document": "7438dc3857ea67728ccc6b0036805dda4784857bac216f4a9af3f3706a75a653",
+    "s1": "7fb9f51fa9b87a449b336034d21038a82939900b9d4f0f7601d78920d33f60b5",
+    "s2": "a5e7f6191ff076dd5d9d211bd18a60edd2751d326e78344ec4356e0452f29f04"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T16:08:36.131829+00:00"
+}
