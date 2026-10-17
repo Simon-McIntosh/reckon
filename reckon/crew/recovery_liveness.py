@@ -1098,7 +1098,10 @@ def _env_scan_run_pid(record: Mapping[str, Any]) -> int | None:
     while the run works, and neither the pointer's pid nor the worker record
     can say so. The environment mark a launcher writes into every process it
     starts for the run is the reach for that worker, so a run left with no
-    other life is asked whether any process still carries the mark. A scan of
+    other life is asked whether any process still carries the mark. The reach
+    is narrowed to this run's own crew home — this process's, which is the home
+    the record was read from — so a process carrying another crew home's run id
+    is not named as this run's worker. A scan of
     this user's process table costs a read per process, so it is asked only
     after the cheaper reads have failed, and only for a run whose own record
     shows a worker existed. A foreign run is never read here: a number is
@@ -1110,7 +1113,7 @@ def _env_scan_run_pid(record: Mapping[str, Any]) -> int | None:
     from reckon.crew.routing import _processes_owning_run
 
     own_pid = os.getpid()
-    for candidate in _processes_owning_run(run_id):
+    for candidate in _processes_owning_run(run_id, runs.crew_home()):
         if candidate == own_pid:
             continue
         if process_alive(candidate) is True:
