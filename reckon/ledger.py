@@ -993,10 +993,40 @@ def input_stamp(project: str, root: str | Path | None = None) -> str | None:
     return hashlib.sha256(json.dumps(value).encode()).hexdigest()
 
 
+def _default_cache_root() -> Path:
+    """The user cache root: the pick cache resolved with no configured home.
+
+    ``client`` is the one kind :func:`_store.cache_root` resolves without
+    consulting the configuration home, so the directory above it is the reckon
+    user cache root — ``$XDG_CACHE_HOME/reckon`` or ``~/.cache/reckon``.
+    Asking ``_store`` for it keeps one owner for that rule instead of a second
+    copy of it here.
+    """
+    return _store.cache_root("client").parent
+
+
+def _index_directory() -> Path:
+    """The directory a run index is published into.
+
+    The configured pick cache sits inside the configuration home whenever that
+    home is named, and the fleet mounts the configuration home read-only around
+    worker launches. An index has to be creatable to be read: a process that
+    cannot open one there pays a full scan of every run file on each read,
+    because no index exists for the last-good fallback to serve. So an index
+    whose configured directory exists and is not writable is published to the
+    user cache directory instead. Both spellings hash the ledger path into the
+    filename, so a reader outside the fence finds the index built inside it.
+    """
+    configured = _store.cache_root("pick-input")
+    if configured.is_dir() and not os.access(configured, os.W_OK):
+        return _default_cache_root()
+    return configured
+
+
 def _run_index_path(project: str, root: str | Path | None) -> Path:
     source = str(ledger_path(project, root).resolve())
     identity = hashlib.sha256(source.encode()).hexdigest()
-    return _store.cache_root("pick-input") / f"ledger-{identity}.sqlite"
+    return _index_directory() / f"ledger-{identity}.sqlite"
 
 
 def recorded_ledger_path(index: str | Path) -> str | None:

@@ -1533,6 +1533,19 @@ def _attempt_inputs(
         return None
 
 
+def _attempt_state(stamp: Any) -> Any:
+    """The part of an attempt stamp that names the state behind a value.
+
+    The index file's own identity is dropped: a read rewrites the index, so
+    that identity moves across every refresh without the source changing, and
+    comparing it would make the second caller of one read a miss. ``None``
+    stands for a stamp that could not be taken, which matches nothing.
+    """
+    if stamp is None:
+        return None
+    return (tuple(stamp[0][:4]), stamp[1], tuple(stamp[2]), stamp[3])
+
+
 def _cached_attempts(
     key: tuple[Any, ...],
     project: str,
@@ -1540,23 +1553,40 @@ def _cached_attempts(
     pointers: list[dict[str, Any]] | None,
     compute: Callable[[], Any],
 ) -> Any:
-    """Serialize cache misses so concurrent reads aggregate a snapshot once."""
+    """Serialize cache misses so concurrent reads aggregate a snapshot once.
+
+    A memo is published only under the stamp taken before the ledger read,
+    because that stamp names the state the value is a reading of. The stamp
+    taken after the read names the state the read happened to end in, which may
+    include a live pointer written while the aggregate ran, and a value
+    computed before that write is not a reading of it. Publishing under that
+    stamp would answer every later reader whose stamp shows the late pointer
+    with the older value, so the pointer would be missing from the result for
+    as long as its stamp stands. A caller is therefore served only when its
+    stamp matches the one its value was computed from, and a read that raced
+    recomputes once, on its own stamp, where the pointer is present.
+
+    The index file's own identity is left out of that comparison. A read
+    rewrites that file, so its identity moves across every refresh without the
+    ledger behind it changing, and no caller of the same read needs it to hold
+    still. The ledger's own identity and version, and the volatile members — the
+    newest run file and the live-pointer set — are compared, so a caller whose
+    state moved recomputes rather than being served an older value.
+    """
     with _ATTEMPT_CACHE_LOCK:
         before = _attempt_inputs(project, root, pointers)
         cached = _ATTEMPT_CACHE.get(key)
-        if before is not None and cached is not None and cached[0] == before:
+        state = _attempt_state(before)
+        if (
+            state is not None
+            and cached is not None
+            and state == _attempt_state(cached[0])
+        ):
             return copy.deepcopy(cached[1])
         value = compute()
-        after = _attempt_inputs(project, root, pointers)
-        # Reading can refresh the index file itself. Source and live-pointer
-        # stamps must remain stable; the post-read index stamp becomes the key.
-        if (
-            before is not None
-            and after is not None
-            and before[0][:4] == after[0][:4]
-            and before[1:] == after[1:]
-        ):
-            _ATTEMPT_CACHE[key] = (after, copy.deepcopy(value))
+        after = _attempt_state(_attempt_inputs(project, root, pointers))
+        if state is not None and state == after:
+            _ATTEMPT_CACHE[key] = (before, copy.deepcopy(value))
             if len(_ATTEMPT_CACHE) > _ATTEMPT_CACHE_LIMIT:
                 _ATTEMPT_CACHE.pop(next(iter(_ATTEMPT_CACHE)))
         return value
