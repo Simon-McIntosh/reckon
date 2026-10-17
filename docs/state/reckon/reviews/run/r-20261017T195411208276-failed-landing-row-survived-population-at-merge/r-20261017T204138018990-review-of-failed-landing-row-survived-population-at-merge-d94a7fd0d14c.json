@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "ecdfa264d2826f9ff80f228a4fe235ec52c6c6ee",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T20:55:00.930Z",
+  "dispatched_at": "2026-10-17T20:42:17Z",
+  "findings": [
+    {
+      "file": "report.md",
+      "line": "52",
+      "severity": "follow-on",
+      "text": "follow-on: the report cites the module-check lines as \"base line 7-8 of its log\", but reckon_module_file and module_check sit at base-ecdfa264d282.log:8-9, so a reader following the pointer reads the literal command line instead of the provenance check."
+    },
+    {
+      "file": "base-ecdfa264d282.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the arm log was rewritten after the job ended \u2014 compose_manifest.py prepended a provenance header (manifest.md:24) that shifts every original line by one \u2014 so the gate log a reader validates is not byte-for-byte what the arm wrote; the job should emit that header itself."
+    }
+  ],
+  "head_log_revision": "90605d69d074e25ce01429fe7f97fb3abfc03d3e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no diff \u2014 the reviewed worktree HEAD is d94a7fd0d14cbc9eb48fc3b8d706093755e6df03 and git status is clean, so the node changed no tracked file and its deliverable is the measurement, its arm logs and report.md.",
+    "done_when": "the done_when at prompt.txt:80 requires two arm logs under the run directory, each naming revision, host, literal command, a single failed id and pytest's summary line ending EXIT=; base-ecdfa264d282.log:1-9 and candidate-90605d69d074.log:1-9 each carry all of them, at 192 and 193 files.",
+    "goal": "the goal is to measure the failed-landing receipt's promotion importer population at base and at its merge candidate; brief.md:5 poses exactly that question and report.md:21 answers it with 0 added failing ids.",
+    "manifest": "read; manifest.md records status complete, each arm's summary with its log path, added ids 0, and the two aborted scaffolding attempts with their attribution.",
+    "write_paths": "the node was fenced to the reports directory at prompt.txt:64; the reviewed worktree status is clean at d94a7fd0d14cbc9eb48fc3b8d706093755e6df03 and no path under reckon/ or tests/ changed."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion, but the instrument the measurement rests on reports a positive when one is present \u2014 instrument-control.log:6 reads (1, [synthetic id]) and derive-guard.py refuses a missing arm with EXIT=98.",
+    "evidence": "base-ecdfa264d282.log:90 and candidate-90605d69d074.log:90 carry pytest summaries whose single FAILED id is identical, and an independent call to reckon.crew.review.added_failures_from_gate_logs over both logs returns (0, []).",
+    "fit": "the artefact names (pop-arms.sbatch, added-failures.json, instrument-control.py) carry no plan or version label and follow the run-directory layout of a measurement node.",
+    "goal_fidelity": "report.md:21 answers the brief.md:5 question with added failing ids 0, which is the deliverable the goal names.",
+    "reuse": "the node derives its ids through reckon.crew.review.added_failures_from_gate_logs (report.md:64) rather than hand-diffing FAILED lines, so no capability is forked.",
+    "scope_discipline": "the reviewed worktree is clean at d94a7fd0d1 and every artefact named in manifest.md:24 sits under the run directory or the reports path fenced at prompt.txt:64."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to measure the failed-landing receipt's promotion importer population at base and at its merge candidate; brief.md:5 poses exactly that question and report.md:21 answers it with 0 added failing ids.\nVERDICT done_when: the done_when at prompt.txt:80 requires two arm logs under the run directory, each naming revision, host, literal command, a single failed id and pytest's summary line ending EXIT=; base-ecdfa264d282.log:1-9 and candidate-90605d69d074.log:1-9 each carry all of them, at 192 and 193 files.\nVERDICT write_paths: the node was fenced to the reports directory at prompt.txt:64; the reviewed worktree status is clean at d94a7fd0d14cbc9eb48fc3b8d706093755e6df03 and no path under reckon/ or tests/ changed.\nVERDICT manifest: read; manifest.md records status complete, each arm's summary with its log path, added ids 0, and the two aborted scaffolding attempts with their attribution.\nVERDICT diff: there is no diff \u2014 the reviewed worktree HEAD is d94a7fd0d14cbc9eb48fc3b8d706093755e6df03 and git status is clean, so the node changed no tracked file and its deliverable is the measurement, its arm logs and report.md.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: report.md:21 answers the brief.md:5 question with added failing ids 0, which is the deliverable the goal names.\nSCORE evidence: 19\nJUSTIFICATION evidence: base-ecdfa264d282.log:90 and candidate-90605d69d074.log:90 carry pytest summaries whose single FAILED id is identical, and an independent call to reckon.crew.review.added_failures_from_gate_logs over both logs returns (0, []).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed worktree is clean at d94a7fd0d1 and every artefact named in manifest.md:24 sits under the run directory or the reports path fenced at prompt.txt:64.\nSCORE durability: 16\nJUSTIFICATION durability: the diff adds no assertion, but the instrument the measurement rests on reports a positive when one is present \u2014 instrument-control.log:6 reads (1, [synthetic id]) and derive-guard.py refuses a missing arm with EXIT=98.\nSCORE fit: 18\nJUSTIFICATION fit: the artefact names (pop-arms.sbatch, added-failures.json, instrument-control.py) carry no plan or version label and follow the run-directory layout of a measurement node.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node derives its ids through reckon.crew.review.added_failures_from_gate_logs (report.md:64) rather than hand-diffing FAILED lines, so no capability is forked.\nFINDING report.md:52 follow-on: the report cites the module-check lines as \"base line 7-8 of its log\", but reckon_module_file and module_check sit at base-ecdfa264d282.log:8-9, so a reader following the pointer reads the literal command line instead of the provenance check.\nFINDING base-ecdfa264d282.log:1 follow-on: the arm log was rewritten after the job ended \u2014 compose_manifest.py prepended a provenance header (manifest.md:24) that shifts every original line by one \u2014 so the gate log a reader validates is not byte-for-byte what the arm wrote; the job should emit that header itself.\n",
+  "review_run_id": "r-20261017T204138018990-review-of-failed-landing-row-survived-population-at-merge-d94a7fd0d14c",
+  "reviewed_base_sha": "d94a7fd0d14cbc9eb48fc3b8d706093755e6df03",
+  "reviewed_head_sha": "d94a7fd0d14cbc9eb48fc3b8d706093755e6df03",
+  "reviewed_run_id": "r-20261017T195411208276-failed-landing-row-survived-population-at-merge",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261017T204138018990-review-of-failed-landing-row-survived-population-at-merge-d94a7fd0d14c"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T20:51:34.636051+00:00",
+  "total": 113
+}

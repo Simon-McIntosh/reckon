@@ -25,7 +25,7 @@
 <meta name="plan-sprint" content="S22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 <meta name="plan-impl" content="0.6">
-<meta name="plan-version" content="87">
+<meta name="plan-version" content="88">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -762,7 +762,10 @@
     <div class="r-comment-body"><p>§11 landed. A failed landing's receipt reads the ledger without its index, so a stale index can no longer make it say "do not re-promote" for a rolled-back row (merge <code>7254d3ee6</code>). Zero added failures over 193 files. <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed.html#s11">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261017T174054384777-a-failed-landing-says-whether-its-row-survived" data-who="reckon-build" data-when="2026-10-17T18:44:12Z">
-    <div class="r-comment-body"><p>promotion_scope._ledger_holds_row reads the ledger with use_index=False so a cached index can no longer decide a failed landing&#x27;s receipt — a rollback reads &quot;rolled back … re-promote&quot; when the per-run file is gone and the aggregate holds no row, and &quot;already written&quot; only when that file or an aggregate row is present; the receipt test now shares the sibling receipt file&#x27;s _git/_rows helpers instead of duplicating them, and asserts the stale-index precondition itself rather than resting on the base arm.</p></div>
+    <div class="r-comment-body"><p>promotion_scope._ledger_holds_row reads the ledger with use_index=False so a cached index can no longer decide a failed landing's receipt — a rollback reads "rolled back … re-promote" when the per-run file is gone and the aggregate holds no row, and "already written" only when that file or an aggregate row is present; the receipt test now shares the sibling receipt file's _git/_rows helpers instead of duplicating them, and asserts the stale-index precondition itself rather than resting on the base arm.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261017T204138018990-review-of-failed-landing-row-survived-population-at-merge-d94a7fd0d14c" data-who="reckon-build" data-when="2026-10-17T20:55:00.930Z">
+    <div class="r-comment-body"><p>independent review of run r-20261017T195411208276-failed-landing-row-survived-population-at-merge at head d94a7fd0d14c stored a parsed record scoring all six dimensions (total 113) with reviewed_base_sha and reviewed_head_sha d94a7fd0d14cbc9eb48fc3b8d706093755e6df03 and added_failure_count 0 with added_failure_ids [] derived from the run&#x27;s own baseline_suite and after_suite gate logs, plus two follow-on findings</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
