@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/flight.py:1742 declared_input_modalities",
+    "reckon/flight.py:1761 missing_input_modalities",
+    "reckon/flight.py:1809 select_profile_backend"
+  ],
+  "completed_at": "2026-10-17T16:21:42.890Z",
+  "dispatched_at": "2026-10-17T16:07:44Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T154304943398-a-test-holds-the-codex-image-declaration/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm names revision 6b781b4b but its tree and its 752-test population include the new test file, which does not exist at that revision, so the arm cannot have measured a pre-change base and the 0 added failures reads as a measured delta it is not."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T154304943398-a-test-holds-the-codex-image-declaration/negative-control.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the negative control's revision header names the base 6b781b4b although the test it reddens does not exist at that revision; the header should name the revision the control actually ran at."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 6b781b4b; 733d65010f adds the 61-line test, 885bb448a5 adds the 25-line evidence fragment, both inside the declared scope.",
+    "done_when": "the done_when names tests/test_codex_declares_image_input.py resolving the repository's own docs/state/reckon/flight.yaml with an empty host layer and asserting image for codex, no outer-file reads, no added failure, ruff clean, and a logged negative control; the manifest records all of these at test_logs and artifacts.",
+    "goal": "the node's goal is to add a test that fails when the project flight layer stops declaring image input on codex; tests/test_codex_declares_image_input.py does not exist and tests/test_codex_declares_image_input.py:61 asserts \"image\" in flight.declared_input_modalities(resolved.config, \"codex\"), which is that test.",
+    "manifest": "read; status complete, commits 733d65010f/885bb448a5a9, focused gate 1 passed EXIT=0, ruff both clean, baseline and after populations 2 failed/749 passed with identical ids, negative control EXIT=1.",
+    "write_paths": "the manifest declares tests/test_codex_declares_image_input.py plus the evidence fragment and figure dir; the diff touches only the test and the fragment, both declared."
+  },
+  "justifications": {
+    "durability": "negative-control.log:15 shows \"assert 'image' in ()\" at tests/test_codex_declares_image_input.py:61, so removing the input_modalities line from the resolved project layer reddens the assertion against an independent on-disk source.",
+    "evidence": "manifest.md:21 records the base arm at revision 6b781b4b while its tree and its 752-test population include tests/test_codex_declares_image_input.py, which does not exist at that revision, so the arm pair is the same tree and its identical failure ids are true by construction.",
+    "fit": "tests/test_codex_declares_image_input.py:38-57 follows the imports, tmp_path fixture and module docstring idiom of tests/test_flight.py:39-45 and introduces no plan or version label.",
+    "goal_fidelity": "tests/test_codex_declares_image_input.py:61 asserts \"image\" in declared for codex resolved from docs/state/reckon/flight.yaml, which is the deliverable the goal states.",
+    "reuse": "the change adds no production definition; it consumes the existing owner reckon/flight.py:1742 declared_input_modalities through flight.resolve, which no other module re-implements.",
+    "scope_discipline": "git diff against 6b781b4b touches only tests/test_codex_declares_image_input.py and docs/evidence/fragments/a-review-can-see-the-figure/a-test-holds-the-codex-image-declaration.html, both declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to add a test that fails when the project flight layer stops declaring image input on codex; tests/test_codex_declares_image_input.py does not exist and tests/test_codex_declares_image_input.py:61 asserts \"image\" in flight.declared_input_modalities(resolved.config, \"codex\"), which is that test.\nVERDICT done_when: the done_when names tests/test_codex_declares_image_input.py resolving the repository's own docs/state/reckon/flight.yaml with an empty host layer and asserting image for codex, no outer-file reads, no added failure, ruff clean, and a logged negative control; the manifest records all of these at test_logs and artifacts.\nVERDICT write_paths: the manifest declares tests/test_codex_declares_image_input.py plus the evidence fragment and figure dir; the diff touches only the test and the fragment, both declared.\nVERDICT manifest: read; status complete, commits 733d65010f/885bb448a5a9, focused gate 1 passed EXIT=0, ruff both clean, baseline and after populations 2 failed/749 passed with identical ids, negative control EXIT=1.\nVERDICT diff: read commit by commit against base 6b781b4b; 733d65010f adds the 61-line test, 885bb448a5 adds the 25-line evidence fragment, both inside the declared scope.\nCALL_SITES: reckon/flight.py:1742 declared_input_modalities, reckon/flight.py:1761 missing_input_modalities, reckon/flight.py:1809 select_profile_backend\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_codex_declares_image_input.py:61 asserts \"image\" in declared for codex resolved from docs/state/reckon/flight.yaml, which is the deliverable the goal states.\nSCORE evidence: 15\nJUSTIFICATION evidence: manifest.md:21 records the base arm at revision 6b781b4b while its tree and its 752-test population include tests/test_codex_declares_image_input.py, which does not exist at that revision, so the arm pair is the same tree and its identical failure ids are true by construction.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff against 6b781b4b touches only tests/test_codex_declares_image_input.py and docs/evidence/fragments/a-review-can-see-the-figure/a-test-holds-the-codex-image-declaration.html, both declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log:15 shows \"assert 'image' in ()\" at tests/test_codex_declares_image_input.py:61, so removing the input_modalities line from the resolved project layer reddens the assertion against an independent on-disk source.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_codex_declares_image_input.py:38-57 follows the imports, tmp_path fixture and module docstring idiom of tests/test_flight.py:39-45 and introduces no plan or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no production definition; it consumes the existing owner reckon/flight.py:1742 declared_input_modalities through flight.resolve, which no other module re-implements.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T154304943398-a-test-holds-the-codex-image-declaration/manifest.md:21 follow-on: the base arm names revision 6b781b4b but its tree and its 752-test population include the new test file, which does not exist at that revision, so the arm cannot have measured a pre-change base and the 0 added failures reads as a measured delta it is not.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T154304943398-a-test-holds-the-codex-image-declaration/negative-control.log:2 follow-on: the negative control's revision header names the base 6b781b4b although the test it reddens does not exist at that revision; the header should name the revision the control actually ran at.\nreviewed_base_sha: 6b781b4b9dcd9d446ac6f8b600f1f3815107ba37\nreviewed_head_sha: 885bb448a5a93cb39bafe0f8f001a15a70a88ab1\n",
+  "review_run_id": "r-20261017T160709927481-review-of-a-test-holds-the-codex-image-declaration-885bb448a5a9",
+  "reviewed_base_sha": "6b781b4b9dcd9d446ac6f8b600f1f3815107ba37",
+  "reviewed_head_sha": "885bb448a5a93cb39bafe0f8f001a15a70a88ab1",
+  "reviewed_run_id": "r-20261017T154304943398-a-test-holds-the-codex-image-declaration",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T16:17:33.792990+00:00",
+  "total": 113
+}
