@@ -73,6 +73,20 @@ def source(tmp_path: Path, monkeypatch):
     return root, first, execs
 
 
+@pytest.fixture()
+def seat(tmp_path: Path, monkeypatch):
+    """The producer's seat, where a reload's housekeeping is recorded.
+
+    A reload prunes its image cache as housekeeping, and the fact worth keeping
+    is the last prune rather than one ticker line per tree per reload. The
+    seat's record is where that lands, so a reload driven here holds one.
+    """
+    handle = (tmp_path / "seat.lock").open("a+b")
+    monkeypatch.setitem(runs._WATCH_SEAT_HANDLES, "test-project", handle)
+    yield handle
+    handle.close()
+
+
 def _executed_root(execs) -> Path:
     launcher = execs[0][1][2]
     literal = launcher.split("sys.path.insert(0, ", 1)[1].split(");", 1)[0]
@@ -171,9 +185,9 @@ def test_archive_timeout_keeps_the_running_image(source, monkeypatch, capsys):
     assert execs == []
 
 
-def test_old_materialized_trees_are_removed_and_named(source, monkeypatch, capsys):
+def test_old_materialized_trees_are_removed_quietly(source, monkeypatch, capsys, seat):
     root, first, execs = source
-    reloader = follow._FollowerReloader("test-project", None)
+    reloader = follow._FollowerReloader("test-project", None, seat=True)
     assert reloader.code_stamp == first
     monkeypatch.setattr(reloader, "_replacement_imports", lambda: (True, ""))
     imported = []
@@ -191,10 +205,16 @@ def test_old_materialized_trees_are_removed_and_named(source, monkeypatch, capsy
     line = capsys.readouterr().out
     assert not imported[0].exists()
     assert all(path.exists() for path in imported[1:])
-    assert f"removed old reload tree {imported[0]}" in line
+    # The oldest image is gone from the cache and named in no ticker line, which
+    # is the housekeeping a reader is not meant to be relayed; the seat's record
+    # is where the count of what the prune removed is kept.
+    assert "reload tree" not in line
+    prune = runs._read_watch_record(seat)["reload_prune"]
+    assert prune["removed"] == 1
+    assert str(imported[0]) not in prune["kept"]
 
 
-def test_running_image_survives_cache_pruning(source, monkeypatch, capsys):
+def test_running_image_survives_cache_pruning(source, monkeypatch, capsys, seat):
     root, first, execs = source
     children = []
 
@@ -230,7 +250,7 @@ def test_running_image_survives_cache_pruning(source, monkeypatch, capsys):
         assert child.stdout.readline().strip() == "READY"
 
     monkeypatch.setattr(follow.os, "execve", capture_exec)
-    reloader = follow._FollowerReloader("test-project", None)
+    reloader = follow._FollowerReloader("test-project", None, seat=True)
     assert reloader.code_stamp == first
     monkeypatch.setattr(reloader, "_replacement_imports", lambda: (True, ""))
     first_image_commit = _commit(root, "running")
@@ -247,7 +267,11 @@ def test_running_image_survives_cache_pruning(source, monkeypatch, capsys):
             reloader.poll({})
             reloader.code_stamp = commit
         assert first_image.is_dir()
-        assert f"kept reload tree {first_image}" in capsys.readouterr().out
+        # The image a live child is importing from is kept by the prune, and
+        # the seat's record is where the paths a lease kept are read.
+        assert "reload tree" not in capsys.readouterr().out
+        prune = runs._read_watch_record(seat)["reload_prune"]
+        assert str(first_image) in prune["kept"]
         child.stdin.write("\n")
         child.stdin.flush()
         assert select.select([child.stdout], [], [], 5)[0]
@@ -262,7 +286,12 @@ def test_running_image_survives_cache_pruning(source, monkeypatch, capsys):
     reloader.poll({})
     reloader.code_stamp = commit
     assert not first_image.exists()
-    assert f"removed old reload tree {first_image}" in capsys.readouterr().out
+    # Once nothing holds it, the image goes and stops being kept; the ticker
+    # carries no line for either half.
+    assert "reload tree" not in capsys.readouterr().out
+    after = runs._read_watch_record(seat)["reload_prune"]
+    assert str(first_image) not in after["kept"]
+    assert after["removed"] >= 1
 
 
 def test_a_pruner_between_open_and_lock_never_leaves_a_plain_file(source, monkeypatch):
