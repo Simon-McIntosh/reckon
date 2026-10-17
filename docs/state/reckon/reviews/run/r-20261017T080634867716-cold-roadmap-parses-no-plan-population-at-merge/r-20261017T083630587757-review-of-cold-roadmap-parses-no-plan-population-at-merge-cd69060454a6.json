@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T08:45:06.597Z",
+  "dispatched_at": "2026-10-17T08:37:04Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/cold-roadmap-parses-no-plan-population-at-merge",
+      "line": "directory",
+      "severity": "follow-on",
+      "text": "follow-on: the node's only declared write path is empty; the report the brief's Report section asks for exists only inside manifest.md's tests line, so a reader that looks for an artefact under the declared path finds none."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T080634867716-cold-roadmap-parses-no-plan-population-at-merge/manifest.md",
+      "line": "measurement_module",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest records a single measurement_module/measurement_cwd for the base arm only, so the candidate arm's imported module path is evidenced solely by population-candidate.log's own header rather than by the manifest fields."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no diff \u2014 git -C <reviewed worktree> rev-parse HEAD is cd69060454a68bd8a6ed17e91a5968b43cc79618 and its log shows no commit authored by the reviewed node, so the node changed no tracked file.",
+    "done_when": "prompt.txt FENCE-EVIDENCE requires two logs each naming revision, host, literal command, a module.__file__ under their own checkout, pytest's summary line and EXIT=; population-base.log (revision 511c2231210786acdc1abd36540dec88f1be8361, module.__file__ under .../population-1287911/base) and population-candidate.log (revision c30d55a8af51c49a24b2b2055bb0a0605fe11781, module.__file__ under .../population-1287911/cand) each carry all five, and population-added.json records added_count 0.",
+    "goal": "the node's goal (prompt.txt:26) is to measure the follow-up-scan and roadmap test population of the stored plan parse at base and at its merge candidate on an exclusive node; the landed artefacts are the two arm logs population-base.log and population-candidate.log, both produced by job 1287911 on 98dci4-clu-3142.",
+    "manifest": "read; status complete with commits none, changed_paths none, retry_failures none, follow_ons none, blockers none; baseline_suite and after_suite are both present, naming revisions 511c2231/c30d55a8, their literal commands, exit_status 1, log_paths and the identical two failure ids, and both added-failure keys resolve to none.",
+    "write_paths": "the node's single declared path is the report directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/cold-roadmap-parses-no-plan-population-at-merge; the reviewed worktree is clean at cd6906045 with no node commit, and the node wrote population-*.log, population-derive.py, population-job.sh and manifest.md under the run directory the brief assigned to logs and scripts, leaving the declared report path empty."
+  },
+  "justifications": {
+    "durability": "population-derive.py:36-44 aborts when an arm log is missing or carries no pytest summary line and population-control.out exercises the reader against a known-present injected failure, but no repository test was added, so nothing committed reddens if the instrument regresses.",
+    "evidence": "population-base.log reports \"2 failed, 1039 passed in 157.97s (0:02:37)\" and population-candidate.log \"2 failed, 1042 passed in 165.70s (0:02:45)\", and population-control.out shows the reader reporting an injected candidate-only failure ('tests/control_injected.py::test_marker') as added, so the zero in population-added.json is a measured zero.",
+    "fit": "population-derive.py:21-25 reuses the module's own _gate_log_format and added_failures_from_gate_logs and names things by capability (read_arm, added_failures_from_gate_logs), introducing no plan label, ticket id or version token.",
+    "goal_fidelity": "population-base.log and population-candidate.log run the 92-file list (91 present at base) at 511c2231210786 and c30d55a8af51 respectively, answering the merge question the goal names.",
+    "reuse": "the node derives the added set by calling reckon/crew/review.py:2100 added_failures_from_gate_logs rather than hand-diffing FAILED lines, extending the owner of that capability instead of forking it.",
+    "scope_discipline": "the reviewed worktree is clean at cd6906045 with no node commit, and every artefact the node wrote lies under the run directory the brief assigned to logs and scripts."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal (prompt.txt:26) is to measure the follow-up-scan and roadmap test population of the stored plan parse at base and at its merge candidate on an exclusive node; the landed artefacts are the two arm logs population-base.log and population-candidate.log, both produced by job 1287911 on 98dci4-clu-3142.\nVERDICT done_when: prompt.txt FENCE-EVIDENCE requires two logs each naming revision, host, literal command, a module.__file__ under their own checkout, pytest's summary line and EXIT=; population-base.log (revision 511c2231210786acdc1abd36540dec88f1be8361, module.__file__ under .../population-1287911/base) and population-candidate.log (revision c30d55a8af51c49a24b2b2055bb0a0605fe11781, module.__file__ under .../population-1287911/cand) each carry all five, and population-added.json records added_count 0.\nVERDICT write_paths: the node's single declared path is the report directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/cold-roadmap-parses-no-plan-population-at-merge; the reviewed worktree is clean at cd6906045 with no node commit, and the node wrote population-*.log, population-derive.py, population-job.sh and manifest.md under the run directory the brief assigned to logs and scripts, leaving the declared report path empty.\nVERDICT manifest: read; status complete with commits none, changed_paths none, retry_failures none, follow_ons none, blockers none; baseline_suite and after_suite are both present, naming revisions 511c2231/c30d55a8, their literal commands, exit_status 1, log_paths and the identical two failure ids, and both added-failure keys resolve to none.\nVERDICT diff: there is no diff \u2014 git -C <reviewed worktree> rev-parse HEAD is cd69060454a68bd8a6ed17e91a5968b43cc79618 and its log shows no commit authored by the reviewed node, so the node changed no tracked file.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: population-base.log and population-candidate.log run the 92-file list (91 present at base) at 511c2231210786 and c30d55a8af51 respectively, answering the merge question the goal names.\nSCORE evidence: 19\nJUSTIFICATION evidence: population-base.log reports \"2 failed, 1039 passed in 157.97s (0:02:37)\" and population-candidate.log \"2 failed, 1042 passed in 165.70s (0:02:45)\", and population-control.out shows the reader reporting an injected candidate-only failure ('tests/control_injected.py::test_marker') as added, so the zero in population-added.json is a measured zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed worktree is clean at cd6906045 with no node commit, and every artefact the node wrote lies under the run directory the brief assigned to logs and scripts.\nSCORE durability: 16\nJUSTIFICATION durability: population-derive.py:36-44 aborts when an arm log is missing or carries no pytest summary line and population-control.out exercises the reader against a known-present injected failure, but no repository test was added, so nothing committed reddens if the instrument regresses.\nSCORE fit: 18\nJUSTIFICATION fit: population-derive.py:21-25 reuses the module's own _gate_log_format and added_failures_from_gate_logs and names things by capability (read_arm, added_failures_from_gate_logs), introducing no plan label, ticket id or version token.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node derives the added set by calling reckon/crew/review.py:2100 added_failures_from_gate_logs rather than hand-diffing FAILED lines, extending the owner of that capability instead of forking it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/cold-roadmap-parses-no-plan-population-at-merge:directory follow-on: the node's only declared write path is empty; the report the brief's Report section asks for exists only inside manifest.md's tests line, so a reader that looks for an artefact under the declared path finds none.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T080634867716-cold-roadmap-parses-no-plan-population-at-merge/manifest.md:measurement_module follow-on: the manifest records a single measurement_module/measurement_cwd for the base arm only, so the candidate arm's imported module path is evidenced solely by population-candidate.log's own header rather than by the manifest fields.\n",
+  "review_run_id": "r-20261017T083630587757-review-of-cold-roadmap-parses-no-plan-population-at-merge-cd69060454a6",
+  "reviewed_base_sha": "cd69060454a68bd8a6ed17e91a5968b43cc79618",
+  "reviewed_head_sha": "cd69060454a68bd8a6ed17e91a5968b43cc79618",
+  "reviewed_run_id": "r-20261017T080634867716-cold-roadmap-parses-no-plan-population-at-merge",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261017T083630587757-review-of-cold-roadmap-parses-no-plan-population-at-merge-cd69060454a6"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T08:42:41.564875+00:00",
+  "total": 112
+}
