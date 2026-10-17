@@ -32,7 +32,7 @@ is green alone.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -256,7 +256,7 @@ def test_the_idle_reap_leaves_the_aggregate_row_count_unchanged(
     result = routing.reap_idle_session_members(
         PROJECT,
         root=git_project,
-        now=datetime(2026, 10, 17, tzinfo=timezone.utc),
+        now=datetime(2026, 10, 17, tzinfo=UTC),
     )
 
     assert result["reaped"] == ["session-idle-one"]
