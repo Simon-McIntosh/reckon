@@ -24,7 +24,7 @@
   <title>A Velocity Window May Open Before The Ledger | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -51,20 +51,29 @@
       <code>git ls-tree</code> prints nothing for one.
     </p>
     <p>
-      <strong>Remedy.</strong> Change both read sites so that a revision whose tree has no <code>crew.json</code>
-      reads as a ledger with no runs:
+      <strong>Remedy.</strong> Make <code>_read_ledger</code> (<code>reckon/velocity.py:708</code>) the one reader of
+      the committed ledger at a revision. A revision whose tree has no <code>crew.json</code> then reads as a ledger
+      with no runs:
     </p>
     <ul>
-      <li><code>recover_ledger_clocks</code> treats every candidate run as absent at the base.</li>
-      <li><code>_read_ledger</code> returns no records. <code>_read_run_rows</code> still supplies the per-run
-        files.</li>
-      <li>For an absent ledger, the digest the snapshot reports is null, not the digest of an empty document. A
-        reader can then tell a revision with no ledger from one whose ledger is empty.</li>
+      <li><code>_read_ledger</code> reads the ledger's bytes through the module's existing batched reader
+        <code>read_blobs</code> (<code>reckon/velocity.py:395</code>), which maps a missing object to
+        <code>None</code>. A <code>None</code> means there is no ledger at that revision, and the function returns no
+        records. <code>_read_run_rows</code> still supplies the per-run files.</li>
+      <li><code>recover_ledger_clocks</code> stops parsing the ledger itself (<code>reckon/velocity.py:1182</code>
+        to 1192). It takes the runs present at the base from
+        <code>_read_ledger(repo, base, project["project"], None)</code>, so a base with no ledger has no runs present
+        and every candidate is searched.</li>
+      <li>For an absent ledger, the digest the snapshot reports is <code>None</code>, not the digest of an empty
+        document. That follows the repository's convention that an unknown reading is <code>None</code> rather than a
+        value that looks real (<code>reckon/crew/window_reading.py:28</code>). A reader can then tell a revision with
+        no ledger from one whose ledger is empty.</li>
     </ul>
     <p>
-      Decide absence from the tree, using the existing <code>_blob_sha</code> helper. Do not catch the failed
-      <code>git show</code>. When a path does exist and its read fails, that failure must still raise. No new public
-      name is added.
+      Do not catch a failed git call. <code>read_blobs</code> reports a missing object as <code>None</code> but still
+      raises when the <code>cat-file</code> process itself fails, and that failure must keep raising. No new public
+      name is added. Once both reads go through <code>_read_ledger</code>, the section of
+      <code>the-ledger-is-one-file-per-run</code> that deletes <code>crew.json</code> has one function to retire.
     </p>
     <p>
       <strong>Write paths:</strong> <code>reckon/velocity.py</code> and
@@ -77,14 +86,15 @@
         three cases:
         <ul>
           <li>a window whose base predates the ledger reports the window's runs and does not raise;</li>
-          <li>a window whose head predates the ledger reports zero runs with a null ledger digest and does not
-            raise;</li>
-          <li>a monkeypatched <code>git</code> that fails the <code>show</code> of a ledger that is present still
-            raises.</li>
+          <li>a window whose head predates the ledger reports zero runs with a <code>None</code> ledger digest and does
+            not raise;</li>
+          <li>when the module's git runner is monkeypatched so that the batched read of a ledger that is present
+            fails, the read still raises.</li>
         </ul>
         The test writes nothing outside its temporary directory. It points <code>RECKON_VELOCITY_CACHE</code> and
         <code>RECKON_CLONE_CACHE</code> into that directory.</li>
-      <li>Pytest over the new file, <code>tests/test_velocity_cache.py</code>, <code>tests/test_velocity.py</code>,
+      <li>Pytest over the new file, <code>tests/test_velocity_cache.py</code>,
+        <code>tests/test_one_blob_reader_serves_velocity_and_the_counter.py</code>, <code>tests/test_velocity.py</code>,
         <code>tests/test_crew_velocity_view.py</code> and
         <code>tests/test_every_module_fits_a_worker_window.py</code> adds no failure against the base.</li>
       <li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</li>
@@ -93,9 +103,10 @@
         repository's history, so it is an integration observation and not a test.</li>
     </ol>
     <p>
-      <strong>Negative control:</strong> restore the unconditional <code>git show</code> at either read site. The
-      matching case in the new test must then fail with <code>CalledProcessError</code>. Removing the presence check
-      in favour of a blanket <code>except</code> must instead fail the third case.
+      <strong>Negative control:</strong> restore the inline <code>git show</code> parse in
+      <code>recover_ledger_clocks</code>, or a <code>git show</code> read in <code>_read_ledger</code>. The matching
+      case in the new test must then fail with <code>CalledProcessError</code>. Replacing the <code>None</code> check
+      with a blanket <code>except</code> must instead fail the third case.
     </p>
 
     
