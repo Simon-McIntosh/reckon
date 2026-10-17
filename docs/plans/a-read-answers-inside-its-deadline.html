@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="207">
+<meta name="plan-version" content="208">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -705,6 +705,9 @@
 </div>
 <div class="r-comment" data-section="s25" data-id="c-close-s25" data-who="reckon-build" data-when="2026-10-17T08:30:00Z">
     <div class="r-comment-body"><p>§25 landed. The 161 s excess was mostly profiler overhead. As wall time the store build is 82.2 s at head against 40.8 s at §19's base, a 41.4 s excess. Its cause is <code>record_discovery</code> rewriting the whole 285 MB persisted store once per discovered document, 404 times per build. A claims review reproduced every finding. The repair is §31. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s25-store-build-excess">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s31" data-id="c-run-r-20261017T094147118285-review-of-building-the-store-writes-it-once-9cc65a412c8f" data-who="reckon-build" data-when="2026-10-17T09:54:42.865Z">
+    <div class="r-comment-body"><p>Independent review of r-20261017T091418241771-building-the-store-writes-it-once at head 9cc65a412c8f6ea5e9f274c5094bf53a5d14efd5 (base fb7d74b8011b6f564ea0656df4404e9ee96fdd89): five item verdicts read (goal, done_when, write_paths, manifest, diff), 4 production call sites, scores goal_fidelity 19, evidence 18, scope_discipline 19, durability 19, fit 17, reuse 20 (total 112); two follow-on findings (the discovery batch is not closed in a try/finally; two test comments narrate the pre-change behaviour) and no blocking finding; added_failure_count null because the reviewed run records no baseline_suite/after_suite.</p></div>
 </div>
 </section>
 </main>

@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's manifest records no baseline_suite or after_suite (classification.json reports both null) \u2014 an implement node with a targeted gate, not an armed suite pair \u2014 so the added-failure count was not taken; a zero would assert a measurement never made, and its gate log records a targeted one-file run (2 passed, EXIT=0) rather than a suite.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/serve.py:2286",
+    "reckon/serve.py:2385",
+    "reckon/serve.py:2312",
+    "reckon/mcp_discovery.py:153"
+  ],
+  "completed_at": "2026-10-17T09:54:42.865Z",
+  "dispatched_at": "2026-10-17T09:42:16Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "2286",
+      "severity": "follow-on",
+      "text": "follow-on: begin_discovery at reckon/serve.py:2286 is not paired with flush_discovery at :2385 in a try/finally, so an exception raised anywhere in the document loop leaves the batch entry in metadata_index._DISCOVERY_BATCHES and silently drops that pass's recorded parses; the next begin_discovery on the same (docs_dir, project) key replaces it rather than nesting, so the loss is bounded to one pass re-parsed by the following read, not an unbounded leak, and nothing corrupt is persisted \u2014 recorded for the discipline, not a reason to hold the node."
+    },
+    {
+      "file": "tests/test_building_the_store_writes_it_once.py",
+      "line": "129",
+      "severity": "follow-on",
+      "text": "follow-on: the comment \"writes the store once per document exactly as it did before the batch\" narrates the pre-change behaviour, the changelog phrasing the repository's naming rules exclude from source; :139 (\"the defect the batch removes\") reads the same way. Both describe the mechanism adequately without the temporal reference and are worth rewriting in place, but neither affects behaviour and neither is a banned token."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s) \u2014 reckon/serve.py:2286 (begin_discovery) and :2385 (flush_discovery) inside _discover_plans_uncached, reached from discover_plans at reckon/serve.py:2250; reckon/serve.py:2312 (record_discovery, the deferred caller); reckon/mcp_discovery.py:153 (the MCP discovery read that reaches discover_plans); the node's own test file is not counted.",
+    "diff": "read commit by commit against base fb7d74b8011b6f564ea0656df4404e9ee96fdd89; a37dd825b adds begin_discovery/flush_discovery/_batch_key and the _DISCOVERY_BATCHES table to reckon/metadata_index.py, opens and closes the batch around the document loop in reckon/serve.py, and adds the 140-line test, and 9cc65a412 lands the 23-line evidence fragment; no out-of-scope file is touched.",
+    "done_when": "the done_when names tests/test_building_the_store_writes_it_once.py counting _store_persisted over a >=20-plan tree at <=2 with content parity, the base-tree negative control ending EXIT=1, a three-per-arm sbatch measurement on one exclusive all_debug node, and a ruff delta; the manifest records the gate \"2 passed in 2.29s (EXIT=0)\", negative-control-base-tree.log ends EXIT=1 with \"26 store writes in one read\", measure-first-read.log shows base median 78.804 s vs head median 20.491 s (58.313 s saving, \"VERDICT pass\") ending EXIT=0, and the ruff delta (base 19 = head 19, formatter clean) was reproduced independently.",
+    "goal": "the node's goal is to make one discovery pass write the persisted metadata store at most once by batching record_discovery's entries into one flush; reckon/metadata_index.py:864 defers each recorded parse into _DISCOVERY_BATCHES and reckon/metadata_index.py:846 writes the store once, with reckon/serve.py:2286 and :2385 opening and closing the batch around the document loop, so the pass writes the store once (the flush) beside the pre-existing covered-shape write.",
+    "manifest": "read; it records status complete, changed_paths matching the diff, the gate \"2 passed in 2.29s (EXIT=0)\", the negative-control path and its red line, and measurement_module/measurement_cwd pointing at the head arm's node-local /tmp tree; its follow_ons correctly names the pre-existing tests/test_metadata_index_survives_restart.py failure owned by the concurrent node; its only shortfall is that the ruff delta is claimed but recorded only in the stream, folded into the evidence score.",
+    "write_paths": "the declared scope is reckon/metadata_index.py, reckon/serve.py, tests/test_building_the_store_writes_it_once.py, the fragment docs/evidence/fragments/a-read-answers-inside-its-deadline/building-the-store-writes-it-once.html and its figures directory; git diff --name-only fb7d74b8..9cc65a412 lists exactly those three code/test files plus the fragment, every one inside the declaration and nothing outside it."
+  },
+  "justifications": {
+    "durability": "tests/test_building_the_store_writes_it_once.py:113 fails on a per-document write count \u2014 proven red at the base tree with \"26 store writes in one read\", EXIT=1 \u2014 and :145 pins the batched store equal to the unbatched rebuild, both read from the instrumented _store_persisted rather than a value the test supplied; :129 and :139 are comments, not assertions.",
+    "evidence": "the gate is recorded in gate-building-the-store-writes-it-once.log as \"2 passed in 2.29s / EXIT=0\", the measurement in measure-first-read.log as base 78.804 s vs head 20.491 s medians with \"VERDICT pass\" and EXIT=0, and the ruff delta (19 at base = 19 at head, formatter clean) was reproduced independently on the changed files; reduced one because the ruff result lives only in the stream, not in a manifest field or a dedicated log the reader can open.",
+    "fit": "the batch follows the module's existing module-global-with-comment idiom (reckon/metadata_index.py:120) and its docstrings match the house style, and no plan, stage or ticket token enters any file; reduced because tests/test_building_the_store_writes_it_once.py:129 and :139 narrate the change rather than the mechanism (FINDING).",
+    "goal_fidelity": "reckon/serve.py:2286 opens one batch for the whole resource loop and :2385 flushes it once, so record_discovery no longer writes the store per document (reckon/metadata_index.py:884-916), which is the goal's deliverable.",
+    "reuse": "reckon/metadata_index.py already owns the persisted store and the addition extends that owner in place; a search of reckon/ for def begin_, def flush_, _BATCHES and class .*Batch found no other owner, and the op-batch in reckon/_store.py:782-805 serves plan writes and evidence appends \u2014 a different capability, not the metadata index.",
+    "scope_discipline": "git diff --name-only fb7d74b8..9cc65a412 lists only reckon/metadata_index.py, reckon/serve.py, tests/test_building_the_store_writes_it_once.py and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make one discovery pass write the persisted metadata store at most once by batching record_discovery's entries into one flush; reckon/metadata_index.py:864 defers each recorded parse into _DISCOVERY_BATCHES and reckon/metadata_index.py:846 writes the store once, with reckon/serve.py:2286 and :2385 opening and closing the batch around the document loop, so the pass writes the store once (the flush) beside the pre-existing covered-shape write.\nVERDICT done_when: the done_when names tests/test_building_the_store_writes_it_once.py counting _store_persisted over a >=20-plan tree at <=2 with content parity, the base-tree negative control ending EXIT=1, a three-per-arm sbatch measurement on one exclusive all_debug node, and a ruff delta; the manifest records the gate \"2 passed in 2.29s (EXIT=0)\", negative-control-base-tree.log ends EXIT=1 with \"26 store writes in one read\", measure-first-read.log shows base median 78.804 s vs head median 20.491 s (58.313 s saving, \"VERDICT pass\") ending EXIT=0, and the ruff delta (base 19 = head 19, formatter clean) was reproduced independently.\nVERDICT write_paths: the declared scope is reckon/metadata_index.py, reckon/serve.py, tests/test_building_the_store_writes_it_once.py, the fragment docs/evidence/fragments/a-read-answers-inside-its-deadline/building-the-store-writes-it-once.html and its figures directory; git diff --name-only fb7d74b8..9cc65a412 lists exactly those three code/test files plus the fragment, every one inside the declaration and nothing outside it.\nVERDICT manifest: read; it records status complete, changed_paths matching the diff, the gate \"2 passed in 2.29s (EXIT=0)\", the negative-control path and its red line, and measurement_module/measurement_cwd pointing at the head arm's node-local /tmp tree; its follow_ons names the pre-existing tests/test_metadata_index_survives_restart.py failure owned by the concurrent node.\nVERDICT diff: read commit by commit against base fb7d74b8011b6f564ea0656df4404e9ee96fdd89; a37dd825b adds begin_discovery/flush_discovery/_batch_key and the _DISCOVERY_BATCHES table to reckon/metadata_index.py, opens and closes the batch around the document loop in reckon/serve.py, and adds the 140-line test, and 9cc65a412 lands the 23-line evidence fragment; no out-of-scope file is touched.\nCALL_SITES: reckon/serve.py:2286, reckon/serve.py:2385, reckon/serve.py:2312, reckon/mcp_discovery.py:153\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/serve.py:2286 opens one batch for the whole resource loop and :2385 flushes it once, so record_discovery no longer writes the store per document (reckon/metadata_index.py:884-916).\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-building-the-store-writes-it-once.log records \"2 passed in 2.29s / EXIT=0\", measure-first-read.log records base 78.804 s vs head 20.491 s medians with \"VERDICT pass\", and the ruff delta (19 at base = 19 at head, formatter clean) was reproduced independently; reduced one because the ruff result is recorded only in the stream.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only fb7d74b8..9cc65a412 lists only reckon/metadata_index.py, reckon/serve.py, tests/test_building_the_store_writes_it_once.py and the evidence fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_building_the_store_writes_it_once.py:113 fails on a per-document write count (proven red at the base tree, \"26 store writes\", EXIT=1) and :145 pins the batched store equal to the unbatched rebuild, both read from the instrumented _store_persisted rather than a value the test supplied.\nSCORE fit: 17\nJUSTIFICATION fit: the batch follows the module's module-global-with-comment idiom (reckon/metadata_index.py:120) and its docstrings match the house style, but tests/test_building_the_store_writes_it_once.py:129 and :139 narrate the change rather than the mechanism.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/metadata_index.py already owns the persisted store and the addition extends it in place; a search of reckon/ for begin_/flush_/_BATCHES found no other owner, and the op-batch in reckon/_store.py:782-805 serves plan writes, a different capability.\nFINDING reckon/serve.py:2286 follow-on: begin_discovery is not paired with flush_discovery at :2385 in a try/finally, so an exception in the document loop leaves the batch in metadata_index._DISCOVERY_BATCHES and silently drops that pass's recorded parses (a later record_discovery on the same key then defers into the stale batch); the next begin_discovery replaces it, so the loss is bounded to one pass re-parsed, not a leak.\nFINDING tests/test_building_the_store_writes_it_once.py:129 follow-on: the comment \"writes the store once per document exactly as it did before the batch\" narrates the pre-change behaviour, the changelog phrasing the repo's naming rules exclude from source; :139 reads the same way.",
+  "review_run_id": "r-20261017T094147118285-review-of-building-the-store-writes-it-once-9cc65a412c8f",
+  "reviewed_base_sha": "fb7d74b8011b6f564ea0656df4404e9ee96fdd89",
+  "reviewed_head_sha": "9cc65a412c8f6ea5e9f274c5094bf53a5d14efd5",
+  "reviewed_run_id": "r-20261017T091418241771-building-the-store-writes-it-once",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T09:55:00.000000+00:00",
+  "total": 112
+}
