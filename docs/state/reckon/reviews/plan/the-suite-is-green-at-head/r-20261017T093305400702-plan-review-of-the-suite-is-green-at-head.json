@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T09:39:12.302Z",
+  "dispatched_at": "2026-10-17T09:33:43Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:704",
+      "id": "reasoning-1",
+      "reason": "the count is used only to argue that many files depend on the reload, which holds a fortiori at 31, so no node's path, gate or write scope changes.",
+      "text": "the rejected-route reason says \"about two dozen test files rely on\" the modules `reload_mcp_family()` reloads, but 31 test files reference `reload_mcp_family()` (`grep -rln reload_mcp_family tests/ | wc -l` = 32, one being the helper itself)",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "1079269e3e34699e0c6d65206f8c5d4426313ea4348a62ca80e1567a3a611597",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 364,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T093305400702-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "a4dc5b51a82e668e4a392bb902178c4827a1ebcd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited target resolves: `tests/test_one_sprint_item_slug.py` and its `test_consumers_share_the_one_reader`; `tests/mcp_family_reload.py::reload_mcp_family`; `_forced_interleaving` at `tests/test_a_lost_race_is_refused_not_raised.py:141`, reached from `test_edit_forced_to_lose_a_landing_race_is_refused_not_raised` (:283); `importlib.reload(_store)` at :153 and at `tests/test_landing_patch_refuses_a_hiding_followup.py:90`. The three named dependent test files exist.",
+    "done_when": "pass \u2014 the done-when carries a measurable pair (trigger test then `tests/test_one_sprint_item_slug.py` in one process, `-p no:randomly`, no xdist) and declares two negative controls: the same pair fails at the base revision, and a consumer given a local copy still fails. Reproduced the base half: the pair fails `test_consumers_share_the_one_reader` at HEAD's unfixed file (1 failed, 11 passed).",
+    "evidence_paths": "pass \u2014 the three logs (head pair, base pair, mutation) are declared under the run directory, which survives the run (the same convention \u00a717 uses), not a session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the change touches only a test file and introduces no symbol or comment carrying a plan label, stage name, ticket number or version tag.",
+    "reasoning": "pass \u2014 the stated root cause matches the reproduced evidence (after `importlib.reload(_store)`+`reload_mcp_family()`, `mcp_discovery._sprint_item_slug` is a new object while the test module's collected import is the old one, so only the third `is` assert fails, exactly as \u00a718 says); the mechanism produces the done-when (measured: `mcp_discovery._sprint_item_slug.__module__ == collected.__module__ == 'reckon._store'` and equal `__qualname__` after the reload, so the comparison passes); and the mechanism runs on the named real path (`_forced_interleaving`, whose caller is named).",
+    "single_goal": "pass \u2014 one deliverable: make the shared-reader test survive a module reload, writing one file.",
+    "wiring": "pass \u2014 \u00a718 is named in the plan's open followup `f-tsigah-017-018` (line 851), which records both \u00a717 and \u00a718 and notes they write disjoint files, so the node is reachable from the repair wave; no depends-on/gates edge is needed since its only write path (`tests/test_one_sprint_item_slug.py`) is disjoint from \u00a717's."
+  },
+  "section_digests": {
+    "_document": "c5589f33d71055954c154bf09a3d1d3e8043303a381898b34ae50840771fdfdc",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "f84dc4d4bef37307ff05d71bd4f7071e9208e789832e7cb00be82c37bcfde97e",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s17": "01fe3ab4eb2f9f616654a729cf8bef4dcf5b530d4d0c1be3bdfa73999d0ad263",
+    "s18": "15b626822483dd850c2006c1d4255b8386f22ef780237614005178a5b3c15d70",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "072f7ace5c2d253a6d4972213a2093233d6f768bd4d1394f2b9eaf1471ff4119",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T09:40:50.900647+00:00"
+}
