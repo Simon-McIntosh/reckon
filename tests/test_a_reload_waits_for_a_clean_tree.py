@@ -402,8 +402,13 @@ def test_committing_the_edit_reloads_the_committed_tree(
         assert after in _cmdline(process.pid)
         images = list((isolated_home / "crew" / "reload-trees").glob(f"*/{after}"))
         assert len(images) == 1, images
-        assert (images[0] / "reckon" / "crew" / "ticker.py").read_bytes() == (
-            module.read_bytes()
-        )
+        committed = subprocess.run(
+            [_GIT, "-C", str(root), "show", "HEAD:reckon/crew/ticker.py"],
+            check=True,
+            capture_output=True,
+        ).stdout
+        module.write_bytes(module.read_bytes() + CONTENT_EDIT_BYTES)
+        assert module.read_bytes() != committed
+        assert (images[0] / "reckon" / "crew" / "ticker.py").read_bytes() == committed
     finally:
         _stop(process)

@@ -2294,7 +2294,7 @@ def _producer_snapshot_identity(project: str) -> dict[str, Any]:
     runs, so the stamp is recorded from the running source rather than assumed.
     """
     registration = read_watch_registration(project)
-    stamp = follower_code_stamp()
+    stamp = running_code_stamp()
     if registration.get("code_stamp") != stamp:
         registration = update_watch_registration(project, code_stamp=stamp)
     return {
@@ -2824,9 +2824,9 @@ def _project_watch_claim(project: str, stall_window: str):
             # The code this producer is actually executing. The version names
             # the install and holds still while commits land in the checkout, so
             # a reader cannot tell a producer running stale code from a current
-            # one without this: the source commit the follower reloads on,
-            # recorded where the seat is read.
-            "code_stamp": follower_code_stamp(),
+            # one without this: the running image's commit travels across its
+            # re-exec even when source HEAD moves before registration.
+            "code_stamp": running_code_stamp(),
         }
         # Which unit owns this seat, so a reader can tell a watcher a service
         # will replace from one nothing will. The unit exports its own name, and
@@ -2847,6 +2847,7 @@ def _project_watch_claim(project: str, stall_window: str):
         # follower's renewal pushes that instant forward.
         update_watch_registration(
             project,
+            code_stamp=record["code_stamp"],
             pid=os.getpid(),
             pid_start_time=pid_start_time,
             host=socket.gethostname(),
@@ -3348,6 +3349,7 @@ from .follower_registration import (  # noqa: E402
     delivery_mode_of as delivery_mode_of,
     follower_claim as follower_claim,
     follower_code_stamp as follower_code_stamp,
+    running_code_stamp as running_code_stamp,
     follower_dir as follower_dir,
     follower_lock_path as follower_lock_path,
     follower_owner as follower_owner,

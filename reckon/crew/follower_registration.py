@@ -26,8 +26,13 @@ _follower_source_digests = obligation_snapshot._source_digests
 
 
 def follower_code_stamp() -> str:
-    """Read the source commit shared by followers, producers and readers."""
+    """Read source HEAD for reload and stale-image comparisons."""
     return checkout_trust.source_code_identity(Path(__file__).resolve().parent.parent)
+
+
+def running_code_stamp() -> str:
+    """Read the commit this process imported, rather than source HEAD."""
+    return checkout_trust.running_code_identity(Path(__file__).resolve().parent.parent)
 
 
 def follower_dir(project: str) -> Path:

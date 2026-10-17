@@ -28,6 +28,7 @@ import fcntl
 import hashlib
 import io
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -77,24 +78,59 @@ def source_code_identity(package_dir: Path, *, source_root: Path | None = None) 
     return code_stamp(package_dir)
 
 
+def running_code_identity(package_dir: Path) -> str:
+    """Identify the image this process loaded, even if source HEAD moved."""
+    carried = os.environ.get("RECKON_FOLLOWER_IMAGE_COMMIT", "")
+    if re.fullmatch(r"[0-9a-f]{40}", carried):
+        return carried
+    image_root = package_dir.parent
+    if (image_root / ".complete").is_file() and re.fullmatch(
+        r"[0-9a-f]{40}", image_root.name
+    ):
+        return image_root.name
+    return source_code_identity(package_dir)
+
+
 def _committed_tree_cache() -> Path:
     from reckon.crew.obligation_snapshot import crew_home
 
     return crew_home() / "reload-trees"
 
 
+def pin_matches_materialized_tree(descriptor: int, root: Path) -> bool:
+    """A carried lease must still name the published image's lock inode."""
+    if not root.is_dir() or not (root / ".complete").is_file():
+        return False
+    try:
+        held = os.fstat(descriptor)
+        published = (root / ".in-use").stat()
+    except OSError:
+        return False
+    return (held.st_dev, held.st_ino) == (published.st_dev, published.st_ino)
+
+
 def pin_materialized_tree(root: Path) -> int:
-    """Hold a shared lock while this process may import from an image."""
+    """Hold a kernel lease while this process may import from an image."""
     descriptor = os.open(root / ".in-use", os.O_CREAT | os.O_RDWR, 0o600)
     try:
         fcntl.flock(descriptor, fcntl.LOCK_SH)
     except BaseException:
         os.close(descriptor)
         raise
+    if not pin_matches_materialized_tree(descriptor, root):
+        os.close(descriptor)
+        raise RuntimeError(f"materialized tree vanished before its lease: {root}")
     return descriptor
 
 
-def materialize_committed_tree(root: Path, commit: str) -> tuple[Path, list[Path], int]:
+def refresh_materialized_tree_pin(descriptor: int) -> None:
+    """Renew the held image lease on every follower or producer poll."""
+    os.utime(descriptor, None)
+
+
+def materialize_committed_tree(
+    root: Path, commit: str, *, active_root: Path | None = None
+) -> tuple[Path, list[Path], list[Path], int]:
     """Publish a package extracted from one commit and prune older images."""
     source_key = hashlib.sha256(str(root.resolve()).encode()).hexdigest()[:16]
     cache = _committed_tree_cache() / source_key
@@ -126,21 +162,26 @@ def materialize_committed_tree(root: Path, commit: str) -> tuple[Path, list[Path
                 shutil.rmtree(staging)
     pin = pin_materialized_tree(target)
     try:
-        target.touch()
+        os.utime(target, None)
         images = sorted(
             (entry for entry in cache.iterdir() if (entry / ".complete").is_file()),
             key=lambda entry: entry.stat().st_mtime_ns,
             reverse=True,
         )
         removed = []
+        kept = []
         for entry in images[COMMITTED_TREE_RETENTION:]:
             if entry == target:
+                continue
+            if entry == active_root:
+                kept.append(entry)
                 continue
             descriptor = os.open(entry / ".in-use", os.O_CREAT | os.O_RDWR, 0o600)
             try:
                 try:
                     fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 except BlockingIOError:
+                    kept.append(entry)
                     continue
                 shutil.rmtree(entry)
                 removed.append(entry)
@@ -149,7 +190,7 @@ def materialize_committed_tree(root: Path, commit: str) -> tuple[Path, list[Path
     except BaseException:
         os.close(pin)
         raise
-    return target, removed, pin
+    return target, removed, kept, pin
 
 
 def _import_probe() -> str:

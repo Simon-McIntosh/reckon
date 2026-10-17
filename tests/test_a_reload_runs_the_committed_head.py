@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import ast
-import importlib.util
+import fcntl
 import os
+import select
+import shutil
 import subprocess
+import sys
 from importlib import import_module
 from pathlib import Path
 
@@ -193,12 +196,38 @@ def test_old_materialized_trees_are_removed_and_named(source, monkeypatch, capsy
 
 def test_running_image_survives_cache_pruning(source, monkeypatch, capsys):
     root, first, execs = source
-    pins = []
+    children = []
 
     def capture_exec(*args):
-        if not pins:
-            pins.append(os.dup(int(args[2][follow._FOLLOWER_IMAGE_PIN_ENV])))
         execs.append(args)
+        if children:
+            return
+        descriptor = int(args[2][follow._FOLLOWER_IMAGE_PIN_ENV])
+        assert os.get_inheritable(descriptor)
+        environment = dict(args[2])
+        environment["RECKON_TEST_IMAGE_ROOT"] = str(_executed_root([args]))
+        child = subprocess.Popen(
+            [
+                sys.executable,
+                "-u",
+                "-c",
+                (
+                    "import os, sys; fd = int(os.environ['RECKON_FOLLOWER_IMAGE_PIN']); "
+                    "os.fstat(fd); print('READY', flush=True); sys.stdin.readline(); "
+                    "sys.path.insert(0, os.environ['RECKON_TEST_IMAGE_ROOT']); "
+                    "from reckon import example; print(example.VALUE, flush=True)"
+                ),
+            ],
+            env=environment,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            close_fds=False,
+        )
+        children.append(child)
+        assert select.select([child.stdout], [], [], 5)[0]
+        assert child.stdout.readline().strip() == "READY"
 
     monkeypatch.setattr(follow.os, "execve", capture_exec)
     reloader = follow._FollowerReloader("test-project", None)
@@ -210,34 +239,105 @@ def test_running_image_survives_cache_pruning(source, monkeypatch, capsys):
     assert (first_image / "reckon" / "example.py").read_text() == (
         "VALUE = 'running'\n"
     )
-    pin = pins[0]
-    monkeypatch.setenv(follow._FOLLOWER_IMAGE_PIN_ENV, str(pin))
-    monkeypatch.setenv(follow._FOLLOWER_SOURCE_ROOT_ENV, str(root))
-    monkeypatch.setenv(follow._FOLLOWER_IMAGE_COMMIT_ENV, first_image_commit)
-    monkeypatch.setattr(follow, "_import_root", lambda module: first_image)
-    running = follow._FollowerReloader("test-project", None)
-    assert running.image_pin == pin
-    assert follow._FOLLOWER_IMAGE_PIN_ENV not in os.environ
+    child = children[0]
+    try:
+        reloader.code_stamp = first_image_commit
+        for index in range(follow.checkout_trust.COMMITTED_TREE_RETENTION + 1):
+            commit = _commit(root, f"newer-{index}")
+            reloader.poll({})
+            reloader.code_stamp = commit
+        assert first_image.is_dir()
+        assert f"kept reload tree {first_image}" in capsys.readouterr().out
+        child.stdin.write("\n")
+        child.stdin.flush()
+        assert select.select([child.stdout], [], [], 5)[0]
+        assert child.stdout.readline().strip() == "running"
+        assert child.wait(timeout=5) == 0, child.stderr.read()
+    finally:
+        if child.poll() is None:
+            child.terminate()
+            child.wait(timeout=5)
 
-    reloader.code_stamp = first_image_commit
-    for index in range(follow.checkout_trust.COMMITTED_TREE_RETENTION + 1):
-        commit = _commit(root, f"newer-{index}")
-        reloader.poll({})
-        reloader.code_stamp = commit
-
-    module_path = first_image / "reckon" / "example.py"
-    assert first_image.exists()
-    spec = importlib.util.spec_from_file_location("running_image_example", module_path)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    assert module.VALUE == "running"
-    assert str(first_image) not in capsys.readouterr().out
-
-    os.close(running.image_pin)
-    running.image_pin = None
     commit = _commit(root, "after-release")
     reloader.poll({})
     reloader.code_stamp = commit
     assert not first_image.exists()
     assert f"removed old reload tree {first_image}" in capsys.readouterr().out
+
+
+def test_a_pruner_between_open_and_lock_never_leaves_a_plain_file(source, monkeypatch):
+    root, _, _ = source
+    commit = _commit(root, "second")
+    checkout = follow.checkout_trust
+    image, _, _, pin = checkout.materialize_committed_tree(root, commit)
+    os.close(pin)
+    lock = checkout.fcntl.flock
+    raced = False
+
+    def prune_before_shared_lock(descriptor, operation):
+        nonlocal raced
+        if operation == fcntl.LOCK_SH and not raced:
+            raced = True
+            pruning = os.open(image / ".in-use", os.O_RDWR)
+            try:
+                lock(pruning, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                shutil.rmtree(image)
+            finally:
+                os.close(pruning)
+        return lock(descriptor, operation)
+
+    monkeypatch.setattr(checkout.fcntl, "flock", prune_before_shared_lock)
+    with pytest.raises(RuntimeError, match="vanished"):
+        checkout.materialize_committed_tree(root, commit)
+    assert not image.exists()
+    image, _, _, pin = checkout.materialize_committed_tree(root, commit)
+    try:
+        assert image.is_dir()
+        assert (image / "reckon" / "example.py").read_text() == "VALUE = 'second'\n"
+    finally:
+        os.close(pin)
+
+
+def test_a_materialized_image_renews_its_lease_on_each_poll(source, monkeypatch):
+    root, _, execs = source
+    reloader = follow._FollowerReloader("test-project", None)
+    commit = _commit(root, "second")
+    reloader.poll({})
+    image = _executed_root(execs)
+    monkeypatch.setenv(follow._FOLLOWER_SOURCE_ROOT_ENV, str(root))
+    monkeypatch.setenv(follow._FOLLOWER_IMAGE_COMMIT_ENV, commit)
+    monkeypatch.setattr(follow, "_import_root", lambda module: image)
+    running = follow._FollowerReloader("test-project", None)
+    try:
+        lease = image / ".in-use"
+        old = lease.stat().st_mtime_ns - 10_000_000_000
+        os.utime(lease, ns=(old, old))
+        running.checked_at = follow.time.monotonic()
+        monkeypatch.setattr(runs, "FOLLOWER_FRESHNESS_SECONDS", 60)
+        running.poll({})
+        assert lease.stat().st_mtime_ns > old
+    finally:
+        os.close(running.image_pin)
+
+
+def test_pruning_keeps_its_own_import_root(source):
+    root, _, _ = source
+    checkout = follow.checkout_trust
+    running_commit = _commit(root, "running")
+    image, _, _, pin = checkout.materialize_committed_tree(root, running_commit)
+    os.close(pin)
+
+    for index in range(checkout.COMMITTED_TREE_RETENTION + 1):
+        commit = _commit(root, f"later-{index}")
+        _, _, kept, pin = checkout.materialize_committed_tree(
+            root, commit, active_root=image
+        )
+        os.close(pin)
+
+    assert image.is_dir()
+    assert image in kept
+    commit = _commit(root, "after-release")
+    _, removed, _, pin = checkout.materialize_committed_tree(root, commit)
+    os.close(pin)
+    assert image in removed
+    assert not image.exists()

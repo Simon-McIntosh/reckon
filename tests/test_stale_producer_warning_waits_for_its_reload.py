@@ -261,6 +261,54 @@ def test_a_producer_on_source_head_is_current_after_a_reload(
     )
 
 
+def test_registration_keeps_the_running_commit_when_head_moves(
+    isolated_home, monkeypatch, tmp_path
+) -> None:
+    root = tmp_path / "source"
+    package = root / "reckon"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("")
+
+    def git(*args: str) -> str:
+        environment = dict(os.environ)
+        if _GIT_HOME is None:
+            environment.pop("RECKON_HOME", None)
+        else:
+            environment["RECKON_HOME"] = _GIT_HOME
+        return subprocess.run(
+            ["git", "-C", str(root), *args],
+            check=True,
+            capture_output=True,
+            text=True,
+            env=environment,
+        ).stdout.strip()
+
+    git("init")
+    git("config", "user.name", "Reload Test")
+    git("config", "user.email", "reload@example.invalid")
+    git("add", "reckon/__init__.py")
+    git("commit", "-m", "Add package")
+    running_commit = git("rev-parse", "HEAD")
+    monkeypatch.setenv(follow._FOLLOWER_SOURCE_ROOT_ENV, str(root))
+    monkeypatch.setenv(follow._FOLLOWER_IMAGE_COMMIT_ENV, running_commit)
+    (package / "example.py").write_text("VALUE = 'newer'\n")
+    git("add", "reckon/example.py")
+    git("commit", "-m", "Move source head")
+    current_commit = git("rev-parse", "HEAD")
+
+    with runs._project_watch_claim(PROJECT, "1h") as (claimed, record):
+        assert claimed
+        assert record["code_stamp"] == running_commit
+        assert runs.follower_code_stamp() == current_commit
+        identity = runs.watch_producer_identity(PROJECT)
+        assert identity["code_stamp"] == running_commit
+        assert identity["current_stamp"] == current_commit
+        assert identity["stale"] is True
+        assert cli_module.FOLLOWER_STALE_PRODUCER_EVENT in _kinds(
+            _events(monkeypatch, reloaded_in_place=False)
+        )
+
+
 def test_the_default_window_covers_a_slow_reload() -> None:
     """The shipped window exceeds the worst case a healthy reload can take.
 

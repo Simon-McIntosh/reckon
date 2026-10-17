@@ -257,9 +257,12 @@ class _FollowerReloader:
         carried_pin = os.environ.pop(_FOLLOWER_IMAGE_PIN_ENV, None)
         if carried_pin is not None:
             try:
-                self.image_pin = int(carried_pin)
-                os.fstat(self.image_pin)
-                os.set_inheritable(self.image_pin, False)
+                candidate_pin = int(carried_pin)
+                if checkout_trust.pin_matches_materialized_tree(
+                    candidate_pin, self.import_root
+                ):
+                    os.set_inheritable(candidate_pin, False)
+                    self.image_pin = candidate_pin
             except (OSError, ValueError):
                 self.image_pin = None
         if self.image_pin is None and (self.import_root / ".complete").is_file():
@@ -365,6 +368,8 @@ class _FollowerReloader:
         from reckon.crew import runs
         from reckon.crew.dispatch import _export_launched_workers_for_reexec
 
+        if self.image_pin is not None:
+            checkout_trust.refresh_materialized_tree_pin(self.image_pin)
         if self.failed:
             return
         moment = time.monotonic()
@@ -399,9 +404,9 @@ class _FollowerReloader:
             self._clear_probe_retry()
         if current_head and current_stamp == current_head:
             try:
-                self.replacement_root, removed, self.replacement_pin = (
+                self.replacement_root, removed, kept, self.replacement_pin = (
                     checkout_trust.materialize_committed_tree(
-                        self.source_root, current_head
+                        self.source_root, current_head, active_root=self.import_root
                     )
                 )
             except (OSError, RuntimeError) as exc:
@@ -415,6 +420,11 @@ class _FollowerReloader:
             for path in removed:
                 _echo_follow_line(
                     f"reckon {self.label} removed old reload tree {path}",
+                    stream=self.stream,
+                )
+            for path in kept:
+                _echo_follow_line(
+                    f"reckon {self.label} kept reload tree {path}: live image lease",
                     stream=self.stream,
                 )
         else:
@@ -2070,8 +2080,8 @@ def _follow_watch_lines(
         _echo_follow_line(line)
 
     while not _stopped() and not lifetime_elapsed and not consumer_gone and not settled:
-        identity = runs.watch_producer_identity(project)
         if not runs.producer_live(project):
+            identity = runs.watch_producer_identity(project)
             reason = _logged_producer_stop(project)
             # A producer that stops while this follower's fleet still holds
             # live work is a silent fleet the pane must name; one that stops
