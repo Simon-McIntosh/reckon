@@ -1,0 +1,81 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T05:12:02.971Z",
+  "dispatched_at": "2026-10-17T05:04:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html#s25",
+      "id": "reasoning-1",
+      "reason": "if 8cc75bafe's build is not ~114.5 s the node's whole premise (\"the build's extra 161 s\") is wrong and its ranked difference will not be 161 s, so the base (or the deliverable's framing) must be corrected before dispatch.",
+      "text": "\u00a725's Why asserts \"\u00a719 made the \u2026 first [read] 2.4 times slower\" and the Done-when measures the build at base 8cc75bafe (the parent of \u00a719's merge), but the 275.9 s / 114.5 s pair it cites are \u00a719's landing figures for head 6faeb3a03 against base d249200c7 (2026-10-10) \u2014 4305 commits and ten days before 8cc75bafe, spanning \u00a72\u2013\u00a718. The plan thus names \u00a719 as the cause of the excess on a measurement that cannot isolate \u00a719 from every other change in that window, and then measures its own arms at a base that may not reproduce the 161 s.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html#s25",
+      "id": "done_when-1",
+      "reason": "the 161 s figure belongs to one specific read; an unnamed entry point lets the node measure a different read and still pass, which is the \"reached by no named caller\" gap.",
+      "text": "\u00a725's done-when requires three fresh processes per arm and \"the wall time of each and the median\", but names no command or entry point for the build; every comparable node names one (\u00a719: mcp._roadmap / mcp._audit / mcp_discovery._discover_project; \u00a720 and \u00a724: obligation_snapshot.fleet_state; \u00a727: reckon roadmap --project reckon), so the worker is left to choose the read that \"writes the persisted metadata index\".",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html#f-araiid-021",
+      "id": "wiring-1",
+      "reason": "the coordinator dispatching this followup would expect \u00a725 to land a repair it no longer delivers, so the followup's description of \u00a725 must be corrected to match the section.",
+      "text": "the open followup f-araiid-021, which is the dispatch wiring for \u00a725\u2013\u00a727, still reads \"\u00a725 cuts the 276 s first build\", but the rewritten \u00a725 only attributes the excess and states \"a repair section follows from its findings\"; the cut is now a future section, not \u00a725.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9311343d42dc1137883bc6a13a687978b39e53613eabd29898b814d83f9aeba8",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 182,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T050327050558-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "b4e53489572c1361074504612a5117bd4302873c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 base 8cc75bafe resolves and is the first parent of \u00a719's merge b048fafa4, and reckon/metadata_index.py exists.",
+    "done_when": "a finding \u2014 \u00a725's done-when never names the read whose \"first read over an empty store\" builds the index, so the build it measures is not pinned to the read \u00a719 timed.",
+    "evidence_paths": "pass \u2014 both write paths (the run directory and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-store-build-excess-is-attributed.html) are durable, and the fragments directory exists.",
+    "naming": "pass \u2014 no plan label, ticket number or version tag reaches a symbol or comment; the node adds no product code.",
+    "reasoning": "a finding \u2014 \u00a725's Why attributes the build's excess to \u00a719, but the cited 275.9/114.5 s figures come from \u00a719's head-vs-d249200c7 measurement, a base 4305 commits behind \u00a725's own base 8cc75bafe.",
+    "single_goal": "pass \u2014 \u00a725 carries one deliverable, an attribution report that changes no product code.",
+    "wiring": "a finding \u2014 the open followup f-araiid-021 that dispatches \u00a725\u2013\u00a727 still describes \u00a725 as cutting the 276 s build, which the rewritten \u00a725 no longer does."
+  },
+  "section_digests": {
+    "_document": "500b5ea93b9c0d6d6eb8d48b8ccfed012d77f0d7901c2eeb133edff610b33eb0",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "f6e2a8c3d1c90f4194ec9891635cef181cf62c62a5dbb39efd4c9832ac5d1e9b",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s20": "81e1ff125ddfc6955aa9bfbaae255b04b8bd03b75e9a4bbaec4a6e2de4790a39",
+    "s21": "12ee0e1852da5baa065bbe019bd803267f1817e4aa5fa5fcd12ec142ffba5f0f",
+    "s22": "6266f82976abf2a572694b2f91bf0143ff9a02ea484166e79b8197bde4e1a5e6",
+    "s23": "0c162cc0de7beec03e05834230443e4e755382e4c7b1cde4be476a6a17d232ec",
+    "s24": "c08bde5fe4a48fc01b81a4cf328439fde17d29607f5771497a07ae74c8f83498",
+    "s25": "4f6a3afb58b718a7a4daae241f0a298a5c65dc19a2a5ec21f21667e38af2da76",
+    "s26": "25e5304fe5780aa9410db57be3ff538d9960379c8f31845f209abd225091913f",
+    "s27": "04e4a0f145492c1a1dcbcf8f220b8763fdd72fbbd2c5427deb9710071ac0aef7",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T05:14:56.818748+00:00"
+}
