@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T14:52:50.079Z",
+  "dispatched_at": "2026-10-17T14:38:16Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-velocity-window-may-open-before-the-ledger.html:128",
+      "id": "reasoning-1",
+      "reason": "it needs one clause naming a distinct source value (e.g. a record-file-addition string) so the new mechanism's provenance is reported truthfully instead of collapsed onto the ledger appearance.",
+      "text": "\u00a72's second remedy says the addition scan \"records the same appearance fields the search records, `source` included\", while the search's value is the literal `first_primary_ledger_appearance_upper_bound` (`reckon/velocity.py:1249`); read literally the scan stamps that same string on a run placed by its record file, and `source` is emitted data \u2014 `promotion_clock_sources` is a reported distribution (`reckon/velocity.py:2149`) and `dispatch_to_explicit_promotion_seconds` selects on the value (`reckon/velocity.py:2160`) \u2014 so the report would attribute a record-file placement to the ledger search and the two mechanisms would be indistinguishable in the output.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6eb7cb5d9a7c110590a3f0bec3af91b805fa4e597bb76b452b24335a4d77dbf1",
+  "plan_slug": "a-velocity-window-may-open-before-the-ledger",
+  "plan_version": 14,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-17T14:56:27.836651+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T14:56:27.836651+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-velocity-window-may-open-before-the-ledger.v14.json",
+  "review_run_id": "r-20261017T143734391663-plan-review-of-a-velocity-window-may-open-before-the-ledger",
+  "reviewed_blob_sha": "b8c33346baab23313f52d52109df3d450f48ac3f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/velocity.py:1217`, `reckon/velocity.py:149`, `e080ed967`, `440ce55a6`, `534f6536e`, `the-ledger-is-one-file-per-run#s4` and the archive evidence href all resolve.",
+    "done_when": "pass \u2014 \u00a72's four items are measurable, item 1 now names an interrupted-resume case rather than a second uninterrupted read, and both mutations redden the case they name (verified against `reckon/velocity.py:1219` resume logic).",
+    "evidence_paths": "pass \u2014 \u00a72's cited timeout logs sit under `~/.cache/reckon-velocity-window-check/`, a durable home path, not a scratchpad or node-local temporary directory.",
+    "naming": "pass \u2014 the new test file and the edits to `reckon/velocity.py` carry no plan labels, stage names, ticket numbers or version tags, and no changelog prose.",
+    "reasoning": "a finding \u2014 the root cause, the mechanism and the caller all hold, but the per-run-file placement is specified to record the search's appearance fields \"`source` included\", and the emitted `promotion_clock_source` would then name a ledger appearance for a run the ledger did not place.",
+    "single_goal": "pass \u2014 the sliced search and the per-run-file placement both serve the one goal of keeping the window's ledger search inside its git bound, and one done-when gates both.",
+    "wiring": "pass \u2014 `plan-blocks` points at `the-ledger-is-one-file-per-run#s4`, which exists and is the section that deletes `crew.json`; `f-avwmobl-002` is open and recommends `\u00a72`; no relationship points at completed work."
+  },
+  "section_digests": {
+    "_document": "7438dc3857ea67728ccc6b0036805dda4784857bac216f4a9af3f3706a75a653",
+    "s1": "7fb9f51fa9b87a449b336034d21038a82939900b9d4f0f7601d78920d33f60b5",
+    "s2": "b484bfc97d9a689893d7d151129b59c478841ed1e1094977441d6957320c5ab3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T14:56:25.640745+00:00"
+}
