@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log, so the added-failure count was not taken",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T18:03:25.463Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "the-split-leak-scan-reads-the-real-mounts",
+      "recorded_at": "2026-10-17T18:06:07.573996+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-17T17:57:26Z",
+  "findings": [
+    {
+      "file": "tests/conftest.py",
+      "line": "1400",
+      "severity": "follow-on",
+      "text": "follow-on: workstation_mounts() duplicates reckon/flight.py:458 mounted_project_docs() \u2014 the same mounts-or-payload unwrap, sorted iteration, docs-or-path pick and expanduser().resolve() \u2014 instead of extending the owner with a mounts-file parameter; the owner sat outside the node's write scope, so the fork is recorded rather than repaired here."
+    },
+    {
+      "file": "tests/test_split_existing_runs.py",
+      "line": "85",
+      "severity": "follow-on",
+      "text": "follow-on: the fixture's use of the new reader is not pinned by any test, so reverting this line to flight.mounted_project_docs() reintroduces the fixture-order flake while the new test still passes."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base 91a8aea54; three commits (7ccd35eb7, 2930951d1, e0272364a) change tests/conftest.py, tests/test_split_existing_runs.py, the new test file and one evidence fragment, all inside the declared scope and with conventional bodies.",
+    "done_when": "read; it names tests/test_the_split_leak_scan_reads_the_real_mounts.py, three -n 4 runs of the split file, the vacuity negative control and the ruff checks, and the manifest with its run-directory logs records the pytest runs and the control.",
+    "goal": "read reckon:the-suite-is-green-at-head \u00a721 and the source prompt; the landed tests/conftest.py captures the mounts file path at import and tests/test_split_existing_runs.py:85 reads through it, so the scan no longer resolves the configuration home in force when the fixture first runs.",
+    "manifest": "read; it states the new test 1 passed at head, tests/test_split_existing_runs.py 8 passed three times under -n 4, the vacuity guard firing against a live-resolving reader, and names each of its five logs.",
+    "write_paths": "read the manifest's declared paths; all four changed paths are inside them, and the unused docs/figures path is justified in evidence_inputs because the done-when names no artifact."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows the new assertion reddens only when workstation_mounts resolves the live home, but the test calls workstation_mounts() directly, so a revert of the fixture's read at tests/test_split_existing_runs.py:85 to flight.mounted_project_docs() stays green and the flake returns unpinned.",
+    "evidence": "the three split-file -n 4 logs (8 passed each, EXIT=0) and head-new-test.log (1 passed, EXIT=0) are recorded, but the manifest's ruff-clean claim carries no log in the run directory and the gate logs name revision 2930951d1 rather than the reviewed head e0272364a.",
+    "fit": "tests/conftest.py:1400 follows the surrounding conftest idiom and the added names (workstation_mounts, WORKSTATION_MOUNTS_PATH) carry no plan, stage, version or ticket label.",
+    "goal_fidelity": "tests/conftest.py:1397 captures the mounts path at import and tests/test_split_existing_runs.py:85 reads through it, which is exactly the plan's own example.",
+    "reuse": "tests/conftest.py:1417 re-implements the mounts-file parse of reckon/flight.py:458 rather than extending that owner with a mounts-file argument.",
+    "scope_discipline": "every path in the diff (tests/conftest.py, tests/test_split_existing_runs.py, tests/test_the_split_leak_scan_reads_the_real_mounts.py, the named fragment) is inside the declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read reckon:the-suite-is-green-at-head \u00a721 and the source prompt; the landed tests/conftest.py captures the mounts file path at import and tests/test_split_existing_runs.py:85 reads through it, so the scan no longer resolves the configuration home in force when the fixture first runs.\nVERDICT done_when: read; it names tests/test_the_split_leak_scan_reads_the_real_mounts.py, three -n 4 runs of the split file, the vacuity negative control and the ruff checks, and the manifest with its run-directory logs records the pytest runs and the control.\nVERDICT write_paths: read the manifest's declared paths; all four changed paths are inside them, and the unused docs/figures path is justified in evidence_inputs because the done-when names no artifact.\nVERDICT manifest: read; it states the new test 1 passed at head, tests/test_split_existing_runs.py 8 passed three times under -n 4, the vacuity guard firing against a live-resolving reader, and names each of its five logs.\nVERDICT diff: read commit by commit against base 91a8aea54; three commits (7ccd35eb7, 2930951d1, e0272364a) change tests/conftest.py, tests/test_split_existing_runs.py, the new test file and one evidence fragment, all inside the declared scope and with conventional bodies.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/conftest.py:1397 captures the mounts path at import and tests/test_split_existing_runs.py:85 reads through it, which is exactly the plan's own example.\nSCORE evidence: 16\nJUSTIFICATION evidence: the three split-file -n 4 logs (8 passed each, EXIT=0) and head-new-test.log (1 passed, EXIT=0) are recorded, but the manifest's ruff-clean claim carries no log in the run directory and the gate logs name revision 2930951d1 rather than the reviewed head e0272364a.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (tests/conftest.py, tests/test_split_existing_runs.py, tests/test_the_split_leak_scan_reads_the_real_mounts.py, the named fragment) is inside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: negative-control.log shows the new assertion reddens only when workstation_mounts resolves the live home, but the test calls workstation_mounts() directly, so a revert of the fixture's read at tests/test_split_existing_runs.py:85 to flight.mounted_project_docs() stays green and the flake returns unpinned.\nSCORE fit: 18\nJUSTIFICATION fit: tests/conftest.py:1400 follows the surrounding conftest idiom and the added names (workstation_mounts, WORKSTATION_MOUNTS_PATH) carry no plan, stage, version or ticket label.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/conftest.py:1417 re-implements the mounts-file parse of reckon/flight.py:458 rather than extending that owner with a mounts-file argument.\nFINDING tests/conftest.py:1400 follow-on: workstation_mounts() duplicates reckon/flight.py:458 mounted_project_docs() \u2014 the same mounts-or-payload unwrap, sorted iteration, docs-or-path pick and expanduser().resolve() \u2014 instead of extending the owner with a mounts-file parameter; the owner sat outside the node's write scope, so the fork is recorded rather than repaired here.\nFINDING tests/test_split_existing_runs.py:85 follow-on: the fixture's use of the new reader is not pinned by any test, so reverting this line to flight.mounted_project_docs() reintroduces the fixture-order flake while the new test still passes.",
+  "review_run_id": "r-20261017T175648147679-review-of-the-split-leak-scan-reads-the-real-mounts-e0272364a413",
+  "reviewed_base_sha": "91a8aea54aca17e98ce06aa7d3012bfe361105ef",
+  "reviewed_head_sha": "e0272364a41337cdf6d6c80e4989deb04943ea9c",
+  "reviewed_run_id": "r-20261017T173820732307-the-split-leak-scan-reads-the-real-mounts",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T18:06:47.991912+00:00",
+  "total": 93
+}
