@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="A failing test id with a space is read whole">
+  <meta name="plan-summary" content="The pytest failure reader takes the node id to pytest's reason separator, so a parametrised id with a space inside its brackets is no longer cut at the space.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s19">
+  <meta name="plan-recorded-at" content="2026-10-17">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="review,gate-log,tests,evidence">
+  <title>A failing test id with a space is read whole | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-failing-test-id-with-a-space-is-read-whole" data-reckon="landed" data-when="2026-10-17">
+  <h2 id="a-failing-test-id-with-a-space-is-read-whole-title">A failing test id with a space is read whole</h2>
+  <p id="a-failing-test-id-with-a-space-is-read-whole-change"><strong>Change.</strong>
+  <code>_GATE_FAILURE_RE</code> in <code>reckon/crew/review.py</code> captured
+  <code>(\S+)</code>, so a pytest summary id was cut at the first space. It now
+  captures the rest of the line, and <code>_pytest_failure_ids</code> takes the
+  id up to pytest's <code>" - "</code> reason separator or the end of the line,
+  trimming surrounding whitespace. The ctest reader is untouched.</p>
+  <p id="a-failing-test-id-with-a-space-is-read-whole-measure"><strong>Measure.</strong> A new
+  test, <code>tests/test_a_failing_id_with_a_space_is_read_whole.py</code>, feeds
+  <code>added_failures_from_gate_logs</code> a base log failing <code>t.py::f[opus 4.7]</code> and a head log failing
+  <code>t.py::f[opus 5.5]</code>, and finds one added id,
+  <code>t.py::f[opus 5.5]</code>. A space-free id and a no-reason line read as before.
+  Gate: 23 passed, <code>EXIT=0</code>, in <code>logs/gate.log</code>; ruff check and
+  <code>ruff format --check</code> add no findings on the two changed Python files
+  (<code>logs/ruff.log</code>).</p>
+  <p id="a-failing-test-id-with-a-space-is-read-whole-control"><strong>Negative control.</strong>
+  Declared mutation: against the base tree both ids truncate to <code>t.py::f[opus</code>
+  and the added count is <code>0</code>. Applied on a base extraction, logged at
+  <code>logs/negative_control.log</code>: three named ids fail, <code>EXIT=1</code>, the
+  added set read back empty.</p>
+</article>
+</body>
+</html>
