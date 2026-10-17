@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="220">
+<meta name="plan-version" content="221">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -742,6 +742,9 @@
 </div>
 <div class="r-comment" data-section="s28" data-id="c-run-r-20261017T135910913972-review-of-a-fresh-read-takes-the-ledger-from-its-index-a05a3e7ded48" data-who="reckon-build" data-when="2026-10-17T14:26:20.879Z">
     <div class="r-comment-body"><p>reviewed the three commits r-20261017T104516290345 gained since faee86b8e (ledger cache-root delegation, memo state projection and freshness test) against faee86b8e..a05a3e7de; scores goal_fidelity 17, evidence 13, scope_discipline 20, durability 19, fit 17, reuse 19 (total 105); two follow-on findings, one on the done-when's base-arm coverage and one on the stamp slice; no blockers</p></div>
+</div>
+<div class="r-comment" data-section="s28" data-id="c-run-r-20261017T104516290345-a-fresh-read-takes-the-ledger-from-its-index" data-who="reckon-build" data-when="2026-10-17T13:57:46Z">
+    <div class="r-comment-body"><p>ledger.load takes the run index from a writable cache when the configured one is read-only, and the attempts memo is stored only under the stamp its value is a reading of, so a read whose stamp shows a late live pointer recomputes instead of being served an older value; head gate 5 passed (EXIT=0), base arm 2 of 5 failed (EXIT=1), mutation arm 1 of 5 failed (EXIT=1)</p></div>
 </div>
 </section>
 </main>
