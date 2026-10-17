@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "0883fd5ed7ef02bb27a807cbbf6f01c257c1686f",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:1004 prompt hook not_fresh_line call",
+    "reckon/hooks/coordinator_obligations.py:1233 stop hook not_fresh_line call"
+  ],
+  "completed_at": "2026-10-17T11:25:41Z",
+  "dispatched_at": "2026-10-17T11:20:35Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "401",
+      "severity": "blocking",
+      "text": "blocking: the new override selection duplicates the host record directory capability owned by reckon/crew/session_host.py:117-123 rather than extending its owner as the source brief requires, so a future change to the writer's resolution rule can silently restore the duplicate follower advice."
+    }
+  ],
+  "head_log_revision": "639969cb0869257490edb27928fcbd22818f8368",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "commit 639969cb0869 against parent 0883fd5ed7ef adds the override lookup at reckon/hooks/coordinator_obligations.py:401-403 and parametrizes the two host-remedy tests at tests/test_a_missing_snapshot_names_a_live_seat.py:181 and tests/test_a_stale_snapshot_names_its_remedy.py:205.",
+    "done_when": "the source brief names both host cases; override-reproduction.log records both failing at 0883fd5ed7ef, repair-after-hook-tests.log records 41 passed at 639969cb0869, and override-negative-control.log records both failing when the lookup is reversed.",
+    "goal": "the source brief requires host guidance for missing and stale snapshots; reckon/hooks/coordinator_obligations.py:401-403 now resolves the override directory before the existing host remedy runs.",
+    "manifest": "the source manifest records complete status, commit 639969cb0869, the three changed paths, and the base and head suite logs, whose headers and summaries match its 39 and 41 passing tests.",
+    "write_paths": "the source brief and manifest grant reckon/hooks/coordinator_obligations.py plus two named test files; git diff 0883fd5ed7ef..639969cb0869 changes exactly those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_missing_snapshot_names_a_live_seat.py:189-203 and tests/test_a_stale_snapshot_names_its_remedy.py:213-227 fail if the hook again ignores the override, as the recorded reversed-lookup control demonstrates.",
+    "evidence": "repair-after-hook-tests.log records 41 passed and EXIT=0 at 639969cb0869, while override-reproduction.log and override-negative-control.log each record the two override cases failing under the prior lookup.",
+    "fit": "reckon/hooks/coordinator_obligations.py:401-403 keeps the prompt hook free of crew imports and uses existing path idioms, but repeats the directory rule owned by reckon/crew/session_host.py:117-123.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:401-403 reads the same override the host writer uses, so the existing missing and stale snapshot branches can name a live host.",
+    "reuse": "reckon/hooks/coordinator_obligations.py:401-402 duplicates rather than extends reckon/crew/session_host.py:117-123, the existing owner found by searching for the host state directory capability.",
+    "scope_discipline": "git diff 0883fd5ed7ef..639969cb0869 changes only reckon/hooks/coordinator_obligations.py and the two test files in the source brief's write scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source brief requires host guidance for missing and stale snapshots; reckon/hooks/coordinator_obligations.py:401-403 now resolves the override directory before the existing host remedy runs.\nVERDICT done_when: the source brief names both host cases; override-reproduction.log records both failing at 0883fd5ed7ef, repair-after-hook-tests.log records 41 passed at 639969cb0869, and override-negative-control.log records both failing when the lookup is reversed.\nVERDICT write_paths: the source brief and manifest grant reckon/hooks/coordinator_obligations.py plus two named test files; git diff 0883fd5ed7ef..639969cb0869 changes exactly those three paths.\nVERDICT manifest: the source manifest records complete status, commit 639969cb0869, the three changed paths, and the base and head suite logs, whose headers and summaries match its 39 and 41 passing tests.\nVERDICT diff: commit 639969cb0869 against parent 0883fd5ed7ef adds the override lookup at reckon/hooks/coordinator_obligations.py:401-403 and parametrizes the two host-remedy tests at tests/test_a_missing_snapshot_names_a_live_seat.py:181 and tests/test_a_stale_snapshot_names_its_remedy.py:205.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:1004 prompt hook not_fresh_line call, reckon/hooks/coordinator_obligations.py:1233 stop hook not_fresh_line call\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:401-403 reads the same override the host writer uses, so the existing missing and stale snapshot branches can name a live host.\nSCORE evidence: 20\nJUSTIFICATION evidence: repair-after-hook-tests.log records 41 passed and EXIT=0 at 639969cb0869, while override-reproduction.log and override-negative-control.log each record the two override cases failing under the prior lookup.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 0883fd5ed7ef..639969cb0869 changes only reckon/hooks/coordinator_obligations.py and the two test files in the source brief's write scope.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_missing_snapshot_names_a_live_seat.py:189-203 and tests/test_a_stale_snapshot_names_its_remedy.py:213-227 fail if the hook again ignores the override, as the recorded reversed-lookup control demonstrates.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/hooks/coordinator_obligations.py:401-403 keeps the prompt hook free of crew imports and uses existing path idioms, but repeats the directory rule owned by reckon/crew/session_host.py:117-123.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/hooks/coordinator_obligations.py:401-402 duplicates rather than extends reckon/crew/session_host.py:117-123, the existing owner found by searching for the host state directory capability.\nFINDING reckon/hooks/coordinator_obligations.py:401 blocking: the new override selection duplicates the host record directory capability owned by reckon/crew/session_host.py:117-123 rather than extending its owner as the source brief requires, so a future change to the writer's resolution rule can silently restore the duplicate follower advice.\n",
+  "review_run_id": "r-20261017T111931779084-review-of-settled-session-names-its-host-639969cb0869",
+  "reviewed_base_sha": "0883fd5ed7ef02bb27a807cbbf6f01c257c1686f",
+  "reviewed_head_sha": "639969cb0869257490edb27928fcbd22818f8368",
+  "reviewed_run_id": "r-20261017T104849165420-settled-session-names-its-host",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 15,
+    "goal_fidelity": 20,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T11:23:08.969834+00:00",
+  "total": 97
+}
