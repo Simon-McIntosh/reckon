@@ -1,0 +1,87 @@
+{
+  "artifacts": [
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/the-store-build-excess-is-attributed (reviewed run's report directory, read-only)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/the-store-build-excess-is-attributed/report.md (reviewed report, read-only)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/the-store-build-excess-is-attributed/logs/invocations.txt (13 invocation rows: timed + profile wall seconds; read-only, re-reduced)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/the-store-build-excess-is-attributed/logs/analysis.txt, logs/analysis.json (gate line, profile ranking, control block; read-only, re-reduced)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/the-store-build-excess-is-attributed/logs/control-check.txt, logs/control-patch.txt (control receipt; read-only)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/the-store-build-excess-is-attributed/rank_excess.py, verify_control.py (cited scripts, re-run)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/the-store-build-excess-is-attributed/profiles/arm-{head,base,third,control}-profile.prof (four cProfile dumps, read-only; re-analysed)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T080752253384-review-of-the-store-build-excess-is-attributed-ea703c418f64/logs/repro-rank_excess.txt, /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T080752253384-review-of-the-store-build-excess-is-attributed-ea703c418f64/logs/repro-verify_control.txt, /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T080752253384-review-of-the-store-build-excess-is-attributed-ea703c418f64/logs/repro-profiled-diff.txt (this review's re-run logs: the two cited scripts and the profiled-wall reduction, EXIT=0 each)"
+  ],
+  "claim_lines": [
+    "CLAIM 1: reproduced: re-ran `/home/ITER/mcintos/Code/reckon/.venv/bin/python /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/the-store-build-excess-is-attributed/rank_excess.py --logs <run>/logs --profiles <run>/profiles --head-tree /tmp/store-build-1287902-SmW4/head/tree --base-tree /tmp/store-build-1287902-SmW4/base/tree --third-tree /tmp/store-build-1287902-SmW4/third/tree --control-tree /tmp/store-build-1287902-SmW4/control/tree --control-patch <run>/logs/control-patch.txt` from the report directory (EXIT=0); it printed head median 82.236 s, base median 40.813 s, third median 22.681 s and `head_minus_base_median_s=41.423 threshold_s=80.0 excess_reproduced=False` with `no ranking: the excess did not reproduce` - the report's 41.4 s / under-80 s gate exactly",
+    "CLAIM 2: reproduced: re-read the profiled wall seconds the report cites from logs/invocations.txt (head 276.698 s, base 114.670 s); difference 162.028 s -> the report's 162.0 s, within 0.7 s of the earlier run's recorded 161.4 s, as the report states; the same round's profiled in-process totals (head 275.156 s, base 113.548 s; mcp._roadmap cum 275.160/113.555) reproduce the 161.6 s in-process difference",
+    "CLAIM 3: reproduced: re-ran `/home/ITER/mcintos/Code/reckon/.venv/bin/python /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/the-store-build-excess-is-attributed/verify_control.py --profiles <run>/profiles` from the report directory (EXIT=0); it printed `control_profile_sleep_entries=1`, `calls=1 expected_attributed_s=2.0000 attributed_s=2.0002 deviation=0.01% within_10pct=True`, identical to logs/control-check.txt - the report's stated 2.0002 s / 0.01 pct / within_10pct=True"
+  ],
+  "claim_summary": {
+    "detail": "The report's summary line is its Outcome paragraph: 'Head minus base is 41.4 s, under the 80 s threshold, so this report ranks no functions' and 'the same two revisions are 82.2 s and 40.8 s'. The table beneath (Table 1, the timed gate) carries head median 82.236 s and base median 40.813 s, and the gate line carries head_minus_base_median_s=41.423 with threshold 80 s; 41.4, 82.2 and 40.8 are exactly those cells rounded, so the summary quotes its table's own figures. The summary's other parenthetical - 'The recorded 161 s (275.9 s head against 114.5 s base)' - is not a figure of the profiled table beneath it: it is the earlier run's recorded profiled figures (275.905/114.534 -> 275.9/114.5), which the reported run's own profiled table re-measures as 276.698/114.670 = 162.0 s; the report makes this provenance explicit and states the reproduced value, so no summary figure contradicts a table cell. One wording nuance, not a number mismatch: the summary says the 161 s 'reproduces exactly' while the report's own text qualifies it as 'to within 0.7 s' (162.0 against 161.4 is a 0.4 pct difference); the number is stated correctly in both places, only the adverb is generous.",
+    "verdict": "agrees"
+  },
+  "claim_summary_line": "CLAIM_SUMMARY: agrees: the report's summary line reads 'Head minus base is 41.4 s, under the 80 s threshold, so this report ranks no functions' and 'the same two revisions are 82.2 s and 40.8 s'; the table beneath (Table 1) carries head median 82.236 s, base median 40.813 s and the gate difference 41.423 s, which are 82.2, 40.8 and 41.4 rounded, so the summary quotes the table's own figures. The summary's other parenthetical '(275.9 s head against 114.5 s base)' quotes the earlier run's recorded profiled figures (275.905/114.534), not a cell of the profiled table beneath (which carries 276.698/114.670 = 162.0 s) - a labelled provenance, not a mismatch. Wording nuance only: 'reproduces exactly' where the report's own text says 'to within 0.7 s'.",
+  "claim_verdicts": {
+    "CLAIM 1": {
+      "cites": "logs/invocations.txt (timed rows); logs/analysis.txt (the gate line); rank_excess.py",
+      "detail": "Re-ran `/home/ITER/mcintos/Code/reckon/.venv/bin/python /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/the-store-build-excess-is-attributed/rank_excess.py --logs <run>/logs --profiles <run>/profiles --head-tree /tmp/store-build-1287902-SmW4/head/tree --base-tree /tmp/store-build-1287902-SmW4/base/tree --third-tree /tmp/store-build-1287902-SmW4/third/tree --control-tree /tmp/store-build-1287902-SmW4/control/tree --control-patch <run>/logs/control-patch.txt` from the report directory; EXIT=0. It printed arm=head median_s=82.236 (81.436/82.236/83.878), arm=base median_s=40.813 (40.559/40.813/41.512), arm=third median_s=22.681 (22.130/22.681/23.617), and `head_minus_base_median_s=41.423 threshold_s=80.0 excess_reproduced=False`, and `== no ranking: the excess did not reproduce ==` - the report's figures (41.4 s threshold-and-gate, Table 1 medians 82.236/40.813/22.681) exactly. Log: logs/repro-rank_excess.txt.",
+      "finding": "rank 1 (the headline negative): the store build's 161 s excess did not reproduce as wall time - head minus base median 41.423 s, under the 80 s threshold, so no function was ranked",
+      "verdict": "reproduced"
+    },
+    "CLAIM 2": {
+      "cites": "logs/invocations.txt (profile rows: head 276.698 s, base 114.670 s); Table 4 (profiled wall) and logs/analysis.txt (profile totals)",
+      "detail": "Re-read the profiled wall seconds the report cites from logs/invocations.txt: head profile wall_seconds=276.698, base profile wall_seconds=114.670, difference 162.028 s -> the report's 162.0 s (independently, the profiled in-process totals from rank_excess.py are head 275.156 s and base 113.548 s, difference 161.608 s, and the mcp._roadmap cum entry is head 275.160 s against base 113.555 s, difference 161.605 s). Against the earlier run's recorded 161.4 s that is within 0.7 s, exactly as the report states. Also re-ran (CLAIM 1's invocation) the profile ranking that carries this: it reproduced head_tottime_total_s=275.156, base 113.548, third 49.284 and the head-minus-base top entries unchanged. Log: logs/repro-profiled-diff.txt.",
+      "finding": "rank 2: the recorded 161 s reproduces only under cProfile - profiled head minus profiled base 162.0 s, matching the earlier run's 161.4 s",
+      "verdict": "reproduced"
+    },
+    "CLAIM 3": {
+      "cites": "logs/control-check.txt; profiles/arm-head-profile.prof and profiles/arm-control-profile.prof; verify_control.py",
+      "detail": "Re-ran `/home/ITER/mcintos/Code/reckon/.venv/bin/python /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/the-store-build-excess-is-attributed/verify_control.py --profiles <run>/profiles` from the report directory; EXIT=0. It printed `control_profile_sleep_entries=1`, `head_profile_sleep_entries=0`, `sleep_entry ncalls=1 self_s=2.0002 cum_s=2.0002 callers=['serve.py:2505:_attach_ready_set']`, `calls=1 expected_attributed_s=2.0000 attributed_s=2.0002 deviation=0.01% within_10pct=True` - identical to logs/control-check.txt and to the report's stated 2.0002 s / 0.01 pct / within_10pct=True. The profile attributes the injected sleep exactly, charged to the caller frame of the chosen function, and absent from the head profile. Log: logs/repro-verify_control.txt.",
+      "finding": "rank 3: the instrument control passes - the profile attributes one injected 2 s sleep to the wrapped function within 10 pct",
+      "verdict": "reproduced"
+    }
+  },
+  "claims": [
+    {
+      "cites": "logs/invocations.txt (timed rows); logs/analysis.txt gate line; rank_excess.py",
+      "finding": "the store build's 161 s excess did not reproduce as wall time - head minus base median 41.423 s, under the 80 s threshold, so no function was ranked",
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T080752253384-review-of-the-store-build-excess-is-attributed-ea703c418f64/logs/repro-rank_excess.txt",
+      "rank": 1,
+      "report_figure": "head median 82.236 s, base 40.813 s, third 22.681 s; head_minus_base_median_s=41.423 < 80 s; excess_reproduced=false",
+      "rerun_figure": "identical: rank_excess.py re-emitted head 82.236 s, base 40.813 s, third 22.681 s, head_minus_base_median_s=41.423, excess_reproduced=False",
+      "verdict": "reproduced"
+    },
+    {
+      "cites": "logs/invocations.txt profile rows; profiles/arm-{head,base}-profile.prof; logs/analysis.txt profile totals",
+      "finding": "the recorded 161 s reproduces only under cProfile - profiled head minus profiled base 162.0 s, within 0.7 s of the earlier run's 161.4 s",
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T080752253384-review-of-the-store-build-excess-is-attributed-ea703c418f64/logs/repro-profiled-diff.txt",
+      "rank": 2,
+      "report_figure": "profiled wall head 276.698 s, base 114.670 s, difference 162.0 s; profiled in-process head 275.162 s, base 113.557 s",
+      "rerun_figure": "identical: 276.698 - 114.670 = 162.028 s (-> 162.0); profiled in-process totals head 275.156 s, base 113.548 s, difference 161.608 s; mcp._roadmap cum head 275.160 s, base 113.555 s",
+      "verdict": "reproduced"
+    },
+    {
+      "cites": "logs/control-check.txt; profiles/arm-head-profile.prof and arm-control-profile.prof; verify_control.py",
+      "finding": "the instrument control passes - the profile attributes one injected 2 s sleep to the chosen function within 10 pct",
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T080752253384-review-of-the-store-build-excess-is-attributed-ea703c418f64/logs/repro-verify_control.txt",
+      "rank": 3,
+      "report_figure": "control_profile_sleep_entries=1, head_profile_sleep_entries=0; calls=1 expected_attributed_s=2.0000 attributed_s=2.0002 deviation=0.01% within_10pct=True",
+      "rerun_figure": "identical: verify_control.py re-emitted the same five lines, sleep_entry ncalls=1 self_s=2.0002 cum_s=2.0002 callers=['serve.py:2505:_attach_ready_set'], within_10pct=True",
+      "verdict": "reproduced"
+    }
+  ],
+  "completed_at": "2026-10-17T08:16:41.702Z",
+  "dimensions": null,
+  "dispatched_at": "2026-10-17T08:08:40Z",
+  "method": "The reviewed run is read-only: its manifest records commits: none and changed_paths confined to its report directory, with no gate suite, so reviewed_base_sha == reviewed_head_sha == ea703c418f64ac2f685ae9f0c8768a344dd93c14 and there is no diff to read. The report is at the reviewed run's report directory (the manifest's changed_paths name reports/reckon/a-read-answers-inside-its-deadline/the-store-build-excess-is-attributed/report.md), and the report's own text says it lives there. The report ranks no functions (it states the wall-clock condition was not met), so its three highest-ranked findings are its headline claims: the gate verdict, the profiled-only 161 s, and the instrument control. Each cites a script or a logged input; both cited scripts were re-run from the report directory against the run's on-disk inputs. rank_excess.py (which produced logs/analysis.txt) was re-run with the recorded scratch-tree prefixes (/tmp/store-build-1287902-SmW4/{head,base,third,control}/tree) passed as its --*-tree arguments, because the node-local scratch trees were torn down when the job ended and the script uses those paths only as string prefixes to normalise profile keys, not to read anything; verify_control.py was re-run verbatim against profiles/. Both are deterministic re-reductions of the logged samples: no re-measurement is possible, since the one shared corpus and the three scratch-tree extractions are gone. A deliberate falsification: rank_excess.py's own cross-process instrument-control block prints control_passes=False (self 0.000 s, cum 1.636 s, both outside 10 pct), and verify_control.py's direct same-profile check prints within_10pct=True (2.0002 s of one injected 2 s sleep) - the re-run therefore discriminates between the two checks rather than echoing one trajectory.",
+  "project": "reckon",
+  "report_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/the-store-build-excess-is-attributed/report.md",
+  "report_present": true,
+  "review_run_id": "r-20261017T080752253384-review-of-the-store-build-excess-is-attributed-ea703c418f64",
+  "reviewed_base_sha": "ea703c418f64ac2f685ae9f0c8768a344dd93c14",
+  "reviewed_head_sha": "ea703c418f64ac2f685ae9f0c8768a344dd93c14",
+  "reviewed_run_id": "r-20261017T071731409931-the-store-build-excess-is-attributed",
+  "rubric": "claims",
+  "status": "parsed",
+  "suite_delta_fields_omitted": "added_failure_count and added_failure_ids are intentionally absent: the reviewed run ran no gate suite (this review adds none). The record does not score the six landed-node dimensions; dimensions is null.",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T08:14:30+00:00"
+}
