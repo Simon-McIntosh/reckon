@@ -111,6 +111,9 @@ def _sweep_lapsed_holds(
 
 
 _FOLLOWER_CHECKPOINT_ENV = "RECKON_FOLLOWER_CHECKPOINT"
+_FOLLOWER_SOURCE_ROOT_ENV = "RECKON_FOLLOWER_SOURCE_ROOT"
+_FOLLOWER_IMAGE_COMMIT_ENV = "RECKON_FOLLOWER_IMAGE_COMMIT"
+_FOLLOWER_IMAGE_PIN_ENV = "RECKON_FOLLOWER_IMAGE_PIN"
 
 
 
@@ -249,8 +252,29 @@ class _FollowerReloader:
         # keeps the owner the original arming had rather than adopting whatever
         # process replaced the image.
         self.owner = owner
-        self.code_stamp = runs.follower_code_stamp()
         self.import_root = _import_root(runs)
+        self.image_pin: int | None = None
+        carried_pin = os.environ.pop(_FOLLOWER_IMAGE_PIN_ENV, None)
+        if carried_pin is not None:
+            try:
+                candidate_pin = int(carried_pin)
+                if checkout_trust.pin_matches_materialized_tree(
+                    candidate_pin, self.import_root
+                ):
+                    os.set_inheritable(candidate_pin, False)
+                    self.image_pin = candidate_pin
+            except (OSError, ValueError):
+                self.image_pin = None
+        if self.image_pin is None and (self.import_root / ".complete").is_file():
+            self.image_pin = checkout_trust.pin_materialized_tree(self.import_root)
+        self.replacement_pin: int | None = None
+        self.source_root = Path(
+            os.environ.get(_FOLLOWER_SOURCE_ROOT_ENV, str(self.import_root))
+        ).resolve()
+        self.code_stamp = os.environ.get(_FOLLOWER_IMAGE_COMMIT_ENV) or (
+            runs.follower_code_stamp()
+        )
+        self.replacement_root = self.import_root
         self.checked_at: float | None = None
         self.failed = False
         # The stamp whose replacement was proven unimportable and therefore not
@@ -294,7 +318,7 @@ class _FollowerReloader:
         live pane down with it. Returns whether the image is safe and, when it
         is not, one line naming why.
         """
-        return checkout_trust.reckon_imports(self.import_root)
+        return checkout_trust.reckon_imports(self.replacement_root)
 
     def _echo_deferred_dirty(self, detail: str) -> None:
         """Say once that a moved code stamp is held back by an unclean tree."""
@@ -344,6 +368,8 @@ class _FollowerReloader:
         from reckon.crew import runs
         from reckon.crew.dispatch import _export_launched_workers_for_reexec
 
+        if self.image_pin is not None:
+            checkout_trust.refresh_materialized_tree_pin(self.image_pin)
         if self.failed:
             return
         moment = time.monotonic()
@@ -353,7 +379,14 @@ class _FollowerReloader:
         ):
             return
         self.checked_at = moment
-        current_stamp = runs.follower_code_stamp()
+        if self.replacement_pin is not None:
+            os.close(self.replacement_pin)
+            self.replacement_pin = None
+        committed_image = bool(re.fullmatch(r"[0-9a-f]{40}", self.code_stamp))
+        current_head = (
+            checkout_trust.committed_head(self.source_root) if committed_image else None
+        )
+        current_stamp = current_head or runs.follower_code_stamp()
         if current_stamp == self.code_stamp:
             # No code has moved, so there is nothing to reload onto: a tree left
             # dirty without a stamp change is not a reload this arming owes.
@@ -369,21 +402,46 @@ class _FollowerReloader:
             # The code moved, so a gap earned by the checkout that timed out no
             # longer describes the one now on disk: this checkout starts afresh.
             self._clear_probe_retry()
-        # A tracked file differing from HEAD defers the reload: a tree mid-edit
-        # can import cleanly and still fail at first use. The check is repeated
-        # on every cadence once it has held one reload, because committing the
-        # edit cleans the tree without moving the stamp -- the content is
-        # already what the commit records -- so only a fresh read of the tree
-        # can tell the reload it may now proceed.
-        dirty, detail = checkout_trust.tracked_reckon_tree_is_dirty(self.import_root)
-        if dirty:
-            self._record_reload_deferral(
-                f"tracked files modified against HEAD ({detail})"
+        if current_head and current_stamp == current_head:
+            try:
+                self.replacement_root, removed, kept, self.replacement_pin = (
+                    checkout_trust.materialize_committed_tree(
+                        self.source_root, current_head, active_root=self.import_root
+                    )
+                )
+            except (OSError, RuntimeError) as exc:
+                self._record_reload_deferral(f"could not materialize HEAD ({exc})")
+                _echo_follow_line(
+                    f"reckon {self.label} deferred its reload: could not "
+                    f"materialize HEAD ({exc})",
+                    stream=self.stream,
+                )
+                return
+            for path in removed:
+                _echo_follow_line(
+                    f"reckon {self.label} removed old reload tree {path}",
+                    stream=self.stream,
+                )
+            for path in kept:
+                _echo_follow_line(
+                    f"reckon {self.label} kept reload tree {path}: live image lease",
+                    stream=self.stream,
+                )
+        else:
+            # A non-commit stamp belongs to an older or non-Git image. Keep its
+            # existing trust check until it can reload from a source checkout.
+            dirty, detail = checkout_trust.tracked_reckon_tree_is_dirty(
+                self.import_root
             )
-            if not self.dirty_deferral:
-                self.dirty_deferral = True
-                self._echo_deferred_dirty(detail)
-            return
+            if dirty:
+                self._record_reload_deferral(
+                    f"tracked files modified against HEAD ({detail})"
+                )
+                if not self.dirty_deferral:
+                    self.dirty_deferral = True
+                    self._echo_deferred_dirty(detail)
+                return
+            self.replacement_root = self.import_root
         self.dirty_deferral = False
         if self.probe_retry_at is not None and moment < self.probe_retry_at:
             # A probe on this stamp ran out of its bound a moment ago, and the
@@ -448,7 +506,7 @@ class _FollowerReloader:
         # Lead with the sys.path root that supplied the imported package.
         launcher = (
             "import sys; "
-            f"sys.path.insert(0, {str(self.import_root)!r}); "
+            f"sys.path.insert(0, {str(self.replacement_root)!r}); "
             "from reckon.cli import main; main()"
         )
         # The carried deadline travels in the environment this exec passes,
@@ -457,6 +515,12 @@ class _FollowerReloader:
         # bounds nothing it runs. Building the mapping here keeps the arming's
         # identity separate from every process but the replacement itself.
         exec_environment = dict(os.environ)
+        if current_head and current_stamp == current_head:
+            exec_environment[_FOLLOWER_SOURCE_ROOT_ENV] = str(self.source_root)
+            exec_environment[_FOLLOWER_IMAGE_COMMIT_ENV] = current_head
+            if self.replacement_pin is not None:
+                os.set_inheritable(self.replacement_pin, True)
+                exec_environment[_FOLLOWER_IMAGE_PIN_ENV] = str(self.replacement_pin)
         if not self.seat:
             # The reader's place reaches the replacement image through the
             # mapping this exec passes and never through ``os.environ``: every
@@ -518,6 +582,10 @@ class _FollowerReloader:
                 f"({exc}); cycle it with: {command}",
                 stream=self.stream,
             )
+        finally:
+            if self.replacement_pin is not None:
+                os.close(self.replacement_pin)
+                self.replacement_pin = None
 
 
 
@@ -2012,8 +2080,8 @@ def _follow_watch_lines(
         _echo_follow_line(line)
 
     while not _stopped() and not lifetime_elapsed and not consumer_gone and not settled:
-        identity = runs.watch_producer_identity(project)
         if not runs.producer_live(project):
+            identity = runs.watch_producer_identity(project)
             reason = _logged_producer_stop(project)
             # A producer that stops while this follower's fleet still holds
             # live work is a silent fleet the pane must name; one that stops

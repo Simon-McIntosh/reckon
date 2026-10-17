@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import os
 import socket
+import subprocess
 import threading
 from pathlib import Path
 
@@ -27,7 +28,8 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon.crew import runs
+from reckon import crew_follow_commands as follow
+from reckon.crew import obligation_snapshot, runs
 
 PROJECT = "proj"
 SESSION = "session-a"
@@ -39,6 +41,7 @@ WINDOW = 1.0
 STEP = 1.0
 
 STALE_STAMP = "0" * 64
+_GIT_HOME = os.environ.get("RECKON_HOME")
 
 
 @pytest.fixture()
@@ -204,6 +207,106 @@ def test_a_current_seat_says_nothing(isolated_home, monkeypatch) -> None:
     assert cli_module.FOLLOWER_PRODUCER_RELOADING_EVENT not in kinds, kinds
     assert cli_module.FOLLOWER_STALE_PRODUCER_EVENT not in kinds, kinds
     assert kinds.count(cli_module.FOLLOWER_PRODUCER_RELOADING_EVENT) == 0
+
+
+def test_a_producer_on_source_head_is_current_after_a_reload(
+    isolated_home, monkeypatch, tmp_path
+) -> None:
+    root = tmp_path / "source"
+    package = root / "reckon"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("")
+
+    def git(*args: str) -> str:
+        environment = dict(os.environ)
+        if _GIT_HOME is None:
+            environment.pop("RECKON_HOME", None)
+        else:
+            environment["RECKON_HOME"] = _GIT_HOME
+        return subprocess.run(
+            ["git", "-C", str(root), *args],
+            check=True,
+            capture_output=True,
+            text=True,
+            env=environment,
+        ).stdout.strip()
+
+    git("init")
+    git("config", "user.name", "Reload Test")
+    git("config", "user.email", "reload@example.invalid")
+    git("add", "reckon/__init__.py")
+    git("commit", "-m", "Add package")
+    first = git("rev-parse", "HEAD")
+    monkeypatch.setenv(follow._FOLLOWER_SOURCE_ROOT_ENV, str(root))
+    assert runs.follower_code_stamp() == first
+    assert obligation_snapshot.source_code_stamp() == first
+    _plant_seat(code_stamp=first)
+    current = runs.watch_producer_identity(PROJECT)
+    assert current["current_stamp"] == first
+    assert current["stale"] is False
+    assert cli_module.FOLLOWER_STALE_PRODUCER_EVENT not in _kinds(_events(monkeypatch))
+
+    (package / "example.py").write_text("VALUE = 'later'\n")
+    git("add", "reckon/example.py")
+    git("commit", "-m", "Add later source")
+    second = git("rev-parse", "HEAD")
+    assert runs.follower_code_stamp() == second
+    assert obligation_snapshot.source_code_stamp() == second
+    older = runs.watch_producer_identity(PROJECT)
+    assert older["code_stamp"] == first
+    assert older["current_stamp"] == second
+    assert older["stale"] is True
+    assert cli_module.FOLLOWER_STALE_PRODUCER_EVENT in _kinds(
+        _events(monkeypatch, reloaded_in_place=False)
+    )
+
+
+def test_registration_keeps_the_running_commit_when_head_moves(
+    isolated_home, monkeypatch, tmp_path
+) -> None:
+    root = tmp_path / "source"
+    package = root / "reckon"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("")
+
+    def git(*args: str) -> str:
+        environment = dict(os.environ)
+        if _GIT_HOME is None:
+            environment.pop("RECKON_HOME", None)
+        else:
+            environment["RECKON_HOME"] = _GIT_HOME
+        return subprocess.run(
+            ["git", "-C", str(root), *args],
+            check=True,
+            capture_output=True,
+            text=True,
+            env=environment,
+        ).stdout.strip()
+
+    git("init")
+    git("config", "user.name", "Reload Test")
+    git("config", "user.email", "reload@example.invalid")
+    git("add", "reckon/__init__.py")
+    git("commit", "-m", "Add package")
+    running_commit = git("rev-parse", "HEAD")
+    monkeypatch.setenv(follow._FOLLOWER_SOURCE_ROOT_ENV, str(root))
+    monkeypatch.setenv(follow._FOLLOWER_IMAGE_COMMIT_ENV, running_commit)
+    (package / "example.py").write_text("VALUE = 'newer'\n")
+    git("add", "reckon/example.py")
+    git("commit", "-m", "Move source head")
+    current_commit = git("rev-parse", "HEAD")
+
+    with runs._project_watch_claim(PROJECT, "1h") as (claimed, record):
+        assert claimed
+        assert record["code_stamp"] == running_commit
+        assert runs.follower_code_stamp() == current_commit
+        identity = runs.watch_producer_identity(PROJECT)
+        assert identity["code_stamp"] == running_commit
+        assert identity["current_stamp"] == current_commit
+        assert identity["stale"] is True
+        assert cli_module.FOLLOWER_STALE_PRODUCER_EVENT in _kinds(
+            _events(monkeypatch, reloaded_in_place=False)
+        )
 
 
 def test_the_default_window_covers_a_slow_reload() -> None:

@@ -14,9 +14,9 @@ from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Any
 
+from reckon import checkout_trust
 from reckon._store import write_json_atomically
 from reckon.crew import obligation_snapshot
-from reckon.crew.obligation_snapshot import code_stamp
 
 # Re-exported for the facade callers that read the stamp's own digest memo and
 # helper from this module; both names are the single implementation in
@@ -26,14 +26,13 @@ _follower_source_digests = obligation_snapshot._source_digests
 
 
 def follower_code_stamp() -> str:
-    """Return a stamp that advances when code used by a follower changes.
+    """Read source HEAD for reload and stale-image comparisons."""
+    return checkout_trust.source_code_identity(Path(__file__).resolve().parent.parent)
 
-    A follower's launch is built from the same source a producer's is, so it
-    reads the one package-wide :func:`reckon.crew.obligation_snapshot.code_stamp`
-    and the two cannot drift. The package directory is resolved from this
-    module rather than the stamp's own, so a caller can point at a copied tree.
-    """
-    return code_stamp(Path(__file__).resolve().parent.parent)
+
+def running_code_stamp() -> str:
+    """Read the commit this process imported, rather than source HEAD."""
+    return checkout_trust.running_code_identity(Path(__file__).resolve().parent.parent)
 
 
 def follower_dir(project: str) -> Path:
