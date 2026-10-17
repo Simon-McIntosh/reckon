@@ -23,10 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-version" content="54">
+<meta name="plan-version" content="55">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-section-depends-on" content="{&quot;s7&quot;: [&quot;new-work-gets-a-new-worker#s11&quot;]}">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 <meta name="plan-impl" content="0.9">
 <meta name="plan-commits" content="4cfc76a4,798e549d,3a06801e,394acda7,eb8db19a">
 </head>
@@ -461,7 +461,7 @@ resume burn, after</a>.</p>
 <p>Negative control: in each of the two patched tests, point the monkeypatch at a promotion attribute the capture path does not call. The <code>capture</code> injection case, the <code>refuse</code> case and the <code>boundary_hook</code> test must each then fail, which shows that each patch reaches the call promotion makes.</p>
 
     <h2 id="s11">§11 — A review run has one predicate</h2>
-<section data-reckon="section" data-id="s11" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="routine" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s11" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="routine" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p>Two functions in <code>reckon/crew</code> decide whether a run is a review, and they disagree. The owner is <code>_is_review_run</code> at <code>reckon/crew/recovery_review_delivery.py:44</code>, which <code>reckon/crew/recovery.py:199</code> re-exports. Promotion checks, obligations, and the review dispatch, delivery and acceptance paths all use it. It recognises a review by its minted node id, or by the role that <code>_pointer_role</code> (<code>reckon/crew/recovery_watch.py:512</code>) reads from the record root or from its node. The second copy, <code>_is_review_run</code> at <code>reckon/crew/dispatch_sessions.py:456</code>, reads the role from the record root only. A record whose <code>review</code> role is set only on its node is therefore a review to recovery but not to dispatch.</p>
 <p>Dispatch's copy decides a run's task identity in <code>_task_identity</code> (<code>dispatch_sessions.py:495</code>). A review it misses is keyed by its own node id rather than by the run it reviews. Its session is then decided as if it were a separate task, which is the selectivity §7 relies on.</p>
 <p>Three health reviews have raised this duplicate: <code>review-code-5e222083bf18</code> on 2026-10-14, <code>review-code-2f2060e98013</code> on 2026-10-16, and <code>review-code-5e5a52e59a82</code> on 2026-10-17. The last of these probed both functions:</p>
@@ -649,6 +649,9 @@ resume burn, after</a>.</p>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261017T110626399745-a-runs-session-has-one-capture-name" data-who="reckon-build" data-when="2026-10-17T11:33:08.989Z">
     <div class="r-comment-body"><p>Deleted the _capture_member_session alias and pointed all five call sites, the two imports and the dispatch re-export/facade entry at capture_run_session, moving the two test monkeypatches to the name promotion calls; `grep -rn _capture_member_session reckon/ tests/` prints nothing at head (13 lines at base), the three-file gate is 24 passed head vs 24 base (0 added failures), and the negative control fails the capture, refuse and boundary_hook cases (3 failed, EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-17T15:20:00Z">
+    <div class="r-comment-body"><p>§11 landed: recovery's <code>_is_review_run</code> is the one predicate, and <code>_task_identity</code> keys plan reviews by their slug and never by an empty string (commit <code>3de3a0d6c</code>). Gate: 31 passed at head, 25 at base. Both negative controls fail their cases. Review 116, no added failures. <a href="/reckon/evidence/archive/new-work-gets-a-new-worker-landed.html#s11">evidence</a></p></div>
 </div>
 </section>
 </main>

@@ -887,6 +887,23 @@ tests/test_no_member_dispatch_runs_alone.py::test_two_unnamed_reviews_launch_wit
 <p>The review left two follow-ons, both accepted. No test would catch the alias returning at the <code>observe</code> or <code>promotion_records</code> call sites; only the done-when's grep guards them. And the head gate log's header names the base revision rather than the head it measured. The first review of this run sat queued for two hours: the admit process predated the fence repair and kept rejecting the review-records write path, so it was discarded and redispatched directly. Logs are under <code>~/.config/reckon/crew/runs/r-20261017T110626399745-a-runs-session-has-one-capture-name/</code>.</p>
   </section>
 
+  <section id="s11">
+    <h2>§11 — a review run has one predicate</h2>
+    <p>Recovery's <code>_is_review_run</code> (<code>reckon/crew/recovery_review_delivery.py</code>) is now the only review predicate. The dispatch copy in <code>dispatch_sessions.py</code> and its re-export in <code>dispatch.py</code> are gone. <code>_task_identity</code> calls the owner, imported inside the function. It keys a <code>plan-review-of-&lt;slug&gt;</code> run as <code>("plan-review", project, slug)</code>, and a review whose reviewed run cannot be resolved by its own node id, never by an empty string. Before this, every plan review in a project shared <code>("review", project, "")</code>. Commit <code>3de3a0d6c</code>.</p>
+<table>
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td><code>grep -rn "def _is_review_run" reckon/</code></td><td>only <code>reckon/crew/recovery_review_delivery.py</code></td></tr>
+<tr><td>Gate: <code>test_plan_review_prefix_is_one_constant</code>, <code>test_a_resumed_head_is_reviewed</code>, <code>test_session_resumes_only_its_own_task</code> and <code>test_dispatch_reads_the_resolved_session</code></td><td>31 passed at head, 25 at base <code>4542d2c33</code> (the six new cases); no failure added</td></tr>
+<tr><td>Negative control A: root-only predicate restored</td><td>the node-only case fails (1 failed, <code>EXIT=1</code>)</td></tr>
+<tr><td>Negative control B: <code>REVIEW_NODE_PREFIX</code> stripped from plan-review ids again</td><td>the alpha, beta and shared-key cases fail (3 failed, <code>EXIT=1</code>)</td></tr>
+<tr><td>Ruff on the three paths</td><td>no finding added; the test file's 4 lines of format debt are cleared</td></tr>
+<tr><td>Independent review</td><td>116 of 120 (goal 20, evidence 18, scope 20, durability 18, fit 20, reuse 20); no added failures</td></tr>
+</tbody>
+</table>
+<p>The review left one follow-on, accepted. One <code>first == second</code> assertion evaluates the same record twice and cannot fail. The assertions that carry the plan-review key are the alpha and beta cases, and control B reddens them. §7's flip of <code>session_reuse</code> waits on this section through <code>plan-section-depends-on</code>. Logs are under <code>~/.config/reckon/crew/runs/r-20261017T143616807978-a-review-run-has-one-predicate/</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>
