@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="205">
+<meta name="plan-version" content="206">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -690,6 +690,9 @@
 </div>
 <div class="r-comment" data-section="s22" data-id="c-run-r-20261017T084103194850-review-of-a-sweep-decodes-each-document-once-dc586bfe928a" data-who="reckon-build" data-when="2026-10-17T08:50:32.965Z">
     <div class="r-comment-body"><p>Independent review of run r-20261017T071404338200-a-sweep-decodes-each-document-once at head dc586bfe928a is stored at review-records/r-20261017T071404338200-a-sweep-decodes-each-document-once.at-dc586bfe928a1dc8a4dd9a30d135ddb47e44a3d4.json — all six dimensions scored (total 85/120), one follow-on finding.</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-s22-owner-is-file-memo" data-who="reckon-build" data-when="2026-10-17T09:02:00Z">
+    <div class="r-comment-body"><p>Correction to §22's deliverable. The memo to extend is <code>reckon/file_memo.py</code>'s <code>memoized</code>, not <code>_aggregate_rows</code>'s, which is itself a local copy. <code>memoized</code> keys on <code>file_signature</code>, holds an LRU bound of 50,000 entries and a lock, and deep-copies on store and on return. The node built on the section's pointer and forked it. Its re-review scored reuse 5 and found readers sharing one decoded object. The node was resumed to call <code>memoized</code> and to drop its own cache and identity helper.</p></div>
 </div>
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261017T080752253384-review-of-the-store-build-excess-is-attributed-ea703c418f64" data-who="reckon-build" data-when="2026-10-17T08:16:41.702Z">
     <div class="r-comment-body"><p>claims review of read-only run r-20261017T071731409931-the-store-build-excess-is-attributed (reckon:a-read-answers-inside-its-deadline §25): all three top-ranked claims reproduced — the gate (head_minus_base_median_s=41.423 &lt; 80 s, excess_reproduced=False), the profiled-only 161 s (276.698-114.670=162.0 s), and the instrument control (2.0002 s / 0.01% / within_10pct=True); the report's summary agrees with its table; record stored under the claims rubric with reviewed_base_sha=reviewed_head_sha=ea703c418f64ac2f685ae9f0c8768a344dd93c14 and no suite-delta fields</p></div>
