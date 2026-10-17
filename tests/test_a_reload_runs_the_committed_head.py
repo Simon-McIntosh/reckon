@@ -207,6 +207,9 @@ def test_running_image_survives_cache_pruning(source, monkeypatch, capsys):
     first_image_commit = _commit(root, "running")
     reloader.poll({})
     first_image = _executed_root(execs)
+    assert (first_image / "reckon" / "example.py").read_text() == (
+        "VALUE = 'running'\n"
+    )
     pin = pins[0]
     monkeypatch.setenv(follow._FOLLOWER_IMAGE_PIN_ENV, str(pin))
     monkeypatch.setenv(follow._FOLLOWER_SOURCE_ROOT_ENV, str(root))
