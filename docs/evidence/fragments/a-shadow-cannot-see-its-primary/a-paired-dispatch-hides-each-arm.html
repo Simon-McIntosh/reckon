@@ -36,6 +36,20 @@ path with a stub in place of the harness and requires both arms to launch under
 their own allocated run directories, because a dry run never reaches the arm
 dispatch calls and so cannot see a keyword collision at them.</p>
 
+<p>The pair touches the run store only when it launches: a dry run resolves both
+arms without creating either run directory, so it leaves no artifact that would
+afterwards read as a run whose worker died before writing anything. Both
+directories, and the shadow's session directory, are created on the launch path
+before the primary starts.</p>
+
+<p>The primary arm's mask names the shadow's <em>session</em> directory rather
+than its worktree, because the shadow's worktree does not exist yet when the
+primary launches and the fence skips a masked path that is not there — a mask
+over an absent path hides nothing. The session directory is the worktree's
+parent: creating only the parent leaves the shadow's own
+<code>git worktree add</code> its path free, while hiding the directory in the
+primary's namespace covers whatever the shadow writes beneath it later.</p>
+
 <h2 id="a-paired-dispatch-hides-each-arm-measure">Measure</h2>
 <p>The gate executes the composed argument vector under a real bubblewrap
 fence, never inspecting its shape: each arm lists its partner's run directory
@@ -44,11 +58,20 @@ directory and worktree. With the primary arm's masks dropped the same listing
 is non-empty (<code>partner-run-dir [stream.jsonl,]</code>), which is the
 declared negative control and is what makes the empty listing mean anything.</p>
 
-<pre>tests/test_a_paired_dispatch_hides_each_arm.py: 6 passed
+<p>The masks are read back from the argument vector the primary's own launch
+composes, and the shadow's answer is then written under its session directory:
+the primary's fence lists that directory as absent, while the same listing
+without the mask shows the content. A paired dry run is held to the run store's
+listing before and after, so the pair is shown to write nothing it did not
+launch.</p>
+
+<pre>tests/test_a_paired_dispatch_hides_each_arm.py: 9 passed
 tests/test_crew.py (the population that drives the dispatcher): 192 passed
 negative control (primary arm's masks dropped): EXIT=1, listing non-empty
 negative control (the launch-path check's change reverted): EXIT=1,
-  TypeError: got multiple values for keyword argument 'route'</pre>
+  TypeError: got multiple values for keyword argument 'route'
+ruff, base 7f28ec35 vs head 72386e05, per changed file through stdin:
+  no finding and no formatting hunk at head that the base lacks</pre>
 
 <h2 id="a-paired-dispatch-hides-each-arm-limits">Limits</h2>
 <p><code>tests/test_crew.py</code>, the file carrying the dispatcher's own suite,
