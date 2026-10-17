@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "both arms read in one format; head-gate.log reports no failures (4 passed) and base-gate.log reports the three test ids, so the reviewed run added no failing test",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/roadmap.py:2605",
+    "reckon/mcp_views.py:1795",
+    "reckon/mcp_views.py:1768",
+    "reckon/ledger.py:1196",
+    "reckon/ledger.py:1364 (ledger._indexed_data sqlite3.connect)"
+  ],
+  "completed_at": "2026-10-17T11:48:12.512Z",
+  "dispatched_at": "2026-10-17T11:33:05Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "1558",
+      "severity": "follow-on",
+      "text": "follow-on: storing the memo under both the pre-read and post-read stamp (reckon/mcp_views.py:1566-1567) lets a later read whose stamp equals the post-read stamp hit `before in cached[0]` and be served a value computed at the pre-read state, so a pointer written during the aggregate is present in the stamp but absent from the value; the docstring at reckon/mcp_views.py:1552 claims the opposite (\"a pointer written during this aggregate is seen then\"), and the memo is module-global and keyed so this is reachable. It is bounded to the window before the next stamp change and does not hold the node."
+    },
+    {
+      "file": "tests/test_a_fresh_read_takes_the_ledger_from_its_index.py",
+      "line": "160",
+      "severity": "follow-on",
+      "text": "follow-on: the test docstring claims \"A pointer written during the aggregate is seen next read\", but no assertion checks the late pointer appears in the second result; only len(loads)==1 (:207) and first==second (:208) are asserted, and first==second holds trivially because the second call is served the memo, so the documented freshness property is unguarded and, per the implementation, false."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "996",
+      "severity": "follow-on",
+      "text": "follow-on: _default_cache_root re-implements the user-cache resolution (XDG_CACHE_HOME else ~/.cache, then /reckon) already owned by reckon/_store.py:193 cache_root, so the same base path now has two private spellings that can drift; the writability-fallback wrapper around it is new, so this is a partial duplication rather than a fully forked capability."
+    },
+    {
+      "file": "tests/test_a_fresh_read_takes_the_ledger_from_its_index.py",
+      "line": "145",
+      "severity": "follow-on",
+      "text": "follow-on: the only recorded ruff log (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T104516290345-a-fresh-read-takes-the-ledger-from-its-index/ruff.log) is red \u2014 EXIT=1 for both `ruff check` (PLW1510 here, W292 at :207) and `ruff format --check` \u2014 and predates the fix, while the manifest claims \"test file 0\"; the landed file at faee86b8e is in fact clean (verified: check EXIT=0, format EXIT=0), so the recorded ruff evidence is a stale pre-fix arm with no clean log recorded for the reviewed revision."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base d23f8142f; one commit moves the index path behind _index_directory/_default_cache_root, widens the attempt-memo condition to both stamps, adds a 208-line test, and lands the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_fresh_read_takes_the_ledger_from_its_index.py with 200 run files, a current index, a fresh process making no _read_run call, a second case writing a live pointer mid-aggregate and finding ledger.load called once, both failing on a base copy, with the exception named from the run directory; the manifest and both gate logs record these.",
+    "goal": "the goal is a fresh roadmap read taking the run ledger from its index once without the per-file scan; reckon/ledger.py:1003 _index_directory returns the user cache when the configured pick cache exists and is unwritable, and reckon/mcp_views.py:1566 stores the aggregate under both stamps so one read no longer recomputes it, matching the goal.",
+    "manifest": "read; it records commit faee86b8e, the head arm \"4 passed in 1.81s\" EXIT=0, the base arm \"3 failed, 1 passed\" EXIT=1 with the three failure ids, the reproduction log, and the ruff delta on the changed files.",
+    "write_paths": "the manifest declares reckon/ledger.py, reckon/mcp_views.py, the test file and the evidence fragment; the diff touches exactly those four paths and no other."
+  },
+  "justifications": {
+    "durability": "tests/test_a_fresh_read_takes_the_ledger_from_its_index.py:207 asserts len(loads)==1 and is red on the base tree (\"ledger.load ran 2 times in one read\"), and :117's READ_RUN=0 is red on base, so both regressions the change guards are independently caught; deducting because :208 first==second is tautological under the memo and the memo's freshness property (\"seen next read\") is unasserted.",
+    "evidence": "the done_when's measures are met and logged: tests/test_a_fresh_read_takes_the_ledger_from_its_index.py builds 200 run files and asserts READ_RUN=0 for a fresh process and ledger.load==1 across two calls; head-gate.log's summary reads \"4 passed in 1.81s\" EXIT=0 and base-gate.log \"3 failed, 1 passed in 2.66s\" EXIT=1 with \"ledger.load ran 2 times in one read\".",
+    "fit": "reckon/ledger.py:1003 and reckon/mcp_views.py:1540 follow the surrounding docstring-and-private-helper idiom with no plan, sprint or ticket label in any name; deducting because reckon/mcp_views.py:1552 asserts a freshness the code does not deliver.",
+    "goal_fidelity": "reckon/ledger.py:1024 _run_index_path now resolves through reckon/ledger.py:1003 _index_directory, which publishes the index to the user cache when the configured pick cache is not writable, so a fresh read finds and opens the index instead of scanning the run files, and reckon/mcp_views.py:1566 stores the attempt memo across the volatile move so one read aggregates once.",
+    "reuse": "reckon/ledger.py:996 _default_cache_root re-resolves XDG_CACHE_HOME else ~/.cache/reckon, the same resolution the repository already owns at reckon/_store.py:193 in cache_root; the writability-fallback wrapper is new but the resolution is duplicated rather than shared.",
+    "scope_discipline": "git show --stat faee86b8e touches exactly the four declared write paths (reckon/ledger.py, reckon/mcp_views.py, tests/test_a_fresh_read_takes_the_ledger_from_its_index.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/a-fresh-read-takes-the-ledger-from-its-index.html) and no undeclared file."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a fresh roadmap read taking the run ledger from its index once without the per-file fallback scan; reckon/ledger.py:1003 _index_directory returns the user cache when the configured pick cache exists and is unwritable, and reckon/mcp_views.py:1566 stores the aggregate under both stamps so one read no longer recomputes it.\nVERDICT done_when: the done_when names tests/test_a_fresh_read_takes_the_ledger_from_its_index.py with 200 run files, a current index, a fresh process making no _read_run call, and a second case writing a live pointer mid-aggregate and finding ledger.load called once, both counts failing on a base copy, with the exception named from a run-directory log; the manifest and both gate logs record exactly these.\nVERDICT write_paths: the manifest declares reckon/ledger.py, reckon/mcp_views.py, tests/test_a_fresh_read_takes_the_ledger_from_its_index.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-fresh-read-takes-the-ledger-from-its-index.html; git show --stat faee86b8e touches exactly those four paths.\nVERDICT manifest: read; it records commit faee86b8e, the head arm \"4 passed in 1.81s\" EXIT=0, the base arm \"3 failed, 1 passed in 2.66s\" EXIT=1 with three failure ids matching base-gate.log, the reproduction log, and the ruff delta.\nVERDICT diff: read commit by commit against base d23f8142f; one commit moves the index path behind _index_directory/_default_cache_root (reckon/ledger.py:996-1024), widens the attempt-memo condition to both stamps (reckon/mcp_views.py:1558-1567), adds a 208-line test, and lands the evidence fragment.\nCALL_SITES: reckon/roadmap.py:2605, reckon/mcp_views.py:1795, reckon/mcp_views.py:1768, reckon/ledger.py:1196, reckon/ledger.py:1364\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1024 routes _run_index_path through _index_directory so a fresh read opens the index, and reckon/mcp_views.py:1566 stores the memo across the volatile move so one roadmap read aggregates once.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_fresh_read_takes_the_ledger_from_its_index.py asserts READ_RUN=0 and ledger.load==1, and head-gate.log's summary reads \"4 passed in 1.81s\" EXIT=0 against base-gate.log's \"3 failed, 1 passed\" EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat faee86b8e touches only the four declared write paths and no undeclared file.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_fresh_read_takes_the_ledger_from_its_index.py:207 fails on the base regression (\"ledger.load ran 2 times in one read\") and :117's READ_RUN=0 is red on base, though :208 first==second is tautological under the memo.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/ledger.py:1003 and reckon/mcp_views.py:1540 follow the surrounding idiom with no plan label, but reckon/mcp_views.py:1552 asserts a freshness the code does not deliver.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/ledger.py:996 duplicates the XDG_CACHE_HOME-else-~/.cache resolution owned by reckon/_store.py:193 cache_root rather than sharing it, though the writability-fallback wrapper is new.\nFINDING reckon/mcp_views.py:1558 follow-on: storing the memo under both the pre- and post-read stamp lets a later read whose stamp equals the post-read stamp be served a value from pre-read state, so a pointer written during the aggregate is in the stamp but not the value, contradicting the docstring at reckon/mcp_views.py:1552.\nFINDING tests/test_a_fresh_read_takes_the_ledger_from_its_index.py:160 follow-on: the docstring claims the late pointer is \"seen next read\" but no assertion checks it; first==second is tautological under the memo, so the freshness property is unguarded and false.\nFINDING reckon/ledger.py:996 follow-on: _default_cache_root duplicates the user-cache resolution already owned by reckon/_store.py:193 cache_root, giving one base path two private spellings that can drift.\nFINDING tests/test_a_fresh_read_takes_the_ledger_from_its_index.py:145 follow-on: the only recorded ruff log is red (EXIT=1 at PLW1510 here and W292 at :207) and predates the fix while the manifest claims the test file adds 0 findings; the landed file is verified clean, so no clean ruff log exists for the reviewed revision.",
+  "review_run_id": "r-20261017T113208074260-review-of-a-fresh-read-takes-the-ledger-from-its-index-faee86b8e84f",
+  "reviewed_base_sha": "d23f8142f8bc29df1cf5b1b4e8bf9741d7ad8219",
+  "reviewed_head_sha": "faee86b8e84f28d6632f65ac841c38af8118e17e",
+  "reviewed_run_id": "r-20261017T104516290345-a-fresh-read-takes-the-ledger-from-its-index",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T11:42:31.917668+00:00",
+  "total": 102
+}
