@@ -215,6 +215,11 @@
     <p>Folded into the §44 run at the lead's request and merged with it as <code>ed866103e</code>. <code>crew_follow_commands.py</code> no longer writes "removed old reload tree" or "kept reload tree" lines to the ticker stream every Monitor relays. <code>_record_reload_prune</code> keeps the last prune on the seat's watch record instead: when it ran, how many trees it removed, and which trees a lease kept. One stream line remains when a removal itself raised. <code>tests/test_reload_tree_housekeeping_stays_off_the_stream.py</code> holds both cases. The three assertions in <code>tests/test_a_reload_runs_the_committed_head.py</code> that pinned the old lines now read the seat record. The reload that moves each follower onto <code>ed866103e</code> still runs the previous code, so expect one last burst of lines. Reloads after that are quiet.</p>
   </section>
 
+  <section id="s47">
+    <h2>§47 — a reload never aborts on a tree a peer pruned, landed</h2>
+    <p>Run <code>r-20261017T221110090490</code>, reviewed head <code>41fcc91df</code>, merged as <code>a31c936d3</code>. <code>materialize_committed_tree</code> in <code>reckon/checkout_trust.py</code> ranks images through <code>_images_ranked_for_pruning</code>, which skips an entry whose <code>stat()</code> races a peer's removal. It prunes through <code>_open_prune_lease</code>, which counts a tree a peer already removed as removed rather than raising. That covers a tree gone before its lease opens and one removed mid-walk (<code>ENOTDIR</code>), so a follower that loses the prune race no longer aborts its reload. <code>COMMITTED_TREE_PUBLISH_GRACE_SECONDS</code> rises from 120 s to 300 s, covering the 137 s HEAD-churn window §46 measured. This closes the race §46 named for reckon-cd's 17:10Z deferral and imas-ambix-1d's two later failures.</p><p>Evidence. Five new cases. The base control reddens four: two raise out of <code>materialize_committed_tree</code>, and the 137 s tree is pruned. The review scored 108/120. The importer population at merge (<code>r-20261017T223606728035</code>, 170 files) added no failing id; the same 3 failures and 1 error appear at both revisions. One window §44's review found was folded here but not built, and §48 carries it.</p>
+  </section>
+
 </main>
 </body>
 </html>
