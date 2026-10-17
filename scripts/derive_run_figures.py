@@ -14,7 +14,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -39,29 +39,48 @@ def backfill_run_figures(
     a second run is a no-op.
     """
 
-    data, version = ledger.load(project, root=root)
+    data, _union_version = ledger.load(project, root=root)
+    # The sweep decides from the union — a run that owns a file is part of the
+    # history too — but each patch is applied where the row is held: through the
+    # aggregate for the aggregate's own rows, and through the run's own file for
+    # the rest. Handing the union back to the writer would copy every per-run row
+    # into the tracked aggregate beside the file that already holds it.
+    aggregate, version = ledger.load_aggregate(project, root)
+    held = {
+        str(row["run_id"]): row
+        for row in aggregate["runs"]
+        if isinstance(row, Mapping) and row.get("run_id")
+    }
     filled = 0
     skipped = 0
     unmeasurable = 0
+    aggregate_changed = False
     for row in data["runs"]:
         missing_orientation = "orientation_input_tokens" not in row
         missing_tool_steps = "tool_steps" not in row
         if not missing_orientation and not missing_tool_steps:
             continue
         if capabilities.run_stream_path(row) is None:
-            row["tool_steps"] = None
-            row["orientation_input_tokens"] = None
+            figures = {"tool_steps": None, "orientation_input_tokens": None}
             skipped += 1
-            continue
-        figures = capabilities.derive_run_figures(row)
-        row["tool_steps"] = figures["tool_steps"]
-        row["orientation_input_tokens"] = figures["orientation_input_tokens"]
-        if figures["tool_steps"] is None and figures["orientation_input_tokens"] is None:
-            unmeasurable += 1
         else:
-            filled += 1
-    if filled or skipped or unmeasurable:
-        ledger.write(project, data, version, root=root)
+            figures = capabilities.derive_run_figures(row)
+            if (
+                figures["tool_steps"] is None
+                and figures["orientation_input_tokens"] is None
+            ):
+                unmeasurable += 1
+            else:
+                filled += 1
+        home = held.get(str(row.get("run_id") or ""))
+        if home is not None:
+            home["tool_steps"] = figures["tool_steps"]
+            home["orientation_input_tokens"] = figures["orientation_input_tokens"]
+            aggregate_changed = True
+        else:
+            _write_run_row(project, {**row, **figures}, root)
+    if aggregate_changed:
+        ledger.write(project, aggregate, version, root=root)
     return {
         "project": project,
         "rows_filled": filled,
@@ -69,6 +88,18 @@ def backfill_run_figures(
         "rows_unmeasurable": unmeasurable,
         "ledger_version": version,
     }
+
+
+def _write_run_row(
+    project: str, row: dict[str, Any], root: str | Path | None
+) -> None:
+    """Amend one run's own file through the canonical serialiser."""
+    from reckon._store import write_atomically
+
+    path = ledger.run_path(project, str(row["run_id"]), root)
+    write_atomically(
+        path, lambda stream: stream.write(ledger.serialize_run(row)), mode=0o600
+    )
 
 
 def _parse(argv: list[str]) -> argparse.Namespace:

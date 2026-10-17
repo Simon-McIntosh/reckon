@@ -640,9 +640,10 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
     identity is part of what a resume finds.
 
     The removal runs after the release receipt is committed, so no later write
-    amends a run file and leaves the aggregate behind; the roster write's own
-    union read keeps the run-count guard satisfied and re-encodes every per-run
-    file it copies, so the two copies stay identical.
+    amends a run file and leaves the aggregate behind. The roster read is the
+    aggregate's own (:func:`ledger.load_aggregate`), never :func:`ledger.load`'s
+    union: a roster holds no run rows, so the union's run rows could only be
+    copied into the tracked aggregate beside the files that already carry them.
     """
     run_id = str(record.get("run_id") or "")
     member_id = str(record.get("member") or "").strip()
@@ -662,7 +663,7 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
         }
     try:
         for _attempt in range(8):
-            data, version = ledger.load(project, root)
+            data, version = ledger.load_aggregate(project, root)
             if not any(str(entry.get("id")) == member_id for entry in data["members"]):
                 return {
                     "identity_retired": False,

@@ -121,7 +121,21 @@ def backfill_run_durations(
     streams_root: str | Path | None = None,
 ) -> dict[str, Any]:
     """Fill duration figures on old rows and explicitly mark every real gap."""
-    data, version = ledger.load(project, root=root)
+    data, _union_version = ledger.load(project, root=root)
+    # The sweep decides from the union — a run that owns a file is part of the
+    # history too — but each row is amended where it is held: through the
+    # aggregate for the aggregate's own rows, and through the run's own file for
+    # the rest. Handing the union back to the writer would copy every per-run row
+    # into the tracked aggregate beside the file that already holds it.
+    aggregate, version = ledger.load_aggregate(project, root)
+    held = {
+        str(item["run_id"]): item
+        for item in aggregate["runs"]
+        if isinstance(item, Mapping) and item.get("run_id")
+    }
+    file_rows: dict[str, dict[str, Any]] = {}
+    processed_files: set[str] = set()
+    aggregate_changed = False
     counts = {
         "project": project,
         "rows_processed": 0,
@@ -131,7 +145,14 @@ def backfill_run_durations(
         "streams_missing": 0,
         "ledger_version": version,
     }
-    for row in data["runs"]:
+    for union_row in data["runs"]:
+        run_id = str(union_row.get("run_id") or "")
+        home = held.get(run_id)
+        if home is None:
+            row = file_rows.setdefault(run_id, dict(union_row))
+        else:
+            row = home
+            aggregate_changed = True
         state = ledger.duration_measurement_state(row)
         marker = row.get("duration_measurement")
         retry_legacy_codex_join = (
@@ -144,6 +165,8 @@ def backfill_run_durations(
         if state != "missing" and not retry_legacy_codex_join:
             continue
         counts["rows_processed"] += 1
+        if home is None:
+            processed_files.add(run_id)
         elapsed = _elapsed_seconds(row)
         path = _stream_path(row, streams_root)
         if path is None:
@@ -212,8 +235,25 @@ def backfill_run_durations(
         counts["rows_measured"] += 1
 
     if counts["rows_processed"]:
-        counts["ledger_version"] = ledger.write(project, data, version, root=root)
+        for run_id in sorted(processed_files):
+            _write_run_row(project, file_rows[run_id], root)
+        if aggregate_changed:
+            counts["ledger_version"] = ledger.write(
+                project, aggregate, version, root=root
+            )
     return counts
+
+
+def _write_run_row(
+    project: str, row: dict[str, Any], root: str | Path | None
+) -> None:
+    """Amend one run's own file through the canonical serialiser."""
+    from reckon._store import write_atomically
+
+    path = ledger.run_path(project, str(row["run_id"]), root)
+    write_atomically(
+        path, lambda stream: stream.write(ledger.serialize_run(row)), mode=0o600
+    )
 
 
 def _parse(argv: list[str]) -> argparse.Namespace:

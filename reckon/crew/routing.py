@@ -2823,6 +2823,12 @@ def reap_idle_session_members(
     reaped: list[str] = []
     for attempt in range(max(1, attempts)):
         data, version = ledger.load(project, root=root)
+        # The decision reads the union — a member's last dispatch may sit in a
+        # completed run's own file — while the write carries the aggregate's own
+        # rows. Writing the union back would copy every per-run row into the
+        # tracked aggregate beside the file that already holds it, which the
+        # writer refuses.
+        aggregate, _aggregate_version = ledger.load_aggregate(project, root)
         last_dispatch: dict[str, datetime] = {}
         for record in [*data["runs"], *pointers]:
             member_id = str(record.get("member") or "")
@@ -2868,6 +2874,9 @@ def reap_idle_session_members(
         data["members"] = [
             entry for entry in data["members"] if str(entry.get("id")) not in reaped
         ]
+        # The write carries the aggregate's own rows with the roster removal
+        # applied; the union's run rows stay in the files that already hold them.
+        data["runs"] = aggregate["runs"]
         try:
             # The reap is the one caller entitled to drop roster members: this
             # function computes `reaped` above and the removal is its whole

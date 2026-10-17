@@ -957,6 +957,24 @@ def _load_aggregate(
     )
 
 
+def load_aggregate(
+    project: str, root: str | Path | None = None
+) -> tuple[dict[str, Any], int]:
+    """Read the aggregate's own collections, never the union :func:`load` merges.
+
+    A caller that intends to write the ledger reads through here: the union
+    :func:`load` returns is the reader's view, and its run rows include every
+    run that already owns a file under ``runs/``. Handing those rows back to
+    :func:`write` would copy each of them into the tracked aggregate beside its
+    own file, which :func:`write` refuses.
+
+    A caller that has to decide from the whole history — an idle member's last
+    dispatch, a row to patch — still reads :func:`load`, and passes the rows
+    this returns, patched in place where the row is one of them, to the writer.
+    """
+    return _load_aggregate(project, root)
+
+
 def run_ids(project: str, root: str | Path | None = None) -> set[str]:
     """Read index membership without decoding the individual run payloads."""
     data, _version = _load_aggregate(project, root)
