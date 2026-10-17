@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling,measurement">
   <meta name="plan-blocks" content="the-ledger-is-one-file-per-run#s4">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;}">
   <title>A Velocity Window May Open Before The Ledger | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -114,7 +114,7 @@
     
 
     <h2 id="s2">§2 — A long window&#x27;s ledger search stays inside its git bound</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p>§1's post-merge check did not exit 0. At main <code>440ce55a6</code>, <code>reckon crew velocity --project reckon --since 2026-08-01</code> gets past the base read that used to crash. It then fails with <code>subprocess.TimeoutExpired</code> after 180 seconds in the search <code>recover_ledger_clocks</code> runs at <code>reckon/velocity.py:1217</code>. A window whose base already has a ledger fails in the same way: <code>--since 2026-09-01</code> at <code>534f6536e</code> ended with the same timeout, with <code>EXIT=1</code> after 410 seconds. The timeout is therefore older than §1: the crash hid it for windows that open before the ledger, and it already broke long windows. Both logs are under <code>~/.cache/reckon-velocity-window-check/</code>.</p>
 <p>The search is one <code>git log --first-parent -p --unified=0 -G &lt;every missing run id&gt; origin..head -- crew.json runs/</code>. <code>run_git</code> (<code>reckon/velocity.py:149</code>) bounds every git call at 180 seconds. The search has to generate the patch of every commit that touched <code>crew.json</code> in the window. Until per-run records landed, nearly every promotion rewrote that file at tens of megabytes, so a window reaching back into August or September asks git for hundreds of such patches.</p>
 <p><strong>Remedy.</strong> Most of the runs in these windows can only be placed by the <code>crew.json</code> search. Per-run files first appear on 2026-09-25 (<code>e080ed967</code>). The content review measured the runs without <code>promotion_commits</code> that also have no per-run file: 1,803 in the 2026-08-01 window and 1,446 in the 2026-09-01 window. So the search itself must stay inside the bound. Two changes, both in <code>recover_ledger_clocks</code> and its cache, with no public name added:</p>
@@ -166,7 +166,10 @@
     <div class="r-comment-body"><p>Post-merge check for §1, run at merge <code>440ce55a6</code>: <code>reckon crew velocity --project reckon --since 2026-08-01</code> no longer raises <code>CalledProcessError</code> at the base read. It now reaches the search in <code>recover_ledger_clocks</code> and exits 1 there when that search times out after 180 seconds. <code>--since 2026-09-01</code> times out in the same place, so the timeout is a separate, older defect. §1's code is in the tree; its fourth done-when item waits on §2.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261017T200233069086-review-of-a-long-window-ledger-search-stays-bounded-0bb5da164cf9" data-who="reckon-build" data-when="2026-10-17T20:24:56.909Z">
-    <div class="r-comment-body"><p>Independent review attached to r-20261017T161034396287-a-long-window-ledger-search-stays-bounded at head 0bb5da164: all six dimensions scored 0..20 (goal_fidelity 18, evidence 14, scope_discipline 16, durability 17, fit 18, reuse 15; total 98), the revision read recorded as reviewed_base_sha 55a9d0708704b2d8b5fe851bd916778efead2d7a and reviewed_head_sha 0bb5da164cf96b8974d87b64814d9085df9f85fd, added_failure_count 0 with no added failure ids derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs, no blocking finding and four follow-on findings; the record is stored in review-records/ inside the reviewed run&#x27;s directory and not in any worktree.</p></div>
+    <div class="r-comment-body"><p>Independent review attached to r-20261017T161034396287-a-long-window-ledger-search-stays-bounded at head 0bb5da164: all six dimensions scored 0..20 (goal_fidelity 18, evidence 14, scope_discipline 16, durability 17, fit 18, reuse 15; total 98), the revision read recorded as reviewed_base_sha 55a9d0708704b2d8b5fe851bd916778efead2d7a and reviewed_head_sha 0bb5da164cf96b8974d87b64814d9085df9f85fd, added_failure_count 0 with no added failure ids derived from the reviewed run's own baseline_suite and after_suite gate logs, no blocking finding and four follow-on findings; the record is stored in review-records/ inside the reviewed run's directory and not in any worktree.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-17T20:40:00Z">
+    <div class="r-comment-body"><p>§2 landed: the ledger search places runs by their record file first, then searches in cached 128-commit slices (commits <code>caf08d8e8</code>, <code>0bb5da164</code>). Gate: 27 passed at head, 24 at base. Both negative controls fail their case. Review total 98, no added failures. The post-merge runs of both real windows are still owed. <a href="/reckon/evidence/archive/a-velocity-window-may-open-before-the-ledger-landed.html#s2">evidence</a></p></div>
 </div>
 </section>
 </main>
