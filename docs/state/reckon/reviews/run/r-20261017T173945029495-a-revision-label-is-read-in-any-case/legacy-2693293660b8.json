@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite arm, so the added-failure count was not taken",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:716",
+    "reckon/crew/reports.py:1159",
+    "reckon/crew/reports.py:2198"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-17T17:40:41Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/a-revision-label-is-read-in-any-case.html",
+      "line": "48",
+      "severity": "follow-on",
+      "text": "follow-on: the Measure paragraph labels the head arm \"change present, revision 91a8aea54\", which is the base revision, while the head-gate.log it cites carries \"arm=head revision=58efccfe838c7a0bb506072abdc06264cc2e09ca\" on its first line, so the fragment states a head-arm revision its own cited capture contradicts."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1336",
+      "severity": "follow-on",
+      "text": "follow-on: the sibling reader of the same capability, _LOGGED_REVISION_RE via recorded_log_revision at review.py:1704, is still case- and label-sensitive \u2014 it returns None for \"REV=<sha>\", \"Revision: <sha>\" and \"rev=<sha>\" (measured at head) \u2014 so a log the audit now accepts annotates with a null head_log_revision and the two readers of one first-line revision disagree."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 91a8aea54aca17e98ce06aa7d3012bfe361105ef; one commit (58efccfe838c) changes three files \u2014 reports.py (the pattern plus its comment), the new test file, and the new evidence fragment \u2014 all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_revision_label_is_read_in_any_case.py; the manifest records the gate as 5 passed / EXIT=0 at head-gate.log and the run directory negative-control.log as 3 failed, 2 passed / EXIT=1, and I re-ran the single named test at head (58efccfe838c) and got 5 passed.",
+    "goal": "the node's goal is \"Make the gate-log audit read a first-line revision label in any case while still requiring the label\"; reckon/crew/reports.py:1146 recompiles _GATE_LOG_REVISION with re.IGNORECASE at reports.py:1148, so a first line reading REV=<sha>, Revision: <sha> or rev=<sha> is read while the label itself stays required.",
+    "manifest": "read; status complete, commits 58efccfe838c, tests and both logs recorded with their EXIT lines, but it carries no baseline_suite or after_suite arm, so the added-failure delta was not measured from suite logs.",
+    "write_paths": "read the manifest's declared paths (reckon/crew/reports.py, tests/test_a_revision_label_is_read_in_any_case.py, the the-suite-is-green-at-head fragment, the a-revision-label-is-read-in-any-case figure directory); all three files in the diff are inside them."
+  },
+  "justifications": {
+    "durability": "the three upper-case label cases parametrised at tests/test_a_revision_label_is_read_in_any_case.py:75 redden at the base tree in negative-control.log (REV=, Revision: and REVISION= fail there), so the assertion at :99 fails if re.IGNORECASE is dropped.",
+    "evidence": "tests/test_a_revision_label_is_read_in_any_case.py is named by the done_when and its 5 passed / EXIT=0 head result is recorded in head-gate.log while negative-control.log records 3 failed / EXIT=1, and the ruff delta the fragment claims (one pre-existing SIM102 at reports.py:702) I reproduced at head.",
+    "fit": "the re.IGNORECASE flag matches the sibling idiom _TEST_LOG_COMMAND_LABEL at reports.py:1227, and the added comment at reports.py:1141 describes the mechanism with no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/reports.py:1148 adds re.IGNORECASE to _GATE_LOG_REVISION and the label requirement at reports.py:1147 is unchanged, so a bare hex run still names no revision.",
+    "reuse": "no definition was added; the fix extends the single owner of the audit's first-line revision read at reports.py:1146, though a second reader of the same capability at review.py:1336 was left case-sensitive (see the finding).",
+    "scope_discipline": "the diff touches only reckon/crew/reports.py, tests/test_a_revision_label_is_read_in_any_case.py and the fragment, every one inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Make the gate-log audit read a first-line revision label in any case while still requiring the label\"; reckon/crew/reports.py:1146 recompiles _GATE_LOG_REVISION with re.IGNORECASE at reports.py:1148, so a first line reading REV=<sha>, Revision: <sha> or rev=<sha> is read while the label itself stays required.\nVERDICT done_when: the done_when names tests/test_a_revision_label_is_read_in_any_case.py; the manifest records the gate as 5 passed / EXIT=0 at head-gate.log and the run directory negative-control.log as 3 failed, 2 passed / EXIT=1, and I re-ran the single named test at head (58efccfe838c) and got 5 passed.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/reports.py, tests/test_a_revision_label_is_read_in_any_case.py, the the-suite-is-green-at-head fragment, the a-revision-label-is-read-in-any-case figure directory); all three files in the diff are inside them.\nVERDICT manifest: read; status complete, commits 58efccfe838c, tests and both logs recorded with their EXIT lines, but it carries no baseline_suite or after_suite arm, so the added-failure delta was not measured from suite logs.\nVERDICT diff: read commit by commit against 91a8aea54aca17e98ce06aa7d3012bfe361105ef; one commit (58efccfe838c) changes three files \u2014 reports.py (the pattern plus its comment), the new test file, and the new evidence fragment \u2014 all inside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:716, reckon/crew/reports.py:1159, reckon/crew/reports.py:2198\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:1148 adds re.IGNORECASE to _GATE_LOG_REVISION and the label requirement at reports.py:1147 is unchanged, so a bare hex run still names no revision.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_revision_label_is_read_in_any_case.py is named by the done_when and its 5 passed / EXIT=0 head result is recorded in head-gate.log while negative-control.log records 3 failed / EXIT=1, and the ruff delta the fragment claims (one pre-existing SIM102 at reports.py:702) I reproduced at head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/reports.py, tests/test_a_revision_label_is_read_in_any_case.py and the fragment, every one inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the three upper-case label cases parametrised at tests/test_a_revision_label_is_read_in_any_case.py:75 redden at the base tree in negative-control.log (REV=, Revision: and REVISION= fail there), so the assertion at :99 fails if re.IGNORECASE is dropped.\nSCORE fit: 18\nJUSTIFICATION fit: the re.IGNORECASE flag matches the sibling idiom _TEST_LOG_COMMAND_LABEL at reports.py:1227, and the added comment at reports.py:1141 describes the mechanism with no plan or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: no definition was added; the fix extends the single owner of the audit's first-line revision read at reports.py:1146, though a second reader of the same capability at review.py:1336 was left case-sensitive (see the finding).\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/a-revision-label-is-read-in-any-case.html:48 follow-on: the Measure paragraph labels the head arm \"change present, revision 91a8aea54\", which is the base revision, while the head-gate.log it cites carries \"arm=head revision=58efccfe838c7a0bb506072abdc06264cc2e09ca\" on its first line, so the fragment states a head-arm revision its own cited capture contradicts.\nFINDING reckon/crew/review.py:1336 follow-on: the sibling reader of the same capability, _LOGGED_REVISION_RE via recorded_log_revision at review.py:1704, is still case- and label-sensitive \u2014 it returns None for \"REV=<sha>\", \"Revision: <sha>\" and \"rev=<sha>\" (measured at head) \u2014 so a log the audit now accepts annotates with a null head_log_revision and the two readers of one first-line revision disagree.",
+  "review_run_id": "legacy-2693293660b8",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "91a8aea54aca17e98ce06aa7d3012bfe361105ef",
+  "reviewed_head_sha": "58efccfe838c7a0bb506072abdc06264cc2e09ca",
+  "reviewed_run_id": "r-20261017T173945029495-a-revision-label-is-read-in-any-case",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T17:55:00+00:00",
+  "total": 111
+}
