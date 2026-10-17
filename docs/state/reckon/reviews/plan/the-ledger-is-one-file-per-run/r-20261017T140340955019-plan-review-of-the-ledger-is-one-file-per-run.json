@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T14:17:24.493Z",
+  "dispatched_at": "2026-10-17T14:04:24Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-ledger-is-one-file-per-run.html:528",
+      "id": "single_goal-1",
+      "reason": "the plan must either trim \u00a78's promotion-commit clause and case (and its promotion.py write path) or gate \u00a710 behind \u00a78, or \u00a710 inherits a deliverable already done and a control that cannot be demonstrated red.",
+      "text": "\u00a710 states \"\u00a78 itself repaired the release path, and left this one untouched\", but \u00a78's own Deliverable requires \"A promotion commit must never record another run's per-run file as deleted\", its done-when carries \"A second case shows that a promotion commit leaves another run's per-run file in place\", and \u00a78 lists `reckon/crew/promotion.py` among its write paths \u2014 so the two sections claim the same deliverable and the same first step (naming what removed fig-09's per-run file), and they contend for the same file; if \u00a78 lands first, \u00a710's declared negative control (\"against the base tree, the promotion commit carries the staged deletion\") no longer holds because the base tree is already repaired",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-ledger-is-one-file-per-run.html:528",
+      "id": "anchors_resolve-1",
+      "reason": "the named file is the node's first search target and one of its two write paths, so a wrong-file anchor sends the night's first step to the wrong module even though the sibling sentence hints at the right one.",
+      "text": "\u00a710 says \"`_commit_landing_writes` in `reckon/crew/promotion.py` stages only its own paths, then runs a bare `git commit`\", but the function is defined at `reckon/crew/promotion_scope.py:1910` and `reckon/crew/promotion.py` only calls it; the same section's closing sentence acknowledges `promotion_scope.py` is where the staged-deletion repair belongs",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-ledger-is-one-file-per-run.html:69",
+      "id": "reasoning-1",
+      "reason": "the clause is the plan's central invariant for its new data structure, and a worker reading it can refuse or gate the release and gate-re-run writes the plan elsewhere requires, so it must be widened to name every intended write or the sections reconciled.",
+      "text": "the preamble asserts a committed run file's \"content changes only when history-persists-as-detail-washes-out's rotation removes detail fields from it\", but \u00a71's landing record has release \"atomically record its receipt in that same run file, through the common serialiser\" as a second commit after the landing, \u00a78's deliverable requires \"A release of a run that has a per-run file changes only that file\", and the locked `integrated-gate-recording` decision routes the integrated-gate re-run's report into the same file",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c1530a3574dc5598131bae229ae2f750b3ef5808668af46ccc803216467f5b6f",
+  "plan_slug": "the-ledger-is-one-file-per-run",
+  "plan_version": 66,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T140340955019-plan-review-of-the-ledger-is-one-file-per-run",
+  "reviewed_blob_sha": "1fb15e7326e59b9a5870cd2a87634150b57abc46",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a710 places `_commit_landing_writes` in `reckon/crew/promotion.py`, but the function is defined in `reckon/crew/promotion_scope.py`.",
+    "done_when": "pass \u2014 each changed section declares a negative control that can fail: \u00a79's \"against the base tree, the union write is accepted\" and \u00a710's \"against the base tree, the promotion commit carries the staged deletion\", both measured over synthesised repositories the section constructs.",
+    "evidence_paths": "pass \u2014 both changed sections write their gate logs \"under the run directory\", a durable path on the shared home, not a session scratchpad or node-local temporary directory.",
+    "naming": "pass \u2014 the changed sections name symbols and test files by mechanism (`test_the_ledger_writer_refuses_a_fold.py`, `test_a_promotion_commit_records_only_its_own_paths.py`); the only `\u00a7` references are to the plan's own numbered sections, which the plan format permits in prose.",
+    "reasoning": "a finding \u2014 the preamble's clause \"Its content changes only when history-persists-as-detail-washes-out's rotation removes detail fields from it\" is contradicted by \u00a71's landed release step, \u00a78's release deliverable, and the locked `integrated-gate-recording` decision, each of which writes into an already-committed run file.",
+    "single_goal": "a finding \u2014 \u00a710's deliverable is the same property \u00a78 already asserts, so neither node can be closed on one verdict.",
+    "wiring": "pass \u2014 the plan-informs pair names two mounted plans, gate g-tlofpr-9 wires \u00a79 to a-read-answers-inside-its-deadline \u00a728 (verified: that section's write paths name reckon/ledger.py), and \u00a710's named build-after run r-20261017T110626399745-a-runs-session-has-one-capture-name has promoted (15dff49b is an ancestor of HEAD), so no declared or needed dependency is missing."
+  },
+  "section_digests": {
+    "_document": "444954ea708e13fe72b1c7a153e48893febb81e1bc9e7db0ed39520866227462",
+    "s1": "457845e844fa9bec63333cc35d867a85aa18bde3b16278a87a8dd315cae98e60",
+    "s10": "fd395e643f6cf3bc219d061e29b0c238a7a19e10d78ae40a40122af02e0600ba",
+    "s2": "f264807d1fd48d466dfe9f9126f75e341e735d9a86b54ba342cf0012dfcdddfc",
+    "s3": "922052455a1c2af498bccd801f0e6db8ab3616bba71d823efa03641ce2332fa7",
+    "s4": "2eb77001999bc36a32f304d3ff896caf2c803489ea790ad39bae324fd7f92a9e",
+    "s5": "60e425e1d2d0d1a1f973eb32c4d3e72fa080e1a616ff0f462d20aefbd1fc522d",
+    "s6": "a344122c7f73694668e843366730c1d1cc881b97ba06225f376f01012af5936b",
+    "s7": "6128dbd3b5deb9351318b08d168c55ae2e7290f079a109ee1241b2fb4a938b62",
+    "s8": "4fd66254949d010496f756785c135e15e159bb0086f024e60e75bb19df9665a9",
+    "s9": "483bdadcb6fa5d83c3af4c86ad83ae0d1626042a8a0bb8e75b5f57b3e5a46475"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T14:19:19.530169+00:00"
+}
