@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T15:09:26.494Z",
+  "dispatched_at": "2026-10-17T14:51:16Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:853",
+      "id": "wiring-1",
+      "reason": "the fix is to point the open invocation at \u00a73 (or resolve it and write \u00a73's), which changes what the next dispatch does.",
+      "text": "the open followup `f-tsigah-repair-wave-at-95ff28824` invokes `/reckon-build the-suite-is-green-at-head \u00a74`, but \u00a74 is declared `done` (plan-section-declarations, and the \u00a74 stub at line 642), so the plan's remaining implementable section \u00a73 has no open followup whose invocation names it, and a coordinator following the recorded invocation dispatches a section already complete",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:25",
+      "id": "reasoning-1",
+      "reason": "impl is the published completion figure roadmap and promotion read, so correcting it (or reconciling the effort meta) changes how the plan is scheduled and closed.",
+      "text": "`plan-impl` reads 0.98 while `plan-section-declarations` still marks two sections `implementable` (\u00a73 at 2.0 h and \u00a719 at 0.5 h) and `plan-effort-hours` reads 6.0 against 12.5 h summed from the sections' own `data-effort-hours`; a near-complete figure on a plan with two open sections and two open followups misreports its state to the readers that roll it up",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b0817fc3526320730dd7611085d879175ea557bd775fc074683254b62c996e23",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 371,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T145033699494-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "9764e85d7e0260e82d14b57c75815d727d991321",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_GATE_FAILURE_RE` resolves at `reckon/crew/review.py:1271` with exactly the quoted pattern, `added_failures_from_gate_logs` at `:2100`, the cited parametrisation id `[opus 5.5]` at `tests/test_old_names_resolve.py:206`, every one of the 21 shas listed in `plan-commits` is a commit object, and `plan-artifacts`' `docs/research/suite-failures-at-head.html` target resolves.",
+    "done_when": "pass \u2014 \u00a719's done-when is measurable and names a negative control, and both arms reproduce on the real function: the current reader returns `(0, [])` for the base/head log pair the section specifies, and a reader carrying the section's own rule returns `(1, ['t.py::f[opus 5.5]'])`.",
+    "evidence_paths": "pass \u2014 \u00a719 writes its log \"under the run directory\", the crew run directory under `~/.config/reckon/crew/runs/<run>`, which survives the run; neither a session scratchpad nor a node-local temp path is named.",
+    "naming": "pass \u2014 the new test file `tests/test_a_failing_id_with_a_space_is_read_whole.py` and the changed regex state the mechanism; no plan label, stage name or ticket number enters a symbol or path.",
+    "reasoning": "a finding \u2014 \u00a719's three checks all hold (its stated root cause is the one I reproduced, its rule produces its done-when, and the reader it changes is the single path all added-failure consumers take, `gate_log_failure_ids` -> `_pytest_failure_ids`); the finding below is on `_document`'s completion figure.",
+    "single_goal": "pass \u2014 \u00a719 carries one deliverable (the pytest failure-id reader reads the id whole); the regex and the test file that pins it are one change under one gate.",
+    "wiring": "a finding \u2014 \u00a719 is wired (open followup `f-tsigah-019` names `/reckon-build the-suite-is-green-at-head \u00a719`, and its empty `data-links` is correct for a standalone section), but the plan's other remaining implementable section, \u00a73, has no open invocation: the only other open followup, `f-tsigah-repair-wave-at-95ff28824`, still invokes \u00a74, which the plan declares `done`."
+  },
+  "section_digests": {
+    "_document": "7bcf700de1a4beaed47544c548c790120e616241181ba1796cba31152b0f9416",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "f84dc4d4bef37307ff05d71bd4f7071e9208e789832e7cb00be82c37bcfde97e",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s17": "01fe3ab4eb2f9f616654a729cf8bef4dcf5b530d4d0c1be3bdfa73999d0ad263",
+    "s18": "15b626822483dd850c2006c1d4255b8386f22ef780237614005178a5b3c15d70",
+    "s19": "94946283d6a94fe284a3f00a5c60fbfdf125cd16b7f43e5e0abdb96b6305cf3b",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "072f7ace5c2d253a6d4972213a2093233d6f768bd4d1394f2b9eaf1471ff4119",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T15:19:22.547133+00:00"
+}
