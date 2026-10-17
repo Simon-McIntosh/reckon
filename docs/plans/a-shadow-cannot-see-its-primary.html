@@ -26,7 +26,7 @@
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="39">
+<meta name="plan-version" content="40">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -371,6 +371,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-17T07:05:00Z">
     <div class="r-comment-body"><p>§7 landed: the shadow-read scan now lives in <code>reckon/shadow_reads.py</code>, and <code>ledger.py</code> is back under the worker-window bound (3,995 lines), so main's width test passes again (commit <code>9025c8787</code>). The move is verbatim and no reference to a moved name remains. <a href="/reckon/evidence/archive/a-shadow-cannot-see-its-primary-landed.html#s7">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261017T050234671691-the-shadow-read-scan-has-its-own-module" data-who="reckon-build" data-when="2026-10-17T05:15:54.136Z">
+    <div class="r-comment-body"><p>Moved the shadow-contamination block whole out of reckon/ledger.py into new reckon/shadow_reads.py (stream_tool_calls, shadow_primary_read, reason priority, git-read verb sets, all private helpers/patterns); ledger.py keeps no re-export or wrapper and its diff is a pure 392-line deletion; promotion_scope._shadow_stream_contamination and tests/test_crew_shadow_contamination.py now import the new module; width test goes 1-failed -&gt; 4 passed (ledger.py 51295 -&gt; 46852 estimated tokens) and the contamination test passes the same 26 ids as at base.</p></div>
 </div>
 </section>
 </main>
