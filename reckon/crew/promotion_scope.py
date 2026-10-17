@@ -1104,6 +1104,34 @@ def _primary_read_surfaces(
     return run_directory, review_records, worktree
 
 
+def _allocated_read_surfaces(
+    *, run_id: str, worktree: str, project: str
+) -> tuple[str, ...]:
+    """The readable surfaces an allocated-but-unlaunched arm already names.
+
+    A paired dispatch fixes both arms' run ids and worktree paths before either
+    launches, so each arm's fence is composed from the partner's allocation
+    rather than from a pointer or a ledger row the partner does not have yet.
+    The surfaces the allocation names are resolved through
+    :func:`_primary_read_surfaces`, the same function the contamination scan
+    reads them from, so the launch fence and the scan cannot disagree about what
+    an arm could have read. A review record is looked for the same way it is for
+    a promoted primary and answers empty until one is stored; a not-yet-created
+    run directory is still a path worth masking, because the partner's own
+    worker will write its stream and records there.
+    """
+    allocation: dict[str, Any] = {
+        "run_id": str(run_id),
+        "worktree_retention": {"worktree": str(worktree)},
+    }
+    run_directory, review_records, resolved_worktree = _primary_read_surfaces(
+        allocation, project
+    )
+    return tuple(
+        path for path in (run_directory, resolved_worktree, *review_records) if path
+    )
+
+
 def _primary_review_record_paths(
     primary: Mapping[str, Any], project: str
 ) -> tuple[str, ...]:
