@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T00:15:48.522Z",
+  "dispatched_at": "2026-10-17T00:03:47Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-mark-is-read-in-its-own-crew-home.html:34",
+      "id": "anchors_resolve-1",
+      "reason": "the operative instruction (\"the run's own crew home\", both sides \"the home\") is consistent and the done-when assertion fails immediately if an implementer compares a config home against a crew home, so this is wording precision, not a mechanism the plan gets wrong.",
+      "text": "the Deliverable says `_config_home` \"is surfaced as `crew_home()`\", but `crew_home()` is `_config_home() / \"crew\"`, one path component deeper, so the resolver and the run's home are not the same value",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-run-mark-is-read-in-its-own-crew-home.html:34",
+      "id": "evidence_paths-1",
+      "reason": "the durable anchor (run id `r-20261016T212841719818`, job `1287701`) resolves in the committed ledger and the collision mechanism is independently reproducible from the two test files, so nothing about the fix depends on that quote.",
+      "text": "the Why quotes a test failure string from the run's transient directory, which has since been cleaned, so only the run id and job remain openable",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "d5f3048d71c47efd7ca2bcdcf5fec9b4c8265bbd869eb33449027f154b21921c",
+  "plan_slug": "a-run-mark-is-read-in-its-own-crew-home",
+  "plan_version": 4,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T000310712058-plan-review-of-a-run-mark-is-read-in-its-own-crew-home",
+  "reviewed_blob_sha": "0587b0ec377d9f7cfb2323618a47d27d15f2bfa0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves at the named module (`_processes_owning_run` `reckon/crew/process_signal.py:148`, callers `:300` and `recovery_liveness.py:1113`; `_env_scan_run_pid` `recovery_liveness.py:1091`; `local_liveness` `:1001`; `_config_home` `reckon/_store.py:128`; `crew_home` `reckon/crew/run_paths.py:19`); the cited test id `test_a_resume_reaches_the_home_the_dispatch_composed[codex]` exists with `codex` in `HARNESS_HOME` (`tests/test_resume_anchors_the_run_harness_home.py:73-76,196`); the evidence run `r-20261016T212841719818` and its job `1287701` resolve in the committed ledger; and the count \"nine test files use `r-resume-*`\" is exact. One non-blocking finding emitted (the `crew_home()`/`_config_home` surface wording).",
+    "done_when": "pass \u2014 \u00a71's done-when is measurable (a named new test asserting one child named of two, `local_liveness` reading not-alive, a no-`RECKON_HOME` child matched only against the default home, and slash/symlink equivalence) and names a declared negative control: \"with the crew-home comparison removed, the test names the second home's child and fails\", a mutation of the code under test that flips the asserted outcome.",
+    "evidence_paths": "pass \u2014 the only evidence location named is \"the run directory\", a durable path under the crew home (`~/.config/reckon/crew/runs/<run-id>/`), not a session scratchpad or a node-local `/tmp`; a node's manifest and gate logs land there, as this run does. One non-blocking finding emitted (cited failure quote sourced from a transient directory).",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag is carried into code; the proposed filename `tests/test_a_run_mark_is_read_in_its_own_crew_home.py` reads as a mechanism sentence without the plan, and the plan's own `a-run-has-one-live-writer \u00a72` reference sits in plan prose, which the tracker owns.",
+    "reasoning": "pass \u2014 all three checks hold. (1) The stated root cause matches the cited evidence: `_processes_owning_run` matches on `environment.get(RUN_ID_ENV) != run_id` alone (`process_signal.py:176`), so home is ignored, and I confirmed the collision is real \u2014 `tests/test_every_attempt_is_supervised.py:95` builds run id `f\"r-resume-{dialect}\"` and `_sleeping_plan` (`:81-91`) launches a genuine `time.sleep(60)` child under `RECKON_HOME` monkeypatched to that test's own `tmp_path/config`; `tests/test_resume_anchors_the_run_harness_home.py` records only an absent pid, so the env scan is the sole source that could return the observed live pid, and the contaminating child's home differs from the failing run's home \u2014 exactly the axis the fix narrows on. (2) The mechanism produces the measure: `_processes_owning_run` is the only scan of `/proc/<pid>/environ` in the repository (single site, `process_signal.py:128`), so the two doors named \u2014 the stop path via `_run_process_pids` (`:300`) and liveness via `_env_scan_run_pid` (`recovery_liveness.py:1113`) \u2014 both inherit the narrowing with no second matcher; the plan's census claim holds. (3) It runs on the real production path with the callers named: the stop door is reached from `signal_worker(reach_run=True)` (`process_signal.py:365`, called at `dispatch_launch.py:2861-2959` and `dispatch_sessions.py:1917-1924`, all passing a `run_dir`), and `_run_process_pids` is also called at `dispatch_sessions.py:1986`, both with a `run_dir`; the liveness door's claim \"`local_liveness` has five callers that pass only a record\" is exact (`recovery_watch.py:1059`, `resumption.py:1012`, `runs.py:1624`, `sprint_liveness.py:153`, `recovery_classification.py:209`), so passing the ambient `crew_home()` is the correct, no-signature-change reading, and production is not stranded because a real worker inherits the dispatcher's `RECKON_HOME`.",
+    "single_goal": "pass \u2014 one section, one deliverable; the four write paths, the ruff floor and the merge-time population run are conditions on that one deliverable, not a second goal.",
+    "wiring": "pass \u2014 the plan declares `plan-standalone` with a reason (\"no live plan waits on it, and it waits on none\"); the only plan it references, `a-run-has-one-live-writer`, is `plan-status: done` (all sections `done`) and carries the cited \u00a72 heading \"A worker never outlives its supervisor\"; no other file under `docs/plans/` names this slug, and no `depends-on`/`gates`/`plan-after` edge is declared or owed."
+  },
+  "section_digests": {
+    "_document": "40c223e122141aaad1c7ab22cae8e33a116eff433615b56d0541fe1781a07af4",
+    "s1": "cef5c415d628fb77e437f4c31c4adb83029ee0558bb7d50d34f52a6c70c0a7eb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T00:22:44.773150+00:00"
+}
