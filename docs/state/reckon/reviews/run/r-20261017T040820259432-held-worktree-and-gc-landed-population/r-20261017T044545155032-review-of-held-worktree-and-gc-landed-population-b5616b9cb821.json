@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:892",
+    "reckon/crew/obligations.py:671",
+    "reckon/crew/routing.py:1167"
+  ],
+  "completed_at": "2026-10-17T04:58:03.351Z",
+  "dispatched_at": "2026-10-17T04:47:09Z",
+  "findings": [
+    {
+      "file": "tests/test_held_worktree_records_match_each_record_once.py",
+      "line": "246",
+      "severity": "follow-on",
+      "text": "follow-on: the call-bound guard wraps record_names_worktree, which the index path no longer calls, so calls[\"n\"] stays at the positive-control 1 and `<= len(records)+len(trees)` cannot redden on an index that is internally records-times-trees without routing through the rule; it reddens only on a revert to the old _holding_record."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T040820259432-held-worktree-and-gc-landed-population/base-importer-population.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate log's required first-line header was synthesised after the run from the log's own later lines, so the log is not the unedited artefact the header contract assumes, though report.md discloses the edit and the .as-produced copy is kept."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "the reviewed head b5616b9cb, the run's own worktree HEAD and the candidate it measured, carries the held-worktree index over base 78dedec in reckon/crew/obligations.py, reckon/crew/routing.py, tests/helpers/git.py and a new test, read commit by commit.",
+    "done_when": "the done-when requires two logs naming revision, host and literal command, each proving reckon.__file__ under its own checkout and ending in EXIT=; both hold in base-importer-population.log and cand-importer-population.log.",
+    "goal": "the run's goal is to measure the importer population of the landed held-worktree index on top of the confined gc, and reports/reckon/a-read-answers-inside-its-deadline/held-worktree-and-gc-landed-population/report.md answers that question with both arms.",
+    "manifest": "read; it records status complete, base 1 failed/1509 passed, candidate 1 failed/1514 passed, an empty added set, and the one failure as pre-existing.",
+    "write_paths": "the run was fenced to the reports directory and wrote only there and in its own run directory, and its worktree at b5616b9cb shows an empty git status."
+  },
+  "justifications": {
+    "durability": "tests/test_held_worktree_records_match_each_record_once.py:289 asserts the index against the independent whole-ledger derivation, but the call-bound guard at line 246 does not observe the index path it bounds.",
+    "evidence": "cand-importer-population.log ends `1 failed, 1514 passed, 8 warnings in 470.85s` and `EXIT=1` with `reckon.__file__` under its own canced checkout, so the gate measures the done_when; the appended first line is disclosed at report.md.",
+    "fit": "reckon/crew/routing.py:1073's WorktreeRecordIndex follows the module's key-derivation idiom through _retained_worktree and _node_worktree_identity, though its names method at routing.py:1132 is reached only from tests.",
+    "goal_fidelity": "report.md answers the stated question with base 1 failed/1509 passed against candidate 1 failed/1514 passed, and the added set empty.",
+    "reuse": "reckon/crew/routing.py:1052 record_names_worktree is the sole owner of the naming rule and the index is built from the same key derivations rather than restating them, so no capability is forked.",
+    "scope_discipline": "git status of the source worktree at b5616b9cb is empty and the manifest's changed_paths is none, matching the declared report-only scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the run's goal is to measure the importer population of the landed held-worktree index on top of the confined gc, and reports/reckon/a-read-answers-inside-its-deadline/held-worktree-and-gc-landed-population/report.md answers that question with both arms.\nVERDICT done_when: the done-when requires two logs naming revision, host and literal command, each proving reckon.__file__ under its own checkout and ending in EXIT=; both hold in base-importer-population.log and cand-importer-population.log.\nVERDICT write_paths: the run was fenced to the reports directory and wrote only there and in its own run directory, and its worktree at b5616b9cb shows an empty git status.\nVERDICT manifest: read; it records status complete, base 1 failed/1509 passed, candidate 1 failed/1514 passed, an empty added set, and the one failure as pre-existing.\nVERDICT diff: the reviewed head b5616b9cb, the run's own worktree HEAD and the candidate it measured, carries the held-worktree index over base 78dedec in reckon/crew/obligations.py, reckon/crew/routing.py, tests/helpers/git.py and a new test, read commit by commit.\nCALL_SITES: reckon/crew/obligation_snapshot.py:892, reckon/crew/obligations.py:671, reckon/crew/routing.py:1167\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: report.md answers the stated question with base 1 failed/1509 passed against candidate 1 failed/1514 passed, and the added set empty.\nSCORE evidence: 19\nJUSTIFICATION evidence: cand-importer-population.log ends `1 failed, 1514 passed, 8 warnings in 470.85s` and `EXIT=1` with `reckon.__file__` under its own canced checkout, so the gate measures the done_when; the appended first line is disclosed at report.md.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git status of the source worktree at b5616b9cb is empty and the manifest's changed_paths is none, matching the declared report-only scope.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_held_worktree_records_match_each_record_once.py:289 asserts the index against the independent whole-ledger derivation, but the call-bound guard at line 246 does not observe the index path it bounds.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/routing.py:1073's WorktreeRecordIndex follows the module's key-derivation idiom through _retained_worktree and _node_worktree_identity, though its names method at routing.py:1132 is reached only from tests.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/routing.py:1052 record_names_worktree is the sole owner of the naming rule and the index is built from the same key derivations rather than restating them, so no capability is forked.\nFINDING tests/test_held_worktree_records_match_each_record_once.py:246 follow-on: the call-bound guard wraps record_names_worktree, which the index path no longer calls, so calls[\"n\"] stays at the positive-control 1 and `<= len(records)+len(trees)` cannot redden on an index that is internally records-times-trees without routing through the rule; it reddens only on a revert to the old _holding_record.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T040820259432-held-worktree-and-gc-landed-population/base-importer-population.log:1 follow-on: the gate log's required first-line header was synthesised after the run from the log's own later lines, so the log is not the unedited artefact the header contract assumes, though report.md discloses the edit and the .as-produced copy is kept.",
+  "review_run_id": "r-20261017T044545155032-review-of-held-worktree-and-gc-landed-population-b5616b9cb821",
+  "reviewed_base_sha": "78dedec578f8a59d6873ae4e7f32bd338a215118",
+  "reviewed_head_sha": "b5616b9cb821c434f2d322a2cb61b4c17dd40b96",
+  "reviewed_run_id": "r-20261017T040820259432-held-worktree-and-gc-landed-population",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261017T044545155032-review-of-held-worktree-and-gc-landed-population-b5616b9cb821",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T05:01:03.976058+00:00",
+  "total": 113
+}
