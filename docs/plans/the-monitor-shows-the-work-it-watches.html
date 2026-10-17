@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="295">
+<meta name="plan-version" content="296">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1184,7 +1184,10 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>a reload never aborts on a tree a peer pruned — materialize_committed_tree in reckon/checkout_trust.py ranks images through _images_ranked_for_pruning (an entry whose stat() races a peer's removal is skipped) and prunes through _open_prune_lease, counting a tree a peer already removed — vanished before its lease open, or removed during the removal walk (ENOTDIR) — as removed rather than raising, and COMMITTED_TREE_PUBLISH_GRACE_SECONDS rises from 120 s to 300 s to cover the 137 s HEAD-churn window, with the retention count and the vanished-target retry unchanged; five new cases in tests/test_a_reload_never_aborts_on_a_tree_a_peer_pruned.py pass (5 passed, EXIT=0) and four redden against the base tree (EXIT=1)</p></div>
 </div>
 <div class="r-comment" data-section="s47" data-id="c-run-r-20261017T223606728035-reload-never-aborts-population-at-merge" data-who="reckon-build" data-when="2026-10-17T23:04:14.438Z">
-    <div class="r-comment-body"><p>Measured the 170-file reload-tree and follower importer population at base 85713782f647783685cd29692fe70476e11ca059 and at its merge candidate 0d223bdbcc45fd9549e32378dbde346c04e74c07 on an exclusive all_debug node: added failing ids 0 — merging adds no failing test id over the whole population; the same 3 failed and 1 error are present at both revisions, and the candidate&#x27;s 5 extra passes are the new peer-prune test file.</p></div>
+    <div class="r-comment-body"><p>Measured the 170-file reload-tree and follower importer population at base 85713782f647783685cd29692fe70476e11ca059 and at its merge candidate 0d223bdbcc45fd9549e32378dbde346c04e74c07 on an exclusive all_debug node: added failing ids 0 — merging adds no failing test id over the whole population; the same 3 failed and 1 error are present at both revisions, and the candidate's 5 extra passes are the new peer-prune test file.</p></div>
+</div>
+<div class="r-comment" data-section="s47" data-id="c-run-r-20261017T230922197698-review-of-reload-never-aborts-population-at-merge-c47213ecbad1" data-who="reckon-build" data-when="2026-10-17T23:18:39.426Z">
+    <div class="r-comment-body"><p>Reviewed the population measurement node r-20261017T223606728035 at head c47213ecbad1cc9eb8547a9a7fbd29f91a484cb2: an independent review stored at the reviewed run&#x27;s review-records/ dir scores all six dimensions (goal_fidelity 20, evidence 19, scope_discipline 18, durability 17, fit 19, reuse 20), records no blocking finding, and confirms the measurement&#x27;s central claim — 0 added failing ids over the 170-file importer population — by reproducing the derivation and its positive control.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
