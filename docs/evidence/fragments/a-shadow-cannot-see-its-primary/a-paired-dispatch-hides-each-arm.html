@@ -44,15 +44,17 @@ directory and worktree. With the primary arm's masks dropped the same listing
 is non-empty (<code>partner-run-dir [stream.jsonl,]</code>), which is the
 declared negative control and is what makes the empty listing mean anything.</p>
 
-<pre>tests/test_a_paired_dispatch_hides_each_arm.py: 5 passed
+<pre>tests/test_a_paired_dispatch_hides_each_arm.py: 6 passed
+tests/test_crew.py (the population that drives the dispatcher): 192 passed
 negative control (primary arm's masks dropped): EXIT=1, listing non-empty
 negative control (the launch-path check's change reverted): EXIT=1,
   TypeError: got multiple values for keyword argument 'route'</pre>
 
 <h2 id="a-paired-dispatch-hides-each-arm-limits">Limits</h2>
-<p>The wider population of test files importing <code>reckon/crew/dispatch</code>
-was not run to completion here; this node's own gate ran, and the coordinator
-runs the wider population at merge. <code>ruff format --check</code> is clean on three
+<p><code>tests/test_crew.py</code>, the file carrying the dispatcher's own suite,
+passes whole at this revision. The remaining test files that import
+<code>reckon/crew/dispatch</code> were not run here; the coordinator runs the
+rest at merge. <code>ruff format --check</code> is clean on three
 of the four changed paths; <code>reckon/crew/promotion_scope.py</code> carries
 pre-existing formatting backlog in regions this node did not touch.</p>
 
