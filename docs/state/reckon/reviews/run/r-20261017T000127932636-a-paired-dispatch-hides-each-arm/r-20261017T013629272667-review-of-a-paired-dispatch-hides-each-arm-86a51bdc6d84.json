@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log and no baseline_suite/after_suite pair, so the added-failure count was not taken; the only population log (wider-population.log) predates the reviewed head",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1509",
+    "reckon/crew_dispatch_commands.py:1521"
+  ],
+  "completed_at": "2026-10-17T01:54:53.957Z",
+  "dispatched_at": "2026-10-17T01:37:14Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "paired-dispatch-population",
+      "recorded_at": "2026-10-17T01:55:51.491294+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T000127932636-a-paired-dispatch-hides-each-arm/manifest.md",
+      "line": "17",
+      "text": "follow-on: the reviewed manifest records no baseline_suite or after_suite gate log, so the added-failure count this review must derive is unmeasured (null) rather than a measured zero, and wider-population.log ran tests/test_crew.py at revision d54d898dc, which predates the reviewed head 86a51bdc6 and so does not cover these two commits."
+    }
+  ],
+  "head_log_revision": "72386e05fecfcfb9055576351f6299ea2fb7dcf2",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit from base b49fd40aac385d41f1d280957943ff2017a6b312 to head 86a51bdc6d844cf8e37f58f0fd0c6cd206789404; 72386e05f moves the run-directory creation off the allocation path onto the launch path and adds the shadow's session directory to the primary's masks (reckon/crew/dispatch.py:789-810,853-860) with three added tests (tests/test_a_paired_dispatch_hides_each_arm.py:201,247,288), and 86a51bdc6 records the prose.",
+    "done_when": "the done_when (prompt.txt:88-95) names a paired dry run that allocates both arms, run directories allocated before either arm launches, a real-bwrap fence stub, the primary's masks naming the shadow's run directory, an unpaired dispatch composing none, a logged negative control, a population delta and clean ruff; gate.log records 9 passed for tests/test_a_paired_dispatch_hides_each_arm.py at 72386e05f and ruff-base-vs-head.log records the ruff delta, but no baseline_suite/after_suite pair is recorded so the suite delta is unmeasured.",
+    "goal": "the node's goal (prompt.txt:21) is that `crew dispatch --pair-backend <backend>` launch a primary and a shadow arm from one base with each arm fenced from the other; this delta repairs two fence defects, and reckon/crew/dispatch.py:789-810 now masks the shadow's session directory so the primary is fenced from what the shadow creates there.",
+    "manifest": "read; manifest.md:11 records the landing, manifest.md:12 records the gate (9 passed), manifest.md:15-16 name the declared negative control and its note, manifest.md:17 the base-vs-head ruff result, and manifest.md:19 lists the artifacts.",
+    "write_paths": "the source node's declared scope (prompt.txt:57-63) is reckon/crew/dispatch.py, reckon/crew_dispatch_commands.py, reckon/crew/promotion_scope.py, tests/test_a_paired_dispatch_hides_each_arm.py and one evidence fragment; this delta's three paths (reckon/crew/dispatch.py, tests/test_a_paired_dispatch_hides_each_arm.py, docs/evidence/fragments/a-shadow-cannot-see-its-primary/a-paired-dispatch-hides-each-arm.html) are all inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_paired_dispatch_hides_each_arm.py:288 executes the primary's own composed argv under real bubblewrap and asserts the masked listing is empty while the same listing without the mask shows the shadow's file, so reinstating the worktree-only mask reddens it.",
+    "evidence": "gate.log records 9 passed for tests/test_a_paired_dispatch_hides_each_arm.py at 72386e05f and ruff-base-vs-head.log the ruff delta, but the reviewed manifest names no baseline_suite/after_suite pair, so added_failure_count is unmeasured rather than a measured zero.",
+    "fit": "the delta uses mechanism names only (shadow_session_dir, primary_masks) and the three added tests (tests/test_a_paired_dispatch_hides_each_arm.py:201,247,288) follow the file's existing stub-and-fixture idiom with no plan or ticket label in any symbol, comment or path.",
+    "goal_fidelity": "reckon/crew/dispatch.py:796-810 adds the shadow's session directory to primary_masks, so the primary's fence hides the directory the shadow's worktree is created under rather than a worktree that does not exist yet.",
+    "reuse": "the delta adds no production definition; reckon/crew/dispatch.py:796 reuses the existing _launch_worktree_path layout (reckon/crew/routing.py:1986) and _allocated_read_surfaces, and a search of reckon/crew for a session-directory owner found the same <root>/<session>/<node id> layout documented at reckon/crew/routing.py:1047 rather than a competing helper to extend.",
+    "scope_discipline": "every path in the delta (reckon/crew/dispatch.py, tests/test_a_paired_dispatch_hides_each_arm.py, docs/evidence/fragments/a-shadow-cannot-see-its-primary/a-paired-dispatch-hides-each-arm.html) is inside the source node's declared write paths (prompt.txt:57-63)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal (prompt.txt:21) is that `crew dispatch --pair-backend <backend>` launch a primary and a shadow arm from one base with each arm fenced from the other; this delta (72386e05f) repairs two fence defects, and reckon/crew/dispatch.py:789-810 now masks the shadow's session directory so the primary is fenced from what the shadow creates there.\nVERDICT done_when: the done_when (prompt.txt:88-95) names a paired dry run that allocates both arms, run directories allocated before either arm launches, a real-bwrap fence stub, the primary's masks naming the shadow's run directory, an unpaired dispatch composing none, a logged negative control, a population delta and clean ruff; gate.log records 9 passed for tests/test_a_paired_dispatch_hides_each_arm.py at 72386e05f and ruff-base-vs-head.log records the ruff delta, but no baseline_suite/after_suite pair is recorded so the suite delta is unmeasured.\nVERDICT write_paths: the source node's declared scope (prompt.txt:57-63) is reckon/crew/dispatch.py, reckon/crew_dispatch_commands.py, reckon/crew/promotion_scope.py, tests/test_a_paired_dispatch_hides_each_arm.py and one evidence fragment; this delta's three paths (reckon/crew/dispatch.py, tests/test_a_paired_dispatch_hides_each_arm.py, docs/evidence/fragments/a-shadow-cannot-see-its-primary/a-paired-dispatch-hides-each-arm.html) are all inside it.\nVERDICT manifest: read; manifest.md:11 records the landing, manifest.md:12 records the gate (9 passed), manifest.md:15-16 name the declared negative control and its note, manifest.md:17 the base-vs-head ruff result, and manifest.md:19 lists the artifacts.\nVERDICT diff: read commit by commit from base b49fd40aac385d41f1d280957943ff2017a6b312 to head 86a51bdc6d844cf8e37f58f0fd0c6cd206789404; 72386e05f moves the run-directory creation off the allocation path onto the launch path and adds the shadow's session directory to the primary's masks (reckon/crew/dispatch.py:789-810,853-860) with three added tests (tests/test_a_paired_dispatch_hides_each_arm.py:201,247,288), and 86a51bdc6 records the prose.\nCALL_SITES: reckon/crew_dispatch_commands.py:1509, reckon/crew_dispatch_commands.py:1521\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:796-810 adds the shadow's session directory to primary_masks, so the primary's fence hides the directory the shadow's worktree is created under rather than a worktree that does not exist yet.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate.log records 9 passed for tests/test_a_paired_dispatch_hides_each_arm.py at 72386e05f and ruff-base-vs-head.log the ruff delta, but the reviewed manifest names no baseline_suite/after_suite pair, so added_failure_count is unmeasured rather than a measured zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the delta (reckon/crew/dispatch.py, tests/test_a_paired_dispatch_hides_each_arm.py, docs/evidence/fragments/a-shadow-cannot-see-its-primary/a-paired-dispatch-hides-each-arm.html) is inside the source node's declared write paths (prompt.txt:57-63).\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_paired_dispatch_hides_each_arm.py:288 executes the primary's own composed argv under real bubblewrap and asserts the masked listing is empty while the same listing without the mask shows the shadow's file, so reinstating the worktree-only mask reddens it.\nSCORE fit: 19\nJUSTIFICATION fit: the delta uses mechanism names only (shadow_session_dir, primary_masks) and the three added tests (tests/test_a_paired_dispatch_hides_each_arm.py:201,247,288) follow the file's existing stub-and-fixture idiom with no plan or ticket label in any symbol, comment or path.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no production definition; reckon/crew/dispatch.py:796 reuses the existing _launch_worktree_path layout (reckon/crew/routing.py:1986) and _allocated_read_surfaces, and a search of reckon/crew for a session-directory owner found the same <root>/<session>/<node id> layout documented at reckon/crew/routing.py:1047 rather than a competing helper to extend.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T000127932636-a-paired-dispatch-hides-each-arm/manifest.md:17 follow-on: the reviewed manifest records no baseline_suite or after_suite gate log, so the added-failure count this review must derive is unmeasured (null) rather than a measured zero, and wider-population.log ran tests/test_crew.py at revision d54d898dc, which predates the reviewed head 86a51bdc6 and so does not cover these two commits.",
+  "review_run_id": "r-20261017T013629272667-review-of-a-paired-dispatch-hides-each-arm-86a51bdc6d84",
+  "reviewed_base_sha": "b49fd40aac385d41f1d280957943ff2017a6b312",
+  "reviewed_head_sha": "86a51bdc6d844cf8e37f58f0fd0c6cd206789404",
+  "reviewed_run_id": "r-20261017T000127932636-a-paired-dispatch-hides-each-arm",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T01:59:05.309621+00:00",
+  "total": 112
+}

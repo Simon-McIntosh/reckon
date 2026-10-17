@@ -26,7 +26,7 @@
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -302,6 +302,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261017T005915361698-review-of-a-paired-dispatch-hides-each-arm-b49fd40aac38" data-who="reckon-build" data-when="2026-10-17T01:14:51.316Z">
     <div class="r-comment-body"><p>independent review of r-20261017T000127932636-a-paired-dispatch-hides-each-arm over the commits gained since its last review (53a5c7f7754852cceb8ab3088a2db66cf2c782ed..b49fd40aac385d41f1d280957943ff2017a6b312) stores a parsed record scoring all six dimensions (goal_fidelity 19, evidence 15, scope_discipline 20, durability 19, fit 19, reuse 20; total 112) with one follow-on finding: the prior blocking duplicate-keyword TypeError is repaired (d54d898dc routes every per-arm keyword through _paired_arm_kwargs exactly once, proven by the reinstated-revision negative control at EXIT=1), and the reviewed manifest still names no baseline_suite/after_suite so the added-failure count is unmeasured</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261017T013629272667-review-of-a-paired-dispatch-hides-each-arm-86a51bdc6d84" data-who="reckon-build" data-when="2026-10-17T01:54:53.957Z">
+    <div class="r-comment-body"><p>review of r-20261017T000127932636-a-paired-dispatch-hides-each-arm at head 86a51bdc6 over base b49fd40aa: goal_fidelity 19, evidence 15, scope_discipline 20, durability 19, fit 19, reuse 20 (total 112); 6 dimensions, 2 call sites, 1 follow-on finding (no baseline/after suite pair so added_failure_count is unmeasured)</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-s4-resolution-layer" data-who="reckon-build" data-when="2026-10-16T19:52:00Z">
     <div class="r-comment-body"><p>Content review <code>r-20261016T193510730111</code>, finding <code>reasoning-1</code>: §4 puts the resolution of the primary's paths in two layers. One sentence has <code>launch_plan</code> gain the paths to hide. The other has the launch look up the primary's ledger row, but <code>launch_plan</code> in <code>reckon/_backends.py</code> takes no project or ledger. The fix, to be written into §4 before it dispatches: each crew-layer caller (dispatch, session launch, resume) looks up the primary's row from the lineage and calls <code>promotion_scope._primary_read_targets</code>. It passes the resolved paths to <code>launch_plan</code> as a plain list of paths to hide, and <code>launch_plan</code> hands them to <code>fence_argv</code>. <code>_backends.py</code> gains no ledger parameter and no crew import.</p></div>

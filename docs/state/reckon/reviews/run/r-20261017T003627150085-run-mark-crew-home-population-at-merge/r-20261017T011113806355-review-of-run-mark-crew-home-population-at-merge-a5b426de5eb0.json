@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "ae915f67ca7a9d7a5a207744c2f467f3538603c9",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T01:31:52.248Z",
+  "dispatched_at": "2026-10-17T01:12:01Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.cache/reckon-population-lists/run-mark-crew-home.txt",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the supplied 206-file population omits 21 files that import reckon/crew/recovery_liveness.py or reckon.crew.recovery, found by an AST scan of the candidate tree (examples: tests/test_a_live_run_never_reads_dead.py, tests/test_crew_recovery.py, tests/test_an_overrun_names_its_cause.py), because the stated git-grep method cannot see the multiline from-reckon.crew-import form, so the answer is over 206 of 223 importers; I ran the 21 omitted files at both revisions myself (262 passed at each) and none fails, so the conclusion is unchanged and the node is not held."
+    }
+  ],
+  "head_log_revision": "6ec9c254fa79c8bd6ffcf4db18bd838a145d928c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the reviewed node commits nothing and its worktree HEAD is a5b426de5eb016632c09d77da4564eaaea0ccdec with an empty git status --short, so there is no code diff; the landed change is the report and its four logs under the grant, and the merge candidate 6ec9c254fa differs from base ae915f67ca in three product files (reckon/_store.py, reckon/crew/process_signal.py, reckon/crew/recovery_liveness.py) plus the new test file.",
+    "done_when": "every clause of the done_when is met by arm-base.log and arm-cand.log: each names arm, revision, host, tree, literal command, interpreter revision/host and a reckon.__file__ under its own checkout (arm-base.log:1-15, arm-cand.log:1-15), carries pytest's summary line (arm-base.log ends \"2 failed, 1688 passed, 1 skipped, 49 warnings in 364.89s\"; arm-cand.log ends \"2 failed, 1694 passed, 1 skipped, 47 warnings in 317.32s\") and ends EXIT=1; the added-id set is empty so no five-times-alone rerun was required and alone-runs.log carries the empty set plus its instrument control; the manifest names no added id; no path under reckon/ or tests/ changed.",
+    "goal": "the node goal is to measure the importer population of the crew-home run mark at base and at its merge candidate on an exclusive node; report.md records one sbatch --exclusive all_debug job (slurm-1287776.out) running both arms over the 206-file population.",
+    "manifest": "read; its tests line records each arm's pass/fail counts with its log path (base 2 failed/1688 passed/1 skipped, candidate 2 failed/1694 passed/1 skipped), its baseline_suite and after_suite blocks carry the same two pre-existing ids at both revisions, and its landing line claims the answer over the 206-file population rather than the wider importer population.",
+    "write_paths": "the run is read-only over the repository and the manifest's declared write path is the report scope /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-run-mark-is-read-in-its-own-crew-home/run-mark-crew-home-population-at-merge; every durable artifact (report.md, arm-base.log, arm-cand.log, alone-runs.log, slurm-1287776.out) lies inside it and the reviewed worktree at a5b426de is clean with no commits."
+  },
+  "justifications": {
+    "durability": "the node adds no test or assertion, so nothing reddens on a regression; its claims are pinned to revisions by the arm logs and the alone-runs instrument control (alone-runs.log:7), so the answer can be re-derived but is not guarded.",
+    "evidence": "both arm logs carry revision, host, literal command, interpreter revision/host and a reckon.__file__ that lies under that arm's own checkout (arm-cand.log:1-15) and end EXIT=1, but the 206-file population it measures omits 21 of the 223 files that import the changed modules, so the measurement covers about 91 percent of the importer population it is asked about.",
+    "fit": "report.md and the manifest follow the dispatch manifest and report idiom with no symbol, filename or comment a repository naming rule forbids.",
+    "goal_fidelity": "report.md records both arms at the pinned revisions on one exclusive all_debug node (slurm-1287776.out: partition=all_debug, host 98dci4-clu-3143), which is the base-versus-candidate measurement the goal states.",
+    "reuse": "the node adds no definition that could fork an owner, and the added-failure record it feeds is reduced by the existing owner reckon/crew/review.py annotate_review_of_run and added_failures_from_gate_logs.",
+    "scope_discipline": "every artifact in the manifest's changed_paths lies under the granted report scope and no path under reckon/ or tests/ changed, so the diff stays inside the declared write path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to measure the importer population of the crew-home run mark at base and at its merge candidate on an exclusive node; report.md records one sbatch --exclusive all_debug job (slurm-1287776.out) running both arms over the 206-file population.\nVERDICT done_when: every clause of the done_when is met by arm-base.log and arm-cand.log: each names arm, revision, host, tree, literal command, interpreter revision/host and a reckon.__file__ under its own checkout (arm-base.log:1-15, arm-cand.log:1-15), carries pytest's summary line (arm-base.log ends \"2 failed, 1688 passed, 1 skipped, 49 warnings in 364.89s\"; arm-cand.log ends \"2 failed, 1694 passed, 1 skipped, 47 warnings in 317.32s\") and ends EXIT=1; the added-id set is empty so no five-times-alone rerun was required and alone-runs.log carries the empty set plus its instrument control; the manifest names no added id; no path under reckon/ or tests/ changed.\nVERDICT write_paths: the run is read-only over the repository and the manifest's declared write path is the report scope /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-run-mark-is-read-in-its-own-crew-home/run-mark-crew-home-population-at-merge; every durable artifact (report.md, arm-base.log, arm-cand.log, alone-runs.log, slurm-1287776.out) lies inside it and the reviewed worktree at a5b426de is clean with no commits.\nVERDICT manifest: read; its tests line records each arm's pass/fail counts with its log path (base 2 failed/1688 passed/1 skipped, candidate 2 failed/1694 passed/1 skipped), its baseline_suite and after_suite blocks carry the same two pre-existing ids at both revisions, and its landing line claims the answer over the 206-file population rather than the wider importer population.\nVERDICT diff: the reviewed node commits nothing and its worktree HEAD is a5b426de5eb016632c09d77da4564eaaea0ccdec with an empty git status --short, so there is no code diff; the landed change is the report and its four logs under the grant, and the merge candidate 6ec9c254fa differs from base ae915f67ca in three product files (reckon/_store.py, reckon/crew/process_signal.py, reckon/crew/recovery_liveness.py) plus the new test file.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: report.md records both arms at the pinned revisions on one exclusive all_debug node (slurm-1287776.out: partition=all_debug, host 98dci4-clu-3143), which is the base-versus-candidate measurement the goal states.\nSCORE evidence: 17\nJUSTIFICATION evidence: both arm logs carry revision, host, literal command, interpreter revision/host and a reckon.__file__ that lies under that arm's own checkout (arm-cand.log:1-15) and end EXIT=1, but the 206-file population it measures omits 21 of the 223 files that import the changed modules, so the measurement covers about 91 percent of the importer population it is asked about.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every artifact in the manifest's changed_paths lies under the granted report scope and no path under reckon/ or tests/ changed, so the diff stays inside the declared write path.\nSCORE durability: 15\nJUSTIFICATION durability: the node adds no test or assertion, so nothing reddens on a regression; its claims are pinned to revisions by the arm logs and the alone-runs instrument control (alone-runs.log:7), so the answer can be re-derived but is not guarded.\nSCORE fit: 18\nJUSTIFICATION fit: report.md and the manifest follow the dispatch manifest and report idiom with no symbol, filename or comment a repository naming rule forbids.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node adds no definition that could fork an owner, and the added-failure record it feeds is reduced by the existing owner reckon/crew/review.py annotate_review_of_run and added_failures_from_gate_logs.\nFINDING /home/ITER/mcintos/.cache/reckon-population-lists/run-mark-crew-home.txt:1 follow-on: the supplied 206-file population omits 21 files that import reckon/crew/recovery_liveness.py or reckon.crew.recovery, found by an AST scan of the candidate tree (examples: tests/test_a_live_run_never_reads_dead.py, tests/test_crew_recovery.py, tests/test_an_overrun_names_its_cause.py), because the stated git-grep method cannot see the multiline from-reckon.crew-import form, so the answer is over 206 of 223 importers; I ran the 21 omitted files at both revisions myself (262 passed at each) and none fails, so the conclusion is unchanged and the node is not held.\n",
+  "review_run_id": "r-20261017T011113806355-review-of-run-mark-crew-home-population-at-merge-a5b426de5eb0",
+  "reviewed_base_sha": "a5b426de5eb016632c09d77da4564eaaea0ccdec",
+  "reviewed_head_sha": "a5b426de5eb016632c09d77da4564eaaea0ccdec",
+  "reviewed_run_id": "r-20261017T003627150085-run-mark-crew-home-population-at-merge",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T01:27:35.559905+00:00",
+  "total": 108
+}
