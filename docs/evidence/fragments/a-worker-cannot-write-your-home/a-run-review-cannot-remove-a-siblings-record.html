@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="A run review is granted no writable directory holding another run's record">
+  <meta name="plan-summary" content="A run review declares its record inside review-records/ in the reviewed run's directory, so the fence binds a directory holding no other run's record, and the record is filed into the store when the run ends.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s12">
+  <meta name="plan-commits" content="fbceb4ce8,1313ddc96">
+  <meta name="plan-recorded-at" content="2026-10-17">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,fence,dispatch,review">
+  <title>A run review is granted no writable directory holding another run's record — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-run-review-cannot-remove-a-siblings-record" data-reckon="landed" data-when="2026-10-17">
+  <h2 id="a-run-review-cannot-remove-a-siblings-record">A run review is granted no writable directory holding another run's record</h2>
+  <p id="a-run-review-cannot-remove-a-siblings-record-landing">A run review now declares its record at <code>&lt;runs&gt;/&lt;reviewed-run&gt;/review-records/&lt;reviewed-run&gt;[.at-&lt;head&gt;].json</code> and the record is filed into the review store by the run's supervisor, or by its <code>crew complete</code> when the supervisor died first; the composed fence binds that record directory and neither the store nor its project directory — 7 cases in <code>tests/test_a_run_review_cannot_remove_a_siblings_record.py</code> pass, 15 with the sibling delivery suite, and each of the three declared negative controls goes red (6, 2 and 2 failures) at EXIT=1.</p>
+</article>
+</body>
+</html>
