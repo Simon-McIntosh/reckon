@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/velocity.py:2657 inside capture which velocity() calls",
+    "reckon/velocity.py:3079 inside report which view() calls to compose the crew velocity payload"
+  ],
+  "completed_at": "2026-10-17T20:24:56.909Z",
+  "dispatched_at": "2026-10-17T20:03:29Z",
+  "findings": [
+    {
+      "file": "reckon/velocity.py",
+      "line": "2816",
+      "severity": "follow-on",
+      "text": "follow-on: the commit inserts a blank line before health_reviews, repairing one pre-existing format deviation inside a feature commit, which the repository's rule against fixing a pre-existing finding in passing forbids and which the manifest's format_count line then reports as untouched debt."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T161034396287-a-long-window-ledger-search-stays-bounded/manifest.md",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "follow-on: format_count states the head's 11 changed lines match the base 55a9d0708, but that base blob counts 12 under the same ruff format --diff method, so the record misstates the base and hides that the diff removed one deviation."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T161034396287-a-long-window-ledger-search-stays-bounded/manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the 1.68 s worst-slice figure that justifies _LEDGER_SEARCH_SLICE_COMMITS=128 against the 180 s bound has no log in the run directory, surviving only in the transcript, and the probe that produced it measured a proxy expression over the range rather than the landed search."
+    },
+    {
+      "file": "tests/test_velocity_places_a_run_by_its_record_file.py",
+      "line": "227",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares velocity_cache_root() against the exact value the test supplied through RECKON_VELOCITY_CACHE, so it holds whatever the recovery does and cannot redden on any regression of this change; it is a plumbing check, and the durability score does not rest on it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against the base, caf08d8e8 carrying the whole change into reckon/velocity.py plus the new test and the fragment, and 0bb5da164 unwrapping two expressions at 2 insertions and 6 deletions.",
+    "done_when": "the done_when names tests/test_velocity_places_a_run_by_its_record_file.py over six files, and the reviewed run's gate-base.log and gate-reformat.log record 24 passed at 55a9d0708 and 27 at 0bb5da164, EXIT=0 on both arms.",
+    "goal": "the node's goal is to keep recover_ledger_clocks' ledger search inside the git bound by slicing it and placing runs by their record files, and reckon/velocity.py:1172 defines the record-file placement with :1311 the sliced search.",
+    "manifest": "read; it records both gate logs, both mutations red at EXIT=1, _LEDGER_SEARCH_SLICE_COMMITS=128 and a worst slice of 1.68 s, but its format_count line misstates the base revision's count.",
+    "write_paths": "the declared paths are reckon/velocity.py, the new test file, the evidence fragment and a figures directory, and git diff --stat 55a9d0708..0bb5da164 changes only the first three, the named figures directory carrying no file."
+  },
+  "justifications": {
+    "durability": "tests/test_velocity_places_a_run_by_its_record_file.py:244 reddens when the record-file scan is disabled and :326 reddens when the per-slice cache store is removed, both shown red in negative-control.log.",
+    "evidence": "gate-base.log and gate-reformat.log record 24 and 27 passed at EXIT=0, but the 1.68 s slice figure that justifies the bound is named only in the manifest's artifacts line, with no log for it in the run directory.",
+    "fit": "reckon/velocity.py:1172 and :634 name the additions by mechanism with no plan label, matching the module's private-helper and git-wrapper idiom at reckon/velocity.py:706.",
+    "goal_fidelity": "reckon/velocity.py:1311 slices the window's ledger commits and :1172 places runs by their record file, so the search is bounded rather than one unbounded patch-generating call.",
+    "reuse": "I searched reckon/ for the same capability and found reckon/serve.py:1764 (_git_first_committed, creation times for docs) and reckon/velocity.py:706 (_run_blobs, tree listing at a head) as the nearest owners; _record_file_additions extends this module's own recovery mechanism rather than extending either, though neither is a general shared owner.",
+    "scope_discipline": "every changed path lies inside the declared scope, but reckon/velocity.py:2816 adds a blank line that repairs pre-existing format debt the goal does not imply."
+  },
+  "node": "review-of-a-long-window-ledger-search-stays-bounded-0bb5da164cf9",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 55a9d0708704b2d8b5fe851bd916778efead2d7a\nreviewed_head_sha: 0bb5da164cf96b8974d87b64814d9085df9f85fd\nVERDICT goal: the node's goal is to keep recover_ledger_clocks' ledger search inside the git bound by slicing it and placing runs by their record files, and reckon/velocity.py:1172 defines the record-file placement with :1311 the sliced search.\nVERDICT done_when: the done_when names tests/test_velocity_places_a_run_by_its_record_file.py over six files, and the reviewed run's gate-base.log and gate-reformat.log record 24 passed at 55a9d0708 and 27 at 0bb5da164, EXIT=0 on both arms.\nVERDICT write_paths: the declared paths are reckon/velocity.py, the new test file, the evidence fragment and a figures directory, and git diff --stat 55a9d0708..0bb5da164 changes only the first three, the named figures directory carrying no file.\nVERDICT manifest: read; it records both gate logs, both mutations red at EXIT=1, _LEDGER_SEARCH_SLICE_COMMITS=128 and a worst slice of 1.68 s, but its format_count line misstates the base revision's count.\nVERDICT diff: read commit by commit against the base, caf08d8e8 carrying the whole change into reckon/velocity.py plus the new test and the fragment, and 0bb5da164 unwrapping two expressions at 2 insertions and 6 deletions.\nCALL_SITES: reckon/velocity.py:2657 inside capture which velocity() calls, reckon/velocity.py:3079 inside report which view() calls to compose the crew velocity payload\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/velocity.py:1311 slices the window's ledger commits and :1172 places runs by their record file, so the search is bounded rather than one unbounded patch-generating call.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate-base.log and gate-reformat.log record 24 and 27 passed at EXIT=0, but the 1.68 s slice figure that justifies the bound is named only in the manifest's artifacts line, with no log for it in the run directory.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every changed path lies inside the declared scope, but reckon/velocity.py:2816 adds a blank line that repairs pre-existing format debt the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_velocity_places_a_run_by_its_record_file.py:244 reddens when the record-file scan is disabled and :326 reddens when the per-slice cache store is removed, both shown red in negative-control.log.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/velocity.py:1172 and :634 name the additions by mechanism with no plan label, matching the module's private-helper and git-wrapper idiom at reckon/velocity.py:706.\nSCORE reuse: 15\nJUSTIFICATION reuse: I searched reckon/ for the same capability and found reckon/serve.py:1764 (_git_first_committed, creation times for docs) and reckon/velocity.py:706 (_run_blobs, tree listing at a head) as the nearest owners; _record_file_additions extends this module's own recovery mechanism rather than extending either, though neither is a general shared owner.\nFINDING reckon/velocity.py:2816 follow-on: the commit inserts a blank line before health_reviews, repairing one pre-existing format deviation inside a feature commit, which the repository's rule against fixing a pre-existing finding in passing forbids and which the manifest's format_count line then reports as untouched debt.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T161034396287-a-long-window-ledger-search-stays-bounded/manifest.md:12 follow-on: format_count states the head's 11 changed lines match the base 55a9d0708, but that base blob counts 12 under the same ruff format --diff method, so the record misstates the base and hides that the diff removed one deviation.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T161034396287-a-long-window-ledger-search-stays-bounded/manifest.md:20 follow-on: the 1.68 s worst-slice figure that justifies _LEDGER_SEARCH_SLICE_COMMITS=128 against the 180 s bound has no log in the run directory, surviving only in the transcript, and the probe that produced it measured a proxy expression over the range rather than the landed search.\nFINDING tests/test_velocity_places_a_run_by_its_record_file.py:227 follow-on: the assertion compares velocity_cache_root() against the exact value the test supplied through RECKON_VELOCITY_CACHE, so it holds whatever the recovery does and cannot redden on any regression of this change; it is a plumbing check, and the durability score does not rest on it.",
+  "review_run_id": "r-20261017T200233069086-review-of-a-long-window-ledger-search-stays-bounded-0bb5da164cf9",
+  "reviewed_base_sha": "55a9d0708704b2d8b5fe851bd916778efead2d7a",
+  "reviewed_head_sha": "0bb5da164cf96b8974d87b64814d9085df9f85fd",
+  "reviewed_run_id": "r-20261017T161034396287-a-long-window-ledger-search-stays-bounded",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T20:19:15.232653+00:00",
+  "total": 98
+}

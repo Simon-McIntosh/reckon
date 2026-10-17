@@ -24,7 +24,7 @@
   <title>A Velocity Window May Open Before The Ledger | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -164,6 +164,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-s1-integration-check" data-who="reckon-build" data-when="2026-10-17T13:58:00Z">
     <div class="r-comment-body"><p>Post-merge check for §1, run at merge <code>440ce55a6</code>: <code>reckon crew velocity --project reckon --since 2026-08-01</code> no longer raises <code>CalledProcessError</code> at the base read. It now reaches the search in <code>recover_ledger_clocks</code> and exits 1 there when that search times out after 180 seconds. <code>--since 2026-09-01</code> times out in the same place, so the timeout is a separate, older defect. §1's code is in the tree; its fourth done-when item waits on §2.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T200233069086-review-of-a-long-window-ledger-search-stays-bounded-0bb5da164cf9" data-who="reckon-build" data-when="2026-10-17T20:24:56.909Z">
+    <div class="r-comment-body"><p>Independent review attached to r-20261017T161034396287-a-long-window-ledger-search-stays-bounded at head 0bb5da164: all six dimensions scored 0..20 (goal_fidelity 18, evidence 14, scope_discipline 16, durability 17, fit 18, reuse 15; total 98), the revision read recorded as reviewed_base_sha 55a9d0708704b2d8b5fe851bd916778efead2d7a and reviewed_head_sha 0bb5da164cf96b8974d87b64814d9085df9f85fd, added_failure_count 0 with no added failure ids derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs, no blocking finding and four follow-on findings; the record is stored in review-records/ inside the reviewed run&#x27;s directory and not in any worktree.</p></div>
 </div>
 </section>
 </main>
