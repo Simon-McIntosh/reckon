@@ -58,7 +58,7 @@ from reckon.crew.reserve import (
     admit_windows as reserve_admit_windows,
 )
 from reckon.crew.review import (
-    RUN_REVIEW_RECORD_DIRNAME,
+    run_review_record_location,
     review_store_root,
 )
 from reckon.crew.routing import (
@@ -70,7 +70,7 @@ from reckon.crew.runs import (
     delivery_roots,
     list_live,
     reports_dir,
-    runs_dir,
+    run_dir,
 )
 
 
@@ -1815,11 +1815,18 @@ def _sandbox_reachability(
         manifest_path=node.manifest_path,
         review_store_directory=review_store_root(),
     )
+    reviewed_run_id = ""
     if node.role == "review" and roots is not None:
+        reviewed_run_id = _reviewed_run_id_for_node(node.id)
         record_directories = {
             directory
             for declared in node.write_paths
-            if (directory := _review_record_directory_grant(declared)) is not None
+            if (
+                directory := _review_record_directory_grant(
+                    declared, reviewed_run_id=reviewed_run_id
+                )
+            )
+            is not None
         }
         roots = tuple(
             sorted({*roots, *record_directories}, key=lambda path: path.as_posix())
@@ -1843,29 +1850,59 @@ def _sandbox_reachability(
             "detail": (
                 f"write path {path!r} is unreachable in resolved sandbox tier "
                 f"{tier!r}; writable grants: {grants or 'none'}"
+                + (
+                    f"; review node {node.id!r} reviews run "
+                    f"{reviewed_run_id or 'that its id does not name'} and may "
+                    "write only that run's record directory"
+                    if node.role == "review"
+                    else ""
+                )
             ),
         }
         for path in unreachable
     ]
 
 
-def _review_record_directory_grant(declared: str) -> Path | None:
-    """Accept a review record only where the fence binds its existing directory."""
+def _reviewed_run_id_for_node(node_id: str) -> str:
+    """The run a review node id names, resolved as the delivery reader resolves it.
+
+    The node id is the only identity a review dispatch and its later readers
+    share, so the reviewed run is recovered from it through the same rule the
+    delivery reader applies — a run id carried directly, or a node id matched
+    against the live fleet — rather than through a second spelling written here.
+    The fleet lookup is not scoped to one project because the dispatch check
+    holds no project, and a node id is the run's own; a node id that resolves no
+    run returns the bare source, which names no run directory and so grants
+    nothing.
+    """
+    from reckon.crew.recovery_review_delivery import _resolved_reviewed_run_id
+
+    return _resolved_reviewed_run_id({"node": {"id": node_id}}, None)
+
+
+def _review_record_directory_grant(
+    declared: str, *, reviewed_run_id: str
+) -> Path | None:
+    """Accept a review record only inside the reviewed run's record directory.
+
+    A run review delivers its record inside a ``review-records/`` directory of
+    the run it reviews, so a declaration is granted only when it lands in that
+    run's directory: a path naming any other run's record directory would be
+    rebound writable through the fence and reach a record the review was never
+    asked about. The containment is read through the review module's own
+    location rule, so the shape has one spelling rather than two, and a node id
+    that resolved no run grants nothing because there is no directory such a
+    record could belong to.
+    """
+    if not reviewed_run_id:
+        return None
     raw = Path(declared).expanduser()
     if not raw.is_absolute():
         return None
-    path = raw.resolve()
-    try:
-        within_runs = path.relative_to(runs_dir().resolve())
-    except ValueError:
+    located = run_review_record_location(raw, run_dir(reviewed_run_id))
+    if located is None or not located.parent.is_dir():
         return None
-    if (
-        len(within_runs.parts) != 3
-        or within_runs.parts[1] != RUN_REVIEW_RECORD_DIRNAME
-        or not path.parent.is_dir()
-    ):
-        return None
-    return path.parent
+    return located.parent.resolve()
 
 
 def _fence_write_roots(
