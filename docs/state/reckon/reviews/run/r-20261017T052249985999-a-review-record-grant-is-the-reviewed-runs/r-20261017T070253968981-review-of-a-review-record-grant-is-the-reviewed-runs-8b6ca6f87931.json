@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:615 _sandbox_reachability from the dispatch-validation path",
+    "reckon/crew/dispatch.py:2579 re-export of _sandbox_reachability",
+    "reckon/crew/recovery_review_subject.py:625 composing the write paths the grant reads through run_review_record_paths"
+  ],
+  "completed_at": "2026-10-17T07:14:45.064Z",
+  "dispatched_at": "2026-10-17T07:03:27Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_admission.py",
+      "line": "1897",
+      "severity": "follow-on",
+      "text": "follow-on: the `if not reviewed_run_id` guard fires only for a node id carrying no review-of- prefix, because _resolved_reviewed_run_id at reckon/crew/recovery_review_delivery.py:175 returns the bare source for an unresolved semantic id rather than empty, so the refusal the docstring at :1874 attributes to the guard is in fact enforced by the run_review_record_location comparison and the located.parent.is_dir() check."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base c752ea8eb; 476199893 replaces the parts-count shape rule with identity containment in reckon/crew/dispatch_admission.py and adds _reviewed_run_id_for_node, 6e21c403c adds the two fleet-lookup cases, and eb039948a/8b6ca6f87 add and amend the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_run_review_with_run_directory_records_dispatches.py with a run-B refusal case, a run-A admission-and-fence case, the sibling file, and a production-composed re-review; the manifest records 14 passed at revision 6e21c403c (head-a-run-review-record-grant.log, EXIT=0) with the declared mutation red at EXIT=1 (negative-control.log).",
+    "goal": "the node's goal is to confine a review node's record grant to the review-records directory of the run its node id names; reckon/crew/dispatch_admission.py:1883 _review_record_directory_grant admits a declared path only through review.run_review_record_location against run_dir(reviewed_run_id), resolved from the node id by _reviewed_run_id_for_node at reckon/crew/dispatch_admission.py:1866.",
+    "manifest": "read; it reports status complete, commits 476199893/6e21c403c/eb039948a/8b6ca6f87, both gate logs by path with their results, and evidence_inputs naming the four covered cases.",
+    "write_paths": "the manifest declares four paths and the landed commits change exactly reckon/crew/dispatch_admission.py, tests/test_a_run_review_with_run_directory_records_dispatches.py and docs/evidence/fragments/a-worker-cannot-write-your-home/a-review-record-grant-is-the-reviewed-runs.html, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "reinstating the widened grant under RECKON_TEST_REVIEW_RECORD_RUN_NEGATIVE reddens tests/test_a_run_review_with_run_directory_records_dispatches.py:202 while the head arm passes, so the run-B guard is shown to fire.",
+    "evidence": "head-a-run-review-record-grant.log records 14 passed at EXIT=0 at 6e21c403c and negative-control.log records the declared mutation reddening test_review_cannot_declare_another_runs_record_directory at EXIT=1, both matching the done_when.",
+    "fit": "the helpers at reckon/crew/dispatch_admission.py:1866 and :1883 are named by mechanism with mechanism docstrings in the module idiom.",
+    "goal_fidelity": "reckon/crew/dispatch_admission.py:1902 admits a declaration only when review.run_review_record_location places it in run_dir(reviewed_run_id), which is the confinement the goal states.",
+    "reuse": "the containment is read through review.run_review_record_location at reckon/crew/review.py:2477 and the run resolution wraps recovery_review_delivery._resolved_reviewed_run_id at reckon/crew/recovery_review_delivery.py:156, so both owners are extended rather than restated.",
+    "scope_discipline": "the four commits touch only the three declared paths, and the now-unused runs_dir and RUN_REVIEW_RECORD_DIRNAME imports are removed at reckon/crew/dispatch_admission.py:61."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to confine a review node's record grant to the review-records directory of the run its node id names; reckon/crew/dispatch_admission.py:1883 _review_record_directory_grant admits a declared path only through review.run_review_record_location against run_dir(reviewed_run_id), resolved from the node id by _reviewed_run_id_for_node at reckon/crew/dispatch_admission.py:1866.\nVERDICT done_when: the done_when names tests/test_a_run_review_with_run_directory_records_dispatches.py with a run-B refusal case, a run-A admission-and-fence case, the sibling file, and a production-composed re-review; the manifest records 14 passed at revision 6e21c403c (head-a-run-review-record-grant.log, EXIT=0) with the declared mutation red at EXIT=1 (negative-control.log).\nVERDICT write_paths: the manifest declares four paths and the landed commits change exactly reckon/crew/dispatch_admission.py, tests/test_a_run_review_with_run_directory_records_dispatches.py and docs/evidence/fragments/a-worker-cannot-write-your-home/a-review-record-grant-is-the-reviewed-runs.html, all inside the declared scope.\nVERDICT manifest: read; it reports status complete, commits 476199893/6e21c403c/eb039948a/8b6ca6f87, both gate logs by path with their results, and evidence_inputs naming the four covered cases.\nVERDICT diff: read commit by commit against base c752ea8eb; 476199893 replaces the parts-count shape rule with identity containment in reckon/crew/dispatch_admission.py and adds _reviewed_run_id_for_node, 6e21c403c adds the two fleet-lookup cases, and eb039948a/8b6ca6f87 add and amend the evidence fragment.\nCALL_SITES: reckon/crew/dispatch_plan.py:615 _sandbox_reachability from the dispatch-validation path, reckon/crew/dispatch.py:2579 re-export of _sandbox_reachability, reckon/crew/recovery_review_subject.py:625 composing the write paths the grant reads through run_review_record_paths\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_admission.py:1902 admits a declaration only when review.run_review_record_location places it in run_dir(reviewed_run_id), which is the confinement the goal states.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-a-run-review-record-grant.log records 14 passed at EXIT=0 at 6e21c403c and negative-control.log records the declared mutation reddening test_review_cannot_declare_another_runs_record_directory at EXIT=1, both matching the done_when.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four commits touch only the three declared paths, and the now-unused runs_dir and RUN_REVIEW_RECORD_DIRNAME imports are removed at reckon/crew/dispatch_admission.py:61.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the widened grant under RECKON_TEST_REVIEW_RECORD_RUN_NEGATIVE reddens tests/test_a_run_review_with_run_directory_records_dispatches.py:202 while the head arm passes, so the run-B guard is shown to fire.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers at reckon/crew/dispatch_admission.py:1866 and :1883 are named by mechanism with mechanism docstrings in the module idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the containment is read through review.run_review_record_location at reckon/crew/review.py:2477 and the run resolution wraps recovery_review_delivery._resolved_reviewed_run_id at reckon/crew/recovery_review_delivery.py:156, so both owners are extended rather than restated.\nFINDING reckon/crew/dispatch_admission.py:1897 follow-on: the `if not reviewed_run_id` guard fires only for a node id carrying no review-of- prefix, because _resolved_reviewed_run_id at reckon/crew/recovery_review_delivery.py:175 returns the bare source for an unresolved semantic id rather than empty, so the refusal the docstring at :1874 attributes to the guard is in fact enforced by the run_review_record_location comparison and the located.parent.is_dir() check.\n",
+  "review_run_id": "r-20261017T070253968981-review-of-a-review-record-grant-is-the-reviewed-runs-8b6ca6f87931",
+  "reviewed_base_sha": "c752ea8ebc4f7e40cd2f59dc0cd2a7f469181f0b",
+  "reviewed_head_sha": "8b6ca6f879313c77df03d9e2a6c0a4de1aebe9fd",
+  "reviewed_run_id": "r-20261017T052249985999-a-review-record-grant-is-the-reviewed-runs",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T07:14:23.659924+00:00",
+  "total": 116
+}
