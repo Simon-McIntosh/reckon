@@ -68,9 +68,7 @@ def _review_store_record_paths(record: Mapping[str, Any], project: str) -> list[
     paths: list[Path] = []
     for declared in node.get("write_paths") or ():
         if run_directory is not None:
-            landed = review_module.run_review_record_location(
-                declared, run_directory
-            )
+            landed = review_module.run_review_record_location(declared, run_directory)
             if landed is not None:
                 paths.append(landed)
                 continue
@@ -108,9 +106,7 @@ def file_review_records_into_store(record: Mapping[str, Any]) -> list[Path]:
     if directory is None:
         return []
     try:
-        return review_module.file_delivered_run_reviews(
-            record, run_directory=directory
-        )
+        return review_module.file_delivered_run_reviews(record, run_directory=directory)
     except (OSError, ValueError):
         return []
 
