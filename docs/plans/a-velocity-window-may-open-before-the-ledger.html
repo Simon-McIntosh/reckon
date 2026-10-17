@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-velocity-window-may-open-before-the-ledger">
+  <meta name="plan-title" content="A Velocity Window May Open Before The Ledger">
+  <meta name="plan-summary" content="crew velocity aborts when its window starts or ends before crew.json existed; a revision with no ledger must read as one with no runs.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="1.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="low">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling,measurement">
+  <meta name="plan-blocks" content="the-ledger-is-one-file-per-run#s4">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;}">
+  <title>A Velocity Window May Open Before The Ledger | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="2">
+<meta name="plan-modified" content="2026-10-17">
+<meta name="plan-north-star" content="state-that-tells-the-truth">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — A revision without the ledger reads as one with no runs</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p>
+      At main <code>3e4736687</code>, <code>reckon crew velocity --project reckon --since 2026-08-01</code> exits 1. The
+      error is <code>CalledProcessError</code> from <code>git show 69fb3c1e5…:docs/state/reckon/crew.json</code>, raised
+      inside <code>recover_ledger_clocks</code> at <code>reckon/velocity.py:1191</code>. The window's base commit is
+      <code>69fb3c1e5</code>, from 2026-07-30. <code>docs/state/reckon/crew.json</code> was first committed in
+      <code>af650745d</code> on 2026-08-12, so the base has no such file. <code>recover_ledger_clocks</code> reads the
+      ledger at the base only to learn which runs already existed. When the path is absent, the whole view aborts,
+      although the true answer is that no runs existed.
+    </p>
+    <p>
+      The read at the head has the same defect. <code>_read_ledger</code> at <code>reckon/velocity.py:708</code> looks
+      up the blob with <code>_blob_sha</code>, which returns <code>None</code> for an absent path. It then calls
+      <code>git show</code> unconditionally at line 719. So a window whose head predates 2026-08-12 fails in the same
+      way. Every window will fail once <code>the-ledger-is-one-file-per-run</code> §4 deletes <code>crew.json</code>,
+      because no head will have it from then on. That is why this plan blocks that section.
+      <code>_read_run_rows</code> already copes with an absent <code>runs/</code> directory, because
+      <code>git ls-tree</code> prints nothing for one.
+    </p>
+    <p>
+      <strong>Remedy.</strong> Change both read sites so that a revision whose tree has no <code>crew.json</code>
+      reads as a ledger with no runs:
+    </p>
+    <ul>
+      <li><code>recover_ledger_clocks</code> treats every candidate run as absent at the base.</li>
+      <li><code>_read_ledger</code> returns no records. <code>_read_run_rows</code> still supplies the per-run
+        files.</li>
+      <li>For an absent ledger, the digest the snapshot reports is null, not the digest of an empty document. A
+        reader can then tell a revision with no ledger from one whose ledger is empty.</li>
+    </ul>
+    <p>
+      Decide absence from the tree, using the existing <code>_blob_sha</code> helper. Do not catch the failed
+      <code>git show</code>. When a path does exist and its read fails, that failure must still raise. No new public
+      name is added.
+    </p>
+    <p>
+      <strong>Write paths:</strong> <code>reckon/velocity.py</code> and
+      <code>tests/test_velocity_reads_a_revision_without_the_ledger.py</code>, which is new.
+    </p>
+    <p><strong>Done when</strong> all four of these hold:</p>
+    <ol>
+      <li>The new test builds a temporary git repository. Its first commits have no
+        <code>docs/state/&lt;project&gt;/crew.json</code>, and later commits add one with run rows. The test asserts
+        three cases:
+        <ul>
+          <li>a window whose base predates the ledger reports the window's runs and does not raise;</li>
+          <li>a window whose head predates the ledger reports zero runs with a null ledger digest and does not
+            raise;</li>
+          <li>a monkeypatched <code>git</code> that fails the <code>show</code> of a ledger that is present still
+            raises.</li>
+        </ul>
+        The test writes nothing outside its temporary directory. It points <code>RECKON_VELOCITY_CACHE</code> and
+        <code>RECKON_CLONE_CACHE</code> into that directory.</li>
+      <li>Pytest over the new file, <code>tests/test_velocity_cache.py</code>, <code>tests/test_velocity.py</code>,
+        <code>tests/test_crew_velocity_view.py</code> and
+        <code>tests/test_every_module_fits_a_worker_window.py</code> adds no failure against the base.</li>
+      <li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</li>
+      <li>After the merge, the coordinator runs <code>reckon crew velocity --project reckon --since 2026-08-01</code>
+        at the merged head and it exits 0. This check is not part of the worker's gate. It reads the live
+        repository's history, so it is an integration observation and not a test.</li>
+    </ol>
+    <p>
+      <strong>Negative control:</strong> restore the unconditional <code>git show</code> at either read site. The
+      matching case in the new test must then fail with <code>CalledProcessError</code>. Removing the presence check
+      in favour of a blanket <code>except</code> must instead fail the third case.
+    </p>
+
+    
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-avwmobl-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-17" data-recommends-skill="/reckon-build a-velocity-window-may-open-before-the-ledger §1" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make both ledger reads in velocity tolerate a revision with no ledger</h4>
+    <div class="r-fu-body"><p>Filed after <code>reckon crew velocity --since 2026-08-01</code> crashed on a window base that predates <code>crew.json</code>. §1 carries the remedy and its done-when.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-velocity-window-may-open-before-the-ledger §1</pre>
+    </article>
+</section>
+  </main>
+  
+</body>
+</html>
