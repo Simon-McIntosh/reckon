@@ -24,6 +24,7 @@ copy, so the two readers share one definition. Both call
 
 from __future__ import annotations
 
+import contextlib
 import fcntl
 import hashlib
 import io
@@ -211,9 +212,19 @@ def refresh_materialized_tree_pin(descriptor: int, root: Path) -> None:
     tree's lease record is re-stamped, which is the renewal a pruner on
     another node reads: that node cannot see this one's lock, so the record is
     the only evidence it has that the tree is still imported from.
+
+    A tree removed from under this process by a pruner elsewhere is a tree
+    with no lease left to renew and no record left to stamp, and neither half
+    of the renewal is then owed to anyone: the descriptor names an inode with
+    no directory left to hold it, and the poll that renews here has a reload
+    ahead of it that materialises a fresh tree. So both halves are attempted
+    and neither is allowed to end the watch, which is what a follower serving
+    a session has to survive.
     """
-    os.utime(descriptor, None)
-    _record_lease_node(root)
+    with contextlib.suppress(OSError):
+        os.utime(descriptor, None)
+    with contextlib.suppress(OSError):
+        _record_lease_node(root)
 
 
 def materialize_committed_tree(

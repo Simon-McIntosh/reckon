@@ -240,6 +240,36 @@ def test_a_target_pruned_before_its_lease_is_retried_once(source, monkeypatch, c
     assert second in str(image)
 
 
+def test_a_tree_pruned_under_a_renewal_degrades_without_ending_the_poll(
+    source, monkeypatch
+):
+    """A renewal on a vanished tree must not raise out of the follower's poll.
+
+    A pruner elsewhere can remove the tree this process imports from, leaving
+    the lease descriptor naming an inode with no directory behind it. Renewing
+    the lease is then owed to nobody, and the poll must carry on to its reload
+    rather than ending the watch stream on the loss.
+    """
+    root, first, execs = source
+    image = _publish(root, first)
+    monkeypatch.setenv(follow._FOLLOWER_SOURCE_ROOT_ENV, str(root))
+    monkeypatch.setenv(follow._FOLLOWER_IMAGE_COMMIT_ENV, first)
+    monkeypatch.setattr(follow, "_import_root", lambda module: image)
+    reloader = follow._FollowerReloader("test-project", None)
+    assert reloader.import_root == image
+    assert reloader.image_pin is not None
+    monkeypatch.setattr(reloader, "_replacement_imports", lambda: (True, ""))
+
+    shutil.rmtree(image)
+    _commit(root, "second")
+    reloader.poll({})
+
+    assert len(execs) == 1, "the poll did not reach its reload for a vanished tree"
+    replacement = _executed_root(execs)
+    assert replacement.is_dir()
+    assert (replacement / "reckon" / "example.py").read_text() == "VALUE = 'second'\n"
+
+
 def test_a_target_removed_twice_defers_naming_the_vanished_path(
     source, monkeypatch, capsys
 ):
