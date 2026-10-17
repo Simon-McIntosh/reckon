@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:615 _sandbox_reachability reached from the dispatch validation path",
+    "reckon/crew/dispatch.py:2579 re-export of _sandbox_reachability",
+    "reckon/crew/recovery_review_subject.py:625 composing the write paths the grant reads through run_review_record_paths"
+  ],
+  "completed_at": "2026-10-17T05:47:13.954Z",
+  "dispatched_at": "2026-10-17T05:39:16Z",
+  "findings": [
+    {
+      "file": "tests/test_a_run_review_with_run_directory_records_dispatches.py",
+      "line": "73",
+      "severity": "follow-on",
+      "text": "follow-on: the added cases mint the node id from a run-id source (REVIEWED_ID at tests/test_a_run_review_cannot_remove_a_siblings_record.py:64), so _resolved_reviewed_run_id takes its direct r- branch and the live-fleet lookup a re-review uses is not exercised, leaving a regression there green in the suite."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T052249985999-a-review-record-grant-is-the-reviewed-runs/head-a-run-review-record-grant.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate log header names revision c752ea8eb, the base, while the change landed at 476199893, so a reader cannot tell from the log whether the head arm ran with the change applied."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base c752ea8eb; 476199893 replaces the parts-count shape rule with review.run_review_record_location against run_dir(reviewed_run_id) and adds _reviewed_run_id_for_node plus the two cases, and eb039948a adds the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_run_review_with_run_directory_records_dispatches.py with a run-B refusal case and a run-A admission case plus the sibling file, and the manifest records 12 passed (head-a-run-review-record-grant.log, EXIT=0) with the declared mutation red at EXIT=1 (negative-control.log).",
+    "goal": "the node's goal is to confine a review's record grant to the reviewed run's own review-records directory, and reckon/crew/dispatch_admission.py:1883 _review_record_directory_grant now resolves the reviewed run from the node id and admits a declared path only through review.run_review_record_location against run_dir(reviewed_run_id).",
+    "manifest": "read; it reports status complete, commits 476199893 and eb039948a, both gate logs by path with their results, and evidence_inputs records the manual re-review node-id resolution probe.",
+    "write_paths": "the manifest declares four paths and the two commits change exactly reckon/crew/dispatch_admission.py, tests/test_a_run_review_with_run_directory_records_dispatches.py and docs/evidence/fragments/a-worker-cannot-write-your-home/a-review-record-grant-is-the-reviewed-runs.html, all inside them."
+  },
+  "justifications": {
+    "durability": "reinstating the pre-change grant under RECKON_TEST_REVIEW_RECORD_RUN_NEGATIVE reddens tests/test_a_run_review_with_run_directory_records_dispatches.py:176 while the head arm passes, so the guard is shown to fire rather than merely shown green.",
+    "evidence": "head-a-run-review-record-grant.log records 12 passed at EXIT=0 and negative-control.log records the declared mutation failing test_review_cannot_declare_another_runs_record_directory at EXIT=1, but the re-review resolution the done_when names rests on the manual probe in the manifest's evidence_inputs rather than a gate.",
+    "fit": "the helpers at reckon/crew/dispatch_admission.py:1866 and :1883 are named by mechanism and carry mechanism docstrings in the module's idiom, though _reviewed_run_id_for_node reaches a private _resolved_reviewed_run_id in a sibling module.",
+    "goal_fidelity": "reckon/crew/dispatch_admission.py:1883 admits the declared path only when review.run_review_record_location places it in run_dir(reviewed_run_id), which is the confinement the goal states.",
+    "reuse": "the confinement is read through review.run_review_record_location and the run resolution through recovery_review_delivery._resolved_reviewed_run_id, so the change extends both owners rather than restating either rule, and a capability search over reckon/crew found no other record-grant rule.",
+    "scope_discipline": "the two commits touch only the three declared paths, and the now-unused runs_dir and RUN_REVIEW_RECORD_DIRNAME imports are removed from reckon/crew/dispatch_admission.py:61 in the same file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to confine a review's record grant to the reviewed run's own review-records directory, and reckon/crew/dispatch_admission.py:1883 _review_record_directory_grant now resolves the reviewed run from the node id and admits a declared path only through review.run_review_record_location against run_dir(reviewed_run_id).\nVERDICT done_when: the done_when names tests/test_a_run_review_with_run_directory_records_dispatches.py with a run-B refusal case and a run-A admission case plus the sibling file, and the manifest records 12 passed (head-a-run-review-record-grant.log, EXIT=0) with the declared mutation red at EXIT=1 (negative-control.log).\nVERDICT write_paths: the manifest declares four paths and the two commits change exactly reckon/crew/dispatch_admission.py, tests/test_a_run_review_with_run_directory_records_dispatches.py and docs/evidence/fragments/a-worker-cannot-write-your-home/a-review-record-grant-is-the-reviewed-runs.html, all inside them.\nVERDICT manifest: read; it reports status complete, commits 476199893 and eb039948a, both gate logs by path with their results, and evidence_inputs records the manual re-review node-id resolution probe.\nVERDICT diff: read commit by commit against base c752ea8eb; 476199893 replaces the parts-count shape rule with review.run_review_record_location against run_dir(reviewed_run_id) and adds _reviewed_run_id_for_node plus the two cases, and eb039948a adds the evidence fragment.\nCALL_SITES: reckon/crew/dispatch_plan.py:615 _sandbox_reachability reached from the dispatch validation path, reckon/crew/dispatch.py:2579 re-export of _sandbox_reachability, reckon/crew/recovery_review_subject.py:625 composing the write paths the grant reads through run_review_record_paths\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_admission.py:1883 admits the declared path only when review.run_review_record_location places it in run_dir(reviewed_run_id), which is the confinement the goal states.\nSCORE evidence: 15\nJUSTIFICATION evidence: head-a-run-review-record-grant.log records 12 passed at EXIT=0 and negative-control.log records the declared mutation failing test_review_cannot_declare_another_runs_record_directory at EXIT=1, but the re-review resolution the done_when names rests on the manual probe in the manifest's evidence_inputs rather than a gate.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the two commits touch only the three declared paths, and the now-unused runs_dir and RUN_REVIEW_RECORD_DIRNAME imports are removed from reckon/crew/dispatch_admission.py:61 in the same file.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the pre-change grant under RECKON_TEST_REVIEW_RECORD_RUN_NEGATIVE reddens tests/test_a_run_review_with_run_directory_records_dispatches.py:176 while the head arm passes, so the guard is shown to fire rather than merely shown green.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers at reckon/crew/dispatch_admission.py:1866 and :1883 are named by mechanism and carry mechanism docstrings in the module's idiom, though _reviewed_run_id_for_node reaches a private _resolved_reviewed_run_id in a sibling module.\nSCORE reuse: 18\nJUSTIFICATION reuse: the confinement is read through review.run_review_record_location and the run resolution through recovery_review_delivery._resolved_reviewed_run_id, so the change extends both owners rather than restating either rule, and a capability search over reckon/crew found no other record-grant rule.\nFINDING tests/test_a_run_review_with_run_directory_records_dispatches.py:73 follow-on: the added cases mint the node id from a run-id source (REVIEWED_ID at tests/test_a_run_review_cannot_remove_a_siblings_record.py:64), so _resolved_reviewed_run_id takes its direct r- branch and the live-fleet lookup a re-review uses is not exercised, leaving a regression there green in the suite.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T052249985999-a-review-record-grant-is-the-reviewed-runs/head-a-run-review-record-grant.log:1 follow-on: the gate log header names revision c752ea8eb, the base, while the change landed at 476199893, so a reader cannot tell from the log whether the head arm ran with the change applied.",
+  "review_run_id": "r-20261017T053843641286-review-of-a-review-record-grant-is-the-reviewed-runs-eb039948a9fe",
+  "reviewed_base_sha": "c752ea8ebc4f7e40cd2f59dc0cd2a7f469181f0b",
+  "reviewed_head_sha": "eb039948a9fea1d566806ad00b3398024efc5ee3",
+  "reviewed_run_id": "r-20261017T052249985999-a-review-record-grant-is-the-reviewed-runs",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T05:45:40.901001+00:00",
+  "total": 106
+}
