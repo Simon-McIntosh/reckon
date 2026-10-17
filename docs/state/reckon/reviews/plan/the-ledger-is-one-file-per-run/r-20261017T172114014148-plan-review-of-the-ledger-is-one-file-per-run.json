@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T17:31:24.799Z",
+  "dispatched_at": "2026-10-17T17:21:52Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-ledger-is-one-file-per-run.html:532",
+      "id": "done_when-1",
+      "reason": "the control names the wrong failing input, so the node cannot show a change; the fixture must force the index refresh to be refused (or remove the run file while the index refresh reads it) before it can demonstrate the base misreport, which is the condition \u00a711's own prose identifies as the second of its three candidate sites.",
+      "text": "the negative control (\"against the base tree, the first case's receipt reads 'already written'\") cannot fire as the first case is specified, because the base tree already returns the rolled-back wording for that exact case: `ledger.load`'s indexed path rescans the run files on every read (`_run_snapshot` at `reckon/ledger.py:1259`, with records whose file is gone deleted at `:1356-1358`), so once the rollback unlinks the created per-run file the read-back drops the row; the misreport requires the refresh itself to be refused so the last-good index is served (load's `except (OSError, sqlite3.Error)` \u2192 `_last_good_index_data`, `reckon/ledger.py:1444-1452`), and the fixture \"whose ledger index is current\" creates no such refusal. A test at the base revision already pins the base behaviour: `tests/test_receipt_names_the_rolled_back_row.py::test_rolled_back_row_receipt_names_re_promotion_as_the_recovery` (new per-run file, HEAD never carried it, failed landing, rollback) asserts \"was written and has been rolled back\" and \"re-promote once the landing failure is resolved\" and passes 3/3 at this base (`timeout 120 .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_receipt_names_the_rolled_back_row.py` \u2192 `3 passed in 13.47s`). So a builder following \u00a711 would find its head arm green at base, its declared control silent, and would reach the plan's own escape hatch (\"the manifest reports blocked\") with no repair",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7af03fc5f8ad1708355af46c774ed8243aa9a7a407bf316374861762a05db4a4",
+  "plan_slug": "the-ledger-is-one-file-per-run",
+  "plan_version": 80,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T172114014148-plan-review-of-the-ledger-is-one-file-per-run",
+  "reviewed_blob_sha": "ed9ec93e26e416c85f824056a8222b94f5294463",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every \u00a711 anchor resolves: `_commit_landing_writes` and `_report_written_ledger_row` are in `reckon/crew/promotion_scope.py` (`:1910`, `:1766`), the refusal text \"could not stage the landing writes\" (`:1951`) and the receipt's \"already written; do not re-promote\" (`:1797`) are in the path. To verify in the tree, the cited commit `4c4b8007c` exists as a commit (`promote(r-20261017T142840115616-fresh-read-ledger-index-population-at-merge): passed`, 2026-10-17T17:40:57+02:00), and the cited run directory `~/.config/reckon/crew/runs/r-20261017T142840115616-fresh-read-ledger-index-population-at-merge/` exists and carries its gate arms.",
+    "done_when": "a finding \u2014 \u00a711's negative control (\"against the base tree, the first case's receipt reads 'already written'\", `:532`) is falsified by a test that passes at the base revision.",
+    "evidence_paths": "pass \u2014 \u00a711's only evidence path is \"the log goes under the run directory\" (`:532`), the durable per-run directory under the crew config home, with no scratchpad or node-local path named.",
+    "naming": "pass \u2014 the new test file is named for the mechanism (`test_a_failed_landing_says_whether_its_row_survived.py`), and \u00a711 carries no plan label, stage name or ticket number in any symbol or file it proposes; the run ids and shas it quotes are evidence prose, not code identifiers.",
+    "reasoning": "pass \u2014 the stated root cause is the one the cited evidence shows (a receipt that read \"already written\" while the run's per-run file was absent), the mechanism named (decide from the rollback's per-path report plus a read-back, never from a cached index) is capable of producing the done-when's head arm, and the path runs on the real caller: `_report_written_ledger_row` is entered at `reckon/crew/promotion.py:1298` (and `:729`) on the ordinary `crew complete` append path, with `row_present=lambda: _ledger_holds_row(project, ledger_root, run_id)`, and `_ledger_holds_row` (`promotion_scope.py:1856`) reads `ledger.load(project, root=root)` \u2014 which by default serves the SQLite index (`reckon/ledger.py:1441-1452`). That is exactly the \"cached index\" the Deliverable tells the builder to take out of the decision, so the fix has a real site.",
+    "single_goal": "pass \u2014 \u00a711 states one deliverable (the receipt's wording decision for a failed landing) and one test file; the three candidate misread sites are the diagnosis that feeds it, not a second deliverable.",
+    "wiring": "pass \u2014 \u00a711 declares no new edge and needs none: its inputs are \u00a71's per-run writer, \u00a72's union reader and \u00a710's `_commit_landing_writes` scoping, all landed (`data-status=\"done\"` at `:507`, `:519`, `:527`), and the single gate `g-tlofpr-9` (`:764`) is \u00a79's, which \u00a711 does not depend on; the \"build it after \u00a710\" ordering is a same-file serialisation, not a dependency, and the earlier wiring finding on it was declined with a reason that still holds."
+  },
+  "section_digests": {
+    "_document": "8e4527e10d661d77f03236932d623c21f34b7b647a4839f77c9b3df629bbefc3",
+    "s1": "457845e844fa9bec63333cc35d867a85aa18bde3b16278a87a8dd315cae98e60",
+    "s10": "bb67efcd6925d252bcc8cb72c7dc1a1b4ba3ec37787e039f9cc41f132c5f74ab",
+    "s11": "5d34d6360cfd1b02b4c3f949c4e3723aaee59d254296a3ca70b5f71e056b8a7a",
+    "s2": "f264807d1fd48d466dfe9f9126f75e341e735d9a86b54ba342cf0012dfcdddfc",
+    "s3": "922052455a1c2af498bccd801f0e6db8ab3616bba71d823efa03641ce2332fa7",
+    "s4": "2eb77001999bc36a32f304d3ff896caf2c803489ea790ad39bae324fd7f92a9e",
+    "s5": "60e425e1d2d0d1a1f973eb32c4d3e72fa080e1a616ff0f462d20aefbd1fc522d",
+    "s6": "a344122c7f73694668e843366730c1d1cc881b97ba06225f376f01012af5936b",
+    "s7": "6128dbd3b5deb9351318b08d168c55ae2e7290f079a109ee1241b2fb4a938b62",
+    "s8": "cdd8d6e0e9a435ddff21dfe693ae91d81f505e26f71b44f8cda7483ab8e7322f",
+    "s9": "219f4b589a8e402682cc7da07cc89dbdad4db3ed8d1db0d80356cbbce2685bfe"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T17:36:17.118954+00:00"
+}
