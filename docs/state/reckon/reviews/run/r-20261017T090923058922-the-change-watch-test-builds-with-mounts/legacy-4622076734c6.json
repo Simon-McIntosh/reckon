@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "after_failure_ids ([]) minus baseline_failure_ids (['tests/test_metadata_index_survives_restart.py::test_the_change_watch_invalidates_the_tree']) is empty: the base arm fails the one id and the head arm fails none, so 0 added failures across the reviewed gate.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py:4495 start_fleet_change_watch(load_mounts())",
+    "reckon/serve.py:4454 _FleetChangeWatch(mounts)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-17T09:10:26Z",
+  "findings": [
+    {
+      "file": "tests/test_metadata_index_survives_restart.py",
+      "line": 339,
+      "severity": "follow-on",
+      "text": "the invalidation wait uses a 10 s deadline equal to the cross-node detector's fast interval _CROSS_NODE_FAST_S = 10.0, so when inotify misses the pre-arming write the detector cannot beat it; the manifest records 2 failures / 10 runs, which makes this guard load-flaky rather than a defect introduced by the mapping change."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production code reached: the landed change is confined to a test module and an evidence fragment; the production caller reckon/serve.py:4495 start_fleet_change_watch(load_mounts()) -> reckon/serve.py:4454 _FleetChangeWatch(mounts) is the mapping shape the test now mirrors and is unmodified.",
+    "diff": "read commit by commit against da2eb10; one commit 8bcdbd59 changes tests/test_metadata_index_survives_restart.py:335 from a list to a mapping and adds the landing fragment; invalidation assertions at :345-354 are unchanged.",
+    "done_when": "the four clauses are recorded: gate-alone.log 8 passed EXIT=0, gate-xdist.log 8 passed (-n 4) EXIT=0, negative-control-base-arm.log 1 failed EXIT=1 on AttributeError: 'list' object has no attribute 'items' at reckon/serve.py:383, and ruff.log EXIT=0; I re-ran the named id at the head revision and it passed (1 passed, EXIT=0).",
+    "goal": "the node goal is \"Make the change-watch test build _FleetChangeWatch from a mapping of project to docs directory, as production does\"; tests/test_metadata_index_survives_restart.py:335 now constructs serve._FleetChangeWatch({_PROJECT: docs_dir}), a project-to-docs-directory mapping, matching the production call.",
+    "manifest": "read; status complete, commit 8bcdbd59293b4a05bee5c518029fc03cbceda732, and it records baseline_suite (da2eb10, 1 failed, test_the_change_watch_invalidates_the_tree) and after_suite (8bcdbd59, 0 failed) with their log paths, matching the logs I opened.",
+    "write_paths": "the manifest declares tests/test_metadata_index_survives_restart.py, the fragment docs/evidence/fragments/the-suite-is-green-at-head/the-change-watch-test-builds-with-mounts.html and the figures dir; git diff da2eb10..8bcdbd59 lists exactly the first two, both inside them, and the figures dir is untouched."
+  },
+  "justifications": {
+    "durability": "reverting tests/test_metadata_index_survives_restart.py:335 to the list reddens the id on AttributeError: 'list' object has no attribute 'items', proven by negative-control-base-arm.log (EXIT=1), but the guard is admitted load-flaky at tests/test_metadata_index_survives_restart.py:339 where the 10 s deadline races _CROSS_NODE_FAST_S.",
+    "evidence": "every done_when clause is recorded in the manifest with a log path, and I reproduced the head arm (tests/test_metadata_index_survives_restart.py::test_the_change_watch_invalidates_the_tree 1 passed, EXIT=0), though the manifest's own follow_ons records the id as load-flaky (2 failures / 10 runs), which weakens the weight of a single green arm.",
+    "fit": "the changed line reuses the module's existing _PROJECT constant (tests/test_metadata_index_survives_restart.py:28) and introduces no new name, matching the surrounding test idiom.",
+    "goal_fidelity": "tests/test_metadata_index_survives_restart.py:335 passes {_PROJECT: docs_dir}, the same project-to-path mapping shape that reckon/serve.py:4454 _FleetChangeWatch(mounts) receives from reckon/serve.py:4495 start_fleet_change_watch(load_mounts()).",
+    "reuse": "the change adds no definition; it reuses the existing _PROJECT constant and mirrors the mapping shape of reckon/serve.py:4454 without forking any capability.",
+    "scope_discipline": "git diff da2eb1096d8da9d389b3de8fb90d56f4e73714dc..8bcdbd59293b4a05bee5c518029fc03cbceda732 lists only tests/test_metadata_index_survives_restart.py and docs/evidence/fragments/the-suite-is-green-at-head/the-change-watch-test-builds-with-mounts.html, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Make the change-watch test build _FleetChangeWatch from a mapping of project to docs directory, as production does\"; tests/test_metadata_index_survives_restart.py:335 now constructs serve._FleetChangeWatch({_PROJECT: docs_dir}), a project-to-docs-directory mapping, matching the production call.\nVERDICT done_when: the four clauses are recorded: gate-alone.log 8 passed EXIT=0, gate-xdist.log 8 passed (-n 4) EXIT=0, negative-control-base-arm.log 1 failed EXIT=1 on AttributeError: 'list' object has no attribute 'items' at reckon/serve.py:383, and ruff.log EXIT=0; I re-ran the named id at the head revision and it passed (1 passed, EXIT=0).\nVERDICT write_paths: the manifest declares tests/test_metadata_index_survives_restart.py, the fragment docs/evidence/fragments/the-suite-is-green-at-head/the-change-watch-test-builds-with-mounts.html and the figures dir; git diff da2eb10..8bcdbd59 lists exactly the first two, both inside them, and the figures dir is untouched.\nVERDICT manifest: read; status complete, commit 8bcdbd59293b4a05bee5c518029fc03cbceda732, and it records baseline_suite (da2eb10, 1 failed, test_the_change_watch_invalidates_the_tree) and after_suite (8bcdbd59, 0 failed) with their log paths, matching the logs I opened.\nVERDICT diff: read commit by commit against da2eb10; one commit 8bcdbd59 changes tests/test_metadata_index_survives_restart.py:335 from a list to a mapping and adds the landing fragment; invalidation assertions at :345-354 are unchanged.\nCALL_SITES: reckon/serve.py:4495 start_fleet_change_watch(load_mounts()), reckon/serve.py:4454 _FleetChangeWatch(mounts)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_metadata_index_survives_restart.py:335 passes {_PROJECT: docs_dir}, the same project-to-path mapping shape that reckon/serve.py:4454 _FleetChangeWatch(mounts) receives from reckon/serve.py:4495 start_fleet_change_watch(load_mounts()).\nSCORE evidence: 18\nJUSTIFICATION evidence: every done_when clause is recorded in the manifest with a log path, and I reproduced the head arm (tests/test_metadata_index_survives_restart.py::test_the_change_watch_invalidates_the_tree 1 passed, EXIT=0), though the manifest's own follow_ons records the id as load-flaky (2 failures / 10 runs), which weakens the weight of a single green arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff da2eb1096d8da9d389b3de8fb90d56f4e73714dc..8bcdbd59293b4a05bee5c518029fc03cbceda732 lists only tests/test_metadata_index_survives_restart.py and docs/evidence/fragments/the-suite-is-green-at-head/the-change-watch-test-builds-with-mounts.html, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: reverting tests/test_metadata_index_survives_restart.py:335 to the list reddens the id on AttributeError: 'list' object has no attribute 'items', proven by negative-control-base-arm.log (EXIT=1), but the guard is admitted load-flaky at tests/test_metadata_index_survives_restart.py:339 where the 10 s deadline races _CROSS_NODE_FAST_S.\nSCORE fit: 19\nJUSTIFICATION fit: the changed line reuses the module's existing _PROJECT constant (tests/test_metadata_index_survives_restart.py:28) and introduces no new name, matching the surrounding test idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; it reuses the existing _PROJECT constant and mirrors the mapping shape of reckon/serve.py:4454 without forking any capability.\nFINDING tests/test_metadata_index_survives_restart.py:339 follow-on: the invalidation wait uses a 10 s deadline equal to the cross-node detector's fast interval _CROSS_NODE_FAST_S = 10.0, so when inotify misses the pre-arming write the detector cannot beat it; the manifest records 2 failures / 10 runs, which makes this guard load-flaky rather than a defect introduced by the mapping change.\n",
+  "review_run_id": "legacy-4622076734c6",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "da2eb1096d8da9d389b3de8fb90d56f4e73714dc",
+  "reviewed_head_sha": "8bcdbd59293b4a05bee5c518029fc03cbceda732",
+  "reviewed_run_id": "r-20261017T090923058922-the-change-watch-test-builds-with-mounts",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T09:25:00+00:00",
+  "total": 115
+}
