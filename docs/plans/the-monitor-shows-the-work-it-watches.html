@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="263">
+<meta name="plan-version" content="264">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1079,6 +1079,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s43" data-id="c-close-s43" data-who="reckon-build" data-when="2026-10-17T17:44:00Z">
     <div class="r-comment-body"><p>§43 landed: a merge whose push fails after it lands now reports the landed commit, with exit 6. A rerun pushes without re-merging, and a push refused on port 22 falls back to port 443 (merge <code>2be0c852a</code>). Zero failing ids added over 295 files. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s43">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s43" data-id="c-run-r-20261017T161742367923-a-landed-merge-whose-push-fails-says-it-landed" data-who="reckon-build" data-when="2026-10-17T16:38:09.584Z">
+    <div class="r-comment-body"><p>fix(crew): report a landed merge whose push failed — land_merge raises MergePushOutstandingError carrying a report naming the landed commit and the base, a head already in HEAD is pushed rather than re-merged, and a push refused on port 22 is retried over the port-443 route; the merge verb emits that report and exits PUSH_OUTSTANDING_EXIT (6), and the reckon-build skill&#x27;s integrate step names the route.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
