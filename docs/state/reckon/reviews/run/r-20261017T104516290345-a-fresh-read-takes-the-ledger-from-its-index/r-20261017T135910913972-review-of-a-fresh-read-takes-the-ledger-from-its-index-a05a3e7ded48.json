@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "read from the reviewed run's own gates in one format: after_suite head-gate.log reports 0 failures (5 passed, EXIT=0) and baseline_suite base-gate.log reports 2 failures (the two index-publication cases); the reviewed run added no failing test.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp_views.py:1825 with_section_attempts",
+    "reckon/mcp_views.py:1798 _section_attempt_count_uncached",
+    "reckon/roadmap.py:2605 _build_roadmap"
+  ],
+  "completed_at": "2026-10-17T14:26:20.879Z",
+  "dispatched_at": "2026-10-17T13:59:46Z",
+  "findings": [
+    {
+      "file": "tests/test_a_fresh_read_takes_the_ledger_from_its_index.py",
+      "line": "174",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when requires both counts to fail on a copy of the base tree; measured at d23f8142f with this test file only test_a_fresh_process_over_a_current_index_decodes_no_run_file fails \u2014 both test_one_read_aggregates_once_over_an_index_it_has_just_built (:174) and test_a_pointer_written_during_the_aggregate_is_seen_by_the_next_read (:200) pass \u2014 so the aggregate-once measure is not shown to discriminate the base defect and the module docstring's account of the second cause at :13 is not reproduced by any recorded arm."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "1546",
+      "severity": "follow-on",
+      "text": "follow-on: _attempt_state drops the index member by slicing stamp[0][:4] against ledger.index_stamp's positional list, so adding or reordering a member in reckon/ledger.py:1050 silently changes which state the memo compares without failing any test."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against faee86b8e; ledger.py delegates the cache root to _store, mcp_views.py adds _attempt_state and publishes under the pre-read stamp only, the test file splits the racing case in two, and the fragment is rewritten.",
+    "done_when": "the gate names tests/test_a_fresh_read_takes_the_ledger_from_its_index.py with 200 run files and a current index, a fresh process making no _read_run call, a racing read aggregating once, both counts failing on a base copy, and no added ruff findings; the head and base logs record the head arm and only two base failures.",
+    "goal": "the goal is a fresh roadmap read taking the run ledger from its index once without the per-file fallback scan; reckon/ledger.py:1003 _index_directory publishes the index into a writable user cache and reckon/mcp_views.py:1589 publishes the memo only under the pre-read stamp, which the goal implies.",
+    "manifest": "read; it records the three commits, the head arm '5 passed' EXIT=0, the base arm '2 failed, 3 passed', the mutation arm '1 failed, 4 passed', the ruff deltas and the live sqlite3.OperationalError log.",
+    "write_paths": "the run's prompt.txt fences reckon/ledger.py, reckon/mcp_views.py, the test file and the evidence fragment; git diff --stat faee86b8e..a05a3e7e touches exactly those four."
+  },
+  "justifications": {
+    "durability": "both gained assertions were falsified by reinstating the regressions they guard: mcp_views.py at faee86b8e reddens :259, and keeping the index identity in _attempt_state reddens :197 with len([1,1])==2.",
+    "evidence": "head-gate.log '5 passed' EXIT=0 is reproduced with `reckon.__file__ asserted inside the scratch tree, but on a base copy only test_a_fresh_process_over_a_current_index_decodes_no_run_file fails while both aggregate-once tests pass, so the done-when's 'both counts fail' clause is unmet.",
+    "fit": "the added helpers follow the surrounding private-helper-with-docstring idiom with no plan label, but reckon/mcp_views.py:1546 slices stamp[0][:4] against ledger.index_stamp's positional layout with nothing binding the two.",
+    "goal_fidelity": "the gained commits drop the index file's own identity from the memo comparison and publish under the pre-read stamp only (reckon/mcp_views.py:1546, :1589), so the index-backed read is never served a value older than its stamp, preserving the node goal's 'from its index once'.",
+    "reuse": "reckon/ledger.py:1005 now asks _store.cache_root('client') for the user cache root instead of re-resolving XDG_CACHE_HOME itself, so the base path has one owner; no owner exists for the stamp projection.",
+    "scope_discipline": "git diff --stat faee86b8e..a05a3e7e touches exactly the four declared write paths and nothing outside them."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a fresh roadmap read taking the run ledger from its index once without the per-file fallback scan; the gained commits publish the index into a writable user cache at reckon/ledger.py:1003 `_index_directory` and publish the attempt memo only under the pre-read stamp at reckon/mcp_views.py:1589, which is what the goal implies.\nVERDICT done_when: read from the run's prompt.txt; the gate names tests/test_a_fresh_read_takes_the_ledger_from_its_index.py with 200 run files and a current index, a fresh process making no `_read_run` call, a racing read aggregating once, both counts failing on a base copy, and no added ruff findings; head-gate.log records \"5 passed\" EXIT=0 and I reproduced it, but base-gate.log records only 2 failures and neither is the aggregate-once count.\nVERDICT write_paths: the run's prompt.txt fences reckon/ledger.py, reckon/mcp_views.py, tests/test_a_fresh_read_takes_the_ledger_from_its_index.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-fresh-read-takes-the-ledger-from-its-index.html; `git diff --stat faee86b8e..a05a3e7e` touches exactly those four paths and no other.\nVERDICT manifest: read; it records commits 8322a8f4b, 1a920a56a, a05a3e7de, the head arm \"5 passed\" EXIT=0, the base arm \"2 failed, 3 passed\" EXIT=1, the mutation arm \"1 failed, 4 passed\" EXIT=1, ruff deltas zero, and names the live sqlite3.OperationalError from live-indexed-data-exception.log.\nVERDICT diff: read commit by commit against faee86b8e; reckon/ledger.py:1005 `_default_cache_root` now delegates to `_store.cache_root(\"client\")`, reckon/mcp_views.py:1536 adds `_attempt_state` and :1589 publishes the memo only under the pre-read stamp, the test file splits the racing case into two tests, and the evidence fragment is rewritten to match.\nCALL_SITES: reckon/mcp_views.py:1825 with_section_attempts, reckon/mcp_views.py:1798 _section_attempt_count_uncached, reckon/roadmap.py:2605 _build_roadmap\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the gained commits drop the index file's own identity from the memo comparison and publish under the pre-read stamp only (reckon/mcp_views.py:1546, :1589), so the index-backed read is never served a value older than its stamp, and the node goal's \"from its index once\" is preserved.\nSCORE evidence: 13\nJUSTIFICATION evidence: head-gate.log \"5 passed\" EXIT=0 is reproduced (I ran the head tree with `reckon.__file__` asserted inside the scratch tree), but on a base copy (d23f8142f, head test file) only test_a_fresh_process_over_a_current_index_decodes_no_run_file fails while both aggregate-once tests pass, so the done-when's \"both counts fail\" clause is unmet.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat faee86b8e..a05a3e7e` touches exactly the four declared write paths (the three Python files and the fragment) and nothing outside them.\nSCORE durability: 19\nJUSTIFICATION durability: I falsified both gained assertions by reinstating the regressions they guard \u2014 restoring reckon/mcp_views.py to faee86b8e reddens test_a_pointer_written_during_the_aggregate_is_seen_by_the_next_read at tests/test_a_fresh_read_takes_the_ledger_from_its_index.py:259, and keeping the index identity in `_attempt_state` reddens test_one_read_aggregates_once_over_an_index_it_has_just_built at :197 with `len([1,1])==2`.\nSCORE fit: 17\nJUSTIFICATION fit: the added helpers follow the surrounding private-helper-with-docstring idiom and carry no plan, sprint or ticket label, but reckon/mcp_views.py:1546 slices `stamp[0][:4]` against the positional layout of `ledger.index_stamp` (reckon/ledger.py:1050) with nothing binding the two.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/ledger.py:1005 now asks `_store.cache_root(\"client\")` for the user cache root instead of re-resolving XDG_CACHE_HOME itself, so the base path has one owner, and no repository owner exists for the stamp projection.\nFINDING tests/test_a_fresh_read_takes_the_ledger_from_its_index.py:174 follow-on: the done-when requires both counts to fail on a copy of the base tree, but measured at d23f8142f with this test file only test_a_fresh_process_over_a_current_index_decodes_no_run_file fails \u2014 both test_one_read_aggregates_once_over_an_index_it_has_just_built and test_a_pointer_written_during_the_aggregate_is_seen_by_the_next_read pass \u2014 so the aggregate-once measure is not shown to discriminate the base defect and the module docstring's account of the second cause at :13 is not reproduced by any recorded arm.\nFINDING reckon/mcp_views.py:1546 follow-on: `_attempt_state` drops the index member by slicing `stamp[0][:4]` against `ledger.index_stamp`'s positional list, so adding or reordering a member in reckon/ledger.py:1050 silently changes which state the memo compares without failing any test.",
+  "review_run_id": "r-20261017T135910913972-review-of-a-fresh-read-takes-the-ledger-from-its-index-a05a3e7ded48",
+  "reviewed_base_sha": "faee86b8e84f28d6632f65ac841c38af8118e17e",
+  "reviewed_head_sha": "a05a3e7ded48f181ec36b823fcbf95e74bdd7dd6",
+  "reviewed_run_id": "r-20261017T104516290345-a-fresh-read-takes-the-ledger-from-its-index",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T14:20:00+00:00",
+  "total": 105
+}
