@@ -97,6 +97,27 @@ def test_unimportable_committed_module_defers_and_names_it(source, capsys):
     assert execs == []
 
 
+def test_archive_timeout_keeps_the_running_image(source, monkeypatch, capsys):
+    root, first, execs = source
+    reloader = follow._FollowerReloader("test-project", None)
+    assert reloader.code_stamp == first
+    _commit(root, "second")
+    run = subprocess.run
+
+    def timed_archive(args, **kwargs):
+        if "archive" in args:
+            raise subprocess.TimeoutExpired(args, 1)
+        return run(args, **kwargs)
+
+    monkeypatch.setattr(follow.checkout_trust.subprocess, "run", timed_archive)
+    reloader.poll({})
+
+    line = capsys.readouterr().out
+    assert "could not materialize HEAD" in line
+    assert "timed out" in line
+    assert execs == []
+
+
 def test_old_materialized_trees_are_removed_and_named(source, monkeypatch, capsys):
     root, first, execs = source
     reloader = follow._FollowerReloader("test-project", None)
