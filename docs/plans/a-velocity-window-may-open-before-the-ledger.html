@@ -24,7 +24,7 @@
   <title>A Velocity Window May Open Before The Ledger | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -125,7 +125,7 @@
   <li>After each slice, store the cache with <code>head</code> set to the slice's last commit. The cache's existing <code>walked</code> resume then carries a long window across slices.</li>
   <li>A read interrupted after some slices resumes where it stopped. A repeated read of a window already walked runs no search at all.</li>
   </ul></li>
-<li><strong>Place runs with their own record file first.</strong> A run whose per-run file, <code>docs/state/&lt;project&gt;/runs/&lt;run_id&gt;.json</code>, is added in the range is placed at the adding commit. A path-limited <code>git log --first-parent --diff-filter=A --name-only</code> lists those additions without generating a patch. It records the same appearance fields the search records, <code>source</code> included. Only the ids left after that reach the sliced search.</li>
+<li><strong>Place runs with their own record file first.</strong> A run whose per-run file, <code>docs/state/&lt;project&gt;/runs/&lt;run_id&gt;.json</code>, is added in the range is placed at the adding commit. A path-limited <code>git log --first-parent --diff-filter=A --name-only</code> lists those additions without generating a patch. It records the same appearance fields the search records, but with its own <code>source</code>, <code>first_primary_record_file_addition_upper_bound</code>. <code>promotion_clock_sources</code> (<code>reckon/velocity.py:2149</code>) then reports the two mechanisms apart. Like the search's value, it is not <code>promote_commit</code>, so <code>dispatch_to_explicit_promotion_seconds</code> still excludes it. Only the ids left after that reach the sliced search.</li>
 </ul>
 <p>Do not raise the timeout. If a single slice of one commit still exceeds the bound, report <code>blocked</code> with that commit and its measured time.</p>
 <p><strong>Write paths:</strong> <code>reckon/velocity.py</code> and <code>tests/test_velocity_places_a_run_by_its_record_file.py</code>, which is new.</p>
