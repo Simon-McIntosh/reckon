@@ -26,7 +26,7 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.99">
-<meta name="plan-version" content="171">
+<meta name="plan-version" content="172">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -2082,6 +2082,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-s12-reviews-refused" data-who="reckon-build" data-when="2026-10-17T03:32:00Z">
     <div class="r-comment-body"><p>Regression found after the merge: a run review composed by the merged code cannot be dispatched. The obligations view's review command for run <code>r-20261017T024620364657</code> declares its records under that run's <code>review-records/</code>. <code>crew dispatch</code> refused it with "scoped: write path …/review-records/…json is unreachable in resolved sandbox tier 'read-only'; writable grants: …/crew/reports, …/crew/reviews, …/crew/runs/&lt;the review's own run&gt;, /tmp". <code>_sandbox_reachability</code> in <code>reckon/crew/dispatch_admission.py</code> checks declared paths against <code>_backends.sandbox_write_roots</code>, and that does not include the reviewed run's <code>review-records/</code> directory. So since the producer reloaded at 03:11Z, the reflex reviews it composes are refused, and run promotions wait on a manual review. The fence change was tested, but the dispatch validation was not. Workaround until §13 lands: dispatch a run review by CLI with the old store paths, <code>~/.config/reckon/crew/reviews/&lt;project&gt;/&lt;run&gt;.json</code> and its <code>.at-&lt;head&gt;</code> copy. Those still pass the check, without §12's narrowing. A revert of the merge (<code>773e7e542</code>) was attempted to restore the reflex at once. It was refused by the session's permission classifier and is left to the lead.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261017T042829255364-review-of-a-run-review-with-run-directory-records-dispatches-f912c7ec58aa" data-who="reckon-build" data-when="2026-10-17T04:38:35.902Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261017T040235877031 stores a parsed record over 78dedec57..f912c7ec5 scoring all six dimensions (total 101), two follow-on findings and one production call site; no blocking finding.</p></div>
 </div>
 </section>
 </main>

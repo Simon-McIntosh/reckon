@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "78dedec578f8a59d6873ae4e7f32bd338a215118",
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:615"
+  ],
+  "completed_at": "2026-10-17T04:38:35.902Z",
+  "dispatched_at": "2026-10-17T04:29:27Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_admission.py",
+      "line": 1852,
+      "severity": "follow-on",
+      "text": "the new helper _review_record_directory_grant re-derives the \"<runs>/<run>/review-records/<file>\" recognition rule that reckon/crew/recovery_review_delivery.py:84 (_delivered_record_location, anchored at reckon/crew/review.py:2477) already implements, so two spellings of one shape rule now exist and a layout change must be made in both; the grant computation itself is new."
+    },
+    {
+      "file": "manifest.md",
+      "line": 1,
+      "severity": "follow-on",
+      "text": "the done_when names a ruff check on the changed Python files, but the manifest records no ruff log among test_logs, so the clause is claimed and not recorded; I re-ran ruff 0.16.4 on both files at f912c7ec against the repository config and it passes, so the claim is true but unbacked in the run directory."
+    }
+  ],
+  "head_log_revision": "f912c7ec58aaaca80a676f44e0f448094d0e3ada",
+  "item_verdicts": {
+    "diff": "read commit f912c7ec5 against base 78dedec57; it adds _review_record_directory_grant (reckon/crew/dispatch_admission.py:1852), wires it into _sandbox_reachability (line 1818) and adds a 104-line test file, 134 insertions and 1 deletion, all inside the declared write paths.",
+    "done_when": "the done_when names tests/test_a_run_review_with_run_directory_records_dispatches.py plus tests/test_a_run_review_cannot_remove_a_siblings_record.py and a ruff check on the changed Python files; head.log records 10 passed EXIT=0 across the two test files and an independent ruff 0.16.4 run at f912c7ec passed, though no ruff log is stored.",
+    "goal": "the node's goal is to make the dispatch scope check grant a review node the run review-records paths the fence already grants; reckon/crew/dispatch_admission.py:1818 adds those directories to the reachable roots for a review node before the scoped-finding scan.",
+    "manifest": "read the source manifest; status complete, it names commit f912c7ec58aa, the two changed paths, the head and negative-control logs, and the pre-change baseline (2 failed, 1 passed).",
+    "write_paths": "the declared paths are reckon/_backends.py, reckon/crew/dispatch_admission.py, tests/test_a_run_review_with_run_directory_records_dispatches.py, an evidence fragment and a figures directory; the diff touches only dispatch_admission.py and the new test, leaving _backends.py and the docs artifacts unwritten."
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_review_with_run_directory_records_dispatches.py:68 fails when the grant is disabled (negative_control.log, EXIT=1) and :86 fails if the helper over-grants another run's non-record path, so the guard reddens on the regression it was added to catch.",
+    "evidence": "head.log records 10 passed EXIT=0 for the named tests and negative_control.log records the declared mutation red at EXIT=1, but the done_when's ruff clause is claimed in the manifest with no log stored.",
+    "fit": "the private helper at reckon/crew/dispatch_admission.py:1852 follows the module's helper idiom and introduces no plan label or version in its name or the test filename.",
+    "goal_fidelity": "reckon/crew/dispatch_admission.py:1818 adds the review-records directories to the reachable roots for role==\"review\" before the scoped-finding loop at 1839.",
+    "reuse": "reckon/crew/dispatch_admission.py:1852 re-derives the review-record shape predicate already owned by reckon/crew/recovery_review_delivery.py:84 (_delivered_record_location, anchored at reckon/crew/review.py:2477) instead of extending it, though the grant computation itself is new.",
+    "scope_discipline": "the diff changes only reckon/crew/dispatch_admission.py and the new test file, a strict subset of the declared write paths, touching neither reckon/_backends.py nor any fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the dispatch scope check grant a review node the run review-records paths the fence already grants; reckon/crew/dispatch_admission.py:1818 adds those directories to the reachable roots for a review node before the scoped-finding scan.\nVERDICT done_when: the done_when names tests/test_a_run_review_with_run_directory_records_dispatches.py plus tests/test_a_run_review_cannot_remove_a_siblings_record.py and a ruff check on the changed Python files; head.log records 10 passed EXIT=0 across the two test files and an independent ruff 0.16.4 run at f912c7ec passed, though no ruff log is stored.\nVERDICT write_paths: the declared paths are reckon/_backends.py, reckon/crew/dispatch_admission.py, tests/test_a_run_review_with_run_directory_records_dispatches.py, an evidence fragment and a figures directory; the diff touches only dispatch_admission.py and the new test, leaving _backends.py and the docs artifacts unwritten.\nVERDICT manifest: read the source manifest; status complete, it names commit f912c7ec58aa, the two changed paths, the head and negative-control logs, and the pre-change baseline (2 failed, 1 passed).\nVERDICT diff: read commit f912c7ec5 against base 78dedec57; it adds _review_record_directory_grant (reckon/crew/dispatch_admission.py:1852), wires it into _sandbox_reachability (line 1818) and adds a 104-line test file, 134 insertions and 1 deletion, all inside the declared write paths.\nCALL_SITES: reckon/crew/dispatch_plan.py:615\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_admission.py:1818 adds the review-records directories to the reachable roots for role==\"review\" before the scoped-finding loop at 1839.\nSCORE evidence: 17\nJUSTIFICATION evidence: head.log records 10 passed EXIT=0 for the named tests and negative_control.log records the declared mutation red at EXIT=1, but the done_when's ruff clause is claimed in the manifest with no log stored.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff changes only reckon/crew/dispatch_admission.py and the new test file, a strict subset of the declared write paths, touching neither reckon/_backends.py nor any fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_run_review_with_run_directory_records_dispatches.py:68 fails when the grant is disabled (negative_control.log) and :86 fails if the helper over-grants another run's non-record path.\nSCORE fit: 18\nJUSTIFICATION fit: the private helper at reckon/crew/dispatch_admission.py:1852 follows the module's helper idiom and introduces no plan label or version in its name or the test filename.\nSCORE reuse: 8\nJUSTIFICATION reuse: reckon/crew/dispatch_admission.py:1852 re-derives the review-record shape predicate already owned by reckon/crew/recovery_review_delivery.py:84 (_delivered_record_location, anchored at reckon/crew/review.py:2477) instead of extending it, though the grant computation itself is new.\nFINDING reckon/crew/dispatch_admission.py:1852 follow-on: the new helper duplicates the \"<runs>/<run>/review-records/<file>\" recognition rule that reckon/crew/recovery_review_delivery.py:84 already implements, so two spellings of one shape rule now exist and a future change to the layout must be made in both.\nFINDING manifest.md:1 follow-on: the done_when names a ruff check on the changed Python files but the manifest records no ruff log among test_logs, so the clause is claimed and not recorded; I re-ran ruff 0.16.4 on both files at f912c7ec against the repository config and it passes, so the claim is true but unbacked in the run directory.",
+  "review_run_id": "r-20261017T042829255364-review-of-a-run-review-with-run-directory-records-dispatches-f912c7ec58aa",
+  "reviewed_base_sha": "78dedec578f8a59d6873ae4e7f32bd338a215118",
+  "reviewed_head_sha": "f912c7ec58aaaca80a676f44e0f448094d0e3ada",
+  "reviewed_run_id": "r-20261017T040235877031-a-run-review-with-run-directory-records-dispatches",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 8,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T04:48:00Z",
+  "total": 101
+}
