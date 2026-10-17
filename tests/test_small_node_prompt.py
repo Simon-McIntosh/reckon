@@ -12,7 +12,8 @@ own record. Because the rule withholds a figure on a condition the worker
 cannot resolve from inside its own node, it also asserts that the clause
 stating which side of that condition the node is on is composed from the
 node's own done-when: a figure-naming done-when is told the figure is permitted
-and the prose is not, and a done-when naming none is told both are withheld.
+and the prose outside the landing fragment is not, and a done-when naming none
+is told both are withheld outside it.
 Finally it asserts that the rule sits beside the landing sentence rather than
 somewhere else in the prompt, and that it is a pure insertion.
 """
@@ -42,8 +43,9 @@ WHAT_A_SMALL_NODE_WRITES = (
     "changed and its measure's figure"
 )
 NO_PROSE_OR_FIGURE_UNLESS_NAMED = (
-    "writes neither evidence prose nor a figure unless its done-when names "
-    "that artifact; naming one does not permit the other"
+    "beyond that fragment the node writes no figure and no evidence prose "
+    "unless its done-when names that artifact; naming one does not permit "
+    "the other"
 )
 LARGE_DATA_FILE_BELONGS_IN_RUN_DIRECTORY = (
     "Any single data file above 300,000 bytes belongs in the run directory, "
