@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion_scope.py:_shadow_stream_contamination (line 1190; calls shadow_reads.stream_tool_calls and shadow_reads.shadow_primary_read at lines 1193-1194) reached from reckon/crew/promotion.py:615"
+  ],
+  "completed_at": "2026-10-17T05:23:50.965Z",
+  "dispatched_at": "2026-10-17T05:17:08Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the tests: field records the gate command as \"PYTHONPATH=<worktree> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest ...\", an unsubstituted angle-bracket placeholder the manifest contract forbids, so a reader who copies the recorded command cannot re-run the gate; the literal command survives only in each gate log's own header line."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "commit 9025c8787 against base b6cdd83be deletes 392 lines from reckon/ledger.py and adds zero there, shadow_reads.py adds the same 392 lines plus a module docstring and stdlib imports, and the remaining changes are the shadow_reads import and attribute references in reckon/crew/promotion_scope.py:19,1193-1194 and tests/test_crew_shadow_contamination.py.",
+    "done_when": "the done_when names tests/test_every_module_fits_a_worker_window.py and tests/test_crew_shadow_contamination.py, and gate-logs/width-head.log (4 passed, EXIT=0) and gate-logs/shadow-head.log (26 passed, EXIT=0) carry those runs at rev 9025c87878af6f3135c437cc6531c8c4995b897c.",
+    "goal": "the goal is a pure move of the shadow-read scan from reckon/ledger.py into reckon/shadow_reads.py with no behaviour change, and every one of the 392 lines the commit deletes from reckon/ledger.py reappears verbatim in reckon/shadow_reads.py with no definition added or dropped.",
+    "manifest": "read; it reports status complete, commit 9025c8787, and both gate results, and reckon crew check-manifest returns ok with no findings, though its tests: line carries an unsubstituted <worktree> placeholder.",
+    "write_paths": "the manifest declares six write paths and the commit's five changed paths -- reckon/ledger.py, reckon/shadow_reads.py, reckon/crew/promotion_scope.py, tests/test_crew_shadow_contamination.py and docs/evidence/fragments/a-shadow-cannot-see-its-primary/the-shadow-read-scan-has-its-own-module.html -- all sit inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_every_module_fits_a_worker_window.py reddens if the block returns to reckon/ledger.py (gate-logs/width-negative-control.log, EXIT=1) and the 26 tests retargeted at tests/test_crew_shadow_contamination.py fail if the move breaks the scan, though the run added no assertion of its own.",
+    "evidence": "gate-logs/width-head.log and gate-logs/shadow-head.log record 4 passed and 26 passed at rev 9025c87878af6f3135c437cc6531c8c4995b897c, with the base and head test-id lists byte-identical at 26 each.",
+    "fit": "reckon/shadow_reads.py:1 carries a module docstring in the style of reckon/ledger.py:1 and introduces no plan, version or ticket label in any changed path.",
+    "goal_fidelity": "reckon/shadow_reads.py carries all 392 lines reckon/ledger.py gave up, verbatim and in the same order, with ledger.py's diff adding zero lines.",
+    "reuse": "the moved block is itself the owner of the shadow-read scan, and a capability search over reckon/ found only reckon/crew/dispatch_accounting.py:_jsonl_events, a plain JSONL line iterator rather than a tool-call extractor.",
+    "scope_discipline": "git diff --stat b6cdd83be..9025c8787 lists exactly the five changed paths, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a pure move of the shadow-read scan from reckon/ledger.py into reckon/shadow_reads.py with no behaviour change, and every one of the 392 lines the commit deletes from reckon/ledger.py reappears verbatim in reckon/shadow_reads.py with no definition added or dropped.\nVERDICT done_when: the done_when names tests/test_every_module_fits_a_worker_window.py and tests/test_crew_shadow_contamination.py, and gate-logs/width-head.log (4 passed, EXIT=0) and gate-logs/shadow-head.log (26 passed, EXIT=0) carry those runs at rev 9025c87878af6f3135c437cc6531c8c4995b897c.\nVERDICT write_paths: the manifest declares six write paths and the commit's five changed paths -- reckon/ledger.py, reckon/shadow_reads.py, reckon/crew/promotion_scope.py, tests/test_crew_shadow_contamination.py and docs/evidence/fragments/a-shadow-cannot-see-its-primary/the-shadow-read-scan-has-its-own-module.html -- all sit inside them.\nVERDICT manifest: read; it reports status complete, commit 9025c8787, and both gate results, and reckon crew check-manifest returns ok with no findings, though its tests: line carries an unsubstituted <worktree> placeholder.\nVERDICT diff: commit 9025c8787 against base b6cdd83be deletes 392 lines from reckon/ledger.py and adds zero there, shadow_reads.py adds the same 392 lines plus a module docstring and stdlib imports, and the remaining changes are the shadow_reads import and attribute references in reckon/crew/promotion_scope.py:19,1193-1194 and tests/test_crew_shadow_contamination.py.\nCALL_SITES: reckon/crew/promotion_scope.py:_shadow_stream_contamination (line 1190; calls shadow_reads.stream_tool_calls and shadow_reads.shadow_primary_read at lines 1193-1194) reached from reckon/crew/promotion.py:615\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/shadow_reads.py carries all 392 lines reckon/ledger.py gave up, verbatim and in the same order, with ledger.py's diff adding zero lines.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-logs/width-head.log and gate-logs/shadow-head.log record 4 passed and 26 passed at rev 9025c87878af6f3135c437cc6531c8c4995b897c, with the base and head test-id lists byte-identical at 26 each.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat b6cdd83be..9025c8787 lists exactly the five changed paths, all inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_every_module_fits_a_worker_window.py reddens if the block returns to reckon/ledger.py (gate-logs/width-negative-control.log, EXIT=1) and the 26 tests retargeted at tests/test_crew_shadow_contamination.py fail if the move breaks the scan, though the run added no assertion of its own.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/shadow_reads.py:1 carries a module docstring in the style of reckon/ledger.py:1 and introduces no plan, version or ticket label in any changed path.\nSCORE reuse: 20\nJUSTIFICATION reuse: the moved block is itself the owner of the shadow-read scan, and a capability search over reckon/ found only reckon/crew/dispatch_accounting.py:_jsonl_events, a plain JSONL line iterator rather than a tool-call extractor.\nFINDING manifest.md:11 follow-on: the tests: field records the gate command as \"PYTHONPATH=<worktree> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest ...\", an unsubstituted angle-bracket placeholder the manifest contract forbids, so a reader who copies the recorded command cannot re-run the gate; the literal command survives only in each gate log's own header line.\n",
+  "review_run_id": "r-20261017T051635266286-review-of-the-shadow-read-scan-has-its-own-module-9025c87878af",
+  "reviewed_base_sha": "b6cdd83be7e4d24c4bba018db1a230847ce9d1a6",
+  "reviewed_head_sha": "9025c87878af6f3135c437cc6531c8c4995b897c",
+  "reviewed_run_id": "r-20261017T050234671691-the-shadow-read-scan-has-its-own-module",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T05:26:07.576813+00:00",
+  "total": 117
+}
