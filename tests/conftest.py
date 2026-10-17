@@ -40,6 +40,155 @@ from reckon.crew.dispatch import (
 )
 from reckon.crew.routing import signal_worker
 
+# ── No test resolves the real cache ────────────────────────────────────────
+#
+# A module- or session-scoped fixture is set up before the per-test
+# ``isolated_reckon_home``, so while such a fixture built a ledger index
+# ``_store.cache_root`` fell through to the real user cache and left a
+# ``ledger-*.sqlite`` there. The session fixture below redirects every root
+# before any module-scoped fixture runs; the wrapper armed at configure time
+# records every ambient resolution so a leak is named from what the code
+# resolved, not inferred from the live cache directory, which a concurrent
+# reader also writes.
+#
+# An explicit ``override`` is the caller choosing a root, so it is never a
+# leak; the guard watches the ambient resolution the environment produces.
+_CACHE_ROOT_LEAKS: list[dict[str, ...]] = []
+# The allowed root and the running test's id, held in one mutable mapping so a
+# hook and the wrapper share them without rebinding a module-global.
+_GUARD_STATE: dict[str, Path | str | None] = {"allowed_root": None, "nodeid": None}
+
+
+def cache_root_leaks() -> list[dict[str, object]]:
+    """Every ambient ``cache_root`` resolution recorded outside the temp tree."""
+    return list(_CACHE_ROOT_LEAKS)
+
+
+def cache_root_leak_report() -> str:
+    """Name every recorded leak, its caller and the test it happened under."""
+    named = "\n".join(
+        f"  {leak['kind']} -> {leak['resolved']}\n    from {leak['caller']}"
+        + (f"\n    during {leak['nodeid']}" if leak["nodeid"] else "")
+        for leak in cache_root_leaks()
+    )
+    return (
+        "a test or fixture resolved a cache root outside the session temp "
+        f"tree:\n{named}\n"
+        "point the root at a session temporary directory before the module- "
+        "or session-scoped fixture runs."
+    )
+
+
+def _guard_is_within(path: Path, root: Path) -> bool:
+    resolved = _resolve(Path(path))
+    return resolved == root or root in resolved.parents
+
+
+def _guard_caller() -> str:
+    frame = sys._getframe(2)
+    return f"{frame.f_code.co_filename}:{frame.f_lineno} in {frame.f_code.co_name}"
+
+
+def install_cache_root_guard() -> None:
+    """Record every ambient ``cache_root`` resolution outside the session temp.
+
+    ``cache_root`` is reached both as an attribute of ``reckon._store`` and,
+    in modules that imported it, as a direct binding: rebinding every module's
+    ``cache_root`` name that still points at the original covers the second
+    spelling, and a module imported later reads the patched attribute.
+    """
+    from reckon import _store
+
+    original = _store.cache_root
+    if getattr(original, "_resolves_real_cache_guard", False):
+        return
+
+    def guarded(kind, override=None):
+        resolved = original(kind, override)
+        allowed = _GUARD_STATE["allowed_root"]
+        if (
+            override is None
+            and allowed is not None
+            and not _guard_is_within(resolved, allowed)
+        ):
+            _CACHE_ROOT_LEAKS.append(
+                {
+                    "kind": kind,
+                    "resolved": str(resolved),
+                    "nodeid": _GUARD_STATE["nodeid"],
+                    "caller": _guard_caller(),
+                }
+            )
+        return resolved
+
+    guarded._resolves_real_cache_guard = True  # type: ignore[attr-defined]
+    guarded._resolves_real_cache_original = original  # type: ignore[attr-defined]
+    _store.cache_root = guarded
+    for module in list(sys.modules.values()):
+        if getattr(module, "cache_root", None) is original:
+            try:
+                module.cache_root = guarded
+            except (AttributeError, TypeError):
+                continue
+
+
+def arm_the_guard_against_a_reload() -> None:
+    """Keep the wrapper armed across a module reload.
+
+    ``importlib.reload(_store)`` re-executes ``reckon/_store.py``, which rebinds
+    ``cache_root`` to the module's own function and takes the wrapper with it.
+    ``tests/mcp_family_reload.py`` reloads the store so the MCP tools' exception
+    classes stay in step with a test that redirected storage, and the MCP test
+    modules reload it in-process. Re-arming at a test boundary repairs that only
+    once the body has finished, so a resolution the reloading test's own
+    teardown makes — or one a module-scoped fixture finalised before the next
+    setup makes — would go unrecorded. Wrapping ``reload`` re-arms the instant a
+    reload returns, which closes that window rather than narrowing it.
+    """
+    import importlib
+
+    reload_ = importlib.reload
+    if getattr(reload_, "_cache_root_guard_rearms", False):
+        return
+
+    def reloading(module):
+        reloaded = reload_(module)
+        install_cache_root_guard()
+        return reloaded
+
+    reloading._cache_root_guard_rearms = True  # type: ignore[attr-defined]
+    importlib.reload = reloading
+
+
+def pytest_runtest_setup(item: pytest.Item) -> None:
+    """Attribute any resolution a test's setup makes to that test's id.
+
+    The wrapper is re-armed here as well as at import, so a worker that reaches
+    the guard test with it absent for any other reason is repaired before the
+    record is read.
+    """
+    install_cache_root_guard()
+    _GUARD_STATE["nodeid"] = item.nodeid
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_teardown(item: pytest.Item) -> None:
+    """Re-arm before the test's teardown, so a reload in the body is repaired.
+
+    The nodeid is still the finished test's here, so a root its finalizers
+    resolve is attributed to the test that reloaded the store.
+    """
+    install_cache_root_guard()
+
+
+# Installed at import rather than in a hook: every xdist worker imports this
+# file in its own process, and a hook the controller alone reaches would leave
+# a worker's resolutions unwatched. The allowed root is filled in by the
+# session fixture below, which every worker runs too.
+install_cache_root_guard()
+arm_the_guard_against_a_reload()
+
+
 ARMING_MARKER = "arms_watch_producer"
 
 # The marker every test in a module that imports the browser harness carries.
@@ -1138,6 +1287,8 @@ def pytest_configure(config: pytest.Config) -> None:
     if not basetemp:
         return
     resolved = Path(os.path.abspath(basetemp))
+    _GUARD_STATE["allowed_root"] = resolved
+    install_cache_root_guard()
     try:
         lock = acquire_basetemp_lock(resolved)
     except BasetempInUseError as refused:
@@ -1155,6 +1306,81 @@ def pytest_collection_modifyitems(
             item.add_marker(getattr(pytest.mark, ARMING_MARKER))
         if module_reaches_the_browser_harness(module):
             item.add_marker(getattr(pytest.mark, BROWSER_MARKER))
+    _run_cache_root_guard_last(items)
+
+
+# The module whose test reads the leak record the wrapper has built all session,
+# so it runs after every module whose fixtures could leak. Collected in place it
+# would run before the module-scoped fixtures it exists to watch.
+_CACHE_ROOT_GUARD_MODULE = "test_no_test_resolves_the_real_cache"
+
+
+def _run_cache_root_guard_last(items: list[pytest.Item]) -> None:
+    """Move the cache-root guard test after every other collected item."""
+    guard = [
+        item
+        for item in items
+        if getattr(getattr(item, "module", None), "__name__", "").rsplit(".", 1)[-1]
+        == _CACHE_ROOT_GUARD_MODULE
+    ]
+    if not guard:
+        return
+    rest = [item for item in items if item not in guard]
+    items[:] = rest + guard
+
+
+# The variable a caller sets to own uv's cache. uv reads ``XDG_CACHE_HOME``
+# for its default location, so redirecting the cache home moves uv's cache with
+# it and a wheel build then cannot resolve its backend from the shared store.
+UV_CACHE_DIR_ENV = "UV_CACHE_DIR"
+
+
+def _uv_cache_dir_before_the_redirect() -> Path:
+    """uv's own cache directory, as it resolves before ``XDG_CACHE_HOME`` moves."""
+    already = os.environ.get(UV_CACHE_DIR_ENV)
+    if already:
+        return Path(already)
+    cache_home = os.environ.get("XDG_CACHE_HOME")
+    base = Path(cache_home) if cache_home else Path.home() / ".cache"
+    return base / "uv"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def session_cache_roots_are_isolated(tmp_path_factory):
+    """Keep every ``_store.cache_root`` resolution inside the session temp tree.
+
+    pytest sets a session-scoped fixture up before a module-scoped one, so this
+    runs before the module-scoped fixture that renders the SPA and builds a
+    ledger index. The mechanism follows ``_store.cache_root``'s own order:
+    ``XDG_CACHE_HOME`` is the one lever every kind reads, so it alone is moved;
+    no per-kind override is set and ``RECKON_HOME`` is left as found, because a
+    test that steers a root through ``cache_root``'s environment — the kinds
+    read before the cache home included — must still steer it, and an override
+    the fixture set would outrank the ``RECKON_HOME`` the test chose.
+
+    uv's cache would move with ``XDG_CACHE_HOME``, so its own directory is
+    pinned first, which a wheel build needs to resolve its backend. A caller
+    that already owns ``UV_CACHE_DIR`` keeps what it set.
+    """
+    root = tmp_path_factory.mktemp("session-cache")
+    assignments = {"XDG_CACHE_HOME": str(root)}
+    if not os.environ.get(UV_CACHE_DIR_ENV):
+        assignments[UV_CACHE_DIR_ENV] = str(_uv_cache_dir_before_the_redirect())
+    previous = {name: os.environ.get(name) for name in assignments}
+    os.environ.update(assignments)
+    # Every worker's own base temp is the tree its resolutions must stay in.
+    _GUARD_STATE["allowed_root"] = tmp_path_factory.getbasetemp()
+    try:
+        yield Path(root)
+    finally:
+        for name, value in previous.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+        leaks = cache_root_leaks()
+        if leaks:
+            raise AssertionError(cache_root_leak_report())
 
 
 @pytest.fixture(autouse=True)
