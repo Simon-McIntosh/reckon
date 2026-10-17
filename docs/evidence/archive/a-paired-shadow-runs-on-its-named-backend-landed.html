@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-paired-shadow-runs-on-its-named-backend-landed">
+  <meta name="plan-title" content="A Paired Shadow Runs On Its Named Backend — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Paired Shadow Runs On Its Named Backend: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-paired-shadow-runs-on-its-named-backend">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Paired Shadow Runs On Its Named Backend — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Paired Shadow Runs On Its Named Backend — landed record</h1>
+  <p>Closure synthesis for A Paired Shadow Runs On Its Named Backend: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s1">
+    <h2>§1 — A paired shadow resolves against the backend it names</h2>
+    <p><code>_shadow_dispatch_config</code> now resolves the shadow arm through <code>resolve_role_override(config, node.role, node.spec_level, candidate_backend)</code>, so the role's overlays still apply and the concrete backend is the named candidate. D21 is kept only for a candidate no layer defines. Its detail comes from <code>_effective_backend</code>, and it is caught at this call site, not in the shared resolver. D21's remedy now names a backend declared under <code>backends</code> in the flight, for both <code>--pair-backend</code> and <code>crew shadow --backend</code>, and no longer mentions a flight override. Commit <code>06a9328b9</code>.</p><p>Measure: <code>tests/test_a_paired_shadow_runs_on_its_named_backend.py</code>, four cases: a pair on a candidate the role does not route to; the same with a spec-level overlay routing the node to the default; an undefined candidate refused with D21's remedy sentence and no mention of a flight override; and the CLI paired dry run. Gate: 79 passed at head, 75 at base, EXIT=0 on both arms. Restoring the old <code>resolve_role</code> equality check fails all four cases; restoring the old remedy text fails the undefined-candidate case. Ruff, measured by the coordinator against base <code>9b73961ac</code>: check 2 to 2 on <code>reckon/crew/dispatch.py</code> (pre-existing), 0 to 0 elsewhere; format unchanged on all three files.</p><p>Independent review <code>r-20261017T213450460215</code> at head <code>06a9328b9</code>: total 119, no added failures, no blocking finding. Two follow-ons. First, the <code>except CrewError</code> also catches the missing-role error <code>_role_overlay</code> raises, which would be re-worded as D21. In a paired dispatch the primary arm resolves the same role first and refuses before the shadow is reached, so the miswording is not reachable there today; narrowing the catch is a residual. Second, the remedy-sentence assertion reads the same registry the refusal reads, so the separate "flight override" assertion is what guards the rewritten text.</p>
+  </section>
+
+</main>
+</body>
+</html>

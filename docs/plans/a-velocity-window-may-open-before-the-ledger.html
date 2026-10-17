@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling,measurement">
   <meta name="plan-blocks" content="the-ledger-is-one-file-per-run#s4">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;}">
   <title>A Velocity Window May Open Before The Ledger | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -139,7 +139,7 @@
 <p>Negative control, two mutations, each applied alone. Disabling the per-run-file addition scan, so that every missing id reaches the <code>crew.json</code> search, must fail the first case on its argv assertion. Storing the cache only once, after the last slice, must fail the third case, because the interrupted read stores nothing and the resumed read searches the first slice again.</p>
 
     <h2 id="s3">§3 — The view is not bounded by the census&#x27;s size check</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p>§2's post-merge check did not exit 0 either, but it got further. At merged head <code>9a9a83ec6</code> both windows finish the ledger search: <code>first durable ledger clocks 902 / 902</code> for <code>--since 2026-08-01</code> and <code>545 / 545</code> for <code>--since 2026-09-01</code>, with no timeout. Both then exit 1 in <code>compact_summary</code> (<code>reckon/velocity.py:2620</code>), after 578 s and 529 s, with <code>AssertionError: Compact census exceeds its repository size bound</code>. Both logs are under <code>~/.cache/reckon-velocity-window-check/</code>, named <code>velocity-since-&lt;date&gt;-at-9a9a83ec6.log</code>.</p>
 <p>The assertion caps the dumped compact summary at 300,000 bytes. It arrived with the fleet velocity census (<code>4d79a470d</code>, 2026-09-27). In that census, <code>velocity()</code> (<code>reckon/velocity.py:2661</code>) returns the compact summary as the study's artifact, and the bound kept that artifact small. <code>report()</code>, which the <code>crew velocity</code> view calls, reuses <code>compact_summary</code> at line 3089. On the very next line it adds <code>full["by_project_day_lane"]</code>, the largest block, to the same dictionary. So the bound never limited what the view returns, and the view already pages that block itself with <code>limit</code> and <code>cursor</code> (<code>view</code>, line 3205). For the view, the bound only aborts the read: a long window's per-day and per-lane cells take the compact part alone past 300 KB.</p>
 <p><strong>Remedy.</strong> Move the size check out of <code>compact_summary</code> and into <code>velocity()</code>, the census path it was written for. Keep the limit (300,000 bytes) and the message (<code>Compact census exceeds its repository size bound</code>) unchanged. <code>compact_summary</code> then returns its summary without checking size, and neither <code>report()</code> nor the view is bounded by it. Change nothing else: do not raise or remove the limit, and do not change what <code>compact_summary</code> or <code>report()</code> put in the summary.</p>
@@ -206,6 +206,9 @@ The test writes nothing outside its temporary directory. It points <code>RECKON_
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261017T213251905219-review-of-a-velocity-view-is-not-bounded-by-the-census-ab343d208511" data-who="reckon-build" data-when="2026-10-17T21:41:52.144Z">
     <div class="r-comment-body"><p>Independent review of the landed node a-velocity-view-is-not-bounded-by-the-census at ab343d208511 (base 97ae2a6bdcb6f8e90656c2329e1c80a051015af8); record parsed with all six dimensions scored (total 114: goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 16, reuse 20), one follow-on finding and no blocking finding; the review confirms the assertion moved out of compact_summary into velocity() with the limit and message unchanged.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-17T21:50:00Z">
+    <div class="r-comment-body"><p>§3 landed: the census size check now lives in <code>velocity()</code> and no longer aborts the view (commit <code>ab343d208</code>). Gate: 33 passed at head, 30 at base. Both negative controls fail their case. Review total 114, no added failures. The post-merge runs of both real windows are still owed. <a href="/reckon/evidence/archive/a-velocity-window-may-open-before-the-ledger-landed.html#s3">evidence</a></p></div>
 </div>
 </section>
 </main>

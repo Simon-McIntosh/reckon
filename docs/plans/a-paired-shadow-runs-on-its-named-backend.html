@@ -20,18 +20,18 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It repairs the landed paired dispatch of a-shadow-cannot-see-its-primary; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;}">
   <title>A Paired Shadow Runs On Its Named Backend | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
 <body>
   <main class="plan-doc">
     <h2 id="s1">§1 — A paired shadow resolves against the backend it names</h2>
-<section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p>
       <code>reckon crew dispatch --pair-backend &lt;backend&gt;</code> refuses every pair backend except the one the
       node's role already resolves to. The nova session reproduced it three times on 2026-10-17 as dry runs with
@@ -144,7 +144,10 @@ Resolve with `reckon crew shadow --backend &lt;candidate&gt;` after correcting t
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261017T213450460215-review-of-a-paired-shadow-resolves-its-named-backend-06a9328b93d3" data-who="reckon-build" data-when="2026-10-17T21:45:01.970Z">
-    <div class="r-comment-body"><p>Independent review of r-20261017T210358439242-a-paired-shadow-resolves-its-named-backend at 06a9328b93d3bd9b5a41a28da0d21597da1090dd (base 9b73961acc3a7c89967abf4abe26c2a90eb71c96): 6/6 dimensions scored (total 119), added_failure_count 0 over the node&#x27;s base/after arms; two follow-on findings — an over-broad `except CrewError` at dispatch.py:485 that would relabel a missing-role refusal as D21, and a self-referential remedy assertion at the new test :198. Record stored under the reviewed run&#x27;s review-records/.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261017T210358439242-a-paired-shadow-resolves-its-named-backend at 06a9328b93d3bd9b5a41a28da0d21597da1090dd (base 9b73961acc3a7c89967abf4abe26c2a90eb71c96): 6/6 dimensions scored (total 119), added_failure_count 0 over the node's base/after arms; two follow-on findings — an over-broad `except CrewError` at dispatch.py:485 that would relabel a missing-role refusal as D21, and a self-referential remedy assertion at the new test :198. Record stored under the reviewed run's review-records/.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-close-s1" data-who="reckon-build" data-when="2026-10-17T21:52:00Z">
+    <div class="r-comment-body"><p>§1 landed: a paired dispatch's shadow arm resolves against the backend it names, and D21 now has an accurate remedy (commit <code>06a9328b9</code>). Gate: 79 passed at head, 75 at base. Both negative controls fail their cases. Review total 119, no added failures. The post-merge <code>--pair-backend codex</code> dry run against this host's flight is still owed. <a href="/reckon/evidence/archive/a-paired-shadow-runs-on-its-named-backend-landed.html#s1">evidence</a></p></div>
 </div>
 </section>
 </main>
