@@ -22,6 +22,7 @@ from reckon.crew.runs import (
     _utc_now,
     list_live,
     run_dir,
+    runs_dir,
 )
 
 
@@ -67,15 +68,40 @@ def _review_store_record_paths(record: Mapping[str, Any], project: str) -> list[
     run_directory = _review_record_delivery_directory(record, project)
     paths: list[Path] = []
     for declared in node.get("write_paths") or ():
-        if run_directory is not None:
-            landed = review_module.run_review_record_location(declared, run_directory)
-            if landed is not None:
-                paths.append(landed)
-                continue
+        landed = _delivered_record_location(declared, run_directory)
+        if landed is not None:
+            paths.append(landed)
+            continue
         candidate = Path(str(declared))
         if candidate.parent == directory:
             paths.append(candidate)
     return paths
+
+
+def _delivered_record_location(
+    declared: Any, run_directory: Path | None
+) -> Path | None:
+    """Where a declared path lands when it is a run review's own record.
+
+    The reviewed run's directory is checked first, because it is the identity
+    the composer and most readers both hold. A reader that cannot resolve it —
+    a review whose node id does not spell the run it reviews, as a re-review's
+    does not — still recognises the declaration by its shape, and the shape is
+    anchored on the runs root so a repository path that happens to carry the
+    directory name is not read as a delivery. Without that second rule the
+    reader would fall through to the store, where a live review's record has
+    not been filed yet, and report the run as owing a review it is owed none of.
+    """
+    if run_directory is not None:
+        located = review_module.run_review_record_location(declared, run_directory)
+        if located is not None:
+            return located
+    candidate = Path(str(declared))
+    if candidate.parent.name != review_module.RUN_REVIEW_RECORD_DIRNAME:
+        return None
+    if candidate.parent.parent.parent != runs_dir():
+        return None
+    return candidate
 
 
 def _review_record_delivery_directory(
@@ -83,14 +109,30 @@ def _review_record_delivery_directory(
 ) -> Path | None:
     """Where a review run delivers its record: the reviewed run's directory.
 
-    The declared record paths are absolute and keyed on the reviewed run, so a
-    reader that will not look in that run's directory finds only the store —
-    where the record has not been filed yet while the review is still live.
+    Resolved from the run the review's node id spells. A review whose id does
+    not spell one — a re-review, or a hand dispatch under a coordinator's own
+    id — names the run in the record paths it declares instead, which is read
+    as the fallback rather than being dropped: the declaration is the run's own
+    record of where its deliverable goes.
     """
     reviewed = _resolved_reviewed_run_id(record, project)
-    if not reviewed:
-        return None
-    return run_dir(reviewed)
+    if reviewed:
+        return run_dir(reviewed)
+    return _declared_record_directory(record)
+
+
+def _declared_record_directory(record: Mapping[str, Any]) -> Path | None:
+    """The run directory a review's own declarations name, or None.
+
+    ``<runs>/<run id>/review-records/<record>.json`` spells its run in the path
+    itself, so a reader that cannot resolve the reviewed run from the node id
+    recovers it here without guessing.
+    """
+    for declared in (record.get("node") or {}).get("write_paths") or ():
+        located = _delivered_record_location(declared, None)
+        if located is not None:
+            return located.parent.parent
+    return None
 
 
 def file_review_records_into_store(record: Mapping[str, Any]) -> list[Path]:
