@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:773 (_record_release_on_ledger)",
+    "reckon/crew/promotion.py:1379 (_record_release_on_ledger)",
+    "reckon/crew/promotion_gate.py:945 (_update_run_record)"
+  ],
+  "completed_at": "2026-10-17T23:08:41.663Z",
+  "dispatched_at": "2026-10-17T23:00:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_release.py",
+      "line": "545",
+      "severity": "follow-on",
+      "text": "follow-on: _ledger_owner_of_run_file re-encodes the \"<root>/docs/state/<project>\" layout that reckon/_store.py:state_path owns, and both callers already hold project and root, so a layout change in _store would silently break this inverse."
+    },
+    {
+      "file": "tests/test_the_release_path_writes_through_the_ledger_helper.py",
+      "line": "68",
+      "severity": "follow-on",
+      "text": "follow-on: the byte-identity assertion compares the written file against ledger.serialize_run(expected), the same encoder the helper uses, so it cannot fail on a regression inside serialize_run; the routing guard is the len(calls)==1 assertion at line 60."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit 18038ffdd against base a1f92a841; three files changed (promotion_release.py +23/-6, a new 83-line test, one evidence fragment) plus the docs fragment, all routing the update through the ledger helper.",
+    "done_when": "the done_when names tests/test_the_release_path_writes_through_the_ledger_helper.py; the gate log gate-head.log records 2 passed EXIT=0 and negative-control-base.log records EXIT=1 with the helper called 0 times, asserting the measure.",
+    "goal": "the node goal is to make the release path's run-record update write the run file through ledger.write_run_file with no encoding of its own; reckon/crew/promotion_release.py:565 now calls ledger.write_run_file and the removed serialize_run/write_atomically are gone from the file.",
+    "manifest": "read; it states the gate test passed 2/2, names gate-head.log, negative-control-base.log and regression.log, and records their EXIT codes.",
+    "write_paths": "read the four declared paths in the reviewed prompt's scope fence; the three files in the diff are all inside them and the unused figures path was not written."
+  },
+  "justifications": {
+    "durability": "tests/test_the_release_path_writes_through_the_ledger_helper.py:60 fails if the update stops calling the helper, which the base-tree negative control confirms is a real red.",
+    "evidence": "tests/test_the_release_path_writes_through_the_ledger_helper.py asserts the call and negative-control-base.log records EXIT=1 with 0 calls, so the measure's two halves are recorded, not claimed.",
+    "fit": "the new helper at reckon/crew/promotion_release.py:545 carries a mechanism-named symbol and a docstring matching reckon/crew/promotion_release.py:556, and ruff format --check reports both files already formatted.",
+    "goal_fidelity": "reckon/crew/promotion_release.py:565 routes _update_run_record through ledger.write_run_file and no serialize_run or write_atomically call remains in the file.",
+    "reuse": "_ledger_owner_of_run_file at reckon/crew/promotion_release.py:545 is a new path inverse with no prior owner, but it re-encodes the docs/state layout that reckon/_store.py:state_path owns.",
+    "scope_discipline": "the diff touches only promotion_release.py, its new test and the evidence fragment, all inside the four declared write paths, and ledger.py was not widened."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the release path's run-record update write the run file through ledger.write_run_file with no encoding of its own; reckon/crew/promotion_release.py:565 now calls ledger.write_run_file and the removed serialize_run/write_atomically are gone from the file.\nVERDICT done_when: the done_when names tests/test_the_release_path_writes_through_the_ledger_helper.py; the gate log gate-head.log records 2 passed EXIT=0 and negative-control-base.log records EXIT=1 with the helper called 0 times, asserting the measure.\nVERDICT write_paths: read the four declared paths in the reviewed prompt's scope fence; the three files in the diff are all inside them and the unused figures path was not written.\nVERDICT manifest: read; it states the gate test passed 2/2, names gate-head.log, negative-control-base.log and regression.log, and records their EXIT codes.\nVERDICT diff: read commit 18038ffdd against base a1f92a841; three files changed (promotion_release.py +23/-6, a new 83-line test, one evidence fragment) plus the docs fragment, all routing the update through the ledger helper.\nCALL_SITES: reckon/crew/promotion.py:773 (_record_release_on_ledger), reckon/crew/promotion.py:1379 (_record_release_on_ledger), reckon/crew/promotion_gate.py:945 (_update_run_record)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_release.py:565 routes _update_run_record through ledger.write_run_file and no serialize_run or write_atomically call remains in the file.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_the_release_path_writes_through_the_ledger_helper.py asserts the call and negative-control-base.log records EXIT=1 with 0 calls, so the measure's two halves are recorded, not claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only promotion_release.py, its new test and the evidence fragment, all inside the four declared write paths, and ledger.py was not widened.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_release_path_writes_through_the_ledger_helper.py:60 fails if the update stops calling the helper, which the base-tree negative control confirms is a real red.\nSCORE fit: 16\nJUSTIFICATION fit: the new helper at reckon/crew/promotion_release.py:545 carries a mechanism-named symbol and a docstring matching reckon/crew/promotion_release.py:556, and ruff format --check reports both files already formatted.\nSCORE reuse: 16\nJUSTIFICATION reuse: _ledger_owner_of_run_file at reckon/crew/promotion_release.py:545 is a new path inverse with no prior owner, but it re-encodes the docs/state layout that reckon/_store.py:state_path owns.\nFINDING reckon/crew/promotion_release.py:545 follow-on: _ledger_owner_of_run_file re-encodes the \"<root>/docs/state/<project>\" layout that reckon/_store.py:state_path owns, and both callers already hold project and root, so a layout change in _store would silently break this inverse.\nFINDING tests/test_the_release_path_writes_through_the_ledger_helper.py:68 follow-on: the byte-identity assertion compares the written file against ledger.serialize_run(expected), the same encoder the helper uses, so it cannot fail on a regression inside serialize_run; the routing guard is the len(calls)==1 assertion at line 60.",
+  "review_run_id": "r-20261017T225941345238-review-of-promotion-release-writes-through-the-ledger-helper-18038ffdd443",
+  "reviewed_base_sha": "a1f92a8415a7690e5f181e8db797397a0a38dde2",
+  "reviewed_head_sha": "18038ffdd4432e42537e0cbab7e2adb3072a1752",
+  "reviewed_run_id": "r-20261017T224248293494-promotion-release-writes-through-the-ledger-helper",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T23:12:02.050861+00:00",
+  "total": 108
+}
