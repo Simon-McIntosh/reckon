@@ -1,0 +1,150 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T14:08:53.089Z",
+  "dispatched_at": "2026-10-17T13:55:48Z",
+  "findings": [
+    {
+      "anchor": "plan.html:465",
+      "id": "reasoning-1",
+      "reason": "\u00a711 is the section that owns review task identity, and as written it leaves the plan-review surface keyed by a constant, so its stated outcome does not hold and the section needs to require the reviewed-run element (or the plan identity) for the `plan-review-of-` spelling too.",
+      "text": "\u00a711 states that a review is \"keyed by its own node id rather than by the run it reviews\" and has `_task_identity` call the owner predicate so a review keys to the run it reviews; but `_task_identity` derives that run id with `round_node_source(_record_node_id(record), REVIEW_NODE_PREFIX)` (`reckon/crew/dispatch_sessions.py:495-511`), `REVIEW_NODE_PREFIX` is `\"review-of-\"`, and plan-review nodes are minted `\"plan-review-of-<slug>\"`. Measured at main 0f72db147 with the repo interpreter: `_task_identity({\"node\":{\"id\":\"plan-review-of-new-work-gets-a-new-worker\",\"plan\":\"new-work-gets-a-new-worker\"},\"role\":\"review\"}, \"reckon\", [])` returns `('review', 'reckon', '')`, and `plan-review-of-other-plan` returns the identical `('review', 'reckon', '')`, while a `review-of-` id correctly returns `('review', 'reckon', 'shc-potential-rename')`. So every plan-review node in one project collapses onto one key.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:465",
+      "id": "reasoning-2",
+      "reason": "it sends \u00a77 down a path where its own selectivity measure silently fails for plan-reviews, which \u00a77's falsifier (\"composes a session from a different task\") would not catch, so \u00a711 must close it before \u00a77 flips the flag.",
+      "text": "because that key is constant, `_prior_same_task_run`'s comparison at `reckon/crew/dispatch_sessions.py:604` matches any earlier plan-review record in the project, so once \u00a77 restores `session_reuse` a plan-review of one plan composes a prior plan-review's session of a different one \u2014 the cross-task reuse this plan exists to remove, on the surface the review reflex actually dispatches under \u2014 and \u00a711 neither repairs nor names it.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:481",
+      "id": "done_when-1",
+      "reason": "a done-when that cannot fail on the defect the section is about measures nothing, so the case must pin the resolved element and the control must include a `plan-review-of-` node.",
+      "text": "the required case pins the record's node id (answering the earlier review) but asserts only that `_task_identity` returns a key whose first element is `\"review\"`; it does not assert the reviewed-run element, so `('review', <project>, '')` passes and the constant-identity defect above is invisible to the gate, and the named negative control restores the root-only predicate, which exercises the role branch only and cannot fail on the prefix.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:475",
+      "id": "anchors_resolve-1",
+      "reason": "the named symbol resolves and a worker greps it, so no work changes.",
+      "text": "\"remove the re-export at `reckon/crew/dispatch.py:2882`\" resolves to line 2881 at main 0f72db147: the \u00a710 commit this section declares it follows (`15dff49be`) deleted the `_capture_member_session` line immediately above it in the same import block, so the anchor is stale by exactly that deletion.",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "plan.html:465",
+      "id": "anchors_resolve-2",
+      "reason": "the function is found by name, so the off-by-12 pointer costs nothing.",
+      "text": "\"`_task_identity` (`dispatch_sessions.py:507`)\" resolves to line 495 at main 0f72db147 (line 507 is the `if _is_review_run(record):` line inside the function).",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "85e4c7ddd1f718543f0798593dc704fe2a82e12283d118bcf4b83b2f7ca9d8b3",
+  "plan_slug": "new-work-gets-a-new-worker",
+  "plan_version": 53,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-17T14:13:11.534074+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-17T14:13:20.970972+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-17T14:13:27.727950+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-17T14:13:33.084213+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-2",
+      "reason": "",
+      "when": "2026-10-17T14:13:38.203191+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T14:13:33.084213+00:00"
+    },
+    "anchors_resolve-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T14:13:38.203191+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T14:13:27.727950+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T14:13:11.534074+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T14:13:20.970972+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-new-work-gets-a-new-worker.v53.json",
+  "review_run_id": "r-20261017T135502492371-plan-review-of-new-work-gets-a-new-worker",
+  "reviewed_blob_sha": "846d6f70992cf197b6fa97c54af2a70d50608d1e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 two line anchors are stale, though both named symbols resolve.",
+    "done_when": "a finding \u2014 the new review-key case asserts only that the key's first element is `\"review\"`, so it passes while the reviewed-run id is empty; no control covers the `plan-review-of-` spelling.",
+    "evidence_paths": "pass \u2014 the gate is a grep plus in-repo pytest; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 \u00a711 introduces no symbol and names no plan label; the review identifiers it cites are plan prose, not code.",
+    "reasoning": "a finding \u2014 the review branch of `_task_identity`, whose predicate call \u00a711 changes, resolves the reviewed-run id to the empty string for every `plan-review-of-` node id, so all plan-reviews in a project share one task identity.",
+    "single_goal": "pass \u2014 \u00a711 carries one deliverable: one predicate for whether a run is a review.",
+    "wiring": "pass \u2014 \u00a711 declares it follows \u00a710, whose write scope holds both `dispatch_sessions.py` and `dispatch.py`, so the two are sequential rather than concurrent; the \u00a77 relationship it serves (\"the selectivity \u00a77 relies on\") is stated."
+  },
+  "section_digests": {
+    "_document": "94d54cc5177fa7b93be4e622d03467e291b778432969d29dacaa05f469ffb0b8",
+    "s1": "7ae481f20fd378b05cffc9c48902a38d550eec6f7589c443213410b5f47f177a",
+    "s10": "6b15d321c8851726303c56e548f95ef6c83ef712f4640d3ce8e4d5c3cbb4f33d",
+    "s11": "f62c584e1f92dddb2d5e4fbd92245332da13526218390e18b94bbaf253ee2c1c",
+    "s2": "75d73add22c27081b096fbdcbfbc7697419fa7455957b55868131e78e8cea099",
+    "s3": "90ebc1798198683841ca985b63d8727ae245d96081f932e024091baac997f5c8",
+    "s4": "04abf1a2e284917d50d9de69a07ea00857d2fb87e04187c0da8008db1f8b03a5",
+    "s5": "cee83946379f7c1418833601209e1a1c211cf9f61c5a75c7f90ce16c60d879bd",
+    "s6": "856fa7deb260fdf62fc25617aa7b562fc3fd2f3c632a71a2a547d4be7bc182b0",
+    "s7": "f2736058e910493b80de5f74b27c2de19c4abd4736246d5108772877b7667b13",
+    "s8": "e7c8f9518519552098b55b1826ee16e97b986001f47d42c07440dc2a4d559e71",
+    "s9": "9bf545205641e1d550ff7dd622b064a3e3b029ef013519fe991543ae7ab7cfe9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T14:13:09.331579+00:00"
+}
