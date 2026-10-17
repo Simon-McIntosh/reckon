@@ -23,7 +23,6 @@ and the aggregate held no row. The coordinator re-promoted against the warning,
 and the run landed.
 """
 
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -32,24 +31,12 @@ from reckon import ledger
 from reckon.crew import promotion, promotion_scope
 from reckon.crew.runs import _write_json, pointer_path
 
+# One copy of the receipt helpers, so the two files describing the same receipt
+# cannot drift apart.
+from tests.test_receipt_names_the_rolled_back_row import _git, _rows
+
 PROJECT = "sample"
 RUN_ID = "failed-landing-row"
-
-
-def _git(root, *args, check=True):
-    return subprocess.run(
-        ["git", "-C", str(root), *args],
-        capture_output=True,
-        text=True,
-        check=check,
-    )
-
-
-def _rows(repository) -> list[str]:
-    return [
-        str(row.get("run_id") or "")
-        for row in ledger.load(PROJECT, root=repository)[0]["runs"]
-    ]
 
 
 @pytest.fixture
@@ -125,6 +112,14 @@ def test_a_rolled_back_row_is_reported_when_only_a_stale_index_names_it(
         promotion._complete_locked(RUN_ID, gate="not-run", root=repository)
 
     assert state["flipped"], "the provisional index must have been published"
+    # Precondition: the index the receipt must not consult is still serving the
+    # row the rollback removed. Asserted here because the branch under test
+    # never reads the index itself, so without this the case would also pass
+    # had the refresh not been refused at all.
+    stale, _ = ledger.load(PROJECT, root=repository, use_index=True)
+    assert RUN_ID in [str(row.get("run_id") or "") for row in stale["runs"]], (
+        "the refused index must still serve the stale row"
+    )
     message = str(caught.value)
     assert "was written and has been rolled back" in message
     assert "re-promote once the landing failure is resolved" in message
