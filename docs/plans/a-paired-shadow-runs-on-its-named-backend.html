@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-paired-shadow-runs-on-its-named-backend">
+  <meta name="plan-title" content="A Paired Shadow Runs On Its Named Backend">
+  <meta name="plan-summary" content="crew dispatch --pair-backend refuses every pair backend except the one the role already resolves to; the shadow arm must resolve against the backend it names.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="1.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="low">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-standalone" content="It repairs the landed paired dispatch of a-shadow-cannot-see-its-primary; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;}">
+  <title>A Paired Shadow Runs On Its Named Backend | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-17">
+<meta name="plan-north-star" content="unattended-execution">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — A paired shadow resolves against the backend it names</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p>
+      <code>reckon crew dispatch --pair-backend &lt;backend&gt;</code> refuses every pair backend except the one the
+      node's role already resolves to. The nova session reproduced it three times on 2026-10-17 as dry runs with
+      <code>--pair-backend codex</code>, while the host flight's <code>default_backend</code> is <code>clive</code>:
+    </p>
+    <pre>candidate backend 'codex' resolved to 'clive'; route the node explicitly to the candidate
+Resolve with `reckon crew shadow --backend &lt;candidate&gt;` after correcting the flight override.</pre>
+    <p>
+      The cause is in <code>reckon/crew/dispatch.py</code> at main <code>7f1f83c6e</code>.
+      <code>dispatch_pair</code> (line 686) passes the dispatch's own config, unmodified, to
+      <code>_shadow_dispatch_config</code> (line 465). That function calls
+      <code>resolve_role(config, node.role, node.spec_level)</code> at line 474. With nothing routing the role to
+      the candidate, that call returns the role's configured backend or the flight's <code>default_backend</code>. It
+      then refuses with D21 whenever that name differs from the candidate. <code>crew shadow</code> never trips the
+      check, because <code>reckon/crew_dispatch_commands.py:2070</code> first adds
+      <code>roles.&lt;role&gt;.backend=&lt;candidate&gt;</code> and
+      <code>roles.&lt;role&gt;.by_spec_level.&lt;level&gt;.backend=&lt;candidate&gt;</code> to the flight
+      overrides. <code>dispatch_pair</code> has no such step.
+    </p>
+    <p>
+      The tests did not catch it. <code>tests/test_a_paired_dispatch_hides_each_arm.py</code> builds its config with
+      <code>_candidate_config</code> (line 85), which routes the implement role itself to the pair backend at line 94.
+      So in every paired test, both arms resolve to <code>candidate</code> and the comparison always matches.
+    </p>
+    <p>
+      The refusal's remedy also misleads. D21's remedy in <code>reckon/crew/refusals.py</code> (line 81) says to run
+      <code>reckon crew shadow --backend &lt;candidate&gt;</code> "after correcting the flight override". That is
+      wrong for a paired dispatch. The nova flight has no override layer at all (<code>crew(view="flight")</code>
+      reports <code>override: present false</code>), so the coordinator searched for a layer that does not exist. The
+      lead read the refusal as a limit on codex. Until this lands, nova dispatches deep nodes unpaired.
+    </p>
+    <p>
+      <strong>Remedy.</strong> Resolve the shadow arm against the backend it names, in the one function both callers
+      share:
+    </p>
+    <ul>
+      <li>In <code>_shadow_dispatch_config</code>, replace the <code>resolve_role</code> call and the equality check
+        with <code>resolve_role_override(config, node.role, node.spec_level, candidate_backend)</code>
+        (<code>reckon/crew/routing.py:195</code>). That function already exists to resolve a role's overlays against
+        a named backend. The role and spec-level overlays still apply, so the effort and sandbox inheritance that
+        follows is unchanged. The host flight's role overlays name only <code>sandbox</code> and <code>effort</code>,
+        so no clive-specific setting carries onto another backend.</li>
+      <li>Keep D21 for the one case that remains: a candidate that no layer defines.
+        <code>_effective_backend</code> (<code>reckon/crew/routing.py:126</code>) already raises <code>CrewError</code>
+        naming the backend and listing the defined ones. Raise D21 with that text as its detail.</li>
+      <li>Rewrite D21's remedy in <code>reckon/crew/refusals.py</code> so it names the real fix for both verbs: pass a
+        backend declared under <code>backends</code> in the flight, to <code>--pair-backend</code> or
+        <code>crew shadow --backend</code>. It must not mention a flight override.</li>
+      <li>Change nothing else. In particular, leave the primary arm's routing, the overrides <code>crew shadow</code>
+        adds, and the fence and mask composition as they are. The overrides <code>crew shadow</code> adds become
+        redundant but stay harmless.</li>
+    </ul>
+    <p>
+      <strong>Write paths:</strong> <code>reckon/crew/dispatch.py</code>, <code>reckon/crew/refusals.py</code>, and
+      <code>tests/test_a_paired_shadow_runs_on_its_named_backend.py</code>, which is new.
+    </p>
+    <p><strong>Done when</strong> all four of these hold:</p>
+    <ol>
+      <li>The new test builds a config whose <code>default_backend</code> is one backend (<code>alpha</code>) and
+        whose implement role names no backend. A second backend, <code>candidate</code>, has its own model. The test
+        asserts four cases:
+        <ul>
+          <li><code>dispatch_pair(dry_run=True, pair_backend="candidate")</code> returns a pair. The primary arm's
+            agent backend is <code>alpha</code>. The shadow arm's agent backend is <code>candidate</code>, with
+            <code>candidate</code>'s model.</li>
+          <li>The same dispatch still pairs when a <code>roles.implement.by_spec_level.&lt;level&gt;.backend</code>
+            overlay routes the node's spec level to <code>alpha</code>. The shadow arm's backend is still
+            <code>candidate</code>.</li>
+          <li><code>pair_backend="nonesuch"</code>, a backend no layer defines, raises <code>CrewError</code> carrying
+            D21. The detail names <code>nonesuch</code> as undefined, and the message does not contain the words
+            "flight override".</li>
+          <li>The same paired dry run through the CLI (<code>reckon crew dispatch … --pair-backend candidate
+            --dry-run</code>, as <code>tests/test_a_paired_dispatch_hides_each_arm.py</code> already drives it)
+            exits 0 against that config. The payload reads <code>"paired": true</code>, and the shadow arm's backend
+            is <code>candidate</code>.</li>
+        </ul>
+        The test writes nothing outside its temporary directory. It uses the same isolated home and repository
+        fixtures as <code>tests/test_a_paired_dispatch_hides_each_arm.py</code>.</li>
+      <li>Pytest over the new file, <code>tests/test_a_paired_dispatch_hides_each_arm.py</code>,
+        <code>tests/test_a_paired_arm_waits_for_its_partner.py</code>, <code>tests/test_paired_arms_are_reported.py</code>,
+        <code>tests/test_crew_shadow.py</code>, <code>tests/test_crew_shadow_overrides.py</code>,
+        <code>tests/test_crew_shadow_contamination.py</code>, <code>tests/test_a_shadow_worktree_hides_its_primary.py</code>
+        and <code>tests/test_every_module_fits_a_worker_window.py</code> adds no failure against the base. Run it in
+        the foreground.</li>
+      <li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths, judged by
+        delta against the base blobs.</li>
+      <li>After the merge, the coordinator runs <code>reckon crew dispatch --dry-run</code> for an implement node with
+        <code>--pair-backend codex</code> against this host's flight, whose <code>default_backend</code> is
+        <code>clive</code>. It must exit 0 with <code>"paired": true</code> and a shadow arm on <code>codex</code>.
+        This is an integration observation of the live flight, not a test.</li>
+    </ol>
+    <p>
+      <strong>Negative control:</strong> restore the <code>resolve_role</code> call and the equality check in
+      <code>_shadow_dispatch_config</code>. The first case must then fail with D21, because <code>alpha</code> is not
+      <code>candidate</code>. Separately, restoring the old D21 remedy text must fail the third case on its "flight
+      override" assertion.
+    </p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-apsronb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-17" data-recommends-skill="/reckon-build a-paired-shadow-runs-on-its-named-backend §1" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Route a paired dispatch's shadow arm to the backend it names</h4>
+    <div class="r-fu-body"><p>Filed after nova reported <code>--pair-backend codex</code> refused while the flight's default backend is clive. §1 carries the remedy and its done-when.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-paired-shadow-runs-on-its-named-backend §1</pre>
+</article>
+</section>
+  </main>
+</body>
+</html>
