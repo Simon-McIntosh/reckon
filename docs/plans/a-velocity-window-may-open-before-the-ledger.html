@@ -20,18 +20,18 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling,measurement">
   <meta name="plan-blocks" content="the-ledger-is-one-file-per-run#s4">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;}">
   <title>A Velocity Window May Open Before The Ledger | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
 <body>
   <main class="plan-doc">
     <h2 id="s1">§1 — A revision without the ledger reads as one with no runs</h2>
-<section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p>
       At main <code>3e4736687</code>, <code>reckon crew velocity --project reckon --since 2026-08-01</code> exits 1. The
       error is <code>CalledProcessError</code> from <code>git show 69fb3c1e5…:docs/state/reckon/crew.json</code>, raised
@@ -124,6 +124,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261017T115137555710-review-of-a-revision-without-the-ledger-reads-as-no-runs-d78210764e86" data-who="reckon-build" data-when="2026-10-17T12:10:16.651Z">
     <div class="r-comment-body"><p>Reviewed r-20261017T112233609448-a-revision-without-the-ledger-reads-as-no-runs at base e4a9909e2753134693edf7eb0f15e6987192399c and head d78210764e86dd51b7faae13d0df10938df9ebea; the change lands its goal and its three-arm negative control shows each new case reddening on the regression it guards, with both findings follow-on only.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-close-s1" data-who="reckon-build" data-when="2026-10-17T13:40:00Z">
+    <div class="r-comment-body"><p>§1 landed: <code>_read_ledger</code> reads a revision without <code>crew.json</code> as one with no runs and a <code>None</code> digest, and <code>recover_ledger_clocks</code> reads the base through it (commits <code>a966f5b7e</code>, <code>d78210764</code>). Gate: 27 passed at head, 24 at base. Each of the three negative controls fails its case. Review 112, no added failures. <a href="/reckon/evidence/archive/a-velocity-window-may-open-before-the-ledger-landed.html#s1">evidence</a></p></div>
 </div>
 </section>
 </main>

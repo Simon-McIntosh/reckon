@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-velocity-window-may-open-before-the-ledger-landed">
+  <meta name="plan-title" content="A Velocity Window May Open Before The Ledger — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Velocity Window May Open Before The Ledger: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-velocity-window-may-open-before-the-ledger">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Velocity Window May Open Before The Ledger — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Velocity Window May Open Before The Ledger — landed record</h1>
+  <p>Closure synthesis for A Velocity Window May Open Before The Ledger: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s1">
+    <h2>§1 — a revision without the ledger reads as one with no runs</h2>
+    <p><code>_read_ledger</code> in <code>reckon/velocity.py</code> is now the one reader of the committed ledger at a revision. When the tree has no <code>docs/state/&lt;project&gt;/crew.json</code>, which <code>_blob_sha</code> reports, it returns no records and a <code>None</code> digest. Otherwise it reads the bytes through <code>read_blobs</code>, so a failed read of a ledger that is present still raises. <code>recover_ledger_clocks</code> no longer parses the ledger itself. It takes the runs present at the base from <code>_read_ledger</code>, and keeps the <code>path</code> its <code>git log</code> search uses. Commits: <code>a966f5b7e</code> (fix) and <code>d78210764</code> (fragment).</p>
+<table>
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Gate at head: new test file plus <code>test_velocity_cache</code>, <code>test_one_blob_reader_serves_velocity_and_the_counter</code>, <code>test_velocity</code>, <code>test_crew_velocity_view</code> and the width test</td><td>27 passed, <code>EXIT=0</code></td></tr>
+<tr><td>Same dependants at base <code>e4a9909e2</code></td><td>24 passed, <code>EXIT=0</code>; no failure added</td></tr>
+<tr><td>Negative controls, each applied alone: inline <code>git show</code> in <code>_read_ledger</code>, inline parse in <code>recover_ledger_clocks</code>, blanket <code>except</code></td><td>each fails exactly its case (3 failed, <code>EXIT=1</code>)</td></tr>
+<tr><td>Ruff on the staged paths</td><td>0 findings at base and at head; <code>velocity.py</code>'s 11 lines of format debt unchanged; the new test is formatted</td></tr>
+<tr><td>Independent review</td><td>112 of 120 (goal 20, evidence 17, scope 18, durability 19, fit 18, reuse 20); no added failures</td></tr>
+</tbody>
+</table>
+<p>The review left two follow-ons, both accepted. If an object store lists the ledger's blob but cannot read it, as in a partial clone or a corrupt store, the read reaches <code>json.loads(None)</code> and raises <code>TypeError</code> rather than a git error naming the revision. And the fragment carries more prose than the node needed. Logs are under <code>~/.config/reckon/crew/runs/r-20261017T112233609448-a-revision-without-the-ledger-reads-as-no-runs/</code>.</p>
+  </section>
+
+</main>
+</body>
+</html>
