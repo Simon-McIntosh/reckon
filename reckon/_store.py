@@ -2055,25 +2055,46 @@ def resolve_in_list(
 # ── Cross-plan scan ────────────────────────────────────────────────────────
 
 
-def list_followups_across(
-    project: str,
-    unresolved_only: bool = True,
-    root: str | Path | None = None,
-) -> list[dict]:
-    """Return followups from all plan HTML files in a project.
+def _stored_plan_states(docs_dir: Path, project: str) -> dict[str, dict]:
+    """Return each unchanged file's persisted parse, keyed by docs-relative path.
 
-    Scans the project docs dir via _plan_html.parse_plan, collecting
-    followups with plan_slug and plan_title.  Skips infrastructure
-    files/dirs per PLAN-FORMAT.md.
+    The persisted metadata index keeps, per file, the semantic state a read was
+    parsed into and its ``<meta>`` record beside it, each entry keyed by the
+    file's content digest. A cross-plan scan that answers from this store reads
+    follow-ups and questions without rebuilding a soup per plan, so a fresh
+    process over a built store parses nothing whose bytes are unchanged. A file
+    whose digest moved, or one the store does not cover, is left out and parsed
+    by the caller rather than read as a stale answer.
+    """
+    from reckon import metadata_index
+
+    return metadata_index.discovery_state(docs_dir, project)
+
+
+def _docs_relative(path: Path, docs_dir: Path) -> str | None:
+    """Return ``path``'s docs-relative posix key, the store's own entry key."""
+
+    try:
+        return path.relative_to(docs_dir).as_posix()
+    except ValueError:
+        return None
+
+
+def _plan_states(project: str, root: str | Path | None):
+    """Yield ``(slug, title, state)`` for every plan in a project.
+
+    The state comes from the persisted parse when the file's bytes are
+    unchanged and from a fresh parse otherwise, so a scan over an unchanged tree
+    touches no plan document it has already parsed.
     """
     from reckon import _plan_html
     from reckon.resources import resource_map
 
     docs_dir = _docs_dir_for_project(project, root)
     if docs_dir is None:
-        return []
+        return
 
-    results: list[dict] = []
+    stored = _stored_plan_states(docs_dir, project)
     for resource in resource_map(
         docs_dir,
         project,
@@ -2082,15 +2103,38 @@ def list_followups_across(
     ).values():
         if resource.type != "plan":
             continue
-        html_file = resource.path
+        relative = _docs_relative(resource.path, docs_dir)
+        entry = stored.get(relative) if relative is not None else None
+        state = entry.get("state") if entry is not None else None
+        if state is not None:
+            meta = entry.get("meta") or {}
+            slug = meta.get("slug") or resource.slug
+            yield slug, meta.get("title") or slug, state
+            continue
         try:
-            rec = _plan_html.parse_plan(html_file)
+            rec = _plan_html.parse_plan(resource.path)
         except Exception:
             continue
         slug = rec["slug"]
-        title = rec.get("title") or slug
-        # followups live in the raw state (parse_plan returns them)
-        for f in rec.get("followups", []):
+        yield slug, rec.get("title") or slug, rec
+
+
+def list_followups_across(
+    project: str,
+    unresolved_only: bool = True,
+    root: str | Path | None = None,
+) -> list[dict]:
+    """Return followups from all plan HTML files in a project.
+
+    Reads each plan's parsed state from the persisted metadata index when its
+    bytes are unchanged, so a fresh process over a built store answers without
+    re-parsing the tree; a file the store cannot answer for is parsed here.
+    Entries carry plan_slug and plan_title. Skips infrastructure files/dirs
+    per PLAN-FORMAT.md.
+    """
+    results: list[dict] = []
+    for slug, title, state in _plan_states(project, root):
+        for f in state.get("followups") or []:
             if unresolved_only and f.get("resolved_at"):
                 continue
             results.append({"plan_slug": slug, "plan_title": title, **f})
@@ -2104,32 +2148,13 @@ def list_questions_across(
 ) -> list[dict]:
     """Return questions from all plan HTML files in a project.
 
-    Adds plan_slug and plan_title to each entry.
+    Shares the store-backed read with :func:`list_followups_across`, so a fresh
+    process over a built store answers without re-parsing the tree. Adds
+    plan_slug and plan_title to each entry.
     """
-    from reckon import _plan_html
-    from reckon.resources import resource_map
-
-    docs_dir = _docs_dir_for_project(project, root)
-    if docs_dir is None:
-        return []
-
     results: list[dict] = []
-    for resource in resource_map(
-        docs_dir,
-        project,
-        include_archived=False,
-        ignore_invalid=True,
-    ).values():
-        if resource.type != "plan":
-            continue
-        html_file = resource.path
-        try:
-            rec = _plan_html.parse_plan(html_file)
-        except Exception:
-            continue
-        slug = rec["slug"]
-        title = rec.get("title") or slug
-        for q in rec.get("questions", []):
+    for slug, title, state in _plan_states(project, root):
+        for q in state.get("questions") or []:
             if unresolved_only and q.get("resolved_at"):
                 continue
             results.append({"plan_slug": slug, "plan_title": title, **q})
