@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T09:40:23.571Z",
+  "dispatched_at": "2026-10-17T09:34:27Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:83",
+      "id": "anchors_resolve-1",
+      "reason": "a builder extending \u00a73's row sets follows a pointer to nothing and must hunt for the function, and two sections of one plan disagree about which module owns gc.",
+      "text": "\u00a73's deliverable names `garbage_collect (reckon/crew/routing.py:1520)`, but the function is defined at `reckon/crew/gc.py:262`; `reckon/crew/routing.py:1520` is an unrelated comment about `STREAM_DERIVED_FIELDS`, so the anchor points at code the module split moved elsewhere (the same plan's \u00a710 already cites `reckon/crew/gc.py`)",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:42",
+      "id": "anchors_resolve-2",
+      "reason": "every one of these is a claim the plan makes about where a mechanism lives, and a reader opening them lands in unrelated code; correcting the anchors is a real edit to the live document.",
+      "text": "the line anchors in \u00a71's table and \u00a74 are stale against the head: `_run_index_path` is cited at `reckon/ledger.py:896-899` but is defined at line 996; `_pointer_lock` is cited at `reckon/crew/runs.py:549-559` but is defined at line 316; the `picker-*.json` name is cited at `reckon/capabilities.py:1190` but sits at 1285-1289; the run-directory retention rule is cited at `reckon/crew/routing.py:1764-1771` where lock pruning now lives; and \u00a74 cites `trim_service_log` at `fleet_supervisor.py:548-574` with its constants \"at line 223\" where the function is at 595 and the constants at 226-227",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:36",
+      "id": "anchors_resolve-3",
+      "reason": "\u00a71's four-store figures rest on this record, and a reader cannot open it; the plan's own \u00a73/\u00a75 report-tree sweep is the mechanism that removes report trees past retention, so the citation the plan depends on was destroyed by the plan.",
+      "text": "\u00a71 cites its source measurement as `~/.config/reckon/crew/reports/reckon/health-review-1010/health-state-hygiene/` (figures in `evidence.md`), and no directory of that name exists under `~/.config/reckon/crew/reports/reckon/` now",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:131",
+      "id": "done_when-1",
+      "reason": "the clause cannot be satisfied as \u00a75 measures it and no control distinguishes a real sweep from a partial one, so the section can only stay deferred until its measure is rebaselined, which is the open decision's job and is not written into the done-when.",
+      "text": "\u00a75 is the one section whose done-when declares no negative control, and its measure \"the combined size of the four stores is at least 100 GB lower than the \u00a71 figures\" is asserted against \u00a71's superseded 330 GB while the plan's own comments (`c-close-s5`, `c-s5-reopened-on-review`) record the stores now at 494 GB and the clause unmet",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:163",
+      "id": "reasoning-1",
+      "reason": "the section states an outcome it no longer states a mechanism for, so a builder must invent the lever the first build did not have, which is exactly where the first build's four defects arose.",
+      "text": "\u00a79 says \"The done-when that follows replaces the mechanism above and keeps its purpose\", but the revision removes both levers it previously named (pointing `XDG_CACHE_HOME` moves uv's cache and breaks seven wheel-build tests; the per-kind overrides outrank a `RECKON_HOME` a test sets and break `test_the_real_cache_is_untouched`) and the replacement states only a goal \u2014 \"A session-scoped fixture keeps every `_store.cache_root` resolution in the session temporary directory\" \u2014 without naming the environment the fixture now sets, while `cache_root` routes `pick-input` through `RECKON_HOME` but routes other kinds (`client`, and the `after` homes) elsewhere",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9e514005bc1dfbe304b6cf8af214b6ea39de05d0bf0005bc8bf1edae97c9ad68",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 63,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T093350140791-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "e18aad30afcd0167b89f388405ca93954e5c1269",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 several cited line anchors are stale and one cited evidence directory no longer resolves.",
+    "done_when": "a finding \u2014 \u00a75's done-when names no negative control and asserts a combined-size clause its own record already reports unmet.",
+    "evidence_paths": "pass \u2014 the plan's own gate and control logs sit under the run directory (`~/.config/reckon/crew/runs/<run-id>/`), which survives the run, and the archive fragment `docs/evidence/archive/the-crew-home-has-a-bound-landed.html` exists.",
+    "naming": "pass \u2014 the section ids (`s1`\u2013`s10`) are the plan surface's own identifiers, the named symbols (`_run_index_path`, `_pinnable_unique_commits`, `_releasable_roots`, `_declared_arm_paths`, `already-removed`) are mechanism names, and no ticket number, version tag or stage label reaches code.",
+    "reasoning": "a finding \u2014 \u00a79's revision replaces its mechanism with a goal list, so the section no longer states how its done-when is produced.",
+    "single_goal": "pass \u2014 each of \u00a72\u2013\u00a710 carries one deliverable, and the revisions to \u00a79 replace its mechanism without adding a second one.",
+    "wiring": "pass \u2014 the plan declares `plan-standalone` with a stated reason, every plan it names (`one-typesafe-model-picker`, `history-persists-as-detail-washes-out`) is correctly described as not waiting on it or being waited on by it, and \u00a76's ordering constraint is against a run (`r-20261012T051827498181-a-worktree-release-is-whole`), not a plan, so no plan relationship is missing or mispointed."
+  },
+  "section_digests": {
+    "_document": "4dc163aaf3971781a60f3a42d1ae1a5f5e8120d9456c429e5adc0ea60acb2b52",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s10": "56c18da5f95c1af6bc07050b4374f565f11fa8750f575894cd4e1cc2b5ea773a",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "ea437bee063bb05e8f8ddb6f7a30f7f066d66dff1770c1488e31b86a6f5c7ba8",
+    "s5": "75a8a336e2ee62426e5a8c3ed3310e0cf614b82a8cf7ae6a5985fcb99f2b1648",
+    "s6": "3f82b3311550663b1d18b1428203c2b44805aff91f1c998049de11dd82bfe201",
+    "s7": "d966e9dc54000fcf7d43d9d39567b2a791c2670b0224b881649472a126a8f106",
+    "s8": "07d9242815cd2c19cf76c9484aa28c908834190af477f204091de9d695b3e8a5",
+    "s9": "c569737fe5162006eee7ba6e00ac5759f364c5e17340fd9154c9d8999ff67437"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T09:44:31.001326+00:00"
+}
