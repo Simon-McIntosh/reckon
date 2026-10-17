@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Measured from the reviewed run's negative_control_base_arm.log (one failed id) and head_arm.log (two passed, no failed ids); its manifest does not populate baseline_suite or after_suite, so automatic read-time annotation may mark this unmeasured.",
+  "base_log_revision": "91a8aea54aca17e98ce06aa7d3012bfe361105ef",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:732",
+    "reckon/crew/promotion.py:1301"
+  ],
+  "completed_at": "2026-10-17T18:17:02Z",
+  "dispatched_at": "2026-10-17T18:09:54Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-ledger-is-one-file-per-run/a-failed-landing-says-whether-its-row-survived.html",
+      "line": "13",
+      "severity": "blocking",
+      "text": "blocking: the 76-line evidence narrative conflicts with the reviewed dispatch's explicit prompt.txt:58-59 instruction that this node write no evidence prose, so remove the fragment before landing."
+    },
+    {
+      "file": "tests/test_a_failed_landing_says_whether_its_row_survived.py",
+      "line": "39",
+      "severity": "follow-on",
+      "text": "follow-on: _git and _rows at :48 duplicate the same capabilities in tests/test_receipt_names_the_rolled_back_row.py:30 and :74; keeping two fixtures for the same receipt behavior makes later fixture changes drift."
+    },
+    {
+      "file": "tests/test_a_failed_landing_says_whether_its_row_survived.py",
+      "line": "118",
+      "severity": "follow-on",
+      "text": "follow-on: the test makes the index read-only but never asserts that a post-rollback index read still returns the stale row, so the base red arm is the only recorded proof that its intended stale-index branch was exercised."
+    },
+    {
+      "file": "manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run lists its red base and green head only in test_logs, without baseline_suite and after_suite fields; automatic review read-back therefore changes this record's measured added_failure_count=0 to unmeasured, hiding the gate delta from that reader."
+    }
+  ],
+  "head_log_revision": "91a8aea54aca17e98ce06aa7d3012bfe361105ef",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "commit 130d54a39 against parent 91a8aea54 changes reckon/crew/promotion_scope.py:1871 to use_index=False, adds two regression cases, and adds a 76-line evidence fragment.",
+    "done_when": "prompt.txt:96 names the stale-index stage-lock and durable aggregate cases; tests/test_a_failed_landing_says_whether_its_row_survived.py:129-146 asserts the first and :167-192 the second, with a red base and green head logged in the reviewed run.",
+    "goal": "prompt.txt:30 asks the receipt to report a rolled-back row when its run file and aggregate row are absent; reckon/crew/promotion_scope.py:1871 bypasses the cached index for that read.",
+    "manifest": "manifest.md:6-15 names commit 130d54a39, the 2-passed head arm, the 1-failed base control, and 97 related passes, but gives no baseline_suite or after_suite fields.",
+    "write_paths": "prompt.txt:68-73 declares both code files, the test and evidence paths; commit 130d54a39 changes three declared paths, though its evidence prose contradicts prompt.txt:58-59."
+  },
+  "justifications": {
+    "durability": "tests/test_a_failed_landing_says_whether_its_row_survived.py:129-131 redden when the index-served read is restored, :133-136 redden if rollback leaves a durable row, :145-146 redden if retry fails to land, and :169-192 redden if an aggregate row is called rolled back.",
+    "evidence": "tests/test_a_failed_landing_says_whether_its_row_survived.py:129 fails on the base with the false already-written receipt and passes at the working-tree fix, while head_arm.log names the base plus working-tree fix rather than committed head 130d54a39.",
+    "fit": "reckon/crew/promotion_scope.py:1856-1876 keeps the existing ledger read and unreadable-state convention, and the new test names its behavior without forbidden plan or release labels.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:1871 reads the aggregate and run files directly, so the two production receipts in reckon/crew/promotion.py:732 and :1301 cannot decide from the last-good index.",
+    "reuse": "tests/test_a_failed_landing_says_whether_its_row_survived.py:39 and :48 duplicate the git runner and row reader already owned by tests/test_receipt_names_the_rolled_back_row.py:30 and :74 rather than extending that owner.",
+    "scope_discipline": "docs/evidence/fragments/the-ledger-is-one-file-per-run/a-failed-landing-says-whether-its-row-survived.html:13 adds prose although prompt.txt:58-59 expressly says this node writes no evidence prose."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks the receipt to report a rolled-back row when its run file and aggregate row are absent; reckon/crew/promotion_scope.py:1871 bypasses the cached index for that read.\nVERDICT done_when: prompt.txt:96 names the stale-index stage-lock and durable aggregate cases; tests/test_a_failed_landing_says_whether_its_row_survived.py:129-146 asserts the first and :167-192 the second, with a red base and green head logged in the reviewed run.\nVERDICT write_paths: prompt.txt:68-73 declares both code files, the test and evidence paths; commit 130d54a39 changes three declared paths, though its evidence prose contradicts prompt.txt:58-59.\nVERDICT manifest: manifest.md:6-15 names commit 130d54a39, the 2-passed head arm, the 1-failed base control, and 97 related passes, but gives no baseline_suite or after_suite fields.\nVERDICT diff: commit 130d54a39 against parent 91a8aea54 changes reckon/crew/promotion_scope.py:1871 to use_index=False, adds two regression cases, and adds a 76-line evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:732, reckon/crew/promotion.py:1301\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:1871 reads the aggregate and run files directly, so the two production receipts in reckon/crew/promotion.py:732 and :1301 cannot decide from the last-good index.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_failed_landing_says_whether_its_row_survived.py:129 fails on the base with the false already-written receipt and passes at the working-tree fix, while head_arm.log names the base plus working-tree fix rather than committed head 130d54a39.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: docs/evidence/fragments/the-ledger-is-one-file-per-run/a-failed-landing-says-whether-its-row-survived.html:13 adds prose although prompt.txt:58-59 expressly says this node writes no evidence prose.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_failed_landing_says_whether_its_row_survived.py:129-131 redden when the index-served read is restored, :133-136 redden if rollback leaves a durable row, :145-146 redden if retry fails to land, and :169-192 redden if an aggregate row is called rolled back.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion_scope.py:1856-1876 keeps the existing ledger read and unreadable-state convention, and the new test names its behavior without forbidden plan or release labels.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_a_failed_landing_says_whether_its_row_survived.py:39 and :48 duplicate the git runner and row reader already owned by tests/test_receipt_names_the_rolled_back_row.py:30 and :74 rather than extending that owner.\nFINDING docs/evidence/fragments/the-ledger-is-one-file-per-run/a-failed-landing-says-whether-its-row-survived.html:13 blocking: the 76-line evidence narrative conflicts with the reviewed dispatch's explicit prompt.txt:58-59 instruction that this node write no evidence prose, so remove the fragment before landing.\nFINDING tests/test_a_failed_landing_says_whether_its_row_survived.py:39 follow-on: _git and _rows at :48 duplicate the same capabilities in tests/test_receipt_names_the_rolled_back_row.py:30 and :74; keeping two fixtures for the same receipt behavior makes later fixture changes drift.\nFINDING tests/test_a_failed_landing_says_whether_its_row_survived.py:118 follow-on: the test makes the index read-only but never asserts that a post-rollback index read still returns the stale row, so the base red arm is the only recorded proof that its intended stale-index branch was exercised.\nFINDING manifest.md:11 follow-on: the reviewed run lists its red base and green head only in test_logs, without baseline_suite and after_suite fields; automatic review read-back therefore changes this record's measured added_failure_count=0 to unmeasured, hiding the gate delta from that reader.\n",
+  "review_run_id": "r-20261017T180859807314-review-of-a-failed-landing-says-whether-its-row-survived-130d54a39f83",
+  "reviewed_base_sha": "91a8aea54aca17e98ce06aa7d3012bfe361105ef",
+  "reviewed_gate_logs": {
+    "base": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T174054384777-a-failed-landing-says-whether-its-row-survived/logs/negative_control_base_arm.log",
+    "head": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T174054384777-a-failed-landing-says-whether-its-row-survived/logs/head_arm.log"
+  },
+  "reviewed_head_sha": "130d54a39f837071d71242328d15f43dad2a0bde",
+  "reviewed_run_id": "r-20261017T174054384777-a-failed-landing-says-whether-its-row-survived",
+  "rubric": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T18:13:43.269233+00:00",
+  "total": 91
+}
