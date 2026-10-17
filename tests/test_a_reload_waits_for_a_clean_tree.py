@@ -1,16 +1,10 @@
-"""A reload waits for a clean, importable tree.
+"""A reload follows the committed source and refuses an unimportable image.
 
-A producer or follower replaces its own process image when the content-hash
-stamp over its source moves. A tree mid-edit can move that stamp while it is
-still not fit to run: a session edited ``reckon/crew/ticker.py`` and
-``reckon/crew/recovery_watch.py`` in place in the shared checkout, and every
-project's producer — which imports that checkout — reloaded onto the half-edit.
-One failed at import with a bare name; another imported cleanly and failed only
-when a row was rendered, because a rename was applied at the call site and not
-at the definition. So the reload is deferred while any tracked file under
-``reckon/`` differs from ``HEAD``, and while any module the process loads fails
-to import. A deferred reload keeps the running image, says so once, and retries
-— when the code moves again, or when the tree is committed back to clean.
+A producer or follower replaces its process image when the source checkout's
+HEAD commit moves. An uncommitted edit leaves that stamp unchanged, so a
+half-applied rename cannot become the replacement image. Once committed, the
+source is materialised from HEAD and probed before re-execution. A committed
+module that fails to import still defers the reload and keeps the running image.
 
 The producer is the process the incident darkened, so it is the process these
 cases watch. The tree under test is a self-contained git checkout laid down per
@@ -44,8 +38,7 @@ from reckon.crew import runs
 PROJECT = "proj"
 NODE = "node-1"
 
-# The reload's own line, and the phrase each deferral reason carries. The two
-# reasons are distinguished so a case proves the guard it means to.
+# The reload's refusal line and the reasons these cases distinguish.
 DEFERRED_MARKER = "reckon crew watch deferred its reload"
 DIRTY_MARKER = "modified against HEAD"
 IMPORT_MARKER = "does not import"
@@ -57,9 +50,8 @@ IMPORT_MARKER = "does not import"
 RELOAD_LAUNCHER_MARKER = "sys.path.insert"
 
 # A comment, and one whose every prefix is a comment, so the module still parses
-# and the change is content-only: the stamp moves while the tree remains fit to
-# import, which is exactly the half-edit a dirty tree catches and the import
-# proof does not.
+# and the change is content-only: the source commit stamp stays fixed while
+# the working tree carries the half-edit.
 CONTENT_EDIT_BYTES = b"\n# half-edit left in the tree\n"
 
 # A module-level name bound to nothing that exists: importing it raises
@@ -149,11 +141,8 @@ def _fresh_checkout(tmp_path: Path) -> tuple[Path, Path]:
 def scratch_checkout(where: Path) -> tuple[Path, Path]:
     """A committed checkout of the package a reload case may change.
 
-    A reload is deferred while a tracked file differs from ``HEAD``, so a case
-    that forces a reload by changing the source cannot edit the package its own
-    process imports: that leaves the tree modified and the reload is held back.
-    The case changes a copy of its own and commits the change, so the tree stays
-    clean against ``HEAD`` and the only thing that moved is the content stamp.
+    The case changes a copy rather than the package its own process imports,
+    then commits to move the source stamp without touching another checkout.
     """
     return _fresh_checkout(where)
 
@@ -168,7 +157,7 @@ def commit_the_source_change(
 
 
 def _stamp_of(root: Path) -> str:
-    """Compute the content-hash stamp over a copied tree, in its own process."""
+    """Read the source checkout's commit stamp in its own process."""
     completed = subprocess.run(
         [
             sys.executable,
@@ -294,13 +283,17 @@ def _cmdline(pid: int) -> str:
         return ""
 
 
-def _read_until(lines: queue.Queue, marker: str, *, timeout: float) -> str:
+def _read_until(
+    lines: queue.Queue, marker: str, *, timeout: float, seen: list[str] | None = None
+) -> str:
     deadline = time.monotonic() + timeout
     while True:
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise AssertionError(f"the producer never printed a line with {marker!r}")
         row = lines.get(timeout=remaining)
+        if seen is not None:
+            seen.append(row)
         if marker in row:
             return row
 
@@ -325,17 +318,10 @@ def _stop(process: subprocess.Popen) -> None:
         process.wait(timeout=8)
 
 
-def test_a_tracked_file_modified_against_head_defers_the_reload(
+def test_an_uncommitted_edit_neither_reloads_nor_defers(
     isolated_home, tmp_path
 ) -> None:
-    """A half-edit left in the tree holds the reload, and the pane keeps flowing.
-
-    The edit is content-only and parses, so the import proof passes it: the dirt
-    against ``HEAD`` is the only thing that can defer the reload, which is what
-    a rename applied at the call site and not the definition leaves behind. The
-    running image must stay on the pane, because deferring onto a dead pane
-    would be the darkening the deferral exists to prevent.
-    """
+    """A half-edit leaves HEAD fixed while the current image keeps delivering."""
     root, package = _fresh_checkout(tmp_path)
     before = _stamp_of(root)
     process, lines = _launch_producer(root, isolated_home)
@@ -344,18 +330,19 @@ def test_a_tracked_file_modified_against_head_defers_the_reload(
 
         module = package / "crew" / "ticker.py"
         module.write_bytes(module.read_bytes() + CONTENT_EDIT_BYTES)
-
-        deferred = _read_until(lines, DEFERRED_MARKER, timeout=DEFER_WITHIN_SECONDS)
-        assert DIRTY_MARKER in deferred, deferred
+        assert _stamp_of(root) == before
+        assert not _reloaded_within(process, timeout=2.0)
 
         # The current image is still delivering: a run it has not reported
-        # before is rendered as a row while the reload stays held.
+        # before is rendered as a row while the source commit stays fixed.
         _write_live_run(isolated_home, "r-1")
-        rendered = _read_until(lines, NODE, timeout=DEFER_WITHIN_SECONDS)
+        seen: list[str] = []
+        rendered = _read_until(lines, NODE, timeout=DEFER_WITHIN_SECONDS, seen=seen)
         assert NODE in rendered
-
+        assert all(DIRTY_MARKER not in line for line in seen), seen
+        assert all(DEFERRED_MARKER not in line for line in seen), seen
         assert RELOAD_LAUNCHER_MARKER not in _cmdline(process.pid), (
-            "the modified-file reload must be deferred, not performed"
+            "an uncommitted edit must not replace the running image"
         )
     finally:
         _stop(process)
@@ -366,9 +353,8 @@ def test_a_module_that_raises_nameerror_at_import_defers_the_reload(
 ) -> None:
     """A module the process loads that fails to import holds the reload.
 
-    The unimportable module is written and committed, so the tree is clean
-    against ``HEAD`` and the dirty-tree guard cannot be what defers: only the
-    import proof, which reaches every module and not just the entry point, can.
+    The module is committed, moving HEAD and requiring an import proof before
+    replacement. The proof reaches every module, including this broken one.
     """
     root, package = _fresh_checkout(tmp_path)
     before = _stamp_of(root)
@@ -390,31 +376,34 @@ def test_a_module_that_raises_nameerror_at_import_defers_the_reload(
         _stop(process)
 
 
-def test_committing_the_edit_lets_the_reload_proceed(isolated_home, tmp_path) -> None:
-    """Cleaning the tree against ``HEAD`` releases the held reload.
-
-    Committing the edit leaves every byte where it was, so the code stamp the
-    reload was deferred at does not move: the gate must re-read the tree rather
-    than the stamp, or the reload would stay held forever.
-    """
+def test_committing_the_edit_reloads_the_committed_tree(
+    isolated_home, tmp_path
+) -> None:
+    """The commit moves the stamp and supplies the replacement's exact bytes."""
     root, package = _fresh_checkout(tmp_path)
     before = _stamp_of(root)
-    process, lines = _launch_producer(root, isolated_home)
+    process, _lines = _launch_producer(root, isolated_home)
     try:
         _await_seat(PROJECT, before)
 
         module = package / "crew" / "ticker.py"
         module.write_bytes(module.read_bytes() + CONTENT_EDIT_BYTES)
-
-        _read_until(lines, DEFERRED_MARKER, timeout=DEFER_WITHIN_SECONDS)
+        assert _stamp_of(root) == before
         assert not _reloaded_within(process, timeout=2.0), (
-            "a dirty tree must hold the reload before the commit"
+            "an uncommitted edit must leave the running image in place"
         )
 
         _commit(root, "land the edit")
-
+        after = _stamp_of(root)
+        assert after != before
         assert _reloaded_within(process, timeout=RELOAD_WITHIN_SECONDS), (
-            "a committed-clean tree must let the reload proceed"
+            "a new source commit must replace the running image"
+        )
+        assert after in _cmdline(process.pid)
+        images = list((isolated_home / "crew" / "reload-trees").glob(f"*/{after}"))
+        assert len(images) == 1, images
+        assert (images[0] / "reckon" / "crew" / "ticker.py").read_bytes() == (
+            module.read_bytes()
         )
     finally:
         _stop(process)
