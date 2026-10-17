@@ -1,0 +1,80 @@
+{
+  "artifacts": [
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/figure-review-pairs/report.md (reviewed deliverable, read-only; sha256 87e8e559cb68c57396cca695fccf244a98d2acb572df5ad2b3b99a8ac52134f4)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/figure-review-pairs/report.py (cited script, read-only; re-run)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T102035865544-figure-judgement-fig-19/stream.jsonl (cited stream, read-only; re-parsed for the PNG spot-check)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T100331138612-figure-judgement-fig-06/stream.jsonl (cited stream, read-only; re-parsed for the SVG spot-check)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T105944658515-review-of-the-five-pairs-are-judged-and-counted-46edf4787b3c/claims-rerun.log (this review's re-run: report.py output, byte-identical diff, sha256 match, stream spot-check, table sums; EXIT=0)"
+  ],
+  "claim_lines": [
+    "CLAIM 1: reproduced: re-ran `python3 report.py --out <scratch>/report-rerun.md` from the report's own directory; it printed 'PNG: 5 of 5 pairs discriminate' and png=yes for pairs 1-5, and the re-run output is byte-identical to report.md (sha256 87e8e559cb68c57396cca695fccf244a98d2acb572df5ad2b3b99a8ac52134f4); the report's stream-check table carries the same, every PNG pair's bad figure FAIL and good figure PASS with no control FAIL",
+    "CLAIM 2: reproduced: the same re-run printed 'SVG: 0 of 5 pairs discriminate' and svg=no for pairs 1-5; an independent parse of the raw streams showed fig-06 and fig-17 return 'NO IMAGE RECEIVED' as their first agent_message, which is neither PASS nor FAIL, matching the report's stated cause",
+    "CLAIM 3: reproduced: the same re-run printed 'tokens: input=3450573 output=37035', exactly the report's figures; summing the report's own stream-check per-id token columns gives 3450573 and 37035, and the manifest's artifacts headline names the same two totals"
+  ],
+  "claim_summary": {
+    "detail": "The report's own summary line - the '## Counts' block - reads 'PNG: 5 of 5 pairs discriminate.' and 'SVG: 0 of 5 pairs discriminate.', and its '## Tokens' block reads 'Total input tokens over the 25 runs: 3450573' and 'Total output tokens over the 25 runs: 37035'. The tables beneath them carry the same figures: the stream-check per-id table's input-token column sums to 3450573 and its output-token column to 37035, its PNG rows give every pair a FAIL bad figure and a PASS good figure with no control FAIL (5 of 5), and its SVG rows are all 'NO IMAGE RECEIVED' (0 of 5). The re-run reproduces every one of these figures. No discrepancy.",
+    "verdict": "agrees"
+  },
+  "claim_summary_line": "CLAIM_SUMMARY: agrees: the report's summary line reads 'PNG: 5 of 5 pairs discriminate' / 'SVG: 0 of 5 pairs discriminate' with token totals 'Total input tokens over the 25 runs: 3450573' and 'Total output tokens over the 25 runs: 37035'; the tables beneath it carry the same figures - the stream-check per-id table's token columns sum to 3450573 and 37035, its PNG rows give every pair a FAIL bad figure and PASS good figure with no control FAIL (5 of 5), and its SVG rows are all NO IMAGE RECEIVED (0 of 5) - and the re-run reproduced all of them",
+  "claim_verdicts": {
+    "CLAIM 1": {
+      "cites": "report.md '## Counts' line 11; report.py __main__ 'PNG: N of M pairs discriminate'; report.md per-pair tables and '## Stream check, every id' table",
+      "detail": "Re-ran `python3 report.py --out <scratch>/report-rerun.md` from the report's own directory; it printed 'PNG: 5 of 5 pairs discriminate' and png=yes for pairs 1-5. The re-run output is byte-identical to report.md (diff empty, both sha256 87e8e559...). Cross-checked against the report's own tables: the stream-check table carries every PNG figure's verdict word, with each pair's bad figure FAIL and good figure PASS and no control FAIL. Log: claims-rerun.log.",
+      "finding": "rank 1 (headline count): PNG - 5 of 5 pairs discriminate",
+      "verdict": "reproduced"
+    },
+    "CLAIM 2": {
+      "cites": "report.md '## Counts' line 13; report.py __main__ 'SVG: N of M pairs discriminate'; report.md 'Pairs that do not discriminate as SVG' list and per-pair tables",
+      "detail": "The same re-run printed 'SVG: 0 of 5 pairs discriminate' and svg=no for pairs 1-5. Report.md states the cause: every SVG figure's verdict is 'NO IMAGE RECEIVED', which is neither PASS nor FAIL. An independent parse of the raw streams confirmed fig-06 (pair 1 bad, svg) and fig-17 (pair 2 good, svg) return 'NO IMAGE RECEIVED' as the first line of their first agent_message. Log: claims-rerun.log.",
+      "finding": "rank 2 (headline count): SVG - 0 of 5 pairs discriminate",
+      "verdict": "reproduced"
+    },
+    "CLAIM 3": {
+      "cites": "report.md '## Tokens' lines 268 and 270; report.py totals print; report.md '## Stream check, every id' per-id token columns",
+      "detail": "The same re-run printed 'tokens: input=3450573 output=37035', exactly the report's figures. Independently, summing the input and output token columns of the report's own stream-check table gives 3450573 and 37035; the report's manifest records the same two figures as its artifacts headline. Log: claims-rerun.log.",
+      "finding": "rank 3 (token totals): 3450573 input and 37035 output tokens over the 25 runs",
+      "verdict": "reproduced"
+    }
+  },
+  "claims": [
+    {
+      "cites": "report.md '## Counts' (PNG line); report.py counts print; report.md per-pair and stream-check tables",
+      "finding": "PNG: 5 of 5 pairs discriminate",
+      "rank": 1,
+      "report_figure": "PNG 5 of 5 pairs discriminate",
+      "rerun_figure": "identical: 'PNG: 5 of 5 pairs discriminate', png=yes for pairs 1-5",
+      "verdict": "reproduced"
+    },
+    {
+      "cites": "report.md '## Counts' (SVG line); report.py counts print; report.md per-pair and stream-check tables",
+      "finding": "SVG: 0 of 5 pairs discriminate (every SVG verdict 'NO IMAGE RECEIVED')",
+      "rank": 2,
+      "report_figure": "SVG 0 of 5 pairs discriminate",
+      "rerun_figure": "identical: 'SVG: 0 of 5 pairs discriminate', svg=no for pairs 1-5",
+      "verdict": "reproduced"
+    },
+    {
+      "cites": "report.md '## Tokens'; report.py totals print; report.md stream-check per-id token columns",
+      "finding": "3450573 input and 37035 output tokens over the 25 runs",
+      "rank": 3,
+      "report_figure": "input=3450573 output=37035",
+      "rerun_figure": "identical: 'tokens: input=3450573 output=37035'",
+      "verdict": "reproduced"
+    }
+  ],
+  "completed_at": "2026-10-17T11:15:19.746Z",
+  "dimensions": null,
+  "dispatched_at": "2026-10-17T11:00:30Z",
+  "method": "The reviewed run is read-only: its manifest records commits: [46edf4787b3c4177719ab64d82c0b6749c56c0dd] (the base revision) and changed_paths confined to its report directory (report.md and report.py), with no gate suite, so reviewed_base_sha == reviewed_head_sha == 46edf4787b3c4177719ab64d82c0b6749c56c0dd and there is no diff to read. Its deliverable is report.md under the report directory. The report cites one script for every figure: `python3 report.py`, run beside the report. The three findings it ranks highest are the two headline pair counts and the token totals it records; each is re-derived by re-running report.py from the report's own directory, /home/ITER/mcintos/.config/reckon/crew/reports/reckon/figure-review-pairs, with --out into a scratch tree so the deliverable is not rewritten: `python3 report.py --out /tmp/reckon-crew-scratch/r-20261017T105944658515-review-of-the-five-pairs-are-judged-and-counted-46edf4787b3c/report-rerun.md`. The re-run's output is byte-identical to report.md (diff empty; both sha256 87e8e559cb68c57396cca695fccf244a98d2acb572df5ad2b3b99a8ac52134f4). The two counts and the token totals are also confirmed by an independent parse of the raw run streams, not via report.py: fig-19's first agent_message is FAIL and fig-06's and fig-17's are NO IMAGE RECEIVED. The report's own summary line (the Counts block, PNG 5 of 5 / SVG 0 of 5) and its token totals were read against the tables beneath them: the stream-check per-id table sums to the same 3450573 input and 37035 output tokens, and its per-id verdict words give every PNG pair a FAIL bad figure and a PASS good figure with no control FAIL (5 of 5) and every SVG figure NO IMAGE RECEIVED (0 of 5).",
+  "project": "reckon",
+  "report_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/figure-review-pairs/report.md",
+  "review_run_id": "r-20261017T105944658515-review-of-the-five-pairs-are-judged-and-counted-46edf4787b3c",
+  "reviewed_base_sha": "46edf4787b3c4177719ab64d82c0b6749c56c0dd",
+  "reviewed_head_sha": "46edf4787b3c4177719ab64d82c0b6749c56c0dd",
+  "reviewed_run_id": "r-20261017T103058161451-the-five-pairs-are-judged-and-counted",
+  "rubric": "claims",
+  "status": "parsed",
+  "suite_delta_fields_omitted": "added_failure_count and added_failure_ids are intentionally absent: the reviewed run ran no gate suite (this review adds none), and the six landed dimensions are not scored.",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T11:10:00+00:00"
+}
