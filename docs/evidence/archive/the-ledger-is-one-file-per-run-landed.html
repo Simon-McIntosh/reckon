@@ -965,6 +965,11 @@ EXIT=1</code></pre>
       verification node.</p>
     </section>
 
-  </main>
+    <section id="s8-release-never-folds">
+    <h2>§8 — a release never folds the run files into the aggregate</h2>
+    <p>Run <code>r-20261017T133411217822</code> (commit <code>9158e655c</code>) changed <code>_record_release_on_ledger</code> in <code>reckon/crew/promotion_release.py</code>. A release whose run has no per-run file now updates only that run's record, and never writes <code>ledger.load()</code>'s union back as <code>crew.json</code>.</p><p>Gate: <code>tests/test_a_release_never_folds_run_files_into_the_aggregate.py</code>, 2 passed, EXIT=0. A release with a missing per-run file leaves a 10-row aggregate at 10, with the 50 per-run files unchanged. A release with a per-run file changes only that file. Negative control: at base the same release takes the aggregate from 10 rows to 60.</p><p>Merge population <code>r-20261017T134955678156</code>: 95 release and ledger test files, exclusive <code>all_debug</code> job 1288094. Base had 1,141 passed, the candidate 1,143, and 0 failing ids were added. The 2 failures at both revisions are pre-existing.</p><p>Merged as <code>eeecb0537</code>, the first landing through <code>reckon crew merge</code>. The worker found the mechanism of the second defect: <code>_commit_landing_writes</code> runs a bare <code>git commit</code>, so an already-staged deletion rides into the next promotion. It could not find what staged fig-09's deletion. Both move to §10.</p>
+  </section>
+
+</main>
 </body>
 </html>
