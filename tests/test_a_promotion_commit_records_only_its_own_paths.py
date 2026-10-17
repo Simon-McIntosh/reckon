@@ -5,12 +5,7 @@ from pathlib import Path
 from reckon import ledger
 from tests import test_crew_promotion as promotion_tests
 from tests.helpers.git import git
-from tests.test_crew_promotion import (
-    PLAN,
-    PROJECT,
-    _promote,
-    _promotion_commit,
-)
+from tests.test_crew_promotion import PLAN, PROJECT, _promote, _promotion_commit
 
 repository = promotion_tests.repository
 
