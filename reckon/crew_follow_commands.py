@@ -366,11 +366,7 @@ class _FollowerReloader:
         current_head = (
             checkout_trust.committed_head(self.source_root) if committed_image else None
         )
-        current_stamp = (
-            current_head
-            if current_head
-            else runs.follower_code_stamp()
-        )
+        current_stamp = current_head or runs.follower_code_stamp()
         if current_stamp == self.code_stamp:
             # No code has moved, so there is nothing to reload onto: a tree left
             # dirty without a stamp change is not a reload this arming owes.
