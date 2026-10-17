@@ -93,10 +93,10 @@ SMALL_NODE_RULE = (
     "  A node is small when its diff has at most 50 changed lines (added plus\n"
     "  deleted), or when it changes no product source or tests and has at most\n"
     "  300 changed lines. A small node writes one `landing:` line in its manifest,\n"
-    "  stating what changed and its measure's figure, and writes neither evidence\n"
-    "  prose nor a figure unless its done-when names that artifact; naming one\n"
-    "  does not permit the other. Any single data file above 300,000 bytes belongs\n"
-    "  in the run directory, not the repository.\n"
+    "  stating what changed and its measure's figure, and, beyond its landing\n"
+    "  fragment, writes no figure and no evidence prose unless its done-when names\n"
+    "  that artifact; naming one does not permit the other. Any single data file\n"
+    "  above 300,000 bytes belongs in the run directory, not the repository.\n"
 )
 
 # The rule withholds a figure unless the node's done-when names one, so the
@@ -106,14 +106,19 @@ SMALL_NODE_RULE = (
 # the artifact the rule keys on. The two clauses are emitted from one
 # classification, so the prompt never tells the same worker both to write a
 # figure and to withhold one, and each names the clause the other withholds so
-# a reader of either learns the whole rule.
+# a reader of either learns the whole rule. The withheld prose is the prose
+# OUTSIDE the landing fragment, because the landing contract asks the same
+# worker for the fragment as its evidence anchor; a clause that forbade the
+# fragment would contradict the clause it sits beside, and a reviewer reading
+# the ban alone once made a worker delete its own landing record.
 ARTIFACT_NAMED_CLAUSE = (
     "  Your done-when names an artifact, so this node may write that artifact. It\n"
-    "  permits no other figure and no evidence prose.\n"
+    "  permits no other figure and no evidence prose outside the landing fragment,\n"
+    "  which is always permitted.\n"
 )
 ARTIFACT_UNNAMED_CLAUSE = (
     "  Your done-when names no artifact, so this node writes no figure and no\n"
-    "  evidence prose.\n"
+    "  evidence prose outside the landing fragment, which is always permitted.\n"
 )
 
 # The words a done-when uses to name a figure artifact. A word-boundary match
@@ -128,9 +133,11 @@ def _artifact_allowance(done_when: str) -> str:
     """State the figure allowance this node's own done-when grants.
 
     A done-when naming a figure artifact permits that figure and still withholds
-    the evidence prose; one naming none withholds both. The node's done-when is
-    the only input, so the clause states the node's own condition rather than
-    asking the worker to resolve a conditional against material it was not given.
+    the evidence prose outside the landing fragment; one naming none withholds
+    both outside it. The landing fragment is always permitted. The node's
+    done-when is the only input, so the clause states the node's own condition
+    rather than asking the worker to resolve a conditional against material it
+    was not given.
     """
     if FIGURE_NAME_PATTERN.search(str(done_when or "")):
         return ARTIFACT_NAMED_CLAUSE

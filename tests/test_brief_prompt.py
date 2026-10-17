@@ -288,10 +288,10 @@ CONTRACT — LANDING YOUR RECORD
   A node is small when its diff has at most 50 changed lines (added plus
   deleted), or when it changes no product source or tests and has at most
   300 changed lines. A small node writes one `landing:` line in its manifest,
-  stating what changed and its measure's figure, and writes neither evidence
-  prose nor a figure unless its done-when names that artifact; naming one
-  does not permit the other. Any single data file above 300,000 bytes belongs
-  in the run directory, not the repository.
+  stating what changed and its measure's figure, and, beyond its landing
+  fragment, writes no figure and no evidence prose unless its done-when names
+  that artifact; naming one does not permit the other. Any single data file
+  above 300,000 bytes belongs in the run directory, not the repository.
   Every element id in the fragment begins with the node id, so sibling
   fragments composed into one record cannot claim the same anchor.
   Use a figure wherever a spatial, plotted or sequential relationship is clearer
@@ -301,7 +301,7 @@ CONTRACT — LANDING YOUR RECORD
   Do not edit the plan-version or plan-modified meta lines: every worker
   touching them makes every merge conflict there.
   Your done-when names no artifact, so this node writes no figure and no
-  evidence prose.
+  evidence prose outside the landing fragment, which is always permitted.
 
 
 CONTRACT — WHO CLOSES THE NODE
