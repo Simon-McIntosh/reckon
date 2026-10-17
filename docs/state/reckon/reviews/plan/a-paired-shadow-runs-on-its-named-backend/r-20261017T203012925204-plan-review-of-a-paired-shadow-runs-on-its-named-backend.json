@@ -1,0 +1,37 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T20:39:28.401Z",
+  "dispatched_at": "2026-10-17T20:31:04Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:465",
+      "id": "thin_wrapper-1",
+      "reason": "the plan should state the reason the wrap must sit at the shadow call site (putting D21 in `_effective_backend` or `resolve_role_override` would impose D21 on all six other callers, so the family is a call-site concern), because without it the next author \"simplifies\" the wrap into the resolver and changes the refusal identity of the budget-fallback and picker paths.",
+      "text": "the plan keeps D21 for an undefined `--pair-backend` by catching `_effective_backend`'s `CrewError` at the shadow call site, but `_effective_backend` (`reckon/crew/routing.py:126`) already raises a message that names the backend and lists the defined ones, and the plan does not say why that message cannot simply be carried (or D21 raised) by the shared resolver instead of a catch at this one caller",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7dca68ab246ee4a25dfbd4b356175b66c63670c0eac0c25f311cb02c106f9e63",
+  "plan_slug": "a-paired-shadow-runs-on-its-named-backend",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T203012925204-plan-review-of-a-paired-shadow-runs-on-its-named-backend",
+  "reviewed_blob_sha": "e7344ea4538e055682456cdbd385a61012178c30",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan creates no module; its edit is internal to the existing `_shadow_dispatch_config` (`reckon/crew/dispatch.py:465`), whose `(shadow_config, comparison)` interface is unchanged, so it adds no wrappers over the same machinery.",
+    "duplicate_owner": "pass \u2014 the candidate-vs-resolved equality guard has exactly one site, `reckon/crew/dispatch.py:475` (census over `reckon/` and `tests/` finds no second occurrence of the guard or of its message), and the plan rewrites that site rather than forking it; role-onto-named-backend resolution keeps its single owner, `reckon/crew/routing.py:195`, already the source for five other call sites (`reckon/crew/dispatch_plan.py:425`, `reckon/crew/dispatch_admission.py:409` and `:1515`, `reckon/crew/picker/snapshot.py:1030`, `reckon/crew/routing.py:373`).",
+    "interface_budget": "pass \u2014 public_definitions 1792, cli_options 362, mcp_views 34, refusal_families 23; the section adds no CLI option, no MCP view, no refusal family and no public definition. It reuses the existing D21 family and the existing `resolve_role_override`, and replaces D21's remedy text rather than adding a family, so the retire-or-merge rule binds nothing new; the plan's own text does name what it retires (the D21 mismatch case) and what remains (a candidate no layer defines).",
+    "reuse_search": "pass \u2014 the plan searched `reckon/crew/dispatch.py` and `reckon/crew/routing.py` and cites the mechanism it extends: `resolve_role_override` (`reckon/crew/routing.py:195`) and `_effective_backend` (`reckon/crew/routing.py:126`), the latter already imported into the dispatcher (`reckon/crew/dispatch.py:147`); the change adds no new resolver.",
+    "thin_wrapper": "a finding \u2014 the plan adds a D21 wrap over `_effective_backend`'s existing `CrewError` inside `_shadow_dispatch_config` without stating why that guard cannot live in the shared resolver."
+  },
+  "section_digests": {
+    "_document": "f129ef4dcd8b0ce5659d097557565b1f84167351faa1e0658618aa17e3be275a",
+    "s1": "59d37aa31565628fd698e072a6b996be3b6ea82920c04f9670b6735fed0e1c01"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T20:49:03.435258+00:00"
+}
