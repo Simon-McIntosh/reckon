@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log (its test_logs names gate-head.log only and no base arm was recorded), so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:268 _replacement_imports, called from _FollowerReloader.poll at line 350",
+    "reckon/checkout_trust.py:161 moved_checkout_is_trustworthy, reached from reckon/mcp.py:295"
+  ],
+  "completed_at": "2026-10-17T05:43:37.338Z",
+  "dispatched_at": "2026-10-17T05:37:13Z",
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "359",
+      "severity": "follow-on",
+      "text": "the recorded reload deferral is built as f\"the import probe timed out ({reason})\" while reason is itself ImportProbeTimedOut('the import probe timed out after 30 s'), so the watch record's reload_deferral.reason reads \"the import probe timed out (the import probe timed out after 30 s)\" -- a duplicated clause in the field a reader consumes, where the sibling branch at line 368 passes a phrase naming the condition and lets reason supply the detail."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "353",
+      "severity": "follow-on",
+      "text": "the timeout branch sets no once-per-contiguous-condition marker, unlike the dirty branch's dirty_deferral flag (line 344) and the failed-import branch's deferred_stamp (line 369); while the code stamp stays moved and the probe keeps running out of its bound under sustained load, the same deferral line is echoed on every poll past runs.FOLLOWER_FRESHNESS_SECONDS and each of those polls spends up to the full probe bound on a subprocess, so a slow node produces an unbounded stream of identical lines."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew_follow_commands.py:268 (_replacement_imports, reached from _FollowerReloader.poll) and reckon/checkout_trust.py:161 (moved_checkout_is_trustworthy, reached from reckon/mcp.py:295)",
+    "diff": "commit 4ee320b9f against c752ea8eb adds ImportProbeTimedOut at reckon/checkout_trust.py:49 and a TimeoutExpired clause at :138, a nine-line timeout branch at reckon/crew_follow_commands.py:353-364, a 121-line test file and a 23-line evidence fragment, and deletes one line.",
+    "done_when": "the done_when names tests/test_a_reload_probe_timeout_is_not_a_broken_image.py and asks for a moved stamp, a clean tree, a TimeoutExpired probe, a timeout-naming deferral line, a retry, and a second failed-import case that does not re-probe, all of which tests/test_a_reload_probe_timeout_is_not_a_broken_image.py:62-121 drives.",
+    "goal": "the goal is a reload probe that times out retried at the next poll and named a timeout rather than a broken image, and reckon/checkout_trust.py:138 returns ImportProbeTimedOut while reckon/crew_follow_commands.py:353-364 retries it, both landed at 4ee320b9f.",
+    "manifest": "read; it reports status complete, commit 4ee320b9f, the 25-passed head gate and the red negative control, and it declares no baseline_suite or after_suite key, so no base arm is recorded for the added-failure derivation.",
+    "write_paths": "the plan's write paths are reckon/crew_follow_commands.py, reckon/checkout_trust.py, reckon/crew/obligation_snapshot.py and the test file; the manifest declares those minus obligation_snapshot.py plus the fragment and figures directory, and every path in the diff is inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reload_probe_timeout_is_not_a_broken_image.py:91 asserts instance.deferred_stamp is None, which negative-control.log shows reddening (EXIT=1) when the declared mutation sets deferred_stamp on a timeout, so the assertion fails on the exact regression it guards.",
+    "evidence": "gate-head.log records 25 passed EXIT=0 at rev 4ee320b9fc52817769301e805b0ddb19b79b00af and negative-control.log records 1 failed EXIT=1 on the mutation, both under the reviewed run directory, so the done_when's measure is recorded rather than claimed.",
+    "fit": "reckon/checkout_trust.py:49 follows the module's long-docstring idiom and introduces no plan, version or ticket label, though reckon/crew_follow_commands.py:359 records a reason that repeats the timeout clause it interpolates.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:353 branches on checkout_trust.ImportProbeTimedOut, echoes \"the import probe timed out after 30 s\" instead of \"does not import\", and returns without setting deferred_stamp, so the next poll past the freshness window re-probes and reloads (tests/test_a_reload_probe_timeout_is_not_a_broken_image.py:74-96).",
+    "reuse": "searched reckon/ and reckon/crew/ for an owner of a probe-outcome type and for an existing str-subclass sentinel and found none; reckon/crew/serving_origin.py:69 carries a local timed_out flag on its own result tuple, but owns no shared contract that reckon_imports's tuple[bool, str] return could extend.",
+    "scope_discipline": "the four paths in git diff c752ea8eb..4ee320b9f -- reckon/checkout_trust.py, reckon/crew_follow_commands.py, tests/test_a_reload_probe_timeout_is_not_a_broken_image.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reload-probe-timeout-is-retried.html -- are each inside the manifest's declared write paths, and the declared figures directory is correctly left untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a reload probe that times out retried at the next poll and named a timeout rather than a broken image, and reckon/checkout_trust.py:138 returns ImportProbeTimedOut while reckon/crew_follow_commands.py:353-364 retries it, both landed at 4ee320b9f.\nVERDICT done_when: the done_when names tests/test_a_reload_probe_timeout_is_not_a_broken_image.py and asks for a moved stamp, a clean tree, a TimeoutExpired probe, a timeout-naming deferral line, a retry, and a second failed-import case that does not re-probe, all of which tests/test_a_reload_probe_timeout_is_not_a_broken_image.py:62-121 drives.\nVERDICT write_paths: the plan's write paths are reckon/crew_follow_commands.py, reckon/checkout_trust.py, reckon/crew/obligation_snapshot.py and the test file; the manifest declares those minus obligation_snapshot.py plus the fragment and figures directory, and every path in the diff is inside the declared set.\nVERDICT manifest: read; it reports status complete, commit 4ee320b9f, the 25-passed head gate and the red negative control, and it declares no baseline_suite or after_suite key, so no base arm is recorded for the added-failure derivation.\nVERDICT diff: commit 4ee320b9f against c752ea8eb adds ImportProbeTimedOut at reckon/checkout_trust.py:49 and a TimeoutExpired clause at :138, a nine-line timeout branch at reckon/crew_follow_commands.py:353-364, a 121-line test file and a 23-line evidence fragment, and deletes one line.\nCALL_SITES: reckon/crew_follow_commands.py:268 _replacement_imports, called from _FollowerReloader.poll at line 350, reckon/checkout_trust.py:161 moved_checkout_is_trustworthy, reached from reckon/mcp.py:295\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:353 branches on checkout_trust.ImportProbeTimedOut, echoes \"the import probe timed out after 30 s\" instead of \"does not import\", and returns without setting deferred_stamp, so the next poll past the freshness window re-probes and reloads (tests/test_a_reload_probe_timeout_is_not_a_broken_image.py:74-96).\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log records 25 passed EXIT=0 at rev 4ee320b9fc52817769301e805b0ddb19b79b00af and negative-control.log records 1 failed EXIT=1 on the mutation, both under the reviewed run directory, so the done_when's measure is recorded rather than claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four paths in git diff c752ea8eb..4ee320b9f -- reckon/checkout_trust.py, reckon/crew_follow_commands.py, tests/test_a_reload_probe_timeout_is_not_a_broken_image.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reload-probe-timeout-is-retried.html -- are each inside the manifest's declared write paths, and the declared figures directory is correctly left untouched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_reload_probe_timeout_is_not_a_broken_image.py:91 asserts instance.deferred_stamp is None, which negative-control.log shows reddening (EXIT=1) when the declared mutation sets deferred_stamp on a timeout, so the assertion fails on the exact regression it guards.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/checkout_trust.py:49 follows the module's long-docstring idiom and introduces no plan, version or ticket label, though reckon/crew_follow_commands.py:359 records a reason that repeats the timeout clause it interpolates.\nSCORE reuse: 19\nJUSTIFICATION reuse: searched reckon/ and reckon/crew/ for an owner of a probe-outcome type and for an existing str-subclass sentinel and found none; reckon/crew/serving_origin.py:69 carries a local timed_out flag on its own result tuple, but owns no shared contract that reckon_imports's tuple[bool, str] return could extend.\nFINDING reckon/crew_follow_commands.py:359 follow-on: the recorded reload deferral is built as f\"the import probe timed out ({reason})\" while reason is itself ImportProbeTimedOut('the import probe timed out after 30 s'), so the watch record's reload_deferral.reason reads \"the import probe timed out (the import probe timed out after 30 s)\" -- a duplicated clause in the field a reader consumes, where the sibling branch at line 368 passes a phrase naming the condition and lets reason supply the detail.\nFINDING reckon/crew_follow_commands.py:353 follow-on: the timeout branch sets no once-per-contiguous-condition marker, unlike the dirty branch's dirty_deferral flag (line 344) and the failed-import branch's deferred_stamp (line 369); while the code stamp stays moved and the probe keeps running out of its bound under sustained load, the same deferral line is echoed on every poll past runs.FOLLOWER_FRESHNESS_SECONDS and each of those polls spends up to the full probe bound on a subprocess, so a slow node produces an unbounded stream of identical lines.\n",
+  "review_run_id": "r-20261017T053643444569-review-of-a-reload-probe-timeout-is-retried-4ee320b9fc52",
+  "reviewed_base_sha": "c752ea8ebc4f7e40cd2f59dc0cd2a7f469181f0b",
+  "reviewed_head_sha": "4ee320b9fc52817769301e805b0ddb19b79b00af",
+  "reviewed_run_id": "r-20261017T052406604938-a-reload-probe-timeout-is-retried",
+  "reviewer": "review-of-a-reload-probe-timeout-is-retried-4ee320b9fc52",
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T05:46:12.724138+00:00",
+  "total": 114
+}
