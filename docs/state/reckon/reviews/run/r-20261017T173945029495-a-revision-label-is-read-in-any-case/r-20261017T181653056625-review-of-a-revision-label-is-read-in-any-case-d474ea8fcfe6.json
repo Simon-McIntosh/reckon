@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "base arm = negative-control.log (91a8aea54, change absent): 6 red ids; head arm = head-gate.log (d474ea8fc): 0 failures; added = head - base = 0, so the reviewed change introduced no failing test",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:716",
+    "reckon/crew/review.py:3632"
+  ],
+  "completed_at": "2026-10-17T18:28:36.321Z",
+  "dispatched_at": "2026-10-17T18:17:30Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/a-revision-label-is-read-in-any-case.html",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment carries Cause, Fix, Sibling reader, New case and Measure prose sections where the node's own contract states that a node whose done-when names no artifact writes no evidence prose; the anchor is required and in scope, so this is how much the fragment carries rather than whether it exists."
+    },
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/a-revision-label-is-read-in-any-case.html",
+      "line": "71",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when requires a zero ruff delta on the changed files but no ruff log is recorded under the run directory, so the delta-zero claim (one pre-existing SIM102 in reports.py, nothing new) is unverifiable from the stored evidence."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read change by change against 91a8aea54; 58efccfe8 adds re.IGNORECASE to the pattern at reckon/crew/reports.py:1142 and adds the test file, and d474ea8fc points review.py's recorded_log_revision (reckon/crew/review.py:1720) at reports._GATE_LOG_REVISION and removes the duplicate _LOGGED_REVISION_RE, touching only declared paths.",
+    "done_when": "the done_when names tests/test_a_revision_label_is_read_in_any_case.py and requires logs under the run directory ending in EXIT= plus a ruff delta of zero on the changed files; head-gate.log records \"9 passed\" EXIT=0 and negative-control.log records \"6 failed, 3 passed\" EXIT=1, but no ruff log is recorded, so that clause rests on the fragment's prose alone.",
+    "goal": "the goal is to make the gate-log audit read a first-line revision label in any case while still requiring the label; reckon/crew/reports.py:1142 now compiles _GATE_LOG_REVISION with re.IGNORECASE while the rev-or-revision label stays required, so REV=, Revision: and rev= each name the sha and a bare hex run still names none.",
+    "manifest": "read; it states status complete, both shas, \"head gate 9 passed / EXIT=0, base-tree control 6 failed / 3 passed / EXIT=1\", and a changed_paths set that matches the diff with nothing outside it.",
+    "write_paths": "the source manifest declares reckon/crew/reports.py, the new test, the fragment under docs/evidence/fragments/the-suite-is-green-at-head/ and its figure dir, with reckon/crew/review.py added by the resume advice; all five paths in the two landed changes are inside that set."
+  },
+  "justifications": {
+    "durability": "the negative-control log shows tests/test_a_revision_label_is_read_in_any_case.py reddening to \"None == sha\" for the annotation case and reporting a revision finding for the audit case when the base tree's case-sensitive readers are restored, so the added assertions name the regression the change repairs, though the rev= audit and both tree-path cases pass at base too and do not by themselves guard the change.",
+    "evidence": "tests/test_a_revision_label_is_read_in_any_case.py is the named gate and the run's head-gate.log records \"9 passed\" EXIT=0 against the base-tree negative control's \"6 failed, 3 passed\" EXIT=1, but the done-when's ruff clause has no log behind it.",
+    "fit": "the change follows the surrounding idiom of one compiled pattern documented by a mechanism comment (reckon/crew/reports.py:1138) and a lazy import with its cycle reason (reckon/crew/review.py:1723), and adds no name the naming rules forbid.",
+    "goal_fidelity": "reckon/crew/reports.py:1142 compiles _GATE_LOG_REVISION with re.IGNORECASE while the label stays required, and reckon/crew/review.py:1720 reads that one pattern, so the audit and the sibling reader both reach REV=, Revision: and rev= as written.",
+    "reuse": "reckon/crew/reports.py:1142 already owns the gate-log revision pattern, the change extends that owner with re.IGNORECASE, and review.py's recorded_log_revision consumes it while deleting review.py's own _LOGGED_REVISION_RE, so no capability is forked and the duplicate pattern is retired.",
+    "scope_discipline": "every path in the two landed changes (reckon/crew/reports.py, reckon/crew/review.py, the test, the fragment) is inside the declared write set, the review.py addition being authorised by the resume advice, but the fragment at docs/evidence/fragments/the-suite-is-green-at-head/a-revision-label-is-read-in-any-case.html:21 carries evidence prose where the node contract says a node whose done-when names no artifact writes none."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 91a8aea54aca17e98ce06aa7d3012bfe361105ef\nreviewed_head_sha: d474ea8fcfe67d286265f8ac113b1e8b9344e0d2\n\nVERDICT goal: the goal is to make the gate-log audit read a first-line revision label in any case while still requiring the label; reckon/crew/reports.py:1142 now compiles _GATE_LOG_REVISION with re.IGNORECASE while the rev-or-revision label stays required, so REV=, Revision: and rev= each name the sha and a bare hex run still names none.\nVERDICT done_when: the done_when names tests/test_a_revision_label_is_read_in_any_case.py and requires logs under the run directory ending in EXIT= plus a ruff delta of zero on the changed files; head-gate.log records \"9 passed\" EXIT=0 and negative-control.log records \"6 failed, 3 passed\" EXIT=1, but no ruff log is recorded, so that clause rests on the fragment's prose alone.\nVERDICT write_paths: the source manifest declares reckon/crew/reports.py, the new test, the fragment under docs/evidence/fragments/the-suite-is-green-at-head/ and its figure dir, with reckon/crew/review.py added by the resume advice; all five paths in the two landed changes are inside that set.\nVERDICT manifest: read; it states status complete, both shas, \"head gate 9 passed / EXIT=0, base-tree control 6 failed / 3 passed / EXIT=1\", and a changed_paths set that matches the diff with nothing outside it.\nVERDICT diff: read change by change against 91a8aea54; 58efccfe8 adds re.IGNORECASE to the pattern at reckon/crew/reports.py:1142 and adds the test file, and d474ea8fc points review.py's recorded_log_revision (reckon/crew/review.py:1720) at reports._GATE_LOG_REVISION and removes the duplicate _LOGGED_REVISION_RE, touching only declared paths.\nCALL_SITES: reckon/crew_run_commands.py:716, reckon/crew/review.py:3632\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:1142 compiles _GATE_LOG_REVISION with re.IGNORECASE while the label stays required, and reckon/crew/review.py:1720 reads that one pattern, so the audit and the sibling reader both reach REV=, Revision: and rev= as written.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_revision_label_is_read_in_any_case.py is the named gate and the run's head-gate.log records \"9 passed\" EXIT=0 against the base-tree negative control's \"6 failed, 3 passed\" EXIT=1, but the done-when's ruff clause has no log behind it.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the two landed changes (reckon/crew/reports.py, reckon/crew/review.py, the test, the fragment) is inside the declared write set, the review.py addition being authorised by the resume advice, but the fragment at docs/evidence/fragments/the-suite-is-green-at-head/a-revision-label-is-read-in-any-case.html:21 carries evidence prose where the node contract says a node whose done-when names no artifact writes none.\nSCORE durability: 19\nJUSTIFICATION durability: the negative-control log shows tests/test_a_revision_label_is_read_in_any_case.py reddening to \"None == sha\" for the annotation case and reporting a revision finding for the audit case when the base tree's case-sensitive readers are restored, so the added assertions name the regression the change repairs, though the rev= audit and both tree-path cases pass at base too and do not by themselves guard the change.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the surrounding idiom of one compiled pattern documented by a mechanism comment (reckon/crew/reports.py:1138) and a lazy import with its cycle reason (reckon/crew/review.py:1723), and adds no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/reports.py:1142 already owns the gate-log revision pattern, the change extends that owner with re.IGNORECASE, and review.py's recorded_log_revision consumes it while deleting review.py's own _LOGGED_REVISION_RE, so no capability is forked and the duplicate pattern is retired.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/a-revision-label-is-read-in-any-case.html:21 follow-on: the fragment carries Cause, Fix, Sibling reader, New case and Measure prose sections where the node's own contract states that a node whose done-when names no artifact writes no evidence prose; the anchor is required and in scope, so this is how much the fragment carries rather than whether it exists.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/a-revision-label-is-read-in-any-case.html:71 follow-on: the done-when requires a zero ruff delta on the changed files but no ruff log is recorded under the run directory, so the delta-zero claim (one pre-existing SIM102 in reports.py, nothing new) is unverifiable from the stored evidence.\n\nReviewed run: r-20261017T173945029495-a-revision-label-is-read-in-any-case\nReviewed head: d474ea8fcfe67d286265f8ac113b1e8b9344e0d2",
+  "review_run_id": "r-20261017T181653056625-review-of-a-revision-label-is-read-in-any-case-d474ea8fcfe6",
+  "reviewed_base_sha": "91a8aea54aca17e98ce06aa7d3012bfe361105ef",
+  "reviewed_head_sha": "d474ea8fcfe67d286265f8ac113b1e8b9344e0d2",
+  "reviewed_run_id": "r-20261017T173945029495-a-revision-label-is-read-in-any-case",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T18:24:49.822006+00:00",
+  "total": 112
+}
