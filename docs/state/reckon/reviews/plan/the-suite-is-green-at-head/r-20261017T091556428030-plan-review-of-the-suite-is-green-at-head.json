@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T09:25:52.133Z",
+  "dispatched_at": "2026-10-17T09:16:35Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:704",
+      "id": "reasoning-1",
+      "reason": "a node that takes the second option edits a shared helper whose documented contract is to keep the tool modules' references in step with the reloaded store, and breaks callers it has no reason to look at; the option should be dropped or scoped to the target test.",
+      "text": "the deliverable's alternative \"Or the reload restores the modules it replaced\", read against its write path `tests/mcp_family_reload.py`, would make `reload_mcp_family()` undo the reload it exists to perform; roughly two dozen test files call that helper from a fixture to re-point storage at a temporary project and then exercise the reloaded tool modules for the rest of the test (`tests/test_mcp_tools.py:88`, `tests/test_impl_is_computed.py:92`, `tests/test_mcp_store.py:52`), and restoring the replaced modules would hand them the pre-reload store and its class objects",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:704",
+      "id": "reasoning-2",
+      "reason": "the plan already records \"The node confirms the trigger\", and the one test that reaches the reload is unambiguous once the file is opened.",
+      "text": "\u00a718 says the reload is \"reached from `tests/test_a_lost_race_is_refused_not_raised.py`'s fixture\", but both `importlib.reload(_store)` and `reload_mcp_family()` sit in the module-level helper `_forced_interleaving` (`tests/test_a_lost_race_is_refused_not_raised.py:141-174`), reached from the test `test_edit_forced_to_lose_a_landing_race_is_refused_not_raised`, not from the `repository` fixture at line 97",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "452cedfb2b1f416b8ce4c0313c8156bd4bc688b48cb74cb9b0ccac444951aa94",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 362,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T091556428030-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "83ee92f6584963dfcf041d8dde3846cfdb3512e8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited file resolves (`tests/mcp_family_reload.py`, `tests/test_one_sprint_item_slug.py`, `tests/test_landing_patch_refuses_a_hiding_followup.py`, `tests/test_a_lost_race_is_refused_not_raised.py`), and \u00a718 carries no href to resolve.",
+    "done_when": "pass \u2014 \u00a718 declares two negative controls (the pair at the base revision failing, and a consumer holding a local copy still failing), and the base arm reproduces: `tests/test_a_lost_race_is_refused_not_raised.py` then `tests/test_one_sprint_item_slug.py` in one process at 1b0f495c4 gives 1 failed, 11 passed, failing exactly `test_consumers_share_the_one_reader` on the `mcp_discovery` assertion.",
+    "evidence_paths": "pass \u2014 the controls are logged under the run directory, the plan's own convention, and no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches the cited symbols, test ids or paths.",
+    "reasoning": "a finding \u2014 the deliverable's second offered mechanism, \"the reload restores the modules it replaced\", is pinned by \u00a718's own write paths to the shared helper and contradicts what that helper's other callers need; the first option is sound (verified: after `reload_mcp_family()` every consumer reads `reckon._store` / `sprint_item_slug`).",
+    "single_goal": "pass \u2014 the section carries one deliverable, that the shared-reader test survive a module reload; the two write paths serve that one goal.",
+    "wiring": "pass \u2014 \u00a718 is reached by the open followup f-tsigah-017-018, whose body names \u00a717 and \u00a718 and whose single-recommendation line follows the same first-section convention as f-tsigah-repair-wave-at-95ff28824 (recommends \u00a74, body covers \u00a74\u2013\u00a714)."
+  },
+  "section_digests": {
+    "_document": "c5589f33d71055954c154bf09a3d1d3e8043303a381898b34ae50840771fdfdc",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "f84dc4d4bef37307ff05d71bd4f7071e9208e789832e7cb00be82c37bcfde97e",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s17": "01fe3ab4eb2f9f616654a729cf8bef4dcf5b530d4d0c1be3bdfa73999d0ad263",
+    "s18": "2665420c6e7b1c319cacf942f90ef155854c40dc1d5b0d91cc2da339bf417f5e",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "072f7ace5c2d253a6d4972213a2093233d6f768bd4d1394f2b9eaf1471ff4119",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T09:29:07.525736+00:00"
+}
