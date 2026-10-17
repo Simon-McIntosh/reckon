@@ -27,7 +27,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import runs, watch_unit
+from reckon.crew import obligation_snapshot, runs, watch_unit
 from tests.helpers.git import git as _git
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -109,11 +109,25 @@ def _touch_stream(*, age_seconds: float) -> None:
     os.utime(path, (written, written))
 
 
-def _drive(repository: Path) -> subprocess.CompletedProcess[str]:
+def _write_session_host(config_home: Path, *, host_pid: int) -> None:
+    owner_pid = os.getpid()
+    start = obligation_snapshot.process_start_time(owner_pid)
+    assert start is not None
+    path = config_home / "crew" / "session-hosts" / f"{owner_pid}-{start}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"owner": {"pid": owner_pid, "start_time": start}, "pid": host_pid}),
+        encoding="utf-8",
+    )
+
+
+def _drive(
+    repository: Path, *, owner_pid: int = _ABSENT_HARNESS_PID
+) -> subprocess.CompletedProcess[str]:
     """Run the prompt hook as the harness does, against the temporary home."""
     environment = dict(os.environ)
     environment["PYTHONPATH"] = str(REPO_ROOT)
-    environment["CLAUDE_PID"] = str(_ABSENT_HARNESS_PID)
+    environment["CLAUDE_PID"] = str(owner_pid)
     payload = {
         "session_id": SESSION,
         "cwd": str(repository),
@@ -162,6 +176,37 @@ def test_a_missing_snapshot_beside_a_live_foreign_seat_names_the_host(
     assert FOLLOW_REMEDY in line, line
     assert "no producer" not in line, line
     assert "watch --ensure" not in line, line
+
+
+def test_a_missing_snapshot_names_its_live_session_host(
+    config_home: Path, repository: Path
+) -> None:
+    _register_the_session()
+    _write_seat(host=FOREIGN_HOST)
+    _touch_stream(age_seconds=0)
+    _write_session_host(config_home, host_pid=os.getpid())
+
+    line = _line(_drive(repository, owner_pid=os.getpid()))
+
+    assert FOREIGN_HOST in line, line
+    assert "session host" in line, line
+    assert "re-arms this session's follower with the session's next dispatch" in line, (
+        line
+    )
+    assert "reckon crew follow" not in line, line
+
+
+def test_a_missing_snapshot_ignores_a_dead_session_host(
+    config_home: Path, repository: Path
+) -> None:
+    _register_the_session()
+    _write_seat(host=FOREIGN_HOST)
+    _touch_stream(age_seconds=0)
+    _write_session_host(config_home, host_pid=_ABSENT_HARNESS_PID)
+
+    line = _line(_drive(repository, owner_pid=os.getpid()))
+
+    assert FOLLOW_REMEDY in line, line
 
 
 def test_a_missing_snapshot_with_no_seat_reads_no_producer(
