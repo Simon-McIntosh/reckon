@@ -533,19 +533,36 @@ def _release_after_promotion(
         return fallback
 
 
+def _ledger_owner_of_run_file(path: Path, run_id: str) -> tuple[str, Path | None]:
+    """The project and ledger root whose run path is ``path``.
+
+    A caller of :func:`_update_run_record` holds the run file's path but not the
+    pair ``ledger.write_run_file`` takes, so the pair is recovered here rather
+    than re-derived at each call site. The recovery is checked against the
+    ledger's own path resolution: a layout the ledger does not recognise is a
+    refusal rather than a write beside the run file.
+    """
+    project = path.parent.parent.name
+    if ledger.run_path(project, run_id, None) == path:
+        return project, None
+    state_dir = path.parent.parent.parent
+    if state_dir.name == "state" and state_dir.parent.name == "docs":
+        root = state_dir.parent.parent
+        if ledger.run_path(project, run_id, root) == path:
+            return project, root
+    raise ledger.LedgerError(f"cannot resolve the ledger root that owns {path}")
+
+
 def _update_run_record(
     path: Path, run_id: str, changes: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """Amend only this run's record through the canonical serialiser."""
+    """Amend only this run's record through the ledger's one run-file writer."""
     record = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(record, dict) or record.get("run_id") != run_id:
         raise ledger.LedgerError(f"run {run_id!r} does not match {path}")
     updated = {**record, **changes}
-    from reckon._store import write_atomically
-
-    write_atomically(
-        path, lambda stream: stream.write(ledger.serialize_run(updated)), mode=0o600
-    )
+    project, root = _ledger_owner_of_run_file(path, run_id)
+    ledger.write_run_file(project, updated, root, mode=0o600)
     return updated
 
 
