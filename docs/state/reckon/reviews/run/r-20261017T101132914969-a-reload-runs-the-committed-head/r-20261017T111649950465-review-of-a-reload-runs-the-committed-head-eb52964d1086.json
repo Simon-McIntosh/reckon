@@ -1,0 +1,246 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "assertion_analysis": {
+    "tests/test_a_reload_runs_the_committed_head.py": [
+      {
+        "lines": [
+          81,
+          100,
+          136,
+          152,
+          173
+        ],
+        "would_fail_if": "the reloader starts with a stamp other than the fixture repository first commit"
+      },
+      {
+        "lines": [
+          87,
+          103
+        ],
+        "would_fail_if": "a new source commit does not produce exactly one re-exec"
+      },
+      {
+        "lines": [
+          89
+        ],
+        "would_fail_if": "the re-exec imports directly from the editable source root"
+      },
+      {
+        "lines": [
+          90,
+          91
+        ],
+        "would_fail_if": "the extracted image contains the uncommitted value or lacks the second committed value"
+      },
+      {
+        "lines": [
+          92,
+          93,
+          94
+        ],
+        "would_fail_if": "the exec root omits the second commit or loses the original source root or image commit in its environment"
+      },
+      {
+        "lines": [
+          114,
+          115,
+          116
+        ],
+        "would_fail_if": "the restarted reloader does not retain the extracted root, original source root, and second image commit respectively"
+      },
+      {
+        "lines": [
+          126,
+          128,
+          129,
+          130
+        ],
+        "would_fail_if": "a third source commit does not trigger a second exec onto a distinct root holding that commit and its expected bytes; the source-root mutation log confirms line 128 becomes red"
+      },
+      {
+        "lines": [
+          144,
+          145,
+          146
+        ],
+        "would_fail_if": "a committed module that fails to import does not name the refusal and missing dependency, or is nevertheless executed"
+      },
+      {
+        "lines": [
+          165,
+          166,
+          167
+        ],
+        "would_fail_if": "an archive timeout is not reported as a materialization failure with a timeout reason or is nevertheless executed"
+      },
+      {
+        "lines": [
+          180,
+          182
+        ],
+        "would_fail_if": "each new commit fails to produce one exec or its extracted content is not that iteration expected literal"
+      },
+      {
+        "lines": [
+          188,
+          189,
+          190
+        ],
+        "would_fail_if": "retention does not delete only the oldest tree or does not print that deletion; these checks do not protect a tree still in use"
+      }
+    ],
+    "tests/test_a_reload_waits_for_a_clean_tree.py": [
+      {
+        "lines": [
+          333,
+          334,
+          391
+        ],
+        "would_fail_if": "a tracked uncommitted edit changes the source commit stamp or triggers a reload"
+      },
+      {
+        "lines": [
+          342,
+          343
+        ],
+        "would_fail_if": "the live producer emits either dirty-tree or other reload deferral while handling the uncommitted edit"
+      },
+      {
+        "lines": [
+          398,
+          402,
+          404
+        ],
+        "would_fail_if": "the commit leaves the stamp fixed, the re-exec command lacks its new commit, or it materializes zero or multiple roots for that commit"
+      },
+      {
+        "lines": [
+          405
+        ],
+        "would_fail_if": "the cache bytes differ from the same working file the fixture supplied; copying that working file rather than HEAD would remain green, so this assertion is not an independent provenance guard"
+      }
+    ],
+    "tests/test_stale_producer_warning_waits_for_its_reload.py": [
+      {
+        "lines": [
+          241,
+          242,
+          245
+        ],
+        "would_fail_if": "the follower, snapshot, or seat reader gives a stamp different from the Git first commit"
+      },
+      {
+        "lines": [
+          246,
+          247
+        ],
+        "would_fail_if": "a seat deliberately planted at the current commit is reported stale or emits the warning"
+      },
+      {
+        "lines": [
+          253,
+          254,
+          257
+        ],
+        "would_fail_if": "the follower, snapshot, or seat reader fails to observe the Git second commit"
+      },
+      {
+        "lines": [
+          256
+        ],
+        "would_fail_if": "the planted seat stamp changes when the source commit changes"
+      },
+      {
+        "lines": [
+          258,
+          259
+        ],
+        "would_fail_if": "a seat planted at the first commit is not classified stale or fails to emit a warning after the second commit"
+      }
+    ]
+  },
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:crew_follow",
+    "reckon/crew_follow_commands.py:crew_watch",
+    "reckon/crew/runs.py:_project_watch_claim",
+    "reckon/crew/runs.py:watch_producer_identity",
+    "reckon/crew/obligation_snapshot.py:freshness_reading",
+    "reckon/crew/follower_registration.py:follower_code_stamp"
+  ],
+  "completed_at": "2026-10-17T11:24:55Z",
+  "dispatched_at": "2026-10-17T11:17:52Z",
+  "findings": [
+    {
+      "file": "reckon/checkout_trust.py",
+      "line": "125",
+      "severity": "blocking",
+      "text": "blocking: Pruning removes every cache tree past the newest three without checking whether a live follower or producer still executes from it; a deferred or slow process can lose its import root, and later imports can fail while the process is meant to keep running."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "2829",
+      "severity": "follow-on",
+      "text": "follow-on: The producer seat records follower_code_stamp(), which now reads source HEAD rather than the carried image commit; a new commit between extraction and seat registration can label an older running image current and suppress the stale-producer warning until a later poll."
+    },
+    {
+      "file": "tests/test_a_reload_waits_for_a_clean_tree.py",
+      "line": "405",
+      "severity": "follow-on",
+      "text": "follow-on: The assertion compares cached ticker bytes with the working ticker file the fixture handed to the reload after committing it, so copying that working file would keep the assertion green; compare against git show HEAD or dirty the file again before checking cached bytes."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "The eight commits from 2f88401e22d5d3803ff519dd25733b0c91274a29 to eb52964d108699fd2892f5fcd70bee4982cdbdf7 add the cache materializer and source stamp, repair archive refusals, add and adjust tests, and finish by rewriting the producer tests across the declared eight files.",
+    "done_when": "The source done_when in prompt.txt:92 is exercised by tests/test_a_reload_runs_the_committed_head.py:78-190 and the rewritten producer tests, with final-head-stamp-gate-repaired.log recording 210 passed and base-dirty-reload.log recording the expected base refusal.",
+    "goal": "The source goal in prompt.txt:30 is implemented by reckon/crew_follow_commands.py:384-494, which extracts HEAD into a cache root and re-executes from that root while a dirty checkout is ignored.",
+    "manifest": "The source manifest.md lists eight commits, eight changed paths, the final 210-pass gate, a failing base control, a failing mutation control, and no baseline_suite arm.",
+    "write_paths": "The widened paths in manifest.md's orientation_write_paths contain all eight files in the base-to-head diff, including tests/test_a_reload_waits_for_a_clean_tree.py."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reload_runs_the_committed_head.py:90 fails if a dirty working tree is copied, and its line 128 failed under the logged source-root mutation, although tests/test_a_reload_waits_for_a_clean_tree.py:405 compares cached bytes with the same working file it supplied.",
+    "evidence": "final-head-stamp-gate-repaired.log:1 records revision eb52964d108699fd2892f5fcd70bee4982cdbdf7 and 210 passing tests, while base-dirty-reload.log records the prior refusal; manifest.md has no baseline_suite arm for an added-failure comparison.",
+    "fit": "reckon/checkout_trust.py:45-127 keeps Git and import checks in the existing trust owner and the changed names describe behavior without a plan label; ruff-final-delta.log reports no added lint or format findings.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:384-494 loads and executes a committed package, but reckon/checkout_trust.py:122-126 can delete a cache root still serving a live process.",
+    "reuse": "The capability search over reckon found no existing committed-package materializer, while reckon/checkout_trust.py:61-127 adds it beside the existing trust probe and reckon/crew/obligation_snapshot.py:423 routes stamp reading through that owner.",
+    "scope_discipline": "The eight changed files in the 2f88401e22d5d3803ff519dd25733b0c91274a29..eb52964d108699fd2892f5fcd70bee4982cdbdf7 diff all appear in manifest.md's widened orientation_write_paths and implement or test the reload and stamp behavior."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal in prompt.txt:30 is implemented by reckon/crew_follow_commands.py:384-494, which extracts HEAD into a cache root and re-executes from that root while a dirty checkout is ignored.\nVERDICT done_when: The source done_when in prompt.txt:92 is exercised by tests/test_a_reload_runs_the_committed_head.py:78-190 and the rewritten producer tests, with final-head-stamp-gate-repaired.log recording 210 passed and base-dirty-reload.log recording the expected base refusal.\nVERDICT write_paths: The widened paths in manifest.md's orientation_write_paths contain all eight files in the base-to-head diff, including tests/test_a_reload_waits_for_a_clean_tree.py.\nVERDICT manifest: The source manifest.md lists eight commits, eight changed paths, the final 210-pass gate, a failing base control, a failing mutation control, and no baseline_suite arm.\nVERDICT diff: The eight commits from 2f88401e22d5d3803ff519dd25733b0c91274a29 to eb52964d108699fd2892f5fcd70bee4982cdbdf7 add the cache materializer and source stamp, repair archive refusals, add and adjust tests, and finish by rewriting the producer tests across the declared eight files.\nCALL_SITES: reckon/crew_follow_commands.py:crew_follow, reckon/crew_follow_commands.py:crew_watch, reckon/crew/runs.py:_project_watch_claim, reckon/crew/runs.py:watch_producer_identity, reckon/crew/obligation_snapshot.py:freshness_reading, reckon/crew/follower_registration.py:follower_code_stamp\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:384-494 loads and executes a committed package, but reckon/checkout_trust.py:122-126 can delete a cache root still serving a live process.\nSCORE evidence: 17\nJUSTIFICATION evidence: final-head-stamp-gate-repaired.log:1 records revision eb52964d108699fd2892f5fcd70bee4982cdbdf7 and 210 passing tests, while base-dirty-reload.log records the prior refusal; manifest.md has no baseline_suite arm for an added-failure comparison.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The eight changed files in the 2f88401e22d5d3803ff519dd25733b0c91274a29..eb52964d108699fd2892f5fcd70bee4982cdbdf7 diff all appear in manifest.md's widened orientation_write_paths and implement or test the reload and stamp behavior.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_reload_runs_the_committed_head.py:90 fails if a dirty working tree is copied, and its line 128 failed under the logged source-root mutation, although tests/test_a_reload_waits_for_a_clean_tree.py:405 compares cached bytes with the same working file it supplied.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/checkout_trust.py:45-127 keeps Git and import checks in the existing trust owner and the changed names describe behavior without a plan label; ruff-final-delta.log reports no added lint or format findings.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search over reckon found no existing committed-package materializer, while reckon/checkout_trust.py:61-127 adds it beside the existing trust probe and reckon/crew/obligation_snapshot.py:423 routes stamp reading through that owner.\nFINDING reckon/checkout_trust.py:125 blocking: Pruning removes every cache tree past the newest three without checking whether a live follower or producer still executes from it; a deferred or slow process can lose its import root, and later imports can fail while the process is meant to keep running.\nFINDING reckon/crew/runs.py:2829 follow-on: The producer seat records follower_code_stamp(), which now reads source HEAD rather than the carried image commit; a new commit between extraction and seat registration can label an older running image current and suppress the stale-producer warning until a later poll.\nFINDING tests/test_a_reload_waits_for_a_clean_tree.py:405 follow-on: The assertion compares cached ticker bytes with the working ticker file the fixture handed to the reload after committing it, so copying that working file would keep the assertion green; compare against git show HEAD or dirty the file again before checking cached bytes.\n",
+  "review_run_id": "r-20261017T111649950465-review-of-a-reload-runs-the-committed-head-eb52964d1086",
+  "reviewed_base_sha": "2f88401e22d5d3803ff519dd25733b0c91274a29",
+  "reviewed_commits": [
+    "7628878d7bd14a902dbbe32338d2cad942d7daf1",
+    "a7fa37204fc18c54645dca5e8294e9a9227b4d82",
+    "77c0421be79246d22ca2f611ab3ca661ef748162",
+    "4bf4d1d7d2a2b7cbc35082860bf676ecfaef559b",
+    "7308514db18e51ff86e3859a5e999626dfdaa19c",
+    "0892dd22f3cfe70c2208d226c32de4f7fe0a9146",
+    "913f785a67ffe5a7e491b7ef9c0c615b360dd84a",
+    "eb52964d108699fd2892f5fcd70bee4982cdbdf7"
+  ],
+  "reviewed_head_sha": "eb52964d108699fd2892f5fcd70bee4982cdbdf7",
+  "reviewed_run_id": "r-20261017T101132914969-a-reload-runs-the-committed-head",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_gate_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T101132914969-a-reload-runs-the-committed-head/final-head-stamp-gate-repaired.log",
+  "source_manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T101132914969-a-reload-runs-the-committed-head/manifest.md",
+  "source_mutation_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T101132914969-a-reload-runs-the-committed-head/materialized-source-root-mutation-red.log",
+  "source_negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T101132914969-a-reload-runs-the-committed-head/base-dirty-reload.log",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T11:21:53.624611+00:00",
+  "total": 105
+}
