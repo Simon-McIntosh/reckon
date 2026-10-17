@@ -69,7 +69,15 @@ COMMITTED_TREE_RETENTION = 3
 # stand in for it, because this filesystem stamps a lease taken moments ago
 # and one released moments ago identically, and a released lease leaves the
 # same file behind as a held one.
-COMMITTED_TREE_PUBLISH_GRACE_SECONDS = 120.0
+#
+# The grace must cover a HEAD-churn window, not just the instant of the
+# rename: only ``materialize_committed_tree`` writes a tree's directory mtime,
+# through the ``os.utime(target)`` below, so during churn every follower that
+# materialises a head touches that head's tree and a tree published moments ago
+# can rank past the newest few. Measured on 2026-10-17: four commits in 137 s.
+# The grace is set above that window with margin, and stays well inside the
+# lease window so a genuinely idle tree is still reclaimed.
+COMMITTED_TREE_PUBLISH_GRACE_SECONDS = 300.0
 COMMITTED_TREE_LEASE_WINDOW_SECONDS = 600.0
 COMMITTED_TREE_LEASE_MARKER = ".lease"
 
@@ -139,6 +147,39 @@ def _prune_must_keep(entry: Path) -> bool:
         return age is not None and age < COMMITTED_TREE_PUBLISH_GRACE_SECONDS
     age = _marker_age_seconds(entry / ".complete")
     return age is not None and age < COMMITTED_TREE_PUBLISH_GRACE_SECONDS
+
+
+def _images_ranked_for_pruning(cache: Path) -> list[Path]:
+    """The published images, newest directory mtime first.
+
+    A peer prunes the same cache concurrently, so an image present in the
+    listing can be gone by the time its mtime is read. That is not an error:
+    the tree is no longer there to rank, and the prune of the tree now being
+    materialised does not depend on it, so it is skipped.
+    """
+    ranked: list[tuple[int, Path]] = []
+    for entry in cache.iterdir():
+        if not (entry / ".complete").is_file():
+            continue
+        try:
+            ranked.append((entry.stat().st_mtime_ns, entry))
+        except (FileNotFoundError, NotADirectoryError):
+            continue
+    ranked.sort(key=lambda item: item[0], reverse=True)
+    return [entry for _, entry in ranked]
+
+
+def _open_prune_lease(entry: Path) -> int | None:
+    """Open the lock a pruner takes on an image, or None if it has vanished.
+
+    The image can be removed by a peer pruner between the ranking and this
+    open. A tree a peer already removed counts as removed, so the caller is
+    told there is nothing left to lease rather than being raised at.
+    """
+    try:
+        return os.open(entry / ".in-use", os.O_CREAT | os.O_RDWR, 0o600)
+    except (FileNotFoundError, NotADirectoryError):
+        return None
 
 
 def committed_head(root: Path) -> str | None:
@@ -274,11 +315,7 @@ def materialize_committed_tree(
     pin = pin_materialized_tree(target)
     try:
         os.utime(target, None)
-        images = sorted(
-            (entry for entry in cache.iterdir() if (entry / ".complete").is_file()),
-            key=lambda entry: entry.stat().st_mtime_ns,
-            reverse=True,
-        )
+        images = _images_ranked_for_pruning(cache)
         removed = []
         kept = []
         for entry in images[COMMITTED_TREE_RETENTION:]:
@@ -290,14 +327,21 @@ def materialize_committed_tree(
             if _prune_must_keep(entry):
                 kept.append(entry)
                 continue
-            descriptor = os.open(entry / ".in-use", os.O_CREAT | os.O_RDWR, 0o600)
+            descriptor = _open_prune_lease(entry)
+            if descriptor is None:
+                removed.append(entry)
+                continue
             try:
                 try:
                     fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 except BlockingIOError:
                     kept.append(entry)
                     continue
-                shutil.rmtree(entry)
+                # A peer pruner can remove the same entry during this walk: the
+                # tree is gone either way, so it counts as removed and the
+                # reload of the tree being materialised is not aborted.
+                with contextlib.suppress(FileNotFoundError, NotADirectoryError):
+                    shutil.rmtree(entry)
                 removed.append(entry)
             finally:
                 os.close(descriptor)
