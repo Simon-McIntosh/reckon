@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T22:34:33.113Z",
+  "dispatched_at": "2026-10-17T22:25:26Z",
+  "findings": [
+    {
+      "anchor": "plan.html:69",
+      "id": "reasoning-1",
+      "reason": "the author already acted on this exact sentence once (adding the release and integrated-gate writers), and a reader relying on \"only\" would under-count who may change a committed run file.",
+      "text": "the preamble states a run file's \"content changes only by named writers: a release recording its receipt in that run file (\u00a71, \u00a78), the integrated-gate re-run's report under the locked integrated-gate-recording decision, and history-persists-as-detail-washes-out's rotation\", but \u00a79 landed `ledger.write_run_file` and routed `scripts/derive_run_figures.py`, `scripts/backfill_run_durations.py` (`ledger.write_run_file` callers at lines 82 and 239), `ledger.repair_completion` (`reckon/ledger.py:3684`) and `_keep_run_files_identical` (`reckon/ledger.py:1673`) through it, each amending a committed run file's content \u2014 so the exhaustive-sounding list omits writers the plan itself declares",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "59c74616c792ff6d4243717b687efbf6de556dbcd4f1b194cde849717dbf1bb6",
+  "plan_slug": "the-ledger-is-one-file-per-run",
+  "plan_version": 94,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T222450153503-plan-review-of-the-ledger-is-one-file-per-run",
+  "reviewed_blob_sha": "cf5c82c1dfe32be3300b241546e2d38047535a7c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_update_run_record` is at `reckon/crew/promotion_release.py:536` and still re-encodes through `ledger.serialize_run` plus `write_atomically(..., mode=0o600)` as \u00a712 states; `ledger.write_run_file` exists at `reckon/ledger.py:888`; the preamble's `run_store.DETAIL_FIELDS`, `_run_ledger_root` and `ledger.ledger_path` all resolve.",
+    "done_when": "pass \u2014 \u00a712's done-when is measurable (a spy on `ledger.write_run_file` observed called once) and declares a negative control that discriminates: the base tree carries `write_run_file` (post-\u00a79) but the release path does not call it, so the call-count assertion is red there and green at the head.",
+    "evidence_paths": "pass \u2014 \u00a712's gate log goes \"under the run directory\", a durable crew run path, not a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches \u00a712's symbol, test filename or comments.",
+    "reasoning": "a finding \u2014 \u00a712's own premise is verified and correct, but the `_document` preamble's exhaustive writer enumeration is now contradicted by the writers \u00a79's landing records.",
+    "single_goal": "pass \u2014 \u00a712 carries one deliverable (route `_update_run_record` through `ledger.write_run_file`), and its byte-identity clause measures that same goal rather than a second one.",
+    "wiring": "pass \u2014 \u00a712's build-order dependency on \u00a79 is satisfied (\u00a79 is declared `done` and merged at `3227be340`), the head's `plan-informs` targets (`history-persists-as-detail-washes-out`, `new-work-gets-a-new-worker`) and the single `g-tlofpr-9` gate all resolve, and no node declares a dependency it lacks."
+  },
+  "section_digests": {
+    "_document": "2a6e0815332fb9b0db3cefe175e8f13d1651d3cc0333a98f00cfca3d97f15b9f",
+    "s1": "457845e844fa9bec63333cc35d867a85aa18bde3b16278a87a8dd315cae98e60",
+    "s10": "bb67efcd6925d252bcc8cb72c7dc1a1b4ba3ec37787e039f9cc41f132c5f74ab",
+    "s11": "f27022c48b024740101b28c18a498a63e1cda3fc980d3c0a21ac70177f196112",
+    "s12": "74f3da974cc43398a6a98a8642686e7a356a6ba4ee4f30a2b584f2bc956405e3",
+    "s2": "f264807d1fd48d466dfe9f9126f75e341e735d9a86b54ba342cf0012dfcdddfc",
+    "s3": "922052455a1c2af498bccd801f0e6db8ab3616bba71d823efa03641ce2332fa7",
+    "s4": "2eb77001999bc36a32f304d3ff896caf2c803489ea790ad39bae324fd7f92a9e",
+    "s5": "60e425e1d2d0d1a1f973eb32c4d3e72fa080e1a616ff0f462d20aefbd1fc522d",
+    "s6": "a344122c7f73694668e843366730c1d1cc881b97ba06225f376f01012af5936b",
+    "s7": "6128dbd3b5deb9351318b08d168c55ae2e7290f079a109ee1241b2fb4a938b62",
+    "s8": "cdd8d6e0e9a435ddff21dfe693ae91d81f505e26f71b44f8cda7483ab8e7322f",
+    "s9": "219f4b589a8e402682cc7da07cc89dbdad4db3ed8d1db0d80356cbbce2685bfe"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T22:41:10.034709+00:00"
+}
