@@ -16,6 +16,16 @@ rows, so the hold transition it records cannot carry them in.
 Every case drives a throwaway project under ``tmp_path`` whose aggregate holds
 ten rows and whose ``runs/`` holds fifty files, so the two sources disagree by
 a known count before the write under test runs.
+
+Five further cases drive one production writer each over that project: the idle
+session-member reap, the disposable-identity retirement, the gate re-run record,
+and the figure and duration backfills. Each writer reads the aggregate's own
+rows and leaves the fifty files standing, and each case asserts that. Against
+the base tree, with no guard, all nine cases fail — the writer cases because
+each writer folds the fifty rows into the aggregate, which is the defect
+reproduced through the production path rather than asserted. With the guard
+present and the writers unrepaired they fail the other way, each writer refused.
+The cases hold the guard and the repairs together; neither half is green alone.
 """
 
 from __future__ import annotations
