@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 3,
+  "added_failure_ids": [
+    "tests/test_crew_obligations.py::test_a_review_from_another_session_for_the_current_head_suppresses_missing",
+    "tests/test_reflex_keys_on_reviewed_run_and_head.py::test_a_run_resumed_to_a_new_head_gets_one_review_and_a_second_sweep_none",
+    "tests/test_review_store_reads_and_fences_by_head.py::test_the_review_dispatch_grants_the_head_keyed_record_path"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T01:17:42.403Z",
+  "dispatched_at": "2026-10-17T01:06:00Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T003355848964-review-record-delivery-population-at-merge/manifest.md",
+      "line": "26",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm's single failure (tests/test_a_terminal_worker_exits_within_its_grace.py::test_a_complete_manifest_ends_the_worker_within_the_grace) failed at base and not at the candidate, and was not re-run alone because the brief asked alone counts only for candidate-only ids, so whether it is a flaky load failure or a difference the candidate introduces is left unmeasured; it does not affect the added-failure direction the goal asks for, but a later reader should not read its disappearance as a fix."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the reviewed node commits nothing, so there is no diff; its worktree HEAD is ae915f67c and git status --porcelain is empty, so nothing under reckon/ or tests/ changed and the only durable artifacts are the report and its run-directory logs.",
+    "done_when": "the done_when asks for two logs from one exclusive all_debug job that name their revision, host and literal command, prove reckon.__file__ under that arm's own checkout, carry pytest's summary for the 198-file list, and end EXIT=, plus five alone runs per revision per added id; population-base.log and population-candidate.log carry those headers (module.__file__ under /tmp/.../base and /tmp/.../candidate, head-at-tree ae915f67c and ab65dacd) and end EXIT=1, and population-alone.log records 5/5 at the candidate and 0/5 at base for each of the three ids.",
+    "goal": "the node goal is to measure the importer population of the run-directory review record delivery at base and at its merge candidate on an exclusive node; the source manifest's landing, tests and artifacts lines report exactly that measurement and name the three ids the candidate adds.",
+    "manifest": "read; it records both arm summaries with their EXIT codes and log paths, the three added ids each with a verdict, per-id failure_attribution to the merge candidate, the dropped base-arm file, and the two runtime deviations from the brief.",
+    "write_paths": "the dispatch granted /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-worker-cannot-write-your-home/review-record-delivery-population-at-merge; the manifest's changed_paths is report.md inside that directory, its arm logs and job script sit under its own run directory as the brief mandated, and the reviewed worktree is clean at ae915f67c with no path under reckon/ or tests/ changed."
+  },
+  "justifications": {
+    "durability": "the reviewed node adds no code and so adds no regression assertion; its evidence is durable on GPFS, but the base arm's lone failure was never re-run alone (population-alone.log covers candidate-only ids only), so its stability is unmeasured.",
+    "evidence": "the two arm logs at population-base.log and population-candidate.log carry the required revision, host, module.__file__ and EXIT= headers, and population-alone.log gives 5/5 candidate against 0/5 base for each added id.",
+    "fit": "the artifacts are a report and a manifest that follow the dispatch manifest contract, and the node introduces no symbol, file or comment a naming rule forbids.",
+    "goal_fidelity": "the source manifest tests line reports \"3 failed, 1824 passed\" at ab65dacd against \"1 failed, 1819 passed\" at ae915f67c and names the three added ids, which is the attribution the goal states.",
+    "reuse": "the reviewed node adds no definition that could fork an owner, and the durable record it feeds is reduced by the existing owner reckon/crew/review.py:2100 added_failures_from_gate_logs rather than by a parallel implementation.",
+    "scope_discipline": "the manifest's changed_paths is the single report.md under the one granted path, and the reviewed worktree reports clean at ae915f67c with no commit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to measure the importer population of the run-directory review record delivery at base and at its merge candidate on an exclusive node; the source manifest's landing, tests and artifacts lines report exactly that measurement and name the three ids the candidate adds.\nVERDICT done_when: the done_when asks for two logs from one exclusive all_debug job that name their revision, host and literal command, prove reckon.__file__ under that arm's own checkout, carry pytest's summary for the 198-file list, and end EXIT=, plus five alone runs per revision per added id; population-base.log and population-candidate.log carry those headers (module.__file__ under /tmp/.../base and /tmp/.../candidate, head-at-tree ae915f67c and ab65dacd) and end EXIT=1, and population-alone.log records 5/5 at the candidate and 0/5 at base for each of the three ids.\nVERDICT write_paths: the dispatch granted /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-worker-cannot-write-your-home/review-record-delivery-population-at-merge; the manifest's changed_paths is report.md inside that directory, its arm logs and job script sit under its own run directory as the brief mandated, and the reviewed worktree is clean at ae915f67c with no path under reckon/ or tests/ changed.\nVERDICT manifest: read; it records both arm summaries with their EXIT codes and log paths, the three added ids each with a verdict, per-id failure_attribution to the merge candidate, the dropped base-arm file, and the two runtime deviations from the brief.\nVERDICT diff: the reviewed node commits nothing, so there is no diff; its worktree HEAD is ae915f67c and git status --porcelain is empty, so nothing under reckon/ or tests/ changed and the only durable artifacts are the report and its run-directory logs.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the source manifest tests line reports \"3 failed, 1824 passed\" at ab65dacd against \"1 failed, 1819 passed\" at ae915f67c and names the three added ids, which is the attribution the goal states.\nSCORE evidence: 18\nJUSTIFICATION evidence: the two arm logs at population-base.log and population-candidate.log carry the required revision, host, module.__file__ and EXIT= headers, and population-alone.log gives 5/5 candidate against 0/5 base for each added id.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the manifest's changed_paths is the single report.md under the one granted path, and the reviewed worktree reports clean at ae915f67c with no commit.\nSCORE durability: 16\nJUSTIFICATION durability: the reviewed node adds no code and so adds no regression assertion; its evidence is durable on GPFS, but the base arm's lone failure was never re-run alone (population-alone.log covers candidate-only ids only), so its stability is unmeasured.\nSCORE fit: 18\nJUSTIFICATION fit: the artifacts are a report and a manifest that follow the dispatch manifest contract, and the node introduces no symbol, file or comment a naming rule forbids.\nSCORE reuse: 19\nJUSTIFICATION reuse: the reviewed node adds no definition that could fork an owner, and the durable record it feeds is reduced by the existing owner reckon/crew/review.py:2100 added_failures_from_gate_logs rather than by a parallel implementation.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T003355848964-review-record-delivery-population-at-merge/manifest.md:26 follow-on: the base arm's single failure (tests/test_a_terminal_worker_exits_within_its_grace.py::test_a_complete_manifest_ends_the_worker_within_the_grace) failed at base and not at the candidate, and was not re-run alone because the brief asked alone counts only for candidate-only ids, so whether it is a flaky load failure or a difference the candidate introduces is left unmeasured; it does not affect the added-failure direction the goal asks for, but a later reader should not read its disappearance as a fix.",
+  "review_run_id": "r-20261017T010521188410-review-of-review-record-delivery-population-at-merge-ae915f67ca7a",
+  "reviewed_base_sha": "ae915f67ca7a9d7a5a207744c2f467f3538603c9",
+  "reviewed_head_sha": "ae915f67ca7a9d7a5a207744c2f467f3538603c9",
+  "reviewed_run_id": "r-20261017T003355848964-review-record-delivery-population-at-merge",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T01:12:36.105408+00:00",
+  "total": 109
+}
