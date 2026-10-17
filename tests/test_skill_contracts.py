@@ -1187,6 +1187,13 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "list"): set(),
         ("crew", "member", "add"): set(),
         ("crew", "member", "list"): {"--project"},
+        ("crew", "merge"): {
+            "--project",
+            "--head",
+            "--message",
+            "--body",
+            "--candidate",
+        },
         ("crew", "observe"): {"--run"},
         ("crew", "pick"): {
             "--project",

@@ -261,6 +261,16 @@ plan other than the one you are landing against. Do not edit the plan-version or
 plan-modified meta lines: every worker touching them makes every merge conflict
 there. Dispatching an unrelated ready node is outside this freeze.
 
+Land the reviewed head with `reckon crew merge --project <project> --head <sha>
+--message <subject> --body <text>`. It builds the merge out of objects with
+`merge-tree` and `commit-tree` and moves the branch with a fast-forward: it
+touches neither the index nor the working tree, so a concurrent promotion that
+wins the `index.lock` race cannot leave the merged files staged for a hand
+repair. A held lock or a moved HEAD is retried, and a conflicting head is
+refused with nothing written. Pass `--candidate <sha>` to land a merge commit
+already built, whose parents must be the pinned HEAD and the head, so the tree a
+measured population reviewed is the tree that lands.
+
 The landing beat ticks a section rather than collapsing it, and leaves the
 section body as authored: the tick records completion without moving the design
 out of the page. It is three `edit_plan` ops, not a hand edit:
