@@ -1,0 +1,61 @@
+{
+  "absent": [
+    "goal_fidelity",
+    "evidence",
+    "scope_discipline",
+    "durability",
+    "fit",
+    "reuse"
+  ],
+  "absent_items": [
+    "goal",
+    "done_when",
+    "write_paths",
+    "manifest",
+    "diff",
+    "call_sites"
+  ],
+  "claim_summary": {
+    "detail": "the report's verdict line (the retention prune in reckon/checkout_trust.py::materialize_committed_tree, shutil.rmtree(entry) at line 186, run by the imas-codex session's crew follow at 2026-10-17T17:10:12.71Z; the deferral was the losing side of the same race, reckon-cd's crew follow, 2 ms later) matches its Timeline table: git -C ~/Code/reckon log confirms 752681b41 at 19:07:54+02:00 (17:07:54Z), bd55dcaf3 17:08:55Z, 613aaa16a 17:09:08Z, 9e85e6584 17:10:11Z (four commits in 137 s), and the table's 17:10:12.7 removal+deferral matches the .711/.714Z stamps.",
+    "verdict": "agrees"
+  },
+  "claims": [
+    {
+      "detail": "re-ran the report's removal-line scan: grep -o \"removed old reload tree.*752681b41497efa1c5b45616ea90b86308ce0500\" over ~/.claude/projects/-home-ITER-mcintos-Code-imas-codex/4f554c2d-3a28-4c55-8645-67a1e8a30dea.jsonl returns the exact line \"removed old reload tree /home/ITER/mcintos/.config/reckon/crew/reload-trees/4695b8e9e67d6131/752681b41497efa1c5b45616ea90b86308ce0500\" (5 records; record timestamps 2026-10-17T17:10:12.711Z and .712Z, matching the report's 17:10:12.71Z), and the same record carries the paired \"kept reload tree .../bd55dcaf...: live image lease\" line; the base file reckon/checkout_trust.py at d1c4bfdc has shutil.rmtree(entry) at line 186 inside the prune loop lines 173-189, with COMMITTED_TREE_RETENTION = 3 at line 48.",
+      "rank": "1",
+      "verdict": "reproduced"
+    },
+    {
+      "detail": "re-ran the report's deferral scan: grep -o \"deferred its reload.*752681b41497efa1c5b45616ea90b86308ce0500\" over ~/.claude/projects/-home-ITER-mcintos-Code-reckon/67139f13-acc5-4116-8e4d-ecb63acaac2c.jsonl returns \"[Errno 2] No such file or directory: PosixPath('/home/ITER/mcintos/.config/reckon/crew/reload-trees/4695b8e9e67d6131/752681b41497efa1c5b45616ea90b86308ce0500')\", and the same transcript carries the record timestamp 2026-10-17T17:10:12.714Z, exactly 2-3 ms after the removal stamps .711/.712Z, matching the report's 17:10:12.714Z.",
+      "rank": "2",
+      "verdict": "reproduced"
+    },
+    {
+      "detail": "re-ran the positive-control scan: sed -n '2264p' of ~/.config/reckon/logs/watch-reckon-watch-nova.service.log returns \"reckon crew watch removed old reload tree /home/ITER/mcintos/.config/reckon/crew/reload-trees/4695b8e9e67d6131/3124cc45ad14f33160dbb27d79ce8cb38d315595\" with its neighbours timestamped local 19:08:06 (= 17:08:06Z), matching the report's independent removal; the reckon producer's 4bbe20ecf... removal (line 3231) and the imas-efit 82b259b8... removal (line 7806) with imas-ambix's deferral naming it (line 14287) are present too.",
+      "rank": "3",
+      "verdict": "reproduced"
+    }
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-17T19:30:48Z",
+  "findings": [],
+  "item_aggregate": null,
+  "item_verdicts": {},
+  "justifications": {},
+  "node": {
+    "id": "review-of-name-what-removed-the-newest-reload-tree-d1c4bfdc83f6"
+  },
+  "project": "reckon",
+  "raw_text": "CLAIM 1: reproduced: re-ran the report's removal-line scan: grep -o \"removed old reload tree.*752681b41497efa1c5b45616ea90b86308ce0500\" over ~/.claude/projects/-home-ITER-mcintos-Code-imas-codex/4f554c2d-3a28-4c55-8645-67a1e8a30dea.jsonl returns the exact line \"removed old reload tree /home/ITER/mcintos/.config/reckon/crew/reload-trees/4695b8e9e67d6131/752681b41497efa1c5b45616ea90b86308ce0500\" (5 records; record timestamps 2026-10-17T17:10:12.711Z and .712Z, matching the report's 17:10:12.71Z), and the same record carries the paired \"kept reload tree .../bd55dcaf...: live image lease\" line; the base file reckon/checkout_trust.py at d1c4bfdc has shutil.rmtree(entry) at line 186 inside the prune loop lines 173-189, with COMMITTED_TREE_RETENTION = 3 at line 48.\nCLAIM 2: reproduced: re-ran the report's deferral scan: grep -o \"deferred its reload.*752681b41497efa1c5b45616ea90b86308ce0500\" over ~/.claude/projects/-home-ITER-mcintos-Code-reckon/67139f13-acc5-4116-8e4d-ecb63acaac2c.jsonl returns \"[Errno 2] No such file or directory: PosixPath('/home/ITER/mcintos/.config/reckon/crew/reload-trees/4695b8e9e67d6131/752681b41497efa1c5b45616ea90b86308ce0500')\", and the same transcript carries the record timestamp 2026-10-17T17:10:12.714Z, exactly 2-3 ms after the removal stamps .711/.712Z, matching the report's 17:10:12.714Z.\nCLAIM 3: reproduced: re-ran the positive-control scan: sed -n '2264p' of ~/.config/reckon/logs/watch-reckon-watch-nova.service.log returns \"reckon crew watch removed old reload tree /home/ITER/mcintos/.config/reckon/crew/reload-trees/4695b8e9e67d6131/3124cc45ad14f33160dbb27d79ce8cb38d315595\" with its neighbours timestamped local 19:08:06 (= 17:08:06Z), matching the report's independent removal; the reckon producer's 4bbe20ecf... removal (line 3231) and the imas-efit 82b259b8... removal (line 7806) with imas-ambix's deferral naming it (line 14287) are present too.\nCLAIM_SUMMARY: agrees: the report's verdict line (the retention prune in reckon/checkout_trust.py::materialize_committed_tree, shutil.rmtree(entry) at line 186, run by the imas-codex session's crew follow at 2026-10-17T17:10:12.71Z; the deferral was the losing side of the same race, reckon-cd's crew follow, 2 ms later) matches its Timeline table: git -C ~/Code/reckon log confirms 752681b41 at 19:07:54+02:00 (17:07:54Z), bd55dcaf3 17:08:55Z, 613aaa16a 17:09:08Z, 9e85e6584 17:10:11Z (four commits in 137 s), and the table's 17:10:12.7 removal+deferral matches the .711/.714Z stamps.\n",
+  "review_run_id": "legacy-2762527b223a",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "d1c4bfdc83f6fbaa798a97fe17308e31bbd2d822",
+  "reviewed_head_sha": "d1c4bfdc83f6fbaa798a97fe17308e31bbd2d822",
+  "reviewed_run_id": "r-20261017T192958783166-name-what-removed-the-newest-reload-tree",
+  "rubric": "claims",
+  "scores": {},
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T20:31:01.399803+00:00",
+  "total": null
+}
