@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_crew_dispatch_arming.py::test_a_peer_sessions_follower_does_not_admit_this_dispatch",
+    "tests/test_scoring_dispatches_its_review.py::test_an_unattached_session_refuses_the_automatic_dispatch_too"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": "e9ad3d3547cbaa9258eb8c9dcdd86f9e08619bc6",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T22:19:02.848Z",
+  "dispatched_at": "2026-10-17T22:13:26Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T212029224967-reload-tree-not-pruned-population-at-merge/derive_added_failures.py",
+      "line": "33",
+      "severity": "follow-on",
+      "text": "follow-on: the EXIT guard reads `not endswith(\"EXIT=0\") and \"EXIT=\" not in text`, true only when \"EXIT=\" appears nowhere, so an arm log that merely contains EXIT= passes without ending in it \u2014 weaker than its \"does not end in EXIT=\" message, though both real logs do end EXIT=1."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T212029224967-reload-tree-not-pruned-population-at-merge/arm-base.log",
+      "line": "8",
+      "severity": "follow-on",
+      "text": "follow-on: the arm log's literal command sits at non-blank head line 8, past `reckon crew check-manifest`'s 5-line command window, so the checker cannot read the command from the log; the node records this in population-report.md:140 and the command is in the manifest."
+    }
+  ],
+  "head_log_revision": "3ad5f681e55c23180fd4c2b0013b72d72a4e8250",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "no commits \u2014 manifest.md:7 records commits: none and the worktree is clean; the deliverable is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-monitor-shows-the-work-it-watches/reload-tree-not-pruned-population-at-merge/population-report.md.",
+    "done_when": "the FENCE-EVIDENCE requires two all_debug arm logs naming rev=/host/command, proving reckon.__file__ under each checkout, carrying the pytest summary and EXIT=, added ids derived by added_failures_from_gate_logs, and alone runs; arm-base.log carries all of these for 167 files and arm-candidate.log for 169.",
+    "goal": "brief.md:5 poses the node goal \u2014 measure the reload-tree and follower importer population at base and at the merge candidate on an exclusive node \u2014 and population-report.md:11 answers it.",
+    "manifest": "read; manifest.md:11 states both arms' pass/fail counts with log paths, the two added ids each with its alone counts and an also-at-base verdict, and status: complete.",
+    "write_paths": "the declared path is the report directory; the only deliverable there is population-report.md and every other write is a log under the run directory the fence grants, with no path under reckon/ or tests/ touched."
+  },
+  "justifications": {
+    "durability": "no test guards the report \u2014 derive_added_failures.py:50 embeds a probe self-check but nothing persists a regression guard, as the node's negative_control none states.",
+    "evidence": "arm-base.log:4 names host and line 6 the module under each checkout, arm-candidate.log:7 ends EXIT=1, and annotate_review_of_run re-derives added_failure_count=2 independently.",
+    "fit": "run-population-arms.sh and population-report.md carry no plan label, ticket number or version in any symbol, comment or path.",
+    "goal_fidelity": "population-report.md:11 answers the brief's question with both arms' counts and the added-id verdicts, run on exclusive all_debug job 1288371.",
+    "reuse": "derive_added_failures.py:12 imports added_failures_from_gate_logs and _PYTEST_SUMMARY_RE from reckon/crew/review.py rather than reimplementing the failing-id reader.",
+    "scope_discipline": "no path under reckon/ or tests/ changed (manifest.md:7, worktree clean); writes land in the declared report directory and the run-directory logs."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: brief.md:5 poses the node goal \u2014 measure the reload-tree and follower importer population at base and at the merge candidate on an exclusive node \u2014 and population-report.md:11 answers it.\nVERDICT done_when: the FENCE-EVIDENCE requires two all_debug arm logs naming rev=/host/command, proving reckon.__file__ under each checkout, carrying the pytest summary and EXIT=, added ids derived by added_failures_from_gate_logs, and alone runs; arm-base.log carries all of these for 167 files and arm-candidate.log for 169.\nVERDICT write_paths: the declared path is the report directory; the only deliverable there is population-report.md and every other write is a log under the run directory the fence grants, with no path under reckon/ or tests/ touched.\nVERDICT manifest: read; manifest.md:11 states both arms' pass/fail counts with log paths, the two added ids each with its alone counts and an also-at-base verdict, and status: complete.\nVERDICT diff: no commits \u2014 manifest.md:7 records commits: none and the worktree is clean; the deliverable is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-monitor-shows-the-work-it-watches/reload-tree-not-pruned-population-at-merge/population-report.md.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: population-report.md:11 answers the brief's question with both arms' counts and the added-id verdicts, run on exclusive all_debug job 1288371.\nSCORE evidence: 17\nJUSTIFICATION evidence: arm-base.log:4 names host and line 6 the module under each checkout, arm-candidate.log:7 ends EXIT=1, and annotate_review_of_run re-derives added_failure_count=2 independently.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: no path under reckon/ or tests/ changed (manifest.md:7, worktree clean); writes land in the declared report directory and the run-directory logs.\nSCORE durability: 11\nJUSTIFICATION durability: no test guards the report \u2014 derive_added_failures.py:50 embeds a probe self-check but nothing persists a regression guard, as the node's negative_control none states.\nSCORE fit: 18\nJUSTIFICATION fit: run-population-arms.sh and population-report.md carry no plan label, ticket number or version in any symbol, comment or path.\nSCORE reuse: 20\nJUSTIFICATION reuse: derive_added_failures.py:12 imports added_failures_from_gate_logs and _PYTEST_SUMMARY_RE from reckon/crew/review.py rather than reimplementing the failing-id reader.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T212029224967-reload-tree-not-pruned-population-at-merge/derive_added_failures.py:33 follow-on: the EXIT guard reads `not endswith(\"EXIT=0\") and \"EXIT=\" not in text`, true only when \"EXIT=\" appears nowhere, so an arm log that merely contains EXIT= passes without ending in it \u2014 weaker than its \"does not end in EXIT=\" message, though both real logs do end EXIT=1.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T212029224967-reload-tree-not-pruned-population-at-merge/arm-base.log:8 follow-on: the arm log's literal command sits at non-blank head line 8, past `reckon crew check-manifest`'s 5-line command window, so the checker cannot read the command from the log; the node records this in population-report.md:140 and the command is in the manifest.\n",
+  "review_run_id": "r-20261017T221237925377-review-of-reload-tree-not-pruned-population-at-merge-5274a1484670",
+  "reviewed_base_sha": "5274a148467056dab323c1f9e291fb34ca7b1eb5",
+  "reviewed_head_sha": "5274a148467056dab323c1f9e291fb34ca7b1eb5",
+  "reviewed_run_id": "r-20261017T212029224967-reload-tree-not-pruned-population-at-merge",
+  "scores": {
+    "durability": 11,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T22:21:07.490742+00:00",
+  "total": 104
+}
