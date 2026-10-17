@@ -25,7 +25,7 @@
 <meta name="plan-sprint" content="S22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
 <meta name="plan-impl" content="0.6">
-<meta name="plan-version" content="97">
+<meta name="plan-version" content="98">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -797,6 +797,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-10-17T23:40:00Z">
     <div class="r-comment-body"><p>§12 landed. The release path writes run files through <code>ledger.write_run_file</code>, its one owner (merge <code>d71c450f1</code>). Zero added failures over 229 files. <a href="/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed.html#s12">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261017T224248293494-promotion-release-writes-through-the-ledger-helper" data-who="reckon-build" data-when="2026-10-17T22:58:58.816Z">
+    <div class="r-comment-body"><p>_update_run_record now writes the run&#x27;s file through ledger.write_run_file with no encoder of its own, and both callers (the release step and the gate re-run) reach it; the gate test passes 2/2 and the base-tree negative control fails EXIT=1 with the helper never called.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">

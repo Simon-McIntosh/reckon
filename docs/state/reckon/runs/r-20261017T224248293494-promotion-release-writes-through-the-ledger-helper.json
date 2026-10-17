@@ -1,0 +1,444 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "a1f92a8415a7690e5f181e8db797397a0a38dde2",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 4565733,
+      "input_tokens_cumulative": 4565733,
+      "output_tokens": 38938,
+      "output_tokens_cumulative": 38938,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 113,
+    "files": 3,
+    "removed": 6
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 271,
+        "name": "_rate_basis_reading",
+        "path": "reckon/mcp_views.py"
+      },
+      "run_function": {
+        "line": 720,
+        "name": "_serialize_rate_basis",
+        "path": "reckon/crew/promotion_release.py"
+      },
+      "window_line": 724
+    },
+    {
+      "existing_function": {
+        "line": 26,
+        "name": "test_release_of_aggregate_run_does_not_fold_split_runs",
+        "path": "tests/test_a_release_never_folds_run_files_into_the_aggregate.py"
+      },
+      "run_function": {
+        "line": 46,
+        "name": "test_release_writes_the_run_file_through_the_ledger_helper",
+        "path": "tests/test_the_release_path_writes_through_the_ledger_helper.py"
+      },
+      "window_line": 49
+    },
+    {
+      "existing_function": {
+        "line": 58,
+        "name": "test_release_of_split_run_changes_only_its_file",
+        "path": "tests/test_a_release_never_folds_run_files_into_the_aggregate.py"
+      },
+      "run_function": {
+        "line": 46,
+        "name": "test_release_writes_the_run_file_through_the_ledger_helper",
+        "path": "tests/test_the_release_path_writes_through_the_ledger_helper.py"
+      },
+      "window_line": 51
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "18038ffdd4432e42537e0cbab7e2adb3072a1752"
+  ],
+  "completed_at": "2026-10-17T22:58:58.816Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-17T22:43:41Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_release_path_writes_through_the_ledger_helper.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T224248293494-promotion-release-writes-through-the-ledger-helper/gate-head.log"
+  },
+  "impl_move": {
+    "at_complete": 0.75,
+    "at_dispatch": 0.6666666666666666,
+    "plan": "the-ledger-is-one-file-per-run",
+    "verdict": "moved"
+  },
+  "lane": "clive",
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-17T23:12:51.365396+00:00",
+    "horizon_seconds": 1800,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-17T22:42:51Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 19,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 0,
+    "headroom": 12,
+    "mean_context": 160000,
+    "observed_at": "2026-10-17T22:42:41Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 19,
+      "aggregate_tokens_per_second": 172.535,
+      "detail": "",
+      "mean_tokens_per_second": 143.779,
+      "observed_at": "2026-10-17T22:42:41Z",
+      "runs": 1.2,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-17T22:58:58.816Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T224248293494-promotion-release-writes-through-the-ledger-helper/manifest.md",
+  "member": "disposable-r-20261017T224248293494-promotion-release-writes-through-the-ledger-helper",
+  "model_key": "flash",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_the_release_path_writes_through_the_ledger_helper.py::test_release_writes_the_run_file_through_the_ledger_helper",
+      "tests/test_the_release_path_writes_through_the_ledger_helper.py::test_run_record_update_resolves_a_config_home_run_file"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "baseline_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_the_release_path_writes_through_the_ledger_helper.py::test_release_writes_the_run_file_through_the_ledger_helper",
+      "tests/test_the_release_path_writes_through_the_ledger_helper.py::test_run_record_update_resolves_a_config_home_run_file"
+    ],
+    "declaration": "against the base tree the patched helper is never called and the test fails",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T224248293494-promotion-release-writes-through-the-ledger-helper/negative-control-base.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T224248293494-promotion-release-writes-through-the-ledger-helper/negative-control-base.log",
+    "test_paths": [
+      "tests/test_the_release_path_writes_through_the_ledger_helper.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "promotion-release-writes-through-the-ledger-helper",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "general",
+      "requirements": {
+        "reasoning": "standard",
+        "risk": "low",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 477,
+          "cached_input_tokens": 766932,
+          "input_tokens": 767411,
+          "output_tokens": 1277,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 768688,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "f653840f-3ca8-4792-819c-9ee9708bdbac",
+      "session_id": "f653840f-3ca8-4792-819c-9ee9708bdbac"
+    },
+    "done_when": "tests/test_the_release_path_writes_through_the_ledger_helper.py patches ledger.write_run_file and finds a release's run-record update calls it once with the run's row, and the run file it produces is byte-identical to the base tree's; against the base tree the patched helper is never called and the test fails (negative control); logs under the run directory end in EXIT=; ruff check and ruff format --check add no findings on the changed Python files",
+    "estimated_hours": null,
+    "goal": "Make the release path's run-record update write the run file through ledger.write_run_file with no encoding of its own",
+    "id": "promotion-release-writes-through-the-ledger-helper",
+    "images": [],
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-17T22:42:51Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 19,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 0,
+      "headroom": 12,
+      "mean_context": 160000,
+      "observed_at": "2026-10-17T22:42:41Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 19,
+        "aggregate_tokens_per_second": 172.535,
+        "detail": "",
+        "mean_tokens_per_second": 143.779,
+        "observed_at": "2026-10-17T22:42:41Z",
+        "runs": 1.2,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T224248293494-promotion-release-writes-through-the-ledger-helper/manifest.md",
+    "negative_control": "against the base tree the patched helper is never called and the test fails",
+    "plan": "the-ledger-is-one-file-per-run",
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§12",
+    "spec_level": "exact",
+    "time_budget": "30m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/promotion_release.py",
+      "tests/test_the_release_path_writes_through_the_ledger_helper.py",
+      "docs/evidence/fragments/the-ledger-is-one-file-per-run/promotion-release-writes-through-the-ledger-helper.html",
+      "docs/figures/the-ledger-is-one-file-per-run/promotion-release-writes-through-the-ledger-helper"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 1345226.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "lift_id": null,
+    "member": null,
+    "node": "promotion-release-writes-through-the-ledger-helper",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-17T22:43:14.231425+00:00",
+    "score": 0.49375,
+    "session": null,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "s12 was reviewed; the only change since is the preamble writer list that review prescribed, answered acted",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout in pick:jev",
+    "family": null,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 5000.4,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {
+      "budget-snapshot": 667.909,
+      "context-estimate": 20.945,
+      "records": 1168.33,
+      "verdict-inputs": 962.655
+    }
+  },
+  "plan": "the-ledger-is-one-file-per-run",
+  "plan_impl_at_dispatch": 0.6666666666666666,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "18038ffdd4432e42537e0cbab7e2adb3072a1752",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "a1f92a8415a7690e5f181e8db797397a0a38dde2",
+    "reviewed_head_sha": "18038ffdd4432e42537e0cbab7e2adb3072a1752",
+    "scores": {
+      "durability": 18,
+      "evidence": 19,
+      "fit": 16,
+      "goal_fidelity": 19,
+      "reuse": 16,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 108
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "shadow",
+  "run_id": "r-20261017T224248293494-promotion-release-writes-through-the-ledger-helper",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§12",
+  "session": "f653840f-3ca8-4792-819c-9ee9708bdbac",
+  "session_harness": "claude",
+  "session_id": "91506c1a-b20e-451b-afc9-dcb0571cb730",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 2,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 4565733,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 904.102,
+    "generated_tokens": 38938,
+    "generation_seconds": 476.859,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 58.4,
+    "machine_seconds": 427.243,
+    "peak_input_tokens": 134452,
+    "tokens_per_second": 81.66,
+    "wall_tokens_per_second": 43.07
+  },
+  "time_budget": "30m",
+  "tool_steps": 49.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 917,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-10-17T22:59:02Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-17T22:43:49Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261017T224248293494-promotion-release-writes-through-the-ledger-helper",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 9516,
+    "worker_pid": 205385
+  },
+  "worker_seconds": 883,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
