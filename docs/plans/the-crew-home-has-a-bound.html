@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="57">
+<meta name="plan-version" content="58">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -323,7 +323,10 @@
     <div class="r-comment-body"><p>§10 landed. A gc naming one run inspects only that run's directory for extractions, so collecting one worktree no longer walks nearly 14,000 run directories on GPFS (merged as <code>f18888534</code>). Gate: 2 passed. The control is red. The 76-file population adds no failing id. Review: 115. <a href="/reckon/evidence/archive/the-crew-home-has-a-bound-landed.html#s10-single-run-gc-confined">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261017T023056594694-a-single-run-gc-reads-its-own-run-directory" data-who="reckon-build" data-when="2026-10-17T02:47:30.134Z">
-    <div class="r-comment-body"><p>§10 — `_run_directory_extractions` in reckon/crew/routing.py now takes an optional `run_id` and scans only that run&#x27;s own directory; `reckon/crew/gc.py` passes the invoked `run_id`, so a single-run gc no longer walks the whole crew runs store for extractions; new gate `tests/test_a_single_run_gc_reads_its_own_run_directory.py` reports 1 listed run directory with `--run` and all 4 extractions without, 2 passed EXIT=0 at base 7b312c82a.</p></div>
+    <div class="r-comment-body"><p>§10 — `_run_directory_extractions` in reckon/crew/routing.py now takes an optional `run_id` and scans only that run's own directory; `reckon/crew/gc.py` passes the invoked `run_id`, so a single-run gc no longer walks the whole crew runs store for extractions; new gate `tests/test_a_single_run_gc_reads_its_own_run_directory.py` reports 1 listed run directory with `--run` and all 4 extractions without, 2 passed EXIT=0 at base 7b312c82a.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261017T031911663696-review-of-single-run-gc-population-at-merge-b1a087325df2" data-who="reckon-build" data-when="2026-10-17T03:29:26.300Z">
+    <div class="r-comment-body"><p>reviewed the measurement node r-20261017T025720212315-single-run-gc-population-at-merge at reviewed_base_sha and reviewed_head_sha b1a087325df20877650852361fc6add52020b2ea, scoring goal_fidelity 20, evidence 20, scope_discipline 20, durability 16, fit 18, reuse 20 (total 114), one follow-on finding, added_failure_count 0.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">

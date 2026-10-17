@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "b1a087325df20877650852361fc6add52020b2ea",
+  "call_sites": [],
+  "completed_at": "2026-10-17T03:29:26.300Z",
+  "dispatched_at": "2026-10-17T03:20:07Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "baseline_suite.command and after_suite.command carry angle-bracket placeholders ('<75 files of ...>'/'<76 files of ...>') where the manifest contract requires the literal command with absolute paths and no placeholder, so the suite field alone does not reproduce the run and the literal command survives only in the gate logs' first lines."
+    }
+  ],
+  "head_log_revision": "ec65f1fdb49c541f657905efe1650058051070c7",
+  "item_verdicts": {
+    "diff": "the node made no commits, so its diff against b1a087325 is empty; the reviewed artefact is the measurement report.",
+    "done_when": "logs/candidate.log:1-6 and logs/base.log:1-6 name revision, host, literal command and module.__file__, carry the pytest summary lines and end EXIT=, meeting the FENCE - EVIDENCE done_when.",
+    "goal": "the node's goal is to measure the importer population of the confined single-run gc at base and at its merge candidate on an exclusive node; report.md:25-31 states the two-arm result.",
+    "manifest": "read the complete manifest; it records both arms' counts, the empty added-id list and the pre-existing ledger.py attribution.",
+    "write_paths": "the declared exclusive write path is the reports directory .../the-crew-home-has-a-bound/single-run-gc-population-at-merge; every changed path lies inside it."
+  },
+  "justifications": {
+    "durability": "the run preserves a re-runnable job script (logs/parity-job.sh) and shows a positive control that the failing-id extractor sees a known failure (slurm-parity-1287842.out:3), but no automated test reddens if the measurement artefacts regress.",
+    "evidence": "logs/candidate.log and logs/base.log each name revision, host, literal command, module.__file__ and EXIT=, and manifest.md:15-16 record the counts with the empty added-id set.",
+    "fit": "report.md follows the established measurement-report convention of the sibling reports under /home/ITER/mcintos/.config/reckon/crew/reports/reckon, and the node introduces no source symbol.",
+    "goal_fidelity": "report.md:25-31 answers the brief's exact question with both arms' pytest summary lines over the declared 76-file population.",
+    "reuse": "the node adds no definition (no production code changed), so no capability the repository owns is forked; the only added artefacts are the report and its logs.",
+    "scope_discipline": "every changed path in manifest.md lies inside the declared reports write path, and the reviewed worktree is clean at b1a087325."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure the importer population of the confined single-run gc at base and at its merge candidate on an exclusive node; report.md:25-31 states the two-arm result (0 added failing ids over 76 files at the candidate, 75 at base).\nVERDICT done_when: the done_when (prompt.txt FENCE - EVIDENCE) requires two logs naming revision/host/literal command, proving reckon.__file__ lies under each revision's own checkout, carrying the pytest summary line and ending EXIT=; logs/candidate.log:1-6 and logs/base.log:1-6 give exactly that, with summary lines '1 failed, 748 passed, 8 warnings in 192.75s' and '1 failed, 746 passed, 8 warnings in 272.56s' and module.__file__ under each scratch checkout.\nVERDICT write_paths: the node's declared exclusive write path is the reports directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-crew-home-has-a-bound/single-run-gc-population-at-merge; every path the manifest marks changed (report.md and logs/*) lies inside it, and the reviewed worktree is clean at b1a087325.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T025720212315-single-run-gc-population-at-merge/manifest.md; status complete, it records both arms' counts with log paths, the empty added-id list, and a pre-existing-failure attribution naming reckon/ledger.py.\nVERDICT diff: the reviewed node made no commits (manifest.md commits: none), so its diff against b1a087325 is empty and its worktree is clean; the substantive artefact is the measurement report rather than a code change.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: report.md:25-31 answers the brief's exact question with both arms' pytest summary lines over the declared 76-file population.\nSCORE evidence: 20\nJUSTIFICATION evidence: logs/candidate.log and logs/base.log each name revision, host, literal command, module.__file__ and EXIT=, and manifest.md:15-16 record the counts with the empty added-id set.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path in manifest.md lies inside the declared reports write path, and the reviewed worktree is clean at b1a087325.\nSCORE durability: 16\nJUSTIFICATION durability: the run preserves a re-runnable job script (logs/parity-job.sh) and shows a positive control that the failing-id extractor sees a known failure (slurm-parity-1287842.out:3), but no automated test reddens if the measurement artefacts regress.\nSCORE fit: 18\nJUSTIFICATION fit: report.md follows the established measurement-report convention of the sibling reports under /home/ITER/mcintos/.config/reckon/crew/reports/reckon, and the node introduces no source symbol.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node adds no definition (no production code changed), so no capability the repository owns is forked; the only added artefacts are the report and its logs.\nFINDING manifest.md:15 follow-on: baseline_suite.command and after_suite.command carry angle-bracket placeholders ('<75 files of ...>'/'<76 files of ...>') where the manifest contract requires the literal command with absolute paths and no placeholder, so the suite field alone does not reproduce the run and the literal command survives only in the gate logs' first lines.",
+  "review_run_id": "r-20261017T031911663696-review-of-single-run-gc-population-at-merge-b1a087325df2",
+  "reviewed_base_sha": "b1a087325df20877650852361fc6add52020b2ea",
+  "reviewed_head_sha": "b1a087325df20877650852361fc6add52020b2ea",
+  "reviewed_run_id": "r-20261017T025720212315-single-run-gc-population-at-merge",
+  "scores": {
+    "durability": 16,
+    "evidence": 20,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T03:35:00Z",
+  "total": 114
+}
