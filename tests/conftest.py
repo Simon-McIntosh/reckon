@@ -32,6 +32,7 @@ from types import ModuleType
 import pytest
 
 import reckon.crew.dispatch_plan as dispatch_plan_module
+from reckon._store import _mounts_path
 from reckon.cli import CLAUDE_SKILLS_DIR_ENV
 from reckon.crew.dispatch import (
     WATCH_ARMING_ENV,
@@ -1381,6 +1382,49 @@ def session_cache_roots_are_isolated(tmp_path_factory):
         leaks = cache_root_leaks()
         if leaks:
             raise AssertionError(cache_root_leak_report())
+
+
+# ── The operator's mount registry, read before any test override ───────────
+#
+# A session-scoped fixture that read ``flight.mounted_project_docs()`` at its own
+# setup resolved the mounts file through whatever configuration home was in
+# force when it first ran. Under xdist that can be a peer's throwaway home, so
+# the leak scan in tests/test_split_existing_runs.py could watch an empty
+# registry and fire its vacuity guard on a fixture-order accident rather than a
+# defect. The registry the scan must consult is the operator's, so its path is
+# captured here at import — before any fixture replaces RECKON_HOME or
+# RECKON_MOUNTS_PATH.
+WORKSTATION_MOUNTS_PATH = _mounts_path()
+
+
+def workstation_mounts() -> dict[str, Path]:
+    """Every mounted project's docs directory, from the import-time path.
+
+    Mirrors ``reckon.flight.mounted_project_docs`` but resolves the captured
+    mounts file rather than the configuration home in force now, so a test that
+    has replaced that home still reads the operator's own registry. The
+    at-least-one-project guard lives with the caller, which fires it rather than
+    watching an empty set in silence.
+    """
+    if not WORKSTATION_MOUNTS_PATH.is_file():
+        return {}
+    try:
+        payload = json.loads(WORKSTATION_MOUNTS_PATH.read_text())
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    entries = payload.get("mounts") if "mounts" in payload else payload
+    if not isinstance(entries, dict):
+        return {}
+    resolved: dict[str, Path] = {}
+    for project, raw in sorted(entries.items(), key=lambda item: str(item[0])):
+        entry = raw
+        if isinstance(raw, dict):
+            entry = raw.get("docs") or raw.get("path")
+        if isinstance(entry, str) and entry.strip():
+            resolved[str(project)] = Path(entry).expanduser().resolve()
+    return resolved
 
 
 @pytest.fixture(autouse=True)
