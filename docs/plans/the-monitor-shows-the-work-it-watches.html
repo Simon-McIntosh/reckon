@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="291">
+<meta name="plan-version" content="292">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1172,6 +1172,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s47" data-id="c-s47-more-evidence-1d" data-who="reckon-build" data-when="2026-10-17T21:50:00Z">
     <div class="r-comment-body"><p>More evidence, relayed by reckon-cd from imas-ambix-1d (session <code>9fd87e71</code>) on 2026-10-17. There were two further "deferred its reload: could not materialize HEAD" failures under <code>reload-trees/4695b8e9e67d6131/</code>. Both landed inside multi-follower bursts of prune rows.</p><ul><li><code>[Errno 20] Not a directory</code> on <code>e4acca00…/reckon/crew/__pycache__</code>, after which the whole <code>e4acca00</code> tree was gone. The tree was removed while it was being walked.</li><li><code>[Errno 2]</code> on <code>3cffef06…/.in-use</code>: the lease marker vanished during materialisation. A concurrent prune removed the tree while it was being pinned.</li></ul><p>The node building this section treats every <code>OSError</code> from a vanished or half-removed tree as "pruned by a peer". That covers <code>ENOENT</code> and <code>ENOTDIR</code> during ranking, removal, pinning and the import walk. The reload either retries or skips. It never aborts. The done-when's cases cover both errnos.</p></div>
+</div>
+<div class="r-comment" data-section="s47" data-id="c-run-r-20261017T223415576661-review-of-a-reload-never-aborts-on-a-tree-a-peer-pruned-41fcc91dffda" data-who="reckon-build" data-when="2026-10-17T22:45:42.350Z">
+    <div class="r-comment-body"><p>review of a-reload-never-aborts-on-a-tree-a-peer-pruned at 41fcc91df scores goal_fidelity 18, evidence 16, scope_discipline 20, durability 18, fit 18, reuse 18 (total 108), 0 added failures against base 9bc0a720f, one follow-on on the reviewed manifest&#x27;s absent baseline_suite/after_suite fields</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">

@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:407 materialize_committed_tree called from _materialize_replacement",
+    "reckon/crew_follow_commands.py:465 the reloader taking its returned removed/kept into _record_reload_prune"
+  ],
+  "completed_at": "2026-10-17T22:45:42.350Z",
+  "dispatched_at": "2026-10-17T22:35:11Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T221110090490-a-reload-never-aborts-on-a-tree-a-peer-pruned/manifest.md",
+      "line": "13",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite and after_suite are absent from the manifest, so reckon.crew.review.added_failures_from_gate_logs over the run's own manifest fields returns unmeasured and every reader's added-failure annotation is empty; the two arm logs named on this line make the delta derivable (base 4 red, head 0, so 0 added)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 9bc0a720f179813263e850d622cbb2389e12107b; 512b81bf6 changes only reckon/checkout_trust.py (ranking via _images_ranked_for_pruning at :152, the prune lease via _open_prune_lease at :172, a FileNotFoundError/NotADirectoryError-tolerant rmtree at :343, and COMMITTED_TREE_PUBLISH_GRACE_SECONDS 120.0 -> 300.0 at :80) and adds the test file, and 41fcc91df adds the three-line landing fragment.",
+    "done_when": "the done_when (prompt.txt FENCE EVIDENCE) names tests/test_a_reload_never_aborts_on_a_tree_a_peer_pruned.py for four cases; the file holds five at :122, :160, :187, :203, :220 and the manifest records the gate at 512b81bf6 as 22 passed EXIT=0 (logs/head-gate.log) with the base arm 4 failed 1 passed EXIT=1 (logs/negative-control-base.log).",
+    "goal": "the node's goal (prompt.txt:30) is that reload-tree ranking, pruning, pinning and the import walk treat a tree a peer pruned as removed rather than abort the reload; the landed change makes the two halves that did abort tolerant \u2014 ranking skips a vanished entry and the prune counts a peer-removed tree as removed in reckon/checkout_trust.py \u2014 while the pin and the import walk already survived a vanished tree through the retry-and-defer loop at reckon/crew_follow_commands.py:404-418.",
+    "manifest": "read; status complete, commits 512b81bf6/41fcc91df, both arm logs named by path under test_logs, but baseline_suite and after_suite are absent so the read-time added-failure annotation is unmeasured.",
+    "write_paths": "the manifest declares reckon/checkout_trust.py, the test file, the evidence fragment and a figure directory; git diff --name-status 9bc0a720f179813263e850d622cbb2389e12107b..41fcc91dffda5af4b1169275e280e6128c4e0019 lists exactly the first three, all inside the fence, with the figure directory left unwritten."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reload_never_aborts_on_a_tree_a_peer_pruned.py:122, :160, :187 and :220 redden when the base checkout_trust.py is restored (logs/negative-control-base.log, 4 failed 1 passed), so reinstating the regression makes each of them fail.",
+    "evidence": "logs/head-gate.log records 22 passed EXIT=0 at 512b81bf6 and logs/negative-control-base.log 4 failed 1 passed EXIT=1 at base 9bc0a720f179813263e850d622cbb2389e12107b, but manifest.md:13 names the logs only under test_logs, so reckon.crew.review.annotate_review_of_run reads the arm fields as absent and the added-failure count as unmeasured.",
+    "fit": "_images_ranked_for_pruning at reckon/checkout_trust.py:152 and _open_prune_lease at :172 are mechanism-named with mechanism docstrings in the surrounding module idiom and carry no plan, sprint or ticket label.",
+    "goal_fidelity": "reckon/checkout_trust.py:330 and :343 make the prune count a peer-removed tree as removed instead of raising out of materialize_committed_tree, which is the abort the goal names, and the pin/import-walk retry at reckon/crew_follow_commands.py:404-418 was already tolerant.",
+    "reuse": "_images_ranked_for_pruning extracts the mtime ranking materialize_committed_tree already held inline, and _open_prune_lease differs from pin_materialized_tree at reckon/checkout_trust.py:248 in lock mode (LOCK_EX vs LOCK_SH) and in vanish policy (None vs a raised RuntimeError), so no existing owner is forked.",
+    "scope_discipline": "git diff --name-status 9bc0a720f179813263e850d622cbb2389e12107b..41fcc91dffda5af4b1169275e280e6128c4e0019 lists exactly reckon/checkout_trust.py, tests/test_a_reload_never_aborts_on_a_tree_a_peer_pruned.py and the evidence fragment, all three declared in the fence, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal (prompt.txt:30) is that reload-tree ranking, pruning, pinning and the import walk treat a tree a peer pruned as removed rather than abort the reload; the landed change makes the two halves that did abort tolerant \u2014 ranking skips a vanished entry and the prune counts a peer-removed tree as removed in reckon/checkout_trust.py \u2014 while the pin and the import walk already survived a vanished tree through the retry-and-defer loop at reckon/crew_follow_commands.py:404-418.\nVERDICT done_when: the done_when (prompt.txt FENCE EVIDENCE) names tests/test_a_reload_never_aborts_on_a_tree_a_peer_pruned.py for four cases; the file holds five at :122, :160, :187, :203, :220 and the manifest records the gate at 512b81bf6 as 22 passed EXIT=0 (logs/head-gate.log) with the base arm 4 failed 1 passed EXIT=1 (logs/negative-control-base.log).\nVERDICT write_paths: the manifest declares reckon/checkout_trust.py, the test file, the evidence fragment and a figure directory; git diff --name-status 9bc0a720f179813263e850d622cbb2389e12107b..41fcc91dffda5af4b1169275e280e6128c4e0019 lists exactly the first three, all inside the fence, with the figure directory left unwritten.\nVERDICT manifest: read; status complete, commits 512b81bf6/41fcc91df, both arm logs named by path under test_logs, but baseline_suite and after_suite are absent so the read-time added-failure annotation is unmeasured.\nVERDICT diff: read commit by commit against base 9bc0a720f179813263e850d622cbb2389e12107b; 512b81bf6 changes only reckon/checkout_trust.py (ranking via _images_ranked_for_pruning at :152, the prune lease via _open_prune_lease at :172, a FileNotFoundError/NotADirectoryError-tolerant rmtree at :343, and COMMITTED_TREE_PUBLISH_GRACE_SECONDS 120.0 -> 300.0 at :80) and adds the test file, and 41fcc91df adds the three-line landing fragment.\nCALL_SITES: reckon/crew_follow_commands.py:407 materialize_committed_tree called from _materialize_replacement, reckon/crew_follow_commands.py:465 the reloader taking its returned removed/kept into _record_reload_prune\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/checkout_trust.py:330 and :343 make the prune count a peer-removed tree as removed instead of raising out of materialize_committed_tree, which is the abort the goal names, and the pin/import-walk retry at reckon/crew_follow_commands.py:404-418 was already tolerant.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-gate.log records 22 passed EXIT=0 at 512b81bf6 and logs/negative-control-base.log 4 failed 1 passed EXIT=1 at base 9bc0a720f179813263e850d622cbb2389e12107b, but manifest.md:13 names the logs only under test_logs, so reckon.crew.review.annotate_review_of_run reads the arm fields as absent and the added-failure count as unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 9bc0a720f179813263e850d622cbb2389e12107b..41fcc91dffda5af4b1169275e280e6128c4e0019 lists exactly reckon/checkout_trust.py, tests/test_a_reload_never_aborts_on_a_tree_a_peer_pruned.py and the evidence fragment, all three declared in the fence, and nothing else.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_reload_never_aborts_on_a_tree_a_peer_pruned.py:122, :160, :187 and :220 redden when the base checkout_trust.py is restored (logs/negative-control-base.log, 4 failed 1 passed), so reinstating the regression makes each of them fail.\nSCORE fit: 18\nJUSTIFICATION fit: _images_ranked_for_pruning at reckon/checkout_trust.py:152 and _open_prune_lease at :172 are mechanism-named with mechanism docstrings in the surrounding module idiom and carry no plan, sprint or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: _images_ranked_for_pruning extracts the mtime ranking materialize_committed_tree already held inline, and _open_prune_lease differs from pin_materialized_tree at reckon/checkout_trust.py:248 in lock mode (LOCK_EX vs LOCK_SH) and in vanish policy (None vs a raised RuntimeError), so no existing owner is forked.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T221110090490-a-reload-never-aborts-on-a-tree-a-peer-pruned/manifest.md:13 follow-on: baseline_suite and after_suite are absent from the manifest, so reckon.crew.review.added_failures_from_gate_logs over the run's own manifest fields returns unmeasured and every reader's added-failure annotation is empty; the two arm logs named on this line make the delta derivable (base 4 red, head 0, so 0 added).\n",
+  "review_run_id": "r-20261017T223415576661-review-of-a-reload-never-aborts-on-a-tree-a-peer-pruned-41fcc91dffda",
+  "reviewed_base_sha": "9bc0a720f179813263e850d622cbb2389e12107b",
+  "reviewed_head_sha": "41fcc91dffda5af4b1169275e280e6128c4e0019",
+  "reviewed_run_id": "r-20261017T221110090490-a-reload-never-aborts-on-a-tree-a-peer-pruned",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T22:41:59.462282+00:00",
+  "total": 108
+}
