@@ -350,13 +350,10 @@ def live_foreign_seat(project: str | None) -> tuple[str, str]:
 
 _PACKAGE_DIR = Path(__file__).resolve().parent.parent
 
-# The CLI's own modules, named relative to the package directory. Both code
-# stamps build their source list from this one declaration, so a module that
-# carries a command is named here once and both a running producer and a
-# running follower reload when its bytes change. Every name is a module
-# directly under ``reckon``; the ``reckon/crew`` package is covered by the glob
-# each stamp appends, so a module that moves under it leaves this tuple rather
-# than being kept in both places.
+# The CLI's own modules, named relative to the package directory. The
+# CLI-owner test reads this declaration to prove no top-level module carrying a
+# command is omitted. The stamp itself covers every module under the package,
+# so a command module outside this tuple still advances it.
 CLI_MODULE_FILES = (
     "cli.py",
     "cli_entry.py",
@@ -367,36 +364,69 @@ CLI_MODULE_FILES = (
     "project_maintenance_commands.py",
 )
 
+# One source file's content digest, kept beside the stat that vouches for it.
+# A stamp is re-read at a bounded cadence and most ticks find nothing new, so
+# the mtime and size let an untouched file reuse the digest it had last time
+# rather than reading every module on every tick. The memo is shared by every
+# caller, so one read of a file serves the producer's stamp and a follower's.
+_source_digests: dict[str, tuple[int, int, str]] = {}
 
-def _content_digest(source: Path) -> str:
+
+def _source_content_digest(source: Path, metadata: os.stat_result) -> str:
+    """Return a digest of a source file's bytes, reused while its stat holds.
+
+    The stat is a pre-check, not the identity: a tool that rewrites a file with
+    identical bytes — a formatter, a checkout restoring the same revision —
+    moves the mtime alone, and a stamp keyed on it reloaded every follower for
+    nothing. An unchanged mtime and size reuse the last digest; a moved one
+    reads the bytes and finds them the same, so the stamp does not move.
+    """
+    key = str(source)
+    cached = _source_digests.get(key)
+    if (
+        cached is not None
+        and cached[0] == metadata.st_mtime_ns
+        and cached[1] == metadata.st_size
+    ):
+        return cached[2]
     try:
-        return hashlib.sha256(source.read_bytes()).hexdigest()
+        digest = hashlib.sha256(source.read_bytes()).hexdigest()
     except OSError:
-        return ""
+        digest = ""
+    _source_digests[key] = (metadata.st_mtime_ns, metadata.st_size, digest)
+    return digest
+
+
+def code_stamp(package_dir: Path | None = None) -> str:
+    """A stamp that advances when any source a launch can run changes.
+
+    Every ``*.py`` module under the package directory is hashed, not only the
+    CLI modules and ``reckon/crew``: the modules a launch is built from —
+    ``reckon/_worker_fence.py``, ``reckon/_backends.py``,
+    ``reckon/nested_launch.py`` — sit outside those, and a producer that
+    reloaded only on a command-module change would keep running stale launch
+    code. Keyed on file content rather than mtime and size alone, so a
+    rewritten file with identical bytes is not new code.
+    """
+    root = Path(package_dir) if package_dir is not None else _PACKAGE_DIR
+    stamp = hashlib.sha256()
+    for source in sorted(root.rglob("*.py")):
+        try:
+            metadata = source.stat()
+        except OSError:
+            continue
+        stamp.update(str(source.relative_to(root)).encode())
+        stamp.update(f":{_source_content_digest(source, metadata)}\n".encode())
+    return stamp.hexdigest()
 
 
 def source_code_stamp(package_dir: Path | None = None) -> str:
     """A stamp that advances when the source a restarted producer would run changes.
 
-    Keyed on file content rather than mtime and size alone, so a rewritten file
-    with identical bytes is not new code. The file set matches what the watch
-    producer's own stamp digests, so the producer's recorded stamp and the one
-    computed here are comparable.
+    The producer's recorded stamp and the one computed here are the same
+    function, so they are comparable by construction.
     """
-    root = Path(package_dir) if package_dir is not None else _PACKAGE_DIR
-    sources = [
-        *(root / name for name in CLI_MODULE_FILES),
-        *sorted((root / "crew").glob("*.py")),
-    ]
-    stamp = hashlib.sha256()
-    for source in sources:
-        try:
-            source.stat()
-        except OSError:
-            continue
-        stamp.update(str(source.relative_to(root)).encode())
-        stamp.update(f":{_content_digest(source)}\n".encode())
-    return stamp.hexdigest()
+    return code_stamp(package_dir)
 
 
 def freshness_reading(
