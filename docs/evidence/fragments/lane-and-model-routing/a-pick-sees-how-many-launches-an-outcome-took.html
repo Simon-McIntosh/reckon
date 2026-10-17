@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:lane-and-model-routing">
+  <meta name="plan-verifies" content="reckon:lane-and-model-routing#s31">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-17">
+  <meta name="plan-tags" content="picker,jev,outcomes,attempts,resume">
+  <title>A pick sees how many launches each outcome at its requirement took | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-pick-sees-how-many-launches-an-outcome-took" data-reckon="landed" data-when="2026-10-17">
+  <h2 id="a-pick-sees-how-many-launches-an-outcome-took-title">A pick sees how many launches each outcome at its requirement took.</h2>
+  <p id="a-pick-sees-how-many-launches-an-outcome-took-change"><strong>Change.</strong>
+  <code>_candidates_scan</code> in <code>reckon/crew/picker/snapshot.py</code> now collects
+  each matched row's <code>attempt</code> in the one pass it already makes over the ledger
+  rows, and <code>_requirement_block</code> adds <code>attempts_median</code> (the median
+  launches those rows took, null when none) and <code>passed_first_attempt</code> (how many
+  passed on the first launch). The <code>outcomes_at_requirement</code> glossary entry in
+  <code>reckon/crew/picker/prompts.py</code> defines both and states that a launch beyond
+  the first is a resume, including the repairs that answer a blocking review. Nothing here
+  routes or overrides a pick.</p>
+  <p id="a-pick-sees-how-many-launches-an-outcome-took-measure"><strong>Measure.</strong> New
+  file <code>tests/test_a_pick_sees_how_many_launches_an_outcome_took.py</code> (5 passed);
+  gate over nine files: head <code>74 passed</code>, <code>EXIT=0</code>; base arm at
+  <code>711c721d4</code> over the eight pre-existing files <code>69 passed</code>,
+  <code>EXIT=0</code> — the five added tests are the whole delta and no failure is added.
+  Negative controls each applied alone: removing the attempt collection, the first case
+  fails on <code>attempts_median</code>; counting every passed row as first-attempt, it
+  fails on <code>passed_first_attempt</code>. Logs are under the run directory.</p>
+</article>
+</body>
+</html>
