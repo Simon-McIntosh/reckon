@@ -125,7 +125,7 @@ class CorruptEnvelopeError(Exception):
 # ── Path helpers ───────────────────────────────────────────────────────────
 
 
-def _config_home() -> Path:
+def _config_home(env: Mapping[str, str] | None = None) -> Path:
     """Resolve the reckon config home directory (mounts.json + state/).
 
     Resolution order (the shared precedence used across reckon):
@@ -133,12 +133,22 @@ def _config_home() -> Path:
     2. ~/.config/reckon  (XDG location — preferred when it exists)
     3. ~/docs-server     (legacy fallback — keeps existing installs working)
 
+    ``env`` names the environment to resolve from: this process's own
+    (``os.environ``) when omitted, or a given mapping — a scanned process's
+    environment — when supplied. Resolving a foreign mapping through this same
+    function is what makes two processes' homes comparable as one resolver
+    reads them, rather than as raw ``RECKON_HOME`` strings: a trailing slash or
+    a symlinked spelling normalises identically on both sides. The two
+    fallbacks (XDG and legacy) are keyed to the running user's home, so a
+    caller resolving a foreign mapping still reads this process's home there.
+
     The fallback is deliberate: until the on-disk directory is migrated to
     ~/.config/reckon, every caller keeps reading ~/docs-server unchanged.
     """
-    env = os.environ.get("RECKON_HOME")
-    if env:
-        return Path(env).expanduser().resolve()
+    source = os.environ if env is None else env
+    value = source.get("RECKON_HOME")
+    if value:
+        return Path(value).expanduser().resolve()
     xdg = Path.home() / ".config" / "reckon"
     if xdg.exists():
         return xdg

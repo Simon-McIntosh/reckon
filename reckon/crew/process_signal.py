@@ -3,6 +3,7 @@ import os
 import signal
 import sys
 
+from reckon._store import _config_home
 from reckon.crew.routing import (
     UTC,
     Any,
@@ -145,25 +146,49 @@ def _start_tick(pid: Any) -> int | None:
         return None
 
 
+def _crew_home_of(environment: Mapping[str, str]) -> Path:
+    """The crew home a process's own environment places it in.
+
+    The home a run holds is resolved by ``_config_home`` from the reader's
+    environment; a scanned process's home is resolved by that same function
+    from its own environment, so the two are compared as one resolver reads
+    them. Comparing the raw ``RECKON_HOME`` strings instead would let a
+    trailing slash or a symlinked spelling name one home for the run and a
+    different one for the process carrying the same place on disk.
+    """
+    return _config_home(env=environment) / "crew"
+
+
 def _processes_owning_run(
-    run_id: str, *, started_no_earlier_than: int | None = None
+    run_id: str,
+    run_home: str | Path,
+    *,
+    started_no_earlier_than: int | None = None,
 ) -> list[int]:
-    """Pids of this user's processes whose environment names ``run_id``.
+    """Pids of this user's processes that ``run_id`` names in ``run_home``.
 
     The only reach for a worker the kernel reparented away from its supervisor:
     the descendant walk cannot cross that boundary, and ``_processes_holding``
-    reads working directories and open files rather than environments. A
-    process qualifies on its environment naming the run and, when a floor is
-    known, a start tick no earlier than it — so a recycled pid cannot be
-    claimed. A process whose environment cannot be read is never named, because
-    the absence of a mark must not read as ownership. Read-only; the caller
-    decides what to signal.
+    reads working directories and open files rather than environments.
+
+    ``run_home`` is the crew home the run belongs to, as its reader resolved
+    it. A process qualifies on its environment naming the run id AND placing it
+    in that same crew home — the process's home read from its own environment
+    by the one config-home resolver, never against a raw ``RECKON_HOME`` string
+    — and, when a floor is known, a start tick no earlier than it, so a
+    recycled pid cannot be claimed. Without the home comparison a process
+    carrying another crew home's run id reads as this run's worker, which is
+    how a liveness read could count it and a stop could signal it. A process
+    whose environment cannot be read is never named, because the absence of a
+    mark must not read as ownership. Read-only; the caller decides what to
+    signal.
     """
     if not run_id:
         return []
     proc = Path("/proc")
     if not proc.is_dir():
         return []
+    wanted_home = Path(run_home)
     own_pid = os.getpid()
     named: list[int] = []
     for entry in proc.iterdir():
@@ -174,6 +199,8 @@ def _processes_owning_run(
             continue
         environment = _process_environment(pid)
         if environment is None or environment.get(RUN_ID_ENV) != run_id:
+            continue
+        if _crew_home_of(environment) != wanted_home:
             continue
         if started_no_earlier_than is not None:
             start = _start_tick(pid)
@@ -296,8 +323,12 @@ def _run_process_pids(
             continue
         collected.extend(_running_descendants(root))
     if run_id:
+        from reckon.crew.runs import crew_home
+
         floor = _run_launch_floor(run_dir)
-        for candidate in _processes_owning_run(run_id, started_no_earlier_than=floor):
+        for candidate in _processes_owning_run(
+            run_id, crew_home(), started_no_earlier_than=floor
+        ):
             collected.extend(_running_descendants(candidate))
     own_pid = os.getpid()
     ordered: list[int] = []
