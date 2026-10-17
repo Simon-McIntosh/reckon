@@ -1,0 +1,39 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T20:59:05.543Z",
+  "dispatched_at": "2026-10-17T20:51:31Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-paired-shadow-runs-on-its-named-backend.html:79",
+      "id": "anchors_resolve-1",
+      "reason": "the omitted caller is the picker-routed availability probe, which is not a shadow and already catches CrewError and returns None, so the decision to raise D21 in _shadow_dispatch_config stands; only the count is wrong.",
+      "text": "the sentence says resolve_role_override \"has five other callers\" and lists five, but a sixth exists at reckon/crew_dispatch_commands.py:429 (_model_availability_refusal), so the enumeration supporting the catch-it-in-_shadow_dispatch_config-not-the-resolver decision is incomplete",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "067b2e71c0a5250cda7153c945e2f36348dab5e20f82a152cc612102a292c826",
+  "plan_slug": "a-paired-shadow-runs-on-its-named-backend",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T205050586291-plan-review-of-a-paired-shadow-runs-on-its-named-backend",
+  "reviewed_blob_sha": "96060dd581eb1877cb3db20bab5ca5a74d041c90",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the five listed resolve_role_override callers all resolve, but the changed sentence miscounts them.",
+    "done_when": "pass \u2014 the done-when names a declared negative control (restoring the resolve_role call and the equality check in _shadow_dispatch_config fails case 1 with D21 because alpha is not candidate; restoring the old D21 remedy text fails case 3 on its \"flight override\" assertion), so a guard that does not fire is visible.",
+    "evidence_paths": "pass \u2014 the done-when names no scratchpad or node-local path; the gate logs it requires are delivered through the run manifest.",
+    "naming": "pass \u2014 the new test is named for its mechanism, D21 is a runtime refusal-family identifier used as emitted data rather than a plan label, and no version or ticket tag reaches a symbol or comment.",
+    "reasoning": "pass \u2014 the quoted refusal text matches reckon/crew/dispatch.py:479-481 exactly, the mechanism runs on both real callers (dispatch_pair at line 772 and shadow at line 583) sharing _shadow_dispatch_config, and resolve_role_override plus _effective_backend produce the shadow backend the done-when asserts.",
+    "single_goal": "pass \u2014 one repair: a paired shadow resolves against the backend it names, plus the misleading D21 remedy it depends on, across reckon/crew/dispatch.py, reckon/crew/refusals.py, and one new test.",
+    "wiring": "pass \u2014 the plan declares no depends-on/informs/gates, and it repairs the already-done a-shadow-cannot-see-its-primary, whose followups are all resolved, so no relationship it needs is missing."
+  },
+  "section_digests": {
+    "_document": "f129ef4dcd8b0ce5659d097557565b1f84167351faa1e0658618aa17e3be275a",
+    "s1": "eb94c67fcfd17475c19ee18f14646fcdbbaa109c2bf4b4fad49770b1c8ed1ade"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T21:01:33.136429+00:00"
+}
