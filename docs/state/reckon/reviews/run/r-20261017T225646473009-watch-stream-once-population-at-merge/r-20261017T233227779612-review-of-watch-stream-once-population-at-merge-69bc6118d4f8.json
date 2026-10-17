@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T23:41:17.050Z",
+  "dispatched_at": "2026-10-17T23:33:23Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/watch-stream-once-population-at-merge",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the declared report directory was left empty -- no report artifact was written there, so a reader following the declared write scope (as the sibling population nodes' population-report.md invites) finds nothing; the answer exists only in manifest.md."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T225646473009-watch-stream-once-population-at-merge/measure-population.sbatch",
+      "line": "90",
+      "severity": "follow-on",
+      "text": "follow-on: the pre-flight guard's inline summary regex is a second spelling of the owned reckon/crew/review.py:1301 _PYTEST_SUMMARY_RE, so a log the owner's _gate_log_format accepts by its FAILED-line pattern can be refused here -- the guard and the reader can disagree."
+    },
+    {
+      "file": "/home/ITER/mcintos/.cache/reckon-population-lists/watch-stream-once.txt",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the supplied population list names tests/conftest.py and tests/spa_parity_harness.py, which pytest collects as test modules, producing the spurious collection ERROR tests/conftest.py::test_temp_config_home (fixture 'prefix' not found); it is identical at both arms so the differential is unaffected, but it inflates the error count a reader sees."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the reviewed node committed nothing (its worktree HEAD is the dispatch base 69bc6118 and is clean), so the diff base-to-head is empty; I read the delivered artifacts instead -- arm-base.log, arm-cand.log, derive.log, diag.log, main-check.log, slurm-1288391.out and measure-population.sbatch.",
+    "done_when": "the FENCE-EVIDENCE names two logs over one exclusive all_debug job that each carry rev=/host/command, prove reckon.__file__ under their own checkout, carry pytest's summary line and EXIT=, with added ids derived by reckon.crew.review.added_failures_from_gate_logs and alone runs for any added id; arm-base.log:1-5 and arm-cand.log:1-5 carry those headers and EXIT=1 footers, the derivation returns 0 with a positive control, and added ids 0 leaves nothing to run alone.",
+    "goal": "the reviewed node's goal is to measure the watch-stream and roadmap importer population of the single stream parse at base 763444a27fb5c87ab63032c8d5e3e12fe972f70c and at the candidate 220d0645f56af56f830479963851af5b436f2b9c on an exclusive node; the delivered manifest answers it (added ids 0) from one exclusive all_debug job 1288391 (slurm-1288391.out:1-5, both arms EXIT=1).",
+    "manifest": "read; manifest.md records status complete, each arm's pass/fail counts with its log path, added ids 0, both revisions, and baseline_suite/after_suite carrying the same four pre-existing failure ids.",
+    "write_paths": "the declared write path is the report directory reports/reckon/a-read-answers-inside-its-deadline/watch-stream-once-population-at-merge, which is empty; every artifact is an arm log, diag log, main-check log or script under the run directory the delivery fence names for logs, and no path under reckon/ or tests/ changed (the reviewed worktree is clean at 69bc6118)."
+  },
+  "justifications": {
+    "durability": "the node adds no test of its own, so its added-ids-0 claim rests on the owned reader reckon/crew/review.py:2114, which three existing tests cover (e.g. tests/test_a_ctest_gate_log_is_read.py) and which I falsified with a synthetic head FAILED line.",
+    "evidence": "arm-base.log:1-5 and arm-cand.log:1-5 carry rev=/host=/cwd=/module=/command= headers with EXIT=1 footers, and I reproduced the derivation (0, []) plus its positive control (an injected head FAILED line returns 1, a base one 0).",
+    "fit": "measure-population.sbatch and manifest.md carry no plan label, ticket number or version in any symbol, path or comment.",
+    "goal_fidelity": "manifest.md answers the brief's question with both arms' counts and added ids 0, run as one exclusive all_debug job on 98dci4-clu-3141 (slurm-1288391.out:1).",
+    "reuse": "measure-population.sbatch:98 calls the owner reckon/crew/review.py:2114 added_failures_from_gate_logs rather than diffing FAILED lines by hand, though its pre-flight summary check at line 90 is a second spelling of the owner's _PYTEST_SUMMARY_RE.",
+    "scope_discipline": "no path under reckon/ or tests/ changed (the reviewed worktree is clean at 69bc6118), and every write is a run-directory log/script or node-local scratch the job's EXIT/TERM/INT trap sweeps."
+  },
+  "node": "review-of-watch-stream-once-population-at-merge",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is to measure the watch-stream and roadmap importer population of the single stream parse at base 763444a27fb5c87ab63032c8d5e3e12fe972f70c and at the candidate 220d0645f56af56f830479963851af5b436f2b9c on an exclusive node; the delivered manifest answers it (added ids 0) from one exclusive all_debug job 1288391 (slurm-1288391.out:1-5, both arms EXIT=1).\nVERDICT done_when: the FENCE-EVIDENCE names two logs over one exclusive all_debug job that each carry rev=/host/command, prove reckon.__file__ under their own checkout, carry pytest's summary line and EXIT=, with added ids derived by reckon.crew.review.added_failures_from_gate_logs and alone runs for any added id; arm-base.log:1-5 and arm-cand.log:1-5 carry those headers and EXIT=1 footers, the derivation returns 0 with a positive control, and added ids 0 leaves nothing to run alone.\nVERDICT write_paths: the declared write path is the report directory reports/reckon/a-read-answers-inside-its-deadline/watch-stream-once-population-at-merge, which is empty; every artifact is an arm log, diag log, main-check log or script under the run directory the delivery fence names for logs, and no path under reckon/ or tests/ changed (the reviewed worktree is clean at 69bc6118).\nVERDICT manifest: read; manifest.md records status complete, each arm's pass/fail counts with its log path, added ids 0, both revisions, and baseline_suite/after_suite carrying the same four pre-existing failure ids.\nVERDICT diff: the reviewed node committed nothing (its worktree HEAD is the dispatch base 69bc6118 and is clean), so the diff base-to-head is empty; I read the delivered artifacts instead -- arm-base.log, arm-cand.log, derive.log, diag.log, main-check.log, slurm-1288391.out and measure-population.sbatch.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: manifest.md answers the brief's question with both arms' counts and added ids 0, run as one exclusive all_debug job on 98dci4-clu-3141 (slurm-1288391.out:1).\nSCORE evidence: 19\nJUSTIFICATION evidence: arm-base.log:1-5 and arm-cand.log:1-5 carry rev=/host=/cwd=/module=/command= headers with EXIT=1 footers, and I reproduced the derivation (0, []) plus its positive control (an injected head FAILED line returns 1, a base one 0).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: no path under reckon/ or tests/ changed (the reviewed worktree is clean at 69bc6118), and every write is a run-directory log/script or node-local scratch the job's EXIT/TERM/INT trap sweeps.\nSCORE durability: 17\nJUSTIFICATION durability: the node adds no test of its own, so its added-ids-0 claim rests on the owned reader reckon/crew/review.py:2114, which three existing tests cover (e.g. tests/test_a_ctest_gate_log_is_read.py) and which I falsified with a synthetic head FAILED line.\nSCORE fit: 19\nJUSTIFICATION fit: measure-population.sbatch and manifest.md carry no plan label, ticket number or version in any symbol, path or comment.\nSCORE reuse: 18\nJUSTIFICATION reuse: measure-population.sbatch:98 calls the owner reckon/crew/review.py:2114 added_failures_from_gate_logs rather than diffing FAILED lines by hand, though its pre-flight summary check at line 90 is a second spelling of the owner's _PYTEST_SUMMARY_RE.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/watch-stream-once-population-at-merge:1 follow-on: the declared report directory was left empty -- no report artifact was written there, so a reader following the declared write scope (as the sibling population nodes' population-report.md invites) finds nothing; the answer exists only in manifest.md.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T225646473009-watch-stream-once-population-at-merge/measure-population.sbatch:90 follow-on: the pre-flight guard's inline summary regex is a second spelling of the owned reckon/crew/review.py:1301 _PYTEST_SUMMARY_RE, so a log the owner's _gate_log_format accepts by its FAILED-line pattern can be refused here -- the guard and the reader can disagree.\nFINDING /home/ITER/mcintos/.cache/reckon-population-lists/watch-stream-once.txt:1 follow-on: the supplied population list names tests/conftest.py and tests/spa_parity_harness.py, which pytest collects as test modules, producing the spurious collection ERROR tests/conftest.py::test_temp_config_home (fixture 'prefix' not found); it is identical at both arms so the differential is unaffected, but it inflates the error count a reader sees.",
+  "review_run_id": "r-20261017T233227779612-review-of-watch-stream-once-population-at-merge-69bc6118d4f8",
+  "reviewed_base_sha": "69bc6118d4f82afa00e84d214fdbabd3a6e75080",
+  "reviewed_head_sha": "69bc6118d4f82afa00e84d214fdbabd3a6e75080",
+  "reviewed_run_id": "r-20261017T225646473009-watch-stream-once-population-at-merge",
+  "reviewer_run_id": "r-20261017T233227779612-review-of-watch-stream-once-population-at-merge-69bc6118d4f8",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T23:39:11.405305+00:00",
+  "total": 109
+}
