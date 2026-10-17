@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured from baseline_suite/after_suite: the reviewed manifest records neither field, so the added-failure count was not taken; the run's own arms are head-gate.log (2 passed, EXIT=0, revision e9f3bc70) and negative-control.log (2 failed, EXIT=1, revision b9264dab)",
+  "base_log_revision": "b9264dabb0a853bc39bc58c262ee993876da8352",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/serve.py:2070 _walk_discovery_signature (called at :544 and :2042)",
+    "reckon/resources.py:578 _scan_resources via iter_resources at :542/:555",
+    "reckon/resources.py:832 _directory_identity_index through _identity_listing at :791 reading metadata_index._reuse_covered",
+    "reckon/roadmap.py:213/:441/:480/:1249 the four private plan readers reached from mcp._roadmap",
+    "reckon/metadata_index.py:555 _covered_files reusing _reuse_covered for the shared walk"
+  ],
+  "completed_at": "2026-10-17T16:24:20.992Z",
+  "dispatched_at": "2026-10-17T16:08:01Z",
+  "findings": [
+    {
+      "file": "tests/test_a_cold_read_walks_the_docs_tree_once.py",
+      "line": "184",
+      "severity": "follow-on",
+      "text": "follow-on: max(cold[\"reads\"].values(), default=0) <= 1 is vacuously true when the measured counter is empty, and the run's only positive control (probe_control, asserted at :172 and :174) is captured before the counters are cleared in the driver at lines 63-65, so no assertion requires the measured window to have observed a value that would fail the bound."
+    },
+    {
+      "file": "reckon/metadata_index.py",
+      "line": "472",
+      "severity": "follow-on",
+      "text": "follow-on: the durability instrument counts only Path.read_text, while the same documents are read through path.read_bytes() in _content_digest (called at :161, :377, :824 and :894), so a repeated byte-level read of a covered file during the covered-file check or index revalidation is invisible to the max(...) <= 1 bound."
+    }
+  ],
+  "head_log_revision": "e9f3bc70f9779e8e172e4e852b2a5da1a1479319",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base b9264dab; f81e2850 routes resources._scan_resources and _identity_listing onto metadata_index._covered_files/_reuse_covered, 0232d1c3/8c1be9c5 add the counting test and separate its two gates, and e9f3bc70 routes the four roadmap plan readers through _read_plan_text; no public signature changed.",
+    "done_when": "the done_when names tests/test_a_cold_read_walks_the_docs_tree_once.py counting os.scandir per directory and Path.read_text per file during one mcp._roadmap, at most one of each and equal to the unshared arm, with the base tree failing the count; head-gate.log records 2 passed at EXIT=0 and negative-control.log records 2 failed at EXIT=1 (docs/plans listed 10 times, each plan read 4 times).",
+    "goal": "the goal is one cold roadmap listing each docs directory once and reading each file at most once, shared across discovery, the resource scan, the covered-file check and sprint liveness; reckon/metadata_index.py:533 extends _covered_files with a project argument shared by reckon/resources.py:589 and reckon/serve.py:2070, and reckon/roadmap.py:213/441/480/1249 route the four private plan readers through the existing memoised _read_plan_text at reckon/_plan_html.py:2208.",
+    "manifest": "read; status complete, commits f81e2850/0232d1c3/8c1be9c5/e9f3bc70, head-gate/negative-control/importer-gate/ruff-delta logs by path with their results, measurement_module /tmp/cold-read-base-0jFCOd/reckon/mcp.py; baseline_suite and after_suite are empty.",
+    "write_paths": "the manifest declares eight paths and the landed commits change exactly reckon/serve.py, reckon/resources.py, reckon/metadata_index.py, reckon/roadmap.py and tests/test_a_cold_read_walks_the_docs_tree_once.py, all inside the declared set."
+  },
+  "justifications": {
+    "durability": "reinstating the pre-change resources._scan_resources rglob walk and the direct path.read_text readers reddens tests/test_a_cold_read_walks_the_docs_tree_once.py:179 and :184, as the base arm shows at EXIT=1.",
+    "evidence": "head-gate.log records 2 passed at EXIT=0 at e9f3bc70 and negative-control.log records the base arm red at EXIT=1, matching the done_when, but the measured window's read counter has no non-emptiness control after the counters are cleared.",
+    "fit": "reckon/metadata_index.py:533 keeps the module idiom of an optional project argument with a mechanism docstring, and the lazy import at reckon/resources.py:586 matches the surrounding style.",
+    "goal_fidelity": "reckon/resources.py:589 and reckon/serve.py:2070 both read the one covered set from reckon/metadata_index.py:533 and reckon/roadmap.py:213 shares reckon/_plan_html.py:2208.",
+    "reuse": "the roadmap readers extend the existing owner _plan_html._read_plan_text at reckon/_plan_html.py:2208 and resources extends metadata_index._covered_files/_reuse_covered at reckon/metadata_index.py:255 rather than restating a walk or a text read.",
+    "scope_discipline": "the four commits touch only the five declared paths, and the declared reckon/sprint_liveness.py and evidence fragment were not modified because the goal was met without them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is one cold roadmap listing each docs directory once and reading each file at most once, shared across discovery, the resource scan, the covered-file check and sprint liveness; reckon/metadata_index.py:533 extends _covered_files with a project argument so reckon/resources.py:589 and reckon/serve.py:2070 share one covered set, and reckon/roadmap.py:213/441/480/1249 route the four private plan readers through the existing memoised _read_plan_text at reckon/_plan_html.py:2208.\nVERDICT done_when: the done_when names tests/test_a_cold_read_walks_the_docs_tree_once.py counting os.scandir per directory and Path.read_text per file during one mcp._roadmap over a 24-plan/4-research/3-sprint tree, at most one of each and equal to the unshared arm, with the base tree failing the count; the manifest records head-gate.log 2 passed EXIT=0 and negative-control.log 2 failed EXIT=1 (docs/plans listed 10 times, each plan file read 4 times), so the gate asserts exactly that measure and its result is recorded.\nVERDICT write_paths: the manifest declares eight paths and the four landed commits change exactly reckon/serve.py, reckon/resources.py, reckon/metadata_index.py, reckon/roadmap.py and tests/test_a_cold_read_walks_the_docs_tree_once.py, all inside the declared set; the declared reckon/sprint_liveness.py, the evidence fragment and the figures directory were not needed and were not touched.\nVERDICT manifest: read; it reports status complete, commits f81e2850/0232d1c3/8c1be9c5/e9f3bc70, head-gate/negative-control/importer-gate/ruff-delta logs by path with their results, measurement_module /tmp/cold-read-base-0jFCOd/reckon/mcp.py, and a failure_attribution for the initial probe; its baseline_suite and after_suite fields are empty.\nVERDICT diff: read commit by commit against base b9264dab; f81e2850 routes resources._scan_resources and _identity_listing onto metadata_index._covered_files/_reuse_covered, 0232d1c3/8c1be9c5 add the counting test and separate its two gates, and e9f3bc70 routes the four roadmap plan readers through _read_plan_text; no public signature changed and no unused code was left behind.\nCALL_SITES: reckon/serve.py:2070 _walk_discovery_signature (called at :544 and :2042), reckon/resources.py:578 _scan_resources via iter_resources at :542/:555, reckon/resources.py:832 _directory_identity_index through _identity_listing at :791 reading metadata_index._reuse_covered, reckon/roadmap.py:213/:441/:480/:1249 the four private plan readers reached from mcp._roadmap, reckon/metadata_index.py:555 _covered_files reusing _reuse_covered for the shared walk\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/resources.py:589 and reckon/serve.py:2070 both read the one covered set from reckon/metadata_index.py:533 and reckon/roadmap.py:213 shares reckon/_plan_html.py:2208, which is the single listing and single read the goal states.\nSCORE evidence: 17\nJUSTIFICATION evidence: head-gate.log records 2 passed EXIT=0 at e9f3bc70 and negative-control.log records the base arm red at EXIT=1 (docs/plans listed 10 times, plans read 4 times), matching the done_when, but the measured window's read counter has no non-emptiness control after the counters are cleared.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four commits touch only the five declared paths, and the declared reckon/sprint_liveness.py and the evidence fragment were not modified because the goal was met without them.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the pre-change resources._scan_resources rglob walk and the direct path.read_text readers reddens tests/test_a_cold_read_walks_the_docs_tree_once.py:179 and :184, as the base arm shows at EXIT=1, so the guard is shown to fire.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/metadata_index.py:533 keeps the module idiom of an optional project argument with a mechanism docstring, and the lazy import at reckon/resources.py:586 matches the surrounding style, though resources.py:737 carries a pre-existing format finding the delta leaves unchanged.\nSCORE reuse: 20\nJUSTIFICATION reuse: no capability is forked; the roadmap readers extend the existing owner _plan_html._read_plan_text at reckon/_plan_html.py:2208 and resources extends metadata_index._covered_files/_reuse_covered at reckon/metadata_index.py:255 rather than restating a walk or a text read.\nFINDING tests/test_a_cold_read_walks_the_docs_tree_once.py:184 follow-on: max(cold[\"reads\"].values(), default=0) <= 1 is vacuously true when the measured counter is empty, and the run's only positive control (probe_control, asserted at :172 and :174) is captured before the counters are cleared in the driver at lines 63-65, so no assertion requires the measured window to have observed a read and a regression that stops reading documents entirely would leave this bound true and the goal unmeasured in the direction that matters.\nFINDING reckon/metadata_index.py:472 follow-on: the durability instrument counts only Path.read_text, while the same documents are read through path.read_bytes() in _content_digest (called at :161, :377, :824 and :894), so a repeated byte-level read of a covered file during the covered-file check or index revalidation is invisible to the max(...) <= 1 bound and the claim reads each file at most once is bounded by one accessor rather than by the file.",
+  "review_run_id": "r-20261017T160715496886-review-of-a-cold-read-walks-the-docs-tree-once-e9f3bc70f977",
+  "reviewed_base_sha": "b9264dabb0a853bc39bc58c262ee993876da8352",
+  "reviewed_head_sha": "e9f3bc70f9779e8e172e4e852b2a5da1a1479319",
+  "reviewed_run_id": "r-20261017T153357520669-a-cold-read-walks-the-docs-tree-once",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T16:22:06.780228+00:00",
+  "total": 112
+}
