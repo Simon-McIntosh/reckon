@@ -1834,29 +1834,15 @@ def with_section_attempts(
 
 
 def _recorded_live_run_classifications(project: str) -> dict[str, dict[str, Any]]:
-    """Return the latest watcher event for every run recorded in its stream."""
+    """Return the latest watcher event for every run recorded in its stream.
+
+    The stream is read through the shared watch-stream reader, so this and the
+    sprint liveness derivation share one parse of the stream per read.
+    """
 
     from reckon.crew import runs
 
-    path = runs.watch_stream_path(project)
-    if not path.is_file():
-        return {}
-    latest: dict[str, dict[str, Any]] = {}
-    try:
-        with path.open(encoding="utf-8") as stream:
-            for line in stream:
-                event = runs.parse_stream_line(line)
-                if event is None or event.get("legacy"):
-                    continue
-                run_id = str(event.get("run_id") or "")
-                classification = str(
-                    event.get("recovery_classification") or event.get("to_state") or ""
-                )
-                if run_id and classification:
-                    latest[run_id] = event
-    except OSError:
-        return {}
-    return latest
+    return runs.watch_stream_latest_events(project)
 
 
 def partition_live_runs(
