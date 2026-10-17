@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:_roadmap",
+    "reckon/mcp.py:_audit",
+    "reckon/mcp_discovery.py:_discover_project"
+  ],
+  "completed_at": "2026-10-17T01:14:15.151Z",
+  "dispatched_at": "2026-10-17T00:59:14Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the per-invocation logs carry instrument_ok=True and the check lines pass; the driver block predates the summarizer's fix and the cited summary is the regenerated one",
+      "recorded_at": "2026-10-17T01:16:53.105794+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "a read-only measurement owes no suite delta; its negative_control_note states so",
+      "recorded_at": "2026-10-17T01:17:14.129872+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "slurm-cold-roadmap-1287771.log",
+      "line": "29",
+      "severity": "follow-on",
+      "text": "follow-on: the driver's summary block reports instrument_ok=False for all six timed invocations while logs/summary.txt reports True, because summarize_logs.py (mtime 02:55:41) was revised after the driver ran it (02:54:15); a later reader opening the driver log sees a contradiction with the summary the manifest cites, though the per-invocation logs themselves carry instrument_ok=True and the check=...passed=True lines, so the evidence stands."
+    },
+    {
+      "file": "manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite and after_suite are left empty although the dispatch's measure names both fields, so a reader cannot tell \"no suite was owed by this read-only measurement\" from \"the fields were forgotten\"; the negative_control_note explains it, but the armed-suite fields themselves carry no such note."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "the node changes no repository file (its brief states \"This node changes no product code and commits nothing\"); its worktree HEAD equals the reviewed head 6faeb3a03 and git status is clean, so the diff against base d249200c7 is empty by design, not missing -- the product change it measures (the persisted plan-parse reuse, commit b048fafa4) already lives between base and head.",
+    "done_when": "the dispatch's measure is met by logs/summary.txt (head cold-roadmap median 11.429 s PASS under 30 s; base 106.085 s CONTROL-HOLDS over it), the two build walls (275.905 s head, 114.534 s base), warm roadmap 0.701/0.891 s and warm audit 1.147/2.238 s, cold discovery 0.290/0.245 s, every per-invocation log naming code revision, corpus revision, host and literal command and ending EXIT=0, and a cumulative cProfile per arm in profiles/; no path under reckon/ or tests/ changed.",
+    "goal": "the goal is \"Measure the cold roadmap over a persisted parse at head and base on an exclusive node\"; the run measured it -- logs/run-head-{1,2,3}.log and logs/run-base-{1,2,3}.log give cold roadmaps 11.429/11.405/12.008 s (head 6faeb3a03) and 105.575/106.656/106.085 s (base d249200c7) on exclusive all_debug node 98dci4-clu-3141 in job 1287771, over one frozen head-docs corpus (digest 38c8100ca9820204f94e31d5328ba7ca, unchanged), each process printing reckon.__file__ under its own arm's extracted tree.",
+    "manifest": "read at .../runs/r-20261017T000930623892-cold-roadmap-reuses-the-parse/manifest.md; status complete with verdict \"head cold roadmap is under the 30 s deadline and the base control exceeds it\", the medians, the untargeted-build figure, and the honest caveat that head still parses 183 plan documents per fresh process; its figures reconcile with logs/summary.txt and the eight per-invocation logs, and its baseline_suite/after_suite are empty because this read-only measurement ran no suite.",
+    "write_paths": "the declared scope is the report directory .../reports/reckon/a-read-answers-inside-its-deadline/cold-roadmap-reuses-the-parse, whose only file is report.md; the profiler, driver, summarizer and logs sit in the node's own run directory, and the reviewed worktree is clean at the reviewed head with no commit, so nothing outside the declared scope changed."
+  },
+  "justifications": {
+    "durability": "this node adds no assertion, so nothing it produced reddens on a regression of the measured property; the guard that exists is run-local (summarize_logs.py prints \"verdict: FAIL\" if the head median reaches 30 s or the base control does not hold) and the property is otherwise guarded by the fixed deliverable's own committed test, not by this node.",
+    "evidence": "the gate asserts the done_when exactly -- logs/summary.txt medians reconcile line-for-line with logs/run-head-1.log (call=roadmap phase=cold seconds=11.429) and logs/run-base-3.log (106.085), the invocations carry a positive instrument check (observed=audit_checked value=236, observed=discovery_inventory value=906) that a fast read is not an empty one, and the base arm is the in-session negative control that exceeds 30 s; scored below full because slurm-cold-roadmap-1287771.log:29 records instrument_ok=False against logs/summary.txt's True, a stale copy from before summarize_logs.py was revised.",
+    "fit": "the added names are mechanism vocabulary (cold_roadmap_arm.py, run_cold_roadmap.sh, summarize_logs.py, merge_profiles.py) with no plan, sprint or ticket identifier, and the per-invocation logs carry the revision/host/command header and EXIT= trailer the repo's own gate logs use.",
+    "goal_fidelity": "the goal is met verbatim -- the three production entry points (reckon/mcp.py:_roadmap) were driven cold and warm by cold_roadmap_arm.py, and the head/base cold-roadmap medians (11.429 s vs 106.085 s) are the deliverable; the single point off reflects that head still parses all 183 plan documents per fresh process, so the win is the persisted store plus per-process dedup, which the report states rather than hides.",
+    "reuse": "the node adds no definition in the repository, and the read profiler it wrote is not a fork -- a search of the tracked tree (git ls-files | grep -i profil, and a grep for profile_reads/cProfile under reckon/) finds no live read-profiler to extend, the \u00a76 health-review profiler having been deleted as plan \u00a719 records.",
+    "scope_discipline": "git -C <worktree> status is clean at 6faeb3a03 with no commit past the reviewed head, the only report-scope file is report.md, and the scripts and logs are confined to the run directory -- no path under reckon/ or tests/ changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"Measure the cold roadmap over a persisted parse at head and base on an exclusive node\"; the run measured it -- logs/run-head-{1,2,3}.log and logs/run-base-{1,2,3}.log give cold roadmaps 11.429/11.405/12.008 s (head 6faeb3a03) and 105.575/106.656/106.085 s (base d249200c7) on exclusive all_debug node 98dci4-clu-3141 in job 1287771, over one frozen head-docs corpus (digest 38c8100ca9820204f94e31d5328ba7ca, unchanged), each process printing reckon.__file__ under its own arm's extracted tree.\nVERDICT done_when: the dispatch's measure is met by logs/summary.txt (head cold-roadmap median 11.429 s PASS under 30 s; base 106.085 s CONTROL-HOLDS over it), the two build walls (275.905 s head, 114.534 s base), warm roadmap 0.701/0.891 s and warm audit 1.147/2.238 s, cold discovery 0.290/0.245 s, every per-invocation log naming code revision, corpus revision, host and literal command and ending EXIT=0, and a cumulative cProfile per arm in profiles/; no path under reckon/ or tests/ changed.\nVERDICT write_paths: the declared scope is the report directory .../reports/reckon/a-read-answers-inside-its-deadline/cold-roadmap-reuses-the-parse, whose only file is report.md; the profiler, driver, summarizer and logs sit in the node's own run directory, and the reviewed worktree is clean at the reviewed head with no commit, so nothing outside the declared scope changed.\nVERDICT manifest: read at .../runs/r-20261017T000930623892-cold-roadmap-reuses-the-parse/manifest.md; status complete with verdict \"head cold roadmap is under the 30 s deadline and the base control exceeds it\", the medians, the untargeted-build figure, and the honest caveat that head still parses 183 plan documents per fresh process; its figures reconcile with logs/summary.txt and the eight per-invocation logs, and its baseline_suite/after_suite are empty because this read-only measurement ran no suite.\nVERDICT diff: the node changes no repository file (its brief states \"This node changes no product code and commits nothing\"); its worktree HEAD equals the reviewed head 6faeb3a03 and git status is clean, so the diff against base d249200c7 is empty by design, not missing -- the product change it measures (the persisted plan-parse reuse, commit b048fafa4) already lives between base and head.\nCALL_SITES: reckon/mcp.py:_roadmap, reckon/mcp.py:_audit, reckon/mcp_discovery.py:_discover_project\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the goal is met verbatim -- the three production entry points (reckon/mcp.py:_roadmap) were driven cold and warm by cold_roadmap_arm.py, and the head/base cold-roadmap medians (11.429 s vs 106.085 s) are the deliverable; the single point off reflects that head still parses all 183 plan documents per fresh process, so the win is the persisted store plus per-process dedup, which the report states rather than hides.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate asserts the done_when exactly -- logs/summary.txt medians reconcile line-for-line with logs/run-head-1.log (call=roadmap phase=cold seconds=11.429) and logs/run-base-3.log (106.085), the invocations carry a positive instrument check (observed=audit_checked value=236, observed=discovery_inventory value=906) that a fast read is not an empty one, and the base arm is the in-session negative control that exceeds 30 s; scored below full because slurm-cold-roadmap-1287771.log:29 records instrument_ok=False against logs/summary.txt's True, a stale copy from before summarize_logs.py was revised.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git -C <worktree> status is clean at 6faeb3a03 with no commit past the reviewed head, the only report-scope file is report.md, and the scripts and logs are confined to the run directory -- no path under reckon/ or tests/ changed.\nSCORE durability: 14\nJUSTIFICATION durability: this node adds no assertion, so nothing it produced reddens on a regression of the measured property; the guard that exists is run-local (summarize_logs.py prints \"verdict: FAIL\" if the head median reaches 30 s or the base control does not hold) and the property is otherwise guarded by the fixed deliverable's own committed test, not by this node.\nSCORE fit: 18\nJUSTIFICATION fit: the added names are mechanism vocabulary (cold_roadmap_arm.py, run_cold_roadmap.sh, summarize_logs.py, merge_profiles.py) with no plan, sprint or ticket identifier, and the per-invocation logs carry the revision/host/command header and EXIT= trailer the repo's own gate logs use.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node adds no definition in the repository, and the read profiler it wrote is not a fork -- a search of the tracked tree (git ls-files | grep -i profil, and a grep for profile_reads/cProfile under reckon/) finds no live read-profiler to extend, the \u00a76 health-review profiler having been deleted as plan \u00a719 records.\nFINDING slurm-cold-roadmap-1287771.log:29 follow-on: the driver's summary block reports instrument_ok=False for all six timed invocations while logs/summary.txt reports True, because summarize_logs.py (mtime 02:55:41) was revised after the driver ran it (02:54:15); a later reader opening the driver log sees a contradiction with the summary the manifest cites, though the per-invocation logs themselves carry instrument_ok=True and the check=...passed=True lines, so the evidence stands.\nFINDING manifest.md:21 follow-on: baseline_suite and after_suite are left empty although the dispatch's measure names both fields, so a reader cannot tell \"no suite was owed by this read-only measurement\" from \"the fields were forgotten\"; the negative_control_note explains it, but the armed-suite fields themselves carry no such note.\n",
+  "review_run_id": "r-20261017T005844089200-review-of-cold-roadmap-reuses-the-parse-6faeb3a03fe4",
+  "reviewed_base_sha": "d249200c71933bee80c0076617fa63c1ae1c74a8",
+  "reviewed_head_sha": "6faeb3a03fe4a120f8bfd20af2538d8c61654a13",
+  "reviewed_run_id": "r-20261017T000930623892-cold-roadmap-reuses-the-parse",
+  "reviewer": "r-20261017T005844089200-review-of-cold-roadmap-reuses-the-parse-6faeb3a03fe4",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T01:23:42.667835+00:00",
+  "total": 108
+}
