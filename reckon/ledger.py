@@ -994,10 +994,15 @@ def input_stamp(project: str, root: str | Path | None = None) -> str | None:
 
 
 def _default_cache_root() -> Path:
-    """The user cache directory, as resolved without a configured home."""
-    cache_home = os.environ.get("XDG_CACHE_HOME")
-    base = Path(cache_home) if cache_home else Path.home() / ".cache"
-    return base / "reckon"
+    """The user cache root: the pick cache resolved with no configured home.
+
+    ``client`` is the one kind :func:`_store.cache_root` resolves without
+    consulting the configuration home, so the directory above it is the reckon
+    user cache root — ``$XDG_CACHE_HOME/reckon`` or ``~/.cache/reckon``.
+    Asking ``_store`` for it keeps one owner for that rule instead of a second
+    copy of it here.
+    """
+    return _store.cache_root("client").parent
 
 
 def _index_directory() -> Path:
