@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="289">
+<meta name="plan-version" content="290">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1141,7 +1141,10 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>committed at 169b93999023b5f73c1460355031c63f6f86261d on a clean worktree; gate-files-final.log at that revision is 19 passed, EXIT=0, and gate-family-final.log over the whole reload family at the same revision is 81 passed, 1 failed, that failure being test_follower_freshness.py's running-follower case, which fails identically at the untouched pre-change parent and so is not a regression</p></div>
 </div>
 <div class="r-comment" data-section="s44" data-id="c-run-r-20261017T221237925377-review-of-reload-tree-not-pruned-population-at-merge-5274a1484670" data-who="reckon-build" data-when="2026-10-17T22:19:02.848Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261017T212029224967-reload-tree-not-pruned-population-at-merge: a parsed six-dimension record (goal_fidelity 19, evidence 17, scope_discipline 19, durability 11, fit 18, reuse 20; total 104) at head 5274a1484670, carrying added_failure_count 2 and both added ids derived from the reviewed run&#x27;s own baseline_suite/after_suite arm logs; two follow-on findings (a weaker-than-named EXIT guard in the derivation helper, and the arm log&#x27;s command outside the check-manifest 5-line window); no blocking finding.</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20261017T212029224967-reload-tree-not-pruned-population-at-merge: a parsed six-dimension record (goal_fidelity 19, evidence 17, scope_discipline 19, durability 11, fit 18, reuse 20; total 104) at head 5274a1484670, carrying added_failure_count 2 and both added ids derived from the reviewed run's own baseline_suite/after_suite arm logs; two follow-on findings (a weaker-than-named EXIT guard in the derivation helper, and the arm log's command outside the check-manifest 5-line window); no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s44" data-id="c-run-r-20261017T212029224967-reload-tree-not-pruned-population-at-merge" data-who="reckon-build" data-when="2026-10-17T22:03:13.576Z">
+    <div class="r-comment-body"><p>Population measurement for §44: the 169-file importer population over base e9ad3d354 and merge candidate 3ad5f681 adds no failing id that is new at the candidate — the two ids the loaded runs differ by (test_crew_dispatch_arming.py::test_a_peer_sessions_follower_does_not_admit_this_dispatch and test_scoring_dispatches_its_review.py::test_an_unattached_session_refuses_the_automatic_dispatch_too) also fail alone at base, 3/5 each, with the same sample watch-seat lock error, so the merge introduces no importer regression; both arm logs, the derivation and the 20 alone runs are under the run directory.</p></div>
 </div>
 <div class="r-comment" data-section="s45" data-id="c-s45-folded-into-s44-run" data-who="reckon-build" data-when="2026-10-17T20:01:00Z">
     <div class="r-comment-body"><p>Folded into the §44 run (<code>r-20261017T173146842533</code>) at 20:00Z, at the lead's request to stop the noise now. That run already owns <code>reckon/crew_follow_commands.py</code>, so §45's deliverable and test land with §44's next delivery under one review and one importer population, rather than waiting for §44 to merge first. The run's scope was widened to add this section's test file.</p></div>
