@@ -9,7 +9,9 @@
   re-based the same way: it now measures the aggregate's own row count, so a caller passing the
   aggregate's rows to a project whose runs are split is not mistaken for a shrinking write.
   <code>record_hold_checks</code> reads and writes the aggregate's own rows and its holds rather
-  than the union, so a hold transition cannot carry per-run rows into the tracked aggregate.</p>
+  than the union, so a hold transition cannot carry per-run rows into the tracked aggregate.
+  <code>ledger.register_member</code> reads the aggregate's own rows for the same reason: a
+  roster registration in a project whose runs own files folded them until this landed.</p>
 
   <p id="the-ledger-writer-refuses-a-fold-measure"><strong>Measure.</strong>
   <code>tests/test_the_ledger_writer_refuses_a_fold.py</code> drives a throwaway project whose
@@ -18,40 +20,56 @@
   changes neither copy; a write of the aggregate's own rows plus one new run is accepted, and its
   fifty files are untouched; a <code>record_hold_checks</code> call opens a hold, leaves the
   aggregate at 10 rows and the 50 files byte-identical, and the reader still returns 60 rows.
-  Head gate: <strong>4 passed, EXIT=0</strong>.</p>
+  Five further cases drive one production writer each over that same project — the idle-member
+  reap, the disposable-identity retirement, the gate re-run record, and the figure and duration
+  backfills — and each finds the aggregate's ten rows and fifty files still standing after the
+  writer ran. Head gate: <strong>12 passed, EXIT=0</strong>.</p>
 
   <p id="the-ledger-writer-refuses-a-fold-negative-control"><strong>Declared negative control,
-  executed and logged.</strong> Against the base tree (<code>2e9a07c237</code>, guard absent) the
-  union write is accepted: the same test file run there is <strong>4 failed, EXIT=1</strong>. The
-  two refusal cases fail on <em>DID NOT RAISE</em>, the append case fails on the base run-count
-  guard measuring the union (<em>“this write takes the committed run count from 60 to 11”).
-  The hold case fails because the base hold path folds the fifty rows: its aggregate row list
-  comes back with 50 more items, first extra <code>f-000</code>, which is the defect this node
-  closes reproduced rather than asserted. Log:
-  <code>logs/negative-control-base-arm.log</code>.</p>
+  executed and logged.</strong> Against the base tree (<code>2e9a07c23</code>, guard absent) the
+  whole test file is <strong>9 failed, EXIT=1</strong>. The refusal cases fail on <em>DID NOT
+  RAISE</em> and the append case on the base run-count guard measuring the union (<em>“this write
+  takes the committed run count from 60 to 11”</em>); the hold case's aggregate row list comes back
+  with 50 more items, first extra <code>f-000</code>. The five writer cases fail because each
+  writer folds the fifty per-run rows into the aggregate, which is the defect reproduced through
+  the production path rather than asserted. With the guard present and the writers unrepaired the
+  same cases fail the other way, each writer refused, so the cases hold the guard and the repairs
+  together and neither half is green alone. Log:
+  <code>logs/attempt2-negative-control-base.log</code>.</p>
 
   <p id="the-ledger-writer-refuses-a-fold-callers"><strong>Other callers that write the
-  aggregate, and how they read.</strong> Every one below reads <code>ledger.load</code>'s union
-  and writes it back, so each folds when the project's runs are split and each is refused by this
-  guard until it is repaired:
-  <code>reckon/crew/routing.py:2825→2882</code> (idle session-member reap),
-  <code>reckon/crew/promotion_gate.py:909→949</code> (gate re-run when the run's file is missing),
-  <code>reckon/crew/promotion_records.py:665→678</code> (identity retirement),
-  <code>scripts/derive_run_figures.py:42→64</code> and
-  <code>scripts/backfill_run_durations.py:124→215</code> (row backfills). Each is outside this
-  node's write scope and is listed in <code>follow_ons</code>.</p>
+  aggregate, and how they read.</strong> Five production writers read
+  <code>ledger.load</code>'s union and would have handed the per-run rows back to the writer, so
+  each is repaired here rather than left to refuse: the idle session-member reap
+  (<code>reckon/crew/routing.py</code>), the gate re-run record when the run's file is missing
+  (<code>reckon/crew/promotion_gate.py</code>), the disposable-identity retirement
+  (<code>reckon/crew/promotion_records.py</code>), and the two row backfills
+  (<code>scripts/derive_run_figures.py</code>, <code>scripts/backfill_run_durations.py</code>), and
+  <code>ledger.register_member</code> inside the ledger itself.
+  Each reads the aggregate's own rows through <code>ledger.load_aggregate</code>, passes those to
+  <code>ledger.write</code>, and patches a row held by its own file through that file's canonical
+  serialiser, so the union's run rows are never copied into the aggregate and no per-run file is
+  removed or folded. A case per writer, driven over the same ten-row, fifty-file project, asserts
+  the aggregate's row set is unchanged and every file still stands. A sixth writer lives in the
+  ledger itself: <code>register_member</code> read the union and folded it on every roster
+  registration in a split project, which the wider neighbour arm found and which is repaired the
+  same way.</p>
 
-  <p id="the-ledger-writer-refuses-a-fold-neighbours"><strong>Neighbouring suites, base against
-  head.</strong> <code>test_ledger_write_keeps_run_files.py</code>,
-  <code>test_ledger_write_cannot_shrink.py</code>, <code>test_roster_loss_guard.py</code> and
-  <code>test_hold_check_leaves_the_tree_clean.py</code> run as one arm per revision: base
-  <strong>32 passed, EXIT=0</strong>; head <strong>29 passed, 3 errors, EXIT=1</strong>. All three
-  errors are the same fixture in <code>test_hold_check_leaves_the_tree_clean.py</code>, which
-  seeds dual placement by writing <code>ledger.load</code>'s union back — the shape this writer
-  now refuses — so the repair is to seed the aggregate row directly. A seven-file head arm over
-  the same four plus <code>test_append_run_writes_one_run_file.py</code>,
-  <code>test_ledger_files_and_index_agree.py</code> and <code>test_ledger.py</code> reached 215 of
-  250 cases with no failure and no error beyond those three, then its launcher was killed at the
-  background ceiling, so that log carries no <code>EXIT=</code> line and is reported as
-  incomplete rather than as green.</p>
+  <p id="the-ledger-writer-refuses-a-fold-neighbours"><strong>Neighbouring suites, head.</strong>
+  Fourteen files run as one arm: the two above plus <code>test_ledger.py</code>,
+  <code>test_ledger_write_keeps_run_files.py</code>, <code>test_ledger_write_cannot_shrink.py</code>,
+  <code>test_ledger_files_and_index_agree.py</code>,
+  <code>test_append_run_writes_one_run_file.py</code>, <code>test_roster_loss_guard.py</code>,
+  <code>test_promotion_retires_a_disposable_identity.py</code>,
+  <code>test_crew_member_reaping.py</code>, <code>test_verify_gate_command_option.py</code>,
+  <code>test_tag_backfill.py</code>,
+  <code>test_a_release_never_folds_run_files_into_the_aggregate.py</code> and
+  <code>test_derived_figures_reach_a_reader.py</code>. It reported <strong>278 passed, 2
+  failed</strong>, both failures in <code>test_ledger.py</code> and both from
+  <code>register_member</code>'s own fold, which the arm found rather than the brief naming it:
+  registering a member over a project whose runs own files was refused. With that repair in, the
+  two cases pass and the two suites a split ledger exercises directly are <strong>14 passed,
+  EXIT=0</strong>; a seven-file arm over the ledger-write neighbours is <strong>154 passed,
+  EXIT=0</strong>. Every earlier arm in this node's history reported a smaller or incomplete
+  figure, and the revision that arm ran against is recorded in its log.</p>
 </section>
