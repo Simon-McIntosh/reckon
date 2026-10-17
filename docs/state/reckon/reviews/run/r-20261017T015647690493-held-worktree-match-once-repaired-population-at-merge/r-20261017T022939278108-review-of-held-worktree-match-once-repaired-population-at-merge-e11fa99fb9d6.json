@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "e11fa99fb9d6ee575d37ad3ea009e73a75280227",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T02:49:43.709Z",
+  "dispatched_at": "2026-10-17T02:30:23Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T015647690493-held-worktree-match-once-repaired-population-at-merge/gate-base.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the two gate logs' first header lines were rewritten after the job (normalise-log-headers.py in the run directory) rather than emitted by the job in the audit's labelled form, so the logs are post-processed artefacts; every recorded fact (revision, host, tree, command, MODULE_FILE, summary, EXIT=) is unchanged and the rewrite is disclosed in the manifest's evidence_inputs, so it does not hold the node."
+    }
+  ],
+  "head_log_revision": "34e4c79ef22f0fea2a87e625ed3d7dddda97fca9",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "The reviewed node landed no repository change; its worktree head equals base e11fa99fb9d6ee575d37ad3ea009e73a75280227 and is clean, so the diff against base is empty and the deliverable is the measurement and its logs rather than code.",
+    "done_when": "The done_when names two logs from one exclusive job, each naming its revision, host and literal command, proving reckon.__file__ lies under its own checkout, carrying pytest's summary line and ending in EXIT=, plus alone-runs of every added id five times at each revision; gate-base.log:1 and gate-candidate.log:1 carry the labelled header, MODULE_FILE lines under their own checkouts, the summaries \"1 failed, 917 passed\" / \"1 failed, 922 passed\" and EXIT=1, job-1287829.log records one exclusive all_debug job, and no id was added so that alone-run clause is satisfied vacuously while the six earlier load-only ids were run 5x at each revision (repeats/summary.txt, every row 0/5).",
+    "goal": "The reviewed node's goal is to measure the importer population of the repaired held-worktree record index at base and at its merge candidate on an exclusive node; its manifest and report measure exactly that, running the 105-file population list at base e11fa99fb (104 files, the one file added by the candidate dropped) and at candidate 34e4c79ef (105 files), and I verified the two arm command lines equal the list and the list minus that one file.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T015647690493-held-worktree-match-once-repaired-population-at-merge/manifest.md; status complete, commits none, tests line records both arms' counts with their log paths, baseline_suite and after_suite carry the two revisions with the single failing id each, and failure_attribution is empty.",
+    "write_paths": "The source manifest declares one report path under the plan's reports directory; the node wrote only there plus its own run directory (manifest.md, the two gate logs, the id-set files, repeats/, job log), and no path under reckon/ or tests/ changed, confirmed by the reviewed worktree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/held-worktree-match-once-repaired-population-at-merge sitting clean at its base revision."
+  },
+  "justifications": {
+    "durability": "the node adds no assertion and no code, so no repository test guards this measurement, but the empty added set is a measured absence backed by a demonstrated positive control (job-1287829.log reports BASE-FAILED 1 / CAND-FAILED 1, the parse seeing the one real failure in each arm) rather than an instrument that reads nothing.",
+    "evidence": "gate-base.log and gate-candidate.log each carry a revision/host/command header, a MODULE_FILE line under their own checkout, the pytest summary and EXIT=, and the failure-id sets in base-failed-ids.txt and cand-failed-ids.txt are equal (added-ids.txt empty), so the done_when's measure is recorded, not merely claimed.",
+    "fit": "the gate logs, id-set files and manifest (manifest.md:1) follow the run's declared artefact idiom with no plan label, stage name or revision tag leaked into source.",
+    "goal_fidelity": "the candidate arm's file set (gate-candidate.log:1) is byte-identical to the 105-file population list and the base arm's is that list minus the one candidate-added file, so the measurement covers exactly the population the goal names.",
+    "reuse": "the node adds no source definition at all (commits none, changed_paths none), so there is no capability to fork; a search of the reviewed tree over reckon/crew found no competing population-reading mechanism the node re-implemented.",
+    "scope_discipline": "every artefact the node produced lies under its declared report path or its own run directory and the reviewed worktree is clean at base, so no path under reckon/ or tests/ was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The reviewed node's goal is to measure the importer population of the repaired held-worktree record index at base and at its merge candidate on an exclusive node; its manifest and report measure exactly that, running the 105-file population list at base e11fa99fb (104 files, the one file added by the candidate dropped) and at candidate 34e4c79ef (105 files), and I verified the two arm command lines equal the list and the list minus that one file.\nVERDICT done_when: The done_when names two logs from one exclusive job, each naming its revision, host and literal command, proving reckon.__file__ lies under its own checkout, carrying pytest's summary line and ending in EXIT=, plus alone-runs of every added id five times at each revision; gate-base.log:1 and gate-candidate.log:1 carry the labelled header, MODULE_FILE lines under their own checkouts, the summaries \"1 failed, 917 passed\" / \"1 failed, 922 passed\" and EXIT=1, job-1287829.log records one exclusive all_debug job, and no id was added so that alone-run clause is satisfied vacuously while the six earlier load-only ids were run 5x at each revision (repeats/summary.txt, every row 0/5).\nVERDICT write_paths: The source manifest declares one report path under the plan's reports directory; the node wrote only there plus its own run directory (manifest.md, the two gate logs, the id-set files, repeats/, job log), and no path under reckon/ or tests/ changed, confirmed by the reviewed worktree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/held-worktree-match-once-repaired-population-at-merge sitting clean at its base revision.\nVERDICT manifest: Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T015647690493-held-worktree-match-once-repaired-population-at-merge/manifest.md; status complete, commits none, tests line records both arms' counts with their log paths, baseline_suite and after_suite carry the two revisions with the single failing id each, and failure_attribution is empty.\nVERDICT diff: The reviewed node landed no repository change; its worktree head equals base e11fa99fb9d6ee575d37ad3ea009e73a75280227 and is clean, so the diff against base is empty and the deliverable is the measurement and its logs rather than code.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the candidate arm's file set (gate-candidate.log:1) is byte-identical to the 105-file population list and the base arm's is that list minus the one candidate-added file, so the measurement covers exactly the population the goal names.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-base.log and gate-candidate.log each carry a revision/host/command header, a MODULE_FILE line under their own checkout, the pytest summary and EXIT=, and the failure-id sets in base-failed-ids.txt and cand-failed-ids.txt are equal (added-ids.txt empty), so the done_when's measure is recorded, not merely claimed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every artefact the node produced lies under its declared report path or its own run directory and the reviewed worktree is clean at base, so no path under reckon/ or tests/ was touched.\nSCORE durability: 15\nJUSTIFICATION durability: the node adds no assertion and no code, so no repository test guards this measurement, but the empty added set is a measured absence backed by a demonstrated positive control (job-1287829.log reports BASE-FAILED 1 / CAND-FAILED 1, the parse seeing the one real failure in each arm) rather than an instrument that reads nothing.\nSCORE fit: 18\nJUSTIFICATION fit: the gate logs, id-set files and manifest (manifest.md:1) follow the run's declared artefact idiom with no plan label, stage name or revision tag leaked into source.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node adds no source definition at all (commits none, changed_paths none), so there is no capability to fork; a search of the reviewed tree over reckon/crew found no competing population-reading mechanism the node re-implemented.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T015647690493-held-worktree-match-once-repaired-population-at-merge/gate-base.log:1 follow-on: the two gate logs' first header lines were rewritten after the job (normalise-log-headers.py in the run directory) rather than emitted by the job in the audit's labelled form, so the logs are post-processed artefacts; every recorded fact (revision, host, tree, command, MODULE_FILE, summary, EXIT=) is unchanged and the rewrite is disclosed in the manifest's evidence_inputs, so it does not hold the node.\n",
+  "review_run_id": "r-20261017T022939278108-review-of-held-worktree-match-once-repaired-population-at-merge-e11fa99fb9d6",
+  "reviewed_base_sha": "e11fa99fb9d6ee575d37ad3ea009e73a75280227",
+  "reviewed_head_sha": "e11fa99fb9d6ee575d37ad3ea009e73a75280227",
+  "reviewed_run_id": "r-20261017T015647690493-held-worktree-match-once-repaired-population-at-merge",
+  "role": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T02:53:49.766602+00:00",
+  "total": 109
+}
