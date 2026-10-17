@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="385">
+<meta name="plan-version" content="386">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1817,7 +1817,7 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
     <div class="r-comment-body"><p>§20 landed: both readers of a gate log's first-line revision share one label pattern, matched in any case (merge <code>ea59accdc</code>). No added failure is attributable in the stacked whole suite. <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed.html#s20">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s20" data-id="c-run-r-20261017T173945029495-a-revision-label-is-read-in-any-case" data-who="reckon-build" data-when="2026-10-17T18:10:37Z">
-    <div class="r-comment-body"><p>Compiled _GATE_LOG_REVISION in reckon/crew/reports.py with re.IGNORECASE and pointed reckon/crew/review.py&#x27;s recorded_log_revision at that one pattern (removing a case- and label-sensitive duplicate) so both readers accept REV=, Revision: and rev= while the label stays required; head gate 9 passed / EXIT=0, base-tree control 6 failed / 3 passed / EXIT=1.</p></div>
+    <div class="r-comment-body"><p>Compiled _GATE_LOG_REVISION in reckon/crew/reports.py with re.IGNORECASE and pointed reckon/crew/review.py's recorded_log_revision at that one pattern (removing a case- and label-sensitive duplicate) so both readers accept REV=, Revision: and rev= while the label stays required; head gate 9 passed / EXIT=0, base-tree control 6 failed / 3 passed / EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20261017T175648147679-review-of-the-split-leak-scan-reads-the-real-mounts-e0272364a413" data-who="reckon-build" data-when="2026-10-17T18:03:25.463Z">
     <div class="r-comment-body"><p>Reviewed run r-20261017T173820732307-the-split-leak-scan-reads-the-real-mounts at head e0272364a: goal met (conftest captures the mounts path at import, the fixture reads it), scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 15, fit 18, reuse 5 (total 93), with two follow-on findings — workstation_mounts() forks reckon/flight.py:458's parse, and the fixture's use of the reader at tests/test_split_existing_runs.py:85 is unpinned.</p></div>
@@ -1827,6 +1827,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s21" data-id="c-close-s21" data-who="reckon-build" data-when="2026-10-17T19:44:00Z">
     <div class="r-comment-body"><p>§21 landed: the split leak scan reads the workstation's mounts captured at import, through the one mounts reader (merge <code>9765e06a9</code>). No added failure is attributable in the stacked whole suite. <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed.html#s21">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261017T173820732307-the-split-leak-scan-reads-the-real-mounts" data-who="reckon-build" data-when="2026-10-17T18:17:05Z">
+    <div class="r-comment-body"><p>tests/conftest.py captures the mounts file path at import (before any fixture replaces RECKON_HOME/RECKON_MOUNTS_PATH); workstation_mounts() delegates to reckon.flight.mounted_project_docs() with that path after it gained an optional mounts_file parameter, and tests/test_split_existing_runs.py&#x27;s leak-scan fixture reads through it. tests/test_the_split_leak_scan_reads_the_real_mounts.py empties that home and finds the reader still returns the operator&#x27;s mounts, plus a case that calls the fixture&#x27;s wrapped body under the empty home so reverting the fixture to the live resolver fails — new file 2 passed, tests/test_split_existing_runs.py 8 passed three times under -n 4, importers of mounted_project_docs 121 passed 1 skipped, and against the fixture-resolves-live mutation the vacuity guard fires (1 failed).</p></div>
 </div>
 </section>
 </main>
