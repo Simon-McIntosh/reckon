@@ -25,7 +25,7 @@
 <meta name="plan-sprint" content="S22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.6">
-<meta name="plan-version" content="82">
+<meta name="plan-version" content="83">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -734,6 +734,9 @@
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261017T165515724957-review-of-the-ledger-writer-refuses-a-fold-80a282c4bc98" data-who="reckon-build" data-when="2026-10-17T17:04:42.421Z">
     <div class="r-comment-body"><p>Independent review of r-20261017T153140915934-the-ledger-writer-refuses-a-fold at head 80a282c4bc982adbd55609f4bfe65b311be47a4c (base 2e9a07c237df7e312e81b47ad4d8744bde532dfc): the guard at reckon/ledger.py:1835 and record_hold_checks at reckon/ledger.py:3798 do what the goal states; all six dimensions scored 15..20 (total 109); one follow-on finding (an identical _write_run_row helper at scripts/derive_run_figures.py:93 and scripts/backfill_run_durations.py:247); no blocking finding; added_failure_count 0 from the reviewed run's own gate logs.</p></div>
 </div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261017T190507911603-review-of-the-ledger-writer-refuses-a-fold-d26206af9b1a" data-who="reckon-build" data-when="2026-10-17T19:21:47.340Z">
+    <div class="r-comment-body"><p>independent review of run r-20261017T153140915934-the-ledger-writer-refuses-a-fold at head d26206af9 (base 2e9a07c237): scores goal_fidelity 17, evidence 15, scope_discipline 19, durability 16, fit 17, reuse 12, total 96; one blocking finding (reckon/ledger.py:3709, repair_completion reads ledger.load&#x27;s union and now raises the fold refusal on the split layout, reproduced in a scratch tree) and one follow-on (scripts/derive_run_figures.py:101 and scripts/backfill_run_durations.py:255 duplicate one run-file amend idiom). Record stored at review-records/r-20261017T153140915934-the-ledger-writer-refuses-a-fold.json and its .at-d26206af9b1a02aa9868b17709d3134e5c574fd3.json twin.</p></div>
+</div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261017T161349704091-review-of-a-promotion-commit-records-only-its-own-paths-a8259a9462f1" data-who="reckon-build" data-when="2026-10-17T16:25:07.407Z">
     <div class="r-comment-body"><p>Reviewed run r-20261017T160259471895 at base fbaf1c363 and head a8259a946 — the promotion commit is now scoped to its own paths via `git commit --only -- &lt;targets&gt;`, with scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 20 and no blocking findings.</p></div>
 </div>
@@ -747,7 +750,7 @@
     <div class="r-comment-body"><p>The merge candidate adds no reproducible failing test id over the 192-file importer population: the single id the gate-log reader reports as added passes 5/5 alone at the candidate and 5/5 alone at base, and two consecutive candidate runs failed different extra ids, neither in a file the merge touches.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261017T180859807314-review-of-a-failed-landing-says-whether-its-row-survived-130d54a39f83" data-who="reckon-build" data-when="2026-10-17T18:17:02Z">
-    <div class="r-comment-body"><p>Independent review of 91a8aea54aca17e98ce06aa7d3012bfe361105ef..130d54a39f837071d71242328d15f43dad2a0bde stored 6 parsed scores (91/120), 4 findings including 1 blocking scope finding, and 0 added failure IDs from the reviewed run&#x27;s base and head gate logs.</p></div>
+    <div class="r-comment-body"><p>Independent review of 91a8aea54aca17e98ce06aa7d3012bfe361105ef..130d54a39f837071d71242328d15f43dad2a0bde stored 6 parsed scores (91/120), 4 findings including 1 blocking scope finding, and 0 added failure IDs from the reviewed run's base and head gate logs.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">

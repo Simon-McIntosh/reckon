@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/ledger.py:1796 ledger.write",
+    "reckon/ledger.py:3630 repair_completion",
+    "reckon/ledger.py:2252 register_member",
+    "reckon/ledger.py:3798 record_hold_checks",
+    "reckon/crew/routing.py:2825 reap_idle_session_members",
+    "reckon/crew/promotion_gate.py:909 record_gate_rerun_at_integrated_revision",
+    "reckon/crew/promotion_records.py:663 _retire_disposable_identity",
+    "scripts/derive_run_figures.py:48 backfill_run_figures",
+    "scripts/backfill_run_durations.py:130 backfill_run_durations"
+  ],
+  "completed_at": "2026-10-17T19:21:47.340Z",
+  "dispatched_at": "2026-10-17T19:05:47Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "3709",
+      "severity": "blocking",
+      "text": "blocking: repair_completion reads ledger.load's union at reckon/ledger.py:3644 and writes it back at line 3709, so on any project holding per-run files it now raises the fold refusal instead of persisting; reproduced in a scratch tree as ledger.repair_completion(project, root, write_changes=True, streams_root=...) against a 10-row aggregate with 50 run files, which raised LedgerError \"this write would fold 50 run row(s) already held as per-run files into the aggregate\". The CLI path reckon/crew_run_commands.py:2563 reaches it, and its tests seed an unsplit aggregate (tests/test_ledger.py:355 asserts no run file exists), so the change breaks a production writer the node was required to repoint and no test covers it."
+    },
+    {
+      "file": "scripts/derive_run_figures.py",
+      "line": "101",
+      "severity": "follow-on",
+      "text": "follow-on: _write_run_row is added here and identically at scripts/backfill_run_durations.py:255, replicating the run-file amend idiom already written at reckon/crew/promotion_release.py:547 and effectively ledger's own _keep_run_files_identical at reckon/ledger.py:1602, so one mechanism now has four copies with no single owner."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T153140915934-the-ledger-writer-refuses-a-fold/logs/attempt2-gate-final.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T153140915934-the-ledger-writer-refuses-a-fold/logs/attempt2-negative-control-final.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read commit by commit against base 2e9a07c237; nine commits change reckon/ledger.py's guard and loader, the five writers plus register_member, the fold test, test_hold_check and three fixture files, and one evidence fragment, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_the_ledger_writer_refuses_a_fold.py over a 10-row aggregate and 50 per-run files, a one-run append accepted and a hold check leaving the row count unchanged; logs/attempt2-gate-final.log records 14 passed EXIT=0 and logs/attempt2-negative-control-final.log records 9 failed EXIT=1, so the named cases are measured and logged.",
+    "goal": "the node goal is a fold refusal in ledger.write with record_hold_checks reading the aggregate's own rows; both land at reckon/ledger.py:1835 and reckon/ledger.py:3798, but one production caller that reaches the same refusal is left unrepaired at reckon/ledger.py:3709, so the goal's own requirement that every writer be repointed is not fully met.",
+    "manifest": "read; it records status complete, the head gate 14 passed EXIT=0, the pre-guard base arm 9 failed EXIT=1, the eleven-id arm 11 passed, the three files 60 passed and the other-site arm 68 passed, and names each log, though it records baseline_suite and after_suite as null.",
+    "write_paths": "the node's declared scope (reckon/ledger.py, the five writers, register_member, three fixture files, test_hold_check_leaves_the_tree_clean.py, the fold test and one evidence fragment, extended by the two resume advices) covers every path in git diff 2e9a07c237..d26206af9; no path in the diff falls outside it."
+  },
+  "justifications": {
+    "durability": "tests/test_the_ledger_writer_refuses_a_fold.py:113 asserts against the fixture's own PER_RUN_FILES, not a value passed to write, and the base arm shows the guard absent, but no case covers the unrepaired caller at reckon/ledger.py:3709.",
+    "evidence": "logs/attempt2-gate-final.log ends 14 passed EXIT=0 and logs/attempt2-negative-control-final.log ends 9 failed EXIT=1 over tests/test_the_ledger_writer_refuses_a_fold.py, so the done_when's cases are logged, but the head arm log is at 80a282c4b one revision before the reviewed head and the manifest records baseline_suite and after_suite as null.",
+    "fit": "_folded_run_ids at reckon/ledger.py:892 and load_aggregate at reckon/ledger.py:959 follow the module's helper idiom and carry no plan or ticket label.",
+    "goal_fidelity": "reckon/ledger.py:1835 refuses an incoming row whose per-run file exists, naming how many would fold, and reckon/ledger.py:3798 reads the aggregate's own rows, which is the goal, but reckon/ledger.py:3709 still folds the union.",
+    "reuse": "load_aggregate wraps the existing _load_aggregate owner, but _write_run_row is added at scripts/derive_run_figures.py:101 and scripts/backfill_run_durations.py:255 as two copies of one run-file amend idiom already written at reckon/crew/promotion_release.py:547 beside ledger's own _keep_run_files_identical at reckon/ledger.py:1602.",
+    "scope_discipline": "every path in git diff 2e9a07c237..d26206af9 lies inside the declared scope plus the two documented resume extensions."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a fold refusal in ledger.write with record_hold_checks reading the aggregate's own rows; both land at reckon/ledger.py:1835 and reckon/ledger.py:3798, but one production caller that reaches the same refusal is left unrepaired at reckon/ledger.py:3709, so the goal's own requirement that every writer be repointed is not fully met.\nVERDICT done_when: the done_when names tests/test_the_ledger_writer_refuses_a_fold.py over a 10-row aggregate and 50 per-run files, a one-run append accepted and a hold check leaving the row count unchanged; logs/attempt2-gate-final.log records 14 passed EXIT=0 and logs/attempt2-negative-control-final.log records 9 failed EXIT=1, so the named cases are measured and logged.\nVERDICT write_paths: the node's declared scope (reckon/ledger.py, the five writers, register_member, three fixture files, test_hold_check_leaves_the_tree_clean.py, the fold test and one evidence fragment, extended by the two resume advices) covers every path in git diff 2e9a07c237..d26206af9; no path in the diff falls outside it.\nVERDICT manifest: read; it records status complete, the head gate 14 passed EXIT=0, the pre-guard base arm 9 failed EXIT=1, the eleven-id arm 11 passed, the three files 60 passed and the other-site arm 68 passed, and names each log, though it records baseline_suite and after_suite as null.\nVERDICT diff: read commit by commit against base 2e9a07c237; nine commits change reckon/ledger.py's guard and loader, the five writers plus register_member, the fold test, test_hold_check and three fixture files, and one evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/ledger.py:1796 ledger.write, reckon/ledger.py:3630 repair_completion, reckon/ledger.py:2252 register_member, reckon/ledger.py:3798 record_hold_checks, reckon/crew/routing.py:2825 reap_idle_session_members, reckon/crew/promotion_gate.py:909 record_gate_rerun_at_integrated_revision, reckon/crew/promotion_records.py:663 _retire_disposable_identity, scripts/derive_run_figures.py:48 backfill_run_figures, scripts/backfill_run_durations.py:130 backfill_run_durations\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1835 refuses an incoming row whose per-run file exists, naming how many would fold, and reckon/ledger.py:3798 reads the aggregate's own rows, which is the goal, but reckon/ledger.py:3709 still folds the union.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/attempt2-gate-final.log ends 14 passed EXIT=0 and logs/attempt2-negative-control-final.log ends 9 failed EXIT=1 over tests/test_the_ledger_writer_refuses_a_fold.py, so the done_when's cases are logged, but the head arm log is at 80a282c4b one revision before the reviewed head and the manifest records baseline_suite and after_suite as null.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 2e9a07c237..d26206af9 lies inside the declared scope plus the two documented resume extensions.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_ledger_writer_refuses_a_fold.py:113 asserts against the fixture's own PER_RUN_FILES, not a value passed to write, and the base arm shows the guard absent, but no case covers the unrepaired caller at reckon/ledger.py:3709.\nSCORE fit: 17\nJUSTIFICATION fit: _folded_run_ids at reckon/ledger.py:892 and load_aggregate at reckon/ledger.py:959 follow the module's helper idiom and carry no plan or ticket label.\nSCORE reuse: 12\nJUSTIFICATION reuse: load_aggregate wraps the existing _load_aggregate owner, but _write_run_row is added at scripts/derive_run_figures.py:101 and scripts/backfill_run_durations.py:255 as two copies of one run-file amend idiom already written at reckon/crew/promotion_release.py:547 beside ledger's own _keep_run_files_identical at reckon/ledger.py:1602.\nFINDING reckon/ledger.py:3709 blocking: repair_completion reads ledger.load's union at reckon/ledger.py:3644 and writes it back at line 3709, so on any project holding per-run files it now raises the fold refusal instead of persisting; reproduced in a scratch tree as ledger.repair_completion(project, root, write_changes=True, streams_root=...) against a 10-row aggregate with 50 run files, which raised LedgerError \"this write would fold 50 run row(s) already held as per-run files into the aggregate\". The CLI path reckon/crew_run_commands.py:2563 reaches it, and its tests seed an unsplit aggregate (tests/test_ledger.py:355 asserts no run file exists), so the change breaks a production writer the node was required to repoint and no test covers it.\nFINDING scripts/derive_run_figures.py:101 follow-on: _write_run_row is added here and identically at scripts/backfill_run_durations.py:255, replicating the run-file amend idiom already written at reckon/crew/promotion_release.py:547 and effectively ledger's own _keep_run_files_identical at reckon/ledger.py:1602, so one mechanism now has four copies with no single owner.\n",
+  "review_run_id": "r-20261017T190507911603-review-of-the-ledger-writer-refuses-a-fold-d26206af9b1a",
+  "reviewed_base_sha": "2e9a07c237df7e312e81b47ad4d8744bde532dfc",
+  "reviewed_head_sha": "d26206af9b1a02aa9868b17709d3134e5c574fd3",
+  "reviewed_run_id": "r-20261017T153140915934-the-ledger-writer-refuses-a-fold",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T19:18:31.085309+00:00",
+  "total": 96
+}
