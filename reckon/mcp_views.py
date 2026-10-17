@@ -1540,23 +1540,31 @@ def _cached_attempts(
     pointers: list[dict[str, Any]] | None,
     compute: Callable[[], Any],
 ) -> Any:
-    """Serialize cache misses so concurrent reads aggregate a snapshot once."""
+    """Serialize cache misses so concurrent reads aggregate a snapshot once.
+
+    The memo is published against both the stamp taken before the ledger read
+    and the one taken after it. The volatile members of that stamp — the newest
+    run file and the live-pointer set — move whenever a peer writes one, which
+    on a busy fleet is during almost every read, so requiring them to be
+    unchanged across the read threw away a completed aggregate and made one
+    roadmap read compute it twice. The aggregate is a snapshot at least as
+    fresh as the stamp taken before it, so either spelling serves a later
+    caller in the same read. The next read recomputes for its own stamp, so a
+    pointer written during this aggregate is seen then.
+    """
     with _ATTEMPT_CACHE_LOCK:
         before = _attempt_inputs(project, root, pointers)
         cached = _ATTEMPT_CACHE.get(key)
-        if before is not None and cached is not None and cached[0] == before:
+        if before is not None and cached is not None and before in cached[0]:
             return copy.deepcopy(cached[1])
         value = compute()
         after = _attempt_inputs(project, root, pointers)
-        # Reading can refresh the index file itself. Source and live-pointer
-        # stamps must remain stable; the post-read index stamp becomes the key.
-        if (
-            before is not None
-            and after is not None
-            and before[0][:4] == after[0][:4]
-            and before[1:] == after[1:]
-        ):
-            _ATTEMPT_CACHE[key] = (after, copy.deepcopy(value))
+        # Reading can refresh the index file itself, and its own identity within
+        # the stamp may move. The ledger's identity and version must not: a
+        # source that changed during the read is re-aggregated by the next read.
+        if before is not None and after is not None and before[0][:4] == after[0][:4]:
+            stamps = tuple([before] if before == after else [before, after])
+            _ATTEMPT_CACHE[key] = (stamps, copy.deepcopy(value))
             if len(_ATTEMPT_CACHE) > _ATTEMPT_CACHE_LIMIT:
                 _ATTEMPT_CACHE.pop(next(iter(_ATTEMPT_CACHE)))
         return value

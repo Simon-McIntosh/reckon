@@ -1,0 +1,30 @@
+<article class="r-fragment" id="a-fresh-read-takes-the-ledger-from-its-index">
+  <h2 id="a-fresh-read-takes-the-ledger-from-its-index-title">A fresh read takes the run ledger from its index, once</h2>
+  <p id="a-fresh-read-takes-the-ledger-from-its-index-why">
+    On the live fleet node a fresh process read every committed run file instead
+    of its index. <code>ledger._indexed_data</code> raised
+    <code>sqlite3.OperationalError: unable to open database file</code>
+    at <code>sqlite3.connect</code>, because the pick-input index resolves under
+    the configuration home and the fleet mounts that home read-only around
+    worker launches: no index could be created there, and
+    <code>_last_good_index_data</code> had nothing to fall back to, so
+    <code>ledger.load</code> scanned all 4,197 run files. Independently,
+    <code>mcp_views._cached_attempts</code> published its aggregate only while
+    the newest run file and the live-pointer set held still across the read, so
+    one roadmap read aggregated twice and loaded the ledger twice.
+  </p>
+  <p id="a-fresh-read-takes-the-ledger-from-its-index-change">
+    <code>reckon/ledger.py</code>: <code>_index_directory</code> publishes the
+    index to the user cache directory when the configured one exists and is not
+    writable. <code>reckon/mcp_views.py</code>: the attempt memo is published
+    against both the pre-read and post-read stamp, so a pointer written during
+    the aggregate serves the same read instead of forcing a second aggregate.
+  </p>
+  <p id="a-fresh-read-takes-the-ledger-from-its-index-measure">
+    Measure: <code>tests/test_a_fresh_read_takes_the_ledger_from_its_index.py</code>
+    — 4 passed at head; at base 3 fail, including
+    <code>ledger.load ran 2 times in one read</code>.
+    On the live node with the pre-fix tree, one <code>mcp._roadmap</code> made
+    <code>ledger.load</code>=2 and <code>ledger._read_run</code>=0 at head.
+  </p>
+</article>

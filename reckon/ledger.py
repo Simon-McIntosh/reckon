@@ -993,10 +993,35 @@ def input_stamp(project: str, root: str | Path | None = None) -> str | None:
     return hashlib.sha256(json.dumps(value).encode()).hexdigest()
 
 
+def _default_cache_root() -> Path:
+    """The user cache directory, as resolved without a configured home."""
+    cache_home = os.environ.get("XDG_CACHE_HOME")
+    base = Path(cache_home) if cache_home else Path.home() / ".cache"
+    return base / "reckon"
+
+
+def _index_directory() -> Path:
+    """The directory a run index is published into.
+
+    The configured pick cache sits inside the configuration home whenever that
+    home is named, and the fleet mounts the configuration home read-only around
+    worker launches. An index has to be creatable to be read: a process that
+    cannot open one there pays a full scan of every run file on each read,
+    because no index exists for the last-good fallback to serve. So an index
+    whose configured directory exists and is not writable is published to the
+    user cache directory instead. Both spellings hash the ledger path into the
+    filename, so a reader outside the fence finds the index built inside it.
+    """
+    configured = _store.cache_root("pick-input")
+    if configured.is_dir() and not os.access(configured, os.W_OK):
+        return _default_cache_root()
+    return configured
+
+
 def _run_index_path(project: str, root: str | Path | None) -> Path:
     source = str(ledger_path(project, root).resolve())
     identity = hashlib.sha256(source.encode()).hexdigest()
-    return _store.cache_root("pick-input") / f"ledger-{identity}.sqlite"
+    return _index_directory() / f"ledger-{identity}.sqlite"
 
 
 def recorded_ledger_path(index: str | Path) -> str | None:
