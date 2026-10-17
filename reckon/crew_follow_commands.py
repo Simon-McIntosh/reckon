@@ -113,6 +113,7 @@ def _sweep_lapsed_holds(
 _FOLLOWER_CHECKPOINT_ENV = "RECKON_FOLLOWER_CHECKPOINT"
 _FOLLOWER_SOURCE_ROOT_ENV = "RECKON_FOLLOWER_SOURCE_ROOT"
 _FOLLOWER_IMAGE_COMMIT_ENV = "RECKON_FOLLOWER_IMAGE_COMMIT"
+_FOLLOWER_IMAGE_PIN_ENV = "RECKON_FOLLOWER_IMAGE_PIN"
 
 
 
@@ -252,6 +253,18 @@ class _FollowerReloader:
         # process replaced the image.
         self.owner = owner
         self.import_root = _import_root(runs)
+        self.image_pin: int | None = None
+        carried_pin = os.environ.pop(_FOLLOWER_IMAGE_PIN_ENV, None)
+        if carried_pin is not None:
+            try:
+                self.image_pin = int(carried_pin)
+                os.fstat(self.image_pin)
+                os.set_inheritable(self.image_pin, False)
+            except (OSError, ValueError):
+                self.image_pin = None
+        if self.image_pin is None and (self.import_root / ".complete").is_file():
+            self.image_pin = checkout_trust.pin_materialized_tree(self.import_root)
+        self.replacement_pin: int | None = None
         self.source_root = Path(
             os.environ.get(_FOLLOWER_SOURCE_ROOT_ENV, str(self.import_root))
         ).resolve()
@@ -361,6 +374,9 @@ class _FollowerReloader:
         ):
             return
         self.checked_at = moment
+        if self.replacement_pin is not None:
+            os.close(self.replacement_pin)
+            self.replacement_pin = None
         committed_image = bool(re.fullmatch(r"[0-9a-f]{40}", self.code_stamp))
         current_head = (
             checkout_trust.committed_head(self.source_root) if committed_image else None
@@ -383,7 +399,7 @@ class _FollowerReloader:
             self._clear_probe_retry()
         if current_head and current_stamp == current_head:
             try:
-                self.replacement_root, removed = (
+                self.replacement_root, removed, self.replacement_pin = (
                     checkout_trust.materialize_committed_tree(
                         self.source_root, current_head
                     )
@@ -492,6 +508,9 @@ class _FollowerReloader:
         if current_head and current_stamp == current_head:
             exec_environment[_FOLLOWER_SOURCE_ROOT_ENV] = str(self.source_root)
             exec_environment[_FOLLOWER_IMAGE_COMMIT_ENV] = current_head
+            if self.replacement_pin is not None:
+                os.set_inheritable(self.replacement_pin, True)
+                exec_environment[_FOLLOWER_IMAGE_PIN_ENV] = str(self.replacement_pin)
         if not self.seat:
             # The reader's place reaches the replacement image through the
             # mapping this exec passes and never through ``os.environ``: every
@@ -553,6 +572,10 @@ class _FollowerReloader:
                 f"({exc}); cycle it with: {command}",
                 stream=self.stream,
             )
+        finally:
+            if self.replacement_pin is not None:
+                os.close(self.replacement_pin)
+                self.replacement_pin = None
 
 
 

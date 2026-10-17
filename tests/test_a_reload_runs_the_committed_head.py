@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import importlib.util
 import os
 import subprocess
 from importlib import import_module
@@ -188,3 +189,52 @@ def test_old_materialized_trees_are_removed_and_named(source, monkeypatch, capsy
     assert not imported[0].exists()
     assert all(path.exists() for path in imported[1:])
     assert f"removed old reload tree {imported[0]}" in line
+
+
+def test_running_image_survives_cache_pruning(source, monkeypatch, capsys):
+    root, first, execs = source
+    pins = []
+
+    def capture_exec(*args):
+        if not pins:
+            pins.append(os.dup(int(args[2][follow._FOLLOWER_IMAGE_PIN_ENV])))
+        execs.append(args)
+
+    monkeypatch.setattr(follow.os, "execve", capture_exec)
+    reloader = follow._FollowerReloader("test-project", None)
+    assert reloader.code_stamp == first
+    monkeypatch.setattr(reloader, "_replacement_imports", lambda: (True, ""))
+    first_image_commit = _commit(root, "running")
+    reloader.poll({})
+    first_image = _executed_root(execs)
+    pin = pins[0]
+    monkeypatch.setenv(follow._FOLLOWER_IMAGE_PIN_ENV, str(pin))
+    monkeypatch.setenv(follow._FOLLOWER_SOURCE_ROOT_ENV, str(root))
+    monkeypatch.setenv(follow._FOLLOWER_IMAGE_COMMIT_ENV, first_image_commit)
+    monkeypatch.setattr(follow, "_import_root", lambda module: first_image)
+    running = follow._FollowerReloader("test-project", None)
+    assert running.image_pin == pin
+    assert follow._FOLLOWER_IMAGE_PIN_ENV not in os.environ
+
+    reloader.code_stamp = first_image_commit
+    for index in range(follow.checkout_trust.COMMITTED_TREE_RETENTION + 1):
+        commit = _commit(root, f"newer-{index}")
+        reloader.poll({})
+        reloader.code_stamp = commit
+
+    module_path = first_image / "reckon" / "example.py"
+    assert first_image.exists()
+    spec = importlib.util.spec_from_file_location("running_image_example", module_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert module.VALUE == "running"
+    assert str(first_image) not in capsys.readouterr().out
+
+    os.close(running.image_pin)
+    running.image_pin = None
+    commit = _commit(root, "after-release")
+    reloader.poll({})
+    reloader.code_stamp = commit
+    assert not first_image.exists()
+    assert f"removed old reload tree {first_image}" in capsys.readouterr().out

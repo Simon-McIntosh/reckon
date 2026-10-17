@@ -24,6 +24,7 @@ copy, so the two readers share one definition. Both call
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import io
 import os
@@ -82,7 +83,18 @@ def _committed_tree_cache() -> Path:
     return crew_home() / "reload-trees"
 
 
-def materialize_committed_tree(root: Path, commit: str) -> tuple[Path, list[Path]]:
+def pin_materialized_tree(root: Path) -> int:
+    """Hold a shared lock while this process may import from an image."""
+    descriptor = os.open(root / ".in-use", os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        fcntl.flock(descriptor, fcntl.LOCK_SH)
+    except BaseException:
+        os.close(descriptor)
+        raise
+    return descriptor
+
+
+def materialize_committed_tree(root: Path, commit: str) -> tuple[Path, list[Path], int]:
     """Publish a package extracted from one commit and prune older images."""
     source_key = hashlib.sha256(str(root.resolve()).encode()).hexdigest()[:16]
     cache = _committed_tree_cache() / source_key
@@ -112,19 +124,32 @@ def materialize_committed_tree(root: Path, commit: str) -> tuple[Path, list[Path
         finally:
             if staging.exists():
                 shutil.rmtree(staging)
-    target.touch()
-    images = sorted(
-        (entry for entry in cache.iterdir() if (entry / ".complete").is_file()),
-        key=lambda entry: entry.stat().st_mtime_ns,
-        reverse=True,
-    )
-    removed = []
-    for entry in images[COMMITTED_TREE_RETENTION:]:
-        if entry == target:
-            continue
-        shutil.rmtree(entry)
-        removed.append(entry)
-    return target, removed
+    pin = pin_materialized_tree(target)
+    try:
+        target.touch()
+        images = sorted(
+            (entry for entry in cache.iterdir() if (entry / ".complete").is_file()),
+            key=lambda entry: entry.stat().st_mtime_ns,
+            reverse=True,
+        )
+        removed = []
+        for entry in images[COMMITTED_TREE_RETENTION:]:
+            if entry == target:
+                continue
+            descriptor = os.open(entry / ".in-use", os.O_CREAT | os.O_RDWR, 0o600)
+            try:
+                try:
+                    fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError:
+                    continue
+                shutil.rmtree(entry)
+                removed.append(entry)
+            finally:
+                os.close(descriptor)
+    except BaseException:
+        os.close(pin)
+        raise
+    return target, removed, pin
 
 
 def _import_probe() -> str:
