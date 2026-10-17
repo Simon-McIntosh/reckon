@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="224">
+<meta name="plan-version" content="225">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -360,10 +360,16 @@
     <pre class="r-fu-prompt">/reckon-build a-read-answers-inside-its-deadline §25</pre>
     <p class="r-fu-outcome"><p>§25 and §27 landed as investigations, and §26 is built and awaiting merge. Superseded by <code>f-araiid-023</code>, which names the repair sections they filed.</p></p>
     </article>
-<article class="r-fu" data-id="f-araiid-023" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-17" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline §31" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-araiid-023" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-17" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline §31" data-resolved-at="2026-10-17T15:43:15+00:00" data-resolved-by="reckon-build coordinator">
     <h4 class="r-fu-title">Build the read repairs §28 to §31 in their stated order</h4>
     <div class="r-fu-body"><p>§22 and §26 are built and close to merge. Next come §31 (the store written once per build, after §26) and §28 (the ledger read from its index, after §22). Then §29 (one docs walk per read, after §26 and §31), §30 (one watch-stream parse per read, after §29), and §23 (after §22).</p></div>
     <pre class="r-fu-prompt">/reckon-build a-read-answers-inside-its-deadline §31</pre>
+    <p class="r-fu-outcome"><p>§22, §26, §28 and §31 have merged and are declared done. §29 was dispatched on 2026-10-17 as <code>r-20261017T153357520669</code>. The remaining chain moves to f-araiid-024.</p></p>
+    </article>
+<article class="r-fu" data-id="f-araiid-024" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build coordinator" data-written-at="2026-10-17" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline §30" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the remaining read repairs §29, §30, §32 and §23</h4>
+    <div class="r-fu-body"><p>§29 is in flight. §30 follows it, because both write <code>reckon/sprint_liveness.py</code>. §32 follows the ledger plan's §9, because both write <code>reckon/ledger.py</code>. §23 follows ledger §9 and §32 for the same file, and it also writes the obligation snapshot. Each lands with an importer population at merge.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-read-answers-inside-its-deadline §30</pre>
     </article>
 </section>
   
@@ -753,7 +759,7 @@
     <div class="r-comment-body"><p>review of run r-20261017T142840115616-fresh-read-ledger-index-population-at-merge at head 54a90aa144611d499b6029e77037c8493a84967f: a measurement run that ran the 197-file importer population at base dbf291aef (196 files) and merge candidate 4f184ab09 (197 files) in one exclusive all_debug job and reported added_count=0; reviewed record scores goal_fidelity 19, evidence 18, scope_discipline 19, durability 8, fit 18, reuse 20 (total 102), added_failure_count 0, no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s28" data-id="c-run-r-20261017T142840115616-fresh-read-ledger-index-population-at-merge" data-who="reckon-build" data-when="2026-10-17T15:14:01.484Z">
-    <div class="r-comment-body"><p>Importer population at merge of 4f184ab09 (base dbf291aef + a05a3e7de) over the 197 files of fresh-read-ledger-index.txt adds no failing test id: base arm 2 failed, 2165 passed, 4 skipped, 4 warnings in 408.80s (0:06:48); candidate arm 2 failed, 2170 passed, 4 skipped, 4 warnings in 407.24s (0:06:47); both arms fail the same two pre-existing ids, test_old_names_resolve.py&#x27;s two test_review_exclusions_match_pair_across_names parametrisations</p></div>
+    <div class="r-comment-body"><p>Importer population at merge of 4f184ab09 (base dbf291aef + a05a3e7de) over the 197 files of fresh-read-ledger-index.txt adds no failing test id: base arm 2 failed, 2165 passed, 4 skipped, 4 warnings in 408.80s (0:06:48); candidate arm 2 failed, 2170 passed, 4 skipped, 4 warnings in 407.24s (0:06:47); both arms fail the same two pre-existing ids, test_old_names_resolve.py's two test_review_exclusions_match_pair_across_names parametrisations</p></div>
 </div>
 </section>
 </main>
