@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-version" content="53">
+<meta name="plan-version" content="54">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.9">
@@ -462,7 +462,7 @@ resume burn, after</a>.</p>
     <h2 id="s11">§11 — A review run has one predicate</h2>
 <section data-reckon="section" data-id="s11" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="routine" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
 <p>Two functions in <code>reckon/crew</code> decide whether a run is a review, and they disagree. The owner is <code>_is_review_run</code> at <code>reckon/crew/recovery_review_delivery.py:44</code>, which <code>reckon/crew/recovery.py:199</code> re-exports. Promotion checks, obligations, and the review dispatch, delivery and acceptance paths all use it. It recognises a review by its minted node id, or by the role that <code>_pointer_role</code> (<code>reckon/crew/recovery_watch.py:512</code>) reads from the record root or from its node. The second copy, <code>_is_review_run</code> at <code>reckon/crew/dispatch_sessions.py:456</code>, reads the role from the record root only. A record whose <code>review</code> role is set only on its node is therefore a review to recovery but not to dispatch.</p>
-<p>Dispatch's copy decides a run's task identity in <code>_task_identity</code> (<code>dispatch_sessions.py:507</code>). A review it misses is keyed by its own node id rather than by the run it reviews. Its session is then decided as if it were a separate task, which is the selectivity §7 relies on.</p>
+<p>Dispatch's copy decides a run's task identity in <code>_task_identity</code> (<code>dispatch_sessions.py:495</code>). A review it misses is keyed by its own node id rather than by the run it reviews. Its session is then decided as if it were a separate task, which is the selectivity §7 relies on.</p>
 <p>Three health reviews have raised this duplicate: <code>review-code-5e222083bf18</code> on 2026-10-14, <code>review-code-2f2060e98013</code> on 2026-10-16, and <code>review-code-5e5a52e59a82</code> on 2026-10-17. The last of these probed both functions:</p>
 <table>
 <thead><tr><th>Record</th><th>Dispatch's copy</th><th>Recovery's copy</th></tr></thead>
@@ -472,17 +472,30 @@ resume burn, after</a>.</p>
 <tr><td>plain implement node</td><td>false</td><td>false</td></tr>
 </tbody>
 </table>
-<p>Delete the dispatch copy, and have <code>_task_identity</code> call the owner. Import it inside the function, as the deleted copy already imports <code>_is_review_node</code>, because <code>recovery</code> loads modules that import from <code>dispatch_sessions</code>. Then remove the re-export at <code>reckon/crew/dispatch.py:2882</code>. Its one reader, <code>tests/test_plan_review_prefix_is_one_constant.py</code>, imports the owner from <code>reckon.crew.recovery</code> instead. No name is added.</p>
+<p>The review branch of <code>_task_identity</code> has a second defect, which the content review of 2026-10-17 measured at main <code>0f72db147</code>. It strips <code>REVIEW_NODE_PREFIX</code> (<code>review-of-</code>) with <code>round_node_source</code>, but plan reviews are minted <code>plan-review-of-&lt;slug&gt;</code>. Their source is therefore empty, and every plan review in a project gets the same key, <code>("review", project, "")</code>. Once §7 restores <code>session_reuse</code>, <code>_prior_same_task_run</code> (<code>dispatch_sessions.py:604</code>) would match any earlier plan review. A plan review of one plan would then compose another plan's review session, which is the cross-task reuse this plan exists to remove. §7 must not flip the flag before this section lands.</p>
+<p>Make three changes:</p>
+<ul>
+<li>Delete the dispatch copy of the predicate, and have <code>_task_identity</code> call the owner. Import it inside the function, as the deleted copy already imports <code>_is_review_node</code>, because <code>recovery</code> loads modules that import from <code>dispatch_sessions</code>.</li>
+<li>In <code>_task_identity</code>, key a run whose node id starts with <code>PLAN_REVIEW_NODE_PREFIX</code> as <code>("plan-review", project, &lt;slug&gt;)</code>, taking the slug from <code>round_node_source(node_id, PLAN_REVIEW_NODE_PREFIX)</code>. A plan-review run record carries no rubric, so a design review and a content review of one plan share that key. That is accepted, because both review the same plan. A review whose reviewed run cannot be resolved from its node id is keyed by its own node id, <code>("review", project, node_id)</code>, never by an empty string.</li>
+<li>Remove the re-export at <code>reckon/crew/dispatch.py:2881</code>. Its one reader, <code>tests/test_plan_review_prefix_is_one_constant.py</code>, imports the owner from <code>reckon.crew.recovery</code> instead.</li>
+</ul>
+<p>No name is added.</p>
 <p>This section follows §10, whose write scope holds both <code>dispatch_sessions.py</code> and <code>dispatch.py</code>.</p>
 <p><strong>Write paths:</strong> <code>reckon/crew/dispatch_sessions.py</code>, <code>reckon/crew/dispatch.py</code>, <code>tests/test_plan_review_prefix_is_one_constant.py</code>.</p>
 <p><strong>Done when</strong> all four of these hold:</p>
 <ul>
 <li><code>grep -rn "def _is_review_run" reckon/</code> prints only <code>reckon/crew/recovery_review_delivery.py</code>.</li>
-<li><code>tests/test_plan_review_prefix_is_one_constant.py</code> gains a case for a record whose <code>review</code> role is set only on its node, whose root role is absent, and whose node id carries no review prefix, such as <code>implement-fixture</code>. A minted <code>review-of-</code> or <code>plan-review-of-</code> id would satisfy both predicates before the fix, so the case must not use one. In that case, <code>recovery._is_review_run</code> returns true and <code>_task_identity</code> returns a key whose first element is <code>"review"</code>. A plain implement node still yields a <code>"node"</code> key.</li>
+<li><code>tests/test_plan_review_prefix_is_one_constant.py</code> gains cases that assert whole keys, not only their first element:
+  <ul>
+  <li>A record whose <code>review</code> role is set only on its node, whose root role is absent, and whose node id carries no review prefix (<code>implement-fixture</code>): <code>recovery._is_review_run</code> returns true, and <code>_task_identity</code> returns <code>("review", project, "implement-fixture")</code>.</li>
+  <li>Records with node ids <code>plan-review-of-alpha</code> and <code>plan-review-of-beta</code> return <code>("plan-review", project, "alpha")</code> and <code>("plan-review", project, "beta")</code>. A second <code>plan-review-of-alpha</code> record returns alpha's key.</li>
+  <li>A <code>review-of-&lt;run&gt;</code> record still returns <code>("review", project, &lt;that run's id&gt;)</code>.</li>
+  <li>A plain implement node still returns a <code>"node"</code> key.</li>
+  </ul></li>
 <li>Pytest over that file, <code>tests/test_a_resumed_head_is_reviewed.py</code>, <code>tests/test_session_resumes_only_its_own_task.py</code> and <code>tests/test_dispatch_reads_the_resolved_session.py</code> adds no failure against the base.</li>
 <li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</li>
 </ul>
-<p>Negative control: restore the root-only predicate in <code>dispatch_sessions.py</code>, and the node-only case must fail under pytest.</p>
+<p>Negative control, two mutations, each applied alone. Restoring the root-only predicate in <code>dispatch_sessions.py</code> must fail the node-only case. Stripping <code>REVIEW_NODE_PREFIX</code> from plan-review ids again must fail the alpha and beta case under pytest.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
