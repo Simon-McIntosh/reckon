@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import ast
 import json
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
 import pytest
 from click.testing import CliRunner
 
-from reckon import capabilities, cli as cli_module, ledger
+from reckon import capabilities, ledger
+from reckon import cli as cli_module
 
 
 @pytest.fixture()
@@ -983,6 +984,34 @@ def _figure_run(
     }
 
 
+def _persist_runs(project: str, root: Path, union: dict[str, Any]) -> None:
+    """Persist run rows edited as ``ledger.load`` returned them, where each is
+    held: through the run's own file, or with the aggregate's own rows.
+
+    A fixture reads the union so it can edit whichever row carries the figure
+    under test. Handing that union back to ``ledger.write`` would copy every
+    per-run row into the tracked aggregate, which the writer refuses.
+    """
+    aggregate, version = ledger.load_aggregate(project, root)
+    held = {
+        str(row["run_id"]): row
+        for row in aggregate["runs"]
+        if isinstance(row, Mapping) and row.get("run_id")
+    }
+    changed = False
+    for row in union["runs"]:
+        home = held.get(str(row.get("run_id") or ""))
+        if home is None:
+            ledger.write_run_file(project, row, root)
+            continue
+        if home is not row:
+            home.clear()
+            home.update(row)
+        changed = True
+    if changed:
+        ledger.write(project, aggregate, version, root)
+
+
 class _StreamOpenCounter:
     """Count Path.open calls that touch a run's jsonl stream."""
 
@@ -1017,12 +1046,12 @@ def test_ledgered_figures_let_the_derive_close_the_streams(
     walked_opens = opens.count()
     assert walked_opens >= 2  # the stream walk really opened the run streams
 
-    data, version = ledger.load(root.name, root=root)
+    data, _version = ledger.load(root.name, root=root)
     for row in data["runs"]:
         figures = expected[str(row["run_id"])]
         row["tool_steps"] = figures["tool_steps"]
         row["orientation_input_tokens"] = figures["orientation_input_tokens"]
-    ledger.write(root.name, data, version, root=root)
+    _persist_runs(root.name, root, data)
     fast = capabilities.derive_capabilities(mounts)
 
     # The fast path opens no stream on the same corpus, and it reproduces the
@@ -1041,7 +1070,7 @@ def test_a_missing_stream_row_is_excluded_not_averaged_as_zero(
     _figure_run(root, home, "r-has-figure", tool_steps=6, effort="medium")
     _figure_run(root, home, "r-missing-stream", tool_steps=6, effort="medium")
 
-    data, version = ledger.load(root.name, root=root)
+    data, _version = ledger.load(root.name, root=root)
     for row in data["runs"]:
         if row["run_id"] == "r-has-figure":
             row["tool_steps"] = 6.0
@@ -1051,7 +1080,7 @@ def test_a_missing_stream_row_is_excluded_not_averaged_as_zero(
             (home / "crew" / "runs" / "r-missing-stream" / "stream.jsonl").unlink()
             row["tool_steps"] = None
             row["orientation_input_tokens"] = None
-    ledger.write(root.name, data, version, root=root)
+    _persist_runs(root.name, root, data)
 
     report = capabilities.derive_routing({root.name: root / "docs"})
     row = next(
@@ -1092,7 +1121,7 @@ def test_a_recorded_figure_key_is_authoritative_by_presence_not_truthiness(
     for run_id, steps in (("r-measured", 2), ("r-null", 4), ("r-absent", 6)):
         _figure_run(root, home, run_id, tool_steps=steps, effort="high")
 
-    data, version = ledger.load(root.name, root=root)
+    data, _version = ledger.load(root.name, root=root)
     for row in data["runs"]:
         if row["run_id"] == "r-measured":
             row["tool_steps"] = 2.0
@@ -1100,7 +1129,7 @@ def test_a_recorded_figure_key_is_authoritative_by_presence_not_truthiness(
         elif row["run_id"] == "r-null":
             row["tool_steps"] = None
             row["orientation_input_tokens"] = None
-    ledger.write(root.name, data, version, root=root)
+    _persist_runs(root.name, root, data)
     runs = {row["run_id"]: row for row in ledger.load(root.name, root=root)[0]["runs"]}
 
     opens = _StreamOpenCounter(monkeypatch)
@@ -1128,7 +1157,7 @@ def test_a_recorded_null_with_a_live_stream_is_not_re_walked_by_the_derive(
     _figure_run(root, home, "r-measured", tool_steps=2, effort="high")
     _figure_run(root, home, "r-null", tool_steps=4, effort="high")
 
-    data, version = ledger.load(root.name, root=root)
+    data, _version = ledger.load(root.name, root=root)
     null_row = None
     for row in data["runs"]:
         if row["run_id"] == "r-measured":
@@ -1138,7 +1167,7 @@ def test_a_recorded_null_with_a_live_stream_is_not_re_walked_by_the_derive(
             row["tool_steps"] = None
             row["orientation_input_tokens"] = None
             null_row = row
-    ledger.write(root.name, data, version, root=root)
+    _persist_runs(root.name, root, data)
     assert capabilities._stream_path(null_row) is not None  # stream still live
 
     opens = _StreamOpenCounter(monkeypatch)
@@ -1161,7 +1190,7 @@ def test_the_fast_path_reproduces_the_walk_over_all_three_row_shapes(
     for run_id, steps in (("r-measured", 2), ("r-null", 4), ("r-absent", 6)):
         _figure_run(root, home, run_id, tool_steps=steps, effort="medium")
 
-    data, version = ledger.load(root.name, root=root)
+    data, _version = ledger.load(root.name, root=root)
     for row in data["runs"]:
         if row["run_id"] == "r-measured":
             row["tool_steps"] = 2.0
@@ -1170,7 +1199,7 @@ def test_the_fast_path_reproduces_the_walk_over_all_three_row_shapes(
             row["tool_steps"] = None
             row["orientation_input_tokens"] = None
             (home / "crew" / "runs" / "r-null" / "stream.jsonl").unlink()
-    ledger.write(root.name, data, version, root=root)
+    _persist_runs(root.name, root, data)
     mounts = {root.name: root / "docs"}
 
     opens = _StreamOpenCounter(monkeypatch)
@@ -1180,11 +1209,11 @@ def test_the_fast_path_reproduces_the_walk_over_all_three_row_shapes(
 
     # Strip every figure key so the whole corpus has to walk, and require the
     # same derived rows as the ledger-only path: equivalence, not just speed.
-    data2, version2 = ledger.load(root.name, root=root)
+    data2, _version2 = ledger.load(root.name, root=root)
     for row in data2["runs"]:
         row.pop("tool_steps", None)
         row.pop("orientation_input_tokens", None)
-    ledger.write(root.name, data2, version2, root=root)
+    _persist_runs(root.name, root, data2)
     walk = capabilities.derive_capabilities(mounts)
 
     assert opens.count() > fast_opens  # the walk re-opened the keyless streams

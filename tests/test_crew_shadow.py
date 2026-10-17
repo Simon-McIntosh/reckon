@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from collections.abc import Mapping
 from pathlib import Path
 
 import pytest
@@ -48,6 +49,34 @@ def _candidate_config_with_distinct_agent() -> dict:
 
 
 # ── Crew shadow ─────────────────────────────────────────────────────────────
+
+
+def _persist_runs(project: str, root, union: dict) -> None:
+    """Persist run rows edited as ``ledger.load`` returned them, where each is
+    held: through the run's own file, or with the aggregate's own rows.
+
+    A case reads the union so it can edit whichever row it measures. Handing
+    that union back to ``ledger.write`` would copy every per-run row into the
+    tracked aggregate, which the writer refuses.
+    """
+    aggregate, version = ledger.load_aggregate(project, root)
+    held = {
+        str(row["run_id"]): row
+        for row in aggregate["runs"]
+        if isinstance(row, Mapping) and row.get("run_id")
+    }
+    changed = False
+    for row in union["runs"]:
+        home = held.get(str(row.get("run_id") or ""))
+        if home is None:
+            ledger.write_run_file(project, row, root)
+            continue
+        if home is not row:
+            home.clear()
+            home.update(row)
+        changed = True
+    if changed:
+        ledger.write(project, aggregate, version, root)
 
 
 def test_shadow_derives_the_committed_node_at_the_primary_base(home, repo) -> None:
@@ -205,14 +234,16 @@ def test_shadow_without_recorded_time_budget_uses_role_default_and_records_fallb
 ) -> None:
     primary_pointer = _dispatched(home, repo)
     primary = crew.complete(primary_pointer["run_id"], gate="passed")["record"]
-    data, version = ledger.load("proj", repo)
+    data, _version = ledger.load("proj", repo)
     data["runs"][0].pop("time_budget")
-    ledger.write("proj", data, version, repo)
+    _persist_runs("proj", repo, data)
     # Registering a session member commits the state file, and refuses while
     # the file holds content the caller has not committed; the rewritten ledger
-    # is committed here so the dispatch is not the one to carry it.
+    # is committed here so the dispatch is not the one to carry it. The row is
+    # held by its own file under docs/state, so the state directory is what
+    # carries the edit.
     subprocess.run(
-        ["git", "add", "docs/state/proj/crew.json"],
+        ["git", "add", "docs/state/proj"],
         cwd=repo,
         check=True,
         capture_output=True,
@@ -253,9 +284,9 @@ def test_shadow_refuses_primary_without_recorded_agent_configuration(
 ) -> None:
     primary_pointer = _dispatched(home, repo)
     primary = crew.complete(primary_pointer["run_id"], gate="passed")["record"]
-    data, version = ledger.load("proj", repo)
+    data, _version = ledger.load("proj", repo)
     data["runs"][0].pop("agent")
-    ledger.write("proj", data, version, repo)
+    _persist_runs("proj", repo, data)
 
     with pytest.raises(crew.CrewError, match="no recorded agent configuration"):
         dispatch_shadow(
@@ -339,9 +370,9 @@ def test_shadow_refuses_plan_unreadable_at_primary_base(home, repo) -> None:
         check=True,
         capture_output=True,
     )
-    data, version = ledger.load("proj", repo)
+    data, _version = ledger.load("proj", repo)
     data["runs"][0]["base_sha"] = unreadable_base
-    ledger.write("proj", data, version, repo)
+    _persist_runs("proj", repo, data)
 
     with pytest.raises(crew.PlanVisibilityError, match="not readable at base"):
         dispatch_shadow(
@@ -396,9 +427,9 @@ def test_shadow_refuses_section_absent_at_primary_base(home, repo) -> None:
         check=True,
         capture_output=True,
     )
-    data, version = ledger.load("proj", repo)
+    data, _version = ledger.load("proj", repo)
     data["runs"][0]["base_sha"] = sectionless_base
-    ledger.write("proj", data, version, repo)
+    _persist_runs("proj", repo, data)
 
     with pytest.raises(crew.PlanVisibilityError, match="does not contain section"):
         dispatch_shadow(
@@ -418,9 +449,9 @@ def test_shadow_refuses_an_unreachable_primary_base_without_artifacts(
 ) -> None:
     primary_pointer = _dispatched(home, repo)
     primary = crew.complete(primary_pointer["run_id"], gate="passed")["record"]
-    data, version = ledger.load("proj", repo)
+    data, _version = ledger.load("proj", repo)
     data["runs"][0]["base_sha"] = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
-    ledger.write("proj", data, version, repo)
+    _persist_runs("proj", repo, data)
 
     with pytest.raises(crew.PlanVisibilityError, match="base"):
         dispatch_shadow(

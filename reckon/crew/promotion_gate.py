@@ -907,6 +907,11 @@ def record_gate_rerun_at_integrated_revision(
             "is a git worktree"
         )
     data, version = ledger.load(project, root=ledger_root)
+    # The row is looked up across the union — a promoted run's row may sit in
+    # its own file — while the write below carries the aggregate's own rows.
+    # Writing the union back would copy every per-run row into the tracked
+    # aggregate beside the file that already holds it, which the writer refuses.
+    aggregate, _aggregate_version = ledger.load_aggregate(project, ledger_root)
     row = next(
         (item for item in data["runs"] if str(item.get("run_id") or "") == run_id),
         None,
@@ -941,7 +946,7 @@ def record_gate_rerun_at_integrated_revision(
         new_version = None
     else:
         record_path = ledger.ledger_path(project, ledger_root)
-        patched = [dict(item) for item in data["runs"]]
+        patched = [dict(item) for item in aggregate["runs"]]
         for index, item in enumerate(patched):
             if str(item.get("run_id") or "") == run_id:
                 patched[index]["integrated_gate_check"] = report

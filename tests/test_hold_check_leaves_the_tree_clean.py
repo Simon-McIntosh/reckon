@@ -47,15 +47,26 @@ def repository(tmp_path):
     _git(root, "init", "-q", "-b", "main")
     _git(root, "config", "user.email", "worker@example.invalid")
     _git(root, "config", "user.name", "Worker")
-    ledger.append_run(
+    # Seed the aggregate's own run row directly, and a different run's file
+    # beside it, so the ledger a case reads is split: the aggregate holds one
+    # run row and runs/ holds another. Neither write folds a row the other holds
+    # — a check that read the union and wrote it back would fold the file's row
+    # into the aggregate, which is what the ledger writer refuses.
+    ledger.write(
         PROJECT,
-        ledger.build_record(run_id="r-one", plan="plan-a", gate="passed"),
+        {
+            "members": [],
+            "runs": [ledger.build_record(run_id="r-one", plan="plan-a", gate="passed")],
+            "holds": [],
+        },
+        0,
         root=root,
     )
-    # Fold the seeded run file into the aggregate and commit it, so the
-    # aggregate every case reads already carries a run row and a clean tree.
-    data, version = ledger.load(PROJECT, root)
-    ledger.write(PROJECT, data, version, root)
+    ledger.append_run(
+        PROJECT,
+        ledger.build_record(run_id="r-two", plan="plan-a", gate="passed"),
+        root=root,
+    )
     _git(root, "add", "--", "docs")
     _git(root, "commit", "-q", "-m", "chore: seed a promoted run")
     return root
