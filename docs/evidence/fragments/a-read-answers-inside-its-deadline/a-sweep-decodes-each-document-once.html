@@ -25,6 +25,14 @@
   pointers, one <code>obligation_snapshot.sweep</code> decodes each of the 200
   run documents once; a second sweep with one run file changed decodes exactly
   that file; the snapshots both sweeps write equal an unmemoised sweep's.</p>
+  <p>The memo is bounded twice over, because the producer that runs a sweep
+  lives for days while run files come and go. It is least-recently-used beyond a
+  stated <code>DOCUMENT_CACHE_LIMIT</code>, and the sweep releases it to the
+  documents that sweep opened, so a run file deleted or renamed between sweeps
+  does not keep its parse for the life of the process. The crew.json row memo in
+  the same scan keyed its parse on the same four fields; it now takes that
+  identity from <code>ledger.document_identity</code>, so the repository holds
+  one rule for when a file has moved rather than two copies of it.</p>
 </article>
 </body>
 </html>
