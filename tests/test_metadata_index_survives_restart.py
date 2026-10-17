@@ -336,7 +336,12 @@ def test_the_change_watch_invalidates_the_tree(project_tree, monkeypatch):
     watch.start()
     try:
         _rewrite(docs_dir / "plans" / "plan-001.html", "plan-001", "a watched change")
-        deadline = time.monotonic() + 10
+        # A write made before the reader thread arms the tree's inotify watch
+        # is invisible to the kernel, so the cross-node detector is the only
+        # fallback and it fires per its own interval. The deadline spans
+        # several of the detector's passes, derived from the interval so a
+        # change to it moves the wait with it.
+        deadline = time.monotonic() + 4 * serve._CROSS_NODE_FAST_S
         while not invalidated and time.monotonic() < deadline:
             time.sleep(0.05)
     finally:
