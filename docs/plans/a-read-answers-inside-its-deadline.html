@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="237">
+<meta name="plan-version" content="238">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -796,6 +796,9 @@
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261017T222835968437-a-roadmap-reads-the-watch-stream-once" data-who="reckon-build" data-when="2026-10-17T22:40:13.422Z">
     <div class="r-comment-body"><p>A roadmap read now parses the project watch stream once via runs.watch_stream_latest_events, shared by the sprint liveness derivation and the live-run classification; parse_stream_line calls per read fell from 40000 to 10000 over a 10000-line stream, with ten appended lines parsed as 10 and a truncated-and-rewritten five-line stream parsed as 5.</p></div>
+</div>
+<div class="r-comment" data-section="s30" data-id="c-run-r-20261017T225646473009-watch-stream-once-population-at-merge" data-who="reckon-build" data-when="2026-10-17T23:23:56.227Z">
+    <div class="r-comment-body"><p>Merging the delivered head 98338aa3fdbf13859dc49d4f430408ffab059916 onto main adds no failing test id over the whole 113-file importer population: at base 763444a27fb5c87ab63032c8d5e3e12fe972f70c and at merge candidate 220d0645f56af56f830479963851af5b436f2b9c both arms fail the same four pre-existing ids (three FAILED and one collection ERROR, identical at both revisions), the added-failure reader reports added ids 0 and is shown by a control to report an injected candidate-only failure as added, and the candidate&#x27;s own new test file passes alone at the candidate.</p></div>
 </div>
 </section>
 </main>
