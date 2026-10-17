@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T01:07:53.255Z",
+  "dispatched_at": "2026-10-17T01:02:04Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:208",
+      "id": "done_when-1",
+      "reason": "the bound must be re-set below base's measured 26 s (or the freshness figure taken from a call base demonstrably exceeds) or \u00a724 can never show the repairs buy anything, and the false \"must fail\" claim would otherwise ship a node that stalls on its own control.",
+      "text": "\u00a724 sets the head target \"the second forced sweep's median on the GPFS copy is under 30 s\" and asserts \"the same bound applied to base must fail\", but the same paragraph cites \u00a720's own figure, \"the steady derivation at about 26 s at base on both filesystems\"; \u00a720 measured exactly the revision \u00a724 uses as base (main before \u00a721 merged) and reported steady-state medians of 26.0 s GPFS / 26.2 s node-local, and \u00a718 records that a sweep costs fleet_state plus only 0.135 s of slicing and writes, so base's second forced sweep is about 26 s \u2014 under the 30 s bound. The bound therefore holds whether or not \u00a721\u2013\u00a723 landed, and \u00a724's own fallback (\"If base already meets it, the bound cannot discriminate the repairs, and the node reports that rather than passing\") makes the section un-completable as the validation it was written to be.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f093b17388ecd6477ae377dfcee738fc4144a303a1c3af8aef55690a8002c15b",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 166,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T010110163929-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "f2512567a32d3e8fcc2e4bf1d48b36eecec4b74b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 obligation_snapshot.fleet_state, obligation_snapshot.sweep (with transition_fired=) and FRESHNESS_WINDOW_SECONDS (120.0) all resolve in reckon/crew/obligation_snapshot.py (lines 856, 998/1004, 51).",
+    "done_when": "a finding \u2014 \u00a724's head target \"the second forced sweep's median on the GPFS copy is under 30 s\" is already met at base, so the bound discriminates nothing.",
+    "evidence_paths": "pass \u2014 \u00a724's gate logs write to the run directory and its evidence to docs/evidence/fragments/, both durable.",
+    "naming": "pass \u2014 no plan label, ticket or version tag reaches a symbol or comment; the section-number prose is the plan's own vocabulary, not code.",
+    "reasoning": "pass \u2014 \u00a720's lag split is the cause \u00a724 cites, and \u00a724's harness (obligation_snapshot.fleet_state and .sweep) runs on the producer's real entry points; the one defect is the calibration of a bound, filed under done_when.",
+    "single_goal": "pass \u2014 \u00a724 carries one deliverable, a measurement of the repaired pass, and changes no product code.",
+    "wiring": "pass \u2014 \u00a724's stated ordering (revisions before \u00a721 and after \u00a723; the shared frozen copies \u00a720 makes) names sections that exist and that its harness depends on."
+  },
+  "section_digests": {
+    "_document": "d4ddda961784c7a505897dfa112dcf8d73378167d498be05466e8103832740db",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "f6e2a8c3d1c90f4194ec9891635cef181cf62c62a5dbb39efd4c9832ac5d1e9b",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s20": "81e1ff125ddfc6955aa9bfbaae255b04b8bd03b75e9a4bbaec4a6e2de4790a39",
+    "s21": "12ee0e1852da5baa065bbe019bd803267f1817e4aa5fa5fcd12ec142ffba5f0f",
+    "s22": "6266f82976abf2a572694b2f91bf0143ff9a02ea484166e79b8197bde4e1a5e6",
+    "s23": "0c162cc0de7beec03e05834230443e4e755382e4c7b1cde4be476a6a17d232ec",
+    "s24": "8651c27bcfbc7ab0c949145071c715107b77015f15698d68468b8c04dc313ba6",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T01:16:15.772575+00:00"
+}
