@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="57">
+<meta name="plan-version" content="58">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="f2ea9301,5b1759ab,428477c7">
@@ -403,6 +403,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-17T15:00:00Z">
     <div class="r-comment-body"><p>§8 landed. Codex (<code>gpt-6-sol</code>) judged five known pairs. <strong>As PNG, all 5 discriminate:</strong> every bad figure failed and every good one passed, with a reason naming what it showed. <strong>As SVG, none do:</strong> all ten SVG runs answered <code>NO IMAGE RECEIVED</code>, though each carried its <code>-i</code> flag. All five image-withheld controls answered <code>NO IMAGE RECEIVED</code>, so no verdict came from the prompt. A local audit re-derived every verdict from the run streams and checked every copy by sha256, and its claims review reproduced the counts. The figures were merged as <code>32b241c9d</code>, and <code>verify-gate</code> passed. Spend: 25 runs, the codex weekly window 89% to 90%. <a href="/reckon/evidence/archive/a-review-can-see-the-figure-landed.html#s8-codex-judges-five-png-pairs">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261017T154304943398-a-test-holds-the-codex-image-declaration" data-who="reckon-build" data-when="2026-10-17T16:00:47.307Z">
+    <div class="r-comment-body"><p>test(flight): tests/test_codex_declares_image_input.py resolves the repository&#x27;s own docs/state/reckon/flight.yaml with an empty host layer and asserts the codex backend declares image (declared_input_modalities contains &quot;image&quot;); focused gate 1 passed, negative control EXIT=1, flight-importing population 2 failed / 749 passed unchanged base-&gt;head (0 added failures)</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
