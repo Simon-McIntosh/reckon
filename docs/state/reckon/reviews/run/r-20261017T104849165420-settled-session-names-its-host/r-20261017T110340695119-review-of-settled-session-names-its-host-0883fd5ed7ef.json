@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:998 prompt hook not_fresh_line call",
+    "reckon/hooks/coordinator_obligations.py:1227 stop hook not_fresh_line call"
+  ],
+  "completed_at": "2026-10-17T11:10:01Z",
+  "dispatched_at": "2026-10-17T11:04:36Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "397",
+      "severity": "blocking",
+      "text": "blocking: the lookup hardcodes crew_home()/session-hosts while the host writes through session_host._state_dir(), which honors RECKON_SESSION_HOST_STATE_DIR; with that override a live host is missed and the hook still advises a duplicate reckon crew follow."
+    },
+    {
+      "file": "tests/test_a_missing_snapshot_names_a_live_seat.py",
+      "line": "187",
+      "severity": "follow-on",
+      "text": "follow-on: the planted host pid equals the owner pid, so the new assertion would still pass if the hook ignored the record's pid and used the owner instead; use a separate live process to guard the distinct-host identity."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "commit 0883fd5ed7ef against base 3ff8058dd3d89d35b5ea4d7341be65d2f6f412bb adds host-record lookup and branches in reckon/hooks/coordinator_obligations.py:388-410 and :805-813 plus live-host and dead-host assertions in the two named test files.",
+    "done_when": "the source brief names both host cases and the focused gate; after-hook-tests.log records 39 passed and EXIT=0, while reproduction.log shows both cases red at the base and negative-control.log shows the no-snapshot case red without the guard.",
+    "goal": "the source brief requires live-host guidance for no snapshot and stale snapshot; reckon/hooks/coordinator_obligations.py:805-813 names the host and next-dispatch re-arm in both branches, except when the host record is moved by its supported override.",
+    "manifest": "the source manifest names complete status, commit 0883fd5ed7ef, the three changed paths, baseline-hook-tests.log with one timeout failure, and after-hook-tests.log with zero failures; the opened logs agree.",
+    "write_paths": "the source brief and manifest declare reckon/hooks/coordinator_obligations.py and the two named test files; git show 0883fd5ed7ef lists exactly those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_missing_snapshot_names_a_live_seat.py:191-196 and tests/test_a_stale_snapshot_names_its_remedy.py:215-220 redden if the host remedy is removed, while :209 reddens if a dead host is treated as live; the tests do not challenge the host-record directory override or a host pid distinct from its owner.",
+    "evidence": "after-hook-tests.log records 39 passed EXIT=0 and reproduction.log plus negative-control.log show the host-remedy assertions failing with the old behavior, while baseline-hook-tests.log's one failure is a git-worktree timeout outside the changed code.",
+    "fit": "reckon/hooks/coordinator_obligations.py:388-410 follows the hook's snapshot-module loading style and adds no forbidden name, but :397 bypasses the session host's state-directory resolver at reckon/crew/session_host.py:117-123.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:805-813 changes both requested remedies, but :397 misses a live host whose owner put its census under RECKON_SESSION_HOST_STATE_DIR.",
+    "reuse": "reckon/hooks/coordinator_obligations.py:397 duplicates the host-record path capability owned by reckon/crew/session_host.py:117-123 and already consumed through reckon/crew/dispatch_watch.py:515-531 rather than extending that owner.",
+    "scope_discipline": "git show 0883fd5ed7ef names only reckon/hooks/coordinator_obligations.py and the two test files declared in the source brief."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source brief requires live-host guidance for no snapshot and stale snapshot; reckon/hooks/coordinator_obligations.py:805-813 names the host and next-dispatch re-arm in both branches, except when the host record is moved by its supported override.\nVERDICT done_when: the source brief names both host cases and the focused gate; after-hook-tests.log records 39 passed and EXIT=0, while reproduction.log shows both cases red at the base and negative-control.log shows the no-snapshot case red without the guard.\nVERDICT write_paths: the source brief and manifest declare reckon/hooks/coordinator_obligations.py and the two named test files; git show 0883fd5ed7ef lists exactly those three paths.\nVERDICT manifest: the source manifest names complete status, commit 0883fd5ed7ef, the three changed paths, baseline-hook-tests.log with one timeout failure, and after-hook-tests.log with zero failures; the opened logs agree.\nVERDICT diff: commit 0883fd5ed7ef against base 3ff8058dd3d89d35b5ea4d7341be65d2f6f412bb adds host-record lookup and branches in reckon/hooks/coordinator_obligations.py:388-410 and :805-813 plus live-host and dead-host assertions in the two named test files.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:998 prompt hook not_fresh_line call, reckon/hooks/coordinator_obligations.py:1227 stop hook not_fresh_line call\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:805-813 changes both requested remedies, but :397 misses a live host whose owner put its census under RECKON_SESSION_HOST_STATE_DIR.\nSCORE evidence: 18\nJUSTIFICATION evidence: after-hook-tests.log records 39 passed EXIT=0 and reproduction.log plus negative-control.log show the host-remedy assertions failing with the old behavior, while baseline-hook-tests.log's one failure is a git-worktree timeout outside the changed code.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show 0883fd5ed7ef names only reckon/hooks/coordinator_obligations.py and the two test files declared in the source brief.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_missing_snapshot_names_a_live_seat.py:191-196 and tests/test_a_stale_snapshot_names_its_remedy.py:215-220 redden if the host remedy is removed, while :209 reddens if a dead host is treated as live; the tests do not challenge the host-record directory override or a host pid distinct from its owner.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/hooks/coordinator_obligations.py:388-410 follows the hook's snapshot-module loading style and adds no forbidden name, but :397 bypasses the session host's state-directory resolver at reckon/crew/session_host.py:117-123.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/hooks/coordinator_obligations.py:397 duplicates the host-record path capability owned by reckon/crew/session_host.py:117-123 and already consumed through reckon/crew/dispatch_watch.py:515-531 rather than extending that owner.\nFINDING reckon/hooks/coordinator_obligations.py:397 blocking: the lookup hardcodes crew_home()/session-hosts while the host writes through session_host._state_dir(), which honors RECKON_SESSION_HOST_STATE_DIR; with that override a live host is missed and the hook still advises a duplicate reckon crew follow.\nFINDING tests/test_a_missing_snapshot_names_a_live_seat.py:187 follow-on: the planted host pid equals the owner pid, so the new assertion would still pass if the hook ignored the record's pid and used the owner instead; use a separate live process to guard the distinct-host identity.\n",
+  "review_run_id": "r-20261017T110340695119-review-of-settled-session-names-its-host-0883fd5ed7ef",
+  "reviewed_base_sha": "3ff8058dd3d89d35b5ea4d7341be65d2f6f412bb",
+  "reviewed_head_sha": "0883fd5ed7ef02bb27a807cbbf6f01c257c1686f",
+  "reviewed_run_id": "r-20261017T104849165420-settled-session-names-its-host",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 16,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T11:07:51.003528+00:00",
+  "total": 89
+}
