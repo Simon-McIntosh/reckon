@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T02:02:43.269Z",
+  "dispatched_at": "2026-10-17T01:55:25Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:192",
+      "id": "wiring-1",
+      "reason": "the section the followup exists to dispatch (\u00a79) is unreachable from the roadmap, so the leak it repairs would never be built unless the followup is split into two invocations or the section is folded into one.",
+      "text": "f-tchhab-004's invocation line is `/reckon-build the-crew-home-has-a-bound \u00a78 \u00a79`, but `parse_invocation` (reckon/followup_pointers.py:57-97) captures one optional `\u00a7<n>` and returns `Invocation(target='the-crew-home-has-a-bound', section='s8')` for it (run under the repo venv), so \u00a79 is still named by no dispatching invocation and the roadmap can never dispatch it \u2014 the earlier review's wiring-1 was marked acted by appending `\u00a79` to the prompt, but the grammar silently ignores the second section token",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:163",
+      "id": "reasoning-1",
+      "reason": "the section's deliverable is a universal and its gate cannot show the universal holds, so a leak from a test file outside the import set passes the guard unobserved, which is precisely the failure the widened gate was meant to close.",
+      "text": "\u00a79's gate rests on the asserted premise that \"every test file that imports `reckon/ledger.py` or `reckon/_store.py` \u2026 together cover every test that can build a ledger\", but the index is built by any reader of a project ledger (`_run_index_path`, reckon/ledger.py:996-999, reached through `_ledgered_records` in `reckon/crew/routing.py`), and 30 test files import `reckon.crew.routing`/`gc`/`obligations` without importing either module, so a transitive ledger-builder is selected by neither the gate nor its assertion",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "096048ea8eb6cef5cdd102dfeb1e289202c8490cf87e7cc5059332f78248a1c2",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 50,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T015425724203-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "254f0c34d6bff18dad14bc0ef7097daa0c134329",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/gc.py:356` is exactly `for path in _run_directory_extractions(runs_root)` and `_run_directory_extractions` is defined at `reckon/crew/routing.py:540`; the extensionless evidence hrefs resolve as `<path>.html`.",
+    "done_when": "pass \u2014 \u00a79 and \u00a710 each name a declared negative control (the removed redirection; the base-tree copy) that reddens the gate, and \u00a710's measure is a concrete count on a named test.",
+    "evidence_paths": "pass \u2014 \u00a710's negative control is logged under the run directory (~/.config/reckon/crew/runs/<run-id>/), a durable path, and \u00a79's guard writes no scratch path.",
+    "naming": "pass \u2014 \u00a79 and \u00a710 name their files by mechanism (`test_a_single_run_gc_reads_its_own_run_directory.py`) and carry no plan label, ticket number or version tag into a symbol.",
+    "reasoning": "pass \u2014 \u00a710's stated root cause matches the code: gc.py:356 walks every run directory unconfined while the registered-worktree filter at gc.py:333-338 and the run-file walk at gc.py:562-566 both already gate on `run_id`, so confinement of the extraction scan is the mechanism that produces \u00a710's done-when.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable (every ledger-building test uses a temporary cache root) and \u00a710 one (a single-run gc inspects only the named run's directory).",
+    "wiring": "a finding \u2014 the followup that carries \u00a79 (f-tchhab-004) dispatches only \u00a78, because its invocation line `/reckon-build the-crew-home-has-a-bound \u00a78 \u00a79` parses to the single section s8."
+  },
+  "section_digests": {
+    "_document": "4dc163aaf3971781a60f3a42d1ae1a5f5e8120d9456c429e5adc0ea60acb2b52",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s10": "56c18da5f95c1af6bc07050b4374f565f11fa8750f575894cd4e1cc2b5ea773a",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "ea437bee063bb05e8f8ddb6f7a30f7f066d66dff1770c1488e31b86a6f5c7ba8",
+    "s5": "75a8a336e2ee62426e5a8c3ed3310e0cf614b82a8cf7ae6a5985fcb99f2b1648",
+    "s6": "3f82b3311550663b1d18b1428203c2b44805aff91f1c998049de11dd82bfe201",
+    "s7": "d966e9dc54000fcf7d43d9d39567b2a791c2670b0224b881649472a126a8f106",
+    "s8": "07d9242815cd2c19cf76c9484aa28c908834190af477f204091de9d695b3e8a5",
+    "s9": "0ee341dedbf303fed1502f47a385ba65234fc56219794249bdb011134e99ecdf"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T02:10:10.651830+00:00"
+}
