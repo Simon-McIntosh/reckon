@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's own manifest records baseline_suite at rev 4542d2c33faf07c6609642eb85caab8336cf881f as 25 passed EXIT=0 failure_ids [] (gate-base.log) and after_suite at rev 3de3a0d6c5a5879e0a0c0f578482540c23c70876 as 31 passed EXIT=0 with failure_ids [] (gate-head.log), so the head arm added six passing tests and no failing test.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:604",
+    "reckon/crew/dispatch_sessions.py:688"
+  ],
+  "completed_at": "2026-10-17T15:14:43.600Z",
+  "dispatched_at": "2026-10-17T15:01:15Z",
+  "findings": [
+    {
+      "file": "tests/test_plan_review_prefix_is_one_constant.py",
+      "line": "75",
+      "severity": "follow-on",
+      "text": "follow-on: assert first == second evaluates key('plan-review-of-alpha') twice from an identical record, so it holds whatever _task_identity does and cannot fail; the assertions that carry the plan-review key are :63 and :77, each reddened by negative-control-b.log."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit from 4542d2c33 to 3de3a0d6c; reckon/crew/dispatch.py removes the _is_review_run re-export, reckon/crew/dispatch_sessions.py deletes the local copy and rewrites _task_identity, and the test file gains six whole-key cases.",
+    "done_when": "the done_when asks the grep to print one file, whole-key cases for the four records \u00a711 names, four named test files green and clean ruff; the grep holds (only reckon/crew/recovery_review_delivery.py:44) and gate-head.log records 31 passed EXIT=0 at head against 25 at base, while the ruff clause is claimed in the manifest but carries no log on disk.",
+    "goal": "the goal is one review predicate plus per-review session keys, delivered at reckon/crew/dispatch_sessions.py:502-509 where _task_identity calls recovery._is_review_run and keys a plan-review node by its slug and a run review by _reviewed_run_id(...) or its own node id.",
+    "manifest": "read; it names commit 3de3a0d6c, a 31-pass head arm and a 25-pass base arm with zero added failures, two red negative controls and the done_when grep result.",
+    "write_paths": "read from the source manifest's orientation_write_paths; all four paths in the diff (reckon/crew/dispatch.py, reckon/crew/dispatch_sessions.py, tests/test_plan_review_prefix_is_one_constant.py and docs/evidence/fragments/new-work-gets-a-new-worker/a-review-run-has-one-predicate.html) sit inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_plan_review_prefix_is_one_constant.py:50 and :63/:77 are mutation-verified by negative-control-a.log (root-only predicate restored) and negative-control-b.log (plan-review branch stripped), but the assertion at :75 compares two calls with identical input so it cannot fail.",
+    "evidence": "gate-head.log records 31 passed EXIT=0 at rev 3de3a0d6c and gate-base.log 25 passed EXIT=0 at 4542d2c33, each with a revision-and-command header, but the done_when's ruff clause is only claimed in the manifest's artifacts field with no ruff log in the run directory.",
+    "fit": "the deletion and the in-function import of the owner at reckon/crew/dispatch_sessions.py:502 follow the removed copy's own idiom, and no name is added beyond the pre-existing PLAN_REVIEW_NODE_PREFIX import at reckon/crew/dispatch_sessions.py:29.",
+    "goal_fidelity": "reckon/crew/dispatch_sessions.py:502-509 has _task_identity call recovery._is_review_run and key a plan-review node by its slug while a run review keys by _reviewed_run_id(...) or its own node id, so the predicate is one and each review is keyed by what it reviews.",
+    "reuse": "the change removes the forked predicate and delegates to the single owner recovery._is_review_run at reckon/crew/recovery_review_delivery.py:44, so no capability is duplicated and no new definition forks one.",
+    "scope_discipline": "the diff from 4542d2c33 to 3de3a0d6c touches only reckon/crew/dispatch.py, reckon/crew/dispatch_sessions.py, tests/test_plan_review_prefix_is_one_constant.py and docs/evidence/fragments/new-work-gets-a-new-worker/a-review-run-has-one-predicate.html, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 4542d2c33faf07c6609642eb85caab8336cf881f\nreviewed_head_sha: 3de3a0d6c5a5879e0a0c0f578482540c23c70876\nVERDICT goal: the goal is one review predicate plus per-review session keys, delivered at reckon/crew/dispatch_sessions.py:502-509 where _task_identity calls recovery._is_review_run and keys a plan-review node by its slug and a run review by _reviewed_run_id(...) or its own node id.\nVERDICT done_when: the done_when asks the grep to print one file, whole-key cases for the four records \u00a711 names, four named test files green and clean ruff; the grep holds (only reckon/crew/recovery_review_delivery.py:44) and gate-head.log records 31 passed EXIT=0 at head against 25 at base, while the ruff clause is claimed in the manifest but carries no log on disk.\nVERDICT write_paths: read from the source manifest's orientation_write_paths; all four paths in the diff (reckon/crew/dispatch.py, reckon/crew/dispatch_sessions.py, tests/test_plan_review_prefix_is_one_constant.py and docs/evidence/fragments/new-work-gets-a-new-worker/a-review-run-has-one-predicate.html) sit inside the declared set.\nVERDICT manifest: read; it names commit 3de3a0d6c, a 31-pass head arm and a 25-pass base arm with zero added failures, two red negative controls and the done_when grep result.\nVERDICT diff: read commit by commit from 4542d2c33 to 3de3a0d6c; reckon/crew/dispatch.py removes the _is_review_run re-export, reckon/crew/dispatch_sessions.py deletes the local copy and rewrites _task_identity, and the test file gains six whole-key cases.\nCALL_SITES: reckon/crew/dispatch_sessions.py:604, reckon/crew/dispatch_sessions.py:688\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_sessions.py:502-509 has _task_identity call recovery._is_review_run and key a plan-review node by its slug while a run review keys by _reviewed_run_id(...) or its own node id, so the predicate is one and each review is keyed by what it reviews.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log records 31 passed EXIT=0 at rev 3de3a0d6c and gate-base.log 25 passed EXIT=0 at 4542d2c33, each with a revision-and-command header, but the done_when's ruff clause is only claimed in the manifest's artifacts field with no ruff log in the run directory.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff from 4542d2c33 to 3de3a0d6c touches only reckon/crew/dispatch.py, reckon/crew/dispatch_sessions.py, tests/test_plan_review_prefix_is_one_constant.py and docs/evidence/fragments/new-work-gets-a-new-worker/a-review-run-has-one-predicate.html, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_plan_review_prefix_is_one_constant.py:50 and :63/:77 are mutation-verified by negative-control-a.log (root-only predicate restored) and negative-control-b.log (plan-review branch stripped), but the assertion at :75 compares two calls with identical input so it cannot fail.\nSCORE fit: 20\nJUSTIFICATION fit: the deletion and the in-function import of the owner at reckon/crew/dispatch_sessions.py:502 follow the removed copy's own idiom, and no name is added beyond the pre-existing PLAN_REVIEW_NODE_PREFIX import at reckon/crew/dispatch_sessions.py:29.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change removes the forked predicate and delegates to the single owner recovery._is_review_run at reckon/crew/recovery_review_delivery.py:44, so no capability is duplicated and no new definition forks one.\nFINDING tests/test_plan_review_prefix_is_one_constant.py:75 follow-on: assert first == second evaluates key('plan-review-of-alpha') twice from an identical record, so it holds whatever _task_identity does and cannot fail; the assertions that carry the plan-review key are :63 and :77, each reddened by negative-control-b.log.",
+  "review_run_id": "r-20261017T150035254187-review-of-a-review-run-has-one-predicate-3de3a0d6c5a5",
+  "reviewed_base_sha": "4542d2c33faf07c6609642eb85caab8336cf881f",
+  "reviewed_head_sha": "3de3a0d6c5a5879e0a0c0f578482540c23c70876",
+  "reviewed_run_id": "r-20261017T143616807978-a-review-run-has-one-predicate",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T15:12:02.613545+00:00",
+  "total": 116
+}
