@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:1350",
+    "reckon/crew/promotion.py:751",
+    "reckon/crew/promotion_gate.py:955"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-17T16:04:01Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against fbaf1c363dfc0529208873988f5856010a808b99; 855562dcc adds the regression test, e864076fb adds `--only` and the pathspec to the commit, a8259a946 folds the test's imports \u2014 two files, 48 insertions, 2 deletions, all inside scope.",
+    "done_when": "the done_when names tests/test_a_promotion_commit_records_only_its_own_paths.py and a base-tree negative control; the manifest records the head run (1 passed) and the base arm (EXIT=1), both on disk under the run directory.",
+    "goal": "the node's goal is that a promotion commit contains only the paths the promotion wrote; reckon/crew/promotion_scope.py:1963-1970 now runs `git commit --only ... -- <targets>`, so only the staged targets are committed.",
+    "manifest": "read; it states status complete, the three commits 855562dcc/e864076fb/a8259a946, the final gate (1 passed) and the focused five-case gate (5 passed), and names each log on disk.",
+    "write_paths": "read the source manifest's declared paths (reckon/crew/promotion.py, reckon/crew/promotion_scope.py, tests/test_a_promotion_commit_records_only_its_own_paths.py, the fragment and the figure dir); the diff touches only the second and third, both inside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promotion_commit_records_only_its_own_paths.py:37-42 fails when the `--only` pathspec is removed, which the recorded base-arm run at fbaf1c363 demonstrates by reddening on the extra staged path.",
+    "evidence": "the head gate records 1 passed in final-gate.log and the base arm records EXIT=1 with the extra staged path in negative-control-final.log, so the measure was taken at both revisions rather than merely claimed.",
+    "fit": "the `git commit --only ... -- <paths>` form matches the repository's existing scoped-commit idiom at reckon/crew/promotion_release.py:617 and reckon/ledger.py:2124, and the commits use conventional subjects with bodies.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:1962-1970 adds `--only` and the explicit `-- <targets>` pathspec so the commit carries only the promotion's own paths and leaves other staged entries alone.",
+    "reuse": "the change adds no new definition and extends the existing owner reckon/crew/promotion_scope.py:_commit_landing_writes; a search for a scoped-commit mechanism found only the same idiom already owned by reckon/ledger.py:2124 and reckon/crew/promotion_release.py:617.",
+    "scope_discipline": "the diff touches only reckon/crew/promotion_scope.py and tests/test_a_promotion_commit_records_only_its_own_paths.py, both inside the declared write paths, with no plan, index or peer path changed."
+  },
+  "node": "review-of-a-promotion-commit-records-only-its-own-paths-a8259a9462f1",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a promotion commit contains only the paths the promotion wrote; reckon/crew/promotion_scope.py:1963-1970 now runs `git commit --only ... -- <targets>`, so only the staged targets are committed.\nVERDICT done_when: the done_when names tests/test_a_promotion_commit_records_only_its_own_paths.py and a base-tree negative control; the manifest records the head run (1 passed) and the base arm (EXIT=1), both on disk under the run directory.\nVERDICT write_paths: read the source manifest's declared paths (reckon/crew/promotion.py, reckon/crew/promotion_scope.py, tests/test_a_promotion_commit_records_only_its_own_paths.py, the fragment and the figure dir); the diff touches only the second and third, both inside the grant.\nVERDICT manifest: read; it states status complete, the three commits 855562dcc/e864076fb/a8259a946, the final gate (1 passed) and the focused five-case gate (5 passed), and names each log on disk.\nVERDICT diff: read commit by commit against fbaf1c363dfc0529208873988f5856010a808b99; 855562dcc adds the regression test, e864076fb adds `--only` and the pathspec to the commit, a8259a946 folds the test's imports \u2014 two files, 48 insertions, 2 deletions, all inside scope.\nCALL_SITES: reckon/crew/promotion.py:1350, reckon/crew/promotion.py:751, reckon/crew/promotion_gate.py:955\nreviewed_base_sha: fbaf1c363dfc0529208873988f5856010a808b99\nreviewed_head_sha: a8259a9462f1afe7be96345f84d5275d6ed27530\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:1962-1970 adds `--only` and the explicit `-- <targets>` pathspec so the commit carries only the promotion's own paths and leaves other staged entries alone.\nSCORE evidence: 18\nJUSTIFICATION evidence: the head gate records 1 passed in final-gate.log and the base arm records EXIT=1 with the extra staged path in negative-control-final.log, so the measure was taken at both revisions rather than merely claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/promotion_scope.py and tests/test_a_promotion_commit_records_only_its_own_paths.py, both inside the declared write paths, with no plan, index or peer path changed.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_promotion_commit_records_only_its_own_paths.py:37-42 fails when the `--only` pathspec is removed, which the recorded base-arm run at fbaf1c363 demonstrates by reddening on the extra staged path.\nSCORE fit: 19\nJUSTIFICATION fit: the `git commit --only ... -- <paths>` form matches the repository's existing scoped-commit idiom at reckon/crew/promotion_release.py:617 and reckon/ledger.py:2124, and the commits use conventional subjects with bodies.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no new definition and extends the existing owner reckon/crew/promotion_scope.py:_commit_landing_writes; a search for a scoped-commit mechanism found only the same idiom already owned by reckon/ledger.py:2124 and reckon/crew/promotion_release.py:617.",
+  "review_run_id": "legacy-2abcb2d06ec3",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "fbaf1c363dfc0529208873988f5856010a808b99",
+  "reviewed_head_sha": "a8259a9462f1afe7be96345f84d5275d6ed27530",
+  "reviewed_run_id": "r-20261017T160259471895-a-promotion-commit-records-only-its-own-paths",
+  "reviewer_run_id": "r-20261017T161349704091-review-of-a-promotion-commit-records-only-its-own-paths-a8259a9462f1",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T16:29:21.438270+00:00",
+  "total": 115
+}
