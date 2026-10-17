@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T16:02:11.941Z",
+  "dispatched_at": "2026-10-17T15:52:09Z",
+  "findings": [
+    {
+      "file": "run_population.sh",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: the EXIT trap that removes the node-local scratch does not run on SIGTERM, so cancelling job 1288118 by id left the scratch tree on 98dci4-clu-3141 to be reclaimed only by tmp-sweep after 6 h (report.md:89); disclosed, and no evidence is affected."
+    },
+    {
+      "file": "run_population.sh",
+      "line": "108",
+      "severity": "follow-on",
+      "text": "follow-on: mapfile over the empty added_ids list yields one empty element, so the alone-run loop iterated once with an empty id and launched empty-id pytest invocations after the measurement was already final, and the line 'added ids: 1' in alone-runs.log misreports the empty list (report.md:82-88); the authoritative added-ids.json holds added_count 0, added_ids []."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the node made no commits - git log 5801e46e0f2977affae82063c9f0df49a8a669cc..HEAD in its worktree is empty and its tree is clean - so there is no product diff to read, consistent with its brief stating it changes no product code and commits nothing.",
+    "done_when": "the brief's evidence fence requires two logs naming revision, host, command, the arm's own imported reckon.__file__ and resolved cwd, carrying pytest's summary and ending in EXIT=, with the added ids derived by the candidate reader after a log-presence check; population-base.log and population-cand.log each carry all of those (verified by their headers and tails) and derive_added.py aborts on a missing log, a log with no summary line, or a None count.",
+    "goal": "the node's goal is to measure whether merging 4e8161114 onto main adds any failing test id over the whole importer population; its report.md and manifest.md record both arms (base 120 files, candidate 121 files) run in exclusive all_debug job 1288118 with added_count 0, which is that measurement.",
+    "manifest": "read in full; it records both arms' pass/fail counts with log paths, added failing ids as none, the one file absent at base, and two self-disclosed scaffolding defects (job 1288116 and the empty-id alone loop) with their attribution.",
+    "write_paths": "the node declares its report directory under crew/reports/reckon/the-suite-is-green-at-head/failing-id-read-whole-population-at-merge (manifest.md:3) plus the run directory its host line grants for logs; every artefact it wrote lies in one of the two and its worktree is clean, so nothing is outside scope."
+  },
+  "justifications": {
+    "durability": "derive_added.py:29-38 aborts when a log is missing, lacks a summary line, or yields a None count, so a vanished log cannot read as zero, but the measurement is a scratch script re-run by no suite and adds no committed guard of its own.",
+    "evidence": "population-base.log and population-cand.log carry revision, host, literal command, the module_under_test proof, measurement_cwd and EXIT=1 with 1 failed/1248 passed and 1 failed/1252 passed, and I reproduced the added-failure derivation from those two logs with reckon/crew/review.py:2108 returning (0, []), each arm's positive control yielding exactly one parsed id.",
+    "fit": "derive_added.py and run_population.sh name their arms and files by what they do and carry no plan label, deliverable id, ticket reference or AI attribution, and the report's plan-section citation (report.md:3) is document prose, not source.",
+    "goal_fidelity": "report.md records both arms over the 121-file population (120 at base, the new test file absent there) in exclusive job 1288118, which is the goal's measurement.",
+    "reuse": "derive_added.py calls reckon.crew.review.added_failures_from_gate_logs and gate_log_failure_ids rather than hand-rolling the FAILED/ERROR extraction, so the derivation extends the owner of that capability instead of duplicating it.",
+    "scope_discipline": "nothing under reckon/ or tests/ changed (git status clean in the reviewed worktree at 5801e46e0) and every written path lies in the declared report directory or the run directory."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure whether merging 4e8161114 onto main adds any failing test id over the whole importer population; its report.md and manifest.md record both arms (base 120 files, candidate 121 files) run in exclusive all_debug job 1288118 with added_count 0, which is that measurement.\nVERDICT done_when: the brief's evidence fence requires two logs naming revision, host, command, the arm's own imported reckon.__file__ and resolved cwd, carrying pytest's summary and ending in EXIT=, with the added ids derived by the candidate reader after a log-presence check; population-base.log and population-cand.log each carry all of those (verified by their headers and tails) and derive_added.py aborts on a missing log, a log with no summary line, or a None count.\nVERDICT write_paths: the node declares its report directory under crew/reports/reckon/the-suite-is-green-at-head/failing-id-read-whole-population-at-merge (manifest.md:3) plus the run directory its host line grants for logs; every artefact it wrote lies in one of the two and its worktree is clean, so nothing is outside scope.\nVERDICT manifest: read in full; it records both arms' pass/fail counts with log paths, added failing ids as none, the one file absent at base, and two self-disclosed scaffolding defects (job 1288116 and the empty-id alone loop) with their attribution.\nVERDICT diff: the node made no commits - git log 5801e46e0f2977affae82063c9f0df49a8a669cc..HEAD in its worktree is empty and its tree is clean - so there is no product diff to read, consistent with its brief stating it changes no product code and commits nothing.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md records both arms over the 121-file population (120 at base, the new test file absent there) in exclusive job 1288118, which is the goal's measurement.\nSCORE evidence: 18\nJUSTIFICATION evidence: population-base.log and population-cand.log carry revision, host, literal command, the module_under_test proof, measurement_cwd and EXIT=1 with 1 failed/1248 passed and 1 failed/1252 passed, and I reproduced the added-failure derivation from those two logs with reckon/crew/review.py:2108 returning (0, []), each arm's positive control yielding exactly one parsed id.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: nothing under reckon/ or tests/ changed (git status clean in the reviewed worktree at 5801e46e0) and every written path lies in the declared report directory or the run directory.\nSCORE durability: 13\nJUSTIFICATION durability: derive_added.py:29-38 aborts when a log is missing, lacks a summary line, or yields a None count, so a vanished log cannot read as zero, but the measurement is a scratch script re-run by no suite and adds no committed guard of its own.\nSCORE fit: 18\nJUSTIFICATION fit: derive_added.py and run_population.sh name their arms and files by what they do and carry no plan label, deliverable id, ticket reference or AI attribution, and the report's plan-section citation (report.md:3) is document prose, not source.\nSCORE reuse: 20\nJUSTIFICATION reuse: derive_added.py calls reckon.crew.review.added_failures_from_gate_logs and gate_log_failure_ids rather than hand-rolling the FAILED/ERROR extraction, so the derivation extends the owner of that capability instead of duplicating it.\nFINDING run_population.sh:16 follow-on: the EXIT trap that removes the node-local scratch does not run on SIGTERM, so cancelling job 1288118 by id left the scratch tree on 98dci4-clu-3141 to be reclaimed only by tmp-sweep after 6 h (report.md:89); disclosed, and no evidence is affected.\nFINDING run_population.sh:108 follow-on: mapfile over the empty added_ids list yields one empty element, so the alone-run loop iterated once with an empty id and launched empty-id pytest invocations after the measurement was already final, and the line 'added ids: 1' in alone-runs.log misreports the empty list (report.md:82-88); the authoritative added-ids.json holds added_count 0, added_ids [].\nREVIEWED_BASE_SHA: 5801e46e0f2977affae82063c9f0df49a8a669cc\nREVIEWED_HEAD_SHA: 5801e46e0f2977affae82063c9f0df49a8a669cc\n\nThe reviewed node is a read-only measurement node. It committed nothing, so\nreviewed_base_sha and reviewed_head_sha are one revision, the worktree head it\nwas cut at and left unchanged; git log 5801e46e0..HEAD in its worktree is empty.\nThe revisions its measurement is about are base 6a74a7fe6429ab940c9f103b0b3b4245e48f0a28\n(main) and candidate ef479867d46dfecf5e654f44fac45ecc07a33489 (the merge whose\ntree would land). The candidate's diff against base is reckon/crew/review.py\nplus the new tests/test_a_failing_id_with_a_space_is_read_whole.py, so the\ncandidate arm's four extra tests (1248 -> 1252 passed) reconcile with the one\nadded file, and neither arm's log carries a failing id containing a space.\n",
+  "review_run_id": "r-20261017T155115180306-review-of-failing-id-read-whole-population-at-merge-5801e46e0f29",
+  "reviewed_base_sha": "5801e46e0f2977affae82063c9f0df49a8a669cc",
+  "reviewed_head_sha": "5801e46e0f2977affae82063c9f0df49a8a669cc",
+  "reviewed_run_id": "r-20261017T151112883507-failing-id-read-whole-population-at-merge",
+  "scores": {
+    "durability": 13,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T16:01:43.893570+00:00",
+  "total": 107
+}
