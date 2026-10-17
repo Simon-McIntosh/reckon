@@ -537,7 +537,9 @@ def _registered_worktrees(repo: Path) -> list[Path]:
     return [record["path"] for record in _worktree_registrations(repo)]
 
 
-def _run_directory_extractions(runs_root: Path) -> list[Path]:
+def _run_directory_extractions(
+    runs_root: Path, run_id: str | None = None
+) -> list[Path]:
     """Return the git-less trees a worker left under the crew runs root.
 
     Workers keep two kinds of source tree in a run directory: registered
@@ -549,6 +551,10 @@ def _run_directory_extractions(runs_root: Path) -> list[Path]:
     already reports, so only the git-less ones are returned here — they are
     exactly the trees gc would otherwise never see. Each run directory is
     scanned directly; the walk never descends a whole run tree.
+
+    A caller that names one run scans only that run's own directory, so a
+    pass confined to a single run does not walk every run directory under the
+    store. A caller that names no run keeps scanning them all.
     """
     from reckon.crew.fleet_supervisor import (
         carries_git_directory,
@@ -557,12 +563,16 @@ def _run_directory_extractions(runs_root: Path) -> list[Path]:
 
     if not runs_root.is_dir():
         return []
+    if run_id:
+        run_dirs = [runs_root / run_id]
+    else:
+        run_dirs = sorted(
+            path
+            for path in runs_root.iterdir()
+            if path.is_dir() and path.name != WORKTREE_TRASH_DIRNAME
+        )
     found: list[Path] = []
-    for run_dir in sorted(
-        path
-        for path in runs_root.iterdir()
-        if path.is_dir() and path.name != WORKTREE_TRASH_DIRNAME
-    ):
+    for run_dir in run_dirs:
         for candidate in run_directory_source_trees(run_dir):
             if carries_git_directory(candidate) or candidate in found:
                 continue
