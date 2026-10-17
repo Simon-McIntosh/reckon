@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "after_suite failures [] minus baseline_suite failures ['tests/test_one_sprint_item_slug.py::test_consumers_share_the_one_reader'] is []: the base arm fails the consumers-share-the-one-reader id and the head arm fails none, so 0 added failures across the reviewed gate.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T10:03:59.605Z",
+  "dispatched_at": "2026-10-17T09:52:15Z",
+  "findings": [
+    {
+      "file": "logs/head-pair.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's own header names revision 7eadb3a56 \"(working tree with node change)\" while the manifest's after_suite records revision \"9e793167d\", so a reader cannot tie the recorded EXIT=0 to the landed commit from the log alone; the working tree content equals the commit, so the gate result stands, but the receipt does not name the revision it ran at."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit 9e793167d against its parent and base 7eadb3a56; two files, +44/-3 - tests/test_one_sprint_item_slug.py:44-64 rewrites test_consumers_share_the_one_reader to compare definition locations, and the new docs/evidence/fragments/the-suite-is-green-at-head/the-shared-reader-test-survives-a-reload.html is the landing anchor.",
+    "done_when": "the done_when names the pair passing at head, the same pair failing at base, and a local-copy mutation failing; all three are recorded with an EXIT= line - head-pair.log closes 12 passed in 5.19s EXIT=0, base-pair.log closes 1 failed, 11 passed in 6.06s EXIT=1 on tests/test_one_sprint_item_slug.py::test_consumers_share_the_one_reader, mutation-local-copy.log closes 1 failed, 7 passed in 0.38s EXIT=1, and the manifest records ruff check and ruff format --check adding no findings.",
+    "goal": "the node goal is \"Make the shared-reader test compare each consumer's reader by module and qualified name so a module reload earlier on the worker cannot fail it\"; the landed change at tests/test_one_sprint_item_slug.py:57-64 replaces the three object-identity assertions with a local defined_as(fn) returning (fn.__module__, fn.__qualname__).",
+    "manifest": "read; status complete, commit 9e793167d, baseline_suite (7eadb3a56, 1 failed, tests/test_one_sprint_item_slug.py::test_consumers_share_the_one_reader) and after_suite (9e793167d, 0 failed) recorded with log paths matching the logs I opened.",
+    "write_paths": "the manifest declares tests/test_one_sprint_item_slug.py, docs/evidence/fragments/the-suite-is-green-at-head/the-shared-reader-test-survives-a-reload.html and the figures directory; git show 9e793167d --stat touches only the first two, both inside the declared paths."
+  },
+  "justifications": {
+    "durability": "tests/test_one_sprint_item_slug.py:62-64 fail if a consumer holds a private copy of the reader, shown by logs/mutation-local-copy.log failing at :62 when reckon.doccheck defines its own sprint_item_slug, and :61 pins the shared reader's definition to a literal independent of the consumers.",
+    "evidence": "the three clauses of the done_when are each recorded with EXIT= in logs/base-pair.log (EXIT=1), logs/head-pair.log (EXIT=0) and logs/mutation-local-copy.log (EXIT=1), though head-pair.log's header names the working tree rather than the landed sha 9e793167d.",
+    "fit": "the local defined_as helper and length-framing docstring at tests/test_one_sprint_item_slug.py:46-64 follow the surrounding test idiom and introduce no name the repository naming rules forbid.",
+    "goal_fidelity": "tests/test_one_sprint_item_slug.py:61 compares each consumer's reader by __module__ and __qualname__ rather than object identity, exactly the goal's deliverable.",
+    "reuse": "no repository owner exists for comparing a function's definition location; tests/conftest.py:59 module_reaches_the_browser_harness matches module names for a different capability, and the two-line local helper forks nothing.",
+    "scope_discipline": "git show 9e793167d --stat lists only tests/test_one_sprint_item_slug.py and the node's evidence fragment, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Make the shared-reader test compare each consumer's reader by module and qualified name so a module reload earlier on the worker cannot fail it\"; the landed change at tests/test_one_sprint_item_slug.py:57-64 replaces the three object-identity assertions with a local defined_as(fn) returning (fn.__module__, fn.__qualname__).\nVERDICT done_when: the done_when names the pair passing at head, the same pair failing at base, and a local-copy mutation failing; all three are recorded with an EXIT= line - head-pair.log closes 12 passed in 5.19s EXIT=0, base-pair.log closes 1 failed, 11 passed in 6.06s EXIT=1 on tests/test_one_sprint_item_slug.py::test_consumers_share_the_one_reader, mutation-local-copy.log closes 1 failed, 7 passed in 0.38s EXIT=1, and the manifest records ruff check and ruff format --check adding no findings.\nVERDICT write_paths: the manifest declares tests/test_one_sprint_item_slug.py, docs/evidence/fragments/the-suite-is-green-at-head/the-shared-reader-test-survives-a-reload.html and the figures directory; git show 9e793167d --stat touches only the first two, both inside the declared paths.\nVERDICT manifest: read; status complete, commit 9e793167d, baseline_suite (7eadb3a56, 1 failed, tests/test_one_sprint_item_slug.py::test_consumers_share_the_one_reader) and after_suite (9e793167d, 0 failed) recorded with log paths matching the logs I opened.\nVERDICT diff: read commit 9e793167d against its parent and base 7eadb3a56; two files, +44/-3 - tests/test_one_sprint_item_slug.py:44-64 rewrites test_consumers_share_the_one_reader to compare definition locations, and the new docs/evidence/fragments/the-suite-is-green-at-head/the-shared-reader-test-survives-a-reload.html is the landing anchor.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_one_sprint_item_slug.py:61 compares each consumer's reader by __module__ and __qualname__ rather than object identity, exactly the goal's deliverable.\nSCORE evidence: 18\nJUSTIFICATION evidence: the three clauses of the done_when are each recorded with EXIT= in logs/base-pair.log (EXIT=1), logs/head-pair.log (EXIT=0) and logs/mutation-local-copy.log (EXIT=1), though head-pair.log's header names the working tree rather than the landed sha 9e793167d.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show 9e793167d --stat lists only tests/test_one_sprint_item_slug.py and the node's evidence fragment, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_one_sprint_item_slug.py:62-64 fail if a consumer holds a private copy of the reader, shown by logs/mutation-local-copy.log failing at :62 when reckon.doccheck defines its own sprint_item_slug, and :61 pins the shared reader's definition to a literal independent of the consumers.\nSCORE fit: 18\nJUSTIFICATION fit: the local defined_as helper and length-framing docstring at tests/test_one_sprint_item_slug.py:46-64 follow the surrounding test idiom and introduce no name the repository naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: no repository owner exists for comparing a function's definition location; tests/conftest.py:59 module_reaches_the_browser_harness matches module names for a different capability, and the two-line local helper forks nothing.\nFINDING logs/head-pair.log:1 follow-on: the head arm's own header names revision 7eadb3a56 \"(working tree with node change)\" while the manifest's after_suite records revision \"9e793167d\", so a reader cannot tie the recorded EXIT=0 to the landed commit from the log alone; the working tree content equals the commit, so the gate result stands, but the receipt does not name the revision it ran at.",
+  "review_run_id": "r-20261017T095145220107-review-of-the-shared-reader-test-survives-a-reload-9e793167d583",
+  "reviewed_base_sha": "7eadb3a56ddd895a219f5a845819aa315a0e364b",
+  "reviewed_head_sha": "9e793167d583ca3aaf86fa5cb3325fb04878dbbe",
+  "reviewed_run_id": "r-20261017T094200953914-the-shared-reader-test-survives-a-reload",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T10:03:06.778641+00:00",
+  "total": 114
+}
