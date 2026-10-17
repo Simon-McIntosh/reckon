@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T11:46:11.194Z",
+  "dispatched_at": "2026-10-17T11:33:26Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/new-work-gets-a-new-worker/r-20261017T112833488253-plan-review-of-new-work-gets-a-new-worker/plan.html:481",
+      "id": "done_when-1",
+      "reason": "unless the case's node id is stated to be absent the review prefix, the new assertion holds on the unfixed code and the node ships a gate that cannot fail.",
+      "text": "\u00a711's second case requires \"a record whose `review` role is set only on its node and whose root role is absent\" to make `recovery._is_review_run` return true and `_task_identity` return a `\"review\"` key, but it never pins the record's node id; both predicates also recognise a review by the record's minted node id (`_is_review_node`, `recovery_review_subject.py:25-36`, which both copies call), so a record whose node id carries `review-of-`/`plan-review-of-` already satisfies both assertions before the fix \u2014 the very fixture the file already uses (`tests/test_plan_review_prefix_is_one_constant.py:23` builds `PLAN_REVIEW_NODE_PREFIX + \"fixture\"`). A probe confirms `plan-review-of-abc` yields dispatch True / recovery True, while only a non-minted id (`n-plain-node`) yields dispatch False / recovery True.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b2dd0988edc0f288df077e50507b42ff975f91308b270ccaf1858f2d1f83045b",
+  "plan_slug": "new-work-gets-a-new-worker",
+  "plan_version": 49,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-17T11:47:37.028340+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T11:47:37.028340+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-new-work-gets-a-new-worker.v49.json",
+  "review_run_id": "r-20261017T112833488253-plan-review-of-new-work-gets-a-new-worker",
+  "reviewed_blob_sha": "1e78168928d0a522f68d9509dd3530c227f483a1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor resolves in this tree: `recovery_review_delivery.py:44` (def), `recovery.py:199` (re-export), `recovery_watch.py:512` (`_pointer_role`), `dispatch_sessions.py:456` (dispatch copy def), `dispatch.py:2882` (`_is_review_run as _is_review_run`), and the named test file exists; `dispatch_sessions.py:507` lands inside the named `_task_identity` (def at 495), so it is a live pointer, not a dead one.",
+    "done_when": "a finding \u2014 \u00a711's second done-when case, the node-only-role record, is specified without pinning the node id, and with the file's existing minted-id fixture the case passes on the unfixed code.",
+    "evidence_paths": "pass \u2014 \u00a711 cites its evidence as review-store records (`review-code-5e222083bf18`, `review-code-2f2060e98013`, `review-code-5e5a52e59a82`), all three present under `~/.config/reckon/crew/reviews/reckon/`, and its gate is greps plus pytest over named files; no session scratchpad or node-local path is named.",
+    "naming": "pass \u2014 \u00a711 names a mechanism throughout (`_is_review_run`, `_task_identity`, `_pointer_role`); the review-store ids are data keys, not symbols, and no plan label, ticket number or changelog prose reaches code.",
+    "reasoning": "pass \u2014 the stated root cause is confirmed by its own cited evidence and reproduced here: the third review's finding (\"Dispatch reads only the root role whereas recovery uses the root or node role at `recovery_watch.py:512`\") matches the code, and a probe returns dispatch False / recovery True for a node-role-only record; the mechanism reaches the live path (`_task_identity` is called by `_task_session_resolution` at `dispatch_sessions.py:661`, re-exported at `dispatch_sessions` and consumed by `_prior_same_task_run`), and the inside-function import is justified (recovery transitively reaches `dispatch` and `dispatch_launch`, which import `dispatch_sessions`).",
+    "single_goal": "pass \u2014 \u00a711 carries one deliverable (delete dispatch's duplicate `_is_review_run`, route `_task_identity` to the owner and drop the re-export); its four checks are all facets of that one deletion.",
+    "wiring": "pass \u2014 \u00a711 declares its serialisation in prose (\"This section follows \u00a710, whose write scope holds both dispatch_sessions.py and dispatch.py\"), which is the plan's convention (every section carries an empty data-links); \u00a710 is unmet and does hold both files, so the stated predecessor is correct."
+  },
+  "section_digests": {
+    "_document": "94d54cc5177fa7b93be4e622d03467e291b778432969d29dacaa05f469ffb0b8",
+    "s1": "7ae481f20fd378b05cffc9c48902a38d550eec6f7589c443213410b5f47f177a",
+    "s10": "6b15d321c8851726303c56e548f95ef6c83ef712f4640d3ce8e4d5c3cbb4f33d",
+    "s11": "0a14d20b4a726af7cb240cd5d82494d51976b0f1a7b971300f4e0c7665113319",
+    "s2": "75d73add22c27081b096fbdcbfbc7697419fa7455957b55868131e78e8cea099",
+    "s3": "90ebc1798198683841ca985b63d8727ae245d96081f932e024091baac997f5c8",
+    "s4": "04abf1a2e284917d50d9de69a07ea00857d2fb87e04187c0da8008db1f8b03a5",
+    "s5": "cee83946379f7c1418833601209e1a1c211cf9f61c5a75c7f90ce16c60d879bd",
+    "s6": "856fa7deb260fdf62fc25617aa7b562fc3fd2f3c632a71a2a547d4be7bc182b0",
+    "s7": "f2736058e910493b80de5f74b27c2de19c4abd4736246d5108772877b7667b13",
+    "s8": "e7c8f9518519552098b55b1826ee16e97b986001f47d42c07440dc2a4d559e71",
+    "s9": "9bf545205641e1d550ff7dd622b064a3e3b029ef013519fe991543ae7ab7cfe9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T11:47:34.504319+00:00"
+}
