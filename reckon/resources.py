@@ -586,7 +586,7 @@ def _scan_resources(
     from reckon import metadata_index
 
     resources: list[Resource] = []
-    for relative, path in metadata_index._covered_files(docs_dir, project):
+    for relative, path in metadata_index._covered_files_for_project(docs_dir, project):
         if not relative.endswith(".html"):
             continue
         if _is_evidence_fragment(PurePosixPath(relative)):

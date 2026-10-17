@@ -38,31 +38,41 @@ DRIVER = dedent(
 
     real_scandir = os.scandir
     real_read_text = Path.read_text
+    real_read_bytes = Path.read_bytes
     listings = Counter()
     reads = Counter()
+    text_reads = Counter()
+    byte_reads = Counter()
+
+    def authored(path):
+        resolved = Path(path).resolve()
+        return (resolved == docs or docs in resolved.parents) and docs / "state" not in resolved.parents
 
     def counting_scandir(path):
         resolved = Path(path).resolve()
         # Run-ledger state has its own read path. Count authored documents,
         # including the canonical sprint documents.
-        if (resolved == docs or docs in resolved.parents) and docs / "state" not in resolved.parents:
+        if authored(resolved):
             listings[str(resolved)] += 1
         return real_scandir(path)
 
     def counting_read_text(path, *args, **kwargs):
         resolved = Path(path).resolve()
-        if (resolved == docs or docs in resolved.parents) and docs / "state" not in resolved.parents:
+        if authored(resolved):
             reads[str(resolved)] += 1
+            text_reads[str(resolved)] += 1
         return real_read_text(path, *args, **kwargs)
+
+    def counting_read_bytes(path, *args, **kwargs):
+        resolved = Path(path).resolve()
+        if authored(resolved):
+            reads[str(resolved)] += 1
+            byte_reads[str(resolved)] += 1
+        return real_read_bytes(path, *args, **kwargs)
 
     os.scandir = counting_scandir
     Path.read_text = counting_read_text
-    with os.scandir(docs / "plans") as entries:
-        assert any(entry.name == "plan-00.html" for entry in entries)
-    assert (docs / "plans" / "plan-00.html").read_text()
-    probe_control = {"listings": dict(listings), "reads": dict(reads)}
-    listings.clear()
-    reads.clear()
+    Path.read_bytes = counting_read_bytes
     sprint_liveness.list_live = lambda project=None: [
         {"run_id": "probe-run", "plan": "plan-00", "phase": "working"}
     ]
@@ -79,7 +89,8 @@ DRIVER = dedent(
         "roadmap": report,
         "listings": listings,
         "reads": reads,
-        "probe_control": probe_control,
+        "text_reads": text_reads,
+        "byte_reads": byte_reads,
         "sprint_reads": sprint_reads[0],
         "module": str(mcp.__file__),
         "cwd": str(Path.cwd().resolve()),
@@ -154,6 +165,9 @@ def measured(tmp_path_factory: pytest.TempPathFactory) -> dict:
     driver = tmp_path / "driver.py"
     driver.write_text(DRIVER, encoding="utf-8")
     assert _run(driver, checkout, home, "prime")["primed"]
+    # Move the recorded shape after the store build so the cold read must
+    # list the authored tree while retaining its built document inventory.
+    (checkout / "docs" / "plans" / ".shape-marker").write_text("new entry")
 
     cold = _run(driver, checkout, home, "measure")
     unshared = _run(driver, checkout, home, "unshared")
@@ -169,16 +183,25 @@ def test_one_cold_roadmap_lists_each_docs_directory_once(measured: dict) -> None
     )
     assert cold["roadmap"] == unshared["roadmap"]
     assert cold["sprint_reads"] > 0
-    assert cold["probe_control"]["listings"][str(checkout / "docs" / "plans")] == 1
-    assert (
-        cold["probe_control"]["reads"][
-            str(checkout / "docs" / "plans" / "plan-00.html")
-        ]
-        == 1
-    )
+    expected_directories = {
+        str(checkout / "docs" / relative)
+        for relative in (".", "plans", "research", "sprints")
+    }
+    assert expected_directories <= cold["listings"].keys(), cold["listings"]
+    assert cold["listings"][str(checkout / "docs" / "plans")] == 1
     assert max(cold["listings"].values(), default=0) <= 1, cold["listings"]
 
 
 def test_one_cold_roadmap_reads_each_authored_file_once(measured: dict) -> None:
+    checkout = measured["checkout"]
     cold = measured["cold"]
+    expected_files = {
+        str(path)
+        for directory in ("plans", "research", "sprints")
+        for path in (checkout / "docs" / directory).glob("*.html")
+    }
+    assert len(expected_files) == DOCUMENT_COUNT + 4 + 3
+    assert expected_files <= cold["reads"].keys(), cold["reads"]
+    assert cold["reads"][str(checkout / "docs" / "plans" / "plan-00.html")] >= 1
+    assert cold["byte_reads"][str(checkout / "docs" / "plans" / "plan-00.html")] >= 1
     assert max(cold["reads"].values(), default=0) <= 1, cold["reads"]
