@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-velocity-window-may-open-before-the-ledger">
   <meta name="plan-title" content="A Velocity Window May Open Before The Ledger">
   <meta name="plan-summary" content="crew velocity aborts when its window starts or ends before crew.json existed; a revision with no ledger must read as one with no runs.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="1.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,8 +24,8 @@
   <title>A Velocity Window May Open Before The Ledger | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="27">
-<meta name="plan-modified" content="2026-10-17">
+<meta name="plan-version" content="28">
+<meta name="plan-modified" content="2026-10-18">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
 <body>
@@ -173,10 +173,17 @@ The test writes nothing outside its temporary directory. It points <code>RECKON_
     <pre class="r-fu-prompt">/reckon-build a-velocity-window-may-open-before-the-ledger §2</pre>
     <p class="r-fu-outcome"><p>§2 landed at merge <code>9a9a83ec6</code> (review 98, no added failures). The ledger search now completes inside the bound on both real windows, but both still exit 1 at <code>compact_summary</code>'s size assertion, which §3 carries.</p></p>
     </article>
-<article class="r-fu" data-id="f-avwmobl-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-17" data-recommends-skill="/reckon-build a-velocity-window-may-open-before-the-ledger §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-avwmobl-003" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-17" data-recommends-skill="/reckon-build a-velocity-window-may-open-before-the-ledger §3" data-resolved-at="2026-10-17T22:14:48+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Take the census&#x27;s size check off the velocity view</h4>
     <div class="r-fu-body"><p>Both real windows now complete the ledger search, then abort at <code>compact_summary</code>'s 300,000-byte assertion. §3 moves that check into <code>velocity()</code>, the census path it was written for.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-velocity-window-may-open-before-the-ledger §3</pre>
+    <p class="r-fu-outcome"><p>§3 landed at merge <code>2f7928062</code> (review 114). At <code>35df08fa6</code>, both real windows exit 0.</p></p>
+    </article>
+<article class="r-fu" data-id="f-avwmobl-004" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-velocity-window-may-open-before-the-ledger" data-resolved-at="2026-10-17T22:15:00Z" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Plan closed</h4>
+    <div class="r-fu-body"><p>All three sections have landed, and <code>crew velocity --since 2026-08-01</code> and <code>--since 2026-09-01</code> both exit 0 at the merged head. Recorded residuals: record-file placement assumes each per-run file is added in its promoting commit, which a later split of older rows would break; and the census path, <code>velocity()</code>, still enforces the 300,000-byte bound.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-velocity-window-may-open-before-the-ledger</pre>
+    <p class="r-fu-outcome">done — no followup</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -212,6 +219,9 @@ The test writes nothing outside its temporary directory. It points <code>RECKON_
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261017T211031488746-a-velocity-view-is-not-bounded-by-the-census" data-who="reckon-build" data-when="2026-10-17T21:29:40.349Z">
     <div class="r-comment-body"><p>The 300,000-byte size assertion moved out of compact_summary into velocity() (the census path it was written for), limit and message unchanged, so report() and the crew velocity view are no longer aborted by it; tests/test_a_velocity_view_is_not_bounded_by_the_census.py asserts compact_summary returns, velocity() raises the message, and report() returns a mapping carrying by_project_day_lane on an oversized full, gate 33 passed at head / 30 at base with both declared mutations red.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-integration-check" data-who="reckon-build" data-when="2026-10-17T22:15:00Z">
+    <div class="r-comment-body"><p>Post-merge check for §3, run at merge <code>35df08fa6</code>, which carries §1, §2 and §3. <code>reckon crew velocity --project reckon --since 2026-08-01</code> exits 0 after 561 s, with <code>first durable ledger clocks 902 / 902</code>. <code>--since 2026-09-01</code> exits 0 after 544 s, with <code>545 / 545</code>. The logs are <code>~/.cache/reckon-velocity-window-check/velocity-since-2026-08-01-at-35df08fa6.log</code> and <code>…-2026-09-01-at-35df08fa6.log</code>; each records its revision and wall time. This meets §3's fourth done-when item, and with it the both-windows measure that §1 and §2 carried forward.</p></div>
 </div>
 </section>
 </main>
