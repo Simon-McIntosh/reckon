@@ -1,0 +1,40 @@
+<section id="the-ledger-writer-refuses-a-fold">
+  <h2>the-ledger-writer-refuses-a-fold — the ledger writer refuses a write that folds per-run rows into the aggregate</h2>
+
+  <p id="the-ledger-writer-refuses-a-fold-what-changed"><strong>What changed.</strong>
+  <code>ledger.write</code> refuses an incoming write that carries a run id the aggregate's own
+  rows do not hold while that run's per-run file exists, naming how many rows it would have
+  folded and citing five of them. The comparison is against the aggregate's own rows, read
+  directly, never against <code>ledger.load</code>'s union. The existing run-count guard is
+  re-based the same way: it now measures the aggregate's own row count, so a caller passing the
+  aggregate's rows to a project whose runs are split is not mistaken for a shrinking write.
+  <code>record_hold_checks</code> reads and writes the aggregate's own rows and its holds rather
+  than the union, so a hold transition cannot carry per-run rows into the tracked aggregate.</p>
+
+  <p id="the-ledger-writer-refuses-a-fold-measure"><strong>Measure.</strong>
+  <code>tests/test_the_ledger_writer_refuses_a_fold.py</code> drives a throwaway project whose
+  aggregate holds 10 rows and whose <code>runs/</code> holds 50 files. A write of
+  <code>ledger.load</code>'s 60-row union is refused naming <strong>50</strong> folded rows and
+  changes neither copy; a write of the aggregate's own rows plus one new run is accepted, and its
+  fifty files are untouched; a <code>record_hold_checks</code> call opens a hold, leaves the
+  aggregate at 10 rows and the 50 files byte-identical, and the reader still returns 60 rows.
+  Head gate: <strong>4 passed, EXIT=0</strong>.</p>
+
+  <p id="the-ledger-writer-refuses-a-fold-negative-control"><strong>Declared negative control,
+  executed and logged.</strong> Against the base tree (<code>2e9a07c237</code>, guard absent) the
+  union write is accepted: the same test file run there is <strong>4 failed, EXIT=1</strong>, with
+  the two refusal cases failing on <em>DID NOT RAISE</em> for the acceptance the base writer
+  permits, and the append and hold cases failing because the base run-count guard measures the
+  union. Log: <code>logs/negative-control-base-arm.log</code>.</p>
+
+  <p id="the-ledger-writer-refuses-a-fold-callers"><strong>Other callers that write the
+  aggregate, and how they read.</strong> Every one below reads <code>ledger.load</code>'s union
+  and writes it back, so each folds when the project's runs are split and each is refused by this
+  guard until it is repaired:
+  <code>reckon/crew/routing.py:2825→2882</code> (idle session-member reap),
+  <code>reckon/crew/promotion_gate.py:909→949</code> (gate re-run when the run's file is missing),
+  <code>reckon/crew/promotion_records.py:665→678</code> (identity retirement),
+  <code>scripts/derive_run_figures.py:42→64</code> and
+  <code>scripts/backfill_run_durations.py:124→215</code> (row backfills). Each is outside this
+  node's write scope and is listed in <code>follow_ons</code>.</p>
+</section>

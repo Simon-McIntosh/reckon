@@ -889,6 +889,36 @@ def _run_files(project: str, root: str | Path | None = None) -> list[Path]:
     return sorted((ledger_path(project, root).parent / "runs").glob("*.json"))
 
 
+def _folded_run_ids(
+    incoming_runs: Sequence[Any],
+    aggregate_runs: Sequence[Any],
+    project: str,
+    root: str | Path | None,
+) -> list[str]:
+    """Run ids the incoming rows carry that only their own file holds today.
+
+    A row is the same record whether it is read from the aggregate or from the
+    file under ``runs/``, so an incoming write that carries a row the aggregate
+    does not hold while that row's file exists is about to copy a per-run record
+    into the aggregate. The ids are returned sorted so a refusal names them
+    stably, and a row the aggregate already holds is never counted: a write
+    that keeps a row and edits it is the ordinary shape, not a fold, and
+    :func:`_keep_run_files_identical` re-encodes the file to match it.
+    """
+    incoming = {
+        str(row["run_id"])
+        for row in incoming_runs
+        if isinstance(row, Mapping) and row.get("run_id")
+    }
+    held = {
+        str(row["run_id"])
+        for row in aggregate_runs
+        if isinstance(row, Mapping) and row.get("run_id")
+    }
+    on_disk = {path.stem for path in _run_files(project, root)}
+    return sorted((incoming - held) & on_disk)
+
+
 def _load_aggregate(
     project: str, root: str | Path | None
 ) -> tuple[dict[str, Any], int]:
@@ -1704,9 +1734,12 @@ def write(
     current roster. Reporting a membership difference drawn from a stale view
     would aim the caller at the wrong remedy.
 
-    A write that would take the committed run count below what the stored
-    ledger holds is refused, naming both counts. A promotion only ever
-    appends, so a reduction is by construction a lost read rather than an
+    A write that would take the aggregate's own run count below what that
+    aggregate holds is refused, naming both counts. The count is the aggregate's
+    own rows rather than the union :func:`load` returns: once a project's runs
+    live in per-run files, a write of the aggregate's rows is a reduction of the
+    union by construction and still the ordinary shape of an edit. A reduction
+    of the aggregate's own rows is by construction a lost read rather than an
     edit — the shape that carried one project's ledger from 110 runs and 87
     members down to a single row in one promote commit. The run store keeps
     every promoted run independently of this file, so the refusal names it as
@@ -1714,6 +1747,16 @@ def write(
     check: a write prepared against a version the ledger has moved past is
     refused for that reason, and the version conflict is what a concurrent
     writer must act on.
+
+    A write that would fold into the aggregate a run already held as its own
+    per-run file is refused, naming how many it would have folded. The two
+    copies of a run are one record; an aggregate that also carries the rows
+    under ``runs/`` is the export :func:`_split_project_runs` exists to undo, so
+    a writer that read :func:`load`'s union and wrote it back would duplicate
+    every promoted run in the aggregate and grow the tracked file without bound.
+    The union is the reader's view, not a writer's input: a caller either passes
+    the aggregate's own rows, or appends one new run through :func:`append_run`,
+    which writes that run's file and nothing else.
 
     ``commit`` states at the call site that the caller is committing the roster
     change it is making: the retirement the write records is committed at once,
@@ -1737,6 +1780,11 @@ def write(
         incoming_members = list(data.get("members", []))
         incoming_runs = list(data.get("runs", []))
         stored, stored_version = load(project, root)
+        # The guard below measures the incoming rows against the aggregate's own
+        # rows, never against the union load() returns: the union is the reader's
+        # view, and the per-run files it folds in are rows this write must leave
+        # where they are.
+        aggregate, _aggregate_version = _load_aggregate(project, root)
         current_view = expected_version == stored_version
         dropped = (
             dropped_member_ids(stored["members"], incoming_members)
@@ -1752,15 +1800,26 @@ def write(
                 "without anyone asking; pass allow_member_removal=True when the "
                 "removal is intended"
             )
-        if current_view and len(incoming_runs) < len(stored["runs"]):
+        if current_view and len(incoming_runs) < len(aggregate["runs"]):
             raise LedgerError(
                 f"refusing to write the ledger for {project!r}: this write takes "
-                f"the committed run count from {len(stored['runs'])} to "
+                f"the committed run count from {len(aggregate['runs'])} to "
                 f"{len(incoming_runs)}, and a promotion only ever appends, so a "
                 f"reduction is by construction a lost read rather than an edit; "
                 f"the run store at {_run_store_location()} holds every promoted "
                 "run independently of this file and is the recovery for a ledger "
                 "that has already lost rows"
+            )
+        folded = _folded_run_ids(incoming_runs, aggregate["runs"], project, root)
+        if current_view and folded:
+            raise LedgerError(
+                f"refusing to write the ledger for {project!r}: this write would "
+                f"fold {len(folded)} run row(s) already held as per-run files "
+                f"into the aggregate ({', '.join(folded[:5])}"
+                f"{', …' if len(folded) > 5 else ''}), which copies each of them "
+                "into the tracked aggregate beside its own file; pass the "
+                "aggregate's own rows, or append one new run with append_run, "
+                "which writes only that run's file"
             )
         if commit and not dropped:
             raise LedgerError(
@@ -3709,7 +3768,12 @@ def record_hold_checks(
     prepared = [dict(check) for check in checks]
     last: LedgerError | None = None
     for _attempt in range(max(1, attempts)):
-        data, version = load(project, root)
+        # The aggregate's own rows, never :func:`load`'s union: a hold is a fact
+        # about the aggregate alone, and writing the union back would carry every
+        # per-run file's row into it. The writer refuses that fold, and reading
+        # the aggregate here is also what leaves its run rows byte-identical
+        # across a hold transition.
+        data, version = _load_aggregate(project, root)
         history = [dict(item) for item in data["holds"]]
         changed = False
         outcomes: list[dict[str, Any]] = []
