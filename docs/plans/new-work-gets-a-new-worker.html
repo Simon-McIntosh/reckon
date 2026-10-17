@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-version" content="52">
+<meta name="plan-version" content="53">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.9">
@@ -632,6 +632,9 @@ resume burn, after</a>.</p>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-17T13:50:00Z">
     <div class="r-comment-body"><p>§10 landed: <code>_capture_member_session</code> is deleted and every caller calls <code>capture_run_session</code> (commit <code>15dff49be</code>). The grep reads 13 lines at base and none at head. Gate: 24 passed at both base and head. The negative control fails its 3 cases. Review 111, no added failures. <a href="/reckon/evidence/archive/new-work-gets-a-new-worker-landed.html#s10">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261017T110626399745-a-runs-session-has-one-capture-name" data-who="reckon-build" data-when="2026-10-17T11:33:08.989Z">
+    <div class="r-comment-body"><p>Deleted the _capture_member_session alias and pointed all five call sites, the two imports and the dispatch re-export/facade entry at capture_run_session, moving the two test monkeypatches to the name promotion calls; `grep -rn _capture_member_session reckon/ tests/` prints nothing at head (13 lines at base), the three-file gate is 24 passed head vs 24 base (0 added failures), and the negative control fails the capture, refuse and boundary_hook cases (3 failed, EXIT=1).</p></div>
 </div>
 </section>
 </main>
