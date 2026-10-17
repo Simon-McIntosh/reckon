@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-shadow-read-scan-has-its-own-module">
+  <meta name="plan-title" content="The shadow-read scan lives in its own module">
+  <meta name="plan-evidence-for" content="reckon:a-shadow-cannot-see-its-primary">
+  <meta name="plan-verifies" content="reckon:a-shadow-cannot-see-its-primary#s7">
+  <meta name="plan-recorded-at" content="2026-10-17">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,shadow,module-split,context-fit">
+  <title>The shadow-read scan lives in its own module &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The shadow-read scan lives in its own module</h1>
+
+    <section id="the-shadow-read-scan-has-its-own-module">
+      <h2>Landing</h2>
+      <p>The shadow-contamination block moved whole out of
+        <code>reckon/ledger.py</code> into a new
+        <code>reckon/shadow_reads.py</code>: the git-read verb sets, the
+        sha-abbreviation helper, <code>stream_tool_calls</code>,
+        <code>shadow_primary_read</code>, the reason priority and every private
+        helper and pattern they use. It is a move, not a copy &mdash; the diff
+        against <code>reckon/ledger.py</code> adds zero lines &mdash; and
+        <code>ledger.py</code> keeps no re-export or wrapper of any moved name.
+        The callers now import the new module:
+        <code>promotion_scope._shadow_stream_contamination</code> and
+        <code>tests/test_crew_shadow_contamination.py</code>.
+        <code>ledger.shadow_controlled</code> and the
+        <code>shadow_contaminated</code> record field stay in
+        <code>ledger.py</code>, because the record builder owns them. No
+        behaviour changes.</p>
+    </section>
+
+    <section id="the-shadow-read-scan-has-its-own-module-gates">
+      <h2>Gates</h2>
+      <table>
+        <thead>
+          <tr><th>Gate</th><th>Head</th><th>Measured at base (b6cdd83be)</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>tests/test_every_module_fits_a_worker_window.py</code></td>
+            <td>4 passed, EXIT=0 (was red)</td>
+            <td>1 failed &mdash; <code>reckon/ledger.py: 51295 estimated tokens
+              exceeds the 50000 bound</code></td>
+          </tr>
+          <tr>
+            <td><code>tests/test_crew_shadow_contamination.py</code></td>
+            <td>26 passed, EXIT=0; the 26 collected ids are byte-identical to
+              the base arm's 26</td>
+            <td>same ids</td>
+          </tr>
+          <tr>
+            <td><code>ruff check</code> and <code>ruff format --check</code>, base
+              vs head piped through stdin per changed path</td>
+            <td>no added findings</td>
+            <td>ledger.py 7 findings either side; the other three paths 0</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><code>reckon/ledger.py</code> fell from 51295 to 46852 estimated
+        tokens (179532 to 163980 bytes), so the width ratchet that has been red
+        since the scan was added now passes.</p>
+    </section>
+
+    <section id="the-shadow-read-scan-has-its-own-module-negative-control">
+      <h2>Negative control</h2>
+      <p>With the moved block restored into <code>ledger.py</code> in a scratch
+        tree, the width test fails again with the identical id:
+        <code>test_every_module_fits_a_worker_window</code>,
+        <code>reckon/ledger.py: 51295 estimated tokens exceeds the 50000
+        bound</code>, <code>EXIT=1</code> &mdash; the head arm passes that same
+        id. Log:
+        <code>gate-logs/width-negative-control.log</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
