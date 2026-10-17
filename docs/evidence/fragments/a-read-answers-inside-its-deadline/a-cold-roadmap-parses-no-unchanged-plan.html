@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-title" content="A cold roadmap parses no unchanged plan">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s26">
+  <meta name="plan-recorded-at" content="2026-10-17">
+  <meta name="plan-verdict" content="passed">
+  <title>A cold roadmap parses no unchanged plan — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-cold-roadmap-parses-no-unchanged-plan-landing" data-node="a-cold-roadmap-parses-no-unchanged-plan" data-reckon="landed" data-when="2026-10-17">
+  <h2 id="a-cold-roadmap-parses-no-unchanged-plan-title">A cold roadmap parses no unchanged plan</h2>
+  <p>The cross-plan follow-up scan read every plan through <code>_plan_html.parse_plan</code> per process. It now answers from the persisted metadata index whenever a file's content digest is unchanged, and parses only a file the store cannot answer for. Discovery already read the same store, so the roadmap no longer re-parses the tree.</p>
+  <table id="a-cold-roadmap-parses-no-unchanged-plan-measures">
+    <tbody>
+      <tr><th scope="row">Reproduction at base</th><td>24 <code>parse_plan</code> calls over a 24-plan built store</td></tr>
+      <tr><th scope="row">Gate</th><td>3 passed; EXIT=0 (<code>tests/test_a_cold_roadmap_parses_no_unchanged_plan.py</code>)</td></tr>
+      <tr><th scope="row">Head arm</th><td>0 <code>parse_plan</code> calls; roadmap equals the uncached arm</td></tr>
+      <tr><th scope="row">Uncached arm</th><td>24 <code>parse_plan</code> calls; identical roadmap</td></tr>
+      <tr><th scope="row">Negative control</th><td>base-tree copy: 3 failed; EXIT=1; <code>run/negative-control-base-tree.log</code></td></tr>
+      <tr><th scope="row">ruff</th><td><code>reckon/_store.py</code> check findings 15 → 13; no new format finding (line 781 pre-existing). New test file: clean (check + format)</td></tr>
+    </tbody>
+  </table>
+</article>
+</body>
+</html>
