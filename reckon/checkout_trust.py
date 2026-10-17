@@ -24,8 +24,14 @@ copy, so the two readers share one definition. Both call
 
 from __future__ import annotations
 
+import hashlib
+import io
+import os
+import shutil
 import subprocess
 import sys
+import tarfile
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -37,6 +43,72 @@ from reckon.crew.obligation_snapshot import FOLLOWER_RELOAD_PROBE_TIMEOUT_SECOND
 # must be the one the follower itself runs. It is fetched lazily here so the
 # module that defines it can import this one without a cycle.
 IMPORT_PROBE_TIMEOUT = FOLLOWER_RELOAD_PROBE_TIMEOUT_SECONDS
+COMMITTED_TREE_RETENTION = 3
+
+
+def committed_head(root: Path) -> str | None:
+    """Read the source checkout's commit, independent of working-tree edits."""
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--verify", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=IMPORT_PROBE_TIMEOUT,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    commit = result.stdout.strip()
+    return commit if result.returncode == 0 and len(commit) == 40 else None
+
+
+def _committed_tree_cache() -> Path:
+    from reckon.crew.obligation_snapshot import crew_home
+
+    return crew_home() / "reload-trees"
+
+
+def materialize_committed_tree(root: Path, commit: str) -> tuple[Path, list[Path]]:
+    """Publish a package extracted from one commit and prune older images."""
+    source_key = hashlib.sha256(str(root.resolve()).encode()).hexdigest()[:16]
+    cache = _committed_tree_cache() / source_key
+    cache.mkdir(parents=True, exist_ok=True)
+    target = cache / commit
+    if not (target / ".complete").is_file():
+        staging = Path(tempfile.mkdtemp(prefix=f".{commit}-", dir=cache))
+        try:
+            archive = subprocess.run(
+                ["git", "-C", str(root), "archive", "--format=tar", commit, "reckon"],
+                capture_output=True,
+                timeout=IMPORT_PROBE_TIMEOUT,
+                check=True,
+            )
+            with tarfile.open(fileobj=io.BytesIO(archive.stdout)) as stream:
+                stream.extractall(staging, filter="data")
+            if not (staging / "reckon" / "__init__.py").is_file():
+                raise RuntimeError(f"commit {commit} contains no reckon package")
+            (staging / ".complete").touch()
+            try:
+                os.rename(staging, target)
+            except OSError:
+                if not (target / ".complete").is_file():
+                    raise
+        finally:
+            if staging.exists():
+                shutil.rmtree(staging)
+    target.touch()
+    images = sorted(
+        (entry for entry in cache.iterdir() if (entry / ".complete").is_file()),
+        key=lambda entry: entry.stat().st_mtime_ns,
+        reverse=True,
+    )
+    removed = []
+    for entry in images[COMMITTED_TREE_RETENTION:]:
+        if entry == target:
+            continue
+        shutil.rmtree(entry)
+        removed.append(entry)
+    return target, removed
 
 
 def _import_probe() -> str:
