@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own two arm logs -- negative-control-base.log (base arm, pytest) and gate-head.log (head arm, pytest) -- because the manifest records baseline_suite and after_suite as prose, so annotate_review_of_run over those fields returns unmeasured; head reports no failing test the base arm does not, so the added-failure count is a measured 0.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:269 pin_materialized_tree",
+    "reckon/crew_follow_commands.py:381 materialize_committed_tree",
+    "reckon/crew_follow_commands.py:400 refresh_materialized_tree_pin",
+    "reckon/crew_follow_commands.py:436 _materialize_replacement",
+    "reckon/checkout_trust.py:234 _prune_must_keep at the prune loop"
+  ],
+  "completed_at": "2026-10-17T18:36:46.420Z",
+  "dispatched_at": "2026-10-17T18:16:40Z",
+  "findings": [
+    {
+      "file": "reckon/checkout_trust.py",
+      "line": "90",
+      "severity": "blocking",
+      "text": "blocking: the publish grace is reached only when no .in-use exists, so a tree that a peer host has just published and pinned but not yet renewed is protected by neither branch -- it fails the grace (an .in-use is present) and fails the lease clause at :93 (no .lease marker yet) -- and a pruner on another host, whose flock is node-local, takes its exclusive lock and removes the tree; that reopens the cross-host loss \u00a744 exists to close, since the incident it fixes is a same-instant reload storm where every host publishes a tree at once."
+    },
+    {
+      "file": "reckon/checkout_trust.py",
+      "line": "183",
+      "severity": "follow-on",
+      "text": "follow-on: refresh_materialized_tree_pin now touches <root>/.lease, which raises FileNotFoundError when the tree directory has been removed, whereas the pre-change os.utime(descriptor, None) succeeded on the still-open lease inode; a follower whose tree is pruned from under it now raises from the SIGALRM-tick poll instead of continuing on the unlinked directory, which ends the watch stream rather than degrading."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T173146842533-a-reload-tree-in-use-on-any-host-is-not-pruned/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest records baseline_suite and after_suite as prose rather than the bare-path shape reckon.crew.review reads, so the record's added-failure annotation over the manifest fields is unmeasured and a reader cannot tie the reviewed run's suite delta to a log without opening the run directory by hand."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base 61ffb7d42; three files, all inside the declared scope, reviewed line by line for the prune predicate, the retry loop and the refresh signature change.",
+    "done_when": "\u00a744 requires a test file covering three cases plus a fourth; tests/test_a_reload_tree_in_use_on_any_host_is_not_pruned.py:110,143,155,179,204 supply all five cases and the manifest records gate-head.log EXIT=0 (14 passed) with negative-control-base.log giving 4 failed, 1 passed at base 61ffb7d42.",
+    "goal": "the node's goal (plan docs/plans/the-monitor-shows-the-work-it-watches.html:444 \u00a744) is that a materialiser that loses a tree between publication and lease is spared, that a lease renewed from another host keeps its tree, and that a materialiser meeting a vanished target retries once; the landed change adds _prune_must_keep and the COMMITTED_TREE_PUBLISH_GRACE_SECONDS/COMMITTED_TREE_LEASE_WINDOW_SECONDS constants to reckon/checkout_trust.py and a retry wrapper _materialize_replacement to reckon/crew_follow_commands.py.",
+    "manifest": "read; status complete, commits 87d03779, changed_paths the three declared files, gate-head.log EXIT=0 and negative-control-base.log 4 failed 1 passed recorded by name, but baseline_suite is prose ('not run') and after_suite is prose, so neither names a log path the read-time annotator parses.",
+    "write_paths": "\u00a744 names reckon/checkout_trust.py, reckon/crew_follow_commands.py and the test file; git diff 61ffb7d42..87d03779 --stat shows exactly those three files (62/51/228 changed lines) and nothing else."
+  },
+  "justifications": {
+    "durability": "the five added tests redden on base (negative-control-base.log, 4 failed) and guard the grace, the renewal window and the retry, but no test covers a peer host pruning a tree that has been pinned and not yet renewed, which is the hole at reckon/checkout_trust.py:90.",
+    "evidence": "tests/test_a_reload_tree_in_use_on_any_host_is_not_pruned.py passed 5/5 for me and the gate pair 14/14 at 87d03779, and negative-control-base.log reproduces 4 failing cases at base, but the manifest's arm fields are prose so reckon.crew.review.added_failures_from_gate_logs over them returns unmeasured; the two arm logs it did write yield (0, []).",
+    "fit": "the added names and the module-level constants at reckon/checkout_trust.py:68-70 follow the surrounding idiom and carry no plan, section or ticket label.",
+    "goal_fidelity": "reckon/checkout_trust.py:90 gates the publish grace on the absence of .in-use, so a tree that has just been pinned but not yet renewed is graded by neither the grace nor the lease clause and a peer host may still prune it.",
+    "reuse": "search over reckon/ for an existing prune-keep, file-age or retry-once owner found none; _marker_age_seconds at reckon/checkout_trust.py:73, _prune_must_keep at :81 and _materialize_replacement at reckon/crew_follow_commands.py:366 extend the module that already owns the materialise/prune path rather than forking it.",
+    "scope_discipline": "git diff 61ffb7d42..87d03779 touches only reckon/checkout_trust.py, reckon/crew_follow_commands.py and tests/test_a_reload_tree_in_use_on_any_host_is_not_pruned.py, all declared."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal (plan docs/plans/the-monitor-shows-the-work-it-watches.html:444 \u00a744) is that a materialiser that loses a tree between publication and lease is spared, that a lease renewed from another host keeps its tree, and that a materialiser meeting a vanished target retries once; the landed change adds _prune_must_keep and the COMMITTED_TREE_PUBLISH_GRACE_SECONDS/COMMITTED_TREE_LEASE_WINDOW_SECONDS constants to reckon/checkout_trust.py and a retry wrapper _materialize_replacement to reckon/crew_follow_commands.py.\nVERDICT done_when: \u00a744 requires a test file covering three cases plus a fourth; tests/test_a_reload_tree_in_use_on_any_host_is_not_pruned.py:110,143,155,179,204 supply all five cases and the manifest records gate-head.log EXIT=0 (14 passed) with negative-control-base.log giving 4 failed, 1 passed at base 61ffb7d42.\nVERDICT write_paths: \u00a744 names reckon/checkout_trust.py, reckon/crew_follow_commands.py and the test file; git diff 61ffb7d42..87d03779 --stat shows exactly those three files (62/51/228 changed lines) and nothing else.\nVERDICT manifest: read; status complete, commits 87d03779, changed_paths the three declared files, gate-head.log EXIT=0 and negative-control-base.log 4 failed 1 passed recorded by name, but baseline_suite is prose ('not run') and after_suite is prose, so neither names a log path the read-time annotator parses.\nVERDICT diff: read commit by commit against base 61ffb7d42; three files, all inside the declared scope, reviewed line by line for the prune predicate, the retry loop and the refresh signature change.\nCALL_SITES: reckon/crew_follow_commands.py:269 pin_materialized_tree, reckon/crew_follow_commands.py:381 materialize_committed_tree, reckon/crew_follow_commands.py:400 refresh_materialized_tree_pin, reckon/crew_follow_commands.py:436 _materialize_replacement, reckon/checkout_trust.py:234 _prune_must_keep at the prune loop\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/checkout_trust.py:90 gates the publish grace on the absence of .in-use, so a tree that has just been pinned but not yet renewed is graded by neither the grace nor the lease clause and a peer host may still prune it.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_a_reload_tree_in_use_on_any_host_is_not_pruned.py passed 5/5 for me and the gate pair 14/14 at 87d03779, and negative-control-base.log reproduces 4 failing cases at base, but the manifest's arm fields are prose so reckon.crew.review.added_failures_from_gate_logs over them returns unmeasured; the two arm logs it did write yield (0, []).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 61ffb7d42..87d03779 touches only reckon/checkout_trust.py, reckon/crew_follow_commands.py and tests/test_a_reload_tree_in_use_on_any_host_is_not_pruned.py, all declared.\nSCORE durability: 15\nJUSTIFICATION durability: the five added tests redden on base (negative-control-base.log, 4 failed) and guard the grace, the renewal window and the retry, but no test covers a peer host pruning a tree that has been pinned and not yet renewed, which is the hole at reckon/checkout_trust.py:90.\nSCORE fit: 18\nJUSTIFICATION fit: the added names and the module-level constants at reckon/checkout_trust.py:68-70 follow the surrounding idiom and carry no plan, section or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: search over reckon/ for an existing prune-keep, file-age or retry-once owner found none; _marker_age_seconds at reckon/checkout_trust.py:73, _prune_must_keep at :81 and _materialize_replacement at reckon/crew_follow_commands.py:366 extend the module that already owns the materialise/prune path rather than forking it.\nFINDING reckon/checkout_trust.py:90 blocking: the publish grace is reached only when no .in-use exists, so a tree that a peer host has just published and pinned but not yet renewed is protected by neither branch -- it fails the grace (an .in-use is present) and fails the lease clause at :93 (no .lease marker yet) -- and a pruner on another host, whose flock is node-local, takes its exclusive lock and removes the tree; that reopens the cross-host loss \u00a744 exists to close, since the incident it fixes is a same-instant reload storm where every host publishes a tree at once.\nFINDING reckon/checkout_trust.py:183 follow-on: refresh_materialized_tree_pin now touches <root>/.lease, which raises FileNotFoundError when the tree directory has been removed, whereas the pre-change os.utime(descriptor, None) succeeded on the still-open lease inode; a follower whose tree is pruned from under it now raises from the SIGALRM-tick poll instead of continuing on the unlinked directory, which ends the watch stream rather than degrading.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T173146842533-a-reload-tree-in-use-on-any-host-is-not-pruned/manifest.md:21 follow-on: the reviewed manifest records baseline_suite and after_suite as prose rather than the bare-path shape reckon.crew.review reads, so the record's added-failure annotation over the manifest fields is unmeasured and a reader cannot tie the reviewed run's suite delta to a log without opening the run directory by hand.",
+  "review_node": "review-of-a-reload-tree-in-use-on-any-host-is-not-pruned-87d03779200e",
+  "review_run_id": "r-20261017T181552849526-review-of-a-reload-tree-in-use-on-any-host-is-not-pruned-87d03779200e",
+  "reviewed_base_sha": "61ffb7d422ab2146a25c864641cb791c17c4cf9c",
+  "reviewed_head_sha": "87d03779200ecf1d5365efc3667dfe0c95f07835",
+  "reviewed_run_id": "r-20261017T173146842533-a-reload-tree-in-use-on-any-host-is-not-pruned",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261017T181552849526-review-of-a-reload-tree-in-use-on-any-host-is-not-pruned-87d03779200e"
+  },
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T18:30:06.474220+00:00",
+  "total": 102
+}
