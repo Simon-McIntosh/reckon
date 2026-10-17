@@ -1,0 +1,43 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "claim_summary": {
+    "detail": "the report's summary line is - The live-minus-node-local median difference is 54.469 s, and 100 % of it is attributed to two named components. It matches the table and the bullets beneath it: the Headline table gives live median 71.657 s and node-local (empty-crew) median 17.188 s, whose difference is 54.469 s; the two component bullets give 20.850 s (38.3 %) and 33.619 s (61.7 %), which sum to 54.469 s (100 %). 71.657 - 17.188 = 54.469 and 20.850 + 33.619 = 54.469 both hold.",
+    "verdict": "agrees"
+  },
+  "claims": [
+    {
+      "detail": "ranked finding 1 is the headline live-minus-node-local median difference 54.469 s. Its command is run_arm.sh driving cold_roadmap_arm.py, run from the reviewed run directory. It cannot be run as cited: the mounts documents it names (mounts-live.json, mounts-A.json) and the node-local copies (home-local, copies/A-docs) under /tmp/reckon-crew-scratch/r-20261017T065504837743-the-live-cold-roadmap-is-attributed were removed by the run itself, as its report states. Re-running the exact cited command reports mounts_unreadable=FileNotFoundError(2, ...) with docs_dir=None and a zero-doc read (call=roadmap seconds=0.006 ... sprints=0 for the node-local arm; the live arm 64.015 s with sprints=0), so neither the live median 71.657 s nor the node-local median 17.188 s can be reproduced. What survives (the per-run logs) only confirms the medians as arithmetic: live 64.081, 71.657, 81.173 -> 71.657; empty-crew 17.188, 16.244, 22.057 -> 17.188.",
+      "rank": "1",
+      "verdict": "not-runnable"
+    },
+    {
+      "detail": "ranked finding 2 is the crew-state component 20.850 s (38.3 %). Re-running the scripts that produce the cited profile diffs - merge_profiles.py over logs/profiles/{L1,L2,L3,A4,A5,A6}-run1.prof, then profile_diff.py over the two merged dumps - reproduces the evidence exactly: mcp_views.section_attempts_by_plan cumulative 70.97 s live against 0.02 s node-local (the report states 70.97 s vs 0.02 s) and ledger._read_run 52.06 s over 24,894 calls live against 0.00 s over 0 calls node-local (the report states 24,894 live and 0 node-local); runs.parse_stream_line 874,000 calls live against 0 node-local and ledger.serialize_run 15,852 against 0 also reproduce. The 20.850 s component is the median difference 38.038 s (node-local with the live crew state) minus 17.188 s (node-local with an empty crew home).",
+      "rank": "2",
+      "verdict": "reproduced"
+    },
+    {
+      "detail": "ranked finding 3 is the docs-on-GPFS component 33.619 s (61.7 %). The component reproduces: profile_diff.py over the surviving merges gives live_total_seconds=71.657 local_total_seconds=38.038 difference_seconds=33.619, i.e. 71.657 - 38.038 = 33.619. However the report's per-function GPFS table does not match the file the report attributes it to. The report's prose says the table's node-local column is the empty-crew-home arm whose merged profile was ranked against the live one in logs/profile-diff.txt. The table states posix.scandir node-local 3.41 s and 76,335 calls, pathlib.read_text 1.30 s and 6,699 calls, glob.scandir 4.46 s and 76,293 calls, and sprint_liveness 0.87 s. logs/profile-diff.txt (live vs empty-crew) carries different figures: posix.scandir 2.31 s and 74,475 calls, read_text 0.79 s and 4,608 calls, scandir 3.10 s and 74,475 calls, sprint_liveness 0.01 s. The table's stated figures are what logs/profile-diff-with-crew.txt carries: posix.scandir 3.41 s and 76,335 calls, read_text 1.30 s and 6,699 calls, scandir 4.46 s and 76,293 calls, sprint_liveness 0.87 s. So the node-local column of the GPFS table is the with-crew arm's, not the empty-crew arm the prose names.",
+      "rank": "3",
+      "verdict": "differs"
+    }
+  ],
+  "completed_at": "2026-10-17T08:01:40.491Z",
+  "dispatched_at": "2026-10-17T07:43:43Z",
+  "findings": [],
+  "item_aggregate": null,
+  "item_verdicts": {},
+  "justifications": {},
+  "project": "reckon",
+  "raw_text": "CLAIM 1: not-runnable: ranked finding 1 is the headline live-minus-node-local median difference 54.469 s. Its command is run_arm.sh driving cold_roadmap_arm.py, run from the reviewed run directory. It cannot be run as cited: the mounts documents it names (mounts-live.json, mounts-A.json) and the node-local copies (home-local, copies/A-docs) under /tmp/reckon-crew-scratch/r-20261017T065504837743-the-live-cold-roadmap-is-attributed were removed by the run itself, as its report states. Re-running the exact cited command reports mounts_unreadable=FileNotFoundError(2, ...) with docs_dir=None and a zero-doc read (call=roadmap seconds=0.006 ... sprints=0 for the node-local arm; the live arm 64.015 s with sprints=0), so neither the live median 71.657 s nor the node-local median 17.188 s can be reproduced. What survives (the per-run logs) only confirms the medians as arithmetic: live 64.081, 71.657, 81.173 -> 71.657; empty-crew 17.188, 16.244, 22.057 -> 17.188.\nCLAIM 2: reproduced: ranked finding 2 is the crew-state component 20.850 s (38.3 %). Re-running the scripts that produce the cited profile diffs - merge_profiles.py over logs/profiles/{L1,L2,L3,A4,A5,A6}-run1.prof, then profile_diff.py over the two merged dumps - reproduces the evidence exactly: mcp_views.section_attempts_by_plan cumulative 70.97 s live against 0.02 s node-local (the report states 70.97 s vs 0.02 s) and ledger._read_run 52.06 s over 24,894 calls live against 0.00 s over 0 calls node-local (the report states 24,894 live and 0 node-local); runs.parse_stream_line 874,000 calls live against 0 node-local and ledger.serialize_run 15,852 against 0 also reproduce. The 20.850 s component is the median difference 38.038 s (node-local with the live crew state) minus 17.188 s (node-local with an empty crew home).\nCLAIM 3: differs: ranked finding 3 is the docs-on-GPFS component 33.619 s (61.7 %). The component reproduces: profile_diff.py over the surviving merges gives live_total_seconds=71.657 local_total_seconds=38.038 difference_seconds=33.619, i.e. 71.657 - 38.038 = 33.619. However the report's per-function GPFS table does not match the file the report attributes it to. The report's prose says the table's node-local column is the empty-crew-home arm whose merged profile was ranked against the live one in logs/profile-diff.txt. The table states posix.scandir node-local 3.41 s and 76,335 calls, pathlib.read_text 1.30 s and 6,699 calls, glob.scandir 4.46 s and 76,293 calls, and sprint_liveness 0.87 s. logs/profile-diff.txt (live vs empty-crew) carries different figures: posix.scandir 2.31 s and 74,475 calls, read_text 0.79 s and 4,608 calls, scandir 3.10 s and 74,475 calls, sprint_liveness 0.01 s. The table's stated figures are what logs/profile-diff-with-crew.txt carries: posix.scandir 3.41 s and 76,335 calls, read_text 1.30 s and 6,699 calls, scandir 4.46 s and 76,293 calls, sprint_liveness 0.87 s. So the node-local column of the GPFS table is the with-crew arm's, not the empty-crew arm the prose names.\nCLAIM_SUMMARY: agrees: the report's summary line is - The live-minus-node-local median difference is 54.469 s, and 100 % of it is attributed to two named components. It matches the table and the bullets beneath it: the Headline table gives live median 71.657 s and node-local (empty-crew) median 17.188 s, whose difference is 54.469 s; the two component bullets give 20.850 s (38.3 %) and 33.619 s (61.7 %), which sum to 54.469 s (100 %). 71.657 - 17.188 = 54.469 and 20.850 + 33.619 = 54.469 both hold.\n",
+  "review_run_id": "r-20261017T074158241941-review-of-the-live-cold-roadmap-is-attributed-32b241c9d0e7",
+  "reviewed_base_sha": "32b241c9d0e7365943d018bab0f55f39386f2c40",
+  "reviewed_head_sha": "32b241c9d0e7365943d018bab0f55f39386f2c40",
+  "reviewed_run_id": "r-20261017T065504837743-the-live-cold-roadmap-is-attributed",
+  "rubric": "claims",
+  "scores": {},
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T07:55:00Z",
+  "total": null
+}
