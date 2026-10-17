@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-velocity-window-may-open-before-the-ledger">
+  <meta name="plan-evidence-for" content="a-velocity-window-may-open-before-the-ledger">
+  <title>A revision without the ledger reads as no runs | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A revision without the ledger reads as no runs</h1>
+      <p class="lead">Two ledger reads called <code>git show</code> unconditionally, so a window whose base or head predated the ledger's first commit aborted the whole view. Both now go through the one batched reader, which reports an absent object as <code>None</code>; a revision with no ledger reads as a ledger with no runs and a <code>None</code> digest, while a read of a ledger that is present and fails still raises.</p>
+    </header>
+
+    <section id="a-revision-without-the-ledger-reads-as-no-runs-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>_read_ledger</code> reads the ledger's bytes through <code>read_blobs</code>. A revision whose tree has no <code>crew.json</code> returns no records and a <code>None</code> digest rather than raising; a present ledger whose batched read fails still raises, because <code>read_blobs</code> maps only a missing object to <code>None</code>.</li>
+        <li><code>recover_ledger_clocks</code> stops parsing the ledger at the base itself and takes the runs present there from <code>_read_ledger(repo, base, …)</code>, so a base with no ledger has no runs present and every candidate is searched.</li>
+      </ul>
+    </section>
+
+    <section id="a-revision-without-the-ledger-reads-as-no-runs-the-gate">
+      <h2>The gate</h2>
+      <p><code>tests/test_velocity_reads_a_revision_without_the_ledger.py</code> builds a temporary git repository whose first commits carry no <code>docs/state/sample/crew.json</code> and whose last commit adds one with a run row, and points both velocity caches into the same directory.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Three cases plus the five velocity dependants, at the delivered head a966f5b7e9d6</td><td>27 passed, <code>EXIT=0</code></td><td><code>r-20261017T112233609448-a-revision-without-the-ledger-reads-as-no-runs/gate-head.log</code></td></tr>
+          <tr><td>The same five dependants at the base revision, in a scratch extraction</td><td>24 passed, <code>EXIT=0</code></td><td><code>r-20261017T112233609448-a-revision-without-the-ledger-reads-as-no-runs/gate-base.log</code></td></tr>
+          <tr><td>Declared negative controls, each mutation applied alone</td><td>3 failed, <code>EXIT=1</code>: one case per mutation</td><td><code>r-20261017T112233609448-a-revision-without-the-ledger-reads-as-no-runs/negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>Logs live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T112233609448-a-revision-without-the-ledger-reads-as-no-runs/</code>.</p>
+    </section>
+
+    <section id="a-revision-without-the-ledger-reads-as-no-runs-negative-control">
+      <h2>Declared negative control</h2>
+      <p>Three mutations, each applied alone and each failing its case: restore the inline <code>git show</code> read in <code>_read_ledger</code> (the head-predates-the-ledger case fails with <code>CalledProcessError</code>); restore the inline <code>git show</code> parse in <code>recover_ledger_clocks</code> (the base-predates case fails with <code>CalledProcessError</code>); replace the <code>None</code> check with a blanket <code>except</code> (the failing-read case fails, the raise swallowed). Every arm ran under pytest; the tree was restored afterwards.</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -706,21 +706,30 @@ def _run_blobs(repo, head, project):
 
 
 def _read_ledger(repo, head, project, cache):
-    """Read the committed ledger, reusing a cached parse when the blob matches.
+    """Read the committed ledger at ``head``, reusing a cached parse by blob.
 
     The ledger is tens of megabytes on a mature project, so it is read through
     its blob identity: an unchanged blob answers from the cache and the parse is
-    skipped, and the raw digest the snapshot reports is kept beside it.
+    skipped, and the raw digest the snapshot reports is kept beside it. Its
+    bytes come from the module's batched reader, which reports an absent object
+    as ``None``, so a revision whose tree carries no ledger reads as a ledger
+    with no runs and reports no digest rather than aborting. That follows the
+    convention that an unknown reading is ``None``: a reader can tell a revision
+    with no ledger from one whose ledger is empty. A read of a ledger that is
+    present but fails still raises, because the batched reader only maps a
+    missing object to ``None``.
     """
     path = "docs/state/" + project + "/crew.json"
     blob = _blob_sha(repo, head, path)
-    if cache is not None and blob is not None and cache.get("blob") == blob:
+    if blob is None:
+        return {}, None
+    if cache is not None and cache.get("blob") == blob:
         return dict(cache["records"]), cache["sha256"]
-    raw = git(repo, "show", head + ":" + path)
+    raw = read_blobs(repo, [(head, path)])[(head, path)]
     payload = json.loads(raw)
     records = {r["run_id"]: r for r in payload.get("data", payload).get("runs", [])}
     digest = hashlib.sha256(raw).hexdigest()
-    if cache is not None and blob is not None:
+    if cache is not None:
         cache.clear()
         cache.update({"blob": blob, "sha256": digest, "records": records})
     return records, digest
@@ -1188,8 +1197,8 @@ def recover_ledger_clocks(
             recovered = dict(entry["recoveries"])
             walked = entry.get("head")
         else:
-            before = json.loads(git(repo, "show", base + ":" + path))
-            present = {r["run_id"] for r in before.get("data", before).get("runs", [])}
+            before, _digest = _read_ledger(repo, base, project["project"], None)
+            present = set(before)
             recovered, walked = {}, None
         candidates = {rid: row for rid, row in candidates.items() if rid not in present}
         if not candidates:
