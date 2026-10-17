@@ -471,15 +471,19 @@ def _shadow_dispatch_config(
     configuration_overrides: Iterable[str],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Resolve a candidate while retaining unmodified primary agent settings."""
-    resolved_backend, candidate = resolve_role(config, node.role, node.spec_level)
-    if resolved_backend != candidate_backend:
-        raise CrewError(
-            format_refusal(
-                "D21",
-                f"candidate backend {candidate_backend!r} resolved to "
-                f"{resolved_backend!r}; route the node explicitly to the candidate",
-            )
+    # The shadow arm resolves against the backend it names rather than against
+    # whatever the role's own overlays route to: a candidate the role does not
+    # select is the ordinary case, and rejecting it refused the very pairing the
+    # flag exists to start. The role's overlay still applies on top of the named
+    # backend, so inherited effort and sandbox are unchanged. A candidate no
+    # layer defines is the one remaining refusal, and its text comes from the
+    # shared resolver so the defined-backend list stays in one place.
+    try:
+        _resolved_backend, candidate = resolve_role_override(
+            config, node.role, node.spec_level, candidate_backend
         )
+    except CrewError as exc:
+        raise CrewError(format_refusal("D21", str(exc))) from exc
 
     explicit = {str(config_key) for config_key in configuration_overrides}
     effective = dict(candidate)

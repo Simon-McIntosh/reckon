@@ -79,8 +79,9 @@ DISPATCH_REFUSAL_REMEDIES: Mapping[str, str | None] = {
         "valid primary run"
     ),
     "D21": (
-        "`reckon crew shadow --backend <candidate>` after correcting the flight "
-        "override"
+        "`reckon crew dispatch --pair-backend <candidate>` or `reckon crew shadow "
+        "--backend <candidate>`, naming a backend declared under `backends` in the "
+        "flight"
     ),
     "D22": (
         "`reckon crew dispatch` or `reckon crew shadow` after correcting the "

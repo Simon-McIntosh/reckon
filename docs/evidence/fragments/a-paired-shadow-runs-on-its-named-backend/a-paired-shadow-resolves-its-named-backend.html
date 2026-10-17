@@ -1,0 +1,6 @@
+<section id="a-paired-shadow-resolves-its-named-backend">
+  <h2 id="a-paired-shadow-resolves-its-named-backend-heading">A paired shadow resolves against the backend it names</h2>
+  <div id="a-paired-shadow-resolves-its-named-backend-landing" class="r-landing">
+    <p><code>_shadow_dispatch_config</code> resolves the shadow arm through <code>resolve_role_override</code> against the named candidate instead of refusing any candidate the role does not already route to; D21 remains for a candidate no layer defines, its detail taken from <code>_effective_backend</code>, and its remedy now names a backend declared under <code>backends</code> for both verbs with no mention of a flight override. Measured by <code>tests/test_a_paired_shadow_runs_on_its_named_backend.py</code> — four cases pass (shadow on the candidate with its model; a by_spec_level overlay to the default leaves the shadow on the candidate; an undefined candidate refused with D21 whose remedy text carries no "flight override"; the CLI paired dry run lands the shadow on the candidate) — and the declared negative control fails four cases at EXIT=1.</p>
+  </div>
+</section>
