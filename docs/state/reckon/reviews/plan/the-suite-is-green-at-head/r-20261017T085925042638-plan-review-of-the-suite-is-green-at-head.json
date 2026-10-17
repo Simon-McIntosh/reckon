@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T09:05:52.925Z",
+  "dispatched_at": "2026-10-17T09:00:01Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:704",
+      "id": "reasoning-1",
+      "reason": "the plan presents three interchangeable options of which the first cannot satisfy its own done-when, so it should either drop that option or state that it additionally requires widening the reload set in tests/mcp_family_reload.py to the other consumers.",
+      "text": "the deliverable's first option, \"it resolves the reader from the defining module at assertion time\", cannot make the done-when's pair pass: `reload_mcp_family()` reloads only `_store`, `mcp_deadlines`, `mcp_discovery`, `mcp_edit_plan` and `mcp` (tests/mcp_family_reload.py:27-31), so after the trigger `doccheck` and `roadmap` \u2014 two of the three consumers the test asserts \u2014 still hold the pre-reload function object while a live resolve reads the post-reload one; measured after `reload_mcp_family()`, `doccheck.sprint_item_slug is _store.sprint_item_slug` is False and `roadmap.sprint_item_slug is _store.sprint_item_slug` is False, while only the `__module__`/`__qualname__` comparison (both generations report `reckon._store sprint_item_slug`) passes for all three. The third option, \"the reload restores the modules it replaced\", does not help either: `importlib.reload` rebinds attributes to new objects and restores nothing, and widening the helper's reload set turns the live-resolve form red on all three assertions, not one \u2014 only the second option is sound as a standalone test change.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "296acc5213cb574ac0d3b6da096a83ee362042fce0c03a65d9108c837a78333e",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 361,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T085925042638-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "81810dc34a688187af678620907416db9db818f0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `tests/test_one_sprint_item_slug.py::test_consumers_share_the_one_reader`, `tests/mcp_family_reload.py`, `reload_mcp_family`, `mcp_discovery._sprint_item_slug`, `tests/test_landing_patch_refuses_a_hiding_followup.py` and `tests/test_a_lost_race_is_refused_not_raised.py` all resolve as cited.",
+    "done_when": "pass \u2014 the measure is a named two-test pair in one process (`-p no:randomly`, no xdist) with two controls: the same pair red at base, and a local-copy mutation that must keep the test red; both are logged under the run directory, and I reproduced the base arm red (`test_consumers_share_the_one_reader`, `1 failed, 11 passed`, EXIT=1).",
+    "evidence_paths": "pass \u2014 base-arm and mutation logs go under the run directory, not a session scratchpad or node-local temp.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or changelog prose reach the cited symbols or files.",
+    "reasoning": "a finding \u2014 the section's first offered repair cannot satisfy the section's own done-when.",
+    "single_goal": "pass \u2014 one deliverable, that `test_consumers_share_the_one_reader` survives a module reload; the two write paths serve that one goal.",
+    "wiring": "pass \u2014 \u00a718 is `implementable`, its write paths are declared, and the open followup `f-tsigah-017-018` names \u00a717 and \u00a718 together, so the earlier unwired-followup finding is resolved."
+  },
+  "section_digests": {
+    "_document": "c5589f33d71055954c154bf09a3d1d3e8043303a381898b34ae50840771fdfdc",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "f84dc4d4bef37307ff05d71bd4f7071e9208e789832e7cb00be82c37bcfde97e",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s17": "01fe3ab4eb2f9f616654a729cf8bef4dcf5b530d4d0c1be3bdfa73999d0ad263",
+    "s18": "523cddfe94667aa7ae9e78b66e8a750f7a88f07c7f84964ddb6f03e6a0dadffd",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "072f7ace5c2d253a6d4972213a2093233d6f768bd4d1394f2b9eaf1471ff4119",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T09:07:49.670544+00:00"
+}
