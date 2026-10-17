@@ -1287,9 +1287,7 @@ def recover_ledger_clocks(
                 found.add(rid)
             missing = sorted(set(candidates) - found)
             if missing:
-                origin = (
-                    walked if walked and _is_ancestor(repo, walked, head) else base
-                )
+                origin = walked if walked and _is_ancestor(repo, walked, head) else base
                 boundary = origin
                 listing = git(
                     repo,
@@ -1360,9 +1358,7 @@ def recover_ledger_clocks(
                                             ),
                                         }
                                     ]
-                                    candidates[rid][
-                                        "promotion_commits"
-                                    ] = appearance
+                                    candidates[rid]["promotion_commits"] = appearance
                                     recovered[rid] = appearance
                                     found.add(rid)
                     boundary = slice_end
