@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T10:27:25.595Z",
+  "dispatched_at": "2026-10-17T10:10:17Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/sweep-decodes-once-population-at-merge/report.md",
+      "line": "67",
+      "severity": "follow-on",
+      "text": "follow-on: the failure-id extractor reads a node id as \\S+, so a parametrisation containing a space is captured only up to the space (\u2026_across_names[opus]), and two cases differing only after the space would compare equal; the report discloses this and the conclusion is safe here only because test_old_names_resolve.py is unchanged between the two arms, but no test pins the behaviour."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 0 production call site(s)",
+    "diff": "the source node's worktree is at dd195c83 == the stated base with an empty git status, so it committed no diff of its own; the change it measured is candidate bd2392c2 (parents dd195c83 + 71d8a9b2), whose diff against base is exactly reckon/crew/obligations.py, reckon/ledger.py, tests/test_a_sweep_decodes_each_document_once.py and one evidence fragment.",
+    "done_when": "the source done_when requires two logs under the run directory from one exclusive all_debug job, each naming revision, host and literal command, proving reckon.__file__ lies under that revision's own checkout, carrying pytest's summary line for the 237 files of sweep-decodes-once.txt and ending in EXIT=, with the added ids derived by reckon.crew.review.added_failures_from_gate_logs only after both logs were checked present with a summary line; base-arm.log and candidate-arm.log hold every clause, and file count 236/237 matches the one file absent at base.",
+    "goal": "the source node's goal is to measure the ledger and obligations population of the memoised sweep at base and at its merge candidate on an exclusive node; /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/sweep-decodes-once-population-at-merge/report.md answers it with base 3 failed/2059 passed against candidate 3 failed/2063 passed and an empty added set.",
+    "manifest": "read; it records status complete, base arm \"3 failed, 2059 passed\" and candidate arm \"3 failed, 2063 passed\", added_count 0 with no ids, the candidate's new test file as the one file absent at base, and job-1287943's exit-91 clone-helper failure attributed as scaffolding.",
+    "write_paths": "the source node was fenced to the reports directory reports/reckon/a-read-answers-inside-its-deadline/sweep-decodes-once-population-at-merge; it wrote report.md there and its logs, job script and derivation under its own run directory, and its worktree HEAD dd195c83 equals the stated base with an empty git status, so no path under reckon/ or tests/ changed."
+  },
+  "justifications": {
+    "durability": "the node adds no code and no suite test, so no test in tests/ fails if the measurement regresses; instrument-check.log is the only falsifiable guard and the id-truncation it exhibits is pinned by no test.",
+    "evidence": "base-arm.log and candidate-arm.log each open with revision, tree and command, print host and reckon.__file__ under their own checkout, and close with \"3 failed, 2059 passed ... EXIT=1\" and \"3 failed, 2063 passed ... EXIT=1\"; instrument-check.log shows the extractor reddens on a synthetic added id and reads an unreadable log as unmeasured, not as zero.",
+    "fit": "base-arm.log and candidate-arm.log follow the brief's header-and-EXIT contract and population-job.sh uses a node-local TMPDIR scratch with a removal trap, as the fleet rules require.",
+    "goal_fidelity": "reports/reckon/a-read-answers-inside-its-deadline/sweep-decodes-once-population-at-merge/report.md answers the stated question with base 3 failed/2059 passed against candidate 3 failed/2063 passed and an empty added set.",
+    "reuse": "the node adds no definition and reuses reckon/crew/review.py:2100 added_failures_from_gate_logs rather than diffing FAILED lines by hand, so no capability is forked.",
+    "scope_discipline": "git status of the source worktree at dd195c83194f5abb0f5941912a86a643bbf9a58d is empty and its HEAD equals the stated base, matching the declared report-only scope."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to measure the ledger and obligations population of the memoised sweep at base and at its merge candidate on an exclusive node; /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/sweep-decodes-once-population-at-merge/report.md answers it with base 3 failed/2059 passed against candidate 3 failed/2063 passed and an empty added set.\nVERDICT done_when: the source done_when requires two logs under the run directory from one exclusive all_debug job, each naming revision, host and literal command, proving reckon.__file__ lies under that revision's own checkout, carrying pytest's summary line for the 237 files of sweep-decodes-once.txt and ending in EXIT=, with the added ids derived by reckon.crew.review.added_failures_from_gate_logs only after both logs were checked present with a summary line; base-arm.log and candidate-arm.log hold every clause, and file count 236/237 matches the one file absent at base.\nVERDICT write_paths: the source node was fenced to the reports directory reports/reckon/a-read-answers-inside-its-deadline/sweep-decodes-once-population-at-merge; it wrote report.md there and its logs, job script and derivation under its own run directory, and its worktree HEAD dd195c83 equals the stated base with an empty git status, so no path under reckon/ or tests/ changed.\nVERDICT manifest: read; it records status complete, base arm \"3 failed, 2059 passed\" and candidate arm \"3 failed, 2063 passed\", added_count 0 with no ids, the candidate's new test file as the one file absent at base, and job-1287943's exit-91 clone-helper failure attributed as scaffolding.\nVERDICT diff: the source node's worktree is at dd195c83 == the stated base with an empty git status, so it committed no diff of its own; the change it measured is candidate bd2392c2 (parents dd195c83 + 71d8a9b2), whose diff against base is exactly reckon/crew/obligations.py, reckon/ledger.py, tests/test_a_sweep_decodes_each_document_once.py and one evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reports/reckon/a-read-answers-inside-its-deadline/sweep-decodes-once-population-at-merge/report.md answers the stated question with base 3 failed/2059 passed against candidate 3 failed/2063 passed and an empty added set.\nSCORE evidence: 19\nJUSTIFICATION evidence: base-arm.log and candidate-arm.log each open with revision, tree and command, print host and reckon.__file__ under their own checkout, and close with \"3 failed, 2059 passed ... EXIT=1\" and \"3 failed, 2063 passed ... EXIT=1\"; instrument-check.log shows the extractor reddens on a synthetic added id and reads an unreadable log as unmeasured, not as zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git status of the source worktree at dd195c83194f5abb0f5941912a86a643bbf9a58d is empty and its HEAD equals the stated base, matching the declared report-only scope.\nSCORE durability: 14\nJUSTIFICATION durability: the node adds no code and no suite test, so no test in tests/ fails if the measurement regresses; instrument-check.log is the only falsifiable guard and the id-truncation it exhibits is pinned by no test.\nSCORE fit: 19\nJUSTIFICATION fit: base-arm.log and candidate-arm.log follow the brief's header-and-EXIT contract and population-job.sh uses a node-local TMPDIR scratch with a removal trap, as the fleet rules require.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node adds no definition and reuses reckon/crew/review.py:2100 added_failures_from_gate_logs rather than diffing FAILED lines by hand, so no capability is forked.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/sweep-decodes-once-population-at-merge/report.md:67 follow-on: follow-on: the failure-id extractor reads a node id as \\S+, so a parametrisation containing a space is captured only up to the space (\u2026_across_names[opus]), and two cases differing only after the space would compare equal; the report discloses this and the conclusion is safe here only because test_old_names_resolve.py is unchanged between the two arms, but no test pins the behaviour.",
+  "review_run_id": "r-20261017T100928586984-review-of-sweep-decodes-once-population-at-merge-dd195c83194f",
+  "reviewed_base_sha": "dd195c83194f5abb0f5941912a86a643bbf9a58d",
+  "reviewed_head_sha": "dd195c83194f5abb0f5941912a86a643bbf9a58d",
+  "reviewed_run_id": "r-20261017T093541197859-sweep-decodes-once-population-at-merge",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 14,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T10:29:19.689777+00:00",
+  "total": 112
+}
