@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T16:26:02.013Z",
+  "dispatched_at": "2026-10-17T16:13:20Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-ledger-is-one-file-per-run.html:530",
+      "id": "reasoning-1",
+      "reason": "a worker following the stated mechanism writes a lock-held case that cannot show the report branch the plan says it exercises, and the section is left pinning the wrong fact.",
+      "text": "\u00a711 says \"The report can mark the new per-run file as surviving because the index drop was refused\", but the failure it describes is the `git add` branch of `_commit_landing_writes` (promotion_scope.py:1944-1953), where the add failed wholesale so nothing is staged and there is no staged entry for a refused index drop to preserve; measured, `git rm --cached` is refused under the held lock while `_path_has_a_staged_change`'s `git diff --cached` probe still answers empty (rc=0), so `_restore_one_landing_write` (promotion_scope.py:1737-1744) reaches the probe, returns False, unlinks the created file and reports it reverted \u2014 the report marks a created per-run file surviving only for a path HEAD already carries (`:1734-1736`), never for the new run file; the read-back is therefore the only fact that can misread here, and the section's own second case (\"keeps the lock through the rollback and finds the receipt states which path survived\") has no distinct state to reproduce, since releasing or holding the lock yields the same report entry for that path",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-ledger-is-one-file-per-run.html:530",
+      "id": "done_when-1",
+      "reason": "without the fixture's aggregate placement the negative control cannot be shown to fail on base, so the node's whole measure can pass on the unfixed code.",
+      "text": "\u00a711's negative control (\"against the base tree, the first case's receipt reads 'already written'\") only fails to fire when the fixture's aggregate still holds the run's row, because with the per-run file removed by the rollback `_ledger_holds_row` returns False and `_ledger_row_was_rolled_back` already yields the \"rolled back \u2026 re-promote\" wording on base; the plan does not state the fixture's aggregate placement, and its Deliverable's \"already written\" clause (\"when that file, or the aggregate row, is present\") sits in tension with the rolled-back clause when the file is absent and the aggregate row is present",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-ledger-is-one-file-per-run.html:530",
+      "id": "wiring-1",
+      "reason": "two implementable sections sharing one write path can be scheduled concurrently, and \u00a710's own text says the file needed for the staged-deletion repair is the same one \u00a711 rewrites.",
+      "text": "\u00a711 declares \"Build it after \u00a710, which also writes `reckon/crew/promotion_scope.py`\", but the plan carries no relationship edge for it (the head declares only `plan-informs`, and the single gate `g-tlofpr-9` is `\u00a79`'s), so nothing sequences \u00a711 behind \u00a710 even though both list `reckon/crew/promotion_scope.py` as a write path",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7b60146a0484201b96924db7cd6f5ca424530d0d2b77920cc82e55da5b0cfc50",
+  "plan_slug": "the-ledger-is-one-file-per-run",
+  "plan_version": 73,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T161242074435-plan-review-of-the-ledger-is-one-file-per-run",
+  "reviewed_blob_sha": "6e2516a18b9a60683587bfe6a3786374a9c9e44b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every file, function, line and section the changed units cite resolves, including the `\u00a79` gate target `a-read-answers-inside-its-deadline#s28`, the five fold writers with their exact lines, and the `\u00a710`/`\u00a711` `promotion_scope.py` symbol set.",
+    "done_when": "a finding \u2014 `\u00a79`'s done-when is measurable and carries a declared negative control, but `\u00a711`'s second case is unspecified and its negative control's ability to fire is undetermined by the plan.",
+    "evidence_paths": "pass \u2014 both changed sections put their gate log \"under the run directory\", a durable path, and neither names a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the new test filenames and cited symbols describe the mechanism (`test_the_ledger_writer_refuses_a_fold.py`, `_restore_landing_writes`), and no plan label, stage name, ticket number or version tag reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 `_document`, `\u00a79`'s root cause and `\u00a79`'s caller enumeration all check out against the code, but `\u00a711` names a rollback-report mechanism that cannot fire on the branch it describes, and builds its second test case on it.",
+    "single_goal": "pass \u2014 `\u00a79` is one deliverable (the fold guard) whose five writer repairs must land with it or the guard breaks live callers, and `\u00a711` is one deliverable (the landing receipt's branch).",
+    "wiring": "a finding \u2014 `\u00a711` states \"Build it after \u00a710\" in prose, but the plan carries no gate or depends-on edge for it while both sections declare `reckon/crew/promotion_scope.py` as a write path."
+  },
+  "section_digests": {
+    "_document": "8e4527e10d661d77f03236932d623c21f34b7b647a4839f77c9b3df629bbefc3",
+    "s1": "457845e844fa9bec63333cc35d867a85aa18bde3b16278a87a8dd315cae98e60",
+    "s10": "bb67efcd6925d252bcc8cb72c7dc1a1b4ba3ec37787e039f9cc41f132c5f74ab",
+    "s11": "de56c7149445b48fa11b38c5cdc190b929e35c5f86c7445954eb258ae2f27410",
+    "s2": "f264807d1fd48d466dfe9f9126f75e341e735d9a86b54ba342cf0012dfcdddfc",
+    "s3": "922052455a1c2af498bccd801f0e6db8ab3616bba71d823efa03641ce2332fa7",
+    "s4": "2eb77001999bc36a32f304d3ff896caf2c803489ea790ad39bae324fd7f92a9e",
+    "s5": "60e425e1d2d0d1a1f973eb32c4d3e72fa080e1a616ff0f462d20aefbd1fc522d",
+    "s6": "a344122c7f73694668e843366730c1d1cc881b97ba06225f376f01012af5936b",
+    "s7": "6128dbd3b5deb9351318b08d168c55ae2e7290f079a109ee1241b2fb4a938b62",
+    "s8": "cdd8d6e0e9a435ddff21dfe693ae91d81f505e26f71b44f8cda7483ab8e7322f",
+    "s9": "219f4b589a8e402682cc7da07cc89dbdad4db3ed8d1db0d80356cbbce2685bfe"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T16:33:27.119042+00:00"
+}
