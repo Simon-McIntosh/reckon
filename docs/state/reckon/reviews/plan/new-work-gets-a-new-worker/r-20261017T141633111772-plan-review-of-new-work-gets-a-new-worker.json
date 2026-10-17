@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T14:28:11.057Z",
+  "dispatched_at": "2026-10-17T14:17:14Z",
+  "findings": [
+    {
+      "anchor": "plan.html:475",
+      "id": "wiring-1",
+      "reason": "\u00a77's flag-flip is exactly what makes plan reviews collide once session_reuse is on, so without a declared gate \u00a77 can land before \u00a711 and re-create the cross-plan-review session reuse \u00a711 exists to remove.",
+      "text": "\u00a711 introduces an ordering precondition on \u00a77 (\"\u00a77 must not flip the flag before this section lands\") that no relationship declares: \u00a711's `data-links` is empty, the plan carries no `plan-section-depends-on` mapping, and \u00a77's own text (plan.html:425-429) flips `session_reuse` back to true \"After \u00a72 and \u00a73 land\" with no mention of \u00a711 \u2014 so a coordinator routing the roadmap can dispatch \u00a77 first.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8923a803c4953379f625db47e8084e7868ec928893f7192f304c3cbeaa18af35",
+  "plan_slug": "new-work-gets-a-new-worker",
+  "plan_version": 54,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-17T14:29:03.864115+00:00"
+    }
+  ],
+  "responses": {
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T14:29:03.864115+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-new-work-gets-a-new-worker.v54.json",
+  "review_run_id": "r-20261017T141633111772-plan-review-of-new-work-gets-a-new-worker",
+  "reviewed_blob_sha": "cb8dbbdc5b0eb591afaf45f36960fa2e862a9734",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every `file:line` anchor resolves at main `fb4b21fb`: `recovery_review_delivery.py:44`, `recovery.py:199`, `recovery_watch.py:512`, `dispatch_sessions.py:456` and `:495`, `dispatch.py:2881` (the `_is_review_run` re-export line); the `dispatch_sessions.py:604` citation resolves inside the named `_prior_same_task_run` (def at 582) at its identity comparison.",
+    "done_when": "pass \u2014 \u00a711's done-when (plan.html:487-496) names measurable greps and a base delta, asserts whole task-identity keys rather than their first element, and declares two mutations as negative controls (plan.html:498).",
+    "evidence_paths": "pass \u2014 \u00a711 changes code and its gate is a pytest delta plus two greps; it names no session-scratch or node-local path.",
+    "naming": "pass \u2014 \u00a711 adds no symbol (\"No name is added\", plan.html:482) and its key literal `(\"plan-review\", \u2026)` carries no plan label, stage name or ticket number.",
+    "reasoning": "pass \u2014 the stated predicate disagreement reproduces and the mechanism reaches the production dispatch path. Measured at `fb4b21fb`: a record whose `review` role is set only on its node gives `dispatch_sessions._is_review_run` false and `recovery._is_review_run` true; `round_node_source(\"plan-review-of-alpha\", \"review-of-\")` is `\"\"` while `round_node_source(..., \"plan-review-of-\")` is `\"alpha\"`, so the plan-review key collision the section describes is real. `_task_identity`'s consumers are `_prior_same_task_run` (dispatch_sessions.py:604) and the session decision at `dispatch_sessions.py:688`, both on the dispatch path. The three change bullets (delete the dispatch copy, key plan reviews by slug, remove the re-export) produce the done-when's whole-key outcomes. The one reasoning defect found is the missing \u00a77 gate, reported once under wiring.",
+    "single_goal": "pass \u2014 \u00a711 is one deliverable: one review predicate and one task-identity key for it.",
+    "wiring": "a finding \u2014 \u00a711 (plan.html:475) asserts \"\u00a77 must not flip the flag before this section lands\", but no relationship carries it: \u00a711's `data-links` is empty and \u00a77 (plan.html:425) conditions its flip on \u00a72 and \u00a73 alone."
+  },
+  "section_digests": {
+    "_document": "94d54cc5177fa7b93be4e622d03467e291b778432969d29dacaa05f469ffb0b8",
+    "s1": "7ae481f20fd378b05cffc9c48902a38d550eec6f7589c443213410b5f47f177a",
+    "s10": "6b15d321c8851726303c56e548f95ef6c83ef712f4640d3ce8e4d5c3cbb4f33d",
+    "s11": "6f6ee51c0bc78e9689eb4b39840110dde4c69edb1b623aedca89d70a33f63fc2",
+    "s2": "75d73add22c27081b096fbdcbfbc7697419fa7455957b55868131e78e8cea099",
+    "s3": "90ebc1798198683841ca985b63d8727ae245d96081f932e024091baac997f5c8",
+    "s4": "04abf1a2e284917d50d9de69a07ea00857d2fb87e04187c0da8008db1f8b03a5",
+    "s5": "cee83946379f7c1418833601209e1a1c211cf9f61c5a75c7f90ce16c60d879bd",
+    "s6": "856fa7deb260fdf62fc25617aa7b562fc3fd2f3c632a71a2a547d4be7bc182b0",
+    "s7": "f2736058e910493b80de5f74b27c2de19c4abd4736246d5108772877b7667b13",
+    "s8": "e7c8f9518519552098b55b1826ee16e97b986001f47d42c07440dc2a4d559e71",
+    "s9": "9bf545205641e1d550ff7dd622b064a3e3b029ef013519fe991543ae7ab7cfe9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T14:29:01.469192+00:00"
+}
