@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: negative-control-base.log (1 failed: test_each_record_is_filed_once_not_compared_per_tree) is the base arm and head-suite.log (5 passed) is the head arm, both pytest; the after-minus-baseline set difference is 0, so the head arm adds no failing test.",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/obligations.py:_held_worktrees_by_session",
+    "reckon/crew/routing.py:_run_worktree_path"
+  ],
+  "completed_at": "2026-10-17T00:40:12.640Z",
+  "dispatched_at": "2026-10-17T00:27:24Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "names is called only by the tests, which pass the filed record objects; no production caller relies on value equality",
+      "recorded_at": "2026-10-17T00:39:29.513471+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1122",
+      "severity": "follow-on",
+      "text": "follow-on: WorktreeRecordIndex.names compares its record argument to the filed records by object identity (\"record is existing\"), so a caller passing a value-equal but distinct record gets False where record_names_worktree returns True, contradicting the method's \"by the rule's own keys\" docstring; only the tests call it today, so nothing in production is wrong, but the contract misleads its next caller."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 17a0646d; the single commit d795d5aa changes three files (reckon/crew/obligations.py, reckon/crew/routing.py, the test file), all inside the declared scope.",
+    "done_when": "the done-when names tests/test_held_worktree_records_match_each_record_once.py and its call-count bound; the manifest records that run and its result (5 passed in 116.00s) and the negative-control base arm (1 failed, 2 passed, 2 skipped), each in head-suite.log and negative-control-base.log.",
+    "goal": "the node's goal is to make one call of _held_worktree_records match each record once through an index of the trees its records name; reckon/crew/obligations.py:574-582 builds a WorktreeRecordIndex and each inspected tree is one lookup, so the work is records plus trees rather than their product.",
+    "manifest": "read; it states 5 passed in 116.00s, names both gate logs, records the retry_failures and the ruff delta (-2, none added) and reads status complete.",
+    "write_paths": "read the manifest's declared paths (reckon/crew/obligations.py, reckon/crew/routing.py and tests/test_held_worktree_records_match_each_record_once.py, the only files the diff touches); every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_held_worktree_records_match_each_record_once.py:217 reddens on the base arm with \"assert 10000 <= (500 + 20)\", and the index-parity and whole-ledger tests at lines 230 and 262 are independent of the value under test.",
+    "evidence": "the gate's count assertion at tests/test_held_worktree_records_match_each_record_once.py:217 measures the done-when's records-plus-trees bound, but on head the count reads zero because the index never calls record_names_worktree for a named tree, and parity against the base tree is approximated by the independent whole-ledger scan in _whole_ledger_held.",
+    "fit": "reckon/crew/routing.py:1063 keeps the new class beside record_names_worktree and shares its key derivation through _retained_worktree (line 1023) and _node_worktree_identity (line 1034); no plan label appears in the names.",
+    "goal_fidelity": "reckon/crew/obligations.py:507 replaces the per-tree record walk with index.records_naming(worktree), so the delivered call matches each record once.",
+    "reuse": "a search over reckon/crew found no existing owner of a record index keyed by worktree, and the new class extends the naming rule's own helpers rather than duplicating it.",
+    "scope_discipline": "git diff 17a0646d..d795d5aa touches only reckon/crew/obligations.py, reckon/crew/routing.py and the test file, every one inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 17a0646d150b48776f6bbd663065d3e5e57cd2d7\nreviewed_head_sha: d795d5aa6a56253a0ea3c026f109ac3c2b095ab2\nVERDICT goal: the node's goal is to make one call of _held_worktree_records match each record once through an index of the trees its records name; reckon/crew/obligations.py:574-582 builds a WorktreeRecordIndex and each inspected tree is one lookup, so the work is records plus trees rather than their product.\nVERDICT done_when: the done-when names tests/test_held_worktree_records_match_each_record_once.py and its call-count bound; the manifest records that run and its result (5 passed in 116.00s) and the negative-control base arm (1 failed, 2 passed, 2 skipped), each in head-suite.log and negative-control-base.log.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/obligations.py, reckon/crew/routing.py and tests/test_held_worktree_records_match_each_record_once.py, the only files the diff touches); every path in the diff is inside them.\nVERDICT manifest: read; it states 5 passed in 116.00s, names both gate logs, records the retry_failures and the ruff delta (-2, none added) and reads status complete.\nVERDICT diff: read commit by commit against base 17a0646d; the single commit d795d5aa changes three files (reckon/crew/obligations.py, reckon/crew/routing.py, the test file), all inside the declared scope.\nCALL_SITES: reckon/crew/obligations.py:_held_worktrees_by_session, reckon/crew/routing.py:_run_worktree_path\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:507 replaces the per-tree record walk with index.records_naming(worktree), so the delivered call matches each record once.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate's count assertion at tests/test_held_worktree_records_match_each_record_once.py:217 measures the done-when's records-plus-trees bound, but on head the count reads zero because the index never calls record_names_worktree for a named tree, and parity against the base tree is approximated by the independent whole-ledger scan in _whole_ledger_held.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 17a0646d..d795d5aa touches only reckon/crew/obligations.py, reckon/crew/routing.py and the test file, every one inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_held_worktree_records_match_each_record_once.py:217 reddens on the base arm with \"assert 10000 <= (500 + 20)\", and the index-parity and whole-ledger tests at lines 230 and 262 are independent of the value under test.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/routing.py:1063 keeps the new class beside record_names_worktree and shares its key derivation through _retained_worktree (line 1023) and _node_worktree_identity (line 1034); no plan label appears in the names.\nSCORE reuse: 19\nJUSTIFICATION reuse: a search over reckon/crew found no existing owner of a record index keyed by worktree, and the new class extends the naming rule's own helpers rather than duplicating it.\nFINDING reckon/crew/routing.py:1122 follow-on: WorktreeRecordIndex.names compares its record argument to the filed records by object identity (\"record is existing\"), so a caller passing a value-equal but distinct record gets False where record_names_worktree returns True, contradicting the method's \"by the rule's own keys\" docstring; only the tests call it today, so nothing in production is wrong, but the contract misleads its next caller.\n",
+  "review_run_id": "r-20261017T002653855835-review-of-held-worktree-records-match-each-record-once-d795d5aa6a56",
+  "reviewed_base_sha": "17a0646d150b48776f6bbd663065d3e5e57cd2d7",
+  "reviewed_head_sha": "d795d5aa6a56253a0ea3c026f109ac3c2b095ab2",
+  "reviewed_run_id": "r-20261016T235407409458-held-worktree-records-match-each-record-once",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T00:38:11.879339+00:00",
+  "total": 110
+}
