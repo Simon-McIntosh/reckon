@@ -353,7 +353,7 @@ def garbage_collect(
             )
         # Extractions carry no git directory, so the worktree registry never sees
         # them; they are reported beside the registry rows under their own kind.
-        for path in _run_directory_extractions(runs_root):
+        for path in _run_directory_extractions(runs_root, run_id):
             failed_path = str(path)
             worktrees.append(_extraction_report(path))
         if apply:
