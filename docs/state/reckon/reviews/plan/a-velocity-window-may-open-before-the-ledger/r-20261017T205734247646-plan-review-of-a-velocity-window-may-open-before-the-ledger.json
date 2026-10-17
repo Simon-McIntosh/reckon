@@ -1,0 +1,41 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T21:06:42.307Z",
+  "dispatched_at": "2026-10-17T20:58:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-velocity-window-may-open-before-the-ledger.html:117",
+      "id": "done_when-1",
+      "reason": "a section declared complete while its own cited evidence fails its stated measure makes the plan's machine state assert a shipped claim its own record refutes, so the declaration or the item must be changed (re-scope the post-merge item onto \u00a73, or put the status at something other than done) before \u00a71/\u00a72 can be read as landed.",
+      "text": "\u00a72's `<section data-id=\"s2\">` carries `data-status=\"done\"` while its fourth done-when item (\"After the merge, the coordinator runs `reckon crew velocity --since 2026-08-01` and `--since 2026-09-01` at the merged head, and both exit 0\") is refuted by the very logs \u00a73 cites: at merged head `9a9a83ec6` both windows return `EXIT=1` (578 s and 529 s), and \u00a72's own followup `f-avwmobl-002` is `data-status=\"resolved\"` with an outcome paragraph admitting the check did not exit 0; \u00a71 carries the same mismatch",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e9ad58fc10f32a5e3e0dad835b242692bc95ea1acf01910701c67534148d9196",
+  "plan_slug": "a-velocity-window-may-open-before-the-ledger",
+  "plan_version": 24,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T205734247646-plan-review-of-a-velocity-window-may-open-before-the-ledger",
+  "reviewed_blob_sha": "68fc8cddeafb557c220703e4b2feae59c27657cf",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/velocity.py` 2620, 2661, 3089, 3090 and 3205, `tests/test_velocity_session_continuity.py:245`, and commits `4d79a470d` and `9a9a83ec6` all resolve as cited; the extensionless href `/reckon/evidence/archive/...-landed.html#s2` is the house convention.",
+    "done_when": "a finding \u2014 \u00a72 is declared `data-status=\"done\"` while its own fourth done-when item is refuted by the logs \u00a73 cites.",
+    "evidence_paths": "pass \u2014 \u00a73's evidence is `~/.cache/reckon-velocity-window-check/velocity-since-<date>-at-9a9a83ec6.log`, both files present (2425 bytes each) and each carrying its revision, wall time and `EXIT=` line.",
+    "naming": "pass \u2014 the new test filename names the behaviour, and no plan label, stage name or ticket number reaches a symbol or comment on \u00a73's write paths.",
+    "reasoning": "pass \u2014 the root cause matches the cited traceback (`view` \u2192 `report` line 3254 \u2192 `compact_summary` line 3089 \u2192 assert line 2620), the three done-when cases follow from relocating the check, and the callers the fix runs on are named (`report()`, `view()`); the check's new host `velocity()` is the module's exported census entry point (`__all__`), which no in-repo module calls \u2014 so the limit is preserved for a caller outside the package rather than for a production path, which is what the section says it is doing.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable (move the 300,000-byte check out of `compact_summary` into `velocity()`) with one write path pair: `reckon/velocity.py` and one new test file.",
+    "wiring": "pass \u2014 `plan-blocks` names `the-ledger-is-one-file-per-run#s4`, which exists at `docs/plans/the-ledger-is-one-file-per-run.html:489` and whose remedy deletes `crew.json` at line 494, so \u00a71's stated reason for blocking it holds, and followup `f-avwmobl-003` recommends the section declared `implementable`."
+  },
+  "section_digests": {
+    "_document": "3655a3b365489679ef7c82ae8e9685a878947d78cf5cdf5511ef8067f97c60fe",
+    "s1": "7fb9f51fa9b87a449b336034d21038a82939900b9d4f0f7601d78920d33f60b5",
+    "s2": "a5e7f6191ff076dd5d9d211bd18a60edd2751d326e78344ec4356e0452f29f04",
+    "s3": "f809def0e8597a85b2b3d11ad2a1cb38d8d2ca5c9d4529d1ebba860434a9580c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T21:08:44.109281+00:00"
+}
