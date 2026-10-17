@@ -40,6 +40,7 @@ from reckon.crew.dispatch import (
     WORKER_SCRATCH_ROOT_NAME,
 )
 from reckon.crew.routing import signal_worker
+from reckon.flight import mounted_project_docs
 
 # ── No test resolves the real cache ────────────────────────────────────────
 #
@@ -1400,31 +1401,14 @@ WORKSTATION_MOUNTS_PATH = _mounts_path()
 def workstation_mounts() -> dict[str, Path]:
     """Every mounted project's docs directory, from the import-time path.
 
-    Mirrors ``reckon.flight.mounted_project_docs`` but resolves the captured
-    mounts file rather than the configuration home in force now, so a test that
-    has replaced that home still reads the operator's own registry. The
-    at-least-one-project guard lives with the caller, which fires it rather than
-    watching an empty set in silence.
+    Delegates to ``reckon.flight.mounted_project_docs`` with the captured mounts
+    file, so the registry the leak scan reads is the operator's rather than the
+    one the configuration home in force now points at — a test that has replaced
+    that home still reads the operator's own registry. The at-least-one-project
+    guard lives with the caller, which fires it rather than watching an empty
+    set in silence.
     """
-    if not WORKSTATION_MOUNTS_PATH.is_file():
-        return {}
-    try:
-        payload = json.loads(WORKSTATION_MOUNTS_PATH.read_text())
-    except (OSError, ValueError):
-        return {}
-    if not isinstance(payload, dict):
-        return {}
-    entries = payload.get("mounts") if "mounts" in payload else payload
-    if not isinstance(entries, dict):
-        return {}
-    resolved: dict[str, Path] = {}
-    for project, raw in sorted(entries.items(), key=lambda item: str(item[0])):
-        entry = raw
-        if isinstance(raw, dict):
-            entry = raw.get("docs") or raw.get("path")
-        if isinstance(entry, str) and entry.strip():
-            resolved[str(project)] = Path(entry).expanduser().resolve()
-    return resolved
+    return mounted_project_docs(WORKSTATION_MOUNTS_PATH)
 
 
 @pytest.fixture(autouse=True)
