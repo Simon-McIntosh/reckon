@@ -1,0 +1,39 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T20:24:51.049Z",
+  "dispatched_at": "2026-10-17T20:09:39Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-paired-shadow-runs-on-its-named-backend.html:103",
+      "id": "done_when-1",
+      "reason": "the case must assert a D21-specific substring (the rewritten remedy clause, e.g. \"Resolve with\") so the declared wrap in the remedy is actually measured.",
+      "text": "the third case cannot show D21 is carried: it asserts only that the message names `nonesuch` as undefined and lacks \"flight override\", and the raw CrewError from `_effective_backend` (\"backend 'nonesuch' is not defined (defined backends: ...)\") satisfies both, so a node that replaces the resolve_role call without adding the D21 wrap passes the gate while leaving the remedy requirement unmet",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9dcc8fb42eee8534d115fe841c1b41b0a489e47b2cdcb2f4868bf6a83d6df5dc",
+  "plan_slug": "a-paired-shadow-runs-on-its-named-backend",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T200900405926-plan-review-of-a-paired-shadow-runs-on-its-named-backend",
+  "reviewed_blob_sha": "be15a9df8de82c6710372e540bf5e8e83d26e647",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: dispatch.py:465/474/686, routing.py:126/195, refusals.py:81, crew_dispatch_commands.py:2070, and test_a_paired_dispatch_hides_each_arm.py:85/94 all match their claims; every cited test file exists; the referenced plan a-shadow-cannot-see-its-primary.html resolves.",
+    "done_when": "a finding \u2014 the third case asserts a `CrewError` \"carrying D21\" by two conditions that the un-wrapped undefined-backend error already satisfies, so the declared D21 requirement is untested.",
+    "evidence_paths": "pass \u2014 no gate log path is declared and none points at a scratchpad or node-local temp; the new test is required to write nothing outside its temp dir.",
+    "naming": "pass \u2014 the new test filename mirrors the plan slug, which the repo already does for named plans (test_every_module_fits_a_worker_window.py, test_a_run_mark_is_read_in_its_own_crew_home.py); no ticket numbers, stage labels or changelog prose reach code.",
+    "reasoning": "pass \u2014 the stated root cause matches the reproduced refusal; the mechanism (resolve_role_override stripping the spec-level backend while keeping role overlays) produces each asserted done-when; and it runs on the real code path, whose two callers (dispatch_pair:686 and shadow():554) both funnel through _shadow_dispatch_config, which dispatch_pair reaches at line 772 with the unmodified config.",
+    "single_goal": "pass \u2014 \u00a71 carries one deliverable: the shadow arm resolves against the backend it names (the D21 remedy rewrite is the same refusal's message, not a second goal).",
+    "wiring": "pass \u2014 the plan declares no depends-on/informs/gates, and its meta documents it as standalone (repairs the landed `a-shadow-cannot-see-its-primary`, status done); no relationship it needs is missing."
+  },
+  "section_digests": {
+    "_document": "f129ef4dcd8b0ce5659d097557565b1f84167351faa1e0658618aa17e3be275a",
+    "s1": "3d7e3e15a666557552ce9cfe4038b18262a0360c82a18c73dcdfce799fbf1f06"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T20:27:38.861871+00:00"
+}
