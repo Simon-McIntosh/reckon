@@ -15,16 +15,24 @@
   </p>
   <p id="a-fresh-read-takes-the-ledger-from-its-index-change">
     <code>reckon/ledger.py</code>: <code>_index_directory</code> publishes the
-    index to the user cache directory when the configured one exists and is not
-    writable. <code>reckon/mcp_views.py</code>: the attempt memo is published
-    against both the pre-read and post-read stamp, so a pointer written during
-    the aggregate serves the same read instead of forcing a second aggregate.
+    index to the user cache root when the configured directory exists and is not
+    writable, resolving that root through the store's own cache kind.
+    <code>reckon/mcp_views.py</code>: the attempt memo is published only under
+    the stamp taken before the ledger read — the state its value is a reading of
+    — with the index file's own identity left out of the comparison, because the
+    read itself rewrites that file. A memo published under the post-read stamp
+    answered every later reader whose stamp showed a live pointer written during
+    the aggregate with a value computed before it, so the pointer stayed missing
+    from the result for as long as that stamp stood.
   </p>
   <p id="a-fresh-read-takes-the-ledger-from-its-index-measure">
     Measure: <code>tests/test_a_fresh_read_takes_the_ledger_from_its_index.py</code>
-    — 4 passed at head; at base 3 fail, including
-    <code>ledger.load ran 2 times in one read</code>.
-    On the live node with the pre-fix tree, one <code>mcp._roadmap</code> made
-    <code>ledger.load</code>=2 and <code>ledger._read_run</code>=0 at head.
+    — 5 passed at head; at base 2 fail
+    (<code>the index moves to the user cache</code> and the fresh process that
+    <code>decodes no run file</code>). Restoring the post-read-stamp publication
+    fails exactly the freshness case, <code>a pointer written during the
+    aggregate is seen by the next read</code>. On the live node with the pre-fix
+    tree, one <code>mcp._roadmap</code> made <code>ledger.load</code>=2 and
+    <code>ledger._read_run</code>=0.
   </p>
 </article>

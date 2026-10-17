@@ -1577,8 +1577,10 @@ def _cached_attempts(
         before = _attempt_inputs(project, root, pointers)
         cached = _ATTEMPT_CACHE.get(key)
         state = _attempt_state(before)
-        if state is not None and cached is not None and state == _attempt_state(
-            cached[0]
+        if (
+            state is not None
+            and cached is not None
+            and state == _attempt_state(cached[0])
         ):
             return copy.deepcopy(cached[1])
         value = compute()

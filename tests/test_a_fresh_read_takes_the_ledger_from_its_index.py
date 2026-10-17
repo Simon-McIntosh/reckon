@@ -244,7 +244,8 @@ def test_a_pointer_written_during_the_aggregate_is_seen_by_the_next_read(
     monkeypatch.setattr(ledger, "load", counting)
     mcp_views._ATTEMPT_CACHE.clear()
 
-    raced = mcp_views.section_attempts_by_plan(PROJECT, root)
+    # The read that raced: the pointer lands inside its aggregate.
+    mcp_views.section_attempts_by_plan(PROJECT, root)
 
     assert written, "the pointer was never written during the aggregate"
     assert len(loads) == 1, f"ledger.load ran {len(loads)} times in the racing read"
