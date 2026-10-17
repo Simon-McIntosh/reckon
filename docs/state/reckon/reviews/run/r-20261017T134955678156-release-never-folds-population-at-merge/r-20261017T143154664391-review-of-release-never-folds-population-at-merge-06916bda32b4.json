@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f4cf279f6c5c5890ead79b5d3e49af1077f4dee9",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T14:45:48.379Z",
+  "dispatched_at": "2026-10-17T14:32:36Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1271",
+      "severity": "follow-on",
+      "text": "follow-on: the pytest failure reader matches (\\S+), so a parametrised node id containing a space reads truncated at it ([opus 5.5] -> [opus); two ids differing only after a space alias and an added failure could be counted as absent."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T134955678156-release-never-folds-population-at-merge/manifest.md",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: the declared write path for this node is an empty reports directory; every deliverable was stored under the run directory instead, so a reader following the declared path finds no artefact."
+    }
+  ],
+  "head_log_revision": "9dc5f54eb58946a08162684e47c61daaded4062a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read the reviewed worktree at 06916bda32b4 against itself; the node committed nothing and git status is clean, so its diff is empty and its deliverable is the measurement stored outside the repository.",
+    "done_when": "the done_when names the two gate logs, the population list, the two revisions, the production derivation helper and the alone-run loop; the manifest records each of them and I reproduced the derivation independently.",
+    "goal": "the node goal is to measure the release-path and ledger population of the confined release at base and at its merge candidate; the two arm logs (arm-base.log at f4cf279f, 94 files; arm-candidate.log at 9dc5f54e, 95 files) record that answer.",
+    "manifest": "read; it records base 2 failed / 1141 passed over 94 files and candidate 2 failed / 1143 passed over 95 files, added failing ids none (added_count=0), the log paths, and the header arithmetic of the extractor's truncation caveat.",
+    "write_paths": "the node's declared write path is the reports directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-ledger-is-one-file-per-run/release-never-folds-population-at-merge; every deliverable instead sits under the run directory the brief names, and no path under reckon/ or tests/ changed."
+  },
+  "justifications": {
+    "durability": "the node lands no code, so there is no regression to guard, and its derivation runs through the existing owner reckon/crew/review.py:2100 rather than a private copy.",
+    "evidence": "I re-ran reckon/crew/review.py:2100 added_failures_from_gate_logs over the reviewed run's own arm logs and got added_failure_count=0 with base_log_revision f4cf279f and head_log_revision 9dc5f54e, matching the manifest.",
+    "fit": "the deliverables are named arm-base.log, arm-candidate.log and population-job.sh, outside the repository and carrying no plan label or ticket number.",
+    "goal_fidelity": "the arm logs arm-base.log and arm-candidate.log record the two revisions and their summaries, so the question the goal poses is answered with the measured population.",
+    "reuse": "a search of reckon for an added-failure derivation found its owner at reckon/crew/review.py:2100, and the node called it rather than diffing FAILED lines by hand.",
+    "scope_discipline": "git status in the reviewed worktree is clean at 06916bda32b4 with no commit, so no reckon/ or tests/ path changed, though the declared reports path received nothing."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to measure the release-path and ledger population of the confined release at base and at its merge candidate; the two arm logs (arm-base.log at f4cf279f, 94 files; arm-candidate.log at 9dc5f54e, 95 files) record that answer.\nVERDICT done_when: the done_when names the two gate logs, the population list, the two revisions, the production derivation helper and the alone-run loop; the manifest records each of them and I reproduced the derivation independently.\nVERDICT write_paths: the node's declared write path is the reports directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-ledger-is-one-file-per-run/release-never-folds-population-at-merge; every deliverable instead sits under the run directory the brief names, and no path under reckon/ or tests/ changed.\nVERDICT manifest: read; it records base 2 failed / 1141 passed over 94 files and candidate 2 failed / 1143 passed over 95 files, added failing ids none (added_count=0), the log paths, and the header arithmetic of the extractor's truncation caveat.\nVERDICT diff: read the reviewed worktree at 06916bda32b4 against itself; the node committed nothing and git status is clean, so its diff is empty and its deliverable is the measurement stored outside the repository.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the arm logs arm-base.log and arm-candidate.log record the two revisions and their summaries, so the question the goal poses is answered with the measured population.\nSCORE evidence: 18\nJUSTIFICATION evidence: I re-ran reckon/crew/review.py:2100 added_failures_from_gate_logs over the reviewed run's own arm logs and got added_failure_count=0 with base_log_revision f4cf279f and head_log_revision 9dc5f54e, matching the manifest.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: git status in the reviewed worktree is clean at 06916bda32b4 with no commit, so no reckon/ or tests/ path changed, though the declared reports path received nothing.\nSCORE durability: 20\nJUSTIFICATION durability: the node lands no code, so there is no regression to guard, and its derivation runs through the existing owner reckon/crew/review.py:2100 rather than a private copy.\nSCORE fit: 19\nJUSTIFICATION fit: the deliverables are named arm-base.log, arm-candidate.log and population-job.sh, outside the repository and carrying no plan label or ticket number.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of reckon for an added-failure derivation found its owner at reckon/crew/review.py:2100, and the node called it rather than diffing FAILED lines by hand.\nFINDING reckon/crew/review.py:1271 follow-on: the pytest failure reader matches (\\S+), so a parametrised node id containing a space reads truncated at it ([opus 5.5] -> [opus); two ids differing only after a space alias and an added failure could be counted as absent.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T134955678156-release-never-folds-population-at-merge/manifest.md:3 follow-on: the declared write path for this node is an empty reports directory; every deliverable was stored under the run directory instead, so a reader following the declared path finds no artefact.\n",
+  "review_run_id": "r-20261017T143154664391-review-of-release-never-folds-population-at-merge-06916bda32b4",
+  "reviewed_base_sha": "06916bda32b4f509137a5746ed318939d5e8f9aa",
+  "reviewed_head_sha": "06916bda32b4f509137a5746ed318939d5e8f9aa",
+  "reviewed_run_id": "r-20261017T134955678156-release-never-folds-population-at-merge",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T14:41:57.132350+00:00",
+  "total": 113
+}
