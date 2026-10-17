@@ -24,7 +24,7 @@
   <title>A Velocity Window May Open Before The Ledger | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="26">
+<meta name="plan-version" content="27">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -209,6 +209,9 @@ The test writes nothing outside its temporary directory. It points <code>RECKON_
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-17T21:50:00Z">
     <div class="r-comment-body"><p>§3 landed: the census size check now lives in <code>velocity()</code> and no longer aborts the view (commit <code>ab343d208</code>). Gate: 33 passed at head, 30 at base. Both negative controls fail their case. Review total 114, no added failures. The post-merge runs of both real windows are still owed. <a href="/reckon/evidence/archive/a-velocity-window-may-open-before-the-ledger-landed.html#s3">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261017T211031488746-a-velocity-view-is-not-bounded-by-the-census" data-who="reckon-build" data-when="2026-10-17T21:29:40.349Z">
+    <div class="r-comment-body"><p>The 300,000-byte size assertion moved out of compact_summary into velocity() (the census path it was written for), limit and message unchanged, so report() and the crew velocity view are no longer aborted by it; tests/test_a_velocity_view_is_not_bounded_by_the_census.py asserts compact_summary returns, velocity() raises the message, and report() returns a mapping carrying by_project_day_lane on an oversized full, gate 33 passed at head / 30 at base with both declared mutations red.</p></div>
 </div>
 </section>
 </main>
