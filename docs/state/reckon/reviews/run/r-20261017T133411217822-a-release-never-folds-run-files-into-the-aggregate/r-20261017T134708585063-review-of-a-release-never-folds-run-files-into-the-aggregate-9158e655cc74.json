@@ -1,0 +1,90 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/a-release-never-folds-run-files-into-the-aggregate/tests/test_a_release_never_folds_run_files_into_the_aggregate.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T133411217822-a-release-never-folds-run-files-into-the-aggregate/head-absolute.log",
+    "revision": "9158e655cc74f5df2594111ec23f1a60b23ebbbb"
+  },
+  "base_log_revision": "b349d765e722750d3c4fe11f7ebda53908212b60",
+  "baseline_suite": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_release_never_folds_run_files_into_the_aggregate.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 1,
+    "failure_ids": [
+      "tests/test_a_release_never_folds_run_files_into_the_aggregate.py::test_release_of_aggregate_run_does_not_fold_split_runs"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T133411217822-a-release-never-folds-run-files-into-the-aggregate/base-release.log",
+    "revision": "b349d765e722750d3c4fe11f7ebda53908212b60"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:773",
+    "reckon/crew/promotion.py:1379"
+  ],
+  "completed_at": "2026-10-17T13:53:57Z",
+  "dispatched_at": "2026-10-17T13:48:37Z",
+  "findings": [
+    {
+      "file": "tests/test_a_release_never_folds_run_files_into_the_aggregate.py",
+      "line": "58",
+      "severity": "blocking",
+      "text": "blocking: the test module has only two release cases and no promotion commit case; prompt.txt:95 requires proof that a promotion commit leaves another run's file in place, so the declared gate is incomplete."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T133411217822-a-release-never-folds-run-files-into-the-aggregate/manifest.md",
+      "line": "25",
+      "severity": "blocking",
+      "text": "blocking: the required cause of the fig-09 worktree deletion is still unidentified, and lines 26-27 identify the peer-owned promotion commit path as unrepaired; the section's first step cannot be considered landed."
+    },
+    {
+      "file": "tests/test_a_release_never_folds_run_files_into_the_aggregate.py",
+      "line": "45",
+      "severity": "follow-on",
+      "text": "follow-on: the returned receipt is compared with the same receipt supplied to the function here and at line 74, so these assertions stay green when the old union write is restored; the independent persisted-row and file-byte assertions carry the real regression guard."
+    }
+  ],
+  "head_log_revision": "9158e655cc74f5df2594111ec23f1a60b23ebbbb",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "git show 9158e655cc74 against b349d765e722 changes one release fallback in reckon/crew/promotion_release.py:579-594 and adds two release tests in tests/test_a_release_never_folds_run_files_into_the_aggregate.py:26-80; it contains no promotion commit change or case.",
+    "done_when": "prompt.txt:95 requires the 10-row/50-file release checks, a promotion commit retention case, and the fig-09 deletion cause; tests/test_a_release_never_folds_run_files_into_the_aggregate.py:26-80 covers only the two release checks, and manifest.md:25-27 leaves the deletion cause and promotion case unresolved.",
+    "goal": "prompt.txt:30 asks for a missing-file release to update only its run record; reckon/crew/promotion_release.py:579-594 now reads aggregate rows alone and writes the selected aggregate row.",
+    "manifest": "manifest.md:11-27 records one commit, two changed paths, the base failure and head pass, but leaves baseline_suite empty and explicitly states the missing-file deletion origin and promotion.py repair remain blocked.",
+    "write_paths": "prompt.txt:68-72 grants promotion_release.py, the new test, and evidence paths; git show 9158e655cc74 lists only promotion_release.py and the test, both granted."
+  },
+  "justifications": {
+    "durability": "tests/test_a_release_never_folds_run_files_into_the_aggregate.py:47-55 reddens when the old union write restores 50 rows, and lines 76-80 would redden if a present-file release changed the aggregate or a peer file, but no assertion covers a promotion commit deleting a peer file.",
+    "evidence": "base-release.log fails the fold assertion with 60 rows and EXIT=1, while head-absolute.log has 2 passed and EXIT=0, but tests/test_a_release_never_folds_run_files_into_the_aggregate.py:26-80 does not measure the required promotion commit case.",
+    "fit": "reckon/crew/promotion_release.py:579-594 uses the ledger's aggregate loader, write lock, and common envelope serialiser, and the added names and comments contain no forbidden release or plan label.",
+    "goal_fidelity": "reckon/crew/promotion_release.py:579-594 restricts the missing-file path to the aggregate's own rows and writes only that aggregate record.",
+    "reuse": "The capability search found aggregate loading in reckon/ledger.py:892 and envelope writing in reckon/_store.py:383; reckon/crew/promotion_release.py:579-594 calls those owners, and the only added definition is a test fixture using ledger.write and ledger.serialize_run.",
+    "scope_discipline": "git show --stat 9158e655cc74 lists only reckon/crew/promotion_release.py and tests/test_a_release_never_folds_run_files_into_the_aggregate.py, both named in prompt.txt:68-72."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks for a missing-file release to update only its run record; reckon/crew/promotion_release.py:579-594 now reads aggregate rows alone and writes the selected aggregate row.\nVERDICT done_when: prompt.txt:95 requires the 10-row/50-file release checks, a promotion commit retention case, and the fig-09 deletion cause; tests/test_a_release_never_folds_run_files_into_the_aggregate.py:26-80 covers only the two release checks, and manifest.md:25-27 leaves the deletion cause and promotion case unresolved.\nVERDICT write_paths: prompt.txt:68-72 grants promotion_release.py, the new test, and evidence paths; git show 9158e655cc74 lists only promotion_release.py and the test, both granted.\nVERDICT manifest: manifest.md:11-27 records one commit, two changed paths, the base failure and head pass, but leaves baseline_suite empty and explicitly states the missing-file deletion origin and promotion.py repair remain blocked.\nVERDICT diff: git show 9158e655cc74 against b349d765e722 changes one release fallback in reckon/crew/promotion_release.py:579-594 and adds two release tests in tests/test_a_release_never_folds_run_files_into_the_aggregate.py:26-80; it contains no promotion commit change or case.\nCALL_SITES: reckon/crew/promotion.py:773, reckon/crew/promotion.py:1379\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_release.py:579-594 restricts the missing-file path to the aggregate's own rows and writes only that aggregate record.\nSCORE evidence: 12\nJUSTIFICATION evidence: base-release.log fails the fold assertion with 60 rows and EXIT=1, while head-absolute.log has 2 passed and EXIT=0, but tests/test_a_release_never_folds_run_files_into_the_aggregate.py:26-80 does not measure the required promotion commit case.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 9158e655cc74 lists only reckon/crew/promotion_release.py and tests/test_a_release_never_folds_run_files_into_the_aggregate.py, both named in prompt.txt:68-72.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_release_never_folds_run_files_into_the_aggregate.py:47-55 reddens when the old union write restores 50 rows, and lines 76-80 would redden if a present-file release changed the aggregate or a peer file, but no assertion covers a promotion commit deleting a peer file.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion_release.py:579-594 uses the ledger's aggregate loader, write lock, and common envelope serialiser, and the added names and comments contain no forbidden release or plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search found aggregate loading in reckon/ledger.py:892 and envelope writing in reckon/_store.py:383; reckon/crew/promotion_release.py:579-594 calls those owners, and the only added definition is a test fixture using ledger.write and ledger.serialize_run.\nFINDING tests/test_a_release_never_folds_run_files_into_the_aggregate.py:58 blocking: the test module has only two release cases and no promotion commit case; prompt.txt:95 requires proof that a promotion commit leaves another run's file in place, so the declared gate is incomplete.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T133411217822-a-release-never-folds-run-files-into-the-aggregate/manifest.md:25 blocking: the required cause of the fig-09 worktree deletion is still unidentified, and lines 26-27 identify the peer-owned promotion commit path as unrepaired; the section's first step cannot be considered landed.\nFINDING tests/test_a_release_never_folds_run_files_into_the_aggregate.py:45 follow-on: the returned receipt is compared with the same receipt supplied to the function here and at line 74, so these assertions stay green when the old union write is restored; the independent persisted-row and file-byte assertions carry the real regression guard.\n",
+  "review_run_id": "r-20261017T134708585063-review-of-a-release-never-folds-run-files-into-the-aggregate-9158e655cc74",
+  "reviewed_base_sha": "b349d765e722750d3c4fe11f7ebda53908212b60",
+  "reviewed_head_sha": "9158e655cc74f5df2594111ec23f1a60b23ebbbb",
+  "reviewed_run_id": "r-20261017T133411217822-a-release-never-folds-run-files-into-the-aggregate",
+  "scores": {
+    "durability": 16,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T13:51:31Z",
+  "total": 107
+}
