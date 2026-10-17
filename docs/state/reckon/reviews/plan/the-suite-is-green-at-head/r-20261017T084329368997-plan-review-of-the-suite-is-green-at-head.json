@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T08:51:37.517Z",
+  "dispatched_at": "2026-10-17T08:44:05Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:846",
+      "id": "wiring-1",
+      "reason": "a coordinator working the followup chain never reaches either repair, so the sections stay unbuilt until someone reads the section list by hand.",
+      "text": "\u00a717 and \u00a718 are declared `implementable` in `plan-section-declarations` (version 359), but the plan's only open followup, `f-tsigah-repair-wave-at-95ff28824`, enumerates \u00a74\u2013\u00a714 and \u00a73 and recommends `/reckon-build the-suite-is-green-at-head \u00a74`; nothing names \u00a717 or \u00a718, so the two new nodes have no dispatch entry",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:704",
+      "id": "reasoning-1",
+      "reason": "a node taking that option is stopped by scope, and restoring inside a single caller would leave every other caller of the helper reloading, so the plan must either drop the option or add `tests/mcp_family_reload.py` to the write paths.",
+      "text": "\u00a718's deliverable offers \"or the reloading test restores the modules it reloaded\", but the reload the failing pair reaches is `reload_mcp_family()` in `tests/mcp_family_reload.py:21`, invoked from the trigger's fixture (`tests/test_a_lost_race_is_refused_not_raised.py:174`), so restoring is an edit to that shared helper \u2014 which \u00a718's write paths (\"`tests/test_one_sprint_item_slug.py` and the triggering test file if it is the one changed\") exclude",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ac410b5a22385b2b5d718bda97a288548918a63276a6e1f369902e074494dec7",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 359,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T084329368997-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "196f103e08efdbb547a0ddf1695804b03a563aef",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor resolves: `tests/test_metadata_index_survives_restart.py:335`, `reckon/serve.py:4454` (`_FleetChangeWatch(mounts)` as the production caller), commit `104956724` (2026-10-15, which changed `__init__(self, trees: Iterable[Path])` to `__init__(self, mounts: Mapping[str, Path])`), `tests/test_one_sprint_item_slug.py:49`, `tests/mcp_family_reload.py`, and both other reloading files; neither section carries an href.",
+    "done_when": "pass \u2014 \u00a717's measure is a bounded suite run whose negative control is the base revision (reproduced above), and \u00a718's is a named-pair run with a base arm and a mutation control.",
+    "evidence_paths": "pass \u2014 both gates log under the run directory, which is on GPFS and outlives the run; neither names a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the new sections name mechanisms and files only; no plan labels, ticket numbers or version tags reach code or symbols, and no changelog prose is introduced.",
+    "reasoning": "a finding \u2014 \u00a718's root cause matches its evidence, but one of the three mechanisms it offers cannot be built on the write paths it declares.",
+    "single_goal": "pass \u2014 each new section carries one deliverable: \u00a717 repairs one test's construction of the watch, \u00a718 makes one identity assertion reload-robust.",
+    "wiring": "a finding \u2014 \u00a717 and \u00a718 are declared `implementable`, but no followup in the plan names either, so the plan's own dispatch map omits them."
+  },
+  "section_digests": {
+    "_document": "c5589f33d71055954c154bf09a3d1d3e8043303a381898b34ae50840771fdfdc",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "f84dc4d4bef37307ff05d71bd4f7071e9208e789832e7cb00be82c37bcfde97e",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s17": "01fe3ab4eb2f9f616654a729cf8bef4dcf5b530d4d0c1be3bdfa73999d0ad263",
+    "s18": "06e7c6ca64d1217bf0a1d28bef3d65926923c3b18cdaa71a909a31d35fbb2256",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "072f7ace5c2d253a6d4972213a2093233d6f768bd4d1394f2b9eaf1471ff4119",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T08:55:04.744823+00:00"
+}
