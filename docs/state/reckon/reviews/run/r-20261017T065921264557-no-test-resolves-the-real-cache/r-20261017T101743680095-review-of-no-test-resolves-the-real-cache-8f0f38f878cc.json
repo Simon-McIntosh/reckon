@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest declares no baseline_suite or after_suite, and reckon.crew.review.added_failures_from_gate_logs over its arm logs logs/base.log and logs/head.log returns (None, []) because neither is in a recognised gate-log format \u2014 both were cancelled mid-run before any summary line, so the count was not taken rather than taken as zero.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/ledger.py:996",
+    "reckon/serve.py:761"
+  ],
+  "completed_at": "2026-10-17T10:31:37.880Z",
+  "dispatched_at": "2026-10-17T10:18:17Z",
+  "findings": [
+    {
+      "file": "tests/conftest.py",
+      "line": "1304",
+      "severity": "blocking",
+      "text": "blocking: the done_when's whole-suite guarded measurement was not taken. It demands the suite run under the guard in one exclusive all_debug job with a base and an after arm, each log naming its revision and ending in EXIT=, finding no test resolving the real cache and no added failure against base; instead the run recorded focused id subsets, logs/base.log and logs/head.log end mid-progress with no summary line and no EXIT=, and the two sbatch jobs (slurm-1287893.out, slurm-1287900.out) were CANCELLED, so the manifest declares neither baseline_suite nor after_suite and 'no added failure against base' is asserted without the measurement the done-when names."
+    },
+    {
+      "file": "tests/conftest.py",
+      "line": "1321",
+      "severity": "follow-on",
+      "text": "follow-on: the fixture sets only XDG_CACHE_HOME and leaves RECKON_HOME as found, deviating from plan \u00a79 and the node done-when, which name RECKON_HOME among the levers. reckon/_store.py:172 reads RECKON_HOME before the cache home for pick-input, the kind that names the ledger index in the original defect, so a session launched with RECKON_HOME pointing at the real home resolves that root into it; the guard records the leak but the redirect the plan asked for is absent."
+    },
+    {
+      "file": "tests/test_no_test_resolves_the_real_cache.py",
+      "line": "64",
+      "severity": "follow-on",
+      "text": "follow-on: the pick-input/run-time-profile assertion accepts 'steered or _within(resolved, session_root)' where steered measures the resolution against the same RECKON_HOME the code under test reads, so that half is not independent of the value it checks; the check that actually carries the guard is the cache_root_leaks() failure below it, and the assertion would read true against a real-home RECKON_HOME were the leak record empty."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s) of the wrapped reckon/_store.cache_root the guard instruments",
+    "diff": "read commit by commit against d0d0d28c4; ab3da5d91 adds the session fixture and the cache_root wrapper, 98ca42916 asserts the guard from the session teardown, ca161be6e pins UV_CACHE_DIR and drops the per-kind overrides, 8f0f38f87 adds the evidence fragment, all additions with no deletions.",
+    "done_when": "the done_when asserts a whole-suite run under the guard in one exclusive all_debug job with base and after arms each ending EXIT=; the manifest records focused id subsets (14 and 7 ids) and logs/base.log and logs/head.log end mid-progress with no summary or EXIT=, so the gate ran does not assert that measure.",
+    "goal": "the node goal is to redirect every test's cache roots to a session temporary directory and guard that no test resolves the real cache; tests/conftest.py:1304 redirects XDG_CACHE_HOME to a session tmp tree and tests/conftest.py:92 wraps reckon/_store.cache_root to record every ambient resolution outside it, but RECKON_HOME is left as found so the kinds reading it first are covered only when it is unset.",
+    "manifest": "read; it records commits ab3da5d91, 98ca42916, ca161be6e, 8f0f38f87, the revised XDG-only mechanism, the 14+7 focused ids passing, the positive control firing at EXIT=1, its disclosure that the declared fixture-removed negative control no longer fires at the revised head, and no baseline_suite or after_suite field.",
+    "write_paths": "the manifest declares tests/conftest.py, tests/test_no_test_resolves_the_real_cache.py and the evidence fragment; git diff d0d0d28c4..8f0f38f87 touches exactly those three paths and no other file."
+  },
+  "justifications": {
+    "durability": "tests/test_no_test_resolves_the_real_cache.py:48 fails on a reinstated leak: with the session fixture removed the guard records client and pick-input resolutions and the test reddens, logs/focused-neg.log EXIT=1, and the armed control at logs/positive-control-n4.log EXIT=1 names velocity -> /home/ITER/mcintos/.cache/reckon/velocity, so the guard demonstrably fires.",
+    "evidence": "the done_when demands the whole suite under the guard in one exclusive all_debug sbatch job with base and after arms ending in EXIT=; logs/base.log and logs/head.log end mid-progress with no summary line and no EXIT=, both slurm jobs were CANCELLED, and the manifest declares no baseline_suite or after_suite, so the recorded focused subsets never establish the no-added-failure measure the done_when asserts.",
+    "fit": "tests/conftest.py:1304 follows the established session-scoped autouse idiom of tests/conftest.py:1368 isolated_claude_skills_dir, and the new names (session_cache_roots_are_isolated, cache_root_leaks, install_cache_root_guard, _run_cache_root_guard_last) carry no plan, ticket or version label.",
+    "goal_fidelity": "tests/conftest.py:1304 session_cache_roots_are_isolated moves XDG_CACHE_HOME to a session tmp tree and tests/conftest.py:92 install_cache_root_guard wraps reckon/_store.cache_root, but the fixture leaves RECKON_HOME as found, so the two kinds reckon/_store.py:172,173 read before the cache home (pick-input, which names the ledger index) are redirected only while ambient RECKON_HOME is unset, unlike the plan \u00a79 levers.",
+    "reuse": "no owner for a session-wide cache-root isolation guard exists; the fixture is a new capability and the guard extends the resolved path of the owner reckon/_store.py:158 cache_root rather than forking it, so the addition wraps the single owner.",
+    "scope_discipline": "git diff d0d0d28c4..8f0f38f87 touches exactly tests/conftest.py, tests/test_no_test_resolves_the_real_cache.py and docs/evidence/fragments/the-crew-home-has-a-bound/no-test-resolves-the-real-cache.html (299 insertions, 0 deletions), all inside the manifest's declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to redirect every test's cache roots to a session temporary directory and guard that no test resolves the real cache; tests/conftest.py:1304 redirects XDG_CACHE_HOME to a session tmp tree and tests/conftest.py:92 wraps reckon/_store.cache_root to record every ambient resolution outside it, but RECKON_HOME is left as found so the kinds reading it first are covered only when it is unset.\nVERDICT done_when: the done_when asserts a whole-suite run under the guard in one exclusive all_debug job with base and after arms each ending EXIT=; the manifest records focused id subsets (14 and 7 ids) and logs/base.log and logs/head.log end mid-progress with no summary or EXIT=, so the gate ran does not assert that measure.\nVERDICT write_paths: the manifest declares tests/conftest.py, tests/test_no_test_resolves_the_real_cache.py and the evidence fragment; git diff d0d0d28c4..8f0f38f87 touches exactly those three paths and no other file.\nVERDICT manifest: read; it records commits ab3da5d91, 98ca42916, ca161be6e, 8f0f38f87, the revised XDG-only mechanism, the 14+7 focused ids passing, the positive control firing at EXIT=1, its disclosure that the declared fixture-removed negative control no longer fires at the revised head, and no baseline_suite or after_suite field.\nVERDICT diff: read commit by commit against d0d0d28c4; ab3da5d91 adds the session fixture and the cache_root wrapper, 98ca42916 asserts the guard from the session teardown, ca161be6e pins UV_CACHE_DIR and drops the per-kind overrides, 8f0f38f87 adds the evidence fragment, all additions with no deletions.\nCALL_SITES: reckon/ledger.py:996, reckon/serve.py:761\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: tests/conftest.py:1304 session_cache_roots_are_isolated moves XDG_CACHE_HOME to a session tmp tree and tests/conftest.py:92 install_cache_root_guard wraps reckon/_store.cache_root, but the fixture leaves RECKON_HOME as found, so the two kinds reckon/_store.py:172,173 read before the cache home (pick-input, which names the ledger index) are redirected only while ambient RECKON_HOME is unset, unlike the plan \u00a79 levers.\nSCORE evidence: 7\nJUSTIFICATION evidence: the done_when demands the whole suite under the guard in one exclusive all_debug sbatch job with base and after arms ending in EXIT=; logs/base.log and logs/head.log end mid-progress with no summary line and no EXIT=, both slurm jobs were CANCELLED, and the manifest declares no baseline_suite or after_suite, so the recorded focused subsets never establish the no-added-failure measure the done_when asserts.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff d0d0d28c4..8f0f38f87 touches exactly tests/conftest.py, tests/test_no_test_resolves_the_real_cache.py and docs/evidence/fragments/the-crew-home-has-a-bound/no-test-resolves-the-real-cache.html (299 insertions, 0 deletions), all inside the manifest's declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_no_test_resolves_the_real_cache.py:48 fails on a reinstated leak: with the session fixture removed the guard records client and pick-input resolutions and the test reddens, logs/focused-neg.log EXIT=1, and the armed control at logs/positive-control-n4.log EXIT=1 names velocity -> /home/ITER/mcintos/.cache/reckon/velocity, so the guard demonstrably fires.\nSCORE fit: 18\nJUSTIFICATION fit: tests/conftest.py:1304 follows the established session-scoped autouse idiom of tests/conftest.py:1368 isolated_claude_skills_dir, and the new names (session_cache_roots_are_isolated, cache_root_leaks, install_cache_root_guard, _run_cache_root_guard_last) carry no plan, ticket or version label.\nSCORE reuse: 18\nJUSTIFICATION reuse: no owner for a session-wide cache-root isolation guard exists; the fixture is a new capability and the guard extends the resolved path of the owner reckon/_store.py:158 cache_root rather than forking it, so the addition wraps the single owner.\nFINDING tests/conftest.py:1304 blocking: the done_when's whole-suite guarded measurement was not taken. It demands the suite run under the guard in one exclusive all_debug job with a base and an after arm, each log naming its revision and ending in EXIT=, finding no test resolving the real cache and no added failure against base; instead the run recorded focused id subsets, logs/base.log and logs/head.log end mid-progress with no summary line and no EXIT=, and the two sbatch jobs (slurm-1287893.out, slurm-1287900.out) were CANCELLED, so the manifest declares neither baseline_suite nor after_suite.\nFINDING tests/conftest.py:1321 follow-on: the fixture sets only XDG_CACHE_HOME and leaves RECKON_HOME as found, deviating from plan \u00a79 and the node done-when, which name RECKON_HOME among the levers; reckon/_store.py:172 reads RECKON_HOME before the cache home for pick-input, the kind that names the ledger index in the original defect, so a session launched with RECKON_HOME pointing at the real home resolves that root into it.\nFINDING tests/test_no_test_resolves_the_real_cache.py:64 follow-on: the pick-input/run-time-profile assertion accepts 'steered or _within(resolved, session_root)' where steered measures the resolution against the same RECKON_HOME the code under test reads, so that half is not independent of the value it checks.",
+  "review_run_id": "r-20261017T101743680095-review-of-no-test-resolves-the-real-cache-8f0f38f878cc",
+  "reviewed_base_sha": "d0d0d28c44159da694850c6e4467238d4a0f843c",
+  "reviewed_head_sha": "8f0f38f878cc45671674266c7cf6b9bb0c1cdc4f",
+  "reviewed_run_id": "r-20261017T065921264557-no-test-resolves-the-real-cache",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 7,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T10:40:00+00:00",
+  "total": 94
+}
