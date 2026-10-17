@@ -29,7 +29,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import obligation_snapshot, runs
+from reckon.crew import obligation_snapshot, runs, session_host
 from reckon.crew.obligations import obligations as obligations_view
 from reckon.hooks.coordinator_obligations import (
     PRODUCER_LEASE_SECONDS,
@@ -131,11 +131,11 @@ def _plant_lease(*, age_seconds: float) -> None:
     )
 
 
-def _write_session_host(config_home: Path) -> None:
+def _write_session_host() -> None:
     owner_pid = os.getpid()
     start = obligation_snapshot.process_start_time(owner_pid)
     assert start is not None
-    path = config_home / "crew" / "session-hosts" / f"{owner_pid}-{start}.json"
+    path = session_host._state_dir() / f"{owner_pid}-{start}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(
@@ -202,13 +202,20 @@ def test_a_stale_snapshot_beside_a_live_lease_names_the_follower(
     assert "watch --ensure" not in line, line
 
 
+@pytest.mark.parametrize("override", [False, True])
 def test_a_stale_snapshot_beside_a_live_lease_names_its_session_host(
-    config_home: Path, repository: Path
+    config_home: Path,
+    repository: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    override: bool,
 ) -> None:
+    if override:
+        monkeypatch.setenv("RECKON_SESSION_HOST_STATE_DIR", str(tmp_path / "hosts"))
     _stop_the_follower()
     _publish_stale_snapshot()
     _plant_lease(age_seconds=0.0)
-    _write_session_host(config_home)
+    _write_session_host()
 
     line = _line(_drive(repository, owner_pid=os.getpid()))
 

@@ -27,7 +27,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import obligation_snapshot, runs, watch_unit
+from reckon.crew import obligation_snapshot, runs, session_host, watch_unit
 from tests.helpers.git import git as _git
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -109,11 +109,11 @@ def _touch_stream(*, age_seconds: float) -> None:
     os.utime(path, (written, written))
 
 
-def _write_session_host(config_home: Path, *, host_pid: int) -> None:
+def _write_session_host(*, host_pid: int) -> None:
     owner_pid = os.getpid()
     start = obligation_snapshot.process_start_time(owner_pid)
     assert start is not None
-    path = config_home / "crew" / "session-hosts" / f"{owner_pid}-{start}.json"
+    path = session_host._state_dir() / f"{owner_pid}-{start}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps({"owner": {"pid": owner_pid, "start_time": start}, "pid": host_pid}),
@@ -178,13 +178,20 @@ def test_a_missing_snapshot_beside_a_live_foreign_seat_names_the_host(
     assert "watch --ensure" not in line, line
 
 
+@pytest.mark.parametrize("override", [False, True])
 def test_a_missing_snapshot_names_its_live_session_host(
-    config_home: Path, repository: Path
+    config_home: Path,
+    repository: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    override: bool,
 ) -> None:
+    if override:
+        monkeypatch.setenv("RECKON_SESSION_HOST_STATE_DIR", str(tmp_path / "hosts"))
     _register_the_session()
     _write_seat(host=FOREIGN_HOST)
     _touch_stream(age_seconds=0)
-    _write_session_host(config_home, host_pid=os.getpid())
+    _write_session_host(host_pid=os.getpid())
 
     line = _line(_drive(repository, owner_pid=os.getpid()))
 
@@ -202,7 +209,7 @@ def test_a_missing_snapshot_ignores_a_dead_session_host(
     _register_the_session()
     _write_seat(host=FOREIGN_HOST)
     _touch_stream(age_seconds=0)
-    _write_session_host(config_home, host_pid=_ABSENT_HARNESS_PID)
+    _write_session_host(host_pid=_ABSENT_HARNESS_PID)
 
     line = _line(_drive(repository, owner_pid=os.getpid()))
 
