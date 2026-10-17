@@ -17,7 +17,7 @@ from __future__ import annotations
 import importlib
 import json
 import os
-import subprocess
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -26,7 +26,7 @@ import pytest
 
 from reckon import ledger
 from reckon.crew import routing
-from reckon.worker_git_shim import RUN_ID_ENV
+from tests.helpers.git import git as _git
 
 obligations_module = importlib.import_module("reckon.crew.obligations")
 
@@ -35,29 +35,6 @@ SESSION = "match-once-fixture"
 TREE_COUNT = 20
 RECORD_COUNT = 500
 BASE_COMPLETED = datetime(2026, 10, 1, 12, 0, tzinfo=UTC) - timedelta(seconds=5000)
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    """Run git in ``repository`` without this process's run identity.
-
-    A crew worker exports the run it serves, and the git shim refuses a
-    mutating verb whose run's live pointer it cannot read — which is precisely
-    the state a test is in, because its configuration home is a temporary one.
-    The fixture's repository is a throwaway, so its git calls run with that
-    identity removed and the shim transparent; they change nothing the shim
-    exists to protect. Reads need no such care, but run through here too so a
-    fixture never depends on which verbs the shim leaves alone.
-    """
-    environment = {key: value for key, value in os.environ.items() if key != RUN_ID_ENV}
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-        env=environment,
-    )
-    return result.stdout.strip()
 
 
 def _tree_name(index: int) -> str:
@@ -96,15 +73,17 @@ def _build_case(index: int, trees: list[Path]) -> dict[str, Any]:
 @pytest.fixture(scope="module")
 def _fleet_build(
     tmp_path_factory: pytest.TempPathFactory,
-) -> tuple[Path, Path, list[Path], list[dict[str, Any]]]:
+) -> Iterator[tuple[Path, Path, list[Path], list[dict[str, Any]]]]:
     """The costly half of the fleet: a synthesised checkout and its records.
 
-    Built once for the module and read by every case without writing. No
-    environment is touched here: a module-scoped fixture outlives the tests
-    that use it, and a worker running several test modules on one process would
-    carry its redirected home into whatever ran next. Returns the temporary
-    root the per-test home is made under, the repository root, the inspected
-    tree paths, and the records as the producer wrote them.
+    Built once for the module and read by every case without writing. The
+    environment is named only where the build needs it and put back before this
+    fixture returns, and what it puts back is asserted when the fixture ends: a
+    module-scoped fixture outlives the tests that use it, and a worker running
+    several test modules on one process would otherwise carry this module's
+    redirected home into whatever ran next. Returns the temporary root the
+    per-test home is made under, the repository root, the inspected tree paths,
+    and the records as the producer wrote them.
     """
     tmp_path = tmp_path_factory.mktemp("held-tree-index")
     config_home = tmp_path / "config"
@@ -120,9 +99,8 @@ def _fleet_build(
         ("commit", "-q", "-m", "test: seed the held-tree index fixture"),
     ):
         _git(root, *arguments)
-    (config_home / "mounts.json").write_text(
-        json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
-    )
+    mounts_path = config_home / "mounts.json"
+    mounts_path.write_text(json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8")
 
     # Publishing a run resolves the checkout that owns the project through the
     # mount registry, and this module-scoped build runs before the per-test home
@@ -133,7 +111,7 @@ def _fleet_build(
         key: os.environ.get(key) for key in ("RECKON_HOME", "RECKON_MOUNTS_PATH")
     }
     os.environ["RECKON_HOME"] = str(config_home)
-    os.environ["RECKON_MOUNTS_PATH"] = str(config_home / "mounts.json")
+    os.environ["RECKON_MOUNTS_PATH"] = str(mounts_path)
     try:
         trees = [_worktree(root, _tree_name(index)) for index in range(TREE_COUNT)]
         records: list[dict[str, Any]] = []
@@ -163,7 +141,23 @@ def _fleet_build(
                 os.environ.pop(key, None)
             else:
                 os.environ[key] = value
-    return tmp_path, root, trees, records
+    yield tmp_path, root, trees, records
+    # Checked when this fixture finalises, which is after every case that used
+    # ``fleet`` has ended and restored what it named. A home left pointed here
+    # would answer a peer module's lookup on the same worker with a project its
+    # mounts file does not carry, and that is a failure of this module however
+    # green its own cases were — so it is asserted rather than assumed, and the
+    # assertion reddens if the restore is ever dropped.
+    leaked = {
+        key: os.environ.get(key)
+        for key in ("RECKON_HOME", "RECKON_MOUNTS_PATH")
+        if os.environ.get(key) is not None
+        and os.environ.get(key) in {str(config_home), str(mounts_path)}
+    }
+    assert not leaked, (
+        "the fixture left the environment naming its own configuration home, "
+        f"which outlives this module: {leaked}"
+    )
 
 
 @pytest.fixture
