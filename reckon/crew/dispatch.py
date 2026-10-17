@@ -728,8 +728,9 @@ def dispatch_pair(
     repo_root = resolve_project_repository(project, repo)
     base = str(dispatch_kwargs.get("base") or "HEAD")
     # Both ids are minted from one clock read each, so the pair is ordered and
-    # neither arm's id is derived from the other's: the shadow names the primary
-    # through its lineage rather than through its id, exactly as §3 settled.
+    # neither arm's id is derived from the other's: a shadow names its primary
+    # through its lineage rather than through its id, so the primary's run id
+    # never reaches the shadow's worktree path or composed prompt.
     primary_run_id = new_run_id(node.id)
     shadow_run_id = new_run_id(node.id)
     # The directories exist before either arm launches, so an arm's own worker
