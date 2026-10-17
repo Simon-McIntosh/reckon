@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-version" content="49">
+<meta name="plan-version" content="50">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.9">
@@ -478,7 +478,7 @@ resume burn, after</a>.</p>
 <p><strong>Done when</strong> all four of these hold:</p>
 <ul>
 <li><code>grep -rn "def _is_review_run" reckon/</code> prints only <code>reckon/crew/recovery_review_delivery.py</code>.</li>
-<li><code>tests/test_plan_review_prefix_is_one_constant.py</code> gains a case for a record whose <code>review</code> role is set only on its node and whose root role is absent. In that case, <code>recovery._is_review_run</code> returns true and <code>_task_identity</code> returns a key whose first element is <code>"review"</code>. A plain implement node still yields a <code>"node"</code> key.</li>
+<li><code>tests/test_plan_review_prefix_is_one_constant.py</code> gains a case for a record whose <code>review</code> role is set only on its node, whose root role is absent, and whose node id carries no review prefix, such as <code>implement-fixture</code>. A minted <code>review-of-</code> or <code>plan-review-of-</code> id would satisfy both predicates before the fix, so the case must not use one. In that case, <code>recovery._is_review_run</code> returns true and <code>_task_identity</code> returns a key whose first element is <code>"review"</code>. A plain implement node still yields a <code>"node"</code> key.</li>
 <li>Pytest over that file, <code>tests/test_a_resumed_head_is_reviewed.py</code>, <code>tests/test_session_resumes_only_its_own_task.py</code> and <code>tests/test_dispatch_reads_the_resolved_session.py</code> adds no failure against the base.</li>
 <li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</li>
 </ul>
