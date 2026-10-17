@@ -93,10 +93,11 @@ SMALL_NODE_RULE = (
     "  A node is small when its diff has at most 50 changed lines (added plus\n"
     "  deleted), or when it changes no product source or tests and has at most\n"
     "  300 changed lines. A small node writes one `landing:` line in its manifest,\n"
-    "  stating what changed and its measure's figure, and, beyond its landing\n"
-    "  fragment, writes no figure and no evidence prose unless its done-when names\n"
-    "  that artifact; naming one does not permit the other. Any single data file\n"
-    "  above 300,000 bytes belongs in the run directory, not the repository.\n"
+    "  stating what changed and its measure's figure. Its landing fragment is\n"
+    "  always permitted at its scope path; beyond that fragment the node writes\n"
+    "  no figure and no evidence prose unless its done-when names that artifact;\n"
+    "  naming one does not permit the other. Any single data file above 300,000\n"
+    "  bytes belongs in the run directory, not the repository.\n"
 )
 
 # The rule withholds a figure unless the node's done-when names one, so the

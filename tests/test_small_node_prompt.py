@@ -43,7 +43,7 @@ WHAT_A_SMALL_NODE_WRITES = (
     "changed and its measure's figure"
 )
 NO_PROSE_OR_FIGURE_UNLESS_NAMED = (
-    "beyond its landing fragment, writes no figure and no evidence prose "
+    "beyond that fragment the node writes no figure and no evidence prose "
     "unless its done-when names that artifact; naming one does not permit "
     "the other"
 )

@@ -11,9 +11,14 @@ prose, so the two clauses cannot both hold unqualified.
 The rule this module asserts is a single one: the landing fragment is the node's
 evidence anchor and is always permitted at its scope path; a figure still needs
 the done-when to name it, and the withheld evidence prose is the prose OUTSIDE
-the fragment. The clauses are asserted by their own wording and by the rule they
-have to satisfy together rather than by a snapshot, so a rewording that keeps
-the rule passes and a rewording that reinstates the ban fails.
+the fragment. The guard asserts the exception itself — every sentence that
+mentions the evidence prose must name the fragment AND permit it — rather than
+merely that a ban mentions the word "fragment", so a reworded ban that names the
+fragment while still forbidding it is rejected. A mutation case pins that
+discrimination: it states exactly such a ban and asserts the guard refuses it.
+
+The prompts are composed through the shared builder helpers the small-node suite
+already owns, so this module does not restate that composition.
 """
 
 from __future__ import annotations
@@ -22,12 +27,8 @@ import re
 
 import pytest
 
-from reckon.crew.node import TaskNode
-from reckon.crew.prompts import (
-    ARTIFACT_NAMED_CLAUSE,
-    ARTIFACT_UNNAMED_CLAUSE,
-    compose_prompt,
-)
+from reckon.crew.prompts import ARTIFACT_NAMED_CLAUSE
+from tests.test_small_node_prompt import _flat, _prompt
 
 # The landing instruction the artifact clause must not contradict: the sentence
 # names the fragment path the node's write scope grants and the worker is told
@@ -37,11 +38,15 @@ FRAGMENT_INSTRUCTION = (
     "docs/evidence/fragments/<plan>/<node-id>.html"
 )
 
+# The exception stated in the clause itself: the withheld prose is the prose
+# outside the fragment, and the fragment is always permitted. Asserted directly
+# so a clause that merely mentions the fragment cannot pass.
+FRAGMENT_EXCEPTION = "outside the landing fragment, which is always permitted"
+
 # A sentence that mentions the evidence prose. Every such sentence must except
-# the landing fragment: the fragment is excluded from the ban, so a sentence
-# stating the ban without the exception is exactly the contradiction this node
-# retires. The period-terminated run keeps ``docs/evidence/fragments/...html``
-# from being read as one, because no sentence there names "evidence prose".
+# the fragment: the fragment is named AND permitted, not merely mentioned. The
+# period-terminated run keeps ``docs/evidence/fragments/...html`` from being
+# read as one, because no sentence there names "evidence prose".
 EVIDENCE_PROSE_SENTENCE = re.compile(r"[^.]*evidence prose[^.]*\.")
 
 # A done-when naming no figure and one naming a figure: the two sides of the
@@ -52,44 +57,54 @@ NAMED_DONE_WHEN = (
     "fails when the figure sentence is removed"
 )
 
-
-def _compose(done_when: str) -> str:
-    node = TaskNode(
-        id="landing-node",
-        goal="compose the implement prompt for a node",
-        plan="plan-a",
-        section="s3",
-        role="implement",
-        done_when=done_when,
-        write_paths=["reckon/crew/prompts.py"],
-        time_budget="20m",
-    )
-    return compose_prompt(
-        node=node,
-        project="proj",
-        worktree="/repo/worktree",
-        working_directory="/repo/worktree",
-        manifest_path="/state/runs/landing-node/manifest.md",
-        time_budget="20m",
-        needs_help_after_failures=2,
-    )
-
-
-def _flat(text: str) -> str:
-    """Collapse the prompt's manual line wrapping so a sentence reads whole
-    regardless of where the composer broke the line."""
-    return " ".join(text.split())
+# A ban that names the fragment but forbids it: the reworded defect the guard
+# must reject, because the fragment word is present and no permission is.
+FRAGMENT_NAMED_THEN_FORBIDDEN = (
+    "  Your done-when names no artifact, so this node writes no figure and no\n"
+    "  evidence prose, including inside the landing fragment.\n"
+)
 
 
 def _evidence_prose_sentences(text: str) -> list[str]:
     return EVIDENCE_PROSE_SENTENCE.findall(_flat(text))
 
 
+def _excepts_the_fragment(sentence: str) -> bool:
+    """A sentence excepts the fragment only when it names it and permits it."""
+    return "fragment" in sentence and "permitted" in sentence
+
+
+def _assert_no_unexcepted_ban(prompt: str) -> None:
+    """Every sentence stating the evidence-prose rule must except the fragment.
+
+    An empty scan would prove nothing, so the rule is confirmed present before
+    it is held to the exception.
+    """
+    sentences = _evidence_prose_sentences(prompt)
+    assert sentences, "the prompt states the evidence-prose rule"
+    for sentence in sentences:
+        assert _excepts_the_fragment(sentence), sentence
+
+
 @pytest.mark.parametrize(
     "done_when", [UNNAMED_DONE_WHEN, NAMED_DONE_WHEN], ids=["unnamed", "named"]
 )
 def test_both_prompts_carry_the_landing_fragment_instruction(done_when: str) -> None:
-    assert _flat(FRAGMENT_INSTRUCTION) in _flat(_compose(done_when))
+    assert _flat(FRAGMENT_INSTRUCTION) in _flat(_prompt(done_when=done_when))
+
+
+@pytest.mark.parametrize(
+    "done_when", [UNNAMED_DONE_WHEN, NAMED_DONE_WHEN], ids=["unnamed", "named"]
+)
+def test_both_prompts_permit_the_landing_fragment_at_its_scope_path(
+    done_when: str,
+) -> None:
+    prompt = _flat(_prompt(done_when=done_when))
+
+    # The scope path the exception permits, and the exception itself, both
+    # stated in the prompt the worker receives.
+    assert _flat(FRAGMENT_INSTRUCTION) in prompt
+    assert FRAGMENT_EXCEPTION in prompt
 
 
 @pytest.mark.parametrize(
@@ -98,30 +113,24 @@ def test_both_prompts_carry_the_landing_fragment_instruction(done_when: str) -> 
 def test_no_prompt_forbids_evidence_prose_without_excepting_the_fragment(
     done_when: str,
 ) -> None:
-    sentences = _evidence_prose_sentences(_compose(done_when))
-
-    # An empty scan would prove nothing: confirm the rule is stated, then hold
-    # every sentence that states it to the exception.
-    assert sentences, "the prompt states the evidence-prose rule"
-    for sentence in sentences:
-        assert "fragment" in sentence, sentence
+    _assert_no_unexcepted_ban(_prompt(done_when=done_when))
 
 
 def test_the_named_artifact_clause_excepts_the_fragment_too() -> None:
     """The named clause withholds the prose as well as other figures, so it
     carries the same fragment exception the unnamed clause does."""
-    sentences = _evidence_prose_sentences(ARTIFACT_NAMED_CLAUSE)
+    _assert_no_unexcepted_ban(ARTIFACT_NAMED_CLAUSE)
 
-    assert sentences, "the named clause states the evidence-prose rule"
-    for sentence in sentences:
-        assert "fragment" in sentence, sentence
+
+def test_the_guard_rejects_a_ban_that_names_the_fragment_but_forbids_it() -> None:
+    """The mutation names the fragment while still forbidding the prose, so the
+    fragment word alone must not satisfy the guard: the exception has to be
+    stated. The guard's own assertion is made to fail on it."""
+    with pytest.raises(AssertionError):
+        _assert_no_unexcepted_ban(FRAGMENT_NAMED_THEN_FORBIDDEN)
 
 
 def test_the_figure_named_prompt_still_grants_its_figure() -> None:
-    named = _flat(_compose(NAMED_DONE_WHEN))
-    unnamed = _flat(_compose(UNNAMED_DONE_WHEN))
+    named = _flat(_prompt(done_when=NAMED_DONE_WHEN))
 
     assert _flat(ARTIFACT_NAMED_CLAUSE) in named
-    assert _flat(ARTIFACT_UNNAMED_CLAUSE) not in named
-    assert _flat(ARTIFACT_UNNAMED_CLAUSE) in unnamed
-    assert _flat(ARTIFACT_NAMED_CLAUSE) not in unnamed
