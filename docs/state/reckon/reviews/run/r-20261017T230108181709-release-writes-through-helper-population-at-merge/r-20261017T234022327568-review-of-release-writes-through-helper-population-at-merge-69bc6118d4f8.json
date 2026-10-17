@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "763444a27fb5c87ab63032c8d5e3e12fe972f70c",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T23:50:51.199Z",
+  "dispatched_at": "2026-10-17T23:41:00Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T230108181709-release-writes-through-helper-population-at-merge/manifest.md",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's orientation_write_paths names the reports directory as the node's write path, but that directory is empty \u2014 every deliverable sits in the run directory \u2014 so a reader resolving the declared path finds nothing and must locate the run directory instead."
+    }
+  ],
+  "head_log_revision": "a02c758f3df5eaff8162ce730dbb660de55fdc4f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no diff \u2014 git -C /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/release-writes-through-helper-population-at-merge rev-parse HEAD is 69bc6118d4f82afa00e84d214fdbabd3a6e75080 and its status is clean, so the node committed nothing and its deliverable is the measurement, the logs and the manifest.",
+    "done_when": "the done_when requires two logs under the run directory from one exclusive all_debug job, each naming revision, host, a reckon.__file__ under its own checkout, the literal command, pytest's summary line and a terminal EXIT=, with added ids derived by reckon.crew.review.added_failures_from_gate_logs and every candidate-only id alone-run five times; arm-base.log carries rev=763444a2 module_file .../base/reckon/__init__.py \"2 failed, 2628 passed, 4 skipped, 4 warnings in 504.16s (0:08:24)\" EXIT=1, arm-candidate.log carries rev=a02c758f module_file .../cand/reckon/__init__.py \"2 failed, 2630 passed, 4 skipped, 4 warnings in 506.27s (0:08:26)\" EXIT=1, and the added list is empty so the alone-run clause is vacuous and alone-runs.txt records \"added ids: 0\", so every clause is met.",
+    "goal": "the node's goal is to measure the release-path and ledger importer population of the run-file helper routing at base and at its merge candidate on an exclusive node; the landed artefacts are arm-base.log and arm-candidate.log from job 1288396 on 98dci4-clu-3141, plus population-job.sh, derive_added_failures.py and manifest.md, all under the run directory.",
+    "manifest": "read; status complete with commits none, changed_paths [], retry_failures naming job-1288393-git-init with a scaffolding attribution, baseline_suite and after_suite naming 763444a2 and a02c758f with their literal commands, log paths and the \"2 failed, 2628 passed\" / \"2 failed, 2630 passed\" summary lines, and added failing ids none.",
+    "write_paths": "the node's single declared write path is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-ledger-is-one-file-per-run/release-writes-through-helper-population-at-merge, which is empty; its brief directed the script, logs and manifest into the run directory, where every deliverable landed, and the reviewed worktree is clean at 69bc6118 with no node commit, so no path under reckon/ or tests/ changed."
+  },
+  "justifications": {
+    "durability": "no repository test guards the measurement and the empty added list leaves no candidate/base red-versus-green pair, but the instrument demonstrably reports failures \u2014 both arms exited 1 and arm-extraction.txt names the same 2 ids in each.",
+    "evidence": "arm-candidate.log records \"2 failed, 2630 passed\" and EXIT=1 at a02c758f:110, and an independent call to reckon.crew.review.added_failures_from_gate_logs over the two logs returned (0, []) after the same function read the 2 pre-existing ids from each arm, so the instrument is shown seeing the failures the empty difference rests on.",
+    "fit": "the run artefacts follow the sibling population node's shape and carry no plan, sprint, version or phase label (population-job.sh:1, derive_added_failures.py:1).",
+    "goal_fidelity": "the manifest tests line and the two arm logs under the run directory answer the brief's one question \u2014 no failing id is added over the 229-file population at candidate a02c758f versus base 763444a2 (arm-candidate.log:110).",
+    "reuse": "the node derived the added ids by calling reckon/crew/review.py:2114 added_failures_from_gate_logs, the owner of the base-versus-head failure comparison, rather than diffing FAILED lines by hand, and a search of reckon/crew for an existing two-arm population sweep found none.",
+    "scope_discipline": "changed_paths is empty and git -C /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/release-writes-through-helper-population-at-merge status is clean at 69bc6118 (manifest.md:12), so no path under reckon/ or tests/ changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure the release-path and ledger importer population of the run-file helper routing at base and at its merge candidate on an exclusive node; the landed artefacts are arm-base.log and arm-candidate.log from job 1288396 on 98dci4-clu-3141, plus population-job.sh, derive_added_failures.py and manifest.md, all under the run directory.\nVERDICT done_when: the done_when requires two logs under the run directory from one exclusive all_debug job, each naming revision, host, a reckon.__file__ under its own checkout, the literal command, pytest's summary line and a terminal EXIT=, with added ids derived by reckon.crew.review.added_failures_from_gate_logs and every candidate-only id alone-run five times; arm-base.log carries rev=763444a2 module_file .../base/reckon/__init__.py \"2 failed, 2628 passed, 4 skipped, 4 warnings in 504.16s (0:08:24)\" EXIT=1, arm-candidate.log carries rev=a02c758f module_file .../cand/reckon/__init__.py \"2 failed, 2630 passed, 4 skipped, 4 warnings in 506.27s (0:08:26)\" EXIT=1, and the added list is empty so the alone-run clause is vacuous and alone-runs.txt records \"added ids: 0\", so every clause is met.\nVERDICT write_paths: the node's single declared write path is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-ledger-is-one-file-per-run/release-writes-through-helper-population-at-merge, which is empty; its brief directed the script, logs and manifest into the run directory, where every deliverable landed, and the reviewed worktree is clean at 69bc6118 with no node commit, so no path under reckon/ or tests/ changed.\nVERDICT manifest: read; status complete with commits none, changed_paths [], retry_failures naming job-1288393-git-init with a scaffolding attribution, baseline_suite and after_suite naming 763444a2 and a02c758f with their literal commands, log paths and the \"2 failed, 2628 passed\" / \"2 failed, 2630 passed\" summary lines, and added failing ids none.\nVERDICT diff: there is no diff \u2014 git -C /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/release-writes-through-helper-population-at-merge rev-parse HEAD is 69bc6118d4f82afa00e84d214fdbabd3a6e75080 and its status is clean, so the node committed nothing and its deliverable is the measurement, the logs and the manifest.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the manifest tests line and the two arm logs under the run directory answer the brief's one question \u2014 no failing id is added over the 229-file population at candidate a02c758f versus base 763444a2 (arm-candidate.log:110).\nSCORE evidence: 20\nJUSTIFICATION evidence: arm-candidate.log records \"2 failed, 2630 passed\" and EXIT=1 at a02c758f:110, and an independent call to reckon.crew.review.added_failures_from_gate_logs over the two logs returned (0, []) after the same function read the 2 pre-existing ids from each arm, so the instrument is shown seeing the failures the empty difference rests on.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: changed_paths is empty and git -C /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/release-writes-through-helper-population-at-merge status is clean at 69bc6118 (manifest.md:12), so no path under reckon/ or tests/ changed.\nSCORE durability: 15\nJUSTIFICATION durability: no repository test guards the measurement and the empty added list leaves no candidate/base red-versus-green pair, but the instrument demonstrably reports failures \u2014 both arms exited 1 and arm-extraction.txt names the same 2 ids in each.\nSCORE fit: 19\nJUSTIFICATION fit: the run artefacts follow the sibling population node's shape and carry no plan, sprint, version or phase label (population-job.sh:1, derive_added_failures.py:1).\nSCORE reuse: 19\nJUSTIFICATION reuse: the node derived the added ids by calling reckon/crew/review.py:2114 added_failures_from_gate_logs, the owner of the base-versus-head failure comparison, rather than diffing FAILED lines by hand, and a search of reckon/crew for an existing two-arm population sweep found none.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T230108181709-release-writes-through-helper-population-at-merge/manifest.md:3 follow-on: the manifest's orientation_write_paths names the reports directory as the node's write path, but that directory is empty \u2014 every deliverable sits in the run directory \u2014 so a reader resolving the declared path finds nothing and must locate the run directory instead.\n",
+  "review_run_id": "r-20261017T234022327568-review-of-release-writes-through-helper-population-at-merge-69bc6118d4f8",
+  "reviewed_base_sha": "69bc6118d4f82afa00e84d214fdbabd3a6e75080",
+  "reviewed_head_sha": "69bc6118d4f82afa00e84d214fdbabd3a6e75080",
+  "reviewed_run_id": "r-20261017T230108181709-release-writes-through-helper-population-at-merge",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261017T234022327568-review-of-release-writes-through-helper-population-at-merge-69bc6118d4f8"
+  },
+  "scores": {
+    "durability": 15,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T23:50:06.468980+00:00",
+  "total": 112
+}
