@@ -26,7 +26,7 @@
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -272,10 +272,16 @@
     <pre class="r-fu-prompt">/reckon-build a-shadow-cannot-see-its-primary §2</pre>
     <p class="r-fu-outcome">superseded by f-ascp-003: the design review showed reckon already scans shadow streams, so §2 extends that scan rather than adding a module</p>
     </article>
-<article class="r-fu" data-id="f-ascp-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build a-shadow-cannot-see-its-primary §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ascp-003" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build a-shadow-cannot-see-its-primary §2" data-resolved-at="2026-10-17T00:02:55+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build §2 and §3 together; §4 after both; decide §5</h4>
     <div class="r-fu-body"><p>§2 widens the existing contamination scan in <code>ledger.py</code> and <code>promotion_scope.py</code> and joins it to the control verdict; §3 renames the shadow worktree in <code>routing.py</code>. They write disjoint files and run together. §4 masks the paths §2's extended <code>_primary_read_targets</code> resolves, from the lineage §3 settles, and shares <code>dispatch.py</code> with §3, so it follows both. nova is holding all shadow arms until §2 and §4 land; tell nova-2c when they do. The lead decides <code>shadow-isolation-scope</code> before §5 is built.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-shadow-cannot-see-its-primary §2</pre>
+    <p class="r-fu-outcome">§2 (merge 18521070b), §3 (merge 8d04b07e1) and §4 (merge 24a6968fb) landed and are ticked done; nova-2c was told on 2026-10-17. The lead locked shadow-isolation-scope as paired-dispatch, and §5 and §6 were written as its build. §5 is dispatched as r-20261017T000127932636.</p>
+    </article>
+<article class="r-fu" data-id="f-ascp-004" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-17 00:03" data-recommends-skill="/reckon-build a-shadow-cannot-see-its-primary §5" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land §5, then build §6</h4>
+    <div class="r-fu-body"><p>§5 (paired dispatch, each arm fenced from the other) is in flight. §6 holds a paired arm's promotion until its partner is terminal, and its test also covers the <code>_shadow_control_marks</code> call that §2 landed untested; it follows §5 because it reads the pairing §5 records. Tell nova-2c when §5 and §6 land.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-shadow-cannot-see-its-primary §5</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -301,7 +307,7 @@
     <div class="r-comment-body"><p>§4 landed: a shadow's fence hides its primary's run directory, review records and worktree on launch, resume and lane change, with the paths resolved by the same function the contamination scan reads (commits <code>a0fbb86d9</code>, <code>856de5076</code>). The bwrap stub reads the primary's records as empty, the importers show no added failure, and the negative control fails. <a href="/reckon/evidence/archive/a-shadow-cannot-see-its-primary-landed.html#s4">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261016T230836611924-a-fence-hides-the-primary" data-who="reckon-build" data-when="2026-10-16T23:37:42.801Z">
-    <div class="r-comment-body"><p>A shadow&#x27;s launch, resume and lane change now mask the primary&#x27;s run directory, its review record files and its worktree — an empty tmpfs over each directory and /dev/null over each review record, resolved in the crew layer from the primary&#x27;s committed row through promotion_scope._primary_read_surfaces and passed to launch_plan as a plain path sequence (head gate 86 passed, zero added failures against base 9c93c6e55).</p></div>
+    <div class="r-comment-body"><p>A shadow's launch, resume and lane change now mask the primary's run directory, its review record files and its worktree — an empty tmpfs over each directory and /dev/null over each review record, resolved in the crew layer from the primary's committed row through promotion_scope._primary_read_surfaces and passed to launch_plan as a plain path sequence (head gate 86 passed, zero added failures against base 9c93c6e55).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-16T20:36:00Z">
     <div class="r-comment-body"><p>§3 landed: a shadow's worktree session is <code>shadow-&lt;candidate&gt;-&lt;component&gt;</code>, so neither its path nor its prompt names the primary, and every pre-change naming still resolves (commit <code>d079e008</code>). 751 passed against base with no added failure; the negative control fails two ids; review scores 17–20. <a href="/reckon/evidence/archive/a-shadow-cannot-see-its-primary-landed.html#s3">evidence</a></p></div>
