@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T15:16:25.400Z",
+  "dispatched_at": "2026-10-17T15:03:00Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-velocity-window-may-open-before-the-ledger.html:134",
+      "id": "done_when-1",
+      "reason": "it adds one clause to \u00a72's done-when (point the cache roots at the temporary directory, as \u00a71 already specifies) and without it the node delivers a test that writes outside its own tree, which the repository's test-isolation rule forbids.",
+      "text": "\u00a72's test builds a temporary repository and records the git runner's argv, but unlike \u00a71's test it never points `RECKON_VELOCITY_CACHE` into that directory, while the newly added third case makes the ledger cache load-bearing: the resumed read is answered from `_ledger_cache_path`, which resolves through `velocity_cache_root()` (`reckon/velocity.py:627`) to `RECKON_VELOCITY_CACHE` or the operator's real cache home, so a worker implementing the case as written leaves a cache file outside the repository under test",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a4fdb1aaa5ca90fe3f5dc6b829f90603259006c2a179114ab79ba50ec6f0364d",
+  "plan_slug": "a-velocity-window-may-open-before-the-ledger",
+  "plan_version": 15,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-17T15:22:05.135697+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T15:22:05.135697+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-velocity-window-may-open-before-the-ledger.v15.json",
+  "review_run_id": "r-20261017T150221207843-plan-review-of-a-velocity-window-may-open-before-the-ledger",
+  "reviewed_blob_sha": "f166810449a4e9850210b28f5db3d48a28a33f4d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/velocity.py:1217` is the `git log \u2026 -G` search, `:149` is `run_git` with `timeout=180`, `:2149` is `promotion_clock_sources`, `e080ed967` is the 2026-09-25 commit that first adds a per-run record file, and the blocked target `the-ledger-is-one-file-per-run#s4` exists.",
+    "done_when": "a finding \u2014 \u00a72's test-case list mounts no cache-root isolation, so the third case's resumed read can be answered from the operator's real cache directory.",
+    "evidence_paths": "pass \u2014 the defect evidence is committed to `~/.cache/reckon-velocity-window-check/` (three readable logs), not a session scratchpad or node-local `/tmp`, and \u00a72's own slice size AND measured worst slice time are required in the manifest.",
+    "naming": "pass \u2014 the new clock-source value `first_primary_record_file_addition_upper_bound` and the new test filename `tests/test_velocity_places_a_run_by_its_record_file.py` name the mechanism; no plan label, stage name, ticket number or version tag reaches code.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (the traceback names the unsliced `-p -G` patch search), the slice-and-record-file mechanism can produce the done-when, and `recover_ledger_clocks` is reached by the velocity command at `reckon/velocity.py:2537` and `:2958`.",
+    "single_goal": "pass \u2014 \u00a72 carries one goal (\"a long window's ledger search stays inside its git bound\"); sliced search and record-file placement are two mechanisms serving that one measure, not two deliverables.",
+    "wiring": "pass \u2014 the plan declares `plan-blocks` to `the-ledger-is-one-file-per-run#s4`, which resolves (that file carries `id=\"s4\"`), \u00a72 is the only implementable section, and followup `f-avwmobl-002` recommends exactly it."
+  },
+  "section_digests": {
+    "_document": "7438dc3857ea67728ccc6b0036805dda4784857bac216f4a9af3f3706a75a653",
+    "s1": "7fb9f51fa9b87a449b336034d21038a82939900b9d4f0f7601d78920d33f60b5",
+    "s2": "d1e7647e764a22b9374b615b37f16bacc9f1a477e3404ca37a75cc3df95e6d0d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T15:22:02.638780+00:00"
+}
