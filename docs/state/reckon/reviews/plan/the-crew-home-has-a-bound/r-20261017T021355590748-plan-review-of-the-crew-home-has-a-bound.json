@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T02:20:30.649Z",
+  "dispatched_at": "2026-10-17T02:15:16Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:163",
+      "id": "done_when-1",
+      "reason": "as written the gate reports green on a leak the plan measured, so the section would close with the defect live and the two cited temp dirs unrepaired.",
+      "text": "the done-when runs the guard only over test files importing the five named modules, but `tests/test_spa_crew_stylesheet.py \u2014 the file behind the `entry-points0` index \u00a79's Why names \u2014 imports only `reckon.cli` and `reckon.serve`, so the gate passes while that leak still reproduces; the module-import predicate cannot cover a leak reached through the CLI entry point",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:163",
+      "id": "reasoning-1",
+      "reason": "an unattributed whole-cache diff makes the guard fail for reasons outside the change under test, so the guard must attribute the file it reports (an index whose recorded ledger path sits under this session's basetemp, say) or the gate is unpassable on this shared host.",
+      "text": "the guard diffs the real cache's listing across a whole session, but `~/.cache/reckon` is shared and live: \u00a75's own record has readers minting indexes there within an hour of a reclaim and a peer `reckon crew gc --apply` deleting them, so a concurrent reader's new `ledger-*.sqlite` or `picker-*.json` fails an unrelated test session",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "be68d33be803f75188f9fc6a7925f721b34aebab76e73e6a7a684fd7eadb9000",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 52,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T021355590748-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "5b46171c79cca75def91acbc2c9fc5f2a351b751",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_run_index_path` resolves at `reckon/ledger.py:996`, `_ledgered_records` at `reckon/crew/routing.py:848`, `_store.cache_root` at `reckon/_store.py:158`, and `tests/conftest.py` exists; \u00a79 cites no line numbers to go stale.",
+    "done_when": "a finding \u2014 the gate's selection (test files importing `reckon/ledger.py`, `reckon/_store.py`, `reckon/crew/routing.py`, `reckon/crew/gc.py` or `reckon/crew/obligations.py`) excludes `tests/test_spa_crew_stylesheet.py`, the file that produced one of the two leaks \u00a79's own Why cites (`.../entry-points0`).",
+    "evidence_paths": "pass \u2014 \u00a79 names no gate-log path of its own, but the dispatch contract writes the guard's control log under the run directory; only a self-made scratch log would be a defect, and none is named.",
+    "naming": "pass \u2014 \u00a79 introduces no symbol, file or comment carrying a plan label, stage name or ticket number; it names only existing code (`_store.cache_root`, `_run_index_path`, `_ledgered_records`).",
+    "reasoning": "a finding \u2014 the guard's test, \"fails the session if the cache gained a file by its end\", is compared against the live shared `~/.cache/reckon`, which peer sessions write to continuously, so the mechanism cannot distinguish the leak it hunts from a peer's legitimate write.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable (no test builds a ledger index into the real cache) and one guard.",
+    "wiring": "pass \u2014 \u00a79's write paths (`tests/conftest.py`, the leaking test files, the guard test) do not collide with \u00a78 (`reckon/ledger.py` plus a new test file) or \u00a710 (`reckon/crew/gc.py`, `reckon/crew/routing.py`), and the two open followups f-tchhab-008/\u00a79 resolve to the open f-tchhab-009 whose invocation names `\u00a79`."
+  },
+  "section_digests": {
+    "_document": "4dc163aaf3971781a60f3a42d1ae1a5f5e8120d9456c429e5adc0ea60acb2b52",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s10": "56c18da5f95c1af6bc07050b4374f565f11fa8750f575894cd4e1cc2b5ea773a",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "ea437bee063bb05e8f8ddb6f7a30f7f066d66dff1770c1488e31b86a6f5c7ba8",
+    "s5": "75a8a336e2ee62426e5a8c3ed3310e0cf614b82a8cf7ae6a5985fcb99f2b1648",
+    "s6": "3f82b3311550663b1d18b1428203c2b44805aff91f1c998049de11dd82bfe201",
+    "s7": "d966e9dc54000fcf7d43d9d39567b2a791c2670b0224b881649472a126a8f106",
+    "s8": "07d9242815cd2c19cf76c9484aa28c908834190af477f204091de9d695b3e8a5",
+    "s9": "e8d28a100f2e82a5e300aa500634839786a03d3d4009251d295594fd98c432c9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T02:26:12.869040+00:00"
+}
