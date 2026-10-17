@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "taken from the reviewed run's own arms because its baseline_suite/after_suite fields are empty: after arm resumed-head-committed.log (6 passed, EXIT=0, revision c03a18d74) has no failing id, base arm resumed-base-control.log (2 failed, 1 passed, EXIT=1, revision b9264dab) fails test_one_cold_roadmap_lists_each_docs_directory_once and test_one_cold_roadmap_reads_each_authored_file_once; the after arm adds no failing id over the base arm.",
+  "base_log_revision": "b9264dabb0a853bc39bc58c262ee993876da8352",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/serve.py:2070 _walk_discovery_signature (called at :544 and :2042) reading metadata_index._covered_files_for_project",
+    "reckon/resources.py:589 _scan_resources via iter_resources at :542/:555",
+    "reckon/resources.py:832 _directory_identity_index through _identity_listing at :791 reading metadata_index._reuse_covered",
+    "reckon/roadmap.py:213/:441/:480/:1249 the four private plan readers reached from mcp._roadmap",
+    "reckon/metadata_index.py:594 _covered_files_for_project delegating to _covered_files (and _content_digest at :165/:383/:859/:929)"
+  ],
+  "completed_at": "2026-10-17T18:41:03.175Z",
+  "dispatched_at": "2026-10-17T18:30:57Z",
+  "findings": [
+    {
+      "file": "tests/test_a_cold_read_walks_the_docs_tree_once.py",
+      "line": "37",
+      "severity": "follow-on",
+      "text": "follow-on: the unshared reference arm replaces module-level metadata_index._covered_files, but the landed code reaches it only through the _covered_files_for_project adapter (reckon/metadata_index.py:594), so a later refactor that stopped that adapter delegating to _covered_files would make the unshared arm silently shared while the roadmap-equality assertion at line 131 still passes, weakening the one control that proves the shared listing does not change the answer."
+    }
+  ],
+  "head_log_revision": "c03a18d74b969e628cdf7e6ccf0f9e6a128da294",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read the six commits against base b9264dab; f81e2850 routes the resource scan and identity listing onto the covered set, 0232d1c3/8c1be9c5 add the counting test and split its two gates, e9f3bc70 routes the four roadmap plan readers through _read_plan_text, ea813ca8 memoises the content digest and seeds the plan_text memo from the bytes it reads, and c03a18d74 adds a between-reads freshness test and forces the walk in the two external scan controls; no public signature changed.",
+    "done_when": "the done_when names tests/test_a_cold_read_walks_the_docs_tree_once.py counting os.scandir per directory and reads per file during one mcp._roadmap over a built tree of 24 plans, 4 research docs and 3 sprints, at most one of each and equal to the unshared arm, with the base tree failing the scandir count; resumed-head-committed.log records 6 passed at EXIT=0 and resumed-base-control.log records 2 failed at EXIT=1 (docs/plans listed 10 times, each plan file read 7 times).",
+    "goal_fidelity": "the goal is one cold roadmap listing each docs directory once and reading each file at most once, shared across discovery, the resource scan, the covered-file check and sprint liveness; reckon/metadata_index.py:594 _covered_files_for_project feeds reckon/resources.py:589 _scan_resources and reckon/serve.py:2070 _walk_discovery_signature one persisted covered set, and reckon/roadmap.py:213/441/480/1249 route the four private plan readers through the existing memoised _read_plan_text at reckon/_plan_html.py:2208.",
+    "manifest": "read; status complete, commits f81e2850/0232d1c3/8c1be9c5/e9f3bc70/ea813ca8/c03a18d74, head/negative-control/importer-gate/ruff-delta logs cited by path with their results, measurement_module /tmp/cold-read-base-a78e67w7/reckon/mcp.py, and baseline_suite and after_suite are empty.",
+    "write_paths": "the dispatch fence declares reckon/serve.py, reckon/resources.py, reckon/metadata_index.py, reckon/sprint_liveness.py and the cold-read test file; resume-1-advice.txt extended it to reckon/roadmap.py and resume-3-advice.txt extended it to tests/test_one_plan_read_is_not_a_corpus_scan.py and tests/test_summary_view_reads_the_index.py; the diff changes exactly those seven paths and nothing else."
+  },
+  "justifications": {
+    "durability": "the count bounds at tests/test_a_cold_read_walks_the_docs_tree_once.py:208 and :222 redden on the pre-change code (resumed-base-control.log shows docs/plans listed 10 times and each plan read 7 times), the fixture's shape marker at line 168 forces the cold read to walk so the counters cannot pass vacuously, and the freshness case at :228 reddens if the shared listing outlives one read.",
+    "evidence": "resumed-head-committed.log records 6 passed at EXIT=0 at c03a18d74 and resumed-base-control.log records the base arm red at EXIT=1 with docs/plans listed 10 times and each plan read 7 times, matching the done_when; the instrument counts read_text and read_bytes together and the observed-everything assertions at tests/test_a_cold_read_walks_the_docs_tree_once.py:200 and :215 make the at-most-one bound non-vacuous.",
+    "fit": "reckon/metadata_index.py:76 uses a module-level ContextVar to preserve the single-argument _covered_files entry, matching the scope ContextVars already used at reckon/resources.py:459-484, and the _read_plan_text import at reckon/roadmap.py:24 follows the existing cross-module use of that private reader at reckon/doccheck.py:1239.",
+    "goal_fidelity": "reckon/resources.py:589 and reckon/serve.py:2070 both read one covered set from reckon/metadata_index.py:594, and reckon/roadmap.py:213 shares reckon/_plan_html.py:2208, so the four named consumers plus the roadmap readers use a single walk and a single read.",
+    "reuse": "the roadmap readers extend the existing owner _read_plan_text at reckon/_plan_html.py:2208 and the resource scan and discovery signature extend metadata_index._covered_files/_reuse_covered rather than restating a walk or a text read.",
+    "scope_discipline": "every changed path is inside the declared fence once reckon/roadmap.py (resume-1-advice.txt) and the two external test files (resume-3-advice.txt) are counted as declared, and no path outside the fence changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is one cold roadmap listing each docs directory once and reading each file at most once, shared across discovery, the resource scan, the covered-file check and sprint liveness; reckon/metadata_index.py:594 _covered_files_for_project feeds reckon/resources.py:589 and reckon/serve.py:2070 one persisted covered set, and reckon/roadmap.py:213/441/480/1249 route the four private plan readers through the existing memoised _read_plan_text at reckon/_plan_html.py:2208.\nVERDICT done_when: the done_when names tests/test_a_cold_read_walks_the_docs_tree_once.py counting os.scandir per directory and reads per file during one mcp._roadmap over a 24-plan/4-research/3-sprint tree, at most one of each and equal to the unshared arm, with the base tree failing the scandir count; resumed-head-committed.log records 6 passed at EXIT=0 and resumed-base-control.log records 2 failed at EXIT=1 (docs/plans listed 10 times, each plan file read 7 times).\nVERDICT write_paths: the dispatch fence declares reckon/serve.py, reckon/resources.py, reckon/metadata_index.py, reckon/sprint_liveness.py and the cold-read test file, and resume-1-advice.txt and resume-3-advice.txt extended it to reckon/roadmap.py and the two external test files; the diff changes exactly those seven paths and nothing else.\nVERDICT manifest: read; status complete, commits f81e2850/0232d1c3/8c1be9c5/e9f3bc70/ea813ca8/c03a18d74, head/negative-control/importer-gate/ruff-delta logs cited by path with their results, measurement_module /tmp/cold-read-base-a78e67w7/reckon/mcp.py, and baseline_suite and after_suite are empty.\nVERDICT diff: read the six commits against base b9264dab; f81e2850 routes the resource scan and identity listing onto the covered set, 0232d1c3/8c1be9c5 add the counting test and split its two gates, e9f3bc70 routes the four roadmap plan readers through _read_plan_text, ea813ca8 memoises the content digest and seeds the plan_text memo from the bytes it reads, and c03a18d74 adds a between-reads freshness test and forces the walk in the two external scan controls.\nCALL_SITES: reckon/serve.py:2070 _walk_discovery_signature (called at :544 and :2042), reckon/resources.py:589 _scan_resources via iter_resources at :542/:555, reckon/resources.py:832 _directory_identity_index through _identity_listing at :791 reading metadata_index._reuse_covered, reckon/metadata_index.py:594 _covered_files_for_project delegating to _covered_files (and _content_digest at :165/:383/:859/:929), reckon/roadmap.py:213/:441/:480/:1249 the four private plan readers reached from mcp._roadmap\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/resources.py:589 and reckon/serve.py:2070 both read one covered set from reckon/metadata_index.py:594 and reckon/roadmap.py:213 shares reckon/_plan_html.py:2208, so all four named consumers plus the roadmap readers use a single walk and a single read.\nSCORE evidence: 19\nJUSTIFICATION evidence: resumed-head-committed.log:1-5 records 6 passed at EXIT=0 at c03a18d74 and resumed-base-control.log records the base arm red at EXIT=1 (docs/plans listed 10 times, each plan read 7 times), and the observed-everything assertions at tests/test_a_cold_read_walks_the_docs_tree_once.py:200 and :215 make the at-most-one bound non-vacuous.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path is inside the declared fence once reckon/roadmap.py and the two external test files are counted as resume-1-advice.txt and resume-3-advice.txt extended it, and no path outside the fence changed.\nSCORE durability: 19\nJUSTIFICATION durability: the count bounds at tests/test_a_cold_read_walks_the_docs_tree_once.py:208 and :222 redden on the pre-change code (resumed-base-control.log shows docs/plans listed 10 times and each plan read 7 times) and the freshness case at :228 reddens if the shared listing outlives one read.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/metadata_index.py:76 uses a module-level ContextVar to preserve the single-argument _covered_files entry, matching the scope ContextVars already used at reckon/resources.py:459-484, and the _read_plan_text import at reckon/roadmap.py:24 follows the existing cross-module use of that private reader at reckon/doccheck.py:1239.\nSCORE reuse: 20\nJUSTIFICATION reuse: the roadmap readers extend the existing owner _read_plan_text at reckon/_plan_html.py:2208 and the resource scan and discovery signature extend metadata_index._covered_files/_reuse_covered rather than restating a walk or a text read.\nFINDING tests/test_a_cold_read_walks_the_docs_tree_once.py:37 follow-on: the unshared reference arm replaces module-level metadata_index._covered_files, but the landed code reaches it only through the _covered_files_for_project adapter (reckon/metadata_index.py:594), so a later refactor that stopped that adapter delegating to _covered_files would make the unshared arm silently shared while the roadmap-equality assertion at line 131 still passes.",
+  "review_run_id": "r-20261017T183008621991-review-of-a-cold-read-walks-the-docs-tree-once-c03a18d74b96",
+  "reviewed_base_sha": "b9264dabb0a853bc39bc58c262ee993876da8352",
+  "reviewed_head_sha": "c03a18d74b969e628cdf7e6ccf0f9e6a128da294",
+  "reviewed_run_id": "r-20261017T153357520669-a-cold-read-walks-the-docs-tree-once",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T18:38:00+00:00",
+  "total": 115
+}
