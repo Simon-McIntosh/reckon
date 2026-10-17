@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="The shared-reader test survives a module reload">
+  <meta name="plan-summary" content="The consumers-share-the-one-reader test compares each consumer's reader by module and qualified name instead of object identity, so a reload of the defining module earlier on the same worker no longer fails it while a consumer holding a private copy still does.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s18">
+  <meta name="plan-recorded-at" content="2026-10-17">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="tests,reload,shared-reader">
+  <title>The shared-reader test survives a module reload — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-shared-reader-test-survives-a-reload" data-reckon="landed" data-when="2026-10-17">
+  <h2 id="the-shared-reader-test-survives-a-reload-landing">The shared-reader test survives a module reload</h2>
+  <p id="the-shared-reader-test-survives-a-reload-statement">In <code>tests/test_one_sprint_item_slug.py</code>, <code>test_consumers_share_the_one_reader</code> now compares each consumer's reader by <code>__module__</code> and <code>__qualname__</code> rather than object identity, so a module reload earlier on the same worker — which replaces the function object — no longer fails it. The triggering test followed by the file in one process with <code>-p no:randomly</code> and no xdist passes (12 passed, <code>EXIT=0</code>); the same pair at the base revision fails <code>test_consumers_share_the_one_reader</code> (<code>EXIT=1</code>); a mutation giving <code>reckon.doccheck</code> a local copy of the reader still fails the test (<code>EXIT=1</code>); ruff check and format add no findings.</p>
+</article>
+</body>
+</html>

@@ -44,6 +44,21 @@ def test_non_mapping_and_missing_slug_are_empty():
 
 
 def test_consumers_share_the_one_reader():
-    assert doccheck.sprint_item_slug is sprint_item_slug
-    assert roadmap.sprint_item_slug is sprint_item_slug
-    assert mcp_discovery._sprint_item_slug is sprint_item_slug
+    """Every consumer holds the one reader, identified by definition, not object.
+
+    Identity is not the test: a test earlier on the same worker may have
+    reloaded the defining module, which replaces the function object while
+    every consumer still holds the shared reader rather than a private copy.
+    Reloading the defining module is itself evidence of sharing, so the test
+    compares where the function is defined — a local copy would name its own
+    module rather than ``reckon._store``.
+    """
+
+    def defined_as(fn):
+        return (fn.__module__, fn.__qualname__)
+
+    reader = defined_as(sprint_item_slug)
+    assert reader == ("reckon._store", "sprint_item_slug")
+    assert defined_as(doccheck.sprint_item_slug) == reader
+    assert defined_as(roadmap.sprint_item_slug) == reader
+    assert defined_as(mcp_discovery._sprint_item_slug) == reader
