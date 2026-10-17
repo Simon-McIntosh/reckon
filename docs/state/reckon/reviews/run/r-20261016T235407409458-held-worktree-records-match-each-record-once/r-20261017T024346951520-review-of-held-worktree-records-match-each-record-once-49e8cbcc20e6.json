@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms recorded in its manifest: the after arms logs/b-shared-n10-run1.log, logs/a-run-id-set.log and logs/c-helper-importers-run-id-set.log (14, 5 and 48 passed, EXIT=0) and the baseline arm logs/c-base-shared-n10.log (1 failed, EXIT=1); the after-minus-baseline set difference is empty, so this commit adds no failing test.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T02:56:25.277Z",
+  "dispatched_at": "2026-10-17T02:44:35Z",
+  "findings": [
+    {
+      "file": "tests/helpers/git.py",
+      "line": "23",
+      "severity": "follow-on",
+      "text": "follow-on: the scrub makes the worker git shim transparent for every git call of the 121 test modules that import this helper, so a mutating verb any of them aims at a repository other than its own throwaway would no longer be refused; the docstring's justification that every test repository is a throwaway is asserted rather than enforced."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read 49e8cbcc against ccaa592e commit by commit; two files change \u2014 tests/helpers/git.py:23 passes subprocess.run an environment with RUN_ID_ENV removed, and the test file deletes its local _git, imports the shared helper at line 29, and asserts at fixture finalisation (line 157) that the two home keys are not left naming its own paths.",
+    "done_when": "the done-when (prompt.txt:94) names tests/test_held_worktree_records_match_each_record_once.py with 20 trees and 500 records, the records-plus-trees call bound and the base arm failing on the count; the manifest's logs/a-run-id-set.log records \"5 passed in 55.50s\" with EXIT=0 and a run id set, and logs/b-shared-n10-run1.log records \"14 passed in 174.13s\" with EXIT=0.",
+    "goal": "the node's goal (prompt.txt:30) is to match each held-worktree record once; the reviewed commit changes no production source and lands the two re-review asks on the harness \u2014 tests/helpers/git.py:23 strips the run identity from every child git call and tests/test_held_worktree_records_match_each_record_once.py:29 calls that shared helper instead of the local copy it deletes.",
+    "manifest": "read; it reads status complete, names commits d795d5aa, ccaa592e and 49e8cbcc, records the head, base and negative-control arms with their log paths, and names the two re-review follow-ons it lands; two of the five b-shared-n10-run*.log arms predate this commit's content and runs 1-3 carry it.",
+    "write_paths": "the dispatch fence (prompt.txt:69) names the product and test paths and the resume-2 advice extends the scope to include tests/helpers/git.py; git show --stat 49e8cbcc touches only tests/helpers/git.py and tests/test_held_worktree_records_match_each_record_once.py, both inside that scope."
+  },
+  "justifications": {
+    "durability": "the finalisation assertion at tests/test_held_worktree_records_match_each_record_once.py:157 reads os.environ against the fixture's own named paths and reddens when the restore is removed (logs/negative-control-restore-removed.log, EXIT=1).",
+    "evidence": "logs/b-shared-n10-run1.log records \"14 passed in 174.13s\" with EXIT=0 and logs/a-run-id-set.log records \"5 passed in 55.50s\" with EXIT=0, both run on this commit's content.",
+    "fit": "tests/helpers/git.py:12 keeps its module's short module-and-function docstrings and the fixture at tests/test_..._once.py:73 keeps the module's mechanism-first docstring idiom.",
+    "goal_fidelity": "tests/helpers/git.py:23 carries the run-identity scrub and tests/test_..._once.py:29 calls that helper in place of the local one, which are the two asks resume-2 grants.",
+    "reuse": "the change deletes the node's local _git and extends tests/helpers/git.py:12, the owner of the shared git runner, and a capability search over tests/ and reckon/ found no other mechanism that removes the run identity.",
+    "scope_discipline": "git show --stat 49e8cbcc changes only tests/helpers/git.py and tests/test_held_worktree_records_match_each_record_once.py, both inside the scope the resume-2 advice grants."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: ccaa592e68309a5d5e49e7553a3313046a4815cf\nreviewed_head_sha: 49e8cbcc20e6cd463eb8ea61f28fcfb46e0eb2e3\nVERDICT goal: the node's goal (prompt.txt:30) is to match each held-worktree record once; the reviewed commit changes no production source and lands the two re-review asks on the harness \u2014 tests/helpers/git.py:23 strips the run identity from every child git call and tests/test_held_worktree_records_match_each_record_once.py:29 calls that shared helper instead of the local copy it deletes.\nVERDICT done_when: the done-when (prompt.txt:94) names tests/test_held_worktree_records_match_each_record_once.py with 20 trees and 500 records, the records-plus-trees call bound and the base arm failing on the count; the manifest's logs/a-run-id-set.log records \"5 passed in 55.50s\" with EXIT=0 and a run id set, and logs/b-shared-n10-run1.log records \"14 passed in 174.13s\" with EXIT=0.\nVERDICT write_paths: the dispatch fence (prompt.txt:69) names the product and test paths and the resume-2 advice extends the scope to include tests/helpers/git.py; git show --stat 49e8cbcc touches only tests/helpers/git.py and tests/test_held_worktree_records_match_each_record_once.py, both inside that scope.\nVERDICT manifest: read; it reads status complete, names commits d795d5aa, ccaa592e and 49e8cbcc, records the head, base and negative-control arms with their log paths, and names the two re-review follow-ons it lands; two of the five b-shared-n10-run*.log arms predate this commit's content and runs 1-3 carry it.\nVERDICT diff: read 49e8cbcc against ccaa592e commit by commit; two files change \u2014 tests/helpers/git.py:23 passes subprocess.run an environment with RUN_ID_ENV removed, and the test file deletes its local _git, imports the shared helper at line 29, and asserts at fixture finalisation (line 157) that the two home keys are not left naming its own paths.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/helpers/git.py:23 carries the run-identity scrub and tests/test_..._once.py:29 calls that helper in place of the local one, which are the two asks resume-2 grants.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/b-shared-n10-run1.log records \"14 passed in 174.13s\" with EXIT=0 and logs/a-run-id-set.log records \"5 passed in 55.50s\" with EXIT=0, both run on this commit's content.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat 49e8cbcc changes only tests/helpers/git.py and tests/test_held_worktree_records_match_each_record_once.py, both inside the scope the resume-2 advice grants.\nSCORE durability: 18\nJUSTIFICATION durability: the finalisation assertion at tests/test_held_worktree_records_match_each_record_once.py:157 reads os.environ against the fixture's own named paths and reddens when the restore is removed (logs/negative-control-restore-removed.log, EXIT=1).\nSCORE fit: 17\nJUSTIFICATION fit: tests/helpers/git.py:12 keeps its module's short module-and-function docstrings and the fixture at tests/test_..._once.py:73 keeps the module's mechanism-first docstring idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change deletes the node's local _git and extends tests/helpers/git.py:12, the owner of the shared git runner, and a capability search over tests/ and reckon/ found no other mechanism that removes the run identity.\nFINDING tests/helpers/git.py:23 follow-on: the scrub makes the worker git shim transparent for every git call of the 121 test modules that import this helper, so a mutating verb any of them aims at a repository other than its own throwaway would no longer be refused; the docstring's justification that every test repository is a throwaway is asserted rather than enforced.",
+  "review_run_id": "r-20261017T024346951520-review-of-held-worktree-records-match-each-record-once-49e8cbcc20e6",
+  "reviewed_base_sha": "ccaa592e68309a5d5e49e7553a3313046a4815cf",
+  "reviewed_head_sha": "49e8cbcc20e6cd463eb8ea61f28fcfb46e0eb2e3",
+  "reviewed_run_id": "r-20261016T235407409458-held-worktree-records-match-each-record-once",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T02:55:23.380465+00:00",
+  "total": 109
+}
