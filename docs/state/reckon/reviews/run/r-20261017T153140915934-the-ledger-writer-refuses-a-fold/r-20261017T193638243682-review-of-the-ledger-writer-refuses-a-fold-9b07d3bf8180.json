@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2563 crew_repair_completion",
+    "reckon/crew/routing.py:2891 reap_idle_session_members",
+    "reckon/crew/promotion_gate.py:954 record_gate_rerun_at_integrated_revision",
+    "reckon/crew/promotion_records.py:679 _retire_disposable_identity",
+    "scripts/derive_run_figures.py:83 backfill_run_figures",
+    "scripts/backfill_run_durations.py:241 backfill_run_durations",
+    "reckon/ledger.py:2293 register_member",
+    "reckon/ledger.py:3916 record_hold_checks"
+  ],
+  "completed_at": "2026-10-17T19:50:20.449Z",
+  "dispatched_at": "2026-10-17T19:37:31Z",
+  "findings": [
+    {
+      "file": "scripts/derive_run_figures.py",
+      "line": "93",
+      "severity": "follow-on",
+      "text": "follow-on: _write_run_row is added here and identically at scripts/backfill_run_durations.py:247 and reckon/ledger.py:3630, replicating the run-file amend idiom already written at reckon/ledger.py:1602 in _keep_run_files_identical and reckon/crew/promotion_release.py:546, so one mechanism now has several copies with no single owner; the completion repair added a third named copy rather than routing the callers through one, which the promotion clone detector may flag as textual duplication."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T153140915934-the-ledger-writer-refuses-a-fold/logs/repair1-head-gate.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T153140915934-the-ledger-writer-refuses-a-fold/logs/attempt2-negative-control-final.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read commit by commit against base 2e9a07c237; eleven commits change reckon/ledger.py's guard, aggregate loader, register_member and completion repair, the five crew and script writers, three fixture files, the fold test and one evidence fragment, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_the_ledger_writer_refuses_a_fold.py over a 10-row aggregate and 50 per-run files, a refusal naming 50, an accepted one-run append and a hold check leaving the row count unchanged; logs/repair1-head-gate.log records 19 passed EXIT=0, logs/attempt2-negative-control-final.log records 9 failed EXIT=1 for the union write at the pre-guard base tree, and logs/repair1-negative-control.log records the reverted-repair case failing EXIT=1, so every named case is measured and logged.",
+    "goal": "the goal is a fold refusal in ledger.write with record_hold_checks reading the aggregate's own rows; the guard lands at reckon/ledger.py:1831, the hold check reads the aggregate at reckon/ledger.py:3858, and the repair at reckon/ledger.py:3760 now persists each repaired row where it is held, so the goal and its implied writer repointing are met.",
+    "manifest": "read; it records status complete, the head gate 19 passed EXIT=0, the pre-guard base arm 9 failed EXIT=1, the eleven-id arm 11 passed, the three files 60 passed, the other-site arm 68 passed and the reverted-repair case 1 failed EXIT=1, and names each log, though it records baseline_suite and after_suite as null.",
+    "write_paths": "the manifest's declared scope (reckon/ledger.py, the five crew/script writers, register_member, three fixture files, tests/test_hold_check_leaves_the_tree_clean.py, the fold test and one evidence fragment) covers every path in git diff 2e9a07c237..9b07d3bf8; no path in the diff falls outside it."
+  },
+  "justifications": {
+    "durability": "tests/test_the_ledger_writer_refuses_a_fold.py:344 fails with the fold refusal when the repair is reverted (logs/repair1-negative-control.log), and the fifty per-run files are asserted to carry the stamp at tests/test_the_ledger_writer_refuses_a_fold.py:358 against the value the stream supplied, not a value passed to write.",
+    "evidence": "logs/repair1-head-gate.log ends 19 passed EXIT=0 and logs/repair1-negative-control.log ends 1 failed EXIT=1 over the cases the done_when names, but the head log carries no revision header and the manifest records baseline_suite and after_suite as null.",
+    "fit": "_folded_run_ids at reckon/ledger.py:892 and _persist_repaired_rows at reckon/ledger.py:3644 follow the module's helper idiom and carry no plan or ticket label.",
+    "goal_fidelity": "reckon/ledger.py:1831 refuses an incoming row whose per-run file exists naming how many would fold, reckon/ledger.py:3858 reads the aggregate's own rows, and reckon/ledger.py:3760 persists the completion repair where each row is held.",
+    "reuse": "_write_run_row is now defined three times \u2014 reckon/ledger.py:3630, scripts/derive_run_figures.py:93 and scripts/backfill_run_durations.py:247 \u2014 as the encode-and-write idiom the repository already carries at reckon/ledger.py:1602 and reckon/crew/promotion_release.py:546, with no single owner extended.",
+    "scope_discipline": "every path in git diff 2e9a07c237..9b07d3bf8 lies inside the scope the manifest declares."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a fold refusal in ledger.write with record_hold_checks reading the aggregate's own rows; the guard lands at reckon/ledger.py:1831, the hold check reads the aggregate at reckon/ledger.py:3858, and the repair at reckon/ledger.py:3760 now persists each repaired row where it is held, so the goal and its implied writer repointing are met.\nVERDICT done_when: the done_when names tests/test_the_ledger_writer_refuses_a_fold.py over a 10-row aggregate and 50 per-run files, a refusal naming 50, an accepted one-run append and a hold check leaving the row count unchanged; logs/repair1-head-gate.log records 19 passed EXIT=0, logs/attempt2-negative-control-final.log records 9 failed EXIT=1 for the union write at the pre-guard base tree, and logs/repair1-negative-control.log records the reverted-repair case failing EXIT=1, so every named case is measured and logged.\nVERDICT write_paths: the manifest's declared scope (reckon/ledger.py, the five crew/script writers, register_member, three fixture files, tests/test_hold_check_leaves_the_tree_clean.py, the fold test and one evidence fragment) covers every path in git diff 2e9a07c237..9b07d3bf8; no path in the diff falls outside it.\nVERDICT manifest: read; it records status complete, the head gate 19 passed EXIT=0, the pre-guard base arm 9 failed EXIT=1, the eleven-id arm 11 passed, the three files 60 passed, the other-site arm 68 passed and the reverted-repair case 1 failed EXIT=1, and names each log, though it records baseline_suite and after_suite as null.\nVERDICT diff: read commit by commit against base 2e9a07c237; eleven commits change reckon/ledger.py's guard, aggregate loader, register_member and completion repair, the five crew and script writers, three fixture files, the fold test and one evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:2563 crew_repair_completion, reckon/crew/routing.py:2891 reap_idle_session_members, reckon/crew/promotion_gate.py:954 record_gate_rerun_at_integrated_revision, reckon/crew/promotion_records.py:679 _retire_disposable_identity, scripts/derive_run_figures.py:83 backfill_run_figures, scripts/backfill_run_durations.py:241 backfill_run_durations, reckon/ledger.py:2293 register_member, reckon/ledger.py:3916 record_hold_checks\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1831 refuses an incoming row whose per-run file exists naming how many would fold, reckon/ledger.py:3858 reads the aggregate's own rows, and reckon/ledger.py:3760 persists the completion repair where each row is held.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/repair1-head-gate.log ends 19 passed EXIT=0 and logs/repair1-negative-control.log ends 1 failed EXIT=1 over the cases the done_when names, but the head log carries no revision header and the manifest records baseline_suite and after_suite as null.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 2e9a07c237..9b07d3bf8 lies inside the scope the manifest declares.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_ledger_writer_refuses_a_fold.py:344 fails with the fold refusal when the repair is reverted (logs/repair1-negative-control.log), and the fifty per-run files are asserted to carry the stamp at tests/test_the_ledger_writer_refuses_a_fold.py:358 against the value the stream supplied, not a value passed to write.\nSCORE fit: 18\nJUSTIFICATION fit: _folded_run_ids at reckon/ledger.py:892 and _persist_repaired_rows at reckon/ledger.py:3644 follow the module's helper idiom and carry no plan or ticket label.\nSCORE reuse: 10\nJUSTIFICATION reuse: _write_run_row is now defined three times \u2014 reckon/ledger.py:3630, scripts/derive_run_figures.py:93 and scripts/backfill_run_durations.py:247 \u2014 as the encode-and-write idiom the repository already carries at reckon/ledger.py:1602 and reckon/crew/promotion_release.py:546, with no single owner extended.\nFINDING scripts/derive_run_figures.py:93 follow-on: _write_run_row is added here and identically at scripts/backfill_run_durations.py:247 and reckon/ledger.py:3630, replicating the run-file amend idiom already written at reckon/ledger.py:1602 in _keep_run_files_identical and reckon/crew/promotion_release.py:546, so one mechanism now has several copies with no single owner; the completion repair added a third named copy rather than routing the callers through one, which the promotion clone detector may flag as textual duplication.\nreviewed_base_sha: 2e9a07c237df7e312e81b47ad4d8744bde532dfc\nreviewed_head_sha: 9b07d3bf8180078898529cc8b9e357fcf2072d4d",
+  "review_run_id": "r-20261017T193638243682-review-of-the-ledger-writer-refuses-a-fold-9b07d3bf8180",
+  "reviewed_base_sha": "2e9a07c237df7e312e81b47ad4d8744bde532dfc",
+  "reviewed_head_sha": "9b07d3bf8180078898529cc8b9e357fcf2072d4d",
+  "reviewed_run_id": "r-20261017T153140915934-the-ledger-writer-refuses-a-fold",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 10,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T19:47:28.456403+00:00",
+  "total": 102
+}
