@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "both arms of the reviewed run read green: gate-head.log reports 27 passed EXIT=0 and gate-base.log reports 24 passed EXIT=0, each with an empty failure list, so the reviewed run added no failing test",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/velocity.py:854",
+    "reckon/velocity.py:1050",
+    "reckon/velocity.py:1200",
+    "reckon/velocity.py:2913",
+    "reckon/crew_run_commands.py:2088",
+    "reckon/serve.py:3315"
+  ],
+  "completed_at": "2026-10-17T12:10:16.651Z",
+  "dispatched_at": "2026-10-17T11:52:12Z",
+  "findings": [
+    {
+      "file": "reckon/velocity.py",
+      "line": "728",
+      "severity": "follow-on",
+      "text": "follow-on: the batched read is unconditional once _blob_sha reports a blob, so a present path whose object the reader reports missing (a partial clone or a corrupt object store) reaches json.loads(None) and raises TypeError, where the replaced git show raised a CalledProcessError naming the revision; this is the one path where read_blobs's None no longer means \"no ledger\", and the guard at reckon/velocity.py:724 is keyed on _blob_sha rather than on the read's own result."
+    },
+    {
+      "file": "docs/evidence/fragments/a-velocity-window-may-open-before-the-ledger/a-revision-without-the-ledger-reads-as-no-runs.html",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment carries \"What changed\", \"The gate\" and \"Declared negative control\" prose sections, where the node's own contract states that a node whose done-when names no artifact writes no evidence prose; the anchor is required and in scope, so this is a question of how much it carries rather than of writing it at all."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against e4a9909e2753134693edf7eb0f15e6987192399c; a966f5b7e changes reckon/velocity.py in two places and adds the 219-line test file, d78210764e86dd51b7faae13d0df10938df9ebea adds two lines to the fragment alone, and nothing outside the declared scope changed.",
+    "done_when": "the done_when names tests/test_velocity_reads_a_revision_without_the_ledger.py plus five velocity dependants and requires the three cases, a log under the run directory and an EXIT= line; the new file synthesises a repository whose first commits carry no docs/state/sample/crew.json and whose last commit adds one with a run row (tests/test_velocity_reads_a_revision_without_the_ledger.py:120), and gate-head.log records \"27 passed\" with EXIT=0 under the run directory.",
+    "goal": "the goal is that _read_ledger becomes the one reader of the committed velocity ledger and reads a revision whose tree has no crew.json as one with no runs; reckon/velocity.py:724 returns `{}, None` when its `_blob_sha` finds no blob, and reckon/velocity.py:1200 has recover_ledger_clocks take the base's present run ids from that reader instead of parsing the ledger itself, so both ledger reads tolerate an absent ledger.",
+    "manifest": "read; it states status complete, the two commits, \"head-arm gate 27 passed EXIT=0, base arm 24 passed EXIT=0, negative controls 3 failed EXIT=1\", and both suite blocks record completed true with zero failures; its \"ruff check clean on both staged paths\" wording is looser than the delta it actually reports.",
+    "write_paths": "the source manifest declares reckon/velocity.py, the new test file, the fragment under docs/evidence/fragments/a-velocity-window-may-open-before-the-ledger/ and its figure directory; all three files in the diff are inside that set, and the figure directory stays empty because the done-when names no artifact."
+  },
+  "justifications": {
+    "durability": "tests/test_velocity_reads_a_revision_without_the_ledger.py:194 asserts a None ledger digest for a head that predates the ledger and the recorded negative control shows that case reddening when the inline git show is restored, so the three cases are each falsified by the regression they guard; the weaker half, tests/test_velocity_reads_a_revision_without_the_ledger.py:182, compares the recovered commit against the head value the test itself fed in, and is not what the score rests on.",
+    "evidence": "the head arm's \"/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T112233609448-a-revision-without-the-ledger-reads-as-no-runs/gate-head.log\" records 27 passed EXIT=0 against the base arm's 24 passed EXIT=0, so the gate measures the done-when, though the ruff clause is a manifest claim with no log behind it.",
+    "fit": "the change follows the module's own idiom of a docstring stating the mechanism (reckon/velocity.py:710) and adds no symbol, filename or comment the naming rules forbid.",
+    "goal_fidelity": "reckon/velocity.py:722 is now the module's only parse of the ledger bytes, since reckon/velocity.py:1191 keeps just the path string the git log search still needs, which is exactly the remedy the plan names.",
+    "reuse": "the diff adds no definition at all, routing both reads through the module's existing read_blobs (reckon/velocity.py:395) and _blob_sha (reckon/velocity.py:689); a capability search over reckon/ledger.py, reckon/crew/obligations.py, reckon/cli_entry.py and reckon/mcp.py found no other revision-scoped ledger reader to extend.",
+    "scope_discipline": "every path in the diff (reckon/velocity.py, the new test file, the fragment) is inside the declared write paths, but the fragment carries evidence prose where the node contract says a node whose done-when names no artifact writes none."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: e4a9909e2753134693edf7eb0f15e6987192399c\nreviewed_head_sha: d78210764e86dd51b7faae13d0df10938df9ebea\n\nVERDICT goal: the goal is that _read_ledger becomes the one reader of the committed velocity ledger and reads a revision whose tree has no crew.json as one with no runs; reckon/velocity.py:724 returns `{}, None` when its `_blob_sha` finds no blob, and reckon/velocity.py:1200 has recover_ledger_clocks take the base's present run ids from that reader instead of parsing the ledger itself, so both ledger reads tolerate an absent ledger.\nVERDICT done_when: the done_when names tests/test_velocity_reads_a_revision_without_the_ledger.py plus five velocity dependants and requires the three cases, a log under the run directory and an EXIT= line; the new file synthesises a repository whose first commits carry no docs/state/sample/crew.json and whose last commit adds one with a run row (tests/test_velocity_reads_a_revision_without_the_ledger.py:120), and gate-head.log records \"27 passed\" with EXIT=0 under the run directory.\nVERDICT write_paths: the source manifest declares reckon/velocity.py, the new test file, the fragment under docs/evidence/fragments/a-velocity-window-may-open-before-the-ledger/ and its figure directory; all three files in the diff are inside that set, and the figure directory stays empty because the done-when names no artifact.\nVERDICT manifest: read; it states status complete, the two commits, \"head-arm gate 27 passed EXIT=0, base arm 24 passed EXIT=0, negative controls 3 failed EXIT=1\", and both suite blocks record completed true with zero failures; its \"ruff check clean on both staged paths\" wording is looser than the delta it actually reports.\nVERDICT diff: read commit by commit against e4a9909e2753134693edf7eb0f15e6987192399c; a966f5b7e changes reckon/velocity.py in two places and adds the 219-line test file, d78210764e86dd51b7faae13d0df10938df9ebea adds two lines to the fragment alone, and nothing outside the declared scope changed.\nCALL_SITES: reckon/velocity.py:854, reckon/velocity.py:1050, reckon/velocity.py:1200, reckon/velocity.py:2913, reckon/crew_run_commands.py:2088, reckon/serve.py:3315\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/velocity.py:722 is now the module's only parse of the ledger bytes, since reckon/velocity.py:1191 keeps just the path string the git log search still needs, which is exactly the remedy the plan names.\nSCORE evidence: 17\nJUSTIFICATION evidence: the head arm's \"/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T112233609448-a-revision-without-the-ledger-reads-as-no-runs/gate-head.log\" records 27 passed EXIT=0 against the base arm's 24 passed EXIT=0, so the gate measures the done-when, though the ruff clause is a manifest claim with no log behind it.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff (reckon/velocity.py, the new test file, the fragment) is inside the declared write paths, but the fragment carries evidence prose where the node contract says a node whose done-when names no artifact writes none.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_velocity_reads_a_revision_without_the_ledger.py:194 asserts a None ledger digest for a head that predates the ledger and the recorded negative control shows that case reddening when the inline git show is restored, so the three cases are each falsified by the regression they guard; the weaker half, tests/test_velocity_reads_a_revision_without_the_ledger.py:182, compares the recovered commit against the head value the test itself fed in, and is not what the score rests on.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module's own idiom of a docstring stating the mechanism (reckon/velocity.py:710) and adds no symbol, filename or comment the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition at all, routing both reads through the module's existing read_blobs (reckon/velocity.py:395) and _blob_sha (reckon/velocity.py:689); a capability search over reckon/ledger.py, reckon/crew/obligations.py, reckon/cli_entry.py and reckon/mcp.py found no other revision-scoped ledger reader to extend.\nFINDING reckon/velocity.py:728 follow-on: the batched read is unconditional once _blob_sha reports a blob, so a present path whose object the reader reports missing (a partial clone or a corrupt object store) reaches json.loads(None) and raises TypeError, where the replaced git show raised a CalledProcessError naming the revision; this is the one path where read_blobs's None no longer means \"no ledger\", and the guard at reckon/velocity.py:724 is keyed on _blob_sha rather than on the read's own result.\nFINDING docs/evidence/fragments/a-velocity-window-may-open-before-the-ledger/a-revision-without-the-ledger-reads-as-no-runs.html:22 follow-on: the fragment carries \"What changed\", \"The gate\" and \"Declared negative control\" prose sections, where the node's own contract states that a node whose done-when names no artifact writes no evidence prose; the anchor is required and in scope, so this is a question of how much it carries rather than of writing it at all.",
+  "review_run_id": "r-20261017T115137555710-review-of-a-revision-without-the-ledger-reads-as-no-runs-d78210764e86",
+  "reviewed_base_sha": "e4a9909e2753134693edf7eb0f15e6987192399c",
+  "reviewed_head_sha": "d78210764e86dd51b7faae13d0df10938df9ebea",
+  "reviewed_run_id": "r-20261017T112233609448-a-revision-without-the-ledger-reads-as-no-runs",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T12:09:38.643657+00:00",
+  "total": 112
+}
