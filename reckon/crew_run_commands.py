@@ -73,6 +73,11 @@ def crew_merge(project, head, message, body, candidate, pretty):
     touched only by the closing fast-forward. A conflicting head is refused
     with nothing written, and a held ``index.lock`` is retried rather than
     leaving the staged tree a hand repair.
+
+    A push that fails after the fast-forward has landed reports the landed
+    commit and exits with a status distinct from a refusal: the merge is in
+    place, only the push is outstanding, and a rerun for the same head pushes
+    rather than building a second merge.
     """
     from reckon.crew import merge
 
@@ -85,6 +90,9 @@ def crew_merge(project, head, message, body, candidate, pretty):
             body=body,
             candidate=candidate or None,
         )
+    except merge.MergePushOutstandingError as exc:
+        _emit(exc.report, pretty)
+        raise click.exceptions.Exit(merge.PUSH_OUTSTANDING_EXIT) from exc
     except merge.MergeError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(report, pretty)

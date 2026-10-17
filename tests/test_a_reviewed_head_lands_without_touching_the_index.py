@@ -41,6 +41,29 @@ DECLARED_MUTATION = (
 # byte-identity assertion measures the landing and not the reading of it.
 _ENV = {**os.environ, "GIT_OPTIONAL_LOCKS": "0"}
 
+# An ``ssh`` that models a host refusing GitHub on port 22: the default route
+# fails the way a compute node does, and the port-443 route git builds from
+# ``GIT_SSH_COMMAND`` serves the remote git command locally, so the retried push
+# reaches the bare origin and can be read back.
+_SSH_STUB = """\
+#!/bin/sh
+route443=0
+for arg in "$@"; do
+  if [ "$arg" = "Port=443" ]; then route443=1; fi
+done
+if [ "$route443" -eq 0 ]; then
+  echo "ssh: connect to host github.com port 22: Connection refused" >&2
+  exit 255
+fi
+cmd=""
+for arg in "$@"; do cmd="$arg"; done
+case "$cmd" in
+  git-receive-pack*) cmd="git receive-pack${cmd#git-receive-pack}" ;;
+  git-upload-pack*) cmd="git upload-pack${cmd#git-upload-pack}" ;;
+esac
+exec sh -c "$cmd"
+"""
+
 
 def _run(repo: Path, *args: str):
     return subprocess.run(
@@ -282,3 +305,119 @@ def test_an_attribution_trailer_is_refused(tmp_path: Path) -> None:
                 "reviewed and green\n\nCo-Authored-By: Some Tool <tool@example.invalid>"
             ),
         )
+
+
+def test_a_push_failure_after_the_merge_reports_the_landed_commit(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A push that fails after the fast-forward names the landed commit.
+
+    Against the base tree the same failure is a bare error with no landed
+    commit: the verb refuses as if nothing were written, which is the defect.
+    """
+    _origin, work = _init_checkout(tmp_path)
+    base = _git(work, "rev-parse", "HEAD")
+    head = _reviewed_head(work, "reviewed-feature", "feature.txt", "feature\n")
+    # Point origin at a path that is not a repository, so the push fails after
+    # the fast-forward has already moved the branch.
+    _git(work, "remote", "set-url", "origin", str(tmp_path / "no-such-origin.git"))
+    monkeypatch.setattr(merge, "project_repository", lambda project: work)
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "merge",
+            "--project",
+            "reckon",
+            "--head",
+            head,
+            "--message",
+            "Land the reviewed feature",
+            "--body",
+            "the feature is reviewed and its suite passes",
+        ],
+    )
+
+    try:
+        payload = json.loads(result.output)
+    except json.JSONDecodeError:
+        raise AssertionError(
+            "the verb reported a bare error with no landed commit: "
+            f"exit={result.exit_code} output={result.output!r}"
+        ) from None
+    landed = _git(work, "rev-parse", "HEAD")
+    # The merge landed even though the push failed, and the status is distinct
+    # from a refusal that wrote nothing.
+    assert result.exit_code == merge.PUSH_OUTSTANDING_EXIT
+    assert result.exit_code != 1
+    assert payload["commit"] == landed
+    assert payload["base"] == base
+    assert payload["head"] == head
+    assert payload["pushed"] is False
+
+
+def test_a_rerun_for_the_same_head_pushes_without_building_a_new_merge(
+    tmp_path: Path,
+) -> None:
+    """A head already in HEAD goes straight to the push; no second merge is built."""
+    origin, work = _init_checkout(tmp_path)
+    head = _reviewed_head(work, "reviewed-feature", "feature.txt", "feature\n")
+    first = merge.land_merge(
+        work,
+        head=head,
+        message="Land the reviewed feature",
+        body="the feature is reviewed and its suite passes",
+    )
+    landed = first["commit"]
+    assert _git(work, "rev-parse", "HEAD") == landed
+    commits_before = _git(work, "rev-list", "--count", "HEAD")
+
+    rerun = merge.land_merge(work, head=head)
+
+    assert rerun["commit"] == landed
+    assert rerun["pushed"] is True
+    # No second merge: HEAD is unchanged and no commit was added.
+    assert _git(work, "rev-parse", "HEAD") == landed
+    assert _git(work, "rev-list", "--count", "HEAD") == commits_before
+    assert _git(origin, "rev-parse", "main") == landed
+
+
+def test_a_refused_port_22_push_is_retried_on_the_port_443_route(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """With no GIT_SSH_COMMAND and a refused port 22, the push uses 443 and lands."""
+    origin, work = _init_checkout(tmp_path)
+    head = _reviewed_head(work, "reviewed-feature", "feature.txt", "feature\n")
+    _git(work, "remote", "set-url", "origin", f"ssh://git@example.invalid{origin}")
+    stub_dir = tmp_path / "bin"
+    stub_dir.mkdir()
+    stub = stub_dir / "ssh"
+    stub.write_text(_SSH_STUB, encoding="utf-8")
+    stub.chmod(0o755)
+    monkeypatch.delenv("GIT_SSH_COMMAND", raising=False)
+    monkeypatch.setenv("PATH", f"{stub_dir}{os.pathsep}{os.environ['PATH']}")
+    monkeypatch.setattr(merge, "project_repository", lambda project: work)
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "merge",
+            "--project",
+            "reckon",
+            "--head",
+            head,
+            "--message",
+            "Land the reviewed feature",
+            "--body",
+            "the feature is reviewed and its suite passes",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    landed = _git(work, "rev-parse", "HEAD")
+    assert payload["pushed"] is True
+    assert payload["commit"] == landed
+    assert _git(origin, "rev-parse", "main") == landed

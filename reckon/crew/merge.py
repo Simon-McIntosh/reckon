@@ -18,10 +18,20 @@ HEAD costs a retry rather than a repair.
 Nothing here sets a plan, a sprint or a project index; it moves one branch and
 pushes it. Identity is a module-local concern: an actor, if one arrives later,
 belongs to the caller's scope and not to the landing.
+
+The push is the one step that can fail after the branch has moved, and a
+landing that hides that reads as a refusal that wrote nothing. A push that
+fails after the fast-forward raises :class:`MergePushOutstandingError`, which
+carries the report naming the landed commit and the base; a caller reruns the
+same head, finds it already in ``HEAD`` and pushes without building a second
+merge. A host that refuses SSH on port 22 — every compute node — retries the
+push over the port-443 route, the caller's ``GIT_SSH_COMMAND`` or the stated
+fallback beside it.
 """
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import time
@@ -47,9 +57,34 @@ _GENERATOR_FOOTER = re.compile(
 DEFAULT_ATTEMPTS = 8
 DEFAULT_RETRY_SECONDS = 0.25
 
+# The port-443 route: GitHub serves SSH there for hosts that refuse port 22.
+# ``GIT_SSH_COMMAND`` carries it because git builds the ssh invocation itself,
+# so naming ``ssh.github.com:443`` there routes the push without a wrapper.
+FALLBACK_SSH_COMMAND = "ssh -o Hostname=ssh.github.com -o Port=443"
+
+# A landed merge whose push failed exits with a status of its own, so a caller
+# distinguishes it from a refusal that wrote nothing (exit 1) and does not
+# rebuild or double-handle a merge already in place.
+PUSH_OUTSTANDING_EXIT = 6
+
 
 class MergeError(Exception):
     """A landing refused with nothing written to the checkout's index or tree."""
+
+
+class MergePushOutstandingError(MergeError):
+    """The merge landed and only the push is outstanding.
+
+    The branch has moved, so the outcome is not a refusal: ``report`` names the
+    landed commit and the base, and the caller reruns the same head to retry the
+    push rather than landing a second merge.
+    """
+
+    def __init__(self, report: dict, detail: str) -> None:
+        self.report = report
+        super().__init__(
+            "the merge landed; only the push is outstanding (rerun to push): " + detail
+        )
 
 
 def project_repository(project: str) -> Path:
@@ -70,7 +105,10 @@ def project_repository(project: str) -> Path:
 
 
 def _run(
-    repo: Path, *args: str, input: str | None = None
+    repo: Path,
+    *args: str,
+    input: str | None = None,
+    env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         ["git", "-C", str(repo), *args],
@@ -78,6 +116,7 @@ def _run(
         capture_output=True,
         text=True,
         check=False,
+        env=env,
     )
 
 
@@ -190,20 +229,81 @@ def _current_branch(repo: Path) -> str:
     return branch
 
 
-def _remote_head(repo: Path, remote: str, branch: str) -> str:
-    result = _run(repo, "ls-remote", remote, f"refs/heads/{branch}")
+def _remote_head(
+    repo: Path, remote: str, branch: str, env: dict[str, str] | None = None
+) -> str:
+    result = _run(repo, "ls-remote", remote, f"refs/heads/{branch}", env=env)
     if result.returncode != 0 or not result.stdout.strip():
         raise MergeError(f"cannot read {remote}'s {branch}")
     return result.stdout.split()[0].strip()
 
 
-def _push(repo: Path, remote: str, commit: str, branch: str) -> None:
+def _is_ancestor(repo: Path, ancestor: str, descendant: str) -> bool:
+    return (
+        _run(repo, "merge-base", "--is-ancestor", ancestor, descendant).returncode == 0
+    )
+
+
+def _first_parent(repo: Path, commit: str) -> str:
+    parents = _parents(repo, commit)
+    return parents[0] if parents else commit
+
+
+def _port22_refused(text: str) -> bool:
+    """Whether a failure reads as an SSH connection refused on port 22.
+
+    The signal is Git's own ssh error, ``connect to host <h> port 22:
+    Connection refused``, which is what a compute node reports for GitHub.
+    """
+    low = (text or "").lower()
+    return "connection refused" in low and ("port 22" in low or ":22" in low)
+
+
+def _port443_env() -> dict[str, str]:
+    """The environment for the port-443 route.
+
+    The caller's ``GIT_SSH_COMMAND`` is honoured when set — it already names
+    the route they want — and the stated fallback is used when it is not.
+    """
+    env = dict(os.environ)
+    if not (env.get("GIT_SSH_COMMAND") or "").strip():
+        env["GIT_SSH_COMMAND"] = FALLBACK_SSH_COMMAND
+    return env
+
+
+class _PushError(Exception):
+    """The push did not land the commit on the remote."""
+
+    def __init__(self, detail: str) -> None:
+        self.detail = detail
+        super().__init__(detail)
+
+
+def _push_and_confirm(repo: Path, remote: str, commit: str, branch: str) -> str:
+    """Push ``commit`` to ``branch`` and return the remote head it confirms.
+
+    A refused port 22 is retried over the port-443 route, and the route that
+    carried the push is reused for the read-back, so a host that reaches GitHub
+    only on 443 confirms the remote head through the same route.
+    """
+    env: dict[str, str] | None = None
     result = _run(repo, "push", remote, f"{commit}:refs/heads/{branch}")
     if result.returncode != 0:
-        raise MergeError(
-            f"push of {commit} to {remote} failed: "
-            + (result.stderr.strip() or result.stdout.strip())
+        detail = result.stderr.strip() or result.stdout.strip()
+        if _port22_refused(detail):
+            env = _port443_env()
+            result = _run(
+                repo, "push", remote, f"{commit}:refs/heads/{branch}", env=env
+            )
+            detail = result.stderr.strip() or result.stdout.strip()
+        if result.returncode != 0:
+            raise _PushError(f"push of {commit} to {remote} failed: {detail}")
+    remote_head = _remote_head(repo, remote, branch, env=env)
+    if remote_head != commit:
+        raise _PushError(
+            f"{remote}'s {branch} reads {remote_head}, not the landed {commit}"
         )
+    return remote_head
 
 
 def land_merge(
@@ -227,61 +327,75 @@ def land_merge(
     the fast-forward stays a fast-forward. With ``candidate`` the already-built
     merge is landed unchanged, provided its parents are the pinned HEAD and the
     head.
+
+    A head already in ``HEAD`` is treated as a landed merge whose push is
+    outstanding: it is pushed rather than merged a second time. A push that
+    fails after the fast-forward raises :class:`MergePushOutstandingError`, whose
+    report names the landed commit and the base.
     """
     repo = Path(repo)
-    if candidate is None:
-        _compose_message(message, body)
     head_sha = _rev_parse(repo, head)
     branch = _current_branch(repo)
 
-    base = commit = ""
-    for attempt in range(1, attempts + 1):
-        base = _rev_parse(repo, "HEAD")
-        if candidate is not None:
-            commit = _rev_parse(repo, candidate)
-            parents = _parents(repo, commit)
-            if parents != [base, head_sha]:
-                raise MergeError(
-                    f"candidate {commit} has parents {parents}, not the pinned "
-                    f"HEAD {base} and head {head_sha}"
-                )
-        else:
-            commit = build_merge_commit(repo, base, head_sha, message, body)
+    if _is_ancestor(repo, head_sha, "HEAD"):
+        # A previous run landed this head and only its push is outstanding, so
+        # the merge is already in HEAD: push it again rather than build a second
+        # merge of the same head.
+        landed = _rev_parse(repo, "HEAD")
+        base = _first_parent(repo, landed)
+    else:
+        if candidate is None:
+            _compose_message(message, body)
+        base = commit = ""
+        for attempt in range(1, attempts + 1):
+            base = _rev_parse(repo, "HEAD")
+            if candidate is not None:
+                commit = _rev_parse(repo, candidate)
+                parents = _parents(repo, commit)
+                if parents != [base, head_sha]:
+                    raise MergeError(
+                        f"candidate {commit} has parents {parents}, not the pinned "
+                        f"HEAD {base} and head {head_sha}"
+                    )
+            else:
+                commit = build_merge_commit(repo, base, head_sha, message, body)
 
-        result = _run(repo, "merge", "--ff-only", commit)
-        if result.returncode == 0:
-            break
-        if _index_lock_held(repo):
-            if attempt == attempts:
-                raise MergeError(
-                    "the checkout's index.lock stayed held for "
-                    f"{attempts} attempts; nothing was written"
-                )
-            sleep(retry_seconds)
-            continue
-        if _rev_parse(repo, "HEAD") != base:
-            if attempt == attempts:
-                raise MergeError("HEAD moved on each attempt; nothing was written")
-            continue
-        raise MergeError(
-            "could not fast-forward: "
-            + (result.stderr.strip() or result.stdout.strip())
-        )
-    else:  # pragma: no cover - the loop raises or breaks
-        raise MergeError(f"could not land after {attempts} attempts")
+            result = _run(repo, "merge", "--ff-only", commit)
+            if result.returncode == 0:
+                break
+            if _index_lock_held(repo):
+                if attempt == attempts:
+                    raise MergeError(
+                        "the checkout's index.lock stayed held for "
+                        f"{attempts} attempts; nothing was written"
+                    )
+                sleep(retry_seconds)
+                continue
+            if _rev_parse(repo, "HEAD") != base:
+                if attempt == attempts:
+                    raise MergeError("HEAD moved on each attempt; nothing was written")
+                continue
+            raise MergeError(
+                "could not fast-forward: "
+                + (result.stderr.strip() or result.stdout.strip())
+            )
+        else:  # pragma: no cover - the loop raises or breaks
+            raise MergeError(f"could not land after {attempts} attempts")
 
-    landed = _rev_parse(repo, commit)
-    _push(repo, remote, landed, branch)
-    remote_head = _remote_head(repo, remote, branch)
-    if remote_head != landed:
-        raise MergeError(
-            f"{remote}'s {branch} reads {remote_head}, not the landed {landed}"
-        )
-    return {
+        landed = _rev_parse(repo, commit)
+
+    report = {
         "base": base,
         "head": head_sha,
         "commit": landed,
         "branch": branch,
         "remote": remote,
-        "remote_head": remote_head,
+        "pushed": False,
     }
+    try:
+        remote_head = _push_and_confirm(repo, remote, landed, branch)
+    except _PushError as exc:
+        raise MergePushOutstandingError(report, exc.detail) from exc
+    report["remote_head"] = remote_head
+    report["pushed"] = True
+    return report
