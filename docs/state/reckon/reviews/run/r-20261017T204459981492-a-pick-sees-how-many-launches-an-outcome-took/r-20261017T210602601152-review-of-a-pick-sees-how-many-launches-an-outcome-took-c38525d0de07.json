@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite failure_count 0 and after_suite failure_count 0, so the added-failure count is zero.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/picker/snapshot.py:candidates",
+    "reckon/crew/picker/snapshot.py:_candidates_scan",
+    "reckon/crew/picker/snapshot.py:_requirement_block",
+    "reckon/crew/picker/prompts.py:build_state",
+    "reckon/crew/picker/__init__.py",
+    "reckon/crew/picker/templates/questions.jinja"
+  ],
+  "call_sites_emission": "sites",
+  "completed_at": "2026-10-17T21:13:47.904Z",
+  "dispatched_at": "2026-10-17T21:06:51Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 12,
+      "severity": "follow-on",
+      "text": "the record's gate line and test_logs name only the pytest run; the done-when also requires ruff check and ruff format --check to add no finding on the staged paths, which is asserted in the source node's prompt but recorded in no log or manifest field, so that half of the measure cannot be checked from the record."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the block reaches Jev through reckon/crew/picker/prompts.py:240 in build_state and the pick entry at reckon/crew/picker/snapshot.py:candidates.",
+    "diff": "read both commits against base 711c721d4; 8caf012f changes the two source files and adds the test, c38525d0d adds the fragment, and every hunk is inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_pick_sees_how_many_launches_an_outcome_took.py and the nine-file pytest gate; the manifest records that run at 74 passed EXIT=0 against a base arm of 69 passed EXIT=0.",
+    "goal": "the goal is to add the median launch count and first-attempt pass count to a pick's at-requirement block and its glossary entry; reckon/crew/picker/snapshot.py:396-398 and reckon/crew/picker/prompts.py:112-117 do exactly that.",
+    "manifest": "read; it states status complete, the two commits, and the head/base gate figures, and its baseline_suite and after_suite both carry completed true, failure_count 0.",
+    "write_paths": "read the manifest's declared write paths; every path in the diff is inside them and no other file is touched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_pick_sees_how_many_launches_an_outcome_took.py:186 fails on attempts_median under negative-control-m1.log and line 187 fails on passed_first_attempt under negative-control-m2.log, each mutation applied alone.",
+    "evidence": "the gate over the nine files is recorded in gate-head.log at 74 passed EXIT=0 with the base arm gate-base.log at 69 passed EXIT=0, but the done-when's ruff obligation is asserted only in the prompt and recorded in no log.",
+    "fit": "the new fields extend the existing block-return idiom at reckon/crew/picker/snapshot.py:388-389 and the glossary addition at reckon/crew/picker/prompts.py:112 matches the surrounding entry style.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:366 adds the attempts list and passed_first_attempt counter in _candidates_scan's existing pass, and reckon/crew/picker/snapshot.py:396-398 adds attempts_median and passed_first_attempt to _requirement_block, exactly the fields section 31 names.",
+    "reuse": "reckon/crew/picker/snapshot.py reuses the already-imported statistics.median and the existing per-candidate entry dict; the only other launch-count aggregate, repair_or_resume_count at reckon/crew/picker/outcomes.py:510, is a distinct offline grouping the plan names as the prior reader, not an owner to extend.",
+    "scope_discipline": "the diff spans reckon/crew/picker/snapshot.py, reckon/crew/picker/prompts.py, tests/test_a_pick_sees_how_many_launches_an_outcome_took.py and the evidence fragment, all inside the manifest's declared write paths, and it changes no other behaviour."
+  },
+  "node": "review-of-a-pick-sees-how-many-launches-an-outcome-took-c38525d0de07",
+  "plan": "reckon:lane-and-model-routing",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to add the median launch count and first-attempt pass count to a pick's at-requirement block and its glossary entry; reckon/crew/picker/snapshot.py:396-398 and reckon/crew/picker/prompts.py:112-117 do exactly that.\nVERDICT done_when: the done_when names tests/test_a_pick_sees_how_many_launches_an_outcome_took.py and the nine-file pytest gate; the manifest records that run at 74 passed EXIT=0 against a base arm of 69 passed EXIT=0.\nVERDICT write_paths: read the manifest's declared write paths; every path in the diff is inside them and no other file is touched.\nVERDICT manifest: read; it states status complete, the two commits, and the head/base gate figures, and its baseline_suite and after_suite both carry completed true, failure_count 0.\nVERDICT diff: read both commits against base 711c721d4; 8caf012f changes the two source files and adds the test, c38525d0d adds the fragment, and every hunk is inside the declared scope.\nCALL_SITES: reckon/crew/picker/snapshot.py:candidates, reckon/crew/picker/snapshot.py:_candidates_scan, reckon/crew/picker/snapshot.py:_requirement_block, reckon/crew/picker/prompts.py:build_state, reckon/crew/picker/__init__.py, reckon/crew/picker/templates/questions.jinja\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:366 adds the attempts list and passed_first_attempt counter in _candidates_scan's existing pass, and reckon/crew/picker/snapshot.py:396-398 adds attempts_median and passed_first_attempt to _requirement_block, exactly the fields section 31 names.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate over the nine files is recorded in gate-head.log at 74 passed EXIT=0 with the base arm gate-base.log at 69 passed EXIT=0, but the done-when's ruff obligation is asserted only in the prompt and recorded in no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff spans reckon/crew/picker/snapshot.py, reckon/crew/picker/prompts.py, tests/test_a_pick_sees_how_many_launches_an_outcome_took.py and the evidence fragment, all inside the manifest's declared write paths, and it changes no other behaviour.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_pick_sees_how_many_launches_an_outcome_took.py:186 fails on attempts_median under negative-control-m1.log and line 187 fails on passed_first_attempt under negative-control-m2.log, each mutation applied alone.\nSCORE fit: 20\nJUSTIFICATION fit: the new fields extend the existing block-return idiom at reckon/crew/picker/snapshot.py:388-389 and the glossary addition at reckon/crew/picker/prompts.py:112 matches the surrounding entry style.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/picker/snapshot.py reuses the already-imported statistics.median and the existing per-candidate entry dict; the only other launch-count aggregate, repair_or_resume_count at reckon/crew/picker/outcomes.py:510, is a distinct offline grouping the plan names as the prior reader, not an owner to extend.\nFINDING manifest.md:12 follow-on: the record's gate line and test_logs name only the pytest run; the done-when also requires ruff check and ruff format --check to add no finding on the staged paths, which is asserted in the source node's prompt but recorded in no log or manifest field, so that half of the measure cannot be checked from the record.\n",
+  "review_run_id": "r-20261017T210602601152-review-of-a-pick-sees-how-many-launches-an-outcome-took-c38525d0de07",
+  "reviewed_base_sha": "711c721d4e12cb32159bbcaee810ba0b78daa26b",
+  "reviewed_head_sha": "c38525d0de07e18244954edefeab8a00f53481ae",
+  "reviewed_run_id": "r-20261017T204459981492-a-pick-sees-how-many-launches-an-outcome-took",
+  "reviewing_run_id": "r-20261017T210602601152-review-of-a-pick-sees-how-many-launches-an-outcome-took-c38525d0de07",
+  "scores": {
+    "durability": 20,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "section": "s31",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T21:15:59.953221+00:00",
+  "total": 115
+}
