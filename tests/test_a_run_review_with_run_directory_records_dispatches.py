@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import os
 from pathlib import Path
 
@@ -85,6 +86,31 @@ def _reviewed_run_node_id() -> str:
     }
     return str(
         recovery_review_dispatch._review_dispatch_fields(record, delta=None)["node_id"]
+    )
+
+
+# A reviewed run whose node id is not its run id, which is the ordinary shape of
+# a real run: its review's id then carries the node id, and the reviewed run is
+# recoverable only through the live fleet.
+SEMANTIC_NODE_ID = "review-records-admission-subject"
+
+
+def _composed_semantic_fields() -> dict:
+    """A review's dispatch fields composed from a node-id (not run-id) source."""
+    record = {
+        "run_id": REVIEWED_ID,
+        "project": "reckon",
+        "node": {"id": SEMANTIC_NODE_ID, "time_budget": "20m"},
+    }
+    return recovery_review_dispatch._review_dispatch_fields(record, delta=None)
+
+
+def _seed_live_pointer(store: Store, run_id: str, node_id: str) -> None:
+    """Publish one live pointer into the isolated crew home's live directory."""
+    path = runs.pointer_path(run_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"run_id": run_id, "project": "reckon", "node": {"id": node_id}})
     )
 
 
@@ -199,6 +225,43 @@ def test_review_admits_its_own_runs_record_directory_and_fence_grants_it_alone(
         root for root in fence if root.is_relative_to(store.reviewed_run_directory())
     } == {store.record_directory().resolve()}
     assert store.project_directory.resolve() not in fence
+
+
+def test_reflex_composed_review_resolves_its_run_through_the_live_fleet(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A review minted from a node-id source is admitted via the fleet lookup."""
+    store = Store(tmp_path)
+    store.point_the_stores(monkeypatch)
+    _separate_sandbox_temp(tmp_path, monkeypatch)
+    fields = _composed_semantic_fields()
+    paths = fields["write_paths"]
+    _seed_live_pointer(store, REVIEWED_ID, SEMANTIC_NODE_ID)
+    node = _review_node(paths, node_id=fields["node_id"])
+    roots, findings = _reachability(store, node)
+    assert not _scoped(findings), findings
+    assert roots is not None
+    assert store.record_directory().resolve() in roots
+    fence = set(store.fence_roots(paths))
+    assert {
+        root for root in fence if root.is_relative_to(store.reviewed_run_directory())
+    } == {store.record_directory().resolve()}
+    assert store.project_directory.resolve() not in fence
+
+
+def test_reflex_composed_review_with_no_live_pointer_is_refused_as_scoped(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A node-id source naming no live run is refused, naming the node id."""
+    store = Store(tmp_path)
+    store.point_the_stores(monkeypatch)
+    _separate_sandbox_temp(tmp_path, monkeypatch)
+    fields = _composed_semantic_fields()
+    node = _review_node(fields["write_paths"], node_id=fields["node_id"])
+    _, findings = _reachability(store, node)
+    scoped = _scoped(findings)
+    assert scoped, findings
+    assert all(node.id in item["detail"] for item in scoped), findings
 
 
 def test_reflex_launches_a_delivered_runs_review_on_a_read_only_backend(
