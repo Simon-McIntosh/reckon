@@ -26,7 +26,7 @@
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -308,6 +308,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-17T04:05:00Z">
     <div class="r-comment-body"><p>§5 landed: <code>crew dispatch --pair-backend</code> launches a primary and a shadow arm from one base, and each arm's fence hides its partner's run directory and, through the shadow's session directory, its worktree (commits <code>0e648e452</code>–<code>86a51bdc6</code>). 9 bwrap tests pass, the 295-file population shows no added failure, and the negative control fails. <a href="/reckon/evidence/archive/a-shadow-cannot-see-its-primary-landed.html#s5">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261017T000127932636-a-paired-dispatch-hides-each-arm" data-who="reckon-build" data-when="2026-10-17T04:10:35Z">
+    <div class="r-comment-body"><p>crew dispatch --pair-backend launches a primary and a shadow arm from one base: both run ids, run directories and worktree paths are allocated before either arm launches and each arm&#x27;s fence is composed from its partner&#x27;s allocation through promotion_scope._allocated_read_surfaces; the pair writes to the run store only on the launch path, and the primary&#x27;s masks name the shadow&#x27;s session directory (its worktree&#x27;s parent, created on the launch path) so a worktree the shadow has yet to create is hidden once it appears; each arm supplies its dispatch keywords through one source (9 passed); the fence is proved by executing the composed argv under real bubblewrap and by reading the primary&#x27;s own composed masks back and writing under the shadow&#x27;s session directory; the declared negative control drops the primary arm&#x27;s masks and the listing is non-empty (EXIT=1)</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-s4-resolution-layer" data-who="reckon-build" data-when="2026-10-16T19:52:00Z">
     <div class="r-comment-body"><p>Content review <code>r-20261016T193510730111</code>, finding <code>reasoning-1</code>: §4 puts the resolution of the primary's paths in two layers. One sentence has <code>launch_plan</code> gain the paths to hide. The other has the launch look up the primary's ledger row, but <code>launch_plan</code> in <code>reckon/_backends.py</code> takes no project or ledger. The fix, to be written into §4 before it dispatches: each crew-layer caller (dispatch, session launch, resume) looks up the primary's row from the lineage and calls <code>promotion_scope._primary_read_targets</code>. It passes the resolved paths to <code>launch_plan</code> as a plain list of paths to hide, and <code>launch_plan</code> hands them to <code>fence_argv</code>. <code>_backends.py</code> gains no ledger parameter and no crew import.</p></div>
