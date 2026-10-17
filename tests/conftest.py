@@ -133,7 +133,17 @@ def install_cache_root_guard() -> None:
 
 
 def pytest_runtest_setup(item: pytest.Item) -> None:
-    """Attribute any resolution a test's setup makes to that test's id."""
+    """Attribute any resolution a test's setup makes to that test's id.
+
+    The wrapper is re-armed here as well as at import, because a reload of
+    ``reckon._store`` — which ``tests/mcp_family_reload.py`` performs so the
+    MCP tools' store classes stay in step — re-executes the module and rebinds
+    ``cache_root`` to the module's own function, dropping the wrapper with it.
+    Re-arming at every test boundary leaves only the reloading test's own body
+    unwatched, and keeps the wrapper present for the guard test, which runs
+    last in its worker.
+    """
+    install_cache_root_guard()
     _GUARD_STATE["nodeid"] = item.nodeid
 
 
