@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: head arm head-gate.log reports 27 passed with no FAILED ids; the base arm negative-control.log fails only the test file the head adds, so the id difference head-minus-base is empty",
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T222835968437-a-roadmap-reads-the-watch-stream-once/head-gate.log",
+  "base_log_revision": "5316d8e9f2af5a4e346a17c6152fae65794ae88b",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T222835968437-a-roadmap-reads-the-watch-stream-once/negative-control.log",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/roadmap.py:2590",
+    "reckon/mcp_views.py:1889",
+    "reckon/mcp_views.py:1923",
+    "reckon/mcp_views.py:1933",
+    "reckon/sprint_liveness.py:247"
+  ],
+  "completed_at": "2026-10-17T22:53:19.315Z",
+  "dispatched_at": "2026-10-17T22:44:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "1989",
+      "severity": "follow-on",
+      "text": "follow-on: the shared reduction keeps the latest event carrying recovery_classification OR to_state, but sprint_liveness._recorded_states (reckon/sprint_liveness.py:73) reads only to_state, so a run whose last transition carried recovery_classification with a blank to_state would lose its recorded state where the replaced loop kept its earlier to_state row; unreachable through runs._stream_transition today (it always sets to_state=current)."
+    }
+  ],
+  "head_log_revision": "5316d8e9f2af5a4e346a17c6152fae65794ae88b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "One commit 98338aa3 changes five files -- reckon/crew/runs.py (the reader and its memory), reckon/sprint_liveness.py and reckon/mcp_views.py (both loops replaced by delegation), the new test, and the evidence fragment -- reviewed commit by commit against base 5316d8e9.",
+    "done_when": "The source prompt's FENCE EVIDENCE names tests/test_a_roadmap_reads_each_live_stream_once.py with four quantitative clauses; the test asserts each (lines 155, 170, 179) and its base-tree negative control fails the first (negative-control.log, 40000 vs 10000, EXIT=1).",
+    "goal": "The source prompt's GOAL asks one roadmap read to parse the project watch stream once, shared by both readers, with a long-lived process parsing only appended bytes; reckon/crew/runs.py:1928 watch_stream_latest_events holds a per-project byte offset and reduction under one lock.",
+    "manifest": "The source manifest.md reports the shared reader at runs.py, the two delegating consumers, head-gate.log 27 passed EXIT=0, and negative-control.log EXIT=1; it names no baseline_suite or after_suite arm (both null).",
+    "write_paths": "The source prompt grants six paths (sprint_liveness.py, mcp_views.py, crew/runs.py, the test file, the evidence fragment, the figures dir); the 5316d8e9..98338aa3 diff changes five of them and no file outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_roadmap_reads_each_live_stream_once.py:155 reddens when the shared reader is absent, as negative-control.log records the base tree parsing 40000 lines and failing assert 40000 <= 10000.",
+    "evidence": "tests/test_a_roadmap_reads_each_live_stream_once.py:155 asserts the at-most-once count and its negative control (head-gate.log EXIT=0 vs negative-control.log EXIT=1) is recorded, but the done_when's ruff clause rests on the source manifest's claim rather than a gate log.",
+    "fit": "reckon/crew/runs.py:1907 WatchStreamMemory and the module-global memory sit beside the existing _WATCH_STREAM_PRODUCERS idiom at runs.py:1845 and carry no plan label or version suffix.",
+    "goal_fidelity": "reckon/crew/runs.py:1928 reduces the stream once per project and both readers delegate to it (reckon/sprint_liveness.py:70, reckon/mcp_views.py:1845), which the gate shows as one parse of a 10000-line stream.",
+    "reuse": "reckon/crew/runs.py:1928 is the single owner of the latest-classified-transition reduction, built on read_stream_events (runs.py:1894) and parse_stream_line; a capability search over reckon/ found only the two inline loops the diff replaces (sprint_liveness.py, mcp_views.py) and no prior owner.",
+    "scope_discipline": "Every path in the 5316d8e9..98338aa3 diff (runs.py, sprint_liveness.py, mcp_views.py, the test, the evidence fragment) is inside the six declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt's GOAL asks one roadmap read to parse the project watch stream once, shared by both readers, with a long-lived process parsing only appended bytes; reckon/crew/runs.py:1928 watch_stream_latest_events holds a per-project byte offset and reduction under one lock.\nVERDICT done_when: The source prompt's FENCE EVIDENCE names tests/test_a_roadmap_reads_each_live_stream_once.py with four quantitative clauses; the test asserts each (lines 155, 170, 179) and its base-tree negative control fails the first (negative-control.log, 40000 vs 10000, EXIT=1).\nVERDICT write_paths: The source prompt grants six paths (sprint_liveness.py, mcp_views.py, crew/runs.py, the test file, the evidence fragment, the figures dir); the 5316d8e9..98338aa3 diff changes five of them and no file outside them.\nVERDICT manifest: The source manifest.md reports the shared reader at runs.py, the two delegating consumers, head-gate.log 27 passed EXIT=0, and negative-control.log EXIT=1; it names no baseline_suite or after_suite arm (both null).\nVERDICT diff: One commit 98338aa3 changes five files -- reckon/crew/runs.py (the reader and its memory), reckon/sprint_liveness.py and reckon/mcp_views.py (both loops replaced by delegation), the new test, and the evidence fragment -- reviewed commit by commit against base 5316d8e9.\nCALL_SITES: reckon/roadmap.py:2590, reckon/mcp_views.py:1889, reckon/mcp_views.py:1923, reckon/mcp_views.py:1933, reckon/sprint_liveness.py:247\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1928 reduces the stream once per project and both readers delegate to it (reckon/sprint_liveness.py:70, reckon/mcp_views.py:1845), which the gate shows as one parse of a 10000-line stream.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_roadmap_reads_each_live_stream_once.py:155 asserts the at-most-once count and its negative control (head-gate.log EXIT=0 vs negative-control.log EXIT=1) is recorded, but the done_when's ruff clause rests on the source manifest's claim rather than a gate log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in the 5316d8e9..98338aa3 diff (runs.py, sprint_liveness.py, mcp_views.py, the test, the evidence fragment) is inside the six declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_roadmap_reads_each_live_stream_once.py:155 reddens when the shared reader is absent, as negative-control.log records the base tree parsing 40000 lines and failing assert 40000 <= 10000.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/runs.py:1907 WatchStreamMemory and the module-global memory sit beside the existing _WATCH_STREAM_PRODUCERS idiom at runs.py:1845 and carry no plan label or version suffix.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/runs.py:1928 is the single owner of the latest-classified-transition reduction, built on read_stream_events (runs.py:1894) and parse_stream_line; a capability search over reckon/ found only the two inline loops the diff replaces (sprint_liveness.py, mcp_views.py) and no prior owner.\nFINDING reckon/crew/runs.py:1989 follow-on: the shared reduction keeps the latest event carrying recovery_classification OR to_state, but sprint_liveness._recorded_states (reckon/sprint_liveness.py:73) reads only to_state, so a run whose last transition carried recovery_classification with a blank to_state would lose its recorded state where the replaced loop kept its earlier to_state row; unreachable through runs._stream_transition today (it always sets to_state=current).",
+  "review_run_id": "r-20261017T224357846647-review-of-a-roadmap-reads-the-watch-stream-once-98338aa3fdbf",
+  "reviewed_base_sha": "5316d8e9f2af5a4e346a17c6152fae65794ae88b",
+  "reviewed_commits": [
+    "98338aa3fdbf13859dc49d4f430408ffab059916"
+  ],
+  "reviewed_head_sha": "98338aa3fdbf13859dc49d4f430408ffab059916",
+  "reviewed_run_id": "r-20261017T222835968437-a-roadmap-reads-the-watch-stream-once",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T22:55:02.754538+00:00",
+  "total": 115
+}
