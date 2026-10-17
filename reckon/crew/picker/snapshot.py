@@ -276,9 +276,12 @@ def _candidates_scan(
     per-candidate block, rows that recorded no requirement count under
     ``unrecorded``, and rows that recorded a different requirement count in
     neither. The block's review-total and wall-time medians are read over the
-    matched rows in the same walk, so no figure here costs a second pass. A
-    request that names no requirement has no difficulty to read history at, so
-    the at-requirement block is None and none is built.
+    matched rows in the same walk, so no figure here costs a second pass. The
+    launches a matched row took are collected in the same walk too: the row's
+    ``attempt`` joins an ``attempts`` list, and a passed row's first-launch
+    count is tallied beside it while the row's gate and attempt are still
+    together. A request that names no requirement has no difficulty to read
+    history at, so the at-requirement block is None and none is built.
 
     A coordinator's move is read in the same walk. A row whose lineage records a
     lane change away from the backend its ``picker_selection`` chose -- a move --
@@ -343,7 +346,15 @@ def _candidates_scan(
         if at_requirement is None:
             continue
         entry = at_requirement.setdefault(
-            key, {"counts": Counter(), "unrecorded": 0, "reviews": [], "walls": []}
+            key,
+            {
+                "counts": Counter(),
+                "unrecorded": 0,
+                "reviews": [],
+                "walls": [],
+                "attempts": [],
+                "passed_first_attempt": 0,
+            },
         )
         recorded = _recorded_requirement(row)
         if recorded is None:
@@ -352,6 +363,11 @@ def _candidates_scan(
         if recorded != request_requirement:
             continue
         entry["counts"][gate] += 1
+        attempt = row.get("attempt")
+        if isinstance(attempt, int) and not isinstance(attempt, bool) and attempt > 0:
+            entry["attempts"].append(attempt)
+            if gate == "passed" and attempt == 1:
+                entry["passed_first_attempt"] += 1
         review = row.get("review")
         total = review.get("total") if isinstance(review, Mapping) else None
         if isinstance(total, (int, float)) and not isinstance(total, bool):
@@ -374,19 +390,26 @@ def _requirement_block(entry: Mapping[str, Any] | None) -> dict[str, Any]:
     The block restates the outcome vocabulary over the rows whose recorded
     requirement equals the request's, adds ``unrecorded``, the count of rows
     that recorded no requirement, and carries the median review total and wall
-    seconds over the matched rows. A candidate with no matched row reads zero
-    gate counts and null medians, never a median over an empty sample.
+    seconds over the matched rows. It also carries ``attempts_median``, the
+    median of the launches those rows took, and ``passed_first_attempt``, how
+    many of them passed on their first launch, so a pass that needed resumes is
+    not weighed as a pass on the first try. A candidate with no matched row
+    reads zero gate counts, null medians and a zero first-attempt count, never a
+    median over an empty sample.
     """
 
     entry = entry or {}
     counts = entry.get("counts") or Counter()
     reviews = entry.get("reviews") or []
     walls = entry.get("walls") or []
+    attempts = entry.get("attempts") or []
     return {
         **_outcome_counts(counts),
         "unrecorded": int(entry.get("unrecorded") or 0),
         "review_total_median": round(median(reviews), 1) if reviews else None,
         "wall_seconds_median": round(median(walls), 1) if walls else None,
+        "attempts_median": round(median(attempts), 1) if attempts else None,
+        "passed_first_attempt": int(entry.get("passed_first_attempt") or 0),
     }
 
 
