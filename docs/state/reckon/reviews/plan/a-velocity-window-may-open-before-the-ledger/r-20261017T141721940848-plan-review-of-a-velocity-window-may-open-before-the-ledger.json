@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T14:29:39.380Z",
+  "dispatched_at": "2026-10-17T14:18:05Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-velocity-window-may-open-before-the-ledger.html:139",
+      "id": "done_when-1",
+      "reason": "the author would either retarget the control at an interrupted-resume case or correct the case it claims to fail, so the node's gate can actually show the per-slice cache resume works.",
+      "text": "the second negative control (\"Storing the cache only once, after the last slice, must fail the third case, because the second read would search again\") cannot redden the third case at line 134 (\"runs the same window twice and asserts that the second read issues no `-p` log\"): for an uninterrupted read the cache is written once either way and the second read finds a complete entry, so it issues no `-p` log and the case passes under the mutation. The mutation in fact breaks a different property \u2014 resume of a read interrupted *between* slices (line 126) \u2014 which no done-when case exercises. As written the control demonstrates nothing about the case it names and leaves the mid-read resume guard unshown to fire.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ee9c6d0c51c208b2bee4ecfdecd5c0715b8783ecab99d95694f15c5cc68f0fbc",
+  "plan_slug": "a-velocity-window-may-open-before-the-ledger",
+  "plan_version": 12,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-17T14:30:42.632115+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T14:30:42.632115+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-velocity-window-may-open-before-the-ledger.v12.json",
+  "review_run_id": "r-20261017T141721940848-plan-review-of-a-velocity-window-may-open-before-the-ledger",
+  "reviewed_blob_sha": "71dbfa6bde7bf0bf207907e54879b6abb86f12b9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each file/section/commit anchor named in \u00a72 resolves (`reckon/velocity.py:1217`, `reckon/velocity.py:149`, `e080ed967`, `440ce55a6`, `534f6536e`, the blocked plan's `s4`).",
+    "done_when": "a finding \u2014 \u00a72's second negative control (line 139) is asserted to fail the third done-when case (line 134), but an uninterrupted read writes the same final cache entry either way, so the mutation does not redden that case.",
+    "evidence_paths": "pass \u2014 the cited logs sit under `~/.cache/reckon-velocity-window-check/`, a durable home path that survives the run, not a scratchpad or node-local temporary directory.",
+    "naming": "pass \u2014 the new test file `tests/test_velocity_places_a_run_by_its_record_file.py` and the edits to `reckon/velocity.py` carry no plan labels, stage names or ticket numbers, and no changelog prose.",
+    "reasoning": "pass \u2014 the stated root cause (the 180 s bound on a patch-generating log over a tens-of-megabytes ledger) matches the cited `TimeoutExpired` argv, the slicing mechanism can hold each git call inside the bound, and the changed function is reached by a named production caller (`capture` \u2192 `reckon crew velocity`).",
+    "single_goal": "pass \u2014 both \u00a72 remedies (sliced search, per-run-file placement) serve the single declared goal of keeping the window's search inside its git bound, and both are gated by one done-when.",
+    "wiring": "pass \u2014 `plan-blocks` points at a section that exists (`the-ledger-is-one-file-per-run#s4`), the followup `f-avwmobl-002` is open and recommends `\u00a72`, and no relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "7438dc3857ea67728ccc6b0036805dda4784857bac216f4a9af3f3706a75a653",
+    "s1": "7fb9f51fa9b87a449b336034d21038a82939900b9d4f0f7601d78920d33f60b5",
+    "s2": "ab43efd4a3238de0f945a35f919db2d836cc5177f72f65c148b14aa263cbd14f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T14:30:40.565365+00:00"
+}
