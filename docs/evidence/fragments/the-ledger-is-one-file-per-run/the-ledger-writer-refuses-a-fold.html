@@ -106,4 +106,22 @@
   plus the six completion-repair cases: <strong>19 passed, EXIT=0</strong>. A rescan of every
   <code>ledger.load</code>-then-<code>ledger.write</code> function under <code>reckon/</code> and
   <code>scripts/</code> finds no other union-fed writer.</p>
+
+  <p id="the-ledger-writer-refuses-a-fold-one-owner"><strong>One owner of the run-file
+  write.</strong> A review of this node found the same function copied three times: the
+  private helper inside <code>ledger.py</code>, and one in each of the two backfill scripts,
+  each re-encoding one run through <code>serialize_run</code> into that run's own file
+  beside <code>_keep_run_files_identical</code>, which did the same thing inline. All four
+  are now one public helper, <code>ledger.write_run_file</code>, which every writer that
+  amends a row owning a file calls. The two script copies and the private one are deleted.
+  The helper keeps each caller's permission bits: the callers that amend or create a run
+  file pass the <em>0o600</em> they used before, while
+  <code>_keep_run_files_identical</code> passes <code>mode=None</code> so a rewrite that
+  only re-encodes a file already on disk leaves its bits as they were, which is what its
+  inline write did. No behaviour changes: the bytes written are
+  <code>serialize_run(row)</code> in every path, exactly as before. Head gate over the fold
+  suite and the hold-check suite: <strong>13 passed, EXIT=0</strong>; the three widened
+  files in full: <strong>60 passed, EXIT=0</strong>; the suites covering the ledger
+  and the run-file write path, including the two backfill scripts:
+  <strong>134 passed, EXIT=0</strong>.</p>
 </section>
