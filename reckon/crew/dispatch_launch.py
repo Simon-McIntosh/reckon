@@ -1502,6 +1502,7 @@ TREE_SNAPSHOT_NAME = "tree-snapshot.json"
 WORKER_RECORD_NAME = "worker.json"
 EXIT_RECORD_NAME = "exit.json"
 ATTEMPT_RECORD_NAME = "attempt.json"
+REVIEW_FILED_RECORD_NAME = "review-filed.json"
 
 # The argv token that runs this module as the per-run supervisor. Named with
 # underscores so it can never collide with a real crew subcommand.
@@ -3212,8 +3213,44 @@ def _run_supervisor(spec_path: Path) -> int:
         exit_record,
         attempt=attempt,
     )
+    filed = _file_delivered_review_records(run_id, run_directory, attempt=attempt)
+    if filed:
+        _write_attempt_artifact(
+            run_directory,
+            REVIEW_FILED_RECORD_NAME,
+            {"run_id": run_id, "attempt": attempt, "filed": filed},
+            attempt=attempt,
+        )
     _publish_stored_phase(spec, ended=True, exit_record=exit_record)
     return 0
+
+
+def _file_delivered_review_records(
+    run_id: str, run_directory: Path, *, attempt: int
+) -> list[str]:
+    """File a review's delivered records into the store as its worker ends.
+
+    The supervisor runs outside the fence, so it holds no grant the worker had
+    to widen to reach the store, and the store's own writer places each record
+    exactly where every store reader already looks for it. The filing is
+    recorded beside the exit record rather than only performed, because a run
+    whose record reached the store and one whose record never parsed read the
+    same from the store alone. A run that delivers nothing files nothing, so a
+    non-review run pays one pointer read and no store write.
+    """
+    from reckon.crew import recovery_review_delivery as delivery
+    from reckon.crew import runs as runs_module
+
+    try:
+        record = runs_module.read_pointer(run_id)
+        written = delivery.file_review_records_into_store(record)
+    except (CrewError, OSError, ValueError, TypeError) as exc:
+        print(
+            f"review filing unavailable: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return []
+    return [str(path) for path in written]
 
 
 def _claim_registration_for_worker(run_directory: Path, run_id: str) -> str:

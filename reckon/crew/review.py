@@ -2432,6 +2432,98 @@ def store_review(
     return path
 
 
+# ── A run review delivers its record through the reviewed run's directory ───
+# The store holds every run of a project as a flat file beside every other
+# run's, so a run review that declared a store path declared a file that did
+# not exist yet, and the fence granted the whole project directory to reach it —
+# measured 2026-10-16, on a directory holding 4,233 records. A run review
+# therefore declares its record inside the directory of the run it reviews, in
+# a subdirectory of its own: that subdirectory holds review records and nothing
+# of another run's, so no grant a review holds reaches a record it was not
+# asked about, and the record is filed into the store when the run ends, so
+# every reader of the store finds it exactly where it found it before.
+#
+# The location is keyed on the reviewed run because a review is composed before
+# the run id dispatch mints for it exists — the composing reflex runs, and this
+# path is declared to it, ahead of the run it launches. The reviewed run is the
+# one identity both the composer and every later reader already hold.
+RUN_REVIEW_RECORD_DIRNAME = "review-records"
+
+
+def run_review_record_directory(run_directory: str | Path) -> Path:
+    """The record directory a run review delivers into, inside the run's own."""
+    return Path(run_directory) / RUN_REVIEW_RECORD_DIRNAME
+
+
+def run_review_record_paths(
+    run_directory: str | Path,
+    reviewed_run_id: str,
+    *,
+    reviewed_head_sha: str = "",
+) -> list[str]:
+    """The record paths a run review declares, in the order it declares them.
+
+    One path for the record, and a second keyed by the reviewed head when the
+    review names one — the store's own two spellings, so a delivered file keeps
+    the name every store reader parses a subject from wherever it lands.
+    """
+    directory = run_review_record_directory(run_directory)
+    names = [f"{reviewed_run_id}.json"]
+    if reviewed_head_sha:
+        names.append(f"{reviewed_run_id}{_blob_suffix(reviewed_head_sha)}.json")
+    return [str(directory / name) for name in names]
+
+
+def run_review_record_location(
+    declared: str | Path, run_directory: str | Path
+) -> Path | None:
+    """Where a declared path lands, when it is a run review's own record path."""
+    candidate = Path(str(declared))
+    if candidate.parent == run_review_record_directory(run_directory):
+        return candidate
+    return None
+
+
+def delivered_run_review_paths(
+    record: Mapping[str, Any], run_directory: str | Path
+) -> list[Path]:
+    """The record files a run review delivered, in the order it declared them."""
+    node = record.get("node") or {}
+    located = (
+        run_review_record_location(declared, run_directory)
+        for declared in node.get("write_paths") or ()
+    )
+    return [path for path in located if path is not None]
+
+
+def file_delivered_run_reviews(
+    record: Mapping[str, Any], *, run_directory: str | Path
+) -> list[Path]:
+    """File a review's delivered records into the store, return their paths.
+
+    The supervisor calls this when its worker exits, and ``crew complete``
+    calls it again for a run whose supervisor did not get that far, so a record
+    delivered into a run directory reaches the store on either path. The
+    store's own writer decides what a review is and where it goes, so a record
+    it refuses is left unfiled: a reader that finds nothing in the store reads
+    the review as undelivered, which is what a half-written record is, and
+    forcing it in would file a review every consumer reads as absent.
+    """
+    filed: list[Path] = []
+    for source in delivered_run_review_paths(record, run_directory):
+        try:
+            body = json.loads(source.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(body, dict):
+            continue
+        try:
+            filed.append(store_review(body))
+        except (ValueError, OSError):
+            continue
+    return filed
+
+
 def run_record_times(
     project: str,
     run_id: str,
