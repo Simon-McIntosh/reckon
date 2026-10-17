@@ -1081,9 +1081,44 @@ def picker_runs(project: str, root: str | Path | None = None) -> list[dict[str, 
         return [picker_record(row) for row in data["runs"]]
 
 
+# A decoded JSON document, held against the stat identity of the file it was
+# read from. A sweep reads the same crew document through several readers — the
+# per-run file reader here and the held-worktree scan in
+# :mod:`reckon.crew.obligations` both decode every run file, and the index build
+# decodes them again — so the file's own identity, device and inode and size and
+# nanosecond mtime, is the only key that holds the parse in memory between those
+# readers and drops it the moment the file moves. A document that cannot be read
+# is never held, so it re-reads as absent exactly as it always did.
+_DOCUMENT_CACHE: dict[str, tuple[tuple[int, int, int, int], Any]] = {}
+
+
+def document_identity(path: Path) -> tuple[int, int, int, int] | None:
+    """The stat identity a decoded document is held against, or None if absent."""
+    try:
+        info = path.stat()
+    except OSError:
+        return None
+    return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
+
+
+def read_document(source: Path) -> Any:
+    """Decode one JSON document at most once per stat identity of its file."""
+    key = str(source)
+    identity = document_identity(source)
+    if identity is None:
+        _DOCUMENT_CACHE.pop(key, None)
+        raise FileNotFoundError(str(source))
+    cached = _DOCUMENT_CACHE.get(key)
+    if cached is not None and cached[0] == identity:
+        return cached[1]
+    value = json.loads(source.read_text(encoding="utf-8"))
+    _DOCUMENT_CACHE[key] = (identity, value)
+    return value
+
+
 def _read_run(source: Path) -> dict[str, Any]:
     try:
-        record = json.loads(source.read_text(encoding="utf-8"))
+        record = read_document(source)
     except (OSError, ValueError) as exc:
         raise LedgerError(
             f"cannot read run {source.stem!r} at {source}: {exc}"

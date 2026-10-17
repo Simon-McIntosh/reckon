@@ -428,7 +428,7 @@ def _run_file_record(source: Path) -> Mapping[str, Any] | None:
     itself would not.
     """
     try:
-        record = json.loads(source.read_text(encoding="utf-8"))
+        record = ledger.read_document(source)
     except (OSError, ValueError):
         return None
     if (

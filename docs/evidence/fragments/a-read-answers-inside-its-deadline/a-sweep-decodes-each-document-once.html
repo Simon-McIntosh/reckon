@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s22">
+  <title>A sweep decodes each crew document once | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-sweep-decodes-each-document-once-landing" data-node="a-sweep-decodes-each-document-once" data-reckon="landed" data-when="2026-10-17">
+  <h2>A sweep decodes each crew document once</h2>
+  <p>Per-run ledger documents are now decoded through one process-wide memo,
+  <code>ledger.read_document</code>, held against the file's stat identity. Both
+  readers of a run file — the held-worktree scan in
+  <code>reckon/crew/obligations.py</code> and the ledger's own
+  <code>_read_run</code> — take the memo, so a sweep decodes each per-run
+  document once, and a later sweep in the same process skips every file whose
+  identity is unchanged. Over a fixture of 200 per-run files and 20 live
+  pointers, one <code>obligation_snapshot.sweep</code> decodes each of the 200
+  run documents once; a second sweep with one run file changed decodes exactly
+  that file; the snapshots both sweeps write equal an unmemoised sweep's.</p>
+</article>
+</body>
+</html>
