@@ -672,6 +672,245 @@ def shadow(
     )
 
 
+def _paired_arm_kwargs(
+    dispatch_kwargs: Mapping[str, Any], overrides: Mapping[str, Any]
+) -> dict[str, Any]:
+    """One dispatch arm's keyword surface: the caller's, minus what the arm fixes."""
+    result = dict(dispatch_kwargs)
+    for key in overrides:
+        result.pop(key, None)
+    result.update(overrides)
+    return result
+
+
+def dispatch_pair(
+    *,
+    node: TaskNode,
+    project: str,
+    repo: str | Path | None,
+    config: Mapping[str, Any],
+    session: str,
+    pair_backend: str,
+    dry_run: bool = False,
+    **dispatch_kwargs: Any,
+) -> dict[str, Any]:
+    """Dispatch one node twice from one base: a primary arm and a shadow arm.
+
+    A shadow is meaningful only when it never read its primary's answer, and a
+    primary that has already landed leaves that answer in the project's main
+    checkout and in git history where no fence reaches. So the pair is started
+    together instead: both arms are cut from one base before either can land,
+    which is the channel this removes rather than hides.
+
+    Both run ids, both run directories and both worktree paths are fixed here,
+    before either arm launches, so each arm's fence is composed from its
+    partner's *allocation* rather than from a live pointer or a ledger row the
+    partner does not have yet: a paired primary is uncommitted until it is
+    promoted, and a shadow's pointer is written only at the end of its own
+    dispatch. The masks are resolved through
+    ``promotion_scope._allocated_read_surfaces``, which names a partner's run
+    directory, worktree and any stored review records.
+
+    The primary arm is routed as any dispatch is, and its resolved agent
+    configuration is read from its own planning resolution rather than from a
+    committed ledger row, so a paired primary is never refused for being
+    uncommitted. The shadow arm runs on the named backend at the primary's
+    inherited effort and sandbox, exactly as ``crew shadow`` configures one.
+    """
+    from reckon.crew.promotion_scope import _allocated_read_surfaces
+    from reckon.crew.routing import _launch_worktree_path
+
+    candidate_backend = str(pair_backend or "").strip()
+    if not candidate_backend:
+        raise CrewError(
+            format_refusal("D20", "--pair-backend needs a backend to run the shadow on")
+        )
+    repo_root = resolve_project_repository(project, repo)
+    base = str(dispatch_kwargs.get("base") or "HEAD")
+    # Both ids are minted from one clock read each, so the pair is ordered and
+    # neither arm's id is derived from the other's: a shadow names its primary
+    # through its lineage rather than through its id, so the primary's run id
+    # never reaches the shadow's worktree path or composed prompt.
+    primary_run_id = new_run_id(node.id)
+    shadow_run_id = new_run_id(node.id)
+
+    locked_decisions = dispatch_kwargs.get("locked_decisions") or ()
+    peer_scopes = dispatch_kwargs.get("peer_scopes") or {}
+    route = dispatch_kwargs.get("route")
+    picker_selection = dispatch_kwargs.get("picker_selection")
+    planning_kwargs: dict[str, Any] = {
+        "config": config,
+        "locked_decisions": locked_decisions,
+        "peer_scopes": peer_scopes,
+        "project": project,
+        "repo": repo_root,
+        "base": base,
+        "execution_override": dispatch_kwargs.get("execution_override", False),
+        "orchestrator_lane_reason": dispatch_kwargs.get("orchestrator_lane_reason"),
+        "local": dispatch_kwargs.get("local", False),
+        "member": dispatch_kwargs.get("member", ""),
+        "allow_unreviewed_plan": dispatch_kwargs.get("unreviewed_plan_override", False),
+        "session": session,
+        "route": route,
+        "picker_selection": picker_selection,
+    }
+    # Each arm resolves its own manifest under its own run directory: a node
+    # helper's default manifest path is one path, and two workers writing it
+    # would each read the other's delivery. The pairing is what makes a fresh
+    # per-arm manifest necessary, so it is fixed here rather than left to the
+    # caller to remember.
+    primary_node = dataclasses.replace(node, manifest_path="")
+    primary_plan = plan_dispatch(
+        node=primary_node,
+        run_id=primary_run_id,
+        backend_override=dispatch_kwargs.get("backend_override"),
+        default_backend_override=dispatch_kwargs.get("default_backend_override"),
+        **planning_kwargs,
+    )
+    primary_agent = primary_plan.as_dict()["agent"]
+    shadow_node = dataclasses.replace(node, manifest_path="")
+    shadow_config, comparison = _shadow_dispatch_config(
+        config=config,
+        node=shadow_node,
+        primary_agent=primary_agent,
+        candidate_backend=candidate_backend,
+        configuration_overrides=(),
+    )
+    shadow_backend_name, _shadow_backend = resolve_role(
+        shadow_config, node.role, node.spec_level
+    )
+    worktree_component = uuid.uuid4().hex[:12]
+    shadow_session = shadow_worktree_session(
+        primary_run_id, shadow_backend_name, worktree_component
+    )
+    primary_worktree = str(_launch_worktree_path(repo_root, session, node.id))
+    shadow_worktree = str(_launch_worktree_path(repo_root, shadow_session, node.id))
+    # The shadow's worktree is created by the shadow's own dispatch, after the
+    # primary has launched, and the fence skips a masked path that does not
+    # exist yet — so masking that path alone would hide nothing while the
+    # primary runs. The session directory the worktree is created under is the
+    # mask instead: created on the launch path below, it is a directory the
+    # primary's namespace can hide, and hiding it covers whatever the shadow
+    # writes beneath it later. Only the parent exists, so the shadow's own
+    # `git worktree add` still finds its path free.
+    shadow_session_dir = _launch_worktree_path(
+        repo_root, shadow_session, node.id
+    ).parent
+    lineage: dict[str, Any] = {
+        "kind": "shadow",
+        "primary_run_id": primary_run_id,
+        "worktree_component": worktree_component,
+        "configuration": comparison,
+    }
+    primary_masks = (
+        *_allocated_read_surfaces(
+            run_id=shadow_run_id, worktree=shadow_worktree, project=project
+        ),
+        str(shadow_session_dir),
+    )
+    shadow_masks = _allocated_read_surfaces(
+        run_id=primary_run_id, worktree=primary_worktree, project=project
+    )
+
+    if dry_run:
+        shadow_plan = plan_dispatch(
+            node=shadow_node,
+            run_id=shadow_run_id,
+            config=shadow_config,
+            locked_decisions=locked_decisions,
+            peer_scopes={},
+            project=project,
+            repo=repo_root,
+            base=base,
+            local=False,
+            backend_override=shadow_backend_name,
+            member=dispatch_kwargs.get("member", ""),
+            session=session,
+            route="deterministic",
+            picker_selection=None,
+        )
+        return {
+            "dry_run": True,
+            "paired": True,
+            "base_sha": str(_resolve_commit(repo_root, base) or ""),
+            "primary_run_id": primary_run_id,
+            "shadow_run_id": shadow_run_id,
+            "primary_masks": list(primary_masks),
+            "shadow_masks": list(shadow_masks),
+            "primary": {
+                **primary_plan.as_dict(),
+                "worktree": primary_worktree,
+                "paired_shadow_run_id": shadow_run_id,
+            },
+            "shadow": {
+                **shadow_plan.as_dict(),
+                "worktree": shadow_worktree,
+                "lineage": lineage,
+            },
+        }
+
+    # The run directories exist before either arm launches, so an arm's own
+    # worker can write its own stream and records into its own directory, and so
+    # each arm's mask names a directory that is there rather than one invented
+    # later: the shadow's run directory is masked from the primary, and the
+    # primary launches first. The shadow's session directory is created for the
+    # same reason — a mask over an absent path hides nothing.
+    for run_id in (primary_run_id, shadow_run_id):
+        run_dir(run_id).mkdir(parents=True, exist_ok=True)
+    shadow_session_dir.mkdir(parents=True, exist_ok=True)
+
+    primary_record = dispatch(
+        node=primary_node,
+        project=project,
+        repo=repo,
+        config=config,
+        session=session,
+        **_paired_arm_kwargs(
+            dispatch_kwargs,
+            {
+                "base": base,
+                "run_id": primary_run_id,
+                "worktree_session": session,
+                "partner_masks": primary_masks,
+                "paired_shadow_run_id": shadow_run_id,
+                "backend_override": dispatch_kwargs.get("backend_override"),
+                "local": dispatch_kwargs.get("local", False),
+            },
+        ),
+    )
+    shadow_record = dispatch(
+        node=shadow_node,
+        project=project,
+        repo=repo,
+        config=shadow_config,
+        session=session,
+        **_paired_arm_kwargs(
+            dispatch_kwargs,
+            {
+                "base": base,
+                "run_id": shadow_run_id,
+                "worktree_session": shadow_session,
+                "partner_masks": shadow_masks,
+                "route": "deterministic",
+                "picker_selection": None,
+                "backend_override": shadow_backend_name,
+                "default_backend_override": None,
+                "lineage_override": lineage,
+                "local": False,
+                "peer_scopes": {},
+            },
+        ),
+    )
+    return {
+        "ok": True,
+        "paired": True,
+        "primary_run_id": primary_run_id,
+        "shadow_run_id": shadow_run_id,
+        "primary": primary_record,
+        "shadow": shadow_record,
+    }
+
+
 def _recorded_capability(
     resolution: Any,
     *,
@@ -740,6 +979,9 @@ def dispatch(
     dispatch_options: Mapping[str, Any] | None = None,
     admission_launch: bool = False,
     admitted_from: str = "",
+    run_id: str | None = None,
+    partner_masks: Iterable[str] | None = None,
+    paired_shadow_run_id: str = "",
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -803,6 +1045,15 @@ def dispatch(
                 "D20", "only shadow lineage may be supplied explicitly at dispatch"
             )
         )
+    # A paired dispatch hands each arm the surfaces its partner's allocation
+    # names, so neither arm resolves its partner from a pointer or a ledger row
+    # the partner does not have yet. The list is fixed at the call and passed
+    # through unchanged; a run that supplies none composes masks the shadow way.
+    paired_masks: tuple[str, ...] | None = (
+        tuple(str(path) for path in partner_masks)
+        if partner_masks is not None
+        else None
+    )
     authority = resolve_dispatch_authority(project, repo_root)
     ledger_root = resolve_dispatch_ledger_root(authority)
     # Captured before plan_dispatch fills in per-backend defaults, so a budget
@@ -900,6 +1151,7 @@ def dispatch(
             orchestrator_lane_reason=orchestrator_lane_reason,
             authority=authority,
             local=local,
+            run_id=run_id,
             backend_override=backend_override,
             default_backend_override=default_backend_override,
             member=member,
@@ -1452,7 +1704,7 @@ def dispatch(
         lineage = shadow_lineage
         attempt = 1
         primary = None
-        if shadow_lineage:
+        if shadow_lineage and paired_masks is None:
             primary = next(
                 (
                     item
@@ -1854,6 +2106,17 @@ def dispatch(
             ],
             "directory_claim_acceptances": list(accepted_directory_claims),
             "lineage": lineage,
+            # A paired dispatch's primary arm names its partner here, because
+            # the primary is not itself a shadow: its lineage is whatever an
+            # ordinary dispatch of the node would record. The shadow arm names
+            # its primary through the shadow lineage above, exactly as a
+            # standalone shadow does, so the scan, the control predicate and
+            # the pairing hold read either arm unchanged.
+            **(
+                {"paired_shadow_run_id": str(paired_shadow_run_id)}
+                if paired_shadow_run_id
+                else {}
+            ),
             "unreconciled_override": waiver,
             "unreviewed_plan_override": plan_review_waiver,
             "watch_override": watcher_waiver,
@@ -1920,8 +2183,10 @@ def dispatch(
                         fence=compose_fence,
                         fence_config=config,
                         fence_waiver=fence_waiver or None,
-                        masked_paths=_shadow_mask_paths(
-                            shadow_lineage, primary, project
+                        masked_paths=(
+                            paired_masks
+                            if paired_masks is not None
+                            else _shadow_mask_paths(shadow_lineage, primary, project)
                         ),
                     ),
                     facts=dispatch_host,

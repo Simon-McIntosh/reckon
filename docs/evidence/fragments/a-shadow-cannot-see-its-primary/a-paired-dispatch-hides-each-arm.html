@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Evidence — a-paired-dispatch-hides-each-arm</title>
+<meta name="plan-node" content="a-paired-dispatch-hides-each-arm">
+</head>
+<body>
+<main class="evidence-record">
+
+<h2 id="a-paired-dispatch-hides-each-arm-what">What landed</h2>
+<p><code>reckon crew dispatch</code> gains <code>--pair-backend &lt;backend&gt;</code>.
+One call resolves two arms at one base revision: a primary arm routed as any
+dispatch is, and a shadow arm on the named backend configured from the primary
+arm's own planning resolution through <code>_shadow_dispatch_config</code>.
+Both run ids, both run directories and both worktree paths are fixed before
+either arm launches (<code>dispatch_pair</code> in <code>reckon/crew/dispatch.py</code>),
+so each arm's fence is composed from its partner's <em>allocation</em> rather
+than from a live pointer or a ledger row the partner does not have yet.
+The primary arm records <code>paired_shadow_run_id</code>; the shadow arm names
+its primary through the existing shadow lineage.</p>
+
+<p><code>promotion_scope._allocated_read_surfaces</code> resolves an allocated
+arm's readable surfaces through <code>_primary_read_surfaces</code>, the same
+function the contamination scan reads, so the launch fence and the scan cannot
+disagree. <code>dispatch</code> threads the partner surfaces to
+<code>launch_plan</code> in place of the committed-row lookup a standalone
+shadow performs, and skips that lookup only when the allocation supplies them.</p>
+
+<p>Each arm supplies its dispatch keywords through one source, the per-arm
+mapping that strips what that arm fixes before it re-adds them, so no key can
+arrive twice however the caller's keyword surface grows. The identity
+arguments stay explicit because the two arms deliberately differ in config.
+That the pair can launch at all is itself asserted: the gate drives the launch
+path with a stub in place of the harness and requires both arms to launch under
+their own allocated run directories, because a dry run never reaches the arm
+dispatch calls and so cannot see a keyword collision at them.</p>
+
+<p>The pair touches the run store only when it launches: a dry run resolves both
+arms without creating either run directory, so it leaves no artifact that would
+afterwards read as a run whose worker died before writing anything. Both
+directories, and the shadow's session directory, are created on the launch path
+before the primary starts.</p>
+
+<p>The primary arm's mask names the shadow's <em>session</em> directory rather
+than its worktree, because the shadow's worktree does not exist yet when the
+primary launches and the fence skips a masked path that is not there — a mask
+over an absent path hides nothing. The session directory is the worktree's
+parent: creating only the parent leaves the shadow's own
+<code>git worktree add</code> its path free, while hiding the directory in the
+primary's namespace covers whatever the shadow writes beneath it later.</p>
+
+<h2 id="a-paired-dispatch-hides-each-arm-measure">Measure</h2>
+<p>The gate executes the composed argument vector under a real bubblewrap
+fence, never inspecting its shape: each arm lists its partner's run directory
+as empty (<code>partner-run-dir []</code>) and can still write its own run
+directory and worktree. With the primary arm's masks dropped the same listing
+is non-empty (<code>partner-run-dir [stream.jsonl,]</code>), which is the
+declared negative control and is what makes the empty listing mean anything.</p>
+
+<p>The masks are read back from the argument vector the primary's own launch
+composes, and the shadow's answer is then written under its session directory:
+the primary's fence lists that directory as absent, while the same listing
+without the mask shows the content. A paired dry run is held to the run store's
+listing before and after, so the pair is shown to write nothing it did not
+launch.</p>
+
+<pre>tests/test_a_paired_dispatch_hides_each_arm.py: 9 passed
+tests/test_crew.py (the population that drives the dispatcher): 192 passed
+negative control (primary arm's masks dropped): EXIT=1, listing non-empty
+negative control (the launch-path check's change reverted): EXIT=1,
+  TypeError: got multiple values for keyword argument 'route'
+ruff, base 7f28ec35 vs head 72386e05, per changed file through stdin:
+  no finding and no formatting hunk at head that the base lacks</pre>
+
+<h2 id="a-paired-dispatch-hides-each-arm-limits">Limits</h2>
+<p><code>tests/test_crew.py</code>, the file carrying the dispatcher's own suite,
+passes whole at this revision. The remaining test files that import
+<code>reckon/crew/dispatch</code> were not run here; the coordinator runs the
+rest at merge. <code>ruff format --check</code> is clean on three
+of the four changed paths; <code>reckon/crew/promotion_scope.py</code> carries
+pre-existing formatting backlog in regions this node did not touch.</p>
+
+</main>
+</body>
+</html>

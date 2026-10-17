@@ -1168,6 +1168,16 @@ def crew_preflight(
     ),
 )
 @click.option(
+    "--pair-backend",
+    "pair_backend",
+    default="",
+    help=(
+        "--pair-backend spawns a paired dispatch: the node is dispatched twice "
+        "from one base, a primary arm routed as any dispatch is and a shadow arm "
+        "on BACKEND, with each arm fenced from the other's records and worktree."
+    ),
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     help="Validate and resolve only: no worktree, no process, no record.",
@@ -1214,6 +1224,7 @@ def crew_dispatch(
     repairs,
     accept_directory_claim,
     no_fence_reason,
+    pair_backend,
     dry_run,
     pretty,
 ):
@@ -1452,6 +1463,81 @@ def crew_dispatch(
             refusal = _with_resolved_overrides(refusal, override_resolution)
         _emit(refusal, pretty)
         raise click.exceptions.Exit(5)
+
+    if pair_backend:
+        # A paired dispatch is one request resolving into two arms, so it never
+        # reaches the single-node dry-run or launch below: the pair reports both
+        # arms' resolutions itself, and its arms are launched together from the
+        # base so neither can land before the other has started.
+        from reckon.crew.dispatch import dispatch_pair
+
+        pair_options = {
+            **json.loads(json.dumps(click.get_current_context().params, default=str)),
+            "orchestrator_assessment": dict(orchestrator_assessment),
+        }
+        pair_kwargs = {
+            "node": node,
+            "project": project,
+            "repo": repo,
+            "config": config,
+            "session": session,
+            "pair_backend": pair_backend,
+            "base": base,
+            "locked_decisions": locked_decisions,
+            "peer_scopes": node.peer_scopes,
+            "member": member,
+            "execution_override": allow_execution_mismatch,
+            "orchestrator_lane_reason": orchestrator_lane_reason,
+            "unreviewed_plan_override": allow_unreviewed_plan,
+            "unreconciled_override": allow_unreconciled_runs,
+            "wave": wave,
+            "watch_required": True,
+            "watch_override": no_watch,
+            "local": local,
+            "backend_override": backend,
+            "default_backend_override": flight_backend_override,
+            "repairs": repairs,
+            "accept_directory_claim": accept_directory_claim,
+            "no_fence_reason": no_fence_reason,
+            "route": route,
+            "comment": comment,
+            "picker_selection": picker_selection,
+            "dispatch_options": pair_options,
+        }
+        if dry_run:
+            try:
+                payload = dispatch_pair(dry_run=True, **pair_kwargs)
+            except crew_module.CrewError as exc:
+                _emit_dry_run_request_error(pretty, str(exc), override_resolution)
+                raise click.exceptions.Exit(1) from exc
+            _emit_crew_result(
+                _with_resolved_overrides(
+                    {"dry_run": True, **payload}, override_resolution
+                ),
+                pretty,
+            )
+            raise click.exceptions.Exit(0)
+        try:
+            pair_record = dispatch_pair(dry_run=False, **pair_kwargs)
+        except crew_module.BudgetHold as exc:
+            _emit(
+                {
+                    "ok": False,
+                    "error": "budget-hold",
+                    "detail": str(exc),
+                    "hold": exc.verdict,
+                },
+                pretty,
+            )
+            raise click.exceptions.Exit(3) from exc
+        except crew_module.CrewError as exc:
+            _emit(
+                {"ok": False, "error": "dispatch-refused", "detail": str(exc)}, pretty
+            )
+            click.echo(f"Error: {exc}", err=True)
+            raise click.exceptions.Exit(1) from exc
+        _emit_crew_result(pair_record, pretty)
+        raise click.exceptions.Exit(0)
 
     if dry_run:
         try:
