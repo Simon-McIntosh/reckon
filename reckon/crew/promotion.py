@@ -205,6 +205,13 @@ def complete(
         # the empty project name further down.
         if not str(record.get("project") or "").strip():
             return _complete_withdrawn_run(run_id, record)
+        # A run review delivers its record inside its own run directory and the
+        # supervisor files it into the store when the worker ends. A supervisor
+        # that died before that filing leaves the record where the reviewer
+        # wrote it, and a record no store reader can find is a review that
+        # never happened — so the filing is repeated here, which is the last
+        # moment the run's own record still exists to be read from.
+        _file_delivered_run_reviews(record)
         # A review run's outcome is the review it stored, so the operator's
         # hand is not the only source for a non-passing gate's summary; the
         # refusal below stands for every run with no stored review to read.
@@ -1695,6 +1702,27 @@ def _marker_present_in(
         f"git could not search {target} in {checkout} for the marker: "
         f"{result.stderr.strip() or result.stdout.strip() or result.returncode}"
     )
+
+
+def _file_delivered_run_reviews(record: Mapping[str, Any]) -> list[str]:
+    """File a run's delivered review records into the store, return their paths.
+
+    A review delivers its record through its own run directory rather than
+    straight into the store, so the file exists even when the store was never
+    written to: the supervisor files it when its worker ends, and a supervisor
+    that died first leaves it where the reviewer wrote it. Promotion is the
+    last moment that copy still exists, and a record no store reader can find
+    is a review that never happened, so it is filed here too. The store's own
+    writer places it, so a record already filed is refiled identically and a
+    record the store refuses is left where it is.
+    """
+    from reckon.crew import recovery_review_delivery as delivery
+
+    try:
+        written = delivery.file_review_records_into_store(record)
+    except (OSError, ValueError, TypeError):
+        return []
+    return [str(path) for path in written]
 
 
 

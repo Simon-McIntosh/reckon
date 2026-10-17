@@ -21,6 +21,7 @@ from reckon.crew.runs import (
     _mutate_pointer,
     _utc_now,
     list_live,
+    run_dir,
 )
 
 
@@ -45,22 +46,73 @@ def _is_review_run(record: Mapping[str, Any]) -> bool:
 
 
 def _review_store_record_paths(record: Mapping[str, Any], project: str) -> list[Path]:
-    """The review-store paths a reviewer was told to write, in order.
+    """The paths a reviewer was told to write its record to, in order.
 
     The dispatch composes them from the reviewed run, so they name the record
-    this run is meant to deliver. A path is selected by where it sits — under
-    the review store's own project directory — rather than by its filename,
-    because the head-keyed and legacy spellings differ only in a suffix the
-    reader must not have to guess.
+    this run is meant to deliver. A run review declares them inside a directory
+    of the run it reviews, which is where they are resolved: the reviewed run's
+    directory is the identity the composer and this reader both hold, so naming
+    it here is what keeps the reader off the store until the record has been
+    filed into it. A declaration that is not one of these is still read as a
+    store path when it sits under the store's own project directory, so a
+    pointer written before the record moved still names the record it was
+    dispatched for.
+
+    A path is selected by where it sits rather than by its filename, because
+    the head-keyed and legacy spellings differ only in a suffix the reader must
+    not have to guess.
     """
     node = record.get("node") or {}
     directory = review_module.review_store_root() / project
+    run_directory = _review_record_delivery_directory(record, project)
     paths: list[Path] = []
     for declared in node.get("write_paths") or ():
+        if run_directory is not None:
+            landed = review_module.run_review_record_location(
+                declared, run_directory
+            )
+            if landed is not None:
+                paths.append(landed)
+                continue
         candidate = Path(str(declared))
         if candidate.parent == directory:
             paths.append(candidate)
     return paths
+
+
+def _review_record_delivery_directory(
+    record: Mapping[str, Any], project: str
+) -> Path | None:
+    """Where a review run delivers its record: the reviewed run's directory.
+
+    The declared record paths are absolute and keyed on the reviewed run, so a
+    reader that will not look in that run's directory finds only the store —
+    where the record has not been filed yet while the review is still live.
+    """
+    reviewed = _resolved_reviewed_run_id(record, project)
+    if not reviewed:
+        return None
+    return run_dir(reviewed)
+
+
+def file_review_records_into_store(record: Mapping[str, Any]) -> list[Path]:
+    """File a review run's delivered records into the store, return their paths.
+
+    The supervisor calls this when its worker exits and ``crew complete`` calls
+    it for a run whose supervisor did not get that far, so both end-of-run
+    paths file a delivered record. A run that is not a review declares no
+    record path, so it files nothing and pays one pointer read.
+    """
+    project = str(record.get("project") or "")
+    directory = _review_record_delivery_directory(record, project)
+    if directory is None:
+        return []
+    try:
+        return review_module.file_delivered_run_reviews(
+            record, run_directory=directory
+        )
+    except (OSError, ValueError):
+        return []
 
 
 def _resolved_reviewed_run_id(record: Mapping[str, Any], project: str) -> str:

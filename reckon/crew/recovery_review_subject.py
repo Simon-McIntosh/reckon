@@ -607,11 +607,24 @@ def _review_dispatch_fields(
     project = str(record.get("project") or "")
     source_node = str(node.get("id") or run_id)
     head = _run_head_for_review(record)
-    write_paths = [str(review_module.review_path(project, run_id))]
-    if head:
-        write_paths.append(
-            str(review_module.review_path(project, run_id, reviewed_head_sha=head))
-        )
+    # Declared inside a directory of the reviewed run's own rather than at
+    # the store path the record is finally read from. The store holds every run
+    # of the project as a flat file in one directory, and a store path that does
+    # not exist yet makes the fence grant that directory — and with it every
+    # other run's record. The record directory holds review records and nothing
+    # of another run's, so a review's fence reaches no record it was not asked
+    # about; the delivered record is filed into the store when the run ends,
+    # which is where every store reader looks for it. The directory is brought
+    # into being here for the same reason the brief is written here — the fence
+    # binds a directory that exists, and a missing one would be granted through
+    # the whole run directory above it — and only for the dispatch that
+    # launches the review, never on a read.
+    record_directory = review_module.run_review_record_directory(runs.run_dir(run_id))
+    if write and composing_for_dispatch:
+        record_directory.mkdir(parents=True, exist_ok=True)
+    write_paths = review_module.run_review_record_paths(
+        runs.run_dir(run_id), run_id, reviewed_head_sha=head
+    )
     plan = str(node.get("plan") or "")
     section = str(node.get("section") or "")
     # A composed review brief cannot ride beside a plan that names no section:
@@ -686,7 +699,11 @@ def _review_dispatch_fields(
                 "read as reviewed_base_sha and reviewed_head_sha, and carrying "
                 "added_failure_count and added_failure_ids derived from the "
                 "reviewed run's own baseline_suite and after_suite gate logs; the "
-                "turn ends once that record is stored and the manifest reads complete"
+                "record is written at one of this run's declared write paths, "
+                f"under {review_module.RUN_REVIEW_RECORD_DIRNAME}/ inside the "
+                f"directory of run {run_id}, and never in the worktree; the "
+                "turn ends once that record is stored and the manifest reads "
+                "complete"
             )
         ),
         "write_path": write_paths[0],
