@@ -26,6 +26,7 @@ from reckon.crew.dispatch import (
     _backend_settings,
 )
 from reckon.crew.node import (
+    _TERMINAL_RUN_PHASES,
     NEGATIVE_CONTROL_FIELD,
     NEGATIVE_CONTROL_NONE,
     CrewError,
@@ -47,7 +48,9 @@ from reckon.crew.routing import (
 from reckon.crew.runs import (
     _manifest_freshness,
     drain,  # noqa: F401 - importable so a caller can substitute the fleet reading's drain
+    pointer_path,
     process_alive,
+    read_pointer,
     record_process_alive,
 )
 from reckon.evidence import EXECUTABLE_SECTION_ROLES
@@ -597,6 +600,81 @@ def _require_worker_stopped_before_promotion(
         f"{record.get('pid')} is still alive and {reading}. Promotion would "
         "delete the live pointer and orphan the worker. Wait for the process to "
         "exit, or state why it may land anyway with --waive-live-run REASON"
+    )
+
+
+def _paired_partner_run_id(record: Mapping[str, Any]) -> str:
+    """The run id of the arm this record is paired with, or the empty string.
+
+    A paired dispatch launches two arms from one base and records the pairing
+    from each side: the primary arm names the shadow in ``paired_shadow_run_id``
+    because it is not itself a shadow, and the shadow arm names the primary
+    through its shadow lineage exactly as a standalone shadow does. Either
+    field resolves the partner, so one reader serves both arms.
+
+    A run that names neither is unpaired and is not held. A shadow lineage is
+    not by itself a pairing: a shadow dispatched through ``crew shadow``
+    against an already-promoted primary names a primary whose pointer is gone,
+    and the caller reads that absence as the terminal partner it is.
+    """
+    paired = str(record.get("paired_shadow_run_id") or "").strip()
+    if paired:
+        return paired
+    lineage = record.get("lineage")
+    if isinstance(lineage, Mapping) and lineage.get("kind") == "shadow":
+        return str(lineage.get("primary_run_id") or "").strip()
+    return ""
+
+
+def _partner_phase(partner_run_id: str) -> str | None:
+    """The phase a partner's live pointer names, or ``None`` when it is gone.
+
+    A pointer that is absent means the partner has been promoted, so it is
+    terminal and holds nothing back. A pointer that is present but unreadable
+    is not the same fact: it states no phase, and this returns the empty string
+    so the caller refuses rather than reading an unreadable live record as a
+    finished one.
+    """
+    if not pointer_path(partner_run_id).exists():
+        return None
+    try:
+        pointer = read_pointer(partner_run_id)
+    except CrewError:
+        return ""
+    return str(pointer.get("phase") or "")
+
+
+def _require_partner_terminal_before_promotion(
+    run_id: str, record: Mapping[str, Any]
+) -> dict[str, str] | None:
+    """Refuse to promote a paired arm while its partner is still non-terminal.
+
+    A paired dispatch starts both arms from one base so neither can find the
+    other's landed answer. That only holds if neither arm lands first: were the
+    first arm to finish promoted, main would hold its result while the second
+    was still working, and the second could copy it from the main checkout
+    exactly as a shadow dispatched after a merge can. So an arm whose partner's
+    pointer is present and names a phase outside the terminal set is refused
+    here, before any store is written, naming the partner and the phase it is
+    in. Once the partner's pointer is terminal, or gone because the partner has
+    already been promoted, the arm promotes as it does today.
+    """
+    partner_run_id = _paired_partner_run_id(record)
+    if not partner_run_id:
+        return None
+    phase = _partner_phase(partner_run_id)
+    if phase is None:
+        return {"partner_run_id": partner_run_id, "partner_phase": "gone"}
+    if phase in _TERMINAL_RUN_PHASES:
+        return {"partner_run_id": partner_run_id, "partner_phase": phase}
+    stated = phase or "a phase its pointer does not name"
+    raise CrewError(
+        f"paired arm {run_id!r} cannot be promoted: its partner "
+        f"{partner_run_id!r} is still running ({stated}), so promoting this arm "
+        "now would put its result in the main checkout while the partner is "
+        "still working, and the partner could read it from there. Wait for the "
+        "partner to finish, or promote this arm once the partner's pointer is "
+        "terminal"
     )
 
 
