@@ -530,7 +530,9 @@ def _walk_covered(
     return sorted(found.items()), sorted(directories.items())
 
 
-def _covered_files(docs_dir: Path) -> list[tuple[str, Path]]:
+def _covered_files(
+    docs_dir: Path, project: str | None = None
+) -> list[tuple[str, Path]]:
     """Return (docs-relative posix path, path) for every file the index covers.
 
     Every HTML file anywhere in the tree, plus figure images under the
@@ -542,10 +544,13 @@ def _covered_files(docs_dir: Path) -> list[tuple[str, Path]]:
     The index records each visited directory's identity, so a tree whose shape
     is unchanged answers from the persisted file set without walking it. A tree
     whose shape moved, or one the index has not seen, walks; the walk's set and
-    directory identities are recorded, so the next read skips the walk.
+    directory identities are recorded, so the next read skips the walk. A
+    caller that already knows the project supplies it directly, including when
+    the docs tree belongs to an unmounted checkout.
     """
 
-    project = _docs_dir_project(docs_dir)
+    if project is None:
+        project = _docs_dir_project(docs_dir)
     if project is not None:
         reused = _reuse_covered(docs_dir, project)
         if reused is not None:

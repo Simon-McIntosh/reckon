@@ -2067,7 +2067,7 @@ def _walk_discovery_signature(
     # discovery's counted set cannot drift apart.
     count = 0
     newest = 0
-    for _relative, path in metadata_index._covered_files(docs_dir):
+    for _relative, path in metadata_index._covered_files(docs_dir, project):
         try:
             mtime = path.stat().st_mtime_ns
         except OSError:
