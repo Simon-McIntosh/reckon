@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T15:38:45.349Z",
+  "dispatched_at": "2026-10-17T15:24:30Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-can-see-the-figure.html:410",
+      "id": "reasoning-1",
+      "reason": "locking the recommendation as written leaves the render step's owner and output path unnamed, so the node dispatched to \u00a74 would build the selection rule without the conversion the decision requires.",
+      "text": "the `svg-figure-delivery` decision is bound by `data-sections=\"s4,s8\"` and recommends `render-to-png` (\"the dispatch renders each SVG figure to PNG \u2026 and attaches the PNG\"), but no section of the plan carries that render: \u00a73's format-boundary paragraph (lines 176\u2013180) poses it as a question whose answer \"is either a render-to-PNG step in the figure contract or a scoped claim that only PNG figures are reviewable\", \u00a78 is declared done and only measured SVG reaching nothing, and \u00a74 (deferred) states selection-by-artifact, sequencing, review separation and the caption rule, with no mention of rendering; so once the lead locks the recommended option, the only section named to act on it has no measure producing it, and the two declared setters of `TaskNode.images` (\u00a76's `crew dispatch --image` and \u00a74's figure review) name no producer of the PNG that gets attached",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "09e94ad8adf5530fb6bfa636e6fa4d21d979aab51e74ff34d2f898973807775f",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 57,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T152344363609-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "bd55eddff847422a1d810d378df12ee82f4edeae",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/_backends.py:1220` is the codex `argv()` composer (line 1223 builds `[command, \"exec\", \"--json\", \"-i\", \u2026]`); `declared_input_modalities` (`reckon/flight.py:1742`), `missing_input_modalities` (1757) and `select_profile_backend` (1769) all exist; `docs/state/reckon/flight.yaml` carries the codex `input_modalities: [text, image]` declaration; the three `plan-commits` shas (f2ea9301, 5b1759ab, 428477c7) all resolve; `docs/figures/` exists; the two decision `data-key`s match the followups that name them.",
+    "done_when": "pass \u2014 each landed section carries a measurable gate with a declared negative control (`\u00a71` fall-through mutation, `\u00a72`/`\u00a76` dropped-`-i` mutation, `\u00a77` prompt-described figure, `\u00a78` image-withheld controls), and the one implementable section `\u00a79` declares both its test file and a control that removes the `input_modalities` line from a scratch copy of the layer. \u00a79's control fails the test it guards, so it is a real control rather than an assertion that holds however the code behaves.",
+    "evidence_paths": "pass \u2014 gate evidence lands under the run's report directory; the cited durable artifacts exist in the repository: `docs/evidence/archive/a-review-can-see-the-figure-landed.html` carries `#s1-input-modalities`, `#s2-attachment-reaching-argv`, `#s6-dispatch-carries-figures`, `#s7-codex-declares-image-input`, `#s8-codex-judges-five-png-pairs`, and `docs/figures/a-review-can-see-the-figure/attachment-reaches-argv.svg` exists. `\u00a79` writes only `tests/test_codex_declares_image_input.py` and reads nothing outside the repository and a temporary directory.",
+    "naming": "pass \u2014 the decision keys `svg-figure-delivery` and `figure-review-on-metered-lane` are config identifiers, the changed context carries no ticket number, version tag or plan label, and the plain-text rewrite removes markup rather than adding any.",
+    "reasoning": "a finding \u2014 the two contexts themselves are correct and the escaped-markup defect the earlier review raised is properly fixed (the surface extracts `.r-dec-ctx` with `_txt` at `reckon/_plan_html.py:1281` and renders it as a React text child at `docs/ui/decision.jsx:46`, so plain text is the right form, and no surface renders that field as inner HTML), but the `svg-figure-delivery` decision asserts a landing place whose sections carry no mechanism for its recommended option.",
+    "single_goal": "pass \u2014 \u00a76 is the one place worth checking (it spans `TaskNode.images`, the `crew dispatch --image` CLI, and the resume and lane-change call sites), but all four are one deliverable \u2014 a node's figures reach the launcher on every path \u2014 measured by one gate; \u00a77 measures delivery for one lane, \u00a78 the five pairs, \u00a79 the declaration.",
+    "wiring": "pass \u2014 the plan declares `plan-informs: scoring-should-stop-a-promotion`, and the divergence the earlier review raised there (that plan's \u00a76 naming `select_profile_backend` as its first dispatch caller, which \u00a74 retires) is disclosed in this plan's own `c-s4-scoring-plan-caller` comment, which names the plan's \u00a76 as a dependency of \u00a74's rewrite; the section declarations (`s1,s2,s5,s6,s7,s8` done; `s3,s4` deferred; `s9` implementable) agree with each section's `data-status`."
+  },
+  "section_digests": {
+    "_document": "3e619e5ba3568661f2d6054a6f574842384613df4987f7fd79746688e5126deb",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T15:41:30.087100+00:00"
+}
