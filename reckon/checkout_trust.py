@@ -93,6 +93,8 @@ def materialize_committed_tree(root: Path, commit: str) -> tuple[Path, list[Path
             except OSError:
                 if not (target / ".complete").is_file():
                     raise
+        except (OSError, subprocess.SubprocessError, tarfile.TarError) as exc:
+            raise RuntimeError(f"cannot unpack commit {commit}: {exc}") from exc
         finally:
             if staging.exists():
                 shutil.rmtree(staging)
