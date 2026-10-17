@@ -30,6 +30,7 @@ import io
 import os
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import tarfile
@@ -58,16 +59,27 @@ COMMITTED_TREE_RETENTION = 3
 # lease has not been taken yet is exactly that gap, and is skipped.
 #
 # A lease is a ``flock``, which does not cross nodes on a shared GPFS home, so
-# a lease held from another host is invisible to a pruner here. Every follower
-# renews its lease on each poll (:func:`refresh_materialized_tree_pin`), and a
-# renewal stamps a marker beside the tree, so a tree whose lease was renewed
-# within the window below is still imported from somewhere and keeps its tree.
-# The marker is what separates a renewal from the lease taken at publication:
-# the lease's own mtime cannot, because this filesystem stamps a lease created
-# moments ago and one renewed moments ago with the same value.
+# a lease taken on another node is invisible here: a pruner here has no lock
+# to be refused by and removes a tree another node is still importing from.
+# Every node that takes or renews a lease records itself beside the tree, so a
+# tree whose record names a node other than this one, renewed within the
+# window below, is one still imported from somewhere else and keeps its tree.
+# The record is what carries that fact; the lease file's own mtime cannot
+# stand in for it, because this filesystem stamps a lease taken moments ago
+# and one released moments ago identically, and a released lease leaves the
+# same file behind as a held one.
 COMMITTED_TREE_PUBLISH_GRACE_SECONDS = 120.0
 COMMITTED_TREE_LEASE_WINDOW_SECONDS = 600.0
 COMMITTED_TREE_LEASE_MARKER = ".lease"
+
+
+def _lock_node_name() -> str:
+    """The name this node records for itself in a lease record.
+
+    ``flock`` is per node, so two nodes sharing a home are two lock domains
+    and the name is how one node's lease is told from another's.
+    """
+    return socket.gethostname()
 
 
 def _marker_age_seconds(path: Path) -> float | None:
@@ -78,21 +90,41 @@ def _marker_age_seconds(path: Path) -> float | None:
         return None
 
 
+def _lease_nodes(root: Path) -> set[str]:
+    """The nodes whose lease record stands beside this image."""
+    try:
+        text = (root / COMMITTED_TREE_LEASE_MARKER).read_text()
+    except OSError:
+        return set()
+    return {line.strip() for line in text.splitlines() if line.strip()}
+
+
+def _record_lease_node(root: Path) -> None:
+    """Name this node in the image's lease record.
+
+    The write also stamps the record's mtime, which is the renewal a pruner on
+    another node reads. Names accumulate rather than replace, so a node that
+    only renews a lease taken by another does not erase the taker.
+    """
+    nodes = _lease_nodes(root) | {_lock_node_name()}
+    (root / COMMITTED_TREE_LEASE_MARKER).write_text("\n".join(sorted(nodes)) + "\n")
+
+
 def _prune_must_keep(entry: Path) -> bool:
     """Whether pruning must leave a published tree alone.
 
     A tree published but not yet leased -- no ``.in-use`` -- is one lying in
     the publish-to-lease gap, and is left alone while it is younger than the
-    grace. A tree whose ``.in-use`` was renewed within the lease window, and
-    which carries the renewal marker, is one a follower is still importing
-    from, on this host or another.
+    grace. A tree whose lease record names a node other than this one, and was
+    renewed within the lease window, is one a node that is not this one is
+    importing from: the tree is held, and no lock here would say so.
     """
     if not (entry / ".in-use").exists():
         age = _marker_age_seconds(entry / ".complete")
         return age is not None and age < COMMITTED_TREE_PUBLISH_GRACE_SECONDS
-    if not (entry / COMMITTED_TREE_LEASE_MARKER).exists():
+    if not (_lease_nodes(entry) - {_lock_node_name()}):
         return False
-    age = _marker_age_seconds(entry / ".in-use")
+    age = _marker_age_seconds(entry / COMMITTED_TREE_LEASE_MARKER)
     return age is not None and age < COMMITTED_TREE_LEASE_WINDOW_SECONDS
 
 
@@ -168,19 +200,20 @@ def pin_materialized_tree(root: Path) -> int:
     if not pin_matches_materialized_tree(descriptor, root):
         os.close(descriptor)
         raise RuntimeError(f"materialized tree vanished before its lease: {root}")
+    _record_lease_node(root)
     return descriptor
 
 
 def refresh_materialized_tree_pin(descriptor: int, root: Path) -> None:
     """Renew the held image lease on every follower or producer poll.
 
-    The renewal is stamped on the lease and recorded in a marker beside the
-    tree. Pruning reads the marker, because the lease's own mtime cannot be
-    told from the one it was created with: a renewal only milliseconds old is
-    stamped identically to the lease taken at publication.
+    The lease itself is renewed on the descriptor and the node's name in the
+    tree's lease record is re-stamped, which is the renewal a pruner on
+    another node reads: that node cannot see this one's lock, so the record is
+    the only evidence it has that the tree is still imported from.
     """
     os.utime(descriptor, None)
-    (root / COMMITTED_TREE_LEASE_MARKER).touch()
+    _record_lease_node(root)
 
 
 def materialize_committed_tree(
