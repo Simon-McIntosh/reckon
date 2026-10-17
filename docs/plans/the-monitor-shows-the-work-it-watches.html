@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="235">
+<meta name="plan-version" content="236">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -987,7 +987,10 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>Independent review of r-20261017T052406604938-a-reload-probe-timeout-is-retried over cda97a7959..682cf679e, the two commits gained since it was last reviewed: the gained change adds four clock-driven cases to tests/test_a_reload_probe_timeout_is_not_a_broken_image.py pinning the retry gap's doubling, its 900 s cap, and its reset on an answer, plus the un-nested recorded reason, and updates the evidence fragment to 7/7; all six dimensions 19-20 (goal_fidelity 20, evidence 20, scope_discipline 20, durability 20, fit 19, reuse 20, total 119), no findings; the prior review's follow-on that nothing pinned the doubling or the cap is now closed, the constant-gap control reddening exactly those three cases.</p></div>
 </div>
 <div class="r-comment" data-section="s40" data-id="c-run-r-20261017T052406604938-a-reload-probe-timeout-is-retried" data-who="reckon-build" data-when="2026-10-17T07:36:46Z">
-    <div class="r-comment-body"><p>A reload probe that runs out of its bound is reported as ImportProbeTimedOut by reckon_imports and _FollowerReloader.poll leaves deferred_stamp unset on it, waits out a retry gap of 60 s that doubles per further timeout to a 15-minute cap and stops doubling there (forgotten when the code stamp moves or a probe answers), says the deferral once per contiguous run of timeouts and records the probe&#x27;s own reason once, while a genuine import failure still defers until the code moves; the backoff is guarded by tests that fail on a constant gap, and the head gate reads 30 passed EXIT=0 at 682cf679e (the test file 7 passed).</p></div>
+    <div class="r-comment-body"><p>A reload probe that runs out of its bound is reported as ImportProbeTimedOut by reckon_imports and _FollowerReloader.poll leaves deferred_stamp unset on it, waits out a retry gap of 60 s that doubles per further timeout to a 15-minute cap and stops doubling there (forgotten when the code stamp moves or a probe answers), says the deferral once per contiguous run of timeouts and records the probe's own reason once, while a genuine import failure still defers until the code moves; the backoff is guarded by tests that fail on a constant gap, and the head gate reads 30 passed EXIT=0 at 682cf679e (the test file 7 passed).</p></div>
+</div>
+<div class="r-comment" data-section="s40" data-id="c-run-r-20261017T074610154835-review-of-reload-probe-timeout-population-at-merge-d0d0d28c4415" data-who="reckon-build" data-when="2026-10-17T08:01:35.162Z">
+    <div class="r-comment-body"><p>review of r-20261017T070814587050-reload-probe-timeout-population-at-merge stored a parsed record scoring all 6 dimensions (goal_fidelity 19, evidence 17, scope_discipline 18, durability 12, fit 18, reuse 5; total 89) at reviewed_base_sha=reviewed_head_sha=d0d0d28c44159da694850c6e4467238d4a0f843c, with added_failure_count 0 and added_failure_ids [], and two follow-on findings on population-measure.sbatch:98.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
