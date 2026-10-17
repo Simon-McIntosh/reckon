@@ -161,3 +161,105 @@ def test_a_failed_import_defers_and_names_the_module(reloader, monkeypatch, caps
         "an import failure was re-probed though the code had not moved"
     )
     assert execs == []
+
+
+def test_a_second_timeout_doubles_the_gap(reloader, monkeypatch, capsys):
+    instance, execs, clock = reloader
+    calls: list = []
+    _probe(monkeypatch, calls, _timed_out)
+
+    instance.poll({})
+    capsys.readouterr()
+    assert len(calls) == 1
+
+    # The gap the first timeout earned has passed, so a second timeout is
+    # taken: it earns twice the first gap, so a poll 61 s past it is still
+    # inside the gap, and a poll past 120 s is not.
+    _advance(clock, follow.FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS)
+    instance.poll({})
+    capsys.readouterr()
+    assert len(calls) == 2
+
+    _advance(clock, 61.0)
+    instance.poll({})
+    assert len(calls) == 2, "a poll 61 s past a second timeout probed again"
+
+    _advance(clock, 60.0)
+    instance.poll({})
+    assert len(calls) == 3, "a poll past the doubled gap did not probe"
+    assert execs == []
+
+
+def test_the_gap_stops_doubling_at_its_cap(reloader, monkeypatch, capsys):
+    instance, execs, clock = reloader
+    calls: list = []
+    _probe(monkeypatch, calls, _timed_out)
+
+    # Each timeout earns the gap the next check waits out; take one at the
+    # instant its predecessor's gap expires and record what it earned.
+    gaps: list = []
+    for _ in range(6):
+        instance.poll({})
+        gaps.append(instance.probe_retry_at - clock[0])
+        clock[0] = instance.probe_retry_at
+    capsys.readouterr()
+
+    initial = follow.FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS
+    cap = follow.FOLLOWER_RELOAD_PROBE_RETRY_CAP_SECONDS
+    assert gaps == [initial, initial * 2, initial * 4, initial * 8, cap, cap], gaps
+    assert len(calls) == 6
+    assert execs == []
+
+
+def test_an_answer_resets_the_gap(reloader, monkeypatch, capsys):
+    instance, execs, clock = reloader
+    calls: list = []
+    _probe(monkeypatch, calls, _timed_out)
+
+    instance.poll({})
+    _advance(clock, follow.FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS)
+    instance.poll({})
+    capsys.readouterr()
+    assert len(calls) == 2
+    assert instance.probe_retry_gap > follow.FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS
+
+    # The probe answers: the reload proceeds (its exec is a no-op here, so this
+    # instance survives it) and the gap the timeouts earned is forgotten.
+    _probe(monkeypatch, calls, _loads)
+    clock[0] = instance.probe_retry_at
+    instance.poll({})
+    capsys.readouterr()
+    assert len(execs) == 1
+    assert (
+        instance.probe_retry_gap == follow.FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS
+    )
+
+    # The code moves again and times out: the new checkout's gap starts from the
+    # initial value rather than from whatever the previous one had earned.
+    monkeypatch.setattr(runs, "follower_code_stamp", lambda: "moved-again")
+    _probe(monkeypatch, calls, _timed_out)
+    _advance(clock, 2.0)
+    instance.poll({})
+    capsys.readouterr()
+
+    assert (
+        instance.probe_retry_at - clock[0]
+        == follow.FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS
+    )
+
+
+def test_the_recorded_reason_says_a_timeout_once(reloader, monkeypatch, capsys):
+    instance, _execs, _clock = reloader
+    calls: list = []
+    _probe(monkeypatch, calls, _timed_out)
+    recorded: list = []
+    monkeypatch.setattr(instance, "_record_reload_deferral", recorded.append)
+
+    instance.poll({})
+    capsys.readouterr()
+
+    assert len(recorded) == 1, recorded
+    assert "timed out" in recorded[0], recorded[0]
+    assert recorded[0].count("timed out") == 1, (
+        f"reason nested in itself: {recorded[0]!r}"
+    )
