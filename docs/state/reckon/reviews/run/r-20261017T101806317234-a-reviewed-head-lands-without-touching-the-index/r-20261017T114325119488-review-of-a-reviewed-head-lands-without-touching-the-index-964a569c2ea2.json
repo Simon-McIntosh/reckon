@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log, so the added-failure count was not taken",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:68",
+    "reckon/crew_dispatch_commands.py",
+    "reckon/cli.py:409"
+  ],
+  "completed_at": "2026-10-17T11:58:40.391Z",
+  "dispatched_at": "2026-10-17T11:44:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/merge.py",
+      "line": "38",
+      "severity": "follow-on",
+      "text": "follow-on: the generator-footer refusal scans the whole subject and body for 'generated with <tool>' rather than only a trailer, so a legitimate merge body that discusses the footer rule itself would be refused; it does not hold the node because the plan asks for the refusal and the guard is deliberately conservative."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against bbaf9816; 9720c1a18 adds reckon/crew/merge.py, the crew merge verb, the SKILL.md Integrate text, the new test file and the evidence fragment; 964a569c2 adds one census row to each of the two contract tests; 660 insertions, no deletions, nothing outside the granted scope.",
+    "done_when": "the done_when names the new test file plus two contract files; tests/test_a_reviewed_head_lands_without_touching_the_index.py builds a temporary repo with a bare origin, a reviewed head and an unrelated modified tracked file, and asserts both parents (line 96), the checkout and origin matching (line 105), the byte-identical conflict refusal (line 205), the retry past a held index.lock (line 236), the exact --candidate landing (line 258) and the bodiless and attribution refusals (lines 279, 289); gate-a-reviewed-head-lands-without-touching-the-index.log records '84 passed in 183.40s' with EXIT=0 and I re-ran the new file alone to '7 passed in 113.07s' with EXIT=0.",
+    "goal": "the goal is a `reckon crew merge` verb that builds a reviewed head's merge out of objects and lands it by fast-forward; reckon/crew/merge.py:243 land_merge pins the base at HEAD, builds the merged tree with `git merge-tree --write-tree` (reckon/crew/merge.py:150) and the commit with `git commit-tree` (reckon/crew/merge.py:172), lands with `git merge --ff-only` (reckon/crew/merge.py:277), pushes and confirms the remote head (reckon/crew/merge.py:301-305), and skills/reckon-build/SKILL.md:264 names the verb and --candidate.",
+    "manifest": "read; it records commits 9720c1a18 and 964a569c2, the four-file gate '84 passed in 183.40s (0:03:03)' with EXIT=0 at 964a569c2, the first-commit gate '7 passed in 150.84s', the negative-control summary '1 failed in 27.57s', a ruff delta of zero, and it names the two census files under follow_ons rather than claiming them as declared scope.",
+    "write_paths": "the node record declares six paths and the resumed dispatch granted two more (tests/test_crew_help_names_its_state.py and tests/test_skill_contracts.py) in resume-1-advice.txt; the diff touches reckon/crew/merge.py, reckon/crew_run_commands.py, skills/reckon-build/SKILL.md, the new test file, the two census files and the evidence fragment, with no path outside that granted set and no figure file."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reviewed_head_lands_without_touching_the_index.py:205 asserts the index bytes and status are byte-identical before and after a refused conflict, and negative-control-conflict-refusal.log shows that exact assertion failing when refusing_conflicts is neutered.",
+    "evidence": "the gate names the new test file and its result is recorded in the manifest and in gate-a-reviewed-head-lands-without-touching-the-index.log as '84 passed in 183.40s' with EXIT=0.",
+    "fit": "reckon/crew/merge.py:69 _run follows the same private git-subprocess helper idiom used across the package (reckon/serve.py:1528 _run_git, reckon/resources.py:136), and no symbol or file name carries a plan or ticket label.",
+    "goal_fidelity": "reckon/crew/merge.py:243 land_merge implements every numbered bullet of the plan's deliverable, including the object-built merge, the fast-forward, the push-with-remote-confirmation and the --candidate parent check.",
+    "reuse": "no owner of a merge-landing capability exists, since a search for merge-tree, commit-tree, --ff-only, ls-remote and push across reckon/ found none, and reckon/crew/merge.py:52 project_repository delegates to the existing owner reckon/crew/dispatch_sections.py:42 project_mount_repository.",
+    "scope_discipline": "every changed path is inside the granted set (the node's six plus the two census files granted in resume-1-advice.txt), while the node record itself still lists only six, which the worker reported under follow_ons."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a `reckon crew merge` verb that builds a reviewed head's merge out of objects and lands it by fast-forward; reckon/crew/merge.py:243 land_merge pins the base at HEAD, builds the merged tree with `git merge-tree --write-tree` (reckon/crew/merge.py:150) and the commit with `git commit-tree` (reckon/crew/merge.py:172), lands with `git merge --ff-only` (reckon/crew/merge.py:277), pushes and confirms the remote head (reckon/crew/merge.py:301-305), and skills/reckon-build/SKILL.md:264 names the verb and --candidate.\nVERDICT done_when: the done_when names the new test file plus two contract files; tests/test_a_reviewed_head_lands_without_touching_the_index.py builds a temporary repo with a bare origin, a reviewed head and an unrelated modified tracked file, and asserts both parents (line 96), the checkout and origin matching (line 105), the byte-identical conflict refusal (line 205), the retry past a held index.lock (line 236), the exact --candidate landing (line 258) and the bodiless and attribution refusals (lines 279, 289); gate-a-reviewed-head-lands-without-touching-the-index.log records '84 passed in 183.40s' with EXIT=0 and I re-ran the new file alone to '7 passed in 113.07s' with EXIT=0.\nVERDICT write_paths: the node record declares six paths and the resumed dispatch granted two more (tests/test_crew_help_names_its_state.py and tests/test_skill_contracts.py) in resume-1-advice.txt; the diff touches reckon/crew/merge.py, reckon/crew_run_commands.py, skills/reckon-build/SKILL.md, the new test file, the two census files and the evidence fragment, with no path outside that granted set and no figure file.\nVERDICT manifest: read; it records commits 9720c1a18 and 964a569c2, the four-file gate '84 passed in 183.40s (0:03:03)' with EXIT=0 at 964a569c2, the first-commit gate '7 passed in 150.84s', the negative-control summary '1 failed in 27.57s', a ruff delta of zero, and it names the two census files under follow_ons rather than claiming them as declared scope.\nVERDICT diff: read commit by commit against bbaf9816; 9720c1a18 adds reckon/crew/merge.py, the crew merge verb, the SKILL.md Integrate text, the new test file and the evidence fragment; 964a569c2 adds one census row to each of the two contract tests; 660 insertions, no deletions, nothing outside the granted scope.\nCALL_SITES: reckon/crew_run_commands.py:68, reckon/crew_dispatch_commands.py, reckon/cli.py:409\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/merge.py:243 land_merge implements every numbered bullet of the plan's deliverable, including the object-built merge, the fast-forward, the push-with-remote-confirmation and the --candidate parent check.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate names the new test file and its result is recorded in the manifest and in gate-a-reviewed-head-lands-without-touching-the-index.log as '84 passed in 183.40s' with EXIT=0.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every changed path is inside the granted set (the node's six plus the two census files granted in resume-1-advice.txt), while the node record itself still lists only six, which the worker reported under follow_ons.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_reviewed_head_lands_without_touching_the_index.py:205 asserts the index bytes and status are byte-identical before and after a refused conflict, and negative-control-conflict-refusal.log shows that exact assertion failing when refusing_conflicts is neutered.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/merge.py:69 _run follows the same private git-subprocess helper idiom used across the package (reckon/serve.py:1528 _run_git, reckon/resources.py:136), and no symbol or file name carries a plan or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: no owner of a merge-landing capability exists, since a search for merge-tree, commit-tree, --ff-only, ls-remote and push across reckon/ found none, and reckon/crew/merge.py:52 project_repository delegates to the existing owner reckon/crew/dispatch_sections.py:42 project_mount_repository.\nFINDING reckon/crew/merge.py:38 follow-on: the generator-footer refusal scans the whole subject and body for 'generated with <tool>' rather than only a trailer, so a legitimate merge body that discusses the footer rule itself would be refused; it does not hold the node because the plan asks for the refusal and the guard is deliberately conservative.",
+  "review_run_id": "r-20261017T114325119488-review-of-a-reviewed-head-lands-without-touching-the-index-964a569c2ea2",
+  "reviewed_base_sha": "bbaf981687fb90aab96d78891e25e7fb8fc95260",
+  "reviewed_head_sha": "964a569c2ea23b0c2ad54ec26436680ad4c49dbc",
+  "reviewed_run_id": "r-20261017T101806317234-a-reviewed-head-lands-without-touching-the-index",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T11:56:23.966956+00:00",
+  "total": 111
+}
