@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-version" content="55">
+<meta name="plan-version" content="56">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-section-depends-on" content="{&quot;s7&quot;: [&quot;new-work-gets-a-new-worker#s11&quot;]}">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
@@ -652,6 +652,9 @@ resume burn, after</a>.</p>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-17T15:20:00Z">
     <div class="r-comment-body"><p>§11 landed: recovery's <code>_is_review_run</code> is the one predicate, and <code>_task_identity</code> keys plan reviews by their slug and never by an empty string (commit <code>3de3a0d6c</code>). Gate: 31 passed at head, 25 at base. Both negative controls fail their cases. Review 116, no added failures. <a href="/reckon/evidence/archive/new-work-gets-a-new-worker-landed.html#s11">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261017T143616807978-a-review-run-has-one-predicate" data-who="reckon-build" data-when="2026-10-17T14:57:35.373Z">
+    <div class="r-comment-body"><p>Made recovery._is_review_run the one review predicate (dispatch_sessions._task_identity now calls the owner and keys each review by the run it reviews, or by the plan slug for a plan review, never an empty string); gate 31 passed EXIT=0 at head vs 25 passed EXIT=0 at base, zero added failures, both declared negative controls red as named.</p></div>
 </div>
 </section>
 </main>
