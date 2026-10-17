@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T15:53:00.012Z",
+  "dispatched_at": "2026-10-17T15:46:42Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-velocity-window-may-open-before-the-ledger.html:139",
+      "id": "done_when-1",
+      "reason": "as written the mutation targets the sliced search, not the per-run-file placement the first case guards; the control must also disable the addition scan (or be reworded to reroute that run through the search) or the node's new placement mechanism ships with no failing control.",
+      "text": "the first case asserts that a run with a per-run file is placed without a `-p` log, but the mutation named to redden it (\"Routing every missing id through one unsliced `-G` search\") leaves the per-run-file addition scan in place, so such a run is still placed by the scan and never becomes \"missing\" \u2014 the first case stays green and the control proves nothing about the mechanism it is meant to guard",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ec07e82f0a7f47bc4e10ccfb993e79b9a077332e6c132cc0e6b69887511cfe06",
+  "plan_slug": "a-velocity-window-may-open-before-the-ledger",
+  "plan_version": 17,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-17T15:53:50.580955+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T15:53:50.580955+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-velocity-window-may-open-before-the-ledger.v17.json",
+  "review_run_id": "r-20261017T154600189583-plan-review-of-a-velocity-window-may-open-before-the-ledger",
+  "reviewed_blob_sha": "c782b8a3476fb567014125052ca78e0cb03906bd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a72's citations resolve: `reckon/velocity.py:1217` is the `-G` search, `:149` is `run_git` with `timeout=180`, `:2149` is `promotion_clock_sources`, and commit `e080ed967` is the first `docs/state/reckon/runs/*.json` addition. (\u00a71's line numbers at 1182/1221 are stale against the post-\u00a71 tree, but \u00a71 is closed and rebuilding it is out of scope.)",
+    "done_when": "a finding \u2014 the first case's negative control (plan.html:139) cannot redden the per-run-file case it is written to guard.",
+    "evidence_paths": "pass \u2014 the timeout evidence sits under `~/.cache/reckon-velocity-window-check/`, a durable named path a later reader can open, and the cited logs exist with the revisions and wall times the section claims.",
+    "naming": "pass \u2014 the new names carry the mechanism, not a plan label: `_LEDGER_SEARCH_SLICE_COMMITS`, `first_primary_record_file_addition_upper_bound`, and `tests/test_velocity_places_a_run_by_its_record_file.py`.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (both cited logs show the `-G` ledger search hitting the 180 s bound, at bases that match the plan's revisions and wall times), the slicing-plus-per-run placement mechanism is capable of the done-when, and the path runs on the real code: `reckon crew velocity` reaches `recover_ledger_clocks`, as the cited traceback shows.",
+    "single_goal": "pass \u2014 \u00a72 names one measurable goal (a long window's ledger search stays inside `run_git`'s 180 s bound) and one gate; the slice and per-run-file changes are two means to that one measure, not two deliverables.",
+    "wiring": "pass \u2014 the plan declares `plan-blocks=the-ledger-is-one-file-per-run#s4`, that target section exists and is the one that deletes `crew.json`; \u00a72 builds on \u00a71, which is `done`."
+  },
+  "section_digests": {
+    "_document": "7438dc3857ea67728ccc6b0036805dda4784857bac216f4a9af3f3706a75a653",
+    "s1": "7fb9f51fa9b87a449b336034d21038a82939900b9d4f0f7601d78920d33f60b5",
+    "s2": "3299f0063362b816ef58c07795455a26dc02b5e9ad727f19698ab5517e4794df"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T15:53:46.340418+00:00"
+}
