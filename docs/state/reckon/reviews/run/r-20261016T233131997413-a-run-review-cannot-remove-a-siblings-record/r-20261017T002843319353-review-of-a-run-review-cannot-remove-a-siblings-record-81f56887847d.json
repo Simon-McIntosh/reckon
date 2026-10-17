@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run is an implement-role node: its manifest carries no baseline_suite or after_suite (both null in the parsed manifest), and its gate.log (15 passed, EXIT=0) and delivery-population.log (43 passed, EXIT=0) are both green, so no failing id is added by this change.",
+  "base_log_revision": "313250e317a7852292b6de086087db0ae5b49d97",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:_file_delivered_run_reviews",
+    "reckon/crew/dispatch_launch.py:_file_delivered_review_records",
+    "reckon/crew/obligations.py:_current_review_in_flight",
+    "reckon/crew/recovery_review_dispatch.py:_review_subject"
+  ],
+  "completed_at": "2026-10-17T00:39:10.593Z",
+  "dispatched_at": "2026-10-17T00:29:13Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the window needs a review dispatched before the merge with store paths and still live after it; the coordinator checks the live review pointers at merge and merges when none carries store-path declarations",
+      "recorded_at": "2026-10-17T00:39:18.743304+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "143",
+      "severity": "follow-on",
+      "text": "follow-on: _current_review_in_flight composes `expected` write_paths from the installed code and matches them against the review pointer's granted paths; this change moves the composed paths from the store to <reviewed-run>/review-records, so a hand-launched review dispatched before the code moved (granted store paths) is no longer recognised as in flight and the run it reviews could be re-dispatched while that review is live \u2014 narrow (needs an in-place upgrade with a live hand-launched review) and the reflex path is checked first, so it does not hold this node."
+    }
+  ],
+  "head_log_revision": "81f56887847dc4674c684a6779a43a9a09635fd1",
+  "item_verdicts": {
+    "call_sites": "reckon/crew/promotion.py:_file_delivered_run_reviews, reckon/crew/dispatch_launch.py:_file_delivered_review_records, reckon/crew/obligations.py:_current_review_in_flight, reckon/crew/recovery_review_dispatch.py:_review_subject",
+    "diff": "Read commit by commit against base 313250e31; three commits (fbceb4ce8 fix, 1313ddc96 test, 81f568878 docs) add the run-directory record declaration and the reader resolution (reckon/crew/review.py:2450-2517).",
+    "done_when": "The done_when names tests/test_a_run_review_cannot_remove_a_siblings_record.py with an executed bwrap arm and three declared negative controls; the reviewed manifest.md records the file's run (15 passed EXIT=0) and the three control logs at EXIT=1, and I re-ran the node's own file at head 81f568878 (7 passed, no skips, so the bwrap refusal arm ran).",
+    "goal": "The node goal is to deliver run review records through the run directory so a run review is granted no writable directory holding another run record; the landed change declares the record at <reviewed-run-dir>/review-records/<id>[.at-<head>].json (reckon/crew/recovery_review_subject.py:625) and creates that directory before the fence is composed (reckon/crew/recovery_review_subject.py:622-624), so _declared_write_grant (reckon/_backends.py:208) grants only review-records/ and never the store's project directory.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T233131997413-a-run-review-cannot-remove-a-siblings-record/manifest.md; status complete, commits fbceb4ce8, 1313ddc96, 81f568878, gate 15 passed EXIT=0, delivery/promotion population 43 passed EXIT=0, and three negative-control logs (6, 2, 2 failed) each at EXIT=1.",
+    "write_paths": "Read the reviewed manifest's declared scope; every path in the diff (reckon/crew/review.py, recovery_review_subject.py, recovery_review_delivery.py, dispatch_launch.py, promotion.py, tests/test_a_run_review_cannot_remove_a_siblings_record.py, docs/evidence/fragments/a-worker-cannot-write-your-home/a-run-review-cannot-remove-a-siblings-record.html) is inside the declared write paths; two declared paths (reckon/crew/dispatch_admission.py, docs/figures/a-worker-cannot-write-your-home/a-run-review-cannot-remove-a-siblings-record) were not written, which is not a breach."
+  },
+  "justifications": {
+    "durability": "The three declared negative controls each redden a distinct case (grant widened 6 failed, filing removed 2, store-only paths 2) and the bwrap arm at tests/test_a_run_review_cannot_remove_a_siblings_record.py:333 executes the refusal, so a regression that re-declared the store path or dropped the filing would fail.",
+    "evidence": "tests/test_a_run_review_cannot_remove_a_siblings_record.py:1-20 names the file as the measure and the reviewed manifest.md:12-13 records its run (15 passed EXIT=0) plus the three red control logs, though the promotion-into-the-committed-store clause is covered in the population suite rather than the node's own file.",
+    "fit": "reckon/crew/review.py:2450 introduces RUN_REVIEW_RECORD_DIRNAME and run_review_record_* in the surrounding store idiom with no plan, stage or version label.",
+    "goal_fidelity": "reckon/crew/recovery_review_subject.py:622-626 declares and creates the record directory inside the reviewed run's directory, and the executed fence arm proves the sibling removal is refused, which is exactly the stated goal.",
+    "reuse": "The filing reuses store_review (reckon/crew/review.py:2423) as the store's own writer; a search over reckon/crew found plan_review.delivered_reports (reckon/crew/plan_review.py:1989) as the analogous report-delivery owner for a different store and format, mirrored rather than duplicated, and no owner of a run-directory review-record delivery exists.",
+    "scope_discipline": "Every path in the diff is inside the declared write paths and no undeclared file was touched; the diffuse chain of thin wrappers (promotion.py:1707, dispatch_launch.py:3216, recovery_review_delivery.py:99) stays within the declared modules."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to deliver run review records through the run directory so a run review is granted no writable directory holding another run record; the landed change declares the record at <reviewed-run-dir>/review-records/<id>[.at-<head>].json (reckon/crew/recovery_review_subject.py:625) and creates that directory before the fence is composed (reckon/crew/recovery_review_subject.py:622-624), so _declared_write_grant (reckon/_backends.py:208) grants only review-records/ and never the store's project directory.\nVERDICT done_when: The done_when names tests/test_a_run_review_cannot_remove_a_siblings_record.py with an executed bwrap arm and three declared negative controls; the reviewed manifest.md records the file's run (15 passed EXIT=0) and the three control logs at EXIT=1, and I re-ran the node's own file at head 81f568878 (7 passed, no skips, so the bwrap refusal arm ran).\nVERDICT write_paths: Read the reviewed manifest's declared scope; every path in the diff (reckon/crew/review.py, recovery_review_subject.py, recovery_review_delivery.py, dispatch_launch.py, promotion.py, tests/test_a_run_review_cannot_remove_a_siblings_record.py, docs/evidence/fragments/a-worker-cannot-write-your-home/a-run-review-cannot-remove-a-siblings-record.html) is inside the declared write paths; two declared paths (reckon/crew/dispatch_admission.py, docs/figures/a-worker-cannot-write-your-home/a-run-review-cannot-remove-a-siblings-record) were not written, which is not a breach.\nVERDICT manifest: Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T233131997413-a-run-review-cannot-remove-a-siblings-record/manifest.md; status complete, commits fbceb4ce8, 1313ddc96, 81f568878, gate 15 passed EXIT=0, delivery/promotion population 43 passed EXIT=0, and three negative-control logs (6, 2, 2 failed) each at EXIT=1.\nVERDICT diff: Read commit by commit against base 313250e31; three commits (fbceb4ce8 fix, 1313ddc96 test, 81f568878 docs) add the run-directory record declaration and the reader resolution (reckon/crew/review.py:2450-2517).\nCALL_SITES: reckon/crew/promotion.py:_file_delivered_run_reviews, reckon/crew/dispatch_launch.py:_file_delivered_review_records, reckon/crew/obligations.py:_current_review_in_flight, reckon/crew/recovery_review_dispatch.py:_review_subject\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_subject.py:622-626 declares and creates the record directory inside the reviewed run's directory, and the executed fence arm proves the sibling removal is refused, which is exactly the stated goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_run_review_cannot_remove_a_siblings_record.py:1-20 names the file as the measure and the reviewed manifest.md:12-13 records its run (15 passed EXIT=0) plus the three red control logs, though the promotion-into-the-committed-store clause is covered in the population suite rather than the node's own file.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: Every path in the diff is inside the declared write paths and no undeclared file was touched; the diffuse chain of thin wrappers (promotion.py:1707, dispatch_launch.py:3216, recovery_review_delivery.py:99) stays within the declared modules.\nSCORE durability: 19\nJUSTIFICATION durability: The three declared negative controls each redden a distinct case (grant widened 6 failed, filing removed 2, store-only paths 2) and the bwrap arm at tests/test_a_run_review_cannot_remove_a_siblings_record.py:333 executes the refusal, so a regression that re-declared the store path or dropped the filing would fail.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/review.py:2450 introduces RUN_REVIEW_RECORD_DIRNAME and run_review_record_* in the surrounding store idiom with no plan, stage or version label.\nSCORE reuse: 18\nJUSTIFICATION reuse: The filing reuses store_review (reckon/crew/review.py:2423) as the store's own writer; a search over reckon/crew found plan_review.delivered_reports (reckon/crew/plan_review.py:1989) as the analogous report-delivery owner for a different store and format, mirrored rather than duplicated, and no owner of a run-directory review-record delivery exists.\nFINDING reckon/crew/obligations.py:143 follow-on: _current_review_in_flight composes `expected` write_paths from the installed code and matches them against the review pointer's granted paths; this change moves the composed paths from the store to <reviewed-run>/review-records, so a hand-launched review dispatched before the code moved (granted store paths) is no longer recognised as in flight and the run it reviews could be re-dispatched while that review is live \u2014 narrow (needs an in-place upgrade with a live hand-launched review) and the reflex path is checked first, so it does not hold this node.\n",
+  "review_run_id": "r-20261017T002843319353-review-of-a-run-review-cannot-remove-a-siblings-record-81f56887847d",
+  "reviewed_base_sha": "313250e317a7852292b6de086087db0ae5b49d97",
+  "reviewed_head_sha": "81f56887847dc4674c684a6779a43a9a09635fd1",
+  "reviewed_run_id": "r-20261016T233131997413-a-run-review-cannot-remove-a-siblings-record",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T00:37:05.401778+00:00",
+  "total": 110
+}
