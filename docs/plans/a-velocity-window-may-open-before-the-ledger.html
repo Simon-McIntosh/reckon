@@ -24,7 +24,7 @@
   <title>A Velocity Window May Open Before The Ledger | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -131,7 +131,7 @@
 <p><strong>Write paths:</strong> <code>reckon/velocity.py</code> and <code>tests/test_velocity_places_a_run_by_its_record_file.py</code>, which is new.</p>
 <p><strong>Done when</strong> all four of these hold:</p>
 <ul>
-<li>The new test builds a temporary repository in which a candidate run's per-run file is added inside the window, and records every argv the module's git runner receives. It asserts that the run is placed at the commit that added its file, and that no <code>-p</code> log over <code>crew.json</code> ran for it. A second case asserts that a run with no per-run file is still placed by the <code>crew.json</code> search, with the slice size set to one commit so that the window takes several slices. A third case interrupts a read between slices. With the slice size at one commit, it makes the module's git runner raise <code>subprocess.TimeoutExpired</code> on the second slice's search. It then reads the same window again and asserts two things: the resumed read searches only from the first slice's last commit onward, issuing no <code>-p</code> log whose range covers the first slice; and a third, uninterrupted read of the completed window issues no <code>-p</code> log at all.</li>
+<li>The new test builds a temporary repository in which a candidate run's per-run file is added inside the window, and records every argv the module's git runner receives. It asserts that the run is placed at the commit that added its file, and that no <code>-p</code> log over <code>crew.json</code> ran for it. A second case asserts that a run with no per-run file is still placed by the <code>crew.json</code> search, with the slice size set to one commit so that the window takes several slices. A third case interrupts a read between slices. With the slice size at one commit, it makes the module's git runner raise <code>subprocess.TimeoutExpired</code> on the second slice's search. It then reads the same window again and asserts two things: the resumed read searches only from the first slice's last commit onward, issuing no <code>-p</code> log whose range covers the first slice; and a third, uninterrupted read of the completed window issues no <code>-p</code> log at all. The test writes nothing outside its temporary directory: it points <code>RECKON_VELOCITY_CACHE</code> and <code>RECKON_CLONE_CACHE</code> into that directory, as §1's test does, and asserts that the real cache root it would otherwise resolve is left untouched.</li>
 <li>Pytest over the new file, <code>tests/test_velocity_cache.py</code>, <code>tests/test_velocity.py</code>, <code>tests/test_crew_velocity_view.py</code> and <code>tests/test_velocity_reads_a_revision_without_the_ledger.py</code> adds no failure against the base.</li>
 <li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</li>
 <li>After the merge, the coordinator runs <code>reckon crew velocity --project reckon --since 2026-08-01</code> and <code>--since 2026-09-01</code> at the merged head, and both exit 0. Each log records its revision and wall time.</li>
