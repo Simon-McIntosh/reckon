@@ -156,7 +156,6 @@ _MODULE_EXPORTS = {
         "_spawn",
         "attach",
         "observe",
-        "_capture_member_session",
         "_backend_settings",
         "resume_plan",
         "terminate",

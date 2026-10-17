@@ -357,7 +357,7 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
         else:
             record["session_id_absent"] = absence
 
-        capture = _capture_member_session(record)
+        capture = capture_run_session(record)
         if capture is not None:
             record["session_capture"] = capture
         return record
@@ -817,11 +817,6 @@ def _capture_session_absence(
             "backend has not announced one for this run"
         ),
     }
-
-
-def _capture_member_session(record: dict[str, Any]) -> dict[str, Any] | None:
-    """Compatibility entry point for promotion; capture writes only the run."""
-    return capture_run_session(record)
 
 
 def _current_harness_session(

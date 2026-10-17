@@ -65,7 +65,6 @@ from reckon.crew import (
 from reckon.crew.dispatch import (
     WORKER_SCRATCH_BUDGET_BYTES,
     _backend_settings,
-    _capture_member_session,
     project_mount_repository,
     remove_worker_scratch,
     resolve_project_repository,
@@ -126,6 +125,7 @@ from reckon.crew.runs import (
     _shared_write_paths,
     _utc_now,
     _write_json,
+    capture_run_session,
     crew_home,
     drain,
     list_live,
@@ -760,7 +760,7 @@ def _complete_locked(
                     checkout=checkout,
                 ),
             )
-            capture = _capture_member_session(record)
+            capture = capture_run_session(record)
             path = pointer_path(run_id)
             path.unlink(missing_ok=True)
             retention = existing.get("worktree_retention")
@@ -1367,7 +1367,7 @@ def _complete_locked(
 
         # Return capture metadata while the pointer still exists. Session
         # ownership has already been copied onto the committed ledger row.
-        capture = _capture_member_session(record)
+        capture = capture_run_session(record)
         pointer_path(run_id).unlink(missing_ok=True)
         release = _release_after_promotion(
             run_id,

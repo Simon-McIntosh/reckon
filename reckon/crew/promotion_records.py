@@ -12,7 +12,6 @@ from reckon import (
 )
 from reckon.crew.dispatch import (
     WORKER_SCRATCH_BUDGET_BYTES,
-    _capture_member_session,
     remove_worker_scratch,
 )
 from reckon.crew.node import (
@@ -32,6 +31,7 @@ from reckon.crew.runs import (
     _live_worktree_claims,
     _manifest_freshness,
     _write_json,
+    capture_run_session,
     drain,  # noqa: F401 - importable so a caller can substitute the fleet reading's drain
     pointer_path,
     read_pointer,
@@ -182,7 +182,7 @@ def _complete_withdrawn_run(run_id: str, record: Mapping[str, Any]) -> dict[str,
     state the word the fleet vocabulary already uses for a departure that
     records no landing.
     """
-    capture = _capture_member_session(record)
+    capture = capture_run_session(record)
     pointer_existed = pointer_path(run_id).exists()
     pointer_path(run_id).unlink(missing_ok=True)
     release = _release_after_promotion(run_id, record)

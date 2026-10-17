@@ -180,7 +180,7 @@ def test_failure_after_append_names_the_row_state(repository, monkeypatch, failu
         monkeypatch.setattr(
             promotion,
             {
-                "capture": "_capture_member_session",
+                "capture": "capture_run_session",
                 "release": "_release_after_promotion",
                 "fleet": "_fleet_state_reading",
             }[failure],
@@ -271,7 +271,7 @@ def test_existing_ledger_row_is_named_when_cleanup_fails(repository, monkeypatch
     def refuse(*args, **kwargs):
         raise OSError("session capture refused")
 
-    monkeypatch.setattr(promotion, "_capture_member_session", refuse)
+    monkeypatch.setattr(promotion, "capture_run_session", refuse)
     with pytest.raises(promotion.CrewError, match="do not re-promote") as caught:
         promotion._complete_locked(run_id, gate="not-run", root=repository)
     assert f"ledger row for run {run_id!r} is already written" in str(caught.value)
