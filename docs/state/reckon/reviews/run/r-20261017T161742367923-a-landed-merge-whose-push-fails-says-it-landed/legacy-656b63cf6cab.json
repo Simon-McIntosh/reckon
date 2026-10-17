@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: head-gate.log recorded 0 failures and negative-control-base-tree.log recorded 1; head-minus-base added failures is 0.",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_run_commands.py:86 crew_merge"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-17T16:18:40Z",
+  "findings": [
+    {
+      "file": "tests/test_a_reviewed_head_lands_without_touching_the_index.py",
+      "line": 356,
+      "severity": "follow-on",
+      "text": "assert payload[\"head\"] == head compares the reported head against the same value the test passed in as --head, so it holds for any code that echoes its input and cannot catch a regression in head reporting; the load-bearing anchors are lines 354-355 against git."
+    },
+    {
+      "file": "reckon/crew/merge.py",
+      "line": 241,
+      "severity": "follow-on",
+      "text": "_is_ancestor re-implements the merge-base ancestor test the repository already owns at reckon/velocity.py:682 (same name and body form) and reckon/crew/promotion_scope.py:1982 _revision_is_ancestor, extending neither owner."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "The only production call site is reckon/crew_run_commands.py:86 crew_merge, the CLI verb that calls land_merge and now catches MergePushOutstandingError before MergeError; no promotion or recovery module calls land_merge.",
+    "diff": "Read commit 915c0aeb7 against base 8302793e commit by commit; 343+/53- across six files, all inside the declared scope.",
+    "done_when": "The done_when names three cases in tests/test_a_reviewed_head_lands_without_touching_the_index.py plus a skill-contract row and a base-tree negative control; head-gate.log records 77 passed EXIT=0 and negative-control-base-tree.log records 1 failed EXIT=1.",
+    "goal": "The source goal is to make crew merge report a landed merge whose push failed, rerun straight to the push, and fall back to port 443 when 22 is refused; reckon/crew/merge.py:75,340,290 implement all three.",
+    "manifest": "Read; it states status complete, names the head gate result 77 passed EXIT=0 and the negative-control log, and lists commit 915c0aeb7.",
+    "write_paths": "Read the manifest's declared paths; every path in the diff (merge.py, crew_run_commands.py, the skill, the two tests, the evidence fragment) is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reviewed_head_lands_without_touching_the_index.py:382 fails if the ancestor check is removed (a second merge increments rev-list --count) and :418 fails if the port-443 retry is removed; the base-arm log proves the push-failure case reddens on the unrepaired code.",
+    "evidence": "head-gate.log records the named gate (77 passed, EXIT=0) and negative-control-base-tree.log records the base failure (EXIT=1, no landed commit), so the done_when's distinct-status, rerun and port-443 measures are recorded rather than claimed.",
+    "fit": "reckon/crew/merge.py:241 follows the module's own thin git-wrapper idiom (_rev_parse, _parents over _run) and the commit carries a conventional subject with a body and no plan identifier.",
+    "goal_fidelity": "reckon/crew/merge.py:75 defines MergePushOutstandingError and :340-345 pushes a head already in HEAD, so a failed push after the fast-forward names the landed commit and the goal's rerun-straight-to-push path exists.",
+    "reuse": "reckon/crew/merge.py:241 _is_ancestor re-implements a capability the repository already owns at reckon/velocity.py:682 and reckon/crew/promotion_scope.py:1982, extending neither.",
+    "scope_discipline": "all six changed paths (reckon/crew/merge.py, reckon/crew_run_commands.py, skills/reckon-build/SKILL.md, the two test files, the evidence fragment) are inside the declared write paths."
+  },
+  "node": "review-of-a-landed-merge-whose-push-fails-says-it-landed-915c0aeb700d",
+  "project": "reckon",
+  "review_run_id": "legacy-656b63cf6cab",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "8302793e18f0a0706b61ab7c4823cd5044cabde6",
+  "reviewed_head_sha": "915c0aeb700d27470bef907bfe858243380c381f",
+  "reviewed_run_id": "r-20261017T161742367923-a-landed-merge-whose-push-fails-says-it-landed",
+  "rubric": "landed-node",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T16:45:43.949290+00:00",
+  "total": 106
+}
