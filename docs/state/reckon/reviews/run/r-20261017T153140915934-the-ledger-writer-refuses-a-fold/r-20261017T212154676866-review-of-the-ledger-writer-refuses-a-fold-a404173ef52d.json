@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1607 reap_idle_session_members",
+    "reckon/crew/routing.py:2891 ledger.write from the reap",
+    "reckon/crew_run_commands.py:1932 record_gate_rerun_at_integrated_revision",
+    "reckon/crew/promotion_records.py:189 _retire_disposable_identity",
+    "scripts/derive_run_figures.py:109 backfill_run_figures",
+    "scripts/backfill_run_durations.py:262 backfill_run_durations",
+    "reckon/crew_run_commands.py:2010 register_member",
+    "reckon/crew_run_commands.py:2563 crew_repair_completion",
+    "reckon/budget.py:1421 record_hold_checks"
+  ],
+  "completed_at": "2026-10-17T21:32:42.509Z",
+  "dispatched_at": "2026-10-17T21:22:33Z",
+  "findings": [
+    {
+      "file": "tests/test_capabilities.py",
+      "line": "987",
+      "severity": "follow-on",
+      "text": "follow-on: the _persist_runs helper is added verbatim here and again at tests/test_crew_shadow.py:54 and tests/test_routing_surface.py:382, so one new fixture capability lands as three copies with no shared owner and a fix to one leaves the other two disagreeing."
+    },
+    {
+      "file": "reckon/crew/promotion_release.py",
+      "line": "546",
+      "severity": "follow-on",
+      "text": "follow-on: _update_run_record re-encodes a run file itself through serialize_run and an atomic write at mode 0o600 instead of calling the new ledger.write_run_file, so the run-file write still has two owners; the node was fenced out of this file and the evidence fragment now states it correctly, so the residual is recorded rather than repaired here."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T153140915934-the-ledger-writer-refuses-a-fold/logs/repair3-fold-and-hold-gate.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T153140915934-the-ledger-writer-refuses-a-fold/logs/attempt2-negative-control-final.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read commit by commit against base 2e9a07c237; fifteen commits add the fold refusal and the aggregate reader, give the run-file write one owner, repoint eight production writers and one internal caller, repoint twelve test fixtures, and add one evidence fragment.",
+    "done_when": "the done_when names tests/test_the_ledger_writer_refuses_a_fold.py over a 10-row aggregate and 50 per-run files, a refusal naming 50, an accepted one-run append, a hold check leaving the row count unchanged, one case per production writer, and a base-tree negative control; head logs/repair3-fold-and-hold-gate.log records 13 passed EXIT=0, the base arm records 9 failed EXIT=1, and re-running the fold file at head myself returned 10 passed EXIT=0.",
+    "goal": "the goal is a fold refusal in ledger.write with record_hold_checks reading the aggregate's own rows and every named aggregate writer repointed; the refusal lands at reckon/ledger.py:1856, the hold check reads the aggregate at reckon/ledger.py:3869, and all six named writers plus register_member and repair_completion now read through ledger.load_aggregate.",
+    "manifest": "read; status complete, its gate figures reconcile with the logs, and its claim that the new test file and the two scripts add no ruff finding is confirmed by running ruff check myself.",
+    "write_paths": "the node's declared write paths are reckon/ledger.py, the fold test file, the evidence fragment, the figures directory, and (via resume advice) the three crew modules, two scripts, tests/test_hold_check_leaves_the_tree_clean.py and the three widened test files; git diff 2e9a07c237..a404173ef changes exactly those."
+  },
+  "justifications": {
+    "durability": "tests/test_the_ledger_writer_refuses_a_fold.py fails on DID NOT RAISE at the pre-guard base tree (9 failed, logs/attempt2-negative-control-final.log) and the completion-repair case fails with the fold refusal when the repair is reverted (logs/repair1-negative-control.log), and every added assertion compares against a value the fixture seeded or an independent re-read, never one handed to the code under test.",
+    "evidence": "the done_when's gate tests/test_the_ledger_writer_refuses_a_fold.py re-run at head returns 10 passed EXIT=0, its base-tree arm logs/attempt2-negative-control-final.log is 9 failed EXIT=1, and ruff check is clean on the new test file and the two scripts; the manifest records baseline_suite/after_suite as absent (the run was not armed) so added_failure ids are read from the run's own gate logs, which name none added at head.",
+    "fit": "reckon/ledger.py:888 write_run_file and reckon/ledger.py:989 load_aggregate follow the module's helper-and-docstring idiom and carry no plan, ticket or version label; the added test file and scripts are clean under ruff check.",
+    "goal_fidelity": "reckon/ledger.py:1856 refuses a write carrying a run id the aggregate's own rows do not hold while its file exists, reckon/ledger.py:3869 reads the aggregate's own rows for the hold check the goal names, and every writer the plan revision named is repointed.",
+    "reuse": "reckon/ledger.py:888 gives the run-file write one owner and absorbs four copies, but reckon/crew/promotion_release.py:546 still re-encodes a run file itself, so the owner is not universal, and the new _persist_runs fixture is triplicated at tests/test_capabilities.py:987, tests/test_crew_shadow.py:54 and tests/test_routing_surface.py:382.",
+    "scope_discipline": "every path in git diff 2e9a07c237..a404173ef is inside the node's declared write paths, the three test files being added to the fence by the resume-2 and resume-3 advice recorded in the run directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a fold refusal in ledger.write with record_hold_checks reading the aggregate's own rows and every named aggregate writer repointed; the refusal lands at reckon/ledger.py:1856, the hold check reads the aggregate at reckon/ledger.py:3869, and all six named writers plus register_member and repair_completion now read through ledger.load_aggregate.\nVERDICT done_when: the done_when names tests/test_the_ledger_writer_refuses_a_fold.py over a 10-row aggregate and 50 per-run files, a refusal naming 50, an accepted one-run append, a hold check leaving the row count unchanged, one case per production writer, and a base-tree negative control; head logs/repair3-fold-and-hold-gate.log records 13 passed EXIT=0, the base arm logs/attempt2-negative-control-final.log records 9 failed EXIT=1, and re-running the fold file at head myself returned 10 passed EXIT=0.\nVERDICT write_paths: the node's declared write paths are reckon/ledger.py, the fold test file, the evidence fragment, the figures directory, and (via the resume-2 and resume-3 advice in the run directory) the three crew modules, two scripts, tests/test_hold_check_leaves_the_tree_clean.py and the three widened test files; git diff 2e9a07c237..a404173ef changes exactly those and nothing else.\nVERDICT manifest: read; status complete, its gate figures reconcile with the logs, and its claim that the new test file and the two scripts add no ruff finding is confirmed by running ruff check myself (both report All checks passed).\nVERDICT diff: read commit by commit against base 2e9a07c237; fifteen commits add the fold refusal and the aggregate reader, give the run-file write one owner, repoint eight production writers and one internal caller, repoint twelve test fixtures, and add one evidence fragment, with no behaviour change outside the guard and the caller repointing.\nCALL_SITES: reckon/crew/dispatch.py:1607 reap_idle_session_members, reckon/crew/routing.py:2891 ledger.write from the reap, reckon/crew_run_commands.py:1932 record_gate_rerun_at_integrated_revision, reckon/crew/promotion_records.py:189 _retire_disposable_identity, scripts/derive_run_figures.py:109 backfill_run_figures, scripts/backfill_run_durations.py:262 backfill_run_durations, reckon/crew_run_commands.py:2010 register_member, reckon/crew_run_commands.py:2563 crew_repair_completion, reckon/budget.py:1421 record_hold_checks\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1856 refuses a write carrying a run id the aggregate's own rows do not hold while its file exists, reckon/ledger.py:3869 reads the aggregate's own rows for the hold check the goal names, and every writer the plan revision named is repointed.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when's gate tests/test_the_ledger_writer_refuses_a_fold.py re-run at head returns 10 passed EXIT=0, its base-tree arm logs/attempt2-negative-control-final.log is 9 failed EXIT=1, and ruff check is clean on the new test file and the two scripts.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 2e9a07c237..a404173ef is inside the node's declared write paths, the three test files being added to the fence by the resume-2 and resume-3 advice recorded in the run directory.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_ledger_writer_refuses_a_fold.py fails on DID NOT RAISE at the pre-guard base tree and the completion-repair case fails with the fold refusal when the repair is reverted (logs/repair1-negative-control.log), and every added assertion compares against a value the fixture seeded or an independent re-read.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/ledger.py:888 write_run_file and reckon/ledger.py:989 load_aggregate follow the module's helper-and-docstring idiom and carry no plan, ticket or version label, and the added test file and scripts are clean under ruff check.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/ledger.py:888 gives the run-file write one owner and absorbs four copies, but reckon/crew/promotion_release.py:546 still re-encodes a run file itself and the new _persist_runs fixture is triplicated at tests/test_capabilities.py:987, tests/test_crew_shadow.py:54 and tests/test_routing_surface.py:382.\nFINDING tests/test_capabilities.py:987 follow-on: the _persist_runs helper is added verbatim here and again at tests/test_crew_shadow.py:54 and tests/test_routing_surface.py:382, so one new fixture capability lands as three copies with no shared owner and a fix to one leaves the other two disagreeing.\nFINDING reckon/crew/promotion_release.py:546 follow-on: _update_run_record re-encodes a run file itself through serialize_run and an atomic write at mode 0o600 instead of calling the new ledger.write_run_file, so the run-file write still has two owners; the node was fenced out of this file and the evidence fragment now states it correctly, so the residual is recorded rather than repaired here.\nreviewed_base_sha: 2e9a07c237df7e312e81b47ad4d8744bde532dfc\nreviewed_head_sha: a404173ef52d62cf68f856457a82d7d97c3c45ba\n",
+  "review_run_id": "r-20261017T212154676866-review-of-the-ledger-writer-refuses-a-fold-a404173ef52d",
+  "reviewed_base_sha": "2e9a07c237df7e312e81b47ad4d8744bde532dfc",
+  "reviewed_head_sha": "a404173ef52d62cf68f856457a82d7d97c3c45ba",
+  "reviewed_run_id": "r-20261017T153140915934-the-ledger-writer-refuses-a-fold",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T21:29:13.907195+00:00",
+  "total": 108
+}
