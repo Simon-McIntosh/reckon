@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's manifest records no baseline_suite or after_suite (classification.json reports both null) \u2014 an implement node with a targeted gate, not an armed suite pair \u2014 so the added-failure count was not taken; a zero would assert a measurement never made, and its gate log records a targeted one-file run (3 passed, EXIT=0) rather than a suite.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/serve.py:2250",
+    "reckon/serve.py:2291",
+    "reckon/serve.py:2392",
+    "reckon/serve.py:2319",
+    "reckon/mcp_discovery.py:153",
+    "reckon/fleet_index.py:171"
+  ],
+  "completed_at": "2026-10-17T10:29:10.978Z",
+  "dispatched_at": "2026-10-17T10:19:00Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/building-the-store-writes-it-once.html",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment's performance figure (base median 78.804 s vs head median 20.491 s) comes from measure-first-read.log at 11:40, which ran before fcc87c188 (12:13) landed, so the measured head arm names a revision earlier than the reviewed head; the wrapped loop body is unchanged so the conclusion holds, but the artefact the landing cites is not the reviewed revision."
+    },
+    {
+      "file": "gate-building-the-store-writes-it-once.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the only recorded gate run names revision 9cc65a412 \"(working tree with staged-uncommitted changes),\" so no recorded run names the reviewed head 0d5bdf341; I re-ran the named file at the reviewed head (3 passed in 2.74s, EXIT=0, gate-review-rerun.log) to close it, and the record should carry a head-revision gate log."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against base 9cc65a412; fcc87c188 wraps the discovery document loop in try/finally (the 209-line serve.py delta is the loop re-indented under the new block, not new logic), adds tests/test_building_the_store_writes_it_once.py::test_a_failure_mid_loop_leaves_no_open_batch, and rewrites the two changelog-phrased comments the prior review flagged; 0d5bdf341 states the finally in the evidence fragment; nothing out of scope is touched.",
+    "done_when": "the done_when names tests/test_building_the_store_writes_it_once.py counting _store_persisted over a >=20-plan tree at <=2 with content parity, a base-tree negative control ending EXIT=, a three-per-arm sbatch measurement on one exclusive all_debug node, and a ruff delta; the manifest records the gate \"3 passed in 2.91s (EXIT=0)\" and negative-control-base-tree.log ends EXIT=1 with \"26 store writes in one read\"; I re-ran the named test file at the reviewed head and got \"3 passed in 2.74s\", EXIT=0 (gate-review-rerun.log), which includes the new failure-path test.",
+    "goal": "the node's goal is to make one discovery pass write the persisted metadata store at most once by batching record_discovery's entries into one flush; in the commits gained since the prior review, reckon/serve.py:2291-2392 puts the document loop under try/finally around metadata_index.begin_discovery (reckon/metadata_index.py:831) and flush_discovery (reckon/metadata_index.py:846), so the single deferred write now happens whether or not the loop completes, and the pass still writes the store once.",
+    "manifest": "read; it records status complete, the four commits, the gate \"3 passed in 2.91s (EXIT=0)\", the negative-control path and its red line \"AssertionError: 26 store writes in one read / EXIT=1\", and a checkpoint naming the batch-closure fix as committed, though its tests field names no log for the second gate and its perf artefact predates the reviewed head (FINDINGs).",
+    "write_paths": "the declared scope is reckon/metadata_index.py, reckon/serve.py, tests/test_building_the_store_writes_it_once.py, the fragment docs/evidence/fragments/a-read-answers-inside-its-deadline/building-the-store-writes-it-once.html and its figures directory; git diff --name-only 9cc65a412..0d5bdf341 lists exactly reckon/serve.py, tests/test_building_the_store_writes_it_once.py and the fragment, every one inside the declaration and nothing outside it."
+  },
+  "justifications": {
+    "durability": "tests/test_building_the_store_writes_it_once.py:144 asserts the batch key is absent from metadata_index._DISCOVERY_BATCHES after a mid-loop RuntimeError and :166 asserts the store holds discovered entries, both of which redden if the finally at reckon/serve.py:2392 is removed.",
+    "evidence": "the gate test re-runs green at the reviewed head (\"3 passed in 2.74s\", EXIT=0, gate-review-rerun.log), but no recorded log names the reviewed head \u2014 gate-building-the-store-writes-it-once.log:2 names 9cc65a412 with staged-uncommitted changes, and measure-first-read.log predates fcc87c188.",
+    "fit": "the try/finally follows the module's existing idiom and the edits rewrite the two changelog-phrased comments at tests/test_building_the_store_writes_it_once.py:129 and :139 into mechanism terms, with no plan, stage or ticket token anywhere in the diff.",
+    "goal_fidelity": "reckon/serve.py:2392 flushes the batch in a finally, so the pass writes the store once (the flush) regardless of a mid-loop failure, which is the goal's one-write-per-pass deliverable made unconditional.",
+    "reuse": "the increment adds no definition of its own \u2014 it wraps the existing owner's calls (reckon/metadata_index.py:831 begin_discovery and :846 flush_discovery) in a try/finally, and a search of reckon/ for a second batching owner of the discovery store found none.",
+    "scope_discipline": "git diff --name-only 9cc65a412..0d5bdf341 lists only reckon/serve.py, tests/test_building_the_store_writes_it_once.py and the evidence fragment, all inside the declared write paths and nothing beyond them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make one discovery pass write the persisted metadata store at most once by batching record_discovery's entries into one flush; in the commits gained since the prior review, reckon/serve.py:2291-2392 puts the document loop under try/finally around metadata_index.begin_discovery (reckon/metadata_index.py:831) and flush_discovery (reckon/metadata_index.py:846), so the single deferred write now happens whether or not the loop completes, and the pass still writes the store once.\nVERDICT done_when: the done_when names tests/test_building_the_store_writes_it_once.py counting _store_persisted over a >=20-plan tree at <=2 with content parity, a base-tree negative control ending EXIT=, a three-per-arm sbatch measurement on one exclusive all_debug node, and a ruff delta; the manifest records the gate \"3 passed in 2.91s (EXIT=0)\" and negative-control-base-tree.log ends EXIT=1 with \"26 store writes in one read\"; I re-ran the named test file at the reviewed head and got \"3 passed in 2.74s\", EXIT=0 (gate-review-rerun.log), which includes the new failure-path test.\nVERDICT write_paths: the declared scope is reckon/metadata_index.py, reckon/serve.py, tests/test_building_the_store_writes_it_once.py, the fragment docs/evidence/fragments/a-read-answers-inside-its-deadline/building-the-store-writes-it-once.html and its figures directory; git diff --name-only 9cc65a412..0d5bdf341 lists exactly reckon/serve.py, tests/test_building_the_store_writes_it_once.py and the fragment, every one inside the declaration and nothing outside it.\nVERDICT manifest: read; it records status complete, the four commits, the gate \"3 passed in 2.91s (EXIT=0)\", the negative-control path and its red line \"AssertionError: 26 store writes in one read / EXIT=1\", and a checkpoint naming the batch-closure fix as committed, though its tests field names no log for the second gate and its perf artefact predates the reviewed head (FINDINGs).\nVERDICT diff: read commit by commit against base 9cc65a412; fcc87c188 wraps the discovery document loop in try/finally (the 209-line serve.py delta is the loop re-indented under the new block, not new logic), adds tests/test_building_the_store_writes_it_once.py::test_a_failure_mid_loop_leaves_no_open_batch, and rewrites the two changelog-phrased comments the prior review flagged; 0d5bdf341 states the finally in the evidence fragment; nothing out of scope is touched.\nCALL_SITES: reckon/serve.py:2250 (discover_plans reaches _discover_plans_uncached), reckon/serve.py:2291 (begin_discovery, outside the try), reckon/serve.py:2392 (flush_discovery, inside the finally), reckon/serve.py:2319 (record_discovery, the deferred caller), reckon/mcp_discovery.py:153 (the MCP discovery read reaching discover_plans), reckon/fleet_index.py:171\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/serve.py:2392 flushes the batch in a finally, so the pass writes the store once (the flush) regardless of a mid-loop failure, which is the goal's one-write-per-pass deliverable made unconditional.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate test re-runs green at the reviewed head (\"3 passed in 2.74s\", EXIT=0, gate-review-rerun.log), but no recorded log names the reviewed head \u2014 gate-building-the-store-writes-it-once.log:2 names 9cc65a412 with staged-uncommitted changes, and measure-first-read.log predates fcc87c188.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 9cc65a412..0d5bdf341 lists only reckon/serve.py, tests/test_building_the_store_writes_it_once.py and the evidence fragment, all inside the declared write paths and nothing beyond them.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_building_the_store_writes_it_once.py:144 asserts the batch key is absent from metadata_index._DISCOVERY_BATCHES after a mid-loop RuntimeError and :166 asserts the store holds discovered entries, both of which redden if the finally at reckon/serve.py:2392 is removed.\nSCORE fit: 18\nJUSTIFICATION fit: the try/finally follows the module's existing idiom and the edits rewrite the two changelog-phrased comments at tests/test_building_the_store_writes_it_once.py:129 and :139 into mechanism terms, with no plan, stage or ticket token anywhere in the diff.\nSCORE reuse: 20\nJUSTIFICATION reuse: the increment adds no definition of its own \u2014 it wraps the existing owner's calls (reckon/metadata_index.py:831 begin_discovery and :846 flush_discovery) in a try/finally, and a search of reckon/ for a second batching owner of the discovery store found none.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/building-the-store-writes-it-once.html:20 follow-on: the fragment's performance figure (base median 78.804 s vs head median 20.491 s) comes from measure-first-read.log at 11:40, which ran before fcc87c188 (12:13) landed, so the measured head arm names a revision earlier than the reviewed head; the wrapped loop body is unchanged so the conclusion holds, but the artefact the landing cites is not the reviewed revision.\nFINDING gate-building-the-store-writes-it-once.log:2 follow-on: the only recorded gate run names revision 9cc65a412 \"(working tree with staged-uncommitted changes),\" so no recorded run names the reviewed head 0d5bdf341; I re-ran the named file at the reviewed head (3 passed in 2.74s, EXIT=0, gate-review-rerun.log) to close it, and the record should carry a head-revision gate log.",
+  "review_run_id": "r-20261017T101826502129-review-of-building-the-store-writes-it-once-0d5bdf3417fd",
+  "reviewed_base_sha": "9cc65a412c8f6ea5e9f274c5094bf53a5d14efd5",
+  "reviewed_head_sha": "0d5bdf3417fd15540b8ff8a7aaf999c2296ef2a3",
+  "reviewed_run_id": "r-20261017T091418241771-building-the-store-writes-it-once",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T10:35:00.000000+00:00",
+  "total": 113
+}
