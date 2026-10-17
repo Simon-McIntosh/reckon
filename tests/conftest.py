@@ -40,6 +40,88 @@ from reckon.crew.dispatch import (
 )
 from reckon.crew.routing import signal_worker
 
+# ── No test resolves the real cache ────────────────────────────────────────
+#
+# A module- or session-scoped fixture is set up before the per-test
+# ``isolated_reckon_home``, so while such a fixture built a ledger index
+# ``_store.cache_root`` fell through to the real user cache and left a
+# ``ledger-*.sqlite`` there. The session fixture below redirects every root
+# before any module-scoped fixture runs; the wrapper armed at configure time
+# records every ambient resolution so a leak is named from what the code
+# resolved, not inferred from the live cache directory, which a concurrent
+# reader also writes.
+#
+# An explicit ``override`` is the caller choosing a root, so it is never a
+# leak; the guard watches the ambient resolution the environment produces.
+_CACHE_ROOT_LEAKS: list[dict[str, ...]] = []
+# The allowed root and the running test's id, held in one mutable mapping so a
+# hook and the wrapper share them without rebinding a module-global.
+_GUARD_STATE: dict[str, Path | str | None] = {"allowed_root": None, "nodeid": None}
+
+
+def cache_root_leaks() -> list[dict[str, object]]:
+    """Every ambient ``cache_root`` resolution recorded outside the session temp."""
+    return list(_CACHE_ROOT_LEAKS)
+
+
+def _guard_is_within(path: Path, root: Path) -> bool:
+    resolved = _resolve(Path(path))
+    return resolved == root or root in resolved.parents
+
+
+def _guard_caller() -> str:
+    frame = sys._getframe(2)
+    return f"{frame.f_code.co_filename}:{frame.f_lineno} in {frame.f_code.co_name}"
+
+
+def install_cache_root_guard() -> None:
+    """Record every ambient ``cache_root`` resolution outside the session temp.
+
+    ``cache_root`` is reached both as an attribute of ``reckon._store`` and,
+    in modules that imported it, as a direct binding: rebinding every module's
+    ``cache_root`` name that still points at the original covers the second
+    spelling, and a module imported later reads the patched attribute.
+    """
+    from reckon import _store
+
+    original = _store.cache_root
+    if getattr(original, "_resolves_real_cache_guard", False):
+        return
+
+    def guarded(kind, override=None):
+        resolved = original(kind, override)
+        allowed = _GUARD_STATE["allowed_root"]
+        if (
+            override is None
+            and allowed is not None
+            and not _guard_is_within(resolved, allowed)
+        ):
+            _CACHE_ROOT_LEAKS.append(
+                {
+                    "kind": kind,
+                    "resolved": str(resolved),
+                    "nodeid": _GUARD_STATE["nodeid"],
+                    "caller": _guard_caller(),
+                }
+            )
+        return resolved
+
+    guarded._resolves_real_cache_guard = True  # type: ignore[attr-defined]
+    guarded._resolves_real_cache_original = original  # type: ignore[attr-defined]
+    _store.cache_root = guarded
+    for module in list(sys.modules.values()):
+        if getattr(module, "cache_root", None) is original:
+            try:
+                module.cache_root = guarded
+            except (AttributeError, TypeError):
+                continue
+
+
+def pytest_runtest_setup(item: pytest.Item) -> None:
+    """Attribute any resolution a test's setup makes to that test's id."""
+    _GUARD_STATE["nodeid"] = item.nodeid
+
+
 ARMING_MARKER = "arms_watch_producer"
 
 # The marker every test in a module that imports the browser harness carries.
@@ -1138,6 +1220,8 @@ def pytest_configure(config: pytest.Config) -> None:
     if not basetemp:
         return
     resolved = Path(os.path.abspath(basetemp))
+    _GUARD_STATE["allowed_root"] = resolved
+    install_cache_root_guard()
     try:
         lock = acquire_basetemp_lock(resolved)
     except BasetempInUseError as refused:
@@ -1155,6 +1239,70 @@ def pytest_collection_modifyitems(
             item.add_marker(getattr(pytest.mark, ARMING_MARKER))
         if module_reaches_the_browser_harness(module):
             item.add_marker(getattr(pytest.mark, BROWSER_MARKER))
+    _run_cache_root_guard_last(items)
+
+
+# The module whose test reads the leak record the wrapper has built all session,
+# so it runs after every module whose fixtures could leak. Collected in place it
+# would run before the module-scoped fixtures it exists to watch.
+_CACHE_ROOT_GUARD_MODULE = "test_no_test_resolves_the_real_cache"
+
+
+def _run_cache_root_guard_last(items: list[pytest.Item]) -> None:
+    """Move the cache-root guard test after every other collected item."""
+    guard = [
+        item
+        for item in items
+        if getattr(getattr(item, "module", None), "__name__", "").rsplit(".", 1)[-1]
+        == _CACHE_ROOT_GUARD_MODULE
+    ]
+    if not guard:
+        return
+    rest = [item for item in items if item not in guard]
+    items[:] = rest + guard
+
+
+# The per-kind cache roots ``_store.cache_root`` reads, each named by the
+# variable it honours. One session temp directory holds them all, so a
+# resolution that leaves it is a leak whichever kind asked.
+_SESSION_CACHE_ENV = (
+    "RECKON_VELOCITY_CACHE",
+    "RECKON_CLONE_CACHE",
+    "RECKON_SESSION_HOST_CACHE",
+    "RECKON_PICK_CACHE",
+    "RECKON_RUN_TIME_PROFILE_CACHE",
+    "RECKON_CLIENT_CACHE",
+)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def session_cache_roots_are_isolated(tmp_path_factory):
+    """Redirect every cache root before any module- or function-scoped fixture.
+
+    pytest sets a session-scoped fixture up before a module-scoped one, so this
+    runs before the module-scoped fixture that renders the SPA and builds a
+    ledger index. ``cache_root("pick-input")`` follows ``RECKON_HOME`` before
+    it reads ``XDG_CACHE_HOME``, and a ledger index reaches the cache through
+    the CLI entry point as well as through an import, so both are set here
+    along with the per-kind overrides. The per-test ``isolated_reckon_home``
+    narrows ``RECKON_HOME`` further, within this directory.
+    """
+    root = tmp_path_factory.mktemp("session-cache")
+    assignments = {
+        "RECKON_HOME": str(root / "home"),
+        "XDG_CACHE_HOME": str(root / "cache"),
+        **{name: str(root / name) for name in _SESSION_CACHE_ENV},
+    }
+    previous = {name: os.environ.get(name) for name in assignments}
+    os.environ.update(assignments)
+    try:
+        yield Path(root)
+    finally:
+        for name, value in previous.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
 
 
 @pytest.fixture(autouse=True)
