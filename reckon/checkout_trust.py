@@ -139,7 +139,20 @@ def _prune_must_keep(entry: Path) -> bool:
     named = _lease_nodes(entry)
     if named - {_lock_node_name()}:
         age = _marker_age_seconds(entry / COMMITTED_TREE_LEASE_MARKER)
-        return age is not None and age < COMMITTED_TREE_LEASE_WINDOW_SECONDS
+        if age is not None and age < COMMITTED_TREE_LEASE_WINDOW_SECONDS:
+            return True
+        # The record names only hosts that have stopped renewing, but a pin on
+        # yet another node can be in flight: it opens and stamps the in-use
+        # mark before it takes the flock and rewrites the record, so in that
+        # instant the record still names only the stale host. This node cannot
+        # see that pin's flock (flock does not cross nodes), so the mark's
+        # mtime -- stamped the instant the pin is taken and on every renewal --
+        # is the only evidence it is in use, and a mark inside the grace holds
+        # the tree.
+        in_use_age = _marker_age_seconds(entry / ".in-use")
+        return (
+            in_use_age is not None and in_use_age < COMMITTED_TREE_PUBLISH_GRACE_SECONDS
+        )
     if (entry / ".in-use").exists():
         if named:
             return False
@@ -244,9 +257,18 @@ def pin_matches_materialized_tree(descriptor: int, root: Path) -> bool:
 
 
 def pin_materialized_tree(root: Path) -> int:
-    """Hold a kernel lease while this process may import from an image."""
+    """Hold a kernel lease while this process may import from an image.
+
+    The pin stamps the in-use mark as it takes the lease, before the flock and
+    the record write. A pruner on another node cannot see this node's flock,
+    and until the record is rewritten the tree's record can still name only a
+    host that has stopped renewing, so the mark's mtime is the one thing that
+    says a pin is in progress across the gap between those two steps. Opening
+    an existing mark rewrites nothing, so the stamp is made explicit here.
+    """
     descriptor = os.open(root / ".in-use", os.O_CREAT | os.O_RDWR, 0o600)
     try:
+        os.utime(descriptor, None)
         fcntl.flock(descriptor, fcntl.LOCK_SH)
     except BaseException:
         os.close(descriptor)
