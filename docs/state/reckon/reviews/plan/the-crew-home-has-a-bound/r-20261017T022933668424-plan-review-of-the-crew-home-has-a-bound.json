@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T02:36:07.503Z",
+  "dispatched_at": "2026-10-17T02:30:29Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:163",
+      "id": "done_when-1",
+      "reason": "the deliverable \"Every test that builds a ledger uses a temporary cache root\" is not achieved for the case the section was written from, and the gate designed to prove it passes over that case, so a node implementing \u00a79 literally lands a guard that reports safety it does not provide.",
+      "text": "\u00a79's cited leak includes an index keyed to `\u2026/pytest-of-mcintos/.../entry-points0`, which tests/test_spa_crew_stylesheet.py:49-55 creates with `tmp_path_factory.mktemp(\"entry-points\")` in a **module-scoped** fixture whose body calls `serve._render_spa_html(\"fixture\")`; that path reaches `ledger.load` at reckon/serve.py:1029, which builds `_run_index_path` \u2192 `_store.cache_root(\"pick-input\")`. A module-scoped fixture is set up before the function-scoped autouse `isolated_reckon_home` (tests/conftest.py:1160-1170), so at that moment neither `RECKON_HOME` nor the proposed per-test `XDG_CACHE_HOME` is set and the root resolves to the real `~/.cache/reckon` \u2014 the leak survives the fix. The guard is blind to it for the same reason: a session-scoped wrapper that \"fails the session naming any test that resolved a root outside its own temporary directory\" has no test to name for a resolution made during module-fixture setup, so it records nothing and passes. The declared negative control (remove the fixture, \"the wrapper names the tests that resolved the real cache\") cannot redden for this case either, because there is no test to name \u2014 the control cannot validate the guard against the very leak \u00a79 cites.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:163",
+      "id": "reasoning-1",
+      "reason": "the section names the wrong environment variable for its own headline case and leaves the permitted root undefined against an existing fixture's actual resolution, so the worker either implements a fixture that does not move the ledger index or a guard that fails the whole suite for reasons unrelated to the leak.",
+      "text": "\u00a79 says pointing `XDG_CACHE_HOME` makes \"every cache root reckon resolves, the ledger index and the picker caches among them\" fall under the test's directory, but `cache_root` (reckon/_store.py:158-201) returns `_config_home()/cache/leaf` for the `pick-input` kind whenever `RECKON_HOME` is set, *before* it ever reads `XDG_CACHE_HOME` (the `home_order == \"before\"` branch for pick-input precedes the `XDG_CACHE_HOME` branch). The ledger index therefore does not follow `XDG_CACHE_HOME` at all; it follows the `RECKON_HOME` the existing fixture already sets to a `tmp_path_factory.mktemp(\"reckon-home\")` directory. That directory is not the test's own `tmp_path`, so the same sentence is false on the other side too: a guard failing on any resolution \"outside its own temporary directory\" reddens on healthy ledger-building tests that resolve to `<basetemp>/reckon-home*/cache`.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e7045cf498a9387804e6a859013bd77e8d4cd7fa08ef2264e2cd335d796670e9",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 53,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T022933668424-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "850185381d03ff4799884cb9abfe7499dfb79879",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 tests/conftest.py, tests/test_spa_crew_stylesheet.py, `_store.cache_root` (reckon/_store.py:158) and `RECKON_PICK_CACHE` (reckon/_store.py:172) all resolve, and the cited evidence and plan hrefs carry an explicit `.html`.",
+    "done_when": "a finding \u2014 \u00a79's fix and its guard are both scoped to a running test, while the leak its own Why cites resolved outside any test.",
+    "evidence_paths": "pass \u2014 the negative-control log and the gate write under the run directory on the all_debug partition, not a node-local temporary path.",
+    "naming": "pass \u2014 \u00a79 names no new symbol, file or comment carrying a plan label, stage name or ticket id.",
+    "reasoning": "a finding \u2014 the mechanism \u00a79 prescribes (a per-test `XDG_CACHE_HOME`) cannot reach the resolution that produced the cited leak.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable, keeping tests out of the real cache.",
+    "wiring": "pass \u2014 the open followup f-tchhab-009 recommends `/reckon-build the-crew-home-has-a-bound \u00a79` and resolves to this section, and \u00a79's write paths (tests/conftest.py and its guard test) are disjoint from \u00a78's (reckon/ledger.py), so the stated parallel dispatch holds."
+  },
+  "section_digests": {
+    "_document": "4dc163aaf3971781a60f3a42d1ae1a5f5e8120d9456c429e5adc0ea60acb2b52",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s10": "56c18da5f95c1af6bc07050b4374f565f11fa8750f575894cd4e1cc2b5ea773a",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "ea437bee063bb05e8f8ddb6f7a30f7f066d66dff1770c1488e31b86a6f5c7ba8",
+    "s5": "75a8a336e2ee62426e5a8c3ed3310e0cf614b82a8cf7ae6a5985fcb99f2b1648",
+    "s6": "3f82b3311550663b1d18b1428203c2b44805aff91f1c998049de11dd82bfe201",
+    "s7": "d966e9dc54000fcf7d43d9d39567b2a791c2670b0224b881649472a126a8f106",
+    "s8": "07d9242815cd2c19cf76c9484aa28c908834190af477f204091de9d695b3e8a5",
+    "s9": "c6e57bcfe29a6b539316fbeac492118e696d5dc6a275044d7e7a27a97da5be0b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T02:43:07.928273+00:00"
+}
