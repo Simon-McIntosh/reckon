@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="jev-learns-from-its-routes">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;a-shadow-cannot-see-its-primary#s2&quot;, &quot;a-shadow-cannot-see-its-primary#s3&quot;], &quot;s5&quot;: [&quot;a-shadow-cannot-see-its-primary#s4&quot;], &quot;s6&quot;: [&quot;a-shadow-cannot-see-its-primary#s5&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="35">
+<meta name="plan-version" content="36">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -238,7 +238,7 @@
       Python files.
     </p>
     <h2 id="s6">§6 — A paired arm does not land before its partner finishes</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> §5 starts both arms before either lands, but they finish at different times. If the first arm to finish were promoted, main would hold its result while the second arm was still working, and the second arm could copy it from the main checkout as the xpoint-cell-owner shadow did.</p>
 <p><strong>Deliverable.</strong> <code>reckon crew complete</code> refuses to promote a paired arm while its partner is non-terminal. The refusal names the partner's run id and phase. It is one <code>_require_*</code> check defined in <code>reckon/crew/promotion_checks.py</code>. It is registered in the lambda list that <code>reckon/crew/promotion.py</code> passes to <code>_require_independently</code>, beside <code>_require_worker_stopped_before_promotion</code>. A run is paired when its lineage is a shadow lineage naming a live primary, or when its record names a <code>paired_shadow_run_id</code>. Once the partner is terminal, either arm promotes as it does today. A shadow of an already-promoted primary, dispatched through <code>crew shadow</code>, is not held.</p>
 <p><strong>Residual.</strong> Both worktrees share the repository's object store, so an arm could still reach its partner's commits through git. §2's scan reports a read of the partner's worktree or commit as contamination, so such a pair reads as uncontrolled rather than passing silently.</p>
@@ -358,7 +358,10 @@
     <div class="r-comment-body"><p>08de78b03 fix(crew): mark a shadow that reads its primary uncontrolled -- a shadow's read of its primary's run directory, review record or worktree now marks the row contaminated and the pair uncontrolled, in both stream dialects, with the scan running when the primary cites no commit.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261017T050433152614-review-of-a-paired-arm-waits-for-its-partner-5a33d1eb026b" data-who="reckon-build" data-when="2026-10-17T05:12:26.606Z">
-    <div class="r-comment-body"><p>Independent review of r-20261017T042118495050-a-paired-arm-waits-for-its-partner at 8b6f57f1ceea340535475c961e7921791c2bf24a..5a33d1eb026b9643bb034374f360be34018f47f7 stores a parsed record scoring all six dimensions (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19, reuse 18; total 115), with added_failure_count 0 and no added failure ids derived from the run&#x27;s baseline_suite (64 passed, EXIT=0) and after_suite (71 passed, EXIT=0), and one follow-on finding: _partner_phase catches only CrewError so a present-but-unreadable partner pointer raising OSError would propagate rather than read as non-terminal.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261017T042118495050-a-paired-arm-waits-for-its-partner at 8b6f57f1ceea340535475c961e7921791c2bf24a..5a33d1eb026b9643bb034374f360be34018f47f7 stores a parsed record scoring all six dimensions (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19, reuse 18; total 115), with added_failure_count 0 and no added failure ids derived from the run's baseline_suite (64 passed, EXIT=0) and after_suite (71 passed, EXIT=0), and one follow-on finding: _partner_phase catches only CrewError so a present-but-unreadable partner pointer raising OSError would propagate rather than read as non-terminal.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-17T05:16:00Z">
+    <div class="r-comment-body"><p>§6 landed: <code>crew complete</code> refuses a paired arm while its partner is still running, so main never holds one arm's result while the other works; it also guards §2's promotion wiring end to end (commit <code>5a33d1eb0</code>). 7 tests pass, the importers show no added failure, and the negative control fails. <a href="/reckon/evidence/archive/a-shadow-cannot-see-its-primary-landed.html#s6">evidence</a></p></div>
 </div>
 </section>
 </main>
