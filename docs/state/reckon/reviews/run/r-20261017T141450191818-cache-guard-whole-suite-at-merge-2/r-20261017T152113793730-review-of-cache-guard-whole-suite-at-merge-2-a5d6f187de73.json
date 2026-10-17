@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own baseline_suite and after_suite gate logs, both recorded with completed true. whole-suite-base.log reports 36 FAILED ids at a5d6f187de73b70a4b803e52f2ef8a1d29cc130f; whole-suite-candidate.log reports 32 at 04be2a6dc06aecaf72f2b88777e4d37389037171. The candidate set is a subset of the base set, so zero ids are added and four base ids pass at the candidate. Reproduced independently by parsing the two logs directly, without the helper and without its scratch-directory arguments.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/_store.py:158 cache_root (the owner the guard wraps)",
+    "reckon/serve.py:762",
+    "reckon/ledger.py:1020",
+    "reckon/velocity.py:589",
+    "reckon/clones.py:536",
+    "reckon/crew/session_host.py:137"
+  ],
+  "completed_at": "2026-10-17T15:44:16.351Z",
+  "dispatched_at": "2026-10-17T15:22:02Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T141450191818-cache-guard-whole-suite-at-merge-2/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "the candidate arm's 'names none' verdict is an absence taken with the guard's sensitivity control unset -- RECKON_CACHE_GUARD_POSITIVE_CONTROL and RECKON_CACHE_GUARD_TEARDOWN_CONTROL were unset in both arms, so neither arm shows the wrapper recording a resolution that left the temp tree; a third control arm is needed, because arming the control inside a measurement arm fails that arm by design, and a control run at HEAD does name the control test and fail the session."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T141450191818-cache-guard-whole-suite-at-merge-2/whole-suite-candidate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "this gate log's first line was rewritten after the run by the node's own fix_heads.py (REV= lowercased to rev=) to satisfy the manifest audit's case-sensitive first-line revision regex at reckon/crew/reports.py:1142; the revision value is unchanged and correct, but a log edited after the fact is not a receipt a reader can audit, and the two arms now carry inconsistently cased header labels -- the shape belongs in the producer (run_arm.sh:19)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T141450191818-cache-guard-whole-suite-at-merge-2/manifest.md",
+      "line": "26",
+      "severity": "follow-on",
+      "text": "the run left its scratch on node-local /tmp -- /tmp/reckon-crew-scratch/r-20261017T141450191818-cache-guard-whole-suite-at-merge-2/derive holds the base and cand clones, plus claude-39486 and pytest-of-mcintos -- where a job is expected to remove what it wrote; the residue is disclosed in follow_ons but is real and sits on a node other sessions reuse."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "the node committed nothing -- the reviewed worktree is clean with HEAD at a5d6f187 = base, so there is no code diff; the deliverables are the two arm logs and the manifest.",
+    "done_when": "each arm log names its revision, host and literal command (whole-suite-base.log and whole-suite-candidate.log, lines 1 and 5-7), proves reckon.__file__ lies under its own checkout, carries the pytest summary line and ends EXIT=1; the manifest records the guard's verdict at the candidate; re-deriving the added ids independently from the two logs yields none; no path under reckon/ or tests/ changed.",
+    "goal": "the goal is a whole-suite measurement at base and at the cache-guard merge candidate on two exclusive nodes; sacct shows job 1288095 (base, 98dci4-clu-3141, 16:23:44-16:47:26) and job 1288096 (candidate, 98dci4-clu-3142, 16:23:49-16:45:29) running concurrently on all_debug, and both arm logs exist under the run directory.",
+    "manifest": "read; its counts reproduce the logs exactly (base 36 failed / 14166 passed / 7 skipped, candidate 32 failed / 14170 passed / 10 skipped, both EXIT=1), its empty added-id set matched a plain parse of my own, and its guard-alone claim (1 passed, 2 skipped) reproduces at HEAD, where tests/conftest.py and tests/test_no_test_resolves_the_real_cache.py are byte-identical to the candidate's.",
+    "write_paths": "the node's declared write path is the reports directory .../the-crew-home-has-a-bound/cache-guard-whole-suite-at-merge-2, which holds no file, and the reviewed worktree is clean with HEAD at a5d6f187 equal to base, so nothing was written outside it either."
+  },
+  "justifications": {
+    "durability": "the run added no assertion of its own, and the durable check over the mechanism it measured is tests/test_no_test_resolves_the_real_cache.py:51, which reddens if reckon/_store.py:158 cache_root is left unwrapped.",
+    "evidence": "the added-failure count of 0 reproduces under an independent parse of whole-suite-base.log and whole-suite-candidate.log, and each arm's header records its revision, host and command at lines 1 and 5-7.",
+    "fit": "the arm logs follow the dispatch contract's log shape, but whole-suite-candidate.log:1 carries labels cased differently from whole-suite-base.log:1 and was rewritten after the run.",
+    "goal_fidelity": "whole-suite-base.log and whole-suite-candidate.log each carry a full tests/ summary at their own revision, and sacct -j 1288095,1288096 shows the two exclusive all_debug jobs overlapping in time.",
+    "reuse": "the derivation calls the owner reckon/crew/review.py:2100 added_failures_from_gate_logs with both gate logs rather than forking a comparison; a capability search over reckon/crew found no other added-failure derivation.",
+    "scope_discipline": "the reviewed worktree is clean with HEAD at a5d6f187 = base and the declared write path .../reports/reckon/the-crew-home-has-a-bound/cache-guard-whole-suite-at-merge-2 holds no file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a whole-suite measurement at base and at the cache-guard merge candidate on two exclusive nodes; sacct shows job 1288095 (base, 98dci4-clu-3141, 16:23:44-16:47:26) and job 1288096 (candidate, 98dci4-clu-3142, 16:23:49-16:45:29) running concurrently on all_debug, and both arm logs exist under the run directory.\nVERDICT done_when: each arm log names its revision, host and literal command (whole-suite-base.log and whole-suite-candidate.log, lines 1 and 5-7), proves reckon.__file__ lies under its own checkout, carries the pytest summary line and ends EXIT=1; the manifest records the guard's verdict at the candidate; re-deriving the added ids independently from the two logs yields none; no path under reckon/ or tests/ changed.\nVERDICT write_paths: the node's declared write path is the reports directory .../the-crew-home-has-a-bound/cache-guard-whole-suite-at-merge-2, which holds no file, and the reviewed worktree is clean with HEAD at a5d6f187 equal to base, so nothing was written outside it either.\nVERDICT manifest: read; its counts reproduce the logs exactly (base 36 failed / 14166 passed / 7 skipped, candidate 32 failed / 14170 passed / 10 skipped, both EXIT=1), its empty added-id set matched a plain parse of my own, and its guard-alone claim (1 passed, 2 skipped) reproduces at HEAD, where tests/conftest.py and tests/test_no_test_resolves_the_real_cache.py are byte-identical to the candidate's.\nVERDICT diff: the node committed nothing -- the reviewed worktree is clean with HEAD at a5d6f187 = base, so there is no code diff; the deliverables are the two arm logs and the manifest.\nCALL_SITES: reckon/_store.py:158 cache_root (the owner the guard wraps), reckon/serve.py:762, reckon/ledger.py:1020, reckon/velocity.py:589, reckon/clones.py:536, reckon/crew/session_host.py:137\nSCORE goal_fidelity: 20\nSCORE evidence: 20\nSCORE scope_discipline: 20\nSCORE durability: 17\nSCORE fit: 17\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: whole-suite-base.log and whole-suite-candidate.log each carry a full tests/ summary at their own revision, and sacct -j 1288095,1288096 shows the two exclusive all_debug jobs overlapping in time.\nJUSTIFICATION evidence: the added-failure count of 0 reproduces under an independent parse of whole-suite-base.log and whole-suite-candidate.log, and each arm's header records its revision, host and command at lines 1 and 5-7.\nJUSTIFICATION scope_discipline: the reviewed worktree is clean with HEAD at a5d6f187 = base and the declared write path .../reports/reckon/the-crew-home-has-a-bound/cache-guard-whole-suite-at-merge-2 holds no file.\nJUSTIFICATION durability: the run added no assertion of its own, and the durable check over the mechanism it measured is tests/test_no_test_resolves_the_real_cache.py:51, which reddens if reckon/_store.py:158 cache_root is left unwrapped.\nJUSTIFICATION fit: the arm logs follow the dispatch contract's log shape, but whole-suite-candidate.log:1 carries labels cased differently from whole-suite-base.log:1 and was rewritten after the run.\nJUSTIFICATION reuse: the derivation calls the owner reckon/crew/review.py:2100 added_failures_from_gate_logs with both gate logs rather than forking a comparison; a capability search over reckon/crew found no other added-failure derivation.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T141450191818-cache-guard-whole-suite-at-merge-2/manifest.md:15 follow-on: the candidate arm's 'names none' verdict is an absence taken with the guard's sensitivity control unset -- RECKON_CACHE_GUARD_POSITIVE_CONTROL and RECKON_CACHE_GUARD_TEARDOWN_CONTROL were unset in both arms, so neither arm shows the wrapper recording a resolution that left the temp tree; a third control arm is needed, because arming the control inside a measurement arm fails that arm by design, and a control run at HEAD does name the control test and fail the session.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T141450191818-cache-guard-whole-suite-at-merge-2/whole-suite-candidate.log:1 follow-on: this gate log's first line was rewritten after the run by the node's own fix_heads.py (REV= lowercased to rev=) to satisfy the manifest audit's case-sensitive first-line revision regex at reckon/crew/reports.py:1142; the revision value is unchanged and correct, but a log edited after the fact is not a receipt a reader can audit, and the two arms now carry inconsistently cased header labels -- the shape belongs in the producer (run_arm.sh:19).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T141450191818-cache-guard-whole-suite-at-merge-2/manifest.md:26 follow-on: the run left its scratch on node-local /tmp -- /tmp/reckon-crew-scratch/r-20261017T141450191818-cache-guard-whole-suite-at-merge-2/derive holds the base and cand clones, plus claude-39486 and pytest-of-mcintos -- where a job is expected to remove what it wrote; the residue is disclosed in follow_ons but is real and sits on a node other sessions reuse.\n",
+  "review_run_id": "r-20261017T152113793730-review-of-cache-guard-whole-suite-at-merge-2-a5d6f187de73",
+  "reviewed_base_sha": "a5d6f187de73b70a4b803e52f2ef8a1d29cc130f",
+  "reviewed_head_sha": "a5d6f187de73b70a4b803e52f2ef8a1d29cc130f",
+  "reviewed_run_id": "r-20261017T141450191818-cache-guard-whole-suite-at-merge-2",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261017T152113793730-review-of-cache-guard-whole-suite-at-merge-2-a5d6f187de73"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 20,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T15:56:00.000000+00:00",
+  "total": 114
+}
