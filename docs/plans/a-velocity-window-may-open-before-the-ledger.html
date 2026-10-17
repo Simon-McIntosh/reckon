@@ -24,7 +24,7 @@
   <title>A Velocity Window May Open Before The Ledger | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -203,6 +203,9 @@ The test writes nothing outside its temporary directory. It points <code>RECKON_
 </div>
 <div class="r-comment" data-section="s2" data-id="c-s2-integration-check" data-who="reckon-build" data-when="2026-10-17T21:00:00Z">
     <div class="r-comment-body"><p>Post-merge check for §2, run at merge <code>9a9a83ec6</code>. The ledger search now completes inside the bound: <code>first durable ledger clocks 902 / 902</code> for <code>--since 2026-08-01</code> and <code>545 / 545</code> for <code>--since 2026-09-01</code>. Both windows still exit 1, after 578 s and 529 s. They now fail later, at <code>compact_summary</code>'s 300,000-byte size assertion (<code>reckon/velocity.py:2620</code>), which is a separate defect that §3 carries. §2's code is in the tree; its fourth done-when item waits on §3.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261017T213251905219-review-of-a-velocity-view-is-not-bounded-by-the-census-ab343d208511" data-who="reckon-build" data-when="2026-10-17T21:41:52.144Z">
+    <div class="r-comment-body"><p>Independent review of the landed node a-velocity-view-is-not-bounded-by-the-census at ab343d208511 (base 97ae2a6bdcb6f8e90656c2329e1c80a051015af8); record parsed with all six dimensions scored (total 114: goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 16, reuse 20), one follow-on finding and no blocking finding; the review confirms the assertion moved out of compact_summary into velocity() with the limit and message unchanged.</p></div>
 </div>
 </section>
 </main>
