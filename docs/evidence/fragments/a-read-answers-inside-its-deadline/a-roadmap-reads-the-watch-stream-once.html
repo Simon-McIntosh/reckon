@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s30">
+  <title>A roadmap reads the watch stream once | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-roadmap-reads-the-watch-stream-once-landing" data-node="a-roadmap-reads-the-watch-stream-once" data-reckon="landed" data-when="2026-10-17">
+  <h2>One read parses the project watch stream once, then only its new bytes</h2>
+  <p>Both readers of a project's watch stream — the sprint liveness derivation in <code>reckon/sprint_liveness.py</code> and the live-run classification in <code>reckon/mcp_views.py</code> — need the same fact: the newest transition recorded per run. Each used to open <code>runs.watch_stream_path(project)</code> and parse it whole, so one roadmap read parsed the stream once per reader per call. A shared reader, <code>runs.watch_stream_latest_events</code>, now holds the byte offset it has parsed to and the reduction it built, keyed by project, in one process. The first reader to consult the stream parses each line once; every later reader in the same read receives the shared reduction. Only bytes appended since the last read are parsed, and a stream whose identity (device, inode) changed, or whose size fell below the parsed offset, is parsed again from the start rather than trusted to be an extension.</p>
+  <p>The reduction keeps only events that name a run and carry a classification (<code>recovery_classification</code> or <code>to_state</code>), which is exactly the set both readers already act on, so it replaces both readers' own loops without changing what either returns. The offset advance and the reduction are held under one lock, because two server threads consuming the same appended bytes would both advance the offset past them and skip those records for every later read.</p>
+  <p>Measured as the number of <code>runs.parse_stream_line</code> calls a single <code>mcp._roadmap</code> makes over a temporary project whose watch stream holds 10,000 lines, counted by wrapping the parser both the shared reader and the from-scratch reference call through.</p>
+  <table>
+    <thead><tr><th>Read</th><th>Lines parsed (base tree)</th><th>Lines parsed (here)</th></tr></thead>
+    <tbody>
+      <tr><td>first read of a 10,000-line stream</td><td>40,000</td><td>10,000</td></tr>
+      <tr><td>second read after ten lines are appended</td><td>—</td><td>10</td></tr>
+      <tr><td>third read after the stream is truncated to five lines</td><td>—</td><td>5</td></tr>
+    </tbody>
+  </table>
+  <p>Each read is checked against a from-scratch parse of the same stream, so a read returns what an unshared read returns. The negative control is the case that gives the first row its meaning: the same test file run against a copy of the base tree counts 40,000 parses of the 10,000-line stream — the two readers each parsing it whole, twice and once — and fails the bound, logging <code>EXIT=1</code> under the run directory. A pass on the base tree would mean the count measured something other than the sharing.</p>
+  <p>Changed: <code>reckon/crew/runs.py</code> (the shared reader and its memory), <code>reckon/sprint_liveness.py</code> and <code>reckon/mcp_views.py</code> (the two readers onto it), <code>tests/test_a_roadmap_reads_each_live_stream_once.py</code>. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the changed files against their base revision.</p>
+</article>
+</body>
+</html>

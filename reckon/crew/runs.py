@@ -1903,6 +1903,99 @@ def read_stream_events(path: Path, *, offset: int = 0) -> Iterable[dict[str, Any
                 yield event
 
 
+@dataclass
+class WatchStreamMemory:
+    """What one process has already parsed from a project's watch stream.
+
+    The stream is append-only and only grows, so a reader that remembers the
+    byte offset it consumed and the reduction it built from those bytes never
+    re-parses a record it has already seen. The file's identity and size are
+    kept beside the offset so a stream that was truncated or replaced is read
+    from the start again rather than trusted to be an extension.
+    """
+
+    path: Path
+    device: int
+    inode: int
+    offset: int
+    latest: dict[str, dict[str, Any]]
+
+
+_WATCH_STREAM_MEMORY: dict[str, WatchStreamMemory] = {}
+_WATCH_STREAM_LOCK = threading.Lock()
+
+
+def watch_stream_latest_events(project: str) -> dict[str, dict[str, Any]]:
+    """The latest classified transition per run in one project's watch stream.
+
+    Both readers of the stream — the sprint liveness derivation and the live-run
+    classification — need the same fact: the newest transition recorded for each
+    run. Parsing the stream once and sharing the reduction means a read parses
+    each line at most once however many readers consult it, and a long-lived
+    process parses only the bytes appended since its last read. A stream whose
+    identity changed, or whose size fell below the parsed offset, was replaced
+    or truncated, so it is parsed again from the start.
+
+    The reduction is keyed by run id and holds only events that carry a
+    classification (``recovery_classification`` or ``to_state``), which is the
+    set both readers already act on. Rows without a run id — a lift, a queued
+    admission — name no run and are not recorded here.
+
+    The offset advance and the reduction are held under one lock: two server
+    threads reading the same stream must not both consume the same appended
+    bytes and advance the offset past them, which would skip those records for
+    every later read.
+    """
+    path = watch_stream_path(project)
+    with _WATCH_STREAM_LOCK:
+        try:
+            stat_result = path.stat()
+        except OSError:
+            _WATCH_STREAM_MEMORY.pop(project, None)
+            return {}
+        memory = _WATCH_STREAM_MEMORY.get(project)
+        identity = (stat_result.st_dev, stat_result.st_ino)
+        if (
+            memory is None
+            or memory.path != path
+            or (memory.device, memory.inode) != identity
+            or stat_result.st_size < memory.offset
+        ):
+            memory = WatchStreamMemory(
+                path=path, device=identity[0], inode=identity[1], offset=0, latest={}
+            )
+        if stat_result.st_size > memory.offset:
+            try:
+                with path.open("rb") as stream:
+                    stream.seek(memory.offset)
+                    appended = stream.read()
+            except OSError:
+                _WATCH_STREAM_MEMORY.pop(project, None)
+                return dict(memory.latest)
+            boundary = appended.rfind(b"\n")
+            if boundary >= 0:
+                # Only complete lines are consumed: a half-written last record
+                # is left for the next read, which returns it whole.
+                complete = appended[: boundary + 1]
+                memory.offset += len(complete)
+                for raw in complete.split(b"\n"):
+                    if not raw:
+                        continue
+                    event = parse_stream_line(raw.decode("utf-8"))
+                    if event is None or event.get("legacy"):
+                        continue
+                    run_id = str(event.get("run_id") or "")
+                    classification = str(
+                        event.get("recovery_classification")
+                        or event.get("to_state")
+                        or ""
+                    )
+                    if run_id and classification:
+                        memory.latest[run_id] = event
+        _WATCH_STREAM_MEMORY[project] = memory
+        return dict(memory.latest)
+
+
 def read_whole_line(stream) -> str:
     """Read one complete line, leaving a half-written line for a later read.
 

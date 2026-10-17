@@ -62,24 +62,18 @@ def _recorded_states(project: str) -> dict[str, tuple[str, str]]:
     an unageable verdict is exactly the stale reading this module must refuse.
     ``observed_at`` is an ISO UTC string, or ``""`` for a line an older producer
     wrote without one.
+
+    The latest transition per run is read from the shared watch-stream reader,
+    so this and the live-run classification share one parse of the stream per
+    read rather than each parsing it whole.
     """
-    path = runs.watch_stream_path(project)
-    if not path.is_file():
-        return {}
-    latest: dict[str, tuple[str, str]] = {}
-    try:
-        with path.open(encoding="utf-8") as stream:
-            for line in stream:
-                event = runs.parse_stream_line(line)
-                if event is None or event.get("legacy"):
-                    continue
-                run_id = str(event.get("run_id") or "")
-                state = str(event.get("to_state") or "")
-                if run_id and state:
-                    latest[run_id] = (state, str(event.get("observed_at") or ""))
-    except OSError:
-        return {}
-    return latest
+    latest = runs.watch_stream_latest_events(project)
+    states: dict[str, tuple[str, str]] = {}
+    for run_id, event in latest.items():
+        state = str(event.get("to_state") or "")
+        if state:
+            states[run_id] = (state, str(event.get("observed_at") or ""))
+    return states
 
 
 def _observed_seconds(observed_at: str) -> float | None:
