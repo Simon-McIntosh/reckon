@@ -4,6 +4,7 @@ import http.client
 import json
 import subprocess
 import threading
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -378,6 +379,41 @@ def test_routing_reports_an_unobserved_orientation_floor_as_unknown(
     assert floor["tokens_per_changed_line"] is None
 
 
+def _persist_runs(project: str, root: Path, union: dict[str, Any]) -> None:
+    """Persist run rows edited as ``ledger.load`` returned them, where each is
+    held: through the run's own file, or with the aggregate's own rows.
+
+    A fixture reads the union so it can edit whichever row carries the value
+    under test. Handing that union back to ``ledger.write`` would copy every
+    per-run row into the tracked aggregate, which the writer refuses.
+    """
+    from reckon._store import write_atomically
+
+    aggregate, version = ledger.load_aggregate(project, root)
+    held = {
+        str(row["run_id"]): row
+        for row in aggregate["runs"]
+        if isinstance(row, Mapping) and row.get("run_id")
+    }
+    changed = False
+    for row in union["runs"]:
+        home = held.get(str(row.get("run_id") or ""))
+        if home is None:
+            path = ledger.run_path(project, str(row["run_id"]), root)
+            write_atomically(
+                path,
+                lambda stream, record=row: stream.write(ledger.serialize_run(record)),
+                mode=0o600,
+            )
+            continue
+        if home is not row:
+            home.clear()
+            home.update(row)
+        changed = True
+    if changed:
+        ledger.write(project, aggregate, version, root)
+
+
 def test_routing_counts_tool_steps_from_a_durable_stream(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -387,12 +423,12 @@ def test_routing_counts_tool_steps_from_a_durable_stream(
     mounts: dict[str, str] = {}
     repository = _project(tmp_path, "project", mounts)
     record = _run(repository, "streamed", path="src/result.py", tool_steps=7)
-    data, version = ledger.load("project", repository)
+    data, _version = ledger.load("project", repository)
     data["runs"][0].pop("tool_steps")
     run_directory = config_home / "crew" / "runs" / record["run_id"]
     run_directory.mkdir(parents=True)
     data["runs"][0]["manifest_path"] = str(run_directory / "manifest.md")
-    ledger.write("project", data, version, repository)
+    _persist_runs("project", repository, data)
     events = [
         {"type": "item.completed", "item": {"type": "reasoning"}},
         {"type": "item.completed", "item": {"type": "command_execution"}},
