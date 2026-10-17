@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest names baseline_suite and after_suite as none (an declared unarmed node), so the count is taken from the reviewed run's own gate logs: head-arm.log reports 0 failures and base-arm.log reports 3 (the negative control), so the landed change added no failing test; I re-ran the new module at head and it passed 6.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:891",
+    "reckon/crew/prompts.py:552",
+    "reckon/crew.py:150"
+  ],
+  "completed_at": "2026-10-17T19:19:47.285Z",
+  "dispatched_at": "2026-10-17T19:06:53Z",
+  "findings": [
+    {
+      "file": "tests/test_a_worker_prompt_never_forbids_its_landing_record.py",
+      "line": "107",
+      "severity": "follow-on",
+      "text": "the guard only requires the word \"fragment\" in each evidence-prose sentence, so a reworded ban that names the fragment while still forbidding it passes; it does not assert the exception itself."
+    },
+    {
+      "file": "tests/test_a_worker_prompt_never_forbids_its_landing_record.py",
+      "line": "56",
+      "severity": "follow-on",
+      "text": "the _compose and _flat helpers duplicate those at tests/test_small_node_prompt.py:88-118, and :120-127 restates the clause-classification assertion at tests/test_small_node_prompt.py:155-176, so the new module re-implements an owner it could extend."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 3fb05adb; 2212fa6c rewrites the small-node rule and both artifact clauses and their snapshots, 20520a2d adds the landing fragment, 5 files, all inside the declared scope.",
+    "done_when": "the done-when (prompt.txt:96) names tests/test_a_worker_prompt_never_forbids_its_landing_record.py, whose gate at :98-117 asserts the done-when's four properties and whose head-arm.log records 40 passed with EXIT=0.",
+    "goal": "the goal is one prompt rule that always permits the landing fragment while withholding figures the done-when does not name; reckon/crew/prompts.py:121 states the withheld prose is the prose \"outside the landing fragment, which is always permitted\".",
+    "manifest": "read; it states the three-file gate passed 40 with EXIT=0 at head 20520a2d, records the base arm 3 failed with EXIT=1, and names head-arm.log/base-arm.log/ruff.log.",
+    "write_paths": "the fenced scope names reckon/crew/prompts.py, tests/test_brief_prompt.py, tests/test_small_node_prompt.py, the new test, the fragment html and a figures directory; git diff 3fb05adb..20520a2d touches five of those and no path outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_prompt_never_forbids_its_landing_record.py:98 reddens when the wording returns to the base, shown by base-arm.log's three failures, but it asserts the token \"fragment\" rather than the exception.",
+    "evidence": "tests/test_a_worker_prompt_never_forbids_its_landing_record.py:98 asserts the done-when's measure and its result is recorded in head-arm.log (40 passed, EXIT=0); I re-ran that module at head 20520a2d and it passed 6.",
+    "fit": "the change follows the constant-and-docstring idiom of reckon/crew/prompts.py:92-137 and the new test mirrors tests/test_small_node_prompt.py, with no plan, version or ticket identifier in the changed source or the new test's name.",
+    "goal_fidelity": "reckon/crew/prompts.py:117 and :121 now read \"no evidence prose outside the landing fragment, which is always permitted\", so no clause forbids the anchor the landing contract at reckon/crew/prompts.py:166 asks the worker to write.",
+    "reuse": "the fragment-exception property has no prior owner, but tests/test_small_node_prompt.py:88-118 and :155 already own the compose-and-assert capability and the new module re-implements its helpers and clause-classification rather than extending it.",
+    "scope_discipline": "git diff 3fb05adb..20520a2d touches only the five declared paths and adds nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is one prompt rule that always permits the landing fragment while withholding figures the done-when does not name; reckon/crew/prompts.py:121 states the withheld prose is the prose \"outside the landing fragment, which is always permitted\".\nVERDICT done_when: the done-when (prompt.txt:96) names tests/test_a_worker_prompt_never_forbids_its_landing_record.py; that gate at :98-117 asserts both prompts carry the fragment instruction, that every evidence-prose sentence excepts the fragment, that ARTIFACT_NAMED_CLAUSE is held to it, and that the figure-named prompt still grants its figure, and the manifest's head-arm.log records 40 passed with EXIT=0.\nVERDICT write_paths: the fenced scope names reckon/crew/prompts.py, tests/test_brief_prompt.py, tests/test_small_node_prompt.py, the new test, the fragment html and a figures directory; git diff 3fb05adb..20520a2d touches five of those and no path outside them.\nVERDICT write_paths: the fenced scope names reckon/crew/prompts.py, tests/test_brief_prompt.py, tests/test_small_node_prompt.py, the new test, the fragment html and a figures directory; git diff 3fb05adb..20520a2d touches five of those and no path outside them.\nVERDICT manifest: read; it states the three-file gate passed 40 with EXIT=0 at head 20520a2d, records the base arm 3 failed with EXIT=1, names head-arm.log/base-arm.log/ruff.log, and records the commit pair 2212fa6c, 20520a2d.\nVERDICT diff: read commit by commit against base 3fb05adb; commit 2212fa6c rewrites the small-node rule and both artifact clauses and their snapshots, commit 20520a2d adds the landing fragment, 5 files, 242 insertions, 18 deletions, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch_claims.py:891, reckon/crew/prompts.py:552, reckon/crew.py:150\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:117 and :121 now read \"no evidence prose outside the landing fragment, which is always permitted\", so no clause forbids the anchor the landing contract at reckon/crew/prompts.py:166 asks the worker to write.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_a_worker_prompt_never_forbids_its_landing_record.py:98 asserts the done-when's measure and its result is recorded in head-arm.log (40 passed, EXIT=0); I re-ran that module at head 20520a2d and it passed 6.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 3fb05adb..20520a2d touches only the five declared paths and adds nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_worker_prompt_never_forbids_its_landing_record.py:98 reddens when the wording returns to the base, shown by base-arm.log's three failures, but it asserts the token \"fragment\" rather than the exception.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the constant-and-docstring idiom of reckon/crew/prompts.py:92-137 and the new test mirrors tests/test_small_node_prompt.py, with no plan, version or ticket identifier in the changed source or the new test's name.\nSCORE reuse: 14\nJUSTIFICATION reuse: the fragment-exception property has no prior owner, but tests/test_small_node_prompt.py:88-118 and :155 already own the compose-and-assert capability and the new module re-implements its helpers and clause-classification rather than extending it.\nFINDING tests/test_a_worker_prompt_never_forbids_its_landing_record.py:107 follow-on: the guard only requires the word \"fragment\" in each evidence-prose sentence, so a reworded ban that names the fragment while still forbidding it passes; it does not assert the exception itself.\nFINDING tests/test_a_worker_prompt_never_forbids_its_landing_record.py:56 follow-on: the _compose and _flat helpers duplicate those at tests/test_small_node_prompt.py:88-118, and :120-127 restates the clause-classification assertion at tests/test_small_node_prompt.py:155-176, so the new module re-implements an owner it could extend.\n",
+  "review_run_id": "r-20261017T190602434475-review-of-a-worker-prompt-never-forbids-its-landing-record-20520a2d077c",
+  "reviewed_base_sha": "3fb05adbf83f841e2e49ce11ec011db18436142f",
+  "reviewed_head_sha": "20520a2d077c6ddbb2b823c087fa49b8965611cc",
+  "reviewed_run_id": "r-20261017T184328023788-a-worker-prompt-never-forbids-its-landing-record",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T19:17:41.133523+00:00",
+  "total": 107
+}
