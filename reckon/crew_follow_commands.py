@@ -200,6 +200,17 @@ _FOLLOWER_RELOAD_PROBE = (
 
 
 
+# The gap a follower keeps after a probe that ran out of its bound, before it
+# spends another probe on the same checkout. The follower's own cadence is a
+# second: re-probing that fast would run a thirty-second probe back to back on
+# a node already slow enough to have timed the first one out. The gap starts
+# here and doubles on every further timeout, so a sustained spike costs a
+# handful of probes rather than one per second, and it is capped so a
+# checkout that stays busy is still re-checked well inside a session.
+FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS = 60.0
+FOLLOWER_RELOAD_PROBE_RETRY_CAP_SECONDS = 900.0
+
+
 class _FollowerReloader:
     """Replace a stale follower only at a complete stream-record boundary."""
 
@@ -254,6 +265,24 @@ class _FollowerReloader:
         # reports. The flag keeps the tree re-read on each cadence until it is
         # clean, and the printed line is owed once per contiguous dirtiness.
         self.dirty_deferral = False
+        # The instant before which a probe that ran out of its bound is not
+        # repeated, and the gap the next timeout will earn. Held with the stamp
+        # they were taken at, so a code stamp that moves starts the gap afresh
+        # rather than inheriting a backoff the previous checkout earned.
+        self.probe_retry_at: float | None = None
+        self.probe_retry_gap = FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS
+        self.probe_retry_stamp: str | None = None
+        # Whether a timeout's deferral line has already been said for the
+        # present contiguous run of timeouts, so a slow node says it once
+        # rather than on every cadence.
+        self.timeout_deferral = False
+
+    def _clear_probe_retry(self) -> None:
+        """Forget a timeout's backoff: the code moved, or a probe answered."""
+        self.probe_retry_at = None
+        self.probe_retry_gap = FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS
+        self.probe_retry_stamp = None
+        self.timeout_deferral = False
 
     def _replacement_imports(self) -> tuple[bool, str]:
         """Prove the replacement image loads before re-executing into it.
@@ -329,9 +358,17 @@ class _FollowerReloader:
             # No code has moved, so there is nothing to reload onto: a tree left
             # dirty without a stamp change is not a reload this arming owes.
             self.dirty_deferral = False
+            self._clear_probe_retry()
             return
         if current_stamp == self.deferred_stamp and not self.dirty_deferral:
             return
+        if (
+            self.probe_retry_stamp is not None
+            and self.probe_retry_stamp != current_stamp
+        ):
+            # The code moved, so a gap earned by the checkout that timed out no
+            # longer describes the one now on disk: this checkout starts afresh.
+            self._clear_probe_retry()
         # A tracked file differing from HEAD defers the reload: a tree mid-edit
         # can import cleanly and still fail at first use. The check is repeated
         # on every cadence once it has held one reload, because committing the
@@ -348,23 +385,42 @@ class _FollowerReloader:
                 self._echo_deferred_dirty(detail)
             return
         self.dirty_deferral = False
+        if self.probe_retry_at is not None and moment < self.probe_retry_at:
+            # A probe on this stamp ran out of its bound a moment ago, and the
+            # gap it earned has not passed: leave it alone rather than spending
+            # another thirty seconds on a node that is still slow.
+            return
         reloadable, reason = self._replacement_imports()
         if not reloadable:
             if isinstance(reason, checkout_trust.ImportProbeTimedOut):
                 # A probe that ran out of its bound says nothing about the code:
                 # the checkout may load perfectly and merely have been slow under
-                # load. So the reload is retried at the next check rather than
-                # held until the code moves -- ``deferred_stamp`` is left unset,
-                # and the freshness window alone bounds the re-probe.
-                self._record_reload_deferral(f"the import probe timed out ({reason})")
-                line = (
-                    f"reckon {self.label} deferred its reload: {reason}; "
-                    "keeping the current image, probing again at the next check"
+                # load. So the reload is retried rather than held until the code
+                # moves -- ``deferred_stamp`` is left unset -- but the retry waits
+                # out a gap that doubles on each further timeout, so a sustained
+                # spike is re-probed a handful of times rather than every cadence.
+                if self.probe_retry_stamp != current_stamp:
+                    # A checkout whose gap has not started yet: owe its deferral
+                    # line afresh rather than inheriting the last one's.
+                    self.timeout_deferral = False
+                    self.probe_retry_stamp = current_stamp
+                self.probe_retry_at = moment + self.probe_retry_gap
+                self.probe_retry_gap = min(
+                    self.probe_retry_gap * 2, FOLLOWER_RELOAD_PROBE_RETRY_CAP_SECONDS
                 )
-                if self.color:
-                    line = _dim_history_line(line)
-                _echo_follow_line(line, stream=self.stream)
+                self._record_reload_deferral(reason)
+                if not self.timeout_deferral:
+                    self.timeout_deferral = True
+                    line = (
+                        f"reckon {self.label} deferred its reload: {reason}; "
+                        "keeping the current image, probing again after "
+                        f"{self.probe_retry_at - moment:g} s"
+                    )
+                    if self.color:
+                        line = _dim_history_line(line)
+                    _echo_follow_line(line, stream=self.stream)
                 return
+            self._clear_probe_retry()
             self._record_reload_deferral(f"new image does not import ({reason})")
             self.deferred_stamp = current_stamp
             line = (
@@ -377,6 +433,9 @@ class _FollowerReloader:
             _echo_follow_line(line, stream=self.stream)
             return
 
+        # The probe answered: whatever gap a timeout last earned, and the
+        # deferral line it owed, belong to that run of timeouts, which is over.
+        self._clear_probe_retry()
         # The launched-worker registry does not survive an image replacement,
         # though the process (and therefore the parent-child relationships)
         # does. Hand the outstanding pids over beside the checkpoint so the
