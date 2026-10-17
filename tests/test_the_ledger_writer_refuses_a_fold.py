@@ -21,11 +21,13 @@ a known count before the write under test runs.
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 
 from reckon import ledger
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 AGGREGATE_ROWS = 10
@@ -182,3 +184,138 @@ def test_a_hold_check_leaves_the_aggregate_row_count_unchanged(
     assert "f-000" not in _aggregate_text(project)
     reread, _ = ledger.load(PROJECT, project)
     assert len(reread["runs"]) == AGGREGATE_ROWS + PER_RUN_FILES
+
+
+@pytest.fixture()
+def crew_home(tmp_path, monkeypatch) -> Path:
+    """Move the crew home into the temp tree, leaving this workstation's alone."""
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    return config_home
+
+
+@pytest.fixture()
+def git_project(project: Path, crew_home: Path) -> Path:
+    """The split-state project as a git checkout the writers can commit in."""
+    _git(project, "init", "-q", "-b", "main")
+    _git(project, "config", "user.email", "worker@example.invalid")
+    _git(project, "config", "user.name", "Worker")
+    _git(project, "add", "--", "docs")
+    _git(project, "commit", "-q", "-m", "chore: seed the split ledger")
+    return project
+
+
+def _seed_member(root: Path, member_id: str, created: str) -> None:
+    """Add one roster row to the aggregate's own members, never the union's."""
+    data, version = ledger.load_aggregate(PROJECT, root)
+    data["members"] = [*data["members"], {"id": member_id, "created": created}]
+    ledger.write(PROJECT, data, version, root)
+    _git(root, "add", "--", "docs")
+    _git(root, "commit", "-q", "-m", "chore: seed a roster row")
+
+
+def _assert_aggregate_untouched(root: Path, files_before: dict[str, bytes]) -> None:
+    stored = _aggregate(root)
+    assert [row["run_id"] for row in stored["runs"]] == [
+        f"a-{index:03d}" for index in range(AGGREGATE_ROWS)
+    ]
+    assert _run_files(root) == files_before
+    assert "f-000" not in _aggregate_text(root)
+
+
+def _assert_aggregate_rows_unchanged(root: Path) -> None:
+    """The aggregate's row set is unchanged and every per-run file still stands."""
+    assert [row["run_id"] for row in _aggregate(root)["runs"]] == [
+        f"a-{index:03d}" for index in range(AGGREGATE_ROWS)
+    ]
+    assert len(_run_files(root)) == PER_RUN_FILES
+    assert "f-000" not in _aggregate_text(root)
+
+
+def test_the_idle_reap_leaves_the_aggregate_row_count_unchanged(
+    git_project: Path,
+) -> None:
+    """The reap writes the aggregate's own rows with its roster removal applied."""
+    from reckon.crew import routing
+
+    _seed_member(git_project, "session-idle-one", "2020-01-01T00:00:00Z")
+    files_before = _run_files(git_project)
+
+    result = routing.reap_idle_session_members(
+        PROJECT,
+        root=git_project,
+        now=datetime(2026, 10, 17, tzinfo=timezone.utc),
+    )
+
+    assert result["reaped"] == ["session-idle-one"]
+    assert _aggregate(git_project)["members"] == []
+    _assert_aggregate_untouched(git_project, files_before)
+
+
+def test_the_identity_retirement_leaves_the_aggregate_row_count_unchanged(
+    git_project: Path,
+) -> None:
+    """Retiring a run's disposable identity carries no per-run row with it."""
+    from reckon.crew import promotion_records, routing
+
+    run_id = "a-000"
+    member_id = routing._disposable_member_id(run_id)
+    _seed_member(git_project, member_id, "2026-10-01T00:00:00Z")
+    files_before = _run_files(git_project)
+
+    result = promotion_records._retire_disposable_identity(
+        {
+            "run_id": run_id,
+            "member": member_id,
+            "project": PROJECT,
+            "repo": str(git_project),
+        }
+    )
+
+    assert result.get("identity_retired") is True, result
+    assert _aggregate(git_project)["members"] == []
+    _assert_aggregate_untouched(git_project, files_before)
+
+
+def test_the_gate_rerun_record_leaves_the_aggregate_row_count_unchanged(
+    git_project: Path,
+) -> None:
+    """The re-run records its report on the run's aggregate row, beside the files."""
+    from reckon.crew import promotion_gate
+
+    files_before = _run_files(git_project)
+
+    promotion_gate.record_gate_rerun_at_integrated_revision(
+        project=PROJECT,
+        run_id="a-000",
+        repository=git_project,
+        root=git_project,
+        command="true",
+    )
+
+    stored = _aggregate(git_project)
+    assert stored["runs"][0].get("integrated_gate_check"), "the report was not recorded"
+    _assert_aggregate_untouched(git_project, files_before)
+
+
+def test_the_figure_backfill_leaves_the_aggregate_row_count_unchanged(
+    git_project: Path,
+) -> None:
+    """A backfill patches each row where it is held, aggregate or file."""
+    from scripts.derive_run_figures import backfill_run_figures
+
+    backfill_run_figures(PROJECT, root=git_project)
+
+    _assert_aggregate_rows_unchanged(git_project)
+
+
+def test_the_duration_backfill_leaves_the_aggregate_row_count_unchanged(
+    git_project: Path,
+) -> None:
+    """A duration backfill patches each row where it is held, aggregate or file."""
+    from scripts.backfill_run_durations import backfill_run_durations
+
+    backfill_run_durations(PROJECT, root=git_project)
+
+    _assert_aggregate_rows_unchanged(git_project)
