@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling,measurement">
   <meta name="plan-blocks" content="the-ledger-is-one-file-per-run#s4">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
   <title>A Velocity Window May Open Before The Ledger | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -113,6 +113,28 @@
 
     
 
+    <h2 id="s2">§2 — A long window&#x27;s ledger search stays inside its git bound</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p>§1's post-merge check did not exit 0. At main <code>440ce55a6</code>, <code>reckon crew velocity --project reckon --since 2026-08-01</code> gets past the base read that used to crash. It then fails with <code>subprocess.TimeoutExpired</code> after 180 seconds in the search <code>recover_ledger_clocks</code> runs at <code>reckon/velocity.py:1217</code>. A window whose base already has a ledger fails in the same way: <code>--since 2026-09-01</code> at <code>534f6536e</code> ended with the same timeout, with <code>EXIT=1</code> after 410 seconds. The timeout is therefore older than §1: the crash hid it for windows that open before the ledger, and it already broke long windows. Both logs are under <code>~/.cache/reckon-velocity-window-check/</code>.</p>
+<p>The search is one <code>git log --first-parent -p --unified=0 -G &lt;every missing run id&gt; origin..head -- crew.json runs/</code>. <code>run_git</code> (<code>reckon/velocity.py:149</code>) bounds every git call at 180 seconds. The search has to generate the patch of every commit that touched <code>crew.json</code> in the window. Until per-run records landed, nearly every promotion rewrote that file at tens of megabytes, so a window reaching back into August or September asks git for hundreds of such patches.</p>
+<p><strong>Remedy.</strong> Place a run whose record lives in its own file without generating patches. A run's per-run file, <code>docs/state/&lt;project&gt;/runs/&lt;run_id&gt;.json</code>, first appears in the commit that adds it. A path-limited <code>git log --first-parent --diff-filter=A --format=… --name-only origin..head -- docs/state/&lt;project&gt;/runs</code> lists those additions without generating a patch.</p>
+<ul>
+<li>A missing run whose file is added in the range is placed at that commit. It is recorded with the same appearance fields the search records today, <code>source</code> included.</li>
+<li>Only the ids still missing after that go through the existing <code>-G</code> search, and it is limited to the <code>crew.json</code> path.</li>
+<li>When no id is left, no patch-generating search runs at all.</li>
+</ul>
+<p>Extend <code>recover_ledger_clocks</code> and its cache in place: the cache's <code>recoveries</code> keep their shape, and no public name is added.</p>
+<p>If the remaining <code>crew.json</code> search still exceeds the bound on this checkout, report <code>blocked</code> with the count of ids that reached it and the search's measured time. Do not raise the timeout.</p>
+<p><strong>Write paths:</strong> <code>reckon/velocity.py</code> and <code>tests/test_velocity_places_a_run_by_its_record_file.py</code>, which is new.</p>
+<p><strong>Done when</strong> all four of these hold:</p>
+<ul>
+<li>The new test builds a temporary repository in which a candidate run's per-run file is added inside the window, and records every argv the module's git runner receives. It asserts that the run is placed at the commit that added its file, and that no <code>-p</code> log over <code>crew.json</code> ran for it. A second case asserts that a run with no per-run file is still placed by the <code>crew.json</code> search.</li>
+<li>Pytest over the new file, <code>tests/test_velocity_cache.py</code>, <code>tests/test_velocity.py</code>, <code>tests/test_crew_velocity_view.py</code> and <code>tests/test_velocity_reads_a_revision_without_the_ledger.py</code> adds no failure against the base.</li>
+<li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</li>
+<li>After the merge, the coordinator runs <code>reckon crew velocity --project reckon --since 2026-08-01</code> and <code>--since 2026-09-01</code> at the merged head, and both exit 0. Each log records its revision and wall time.</li>
+</ul>
+<p>Negative control: route every missing id through the single <code>-G</code> search again, and the first case must fail on its argv assertion.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-avwmobl-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-17" data-recommends-skill="/reckon-build a-velocity-window-may-open-before-the-ledger §1" data-resolved-at="" data-resolved-by="">
@@ -129,7 +151,10 @@
     <div class="r-comment-body"><p>§1 landed: <code>_read_ledger</code> reads a revision without <code>crew.json</code> as one with no runs and a <code>None</code> digest, and <code>recover_ledger_clocks</code> reads the base through it (commits <code>a966f5b7e</code>, <code>d78210764</code>). Gate: 27 passed at head, 24 at base. Each of the three negative controls fails its case. Review 112, no added failures. <a href="/reckon/evidence/archive/a-velocity-window-may-open-before-the-ledger-landed.html#s1">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261017T112233609448-a-revision-without-the-ledger-reads-as-no-runs" data-who="reckon-build" data-when="2026-10-17T11:50:54.182Z">
-    <div class="r-comment-body"><p>_read_ledger now reads a revision with no crew.json as a ledger with no runs and reports a None digest (bytes via the module&#x27;s batched reader, which maps a missing object to None while a failed read of a present ledger still raises), and recover_ledger_clocks reads the runs present at the base through it instead of parsing the ledger itself; the new test&#x27;s three cases pass (head arm 27 passed, base arm 24 passed, both EXIT=0).</p></div>
+    <div class="r-comment-body"><p>_read_ledger now reads a revision with no crew.json as a ledger with no runs and reports a None digest (bytes via the module's batched reader, which maps a missing object to None while a failed read of a present ledger still raises), and recover_ledger_clocks reads the runs present at the base through it instead of parsing the ledger itself; the new test's three cases pass (head arm 27 passed, base arm 24 passed, both EXIT=0).</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-s1-integration-check" data-who="reckon-build" data-when="2026-10-17T13:58:00Z">
+    <div class="r-comment-body"><p>Post-merge check for §1, run at merge <code>440ce55a6</code>: <code>reckon crew velocity --project reckon --since 2026-08-01</code> no longer raises <code>CalledProcessError</code> at the base read. It now reaches the search in <code>recover_ledger_clocks</code> and exits 1 there when that search times out after 180 seconds. <code>--since 2026-09-01</code> times out in the same place, so the timeout is a separate, older defect. §1's code is in the tree; its fourth done-when item waits on §2.</p></div>
 </div>
 </section>
 </main>
