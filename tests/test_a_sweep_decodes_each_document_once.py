@@ -45,6 +45,10 @@ def _now() -> datetime:
 @pytest.fixture()
 def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path]:
     """A synthesised project of 200 per-run files and 20 live pointers."""
+    # The memo is process-wide, so a test starts from an empty one rather than
+    # from whatever the previous test left held.
+    ledger_module._DOCUMENT_CACHE.clear()
+    ledger_module._OPENED_SINCE_RELEASE.clear()
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
@@ -202,3 +206,39 @@ def test_the_memoised_sweep_matches_an_unmemoised_one(fleet: dict[str, Path]) ->
     _run_sweep(fleet)
     reread = obligation_snapshot.read_snapshot(PROJECT, SESSION)
     assert reread == held
+
+
+def test_a_sweep_drops_the_documents_it_did_not_open(fleet: dict[str, Path]) -> None:
+    """A file removed between sweeps does not keep its parse in the memo."""
+    _run_sweep(fleet)
+    removed = _per_run_paths(fleet)[:40]
+    keys = {str(path) for path in removed}
+    assert keys <= set(ledger_module._DOCUMENT_CACHE)
+
+    for path in removed:
+        path.unlink()
+    _run_sweep(fleet)
+
+    assert not (keys & set(ledger_module._DOCUMENT_CACHE)), (
+        "a sweep kept documents it did not open:"
+        f" {sorted(keys & set(ledger_module._DOCUMENT_CACHE))[:5]}"
+    )
+
+
+def test_the_memo_stays_within_its_bound_across_changing_files(
+    fleet: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The held documents are bounded however many sweeps run over the state."""
+    monkeypatch.setattr(ledger_module, "DOCUMENT_CACHE_LIMIT", 64)
+    for round_number in range(6):
+        paths = _per_run_paths(fleet)
+        # Move a different slice each round, so the population keeps changing
+        # and a memo that only ever grew would show it.
+        for path in paths[round_number::17]:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["completed_at"] = f"2026-10-0{round_number + 1}T00:00:00Z"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+        _run_sweep(fleet)
+        assert (
+            len(ledger_module._DOCUMENT_CACHE) <= ledger_module.DOCUMENT_CACHE_LIMIT
+        ), f"round {round_number} held {len(ledger_module._DOCUMENT_CACHE)} documents"

@@ -46,6 +46,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from functools import lru_cache
@@ -1089,7 +1090,19 @@ def picker_runs(project: str, root: str | Path | None = None) -> list[dict[str, 
 # nanosecond mtime, is the only key that holds the parse in memory between those
 # readers and drops it the moment the file moves. A document that cannot be read
 # is never held, so it re-reads as absent exactly as it always did.
-_DOCUMENT_CACHE: dict[str, tuple[tuple[int, int, int, int], Any]] = {}
+#
+# The memo is bounded twice over, because a producer lives for days while run
+# files come and go: least-recently-used beyond DOCUMENT_CACHE_LIMIT, and
+# released to the documents one sweep opened by :func:`release_unopened_documents`.
+# Without the second, a run file that was deleted or renamed would keep its
+# parse for the life of the process.
+_DOCUMENT_CACHE: OrderedDict[str, tuple[tuple[int, int, int, int], Any]] = OrderedDict()
+_OPENED_SINCE_RELEASE: set[str] = set()
+
+# Stated bound on the held documents. One sweep of a busy project opens a few
+# thousand run, pointer and manifest documents, so this covers a whole sweep's
+# working set several times over while still refusing to grow without limit.
+DOCUMENT_CACHE_LIMIT = 4096
 
 
 def document_identity(path: Path) -> tuple[int, int, int, int] | None:
@@ -1107,13 +1120,33 @@ def read_document(source: Path) -> Any:
     identity = document_identity(source)
     if identity is None:
         _DOCUMENT_CACHE.pop(key, None)
+        _OPENED_SINCE_RELEASE.discard(key)
         raise FileNotFoundError(str(source))
     cached = _DOCUMENT_CACHE.get(key)
     if cached is not None and cached[0] == identity:
+        _DOCUMENT_CACHE.move_to_end(key)
+        _OPENED_SINCE_RELEASE.add(key)
         return cached[1]
     value = json.loads(source.read_text(encoding="utf-8"))
     _DOCUMENT_CACHE[key] = (identity, value)
+    _DOCUMENT_CACHE.move_to_end(key)
+    _OPENED_SINCE_RELEASE.add(key)
+    while len(_DOCUMENT_CACHE) > DOCUMENT_CACHE_LIMIT:
+        _DOCUMENT_CACHE.popitem(last=False)
     return value
+
+
+def release_unopened_documents() -> None:
+    """Drop every held document not opened since the previous release.
+
+    Called once per sweep, at the end of the read that opens the run files, so
+    the memo holds the documents that sweep actually read. A run file deleted or
+    renamed between sweeps is not opened again, so its parse goes with the sweep
+    rather than living until the next read happens to find it gone.
+    """
+    for key in [key for key in _DOCUMENT_CACHE if key not in _OPENED_SINCE_RELEASE]:
+        del _DOCUMENT_CACHE[key]
+    _OPENED_SINCE_RELEASE.clear()
 
 
 def _read_run(source: Path) -> dict[str, Any]:

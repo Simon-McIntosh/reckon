@@ -449,8 +449,10 @@ def _names_worktree(record: Mapping[str, Any], worktree: Path) -> bool:
 
 
 # The rows crew.json holds, keyed by the stat identity of the file they were
-# parsed from. A ledger that has not moved answers from memory, so a call stats
-# it once and parses it only when a promotion rewrote it.
+# parsed from — the same identity :func:`ledger.document_identity` gives every
+# other memoised document, so the repository holds one rule for when a file has
+# moved. A ledger that has not moved answers from memory, so a call stats it
+# once and parses it only when a promotion rewrote it.
 _AGGREGATE_ROWS: dict[
     Path, tuple[tuple[int, int, int, int], tuple[Mapping[str, Any], ...]]
 ] = {}
@@ -465,11 +467,9 @@ def _aggregate_rows(project: str, repository: Path) -> tuple[Mapping[str, Any], 
     memory instead of parsed again.
     """
     path = ledger.ledger_path(project, repository)
-    try:
-        status = path.stat()
-    except OSError:
+    identity = ledger.document_identity(path)
+    if identity is None:
         return ()
-    identity = (status.st_dev, status.st_ino, status.st_size, status.st_mtime_ns)
     cached = _AGGREGATE_ROWS.get(path)
     if cached is not None and cached[0] == identity:
         return cached[1]
@@ -615,8 +615,22 @@ def _held_worktrees_by_session(
     """One session's held-worktree duties, from the trees that are still held.
 
     The session is the directory the tree was created under, which is the
-    session that dispatched the run whose record still names it.
+    session that dispatched the run whose record still names it. This is the
+    scan that opens every per-run ledger document, and the fleet derivation runs
+    it once per sweep, so the document memo is released to this sweep's opens
+    here — a run file gone since the last sweep is not read again and does not
+    keep its parse.
     """
+    try:
+        return _held_worktree_duties(project, now=now)
+    finally:
+        ledger.release_unopened_documents()
+
+
+def _held_worktree_duties(
+    project: str, *, now: datetime
+) -> dict[str, list[dict[str, Any]]]:
+    """The held-worktree duties themselves, from every tree still held."""
     docs_dir = _store._docs_dir_for_project(project)
     if docs_dir is None:
         return {}
