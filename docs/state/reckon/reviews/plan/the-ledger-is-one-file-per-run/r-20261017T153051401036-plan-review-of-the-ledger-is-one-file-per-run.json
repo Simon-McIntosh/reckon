@@ -1,0 +1,39 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T15:42:53.628Z",
+  "dispatched_at": "2026-10-17T15:31:30Z",
+  "findings": [],
+  "plan_fingerprint": "7469669ac5268cd2ca4b7d9c36fd44f7ee41b0666bcaae00f4d1d2b19a2e2a66",
+  "plan_slug": "the-ledger-is-one-file-per-run",
+  "plan_version": 71,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T153051401036-plan-review-of-the-ledger-is-one-file-per-run",
+  "reviewed_blob_sha": "090e5f23c1f5aab7655c53085bdb73b6afbc96f9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/promotion_scope.py:1910` defines `_commit_landing_writes` (`reckon/crew/promotion.py:751` and `:1350` call it), and commits c96c11153, b92e9f79e, 073b73795, 2b2d5cadd and 28dc8c197 all resolve in the tree.",
+    "done_when": "pass \u2014 \u00a710's done-when is measurable and carries a declared negative control (\"against the base tree, the promotion commit carries the staged deletion\"), which is falsifiable because the base `git commit` has no pathspec.",
+    "evidence_paths": "pass \u2014 \u00a710 sends its gate log to the run directory, a durable path under the run's own record, not a scratch or node-local temporary.",
+    "naming": "pass \u2014 the changed units name no plan label, stage name or ticket number; the prescribed test names are behavioural (`test_a_promotion_commit_records_only_its_own_paths.py`).",
+    "reasoning": "pass \u2014 \u00a710's root cause (a bare `git commit` after staging only its own paths lets pre-staged index content ride in) matches the code at `reckon/crew/promotion_scope.py:1910` (`git add -- <paths>` then `git commit` with no pathspec), the repaired mechanism is reached by the named production caller, and it produces the done-when's assertions (the other run's file stays in HEAD, its staged deletion stays staged).",
+    "single_goal": "pass \u2014 \u00a78 and \u00a710 no longer claim the same deliverable; \u00a78 keeps the release path, \u00a710 owns the promotion-commit repair, and each states one measurand.",
+    "wiring": "pass \u2014 `plan-informs` names two mounted plans, gate `g-tlofpr-9` wires \u00a79 to `a-read-answers-inside-its-deadline` \u00a728, and \u00a710's named build-after run (`r-20261017T110626399745-...`) has already promoted (15dff49b is an ancestor of HEAD), so no declared or needed dependency is missing."
+  },
+  "section_digests": {
+    "_document": "bcda5b78d05262af91efea3b45513cb783e63a0b43168a4ba4426247a7e68065",
+    "s1": "457845e844fa9bec63333cc35d867a85aa18bde3b16278a87a8dd315cae98e60",
+    "s10": "bb67efcd6925d252bcc8cb72c7dc1a1b4ba3ec37787e039f9cc41f132c5f74ab",
+    "s2": "f264807d1fd48d466dfe9f9126f75e341e735d9a86b54ba342cf0012dfcdddfc",
+    "s3": "922052455a1c2af498bccd801f0e6db8ab3616bba71d823efa03641ce2332fa7",
+    "s4": "2eb77001999bc36a32f304d3ff896caf2c803489ea790ad39bae324fd7f92a9e",
+    "s5": "60e425e1d2d0d1a1f973eb32c4d3e72fa080e1a616ff0f462d20aefbd1fc522d",
+    "s6": "a344122c7f73694668e843366730c1d1cc881b97ba06225f376f01012af5936b",
+    "s7": "6128dbd3b5deb9351318b08d168c55ae2e7290f079a109ee1241b2fb4a938b62",
+    "s8": "cdd8d6e0e9a435ddff21dfe693ae91d81f505e26f71b44f8cda7483ab8e7322f",
+    "s9": "483bdadcb6fa5d83c3af4c86ad83ae0d1626042a8a0bb8e75b5f57b3e5a46475"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T15:58:58.110906+00:00"
+}
