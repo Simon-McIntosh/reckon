@@ -24,7 +24,7 @@
   <title>A Velocity Window May Open Before The Ledger | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -127,6 +127,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-close-s1" data-who="reckon-build" data-when="2026-10-17T13:40:00Z">
     <div class="r-comment-body"><p>§1 landed: <code>_read_ledger</code> reads a revision without <code>crew.json</code> as one with no runs and a <code>None</code> digest, and <code>recover_ledger_clocks</code> reads the base through it (commits <code>a966f5b7e</code>, <code>d78210764</code>). Gate: 27 passed at head, 24 at base. Each of the three negative controls fails its case. Review 112, no added failures. <a href="/reckon/evidence/archive/a-velocity-window-may-open-before-the-ledger-landed.html#s1">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261017T112233609448-a-revision-without-the-ledger-reads-as-no-runs" data-who="reckon-build" data-when="2026-10-17T11:50:54.182Z">
+    <div class="r-comment-body"><p>_read_ledger now reads a revision with no crew.json as a ledger with no runs and reports a None digest (bytes via the module&#x27;s batched reader, which maps a missing object to None while a failed read of a present ledger still raises), and recover_ledger_clocks reads the runs present at the base through it instead of parsing the ledger itself; the new test&#x27;s three cases pass (head arm 27 passed, base arm 24 passed, both EXIT=0).</p></div>
 </div>
 </section>
 </main>
