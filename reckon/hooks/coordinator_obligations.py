@@ -19,7 +19,9 @@ Two modes, selected by ``--hook``:
   the reason and the remedy that matches the reading: the command that arms
   the seat when no producer lease is live, and this session's own follower
   when a live producer stands behind a snapshot gone stale because the session
-  stopped its follower. The exception is a producer reload in progress,
+  stopped its follower. When this session has a live session host, that host
+  re-arms the follower on the next dispatch, so the line names the host instead
+  of giving a manual follower command. The exception is a producer reload in progress,
   which shows the last snapshot's checklist headed by its age and the words
   ``producer reloading`` with no remedy, because the replacement is already on
   its way and cycling the seat would be the wrong thing to do. The hook never
@@ -381,6 +383,31 @@ def _claude_pid() -> int | None:
         if command and Path(command.split(" ", 1)[0]).name == "claude":
             return pid
     return None
+
+
+def _live_session_host_pid() -> int | None:
+    """The running host recorded for this hook's harness process, if any."""
+    owner_pid = _claude_pid()
+    if owner_pid is None:
+        return None
+    module = snapshot_module()
+    owner_start = module.process_start_time(owner_pid)
+    if not owner_start:
+        return None
+    path = module.crew_home() / "session-hosts" / f"{owner_pid}-{owner_start}.json"
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(record, dict) or record.get("owner") != {
+        "pid": owner_pid,
+        "start_time": owner_start,
+    }:
+        return None
+    host_pid = record.get("pid")
+    if isinstance(host_pid, bool) or not isinstance(host_pid, int):
+        return None
+    return host_pid if module._process_is_running(host_pid) else None
 
 
 def _descends_from(pid: int | None, ancestor: int | None) -> bool:
@@ -745,7 +772,9 @@ def not_fresh_line(
     arming, which is the command that can register this session and start its
     lease; the seat command would change nothing on this host. A stale snapshot
     beside a live producer lease earns the same follower arming, for the same
-    reason. Every other reading, including a stale snapshot whose lease has
+    reason. When this session's host is running, the host instead re-arms the
+    follower with the next dispatch; a manual arming would duplicate it.
+    Every other reading, including a stale snapshot whose lease has
     lapsed, keeps the command that publishes a snapshot again. A caller that
     routes a live stale producer through the reload reading never reaches this
     line for it, and a direct caller gets the state it asked about rather than
@@ -773,7 +802,16 @@ def not_fresh_line(
         )
     else:
         reason = "no producer"
-    if state == module.STALE_SNAPSHOT and producer_lease_is_live(project):
+    live_lease = state == module.STALE_SNAPSHOT and producer_lease_is_live(project)
+    host_pid = (
+        _live_session_host_pid() if live_lease or state == module.NO_FOLLOWER else None
+    )
+    if host_pid is not None:
+        remedy = (
+            f"the session host (pid {host_pid}) is live and re-arms this "
+            "session's follower with the session's next dispatch"
+        )
+    elif live_lease:
         remedy = (
             "the producer is live, so run "
             f"`reckon crew follow --project {project} --session {session}` "

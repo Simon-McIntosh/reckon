@@ -131,11 +131,27 @@ def _plant_lease(*, age_seconds: float) -> None:
     )
 
 
-def _drive(repository: Path) -> subprocess.CompletedProcess[str]:
+def _write_session_host(config_home: Path) -> None:
+    owner_pid = os.getpid()
+    start = obligation_snapshot.process_start_time(owner_pid)
+    assert start is not None
+    path = config_home / "crew" / "session-hosts" / f"{owner_pid}-{start}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {"owner": {"pid": owner_pid, "start_time": start}, "pid": owner_pid}
+        ),
+        encoding="utf-8",
+    )
+
+
+def _drive(
+    repository: Path, *, owner_pid: int = _ABSENT_HARNESS_PID
+) -> subprocess.CompletedProcess[str]:
     """Run the prompt hook as the harness does, against the temporary home."""
     environment = dict(os.environ)
     environment["PYTHONPATH"] = str(REPO_ROOT)
-    environment["CLAUDE_PID"] = str(_ABSENT_HARNESS_PID)
+    environment["CLAUDE_PID"] = str(owner_pid)
     environment["RECKON_PRODUCER_LEASE_SECONDS"] = str(PRODUCER_LEASE_SECONDS)
     payload = {
         "session_id": SESSION,
@@ -184,6 +200,24 @@ def test_a_stale_snapshot_beside_a_live_lease_names_the_follower(
     assert "no producer" not in line, line
     assert FOLLOW_REMEDY in line, line
     assert "watch --ensure" not in line, line
+
+
+def test_a_stale_snapshot_beside_a_live_lease_names_its_session_host(
+    config_home: Path, repository: Path
+) -> None:
+    _stop_the_follower()
+    _publish_stale_snapshot()
+    _plant_lease(age_seconds=0.0)
+    _write_session_host(config_home)
+
+    line = _line(_drive(repository, owner_pid=os.getpid()))
+
+    assert re.search(r"the snapshot is \d+s old", line), line
+    assert "session host" in line, line
+    assert "re-arms this session's follower with the session's next dispatch" in line, (
+        line
+    )
+    assert "reckon crew follow" not in line, line
 
 
 def test_a_stale_snapshot_beside_an_expired_lease_keeps_the_seat_remedy(
