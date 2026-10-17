@@ -105,8 +105,7 @@ def _document(slug: str, kind: str, sprint: str) -> str:
     )
 
 
-@pytest.fixture
-def checkout(tmp_path: Path) -> Path:
+def _build_checkout(tmp_path: Path) -> Path:
     root = tmp_path / "checkout"
     docs = root / "docs"
     for kind, count in (("plan", DOCUMENT_COUNT), ("research", 4)):
@@ -146,9 +145,10 @@ def _run(driver: Path, checkout: Path, home: Path, mode: str) -> dict:
     return json.loads(completed.stdout.strip().splitlines()[-1])
 
 
-def test_one_cold_roadmap_lists_each_docs_directory_once(
-    tmp_path: Path, checkout: Path
-) -> None:
+@pytest.fixture(scope="module")
+def measured(tmp_path_factory: pytest.TempPathFactory) -> dict:
+    tmp_path = tmp_path_factory.mktemp("cold-roadmap")
+    checkout = _build_checkout(tmp_path)
     home = tmp_path / "home"
     home.mkdir()
     driver = tmp_path / "driver.py"
@@ -157,6 +157,13 @@ def test_one_cold_roadmap_lists_each_docs_directory_once(
 
     cold = _run(driver, checkout, home, "measure")
     unshared = _run(driver, checkout, home, "unshared")
+    return {"checkout": checkout, "cold": cold, "unshared": unshared}
+
+
+def test_one_cold_roadmap_lists_each_docs_directory_once(measured: dict) -> None:
+    checkout = measured["checkout"]
+    cold = measured["cold"]
+    unshared = measured["unshared"]
     assert (
         cold["roadmap"].get("data", {}).get("scope", {}).get("plans") == DOCUMENT_COUNT
     )
@@ -170,4 +177,8 @@ def test_one_cold_roadmap_lists_each_docs_directory_once(
         == 1
     )
     assert max(cold["listings"].values(), default=0) <= 1, cold["listings"]
+
+
+def test_one_cold_roadmap_reads_each_authored_file_once(measured: dict) -> None:
+    cold = measured["cold"]
     assert max(cold["reads"].values(), default=0) <= 1, cold["reads"]
