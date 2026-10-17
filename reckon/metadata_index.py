@@ -12,10 +12,10 @@ rebuild walks the tree, hashes each file and re-parses only the ones whose
 bytes changed, so a rebuild costs a hash per file rather than a parse; the hash
 is an order of magnitude cheaper than the parse it stands in for. The change
 watch drops a tree's in-process rows when the kernel reports a change to it,
-and the next read rehashes that tree and rebuilds the rows that moved. A
-reader with no watch revalidates by digest on every call instead — see
-``index_rows(..., revalidate=True)`` — so a long-lived process still sees a
-later edit.
+and the next read checks that tree and rebuilds the rows that moved. A reader
+with no watch compares each row with its digest on every call instead — see
+``index_rows(..., revalidate=True)``. The process shares a hash while the file's
+stat identity is unchanged and reads changed bytes again.
 
 A plan's row also carries the two figures that cannot be read from a document's
 ``<meta>`` head: its open-followup count and its implementable-section count.
@@ -33,13 +33,14 @@ import logging
 import os
 import threading
 from collections.abc import Callable, Mapping
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
 from reckon import _plan_html, figures, resources
 from reckon._store import _config_home, write_json_atomically
-from reckon.file_memo import file_signature
+from reckon.file_memo import file_signature, memoized
 
 #: A row's stamp source: a file and its stat identity in, ``(created, edited)``
 #: out. The default derives both from the stat identity; a caller that can
@@ -72,6 +73,9 @@ _SCHEMA = "reckon.metadata-index"
 _VERSION = 5
 _FIGURE_DIR = "figures"
 _FIGURE_SUFFIXES = (".png", ".svg", ".gif")
+_COVERED_PROJECT: ContextVar[tuple[str, str] | None] = ContextVar(
+    "reckon_covered_project", default=None
+)
 #: The types discovery keeps in an inventory, so the index answers with the
 #: same row set the derived payload is merged into.
 _INDEX_TYPES = frozenset({"plan", "research", "evidence"})
@@ -219,9 +223,10 @@ def index_rows(
     whose stamps use the same source the served discovery payload uses, so a
     reader merging the two never sees a document's timestamps move.
 
-    ``revalidate`` rehashes every covered file before answering and re-parses
-    only the ones whose bytes changed — the cost a restart already pays. A
-    caller the change watch serves gets that for free through
+    ``revalidate`` checks every covered file against its digest and re-parses
+    only the ones whose bytes changed. One process reuses a hash while the
+    file's stat identity is unchanged. A caller the change watch serves gets
+    that for free through
     :func:`invalidate_tree` and leaves the flag alone; a caller without a watch
     (the MCP and CLI processes) would otherwise answer from the first build it
     made for the life of its process and never see a later edit.
@@ -257,7 +262,7 @@ def _reuse_covered(
 ) -> tuple[list[tuple[str, Path]], dict[str, Path]] | None:
     """Return the persisted file set when the tree's shape is unchanged.
 
-    A reader with no change watch rehashes every covered file to revalidate,
+    A reader with no change watch checks every covered file to revalidate,
     and it needs the file set to do that. Rediscovering it walks the tree on
     every read. The persisted index already lists the files, and the
     directories' stat identities say whether entry ``*was added or removed``
@@ -292,8 +297,9 @@ def plan_derivations(docs_dir: Path, project: str) -> list[dict]:
     title, stamps — reads :func:`index_rows` instead; these figures are
     deliberately outside ``ROW_FIELDS``.
 
-    Every call rehashes each covered file, so a caller in a long-lived process
-    sees a later edit, and only a file whose bytes changed is parsed again.
+    Every call checks each covered file against its digest, so a caller in a
+    long-lived process sees a later edit. An unchanged stat identity reuses the
+    hash, and only a file whose bytes changed is parsed again.
     """
 
     build = _build_and_cache(
@@ -458,7 +464,7 @@ def _row_is_complete(entry: Mapping) -> bool:
 
 
 def _content_digest(path: Path) -> str:
-    """Return the digest that changes exactly when ``path``'s bytes change.
+    """Return a byte digest, sharing an unchanged file's one physical read.
 
     The row is keyed on the file's bytes rather than its stat identity: a
     rewrite that restores the same bytes — a checkout or a rebuild that only
@@ -466,10 +472,27 @@ def _content_digest(path: Path) -> str:
     it. A shared filesystem also reports a different device number for the same
     file on each host, which a byte digest is blind to, so the served process
     and the readers on other hosts share one persisted index instead of each
-    re-parsing the whole project.
+    re-parsing the whole project. The process cache is revalidated by the file's
+    full stat identity; a changed file is hashed again.
     """
 
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    def read() -> str:
+        signature = file_signature(path)
+        content = path.read_bytes()
+        if path.suffix == ".html":
+
+            def decoded() -> str:
+                try:
+                    if file_signature(path) == signature:
+                        return content.decode("utf-8", errors="replace")
+                    return path.read_text(encoding="utf-8", errors="replace")
+                except OSError:
+                    return ""
+
+            memoized("plan_text", path, decoded)
+        return hashlib.sha256(content).hexdigest()
+
+    return memoized("content_digest", path, read)
 
 
 def _cache_key(docs_dir: Path, project: str, with_git: bool) -> tuple[str, str, bool]:
@@ -542,10 +565,17 @@ def _covered_files(docs_dir: Path) -> list[tuple[str, Path]]:
     The index records each visited directory's identity, so a tree whose shape
     is unchanged answers from the persisted file set without walking it. A tree
     whose shape moved, or one the index has not seen, walks; the walk's set and
-    directory identities are recorded, so the next read skips the walk.
+    directory identities are recorded, so the next read skips the walk. A
+    caller that already knows the project supplies it through
+    :func:`_covered_files_for_project`, including for an unmounted checkout.
     """
 
-    project = _docs_dir_project(docs_dir)
+    scoped = _COVERED_PROJECT.get()
+    project = (
+        scoped[1]
+        if scoped is not None and scoped[0] == os.fspath(docs_dir)
+        else _docs_dir_project(docs_dir)
+    )
     if project is not None:
         reused = _reuse_covered(docs_dir, project)
         if reused is not None:
@@ -554,6 +584,16 @@ def _covered_files(docs_dir: Path) -> list[tuple[str, Path]]:
     if project is not None:
         _record_covered_shape(docs_dir, project, files, dirs)
     return files
+
+
+def _covered_files_for_project(docs_dir: Path, project: str) -> list[tuple[str, Path]]:
+    """Use a known project while keeping the tree walk's one-argument entry."""
+
+    token = _COVERED_PROJECT.set((os.fspath(docs_dir), project))
+    try:
+        return _covered_files(docs_dir)
+    finally:
+        _COVERED_PROJECT.reset(token)
 
 
 def _docs_dir_project(docs_dir: Path) -> str | None:

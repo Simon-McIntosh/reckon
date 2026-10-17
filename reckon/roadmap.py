@@ -21,6 +21,7 @@ from reckon._plan_html import (
     SECTION_DECLARATION_DEFERRED,
     SECTION_DECLARATION_DONE,
     SECTION_NUMBER_PATTERN,
+    _read_plan_text,
     authored_section_headings,
     open_sections,
     read_state_and_text_file,
@@ -209,10 +210,7 @@ def _plan_authored_html(
         return ""
 
     def read_text() -> str:
-        try:
-            return path.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            return ""
+        return _read_plan_text(path)
 
     return memoized("plan_authored_html", path, read_text)
 
@@ -440,11 +438,7 @@ def _plan_section_deps(
         return None
 
     def read_mapping() -> dict[str, Any]:
-        try:
-            text = path.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            return {}
-        return dict(section_depends_on(text) or {})
+        return dict(section_depends_on(_read_plan_text(path)) or {})
 
     return memoized("section_depends_on", path, read_mapping)
 
@@ -483,11 +477,7 @@ def _plan_decision_sections(
         return None
 
     def read_mapping() -> dict[str, Any]:
-        try:
-            text = path.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            return {}
-        return dict(decision_sections(text) or {})
+        return dict(decision_sections(_read_plan_text(path)) or {})
 
     return memoized("decision_sections", path, read_mapping)
 
@@ -1256,11 +1246,7 @@ def _standalone_reason(docs_dir: Path | None, project: str, slug: str) -> str | 
     path = resource.path
 
     def read_declaration() -> str | None:
-        try:
-            text = path.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            return None
-        return standalone_reason(text)
+        return standalone_reason(_read_plan_text(path))
 
     return memoized("standalone_reason", path, read_declaration)
 

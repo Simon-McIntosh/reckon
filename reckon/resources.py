@@ -583,9 +583,13 @@ def _scan_resources(
     include_legacy: bool,
     ignore_invalid: bool,
 ) -> list[Resource]:
+    from reckon import metadata_index
+
     resources: list[Resource] = []
-    for path in sorted(docs_dir.rglob("*.html")):
-        if _is_evidence_fragment(PurePosixPath(path.relative_to(docs_dir).as_posix())):
+    for relative, path in metadata_index._covered_files_for_project(docs_dir, project):
+        if not relative.endswith(".html"):
+            continue
+        if _is_evidence_fragment(PurePosixPath(relative)):
             continue
         try:
             resource = identify_resource(docs_dir, path, project)
@@ -773,7 +777,7 @@ def _canonical_identity_is_unique(
 
 
 def _identity_listing(
-    directory: Path,
+    directory: Path, docs_dir: Path, project: str
 ) -> tuple[tuple[str, tuple[int, int, int, int, int] | None], ...]:
     """Return each HTML entry of ``directory`` with the stamp that identifies it.
 
@@ -782,10 +786,20 @@ def _identity_listing(
     its own stamp. A file that cannot be stat'ed keeps its place in the listing
     with no stamp, so the index is rebuilt rather than trusted.
     """
-    try:
-        paths = sorted(directory.glob("*.html"))
-    except OSError:
-        return ()
+    from reckon import metadata_index
+
+    reused = metadata_index._reuse_covered(docs_dir, project)
+    if reused is not None:
+        paths = [
+            path
+            for relative, path in reused[0]
+            if relative.endswith(".html") and path.parent == directory
+        ]
+    else:
+        try:
+            paths = sorted(directory.glob("*.html"))
+        except OSError:
+            return ()
     listing: list[tuple[str, tuple[int, int, int, int, int] | None]] = []
     for path in paths:
         try:
@@ -815,7 +829,7 @@ def _directory_identity_index(
         held = scope.get(key)
         if held is not None:
             return held
-    listing = _identity_listing(directory)
+    listing = _identity_listing(directory, docs_dir, project)
     with _INDEX_LOCK:
         stored = _INDEX_MEMO.get(key)
     if stored is not None and stored[0] == listing:
