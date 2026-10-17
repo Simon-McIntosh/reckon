@@ -25,7 +25,7 @@
 <meta name="plan-sprint" content="S22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.6">
-<meta name="plan-version" content="64">
+<meta name="plan-version" content="66">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -521,7 +521,7 @@
 
     <h2 id="s9">§9 — The ledger writer refuses to fold run files into the aggregate</h2>
 <section data-reckon="section" data-id="s9" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> §8 repairs the one caller that wrote <code>ledger.load()</code>'s union back as the aggregate. Nothing stops another caller from doing the same, and the cost is an unpushable <code>main</code>.</p><p><strong>Deliverable.</strong> <code>ledger.write</code> refuses a write that would add to the aggregate rows already held as per-run files. It names how many it would have folded, so no caller can repeat the fold.</p><p><strong>Done when</strong> a new test, <code>tests/test_the_ledger_writer_refuses_a_fold.py</code>, builds a project with an aggregate of 10 rows and 50 per-run files. It finds a <code>ledger.write</code> of <code>ledger.load()</code>'s union refused, naming 50. A write that appends one new run is accepted. Negative control: against the base tree, the union write is accepted. The log goes under the run directory. ruff check and ruff format --check add no findings on the changed Python files. The coordinator runs the importer population at merge. Build it after read-deadline §28, which also writes <code>reckon/ledger.py</code>. Write paths: <code>reckon/ledger.py</code> and the test file.</p>
+<p><strong>Why.</strong> §8 repairs the release path. A second caller folds the same way. <code>record_hold_checks</code> in <code>reckon/ledger.py</code> does <code>data, version = load(project, root)</code> and then writes, as §7 recorded when a hold check rewrote the aggregate carrying 810 run rows that already existed as per-run files. A hold-check commit on 2026-10-17 at 12:46 grew <code>crew.json</code> from 62 MB to 81 MB the same way. Measured after the history repair, a hold check would now fold 2,909 per-run rows, about 226 MB of JSON, and make <code>main</code> unpushable again. A pre-commit size guard in the shared repository now refuses any commit staging a file over 95 MB, so such a fold fails at the commit rather than in history. It does not stop the write.</p><p><strong>Deliverable.</strong> <code>record_hold_checks</code> reads and writes the aggregate's own rows and its holds, never <code>ledger.load()</code>'s union. Then <code>ledger.write</code> refuses a write that would add to the aggregate rows already held as per-run files. It names how many it would have folded, so no caller can repeat the fold. Every other caller that writes the aggregate is listed in the manifest with how it reads.</p><p><strong>Done when</strong> a new test, <code>tests/test_the_ledger_writer_refuses_a_fold.py</code>, builds a project with an aggregate of 10 rows and 50 per-run files. It finds a <code>ledger.write</code> of <code>ledger.load()</code>'s union refused, naming 50. A write that appends one new run is accepted. A <code>record_hold_checks</code> call over that project leaves the aggregate's row count unchanged. Negative control: against the base tree, the union write is accepted. The log goes under the run directory. ruff check and ruff format --check add no findings on the changed Python files. The coordinator runs the importer population at merge. Build it after read-deadline §28, which also writes <code>reckon/ledger.py</code>. Write paths: <code>reckon/ledger.py</code> and the test file.</p>
 
     <h2 id="s10">§10 — A promotion commit records only its own paths</h2>
 <section data-reckon="section" data-id="s10" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
@@ -723,6 +723,13 @@
       <button class="r-opt" data-value="retire-in-place-update">Retire the in-place update — remove the load/patch/write/index-import/commit flow and give up the durable per-run report.</button>
       </p>
     <p class="r-dec-rat">The integrated-gate report is the only durable record of whether a promoted run&#x27;s gate still holds at the merged head, and verify-gate exists to write it. Retiring the in-place update would delete that evidence to save one targeted read and write, which the one serialiser already makes cheap. Locked by the S22 coordinator on the code evidence the revision recorded.</p>
+    </div>
+</section>
+<section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-tlofpr-9" data-section="s9" data-gated-sections="s9" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">read-deadline s28, which also writes reckon/ledger.py, has merged</h4>
+    <p class="r-gate-required-evidence">a-read-answers-inside-its-deadline#s28</p>
     </div>
 </section>
 </main>
