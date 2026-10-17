@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Evidence — a-paired-dispatch-hides-each-arm</title>
+<meta name="plan-node" content="a-paired-dispatch-hides-each-arm">
+</head>
+<body>
+<main class="evidence-record">
+
+<h2 id="a-paired-dispatch-hides-each-arm-what">What landed</h2>
+<p><code>reckon crew dispatch</code> gains <code>--pair-backend &lt;backend&gt;</code>.
+One call resolves two arms at one base revision: a primary arm routed as any
+dispatch is, and a shadow arm on the named backend configured from the primary
+arm's own planning resolution through <code>_shadow_dispatch_config</code>.
+Both run ids, both run directories and both worktree paths are fixed before
+either arm launches (<code>dispatch_pair</code> in <code>reckon/crew/dispatch.py</code>),
+so each arm's fence is composed from its partner's <em>allocation</em> rather
+than from a live pointer or a ledger row the partner does not have yet.
+The primary arm records <code>paired_shadow_run_id</code>; the shadow arm names
+its primary through the existing shadow lineage.</p>
+
+<p><code>promotion_scope._allocated_read_surfaces</code> resolves an allocated
+arm's readable surfaces through <code>_primary_read_surfaces</code>, the same
+function the contamination scan reads, so the launch fence and the scan cannot
+disagree. <code>dispatch</code> threads the partner surfaces to
+<code>launch_plan</code> in place of the committed-row lookup a standalone
+shadow performs, and skips that lookup only when the allocation supplies them.</p>
+
+<h2 id="a-paired-dispatch-hides-each-arm-measure">Measure</h2>
+<p>The gate executes the composed argument vector under a real bubblewrap
+fence, never inspecting its shape: each arm lists its partner's run directory
+as empty (<code>partner-run-dir []</code>) and can still write its own run
+directory and worktree. With the primary arm's masks dropped the same listing
+is non-empty (<code>partner-run-dir [stream.jsonl,]</code>), which is the
+declared negative control and is what makes the empty listing mean anything.</p>
+
+<pre>tests/test_a_paired_dispatch_hides_each_arm.py: 4 passed
+negative control (primary arm's masks dropped): EXIT=1, listing non-empty</pre>
+
+<h2 id="a-paired-dispatch-hides-each-arm-limits">Limits</h2>
+<p>The wider population of test files importing <code>reckon/crew/dispatch.py</code>
+was not run here; only this node's own gate ran. The coordinator runs the
+wider population at merge. <code>ruff format --check</code> is clean on three
+of the four changed paths; <code>reckon/crew/promotion_scope.py</code> carries
+pre-existing formatting backlog in regions this node did not touch.</p>
+
+</main>
+</body>
+</html>
