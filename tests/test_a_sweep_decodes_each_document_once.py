@@ -42,13 +42,22 @@ def _now() -> datetime:
     return datetime(2026, 10, 1, 12, 0, 0, tzinfo=UTC)
 
 
+def _clear_memo() -> None:
+    """Start a test from no held document.
+
+    The memo is process-wide, so a test that leaves entries behind — the bound
+    test changes the limit — would otherwise be read against them. Missing
+    attributes are tolerated: the negative control runs this file against the
+    base revision, which has no memo at all.
+    """
+    ledger_module.__dict__.get("_DOCUMENT_CACHE", {}).clear()
+    ledger_module.__dict__.get("_OPENED_SINCE_RELEASE", set()).clear()
+
+
 @pytest.fixture()
 def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path]:
     """A synthesised project of 200 per-run files and 20 live pointers."""
-    # The memo is process-wide, so a test starts from an empty one rather than
-    # from whatever the previous test left held.
-    ledger_module._DOCUMENT_CACHE.clear()
-    ledger_module._OPENED_SINCE_RELEASE.clear()
+    _clear_memo()
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
@@ -200,9 +209,9 @@ def test_the_memoised_sweep_matches_an_unmemoised_one(fleet: dict[str, Path]) ->
     _run_sweep(fleet)
     held = obligation_snapshot.read_snapshot(PROJECT, SESSION)
     assert held is not None
-    # Drop every held document and the live-pointer memo, so the next sweep
-    # decodes the whole state again rather than reusing the first sweep's parse.
-    ledger_module._DOCUMENT_CACHE.clear()
+    # Drop every held document, so the next sweep decodes the whole state again
+    # rather than reusing the first sweep's parse.
+    _clear_memo()
     _run_sweep(fleet)
     reread = obligation_snapshot.read_snapshot(PROJECT, SESSION)
     assert reread == held
