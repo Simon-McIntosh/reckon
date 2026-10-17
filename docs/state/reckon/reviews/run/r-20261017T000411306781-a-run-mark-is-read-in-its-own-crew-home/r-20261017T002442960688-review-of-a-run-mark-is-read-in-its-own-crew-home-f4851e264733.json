@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_liveness.py:1116 (_env_scan_run_pid)",
+    "reckon/crew/process_signal.py:328 (_run_process_pids)"
+  ],
+  "completed_at": "2026-10-17T00:36:24.551Z",
+  "dispatched_at": "2026-10-17T00:25:14Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "both production callers pass crew_home(), which _config_home resolves, so the unnormalised argument is latent; no caller passes a relative home",
+      "recorded_at": "2026-10-17T00:35:30.445188+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the coordinator runs the importer population at the merge candidate in git checkouts whose logs name their revisions, which supersedes the worker's working-tree regression set",
+      "recorded_at": "2026-10-17T00:35:45.426371+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/process_signal.py",
+      "line": "191",
+      "severity": "follow-on",
+      "text": "follow-on: `wanted_home = Path(run_home)` is left unnormalised while `_crew_home_of` returns a `.resolve()`d path, so a caller passing a relative or `..`-bearing run_home would name no process and the run would read dead, or a stop would miss it; both production callers pass `crew_home()`, so the asymmetry is latent."
+    },
+    {
+      "file": "logs/gate-focused.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the header records the 86-passed regression set as run against \"working tree, uncommitted edit\" at base 641130fc, and the committed head only re-ran the new file, so the regression result is not tied to the promoted revision f4851e26."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read against base 641130fc; one commit f4851e264 changes five files, adding a required `run_home` argument and the `_crew_home_of` resolver, all inside scope.",
+    "done_when": "the done_when names tests/test_a_run_mark_is_read_in_its_own_crew_home.py with two homes, two live children, one run id, a not-alive case, a no-RECKON_HOME fallback case and a trailing-slash/symlink case; the file carries six tests and the manifest records 6 passed EXIT=0.",
+    "goal": "the node's goal is to name a process for a run only when its resolved crew home is the run's; reckon/crew/process_signal.py:203 now skips any candidate whose `_crew_home_of` differs from the run's home.",
+    "manifest": "read; it states the focused regression set passed 86 with EXIT=0 and the negative control failed 5 with EXIT=1, and it names its gate logs.",
+    "write_paths": "read the manifest's six declared paths; every path the diff touches \u2014 reckon/_store.py, reckon/crew/process_signal.py, reckon/crew/recovery_liveness.py, the test file and the evidence fragment \u2014 is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_mark_is_read_in_its_own_crew_home.py:140 asserts `named == [child_one.pid]`, which reddens when the crew-home comparison at reckon/crew/process_signal.py:203 is removed.",
+    "evidence": "the gate covers every clause of the done_when and the negative control is red (5 failed/1 passed, EXIT=1), but the 86-passed regression set was run on an uncommitted tree at base 641130fc (logs/gate-focused.log:1), not at head f4851e26.",
+    "fit": "`_crew_home_of` and the `run_home` parameter name the mechanism, matching the surrounding style at reckon/crew/process_signal.py:146.",
+    "goal_fidelity": "reckon/crew/process_signal.py:203 skips a candidate unless `_crew_home_of(environment) == wanted_home`, so a run id carried in another home is not named.",
+    "reuse": "`_crew_home_of` extends `_config_home` (reckon/_store.py:128), the one home resolver, and its `/crew` join mirrors reckon/crew/run_paths.py:21; no pre-existing owner of a foreign environment's crew home was found.",
+    "scope_discipline": "the diff's five files are all within the manifest's declared write paths and nothing outside them is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to name a process for a run only when its resolved crew home is the run's; reckon/crew/process_signal.py:203 now skips any candidate whose `_crew_home_of` differs from the run's home.\nVERDICT done_when: the done_when names tests/test_a_run_mark_is_read_in_its_own_crew_home.py with two homes, two live children, one run id, a not-alive case, a no-RECKON_HOME fallback case and a trailing-slash/symlink case; the file carries six tests and the manifest records 6 passed EXIT=0.\nVERDICT write_paths: read the manifest's six declared paths; every path the diff touches \u2014 reckon/_store.py, reckon/crew/process_signal.py, reckon/crew/recovery_liveness.py, the test file and the evidence fragment \u2014 is inside them.\nVERDICT manifest: read; it states the focused regression set passed 86 with EXIT=0 and the negative control failed 5 with EXIT=1, and it names its gate logs.\nVERDICT diff: read against base 641130fc; one commit f4851e264 changes five files, adding a required `run_home` argument and the `_crew_home_of` resolver, all inside scope.\nCALL_SITES: reckon/crew/recovery_liveness.py:1116 (_env_scan_run_pid), reckon/crew/process_signal.py:328 (_run_process_pids)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/process_signal.py:203 skips a candidate unless `_crew_home_of(environment) == wanted_home`, so a run id carried in another home is not named.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate covers every clause of the done_when and the negative control is red (5 failed/1 passed, EXIT=1), but the 86-passed regression set was run on an uncommitted tree at base 641130fc (logs/gate-focused.log:1), not at head f4851e26.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's five files are all within the manifest's declared write paths and nothing outside them is touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_run_mark_is_read_in_its_own_crew_home.py:140 asserts `named == [child_one.pid]`, which reddens when the crew-home comparison at reckon/crew/process_signal.py:203 is removed.\nSCORE fit: 18\nJUSTIFICATION fit: `_crew_home_of` and the `run_home` parameter name the mechanism, matching the surrounding style at reckon/crew/process_signal.py:146.\nSCORE reuse: 18\nJUSTIFICATION reuse: `_crew_home_of` extends `_config_home` (reckon/_store.py:128), the one home resolver, and its `/crew` join mirrors reckon/crew/run_paths.py:21; no pre-existing owner of a foreign environment's crew home was found.\nFINDING reckon/crew/process_signal.py:191 follow-on: `wanted_home = Path(run_home)` is left unnormalised while `_crew_home_of` returns a `.resolve()`d path, so a caller passing a relative or `..`-bearing run_home would name no process and the run would read dead, or a stop would miss it; both production callers pass `crew_home()`, so the asymmetry is latent.\nFINDING logs/gate-focused.log:1 follow-on: the header records the 86-passed regression set as run against \"working tree, uncommitted edit\" at base 641130fc, and the committed head only re-ran the new file, so the regression result is not tied to the promoted revision f4851e26.",
+  "review_run_id": "r-20261017T002442960688-review-of-a-run-mark-is-read-in-its-own-crew-home-f4851e264733",
+  "reviewed_base_sha": "641130fc7e12a29cc4b3f62ebe5913a04d9aecb8",
+  "reviewed_head_sha": "f4851e2647337b788f0f35e0f7ae25612bcd3df0",
+  "reviewed_run_id": "r-20261017T000411306781-a-run-mark-is-read-in-its-own-crew-home",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T00:35:27.789943+00:00",
+  "total": 110
+}
