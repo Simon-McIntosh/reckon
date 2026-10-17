@@ -2617,9 +2617,6 @@ def compact_summary(full, weekly_cells, *, artifacts=None):
             "path": file["path"],
             "added": added,
         }
-    assert len(dump(summary)) < 300_000, (
-        "Compact census exceeds its repository size bound"
-    )
     return summary
 
 
@@ -2687,7 +2684,11 @@ def velocity(
         weekly_cells=weekly_cells,
         transcript_root=transcript_root,
     )
-    return compact_summary(result, weekly_cells)
+    summary = compact_summary(result, weekly_cells)
+    assert len(dump(summary)) < 300_000, (
+        "Compact census exceeds its repository size bound"
+    )
+    return summary
 
 
 def current_week_interface_counts(repo_root, *, write=True):
