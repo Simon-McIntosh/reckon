@@ -623,6 +623,16 @@ def _store_captured_history(path, entry):
 
 LEDGER_CACHE_VERSION = 1
 
+# The ledger search generates the patch of every commit that touched the ledger
+# in its range, and a mature project's ledger is tens of megabytes rewritten at
+# every promotion, so a window reaching back months asks git for hundreds of
+# such patches in one call and overruns ``run_git``'s 180-second bound. The
+# window's ledger commits are searched in slices of this many commits instead,
+# the cache carrying the walk forward to each slice's last commit so a long
+# window finishes inside the bound and an interrupted read resumes where it
+# stopped. The value is read at call time so a test can shrink it.
+_LEDGER_SEARCH_SLICE_COMMITS = 128
+
 
 def _ledger_cache_path(repo, cache_root=None):
     """The ledger-clock cache beside a repository's captured-history entry.
@@ -1159,6 +1169,54 @@ def replay(commits):
     return births
 
 
+def _record_file_additions(repo, base, head, runs_path, candidates, found):
+    """Place candidate runs at the commit that added their own record file.
+
+    A run's ``docs/state/<project>/runs/<run_id>.json`` is added once, and a
+    path-limited log lists those additions without generating a patch, so this
+    is far cheaper than the ledger search over the same window. The adding
+    commit is an upper bound on the run's durable appearance in the primary
+    branch, the same kind of value the search reports, so the two are told
+    apart by the ``source`` each records rather than by their shape. The
+    returned mapping is empty for a run whose file is absent from the range,
+    which then falls through to the search.
+    """
+    added = {}
+    raw = git(
+        repo,
+        "log",
+        "--first-parent",
+        "--reverse",
+        "--diff-merges=first-parent",
+        "--format=%x1e%H%x09%ct",
+        "--diff-filter=A",
+        "--name-only",
+        base + ".." + head,
+        "--",
+        runs_path,
+    )
+    commit, epoch = None, None
+    for line in raw.split(b"\n"):
+        if line.startswith(b"\x1e"):
+            commit, value = line[1:].decode().split("\t")
+            epoch = int(value)
+            continue
+        name = line.decode().strip()
+        if not name.endswith(".json"):
+            continue
+        rid = name.rsplit("/", 1)[-1][: -len(".json")]
+        if rid in candidates and rid not in found:
+            added[rid] = [
+                {
+                    "sha": commit,
+                    "epoch": epoch,
+                    "landing_sha": commit,
+                    "source": "first_primary_record_file_addition_upper_bound",
+                }
+            ]
+    return added
+
+
 def recover_ledger_clocks(
     snapshot, *, code_root=CODE, repos=None, start=START, end=END, cache_root=None
 ):
@@ -1210,49 +1268,111 @@ def recover_ledger_clocks(
         # An appearance found before the cached head still holds, so only the
         # ids still missing are searched, over the range the cache had not
         # reached. A cached head this one does not descend from cannot supply
-        # them, and the walk restarts from the window base.
+        # them, and the walk restarts from the window base. The whole recovery
+        # is skipped once the cache reaches the window head, so a repeated read
+        # of a completed window issues no git call at all.
         if missing and head != walked:
-            origin = walked if walked and _is_ancestor(repo, walked, head) else base
-            expression = "|".join(re.escape(rid) for rid in missing)
-            raw = git(
-                repo,
-                "log",
-                "--first-parent",
-                "--reverse",
-                "--diff-merges=first-parent",
-                "--format=%x1e%H%x09%ct",
-                "--unified=0",
-                "-p",
-                "-G",
-                expression,
-                origin + ".." + head,
-                "--",
-                path,
-                "docs/state/" + project["project"] + "/runs",
-            )
-            commit, epoch = None, None
-            for line in raw.split(b"\n"):
-                if line.startswith(b"\x1e"):
-                    commit, value = line[1:].decode().split("\t")
-                    epoch = int(value)
-                elif line.startswith(b"+"):
-                    match = re.search(rb'"run_id"\s*:\s*"([^"]+)"', line)
-                    if match and match[1].decode() in candidates:
-                        rid = match[1].decode()
-                        if rid not in found:
-                            appearance = [
-                                {
-                                    "sha": commit,
-                                    "epoch": epoch,
-                                    "landing_sha": commit,
-                                    "source": (
-                                        "first_primary_ledger_appearance_upper_bound"
-                                    ),
-                                }
-                            ]
-                            candidates[rid]["promotion_commits"] = appearance
-                            recovered[rid] = appearance
-                            found.add(rid)
+            # A run's own record file is placed before the ledger search.
+            # Listing the file's additions is path-limited and generates no
+            # patch, so it is far cheaper than the search, and only the ids it
+            # leaves behind reach the search. The adding commit is an upper
+            # bound of the same kind the search reports, told apart by its own
+            # source.
+            runs_path = "docs/state/" + project["project"] + "/runs"
+            for rid, appearance in _record_file_additions(
+                repo, base, head, runs_path, candidates, found
+            ).items():
+                candidates[rid]["promotion_commits"] = appearance
+                recovered[rid] = appearance
+                found.add(rid)
+            missing = sorted(set(candidates) - found)
+            if missing:
+                origin = walked if walked and _is_ancestor(repo, walked, head) else base
+                boundary = origin
+                listing = git(
+                    repo,
+                    "log",
+                    "--first-parent",
+                    "--reverse",
+                    "--format=%H",
+                    boundary + ".." + head,
+                    "--",
+                    path,
+                    runs_path,
+                )
+                ledger_commits = [sha for sha in listing.decode().split() if sha]
+                # The window's ledger commits are searched a slice at a time,
+                # oldest first, each slice dropping the ids already placed from
+                # the expression, so a window of hundreds of patch-generating
+                # commits finishes inside the runner's bound instead of asking
+                # git for every patch at once. The cache is stored after each
+                # slice with its head at the slice's last commit, so an
+                # interrupted read resumes where it stopped.
+                for start_index in range(
+                    0, len(ledger_commits), _LEDGER_SEARCH_SLICE_COMMITS
+                ):
+                    remaining = sorted(set(missing) - found)
+                    if not remaining:
+                        break
+                    slice_end = ledger_commits[
+                        min(
+                            start_index + _LEDGER_SEARCH_SLICE_COMMITS,
+                            len(ledger_commits),
+                        )
+                        - 1
+                    ]
+                    expression = "|".join(re.escape(rid) for rid in remaining)
+                    raw = git(
+                        repo,
+                        "log",
+                        "--first-parent",
+                        "--reverse",
+                        "--diff-merges=first-parent",
+                        "--format=%x1e%H%x09%ct",
+                        "--unified=0",
+                        "-p",
+                        "-G",
+                        expression,
+                        boundary + ".." + slice_end,
+                        "--",
+                        path,
+                        runs_path,
+                    )
+                    commit, epoch = None, None
+                    for line in raw.split(b"\n"):
+                        if line.startswith(b"\x1e"):
+                            commit, value = line[1:].decode().split("\t")
+                            epoch = int(value)
+                        elif line.startswith(b"+"):
+                            match = re.search(rb'"run_id"\s*:\s*"([^"]+)"', line)
+                            if match and match[1].decode() in candidates:
+                                rid = match[1].decode()
+                                if rid not in found:
+                                    appearance = [
+                                        {
+                                            "sha": commit,
+                                            "epoch": epoch,
+                                            "landing_sha": commit,
+                                            "source": (
+                                                "first_primary_ledger_appearance_upper_bound"
+                                            ),
+                                        }
+                                    ]
+                                    candidates[rid]["promotion_commits"] = appearance
+                                    recovered[rid] = appearance
+                                    found.add(rid)
+                    boundary = slice_end
+                    _store_ledger_cache(
+                        cache_path,
+                        {
+                            "version": LEDGER_CACHE_VERSION,
+                            "repo": str(Path(repo).resolve()),
+                            "base": base,
+                            "head": slice_end,
+                            "present": sorted(present),
+                            "recoveries": recovered,
+                        },
+                    )
         project["ledger_clock_recoveries"] = sorted(found)
         _store_ledger_cache(
             cache_path,
@@ -2692,6 +2812,7 @@ HEALTH_REVIEW_STOP_RULE = (
     "build's health-review step becomes opt-in and the lead decides whether to "
     "keep it"
 )
+
 
 def health_reviews(
     project,
