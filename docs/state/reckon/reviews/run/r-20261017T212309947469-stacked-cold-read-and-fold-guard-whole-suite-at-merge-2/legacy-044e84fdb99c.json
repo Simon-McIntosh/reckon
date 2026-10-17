@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 19,
+  "added_failure_ids": [
+    "tests/test_crew_dispatch_arming.py::test_a_peer_sessions_follower_does_not_admit_this_dispatch",
+    "tests/test_scoring_dispatches_its_review.py::test_an_unattached_session_refuses_the_automatic_dispatch_too",
+    "tests/test_spa_project_visibility.py::test_first_visit_renders_live_runs_from_every_mounted_project",
+    "tests/test_spa_project_visibility.py::test_topbar_keeps_one_ordered_row_with_tools_flush_right[1280]",
+    "tests/test_spa_project_visibility.py::test_topbar_keeps_one_ordered_row_with_tools_flush_right[1440]",
+    "tests/test_spa_project_visibility.py::test_topbar_keeps_one_ordered_row_with_tools_flush_right[1920]",
+    "tests/test_spa_rendered_semantics.py::test_compact_progress_renders_label_tooltip_and_navigation_target",
+    "tests/test_spa_rendered_semantics.py::test_handoff_renders_live_source_and_loaded_plan_version",
+    "tests/test_spa_rendered_semantics.py::test_overview_renders_every_active_sprint_and_focus_conflict",
+    "tests/test_spa_rendered_semantics.py::test_plan_row_renders_authored_to_effective_transition_and_open_gate_count",
+    "tests/test_spa_rendered_semantics.py::test_refresh_revalidates_discovery_without_document_navigation",
+    "tests/test_spa_rendered_semantics.py::test_shell_renders_snapshot_source_resource_count_load_time_and_refresh",
+    "tests/test_spa_rendered_semantics.py::test_sprint_view_renders_composed_metrics_findings_order_and_priority",
+    "tests/test_spa_rendered_semantics.py::test_sprint_view_without_review_has_no_review_affordances",
+    "tests/test_standing_suite.py::test_a_run_past_its_budget_is_stopped_with_its_whole_group",
+    "tests/test_stop_before_spawn_spawns_nothing.py::test_a_stop_between_the_check_and_the_spawn_spawns_no_worker",
+    "tests/test_stop_before_spawn_spawns_nothing.py::test_a_stop_during_the_pre_spawn_snapshot_spawns_no_worker",
+    "tests/test_stored_phase_advances.py::test_stored_phase_advances_from_starting_to_working_to_complete",
+    "tests/test_the_departure_row_says_how_and_what_it_spent.py::test_four_departures_render_three_pane_words"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": "5274a148467056dab323c1f9e291fb34ca7b1eb5",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-17T21:23:59Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T212309947469-stacked-cold-read-and-fold-guard-whole-suite-at-merge-2/whole-suite-candidate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the two arms ran on different hosts (base log line 1 host=98dci4-clu-3141, candidate log line 1 host=98dci4-clu-3142) and skipped different populations (44 vs 10, manifest.md:20), so the 19 added ids conflate a merge effect with a node and skip-population difference; the alone matrix does not resolve it because running a test in isolation is a third environment in which 13 of the 19 also fail at base 0/5 (whole-suite-derive.log:24-36)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T212309947469-stacked-cold-read-and-fold-guard-whole-suite-at-merge-2/whole-suite-arm.sh",
+      "line": "10",
+      "severity": "follow-on",
+      "text": "follow-on: the brief's checkout recipe (git clone --shared --no-checkout) was not implemented \u2014 jobs 1288366 and 1288367 print \"clone failed:\" in slurm-ws-arm-1288366.out and slurm-ws-arm-1288367.out and the arms use git init plus objects/info/alternates instead \u2014 and the substitution is disclosed only in this script comment, while manifest.md:22 records blockers: none, so the exact-spec deviation the role contract requires be reported is not in the record a coordinator reads."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T212309947469-stacked-cold-read-and-fold-guard-whole-suite-at-merge-2/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the landing line states flatly that the merge adds 19 failing ids, while the node's own failure_attribution (manifest.md:18) classifies every one of the 19 as also-at-base or load-only, so a coordinator reading only the landing line would attribute 19 regressions to the merge that the node's own control does not support."
+    }
+  ],
+  "head_log_revision": "24358ccabf4d201ba716e08d90be2a385f23a0a2",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "no commits \u2014 manifest.md:8 lists the two measured shas, not authored commits, and the node worktree is clean at 5274a148; the landed diff under review is base to candidate 24358cca, 19 files changed, +1222/-112 by git diff --stat, chiefly reckon/ledger.py, reckon/metadata_index.py, reckon/resources.py, reckon/roadmap.py and reckon/crew/routing.py.",
+    "done_when": "the done-when (prompt.txt:38) requires two logs naming rev=/host/command, proving reckon.__file__ under each checkout and ending in EXIT=, a derivation through added_failures_from_gate_logs, and five alone runs per id per revision; whole-suite-base.log:1-3 and whole-suite-candidate.log:1-3 carry all of these and whole-suite-derive.log holds the 190 alone cells.",
+    "goal": "the node goal (prompt.txt:22) is to measure the whole suite at base and at the re-stacked merge candidate; the two arm logs and the attribution in manifest.md:11-20 deliver it.",
+    "manifest": "read; manifest.md:11-20 states both arms' counts with log paths, the 19 added ids each with its alone counts and a verdict, the skip divergence between the arms, and status: complete.",
+    "write_paths": "the declared scope is the reports directory prompt.txt:58 names, and it is empty; every artefact (manifest, both arm logs, derive log, three scripts) sits under the run directory the delivery fence grants, and no path under reckon/ or tests/ changed."
+  },
+  "justifications": {
+    "durability": "no test guards this measurement \u2014 whole-suite-arm.sh and derive-and-alone.sh are run once and nothing persists a regression guard, as the node's negative_control none states.",
+    "evidence": "whole-suite-base.log:1 names rev/host/command and whole-suite-candidate.log:3 names the module under each checkout, and re-deriving with reckon/crew/review.py:2114 reproduces added_count=19 from the two logs.",
+    "fit": "whole-suite-arm.sh:10-16 documents the checkout substitution by mechanism and neither script nor manifest carries a plan label, ticket or version.",
+    "goal_fidelity": "manifest.md:11 gives each arm's pass and fail counts and manifest.md:18 gives every added id a verdict naming the run whose files it exercises.",
+    "reuse": "derive-and-alone.sh:46 imports added_failures_from_gate_logs from reckon/crew/review.py:2114 rather than reimplementing the failing-id reader.",
+    "scope_discipline": "manifest.md:9 records changed_paths: [] and the measured worktree is clean at 5274a148, with every artefact written under the run directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal (prompt.txt:22) is to measure the whole suite at base and at the re-stacked merge candidate; the two arm logs and the attribution in manifest.md:11-20 deliver it.\nVERDICT done_when: the done-when (prompt.txt:38) requires two logs naming rev=/host/command, proving reckon.__file__ under each checkout and ending in EXIT=, a derivation through added_failures_from_gate_logs, and five alone runs per id per revision; whole-suite-base.log:1-3 and whole-suite-candidate.log:1-3 carry all of these and whole-suite-derive.log holds the 190 alone cells.\nVERDICT write_paths: the declared scope is the reports directory prompt.txt:58 names, and it is empty; every artefact (manifest, both arm logs, derive log, three scripts) sits under the run directory the delivery fence grants, and no path under reckon/ or tests/ changed.\nVERDICT manifest: read; manifest.md:11-20 states both arms' counts with log paths, the 19 added ids each with its alone counts and a verdict, the skip divergence between the arms, and status: complete.\nVERDICT diff: no commits \u2014 manifest.md:8 lists the two measured shas, not authored commits, and the node worktree is clean at 5274a148; the landed diff under review is base to candidate 24358cca, 19 files changed, +1222/-112 by git diff --stat, chiefly reckon/ledger.py, reckon/metadata_index.py, reckon/resources.py, reckon/roadmap.py and reckon/crew/routing.py.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: manifest.md:11 gives each arm's pass and fail counts and manifest.md:18 gives every added id a verdict naming the run whose files it exercises.\nSCORE evidence: 16\nJUSTIFICATION evidence: whole-suite-base.log:1 names rev/host/command and whole-suite-candidate.log:3 names the module under each checkout, and re-deriving with reckon/crew/review.py:2114 reproduces added_count=19 from the two logs.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: manifest.md:9 records changed_paths: [] and the measured worktree is clean at 5274a148, with every artefact written under the run directory.\nSCORE durability: 11\nJUSTIFICATION durability: no test guards this measurement \u2014 whole-suite-arm.sh and derive-and-alone.sh are run once and nothing persists a regression guard, as the node's negative_control none states.\nSCORE fit: 18\nJUSTIFICATION fit: whole-suite-arm.sh:10-16 documents the checkout substitution by mechanism and neither script nor manifest carries a plan label, ticket or version.\nSCORE reuse: 20\nJUSTIFICATION reuse: derive-and-alone.sh:46 imports added_failures_from_gate_logs from reckon/crew/review.py:2114 rather than reimplementing the failing-id reader.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T212309947469-stacked-cold-read-and-fold-guard-whole-suite-at-merge-2/whole-suite-candidate.log:1 follow-on: the two arms ran on different hosts (base log line 1 host=98dci4-clu-3141, candidate log line 1 host=98dci4-clu-3142) and skipped different populations (44 vs 10, manifest.md:20), so the 19 added ids conflate a merge effect with a node and skip-population difference; the alone matrix does not resolve it because running a test in isolation is a third environment in which 13 of the 19 also fail at base 0/5 (whole-suite-derive.log:24-36).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T212309947469-stacked-cold-read-and-fold-guard-whole-suite-at-merge-2/whole-suite-arm.sh:10 follow-on: the brief's checkout recipe (git clone --shared --no-checkout) was not implemented \u2014 jobs 1288366 and 1288367 print \"clone failed:\" in slurm-ws-arm-1288366.out and slurm-ws-arm-1288367.out and the arms use git init plus objects/info/alternates instead \u2014 and the substitution is disclosed only in this script comment, while manifest.md:22 records blockers: none, so the exact-spec deviation the role contract requires be reported is not in the record a coordinator reads.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T212309947469-stacked-cold-read-and-fold-guard-whole-suite-at-merge-2/manifest.md:11 follow-on: the landing line states flatly that the merge adds 19 failing ids, while the node's own failure_attribution (manifest.md:18) classifies every one of the 19 as also-at-base or load-only, so a coordinator reading only the landing line would attribute 19 regressions to the merge that the node's own control does not support.\n",
+  "review_run_id": "legacy-044e84fdb99c",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "5274a148467056dab323c1f9e291fb34ca7b1eb5",
+  "reviewed_head_sha": "5274a148467056dab323c1f9e291fb34ca7b1eb5",
+  "reviewed_run_id": "r-20261017T212309947469-stacked-cold-read-and-fold-guard-whole-suite-at-merge-2",
+  "scores": {
+    "durability": 11,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T22:34:29.474296+00:00",
+  "total": 101
+}
