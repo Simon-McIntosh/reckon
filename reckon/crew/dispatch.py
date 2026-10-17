@@ -733,12 +733,6 @@ def dispatch_pair(
     # never reaches the shadow's worktree path or composed prompt.
     primary_run_id = new_run_id(node.id)
     shadow_run_id = new_run_id(node.id)
-    # The directories exist before either arm launches, so an arm's own worker
-    # can write its own stream and records into its own directory, and so the
-    # partner's mask names a directory that is there rather than one invented
-    # later. A mask over an absent path would hide nothing.
-    for run_id in (primary_run_id, shadow_run_id):
-        run_dir(run_id).mkdir(parents=True, exist_ok=True)
 
     locked_decisions = dispatch_kwargs.get("locked_decisions") or ()
     peer_scopes = dispatch_kwargs.get("peer_scopes") or {}
@@ -791,14 +785,28 @@ def dispatch_pair(
     )
     primary_worktree = str(_launch_worktree_path(repo_root, session, node.id))
     shadow_worktree = str(_launch_worktree_path(repo_root, shadow_session, node.id))
+    # The shadow's worktree is created by the shadow's own dispatch, after the
+    # primary has launched, and the fence skips a masked path that does not
+    # exist yet — so masking that path alone would hide nothing while the
+    # primary runs. The session directory the worktree is created under is the
+    # mask instead: created on the launch path below, it is a directory the
+    # primary's namespace can hide, and hiding it covers whatever the shadow
+    # writes beneath it later. Only the parent exists, so the shadow's own
+    # `git worktree add` still finds its path free.
+    shadow_session_dir = _launch_worktree_path(
+        repo_root, shadow_session, node.id
+    ).parent
     lineage: dict[str, Any] = {
         "kind": "shadow",
         "primary_run_id": primary_run_id,
         "worktree_component": worktree_component,
         "configuration": comparison,
     }
-    primary_masks = _allocated_read_surfaces(
-        run_id=shadow_run_id, worktree=shadow_worktree, project=project
+    primary_masks = (
+        *_allocated_read_surfaces(
+            run_id=shadow_run_id, worktree=shadow_worktree, project=project
+        ),
+        str(shadow_session_dir),
     )
     shadow_masks = _allocated_read_surfaces(
         run_id=primary_run_id, worktree=primary_worktree, project=project
@@ -840,6 +848,16 @@ def dispatch_pair(
                 "lineage": lineage,
             },
         }
+
+    # The run directories exist before either arm launches, so an arm's own
+    # worker can write its own stream and records into its own directory, and so
+    # each arm's mask names a directory that is there rather than one invented
+    # later: the shadow's run directory is masked from the primary, and the
+    # primary launches first. The shadow's session directory is created for the
+    # same reason — a mask over an absent path hides nothing.
+    for run_id in (primary_run_id, shadow_run_id):
+        run_dir(run_id).mkdir(parents=True, exist_ok=True)
+    shadow_session_dir.mkdir(parents=True, exist_ok=True)
 
     primary_record = dispatch(
         node=primary_node,

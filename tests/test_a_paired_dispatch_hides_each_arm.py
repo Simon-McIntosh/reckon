@@ -32,7 +32,7 @@ import pytest
 
 from reckon import _backends
 from reckon.crew import promotion_scope
-from reckon.crew.runs import new_run_id, run_dir
+from reckon.crew.runs import new_run_id, run_dir, runs_dir
 from tests import test_crew as _test_crew
 
 # ``reckon.crew`` is a facade module that re-exports the dispatcher's ``dispatch``
@@ -194,9 +194,10 @@ def test_a_paired_dry_run_reports_two_arms_at_one_base(home, repo) -> None:
     assert result["paired"] is not None
     assert result["primary_run_id"] != result["shadow_run_id"]
     assert result["base_sha"]
-    # Both run directories were created before either arm launched.
-    assert run_dir(result["primary_run_id"]).is_dir()
-    assert run_dir(result["shadow_run_id"]).is_dir()
+    # Both arms are allocated; the directories themselves belong to the launch,
+    # which a dry run does not perform.
+    assert str(run_dir(result["primary_run_id"])) in result["shadow_masks"]
+    assert str(run_dir(result["shadow_run_id"])) in result["primary_masks"]
     assert result["shadow"]["lineage"]["kind"] == "shadow"
     assert result["shadow"]["lineage"]["primary_run_id"] == result["primary_run_id"]
     assert result["primary"]["paired_shadow_run_id"] == result["shadow_run_id"]
@@ -234,6 +235,60 @@ def test_the_pair_masks_name_the_partners_run_directory(home, repo) -> None:
         )
         == ()
     )
+
+
+def test_a_paired_dry_run_creates_no_run_directory(home, repo) -> None:
+    """A dry run reports the pair and touches the run store nowhere.
+
+    The dry run exists to resolve an answer without side effects, so a run
+    directory created for an arm that never launches is a write the caller
+    asked not to happen — and it is invisible afterwards, because it looks
+    exactly like a run whose worker died before writing anything.
+    """
+    before = (
+        {path.name for path in runs_dir().iterdir()} if runs_dir().is_dir() else set()
+    )
+
+    result = dispatch_module.dispatch_pair(
+        node=_node(spec_level="guided"),
+        project=PROJECT,
+        repo=repo,
+        config=_candidate_config(),
+        session="sess",
+        pair_backend=PAIR_BACKEND,
+        dry_run=True,
+    )
+
+    after = (
+        {path.name for path in runs_dir().iterdir()} if runs_dir().is_dir() else set()
+    )
+    assert after == before
+    # The arms still resolve, and their allocated directories are named as the
+    # surfaces the launch would mask — reported, never created.
+    for run_id in (result["primary_run_id"], result["shadow_run_id"]):
+        assert not run_dir(run_id).exists()
+        assert str(run_dir(run_id)) in result["shadow_masks"] + result["primary_masks"]
+
+
+def test_the_pair_masks_name_the_partners_session_directory(home, repo) -> None:
+    """The primary's masks name the shadow's session directory, not just its worktree.
+
+    The shadow's worktree does not exist when the primary launches — the
+    shadow's own dispatch creates it — and the fence skips a masked path that
+    is not there.
+    """
+    result = dispatch_module.dispatch_pair(
+        node=_node(spec_level="guided"),
+        project=PROJECT,
+        repo=repo,
+        config=_candidate_config(),
+        session="sess",
+        pair_backend=PAIR_BACKEND,
+        dry_run=True,
+    )
+    shadow_worktree = Path(result["shadow"]["worktree"])
+
+    assert str(shadow_worktree.parent) in result["primary_masks"]
 
 
 def test_a_paired_launch_starts_both_arms(home, repo) -> None:
@@ -327,6 +382,101 @@ def test_the_cli_pair_flag_resolves_a_paired_dry_run(home, repo, monkeypatch) ->
     assert payload["paired"] is True
     assert payload["primary_run_id"] != payload["shadow_run_id"]
     assert payload["shadow"]["lineage"]["primary_run_id"] == payload["primary_run_id"]
+
+
+_LIST_STUB = """#!/bin/sh
+set -u
+: > "$FENCE_RESULTS"
+ls -A "$FENCE_TARGET" 2>&1 | tr '\\n' ',' >> "$FENCE_RESULTS"
+"""
+
+
+@requires_bwrap
+def test_the_primary_arm_cannot_read_the_shadows_session_directory(
+    home, repo, tmp_path: Path
+) -> None:
+    """What the shadow creates in its session directory is absent to the primary.
+
+    The masks are read back from the argument vector the primary's own launch
+    composes rather than rebuilt from the same inputs, so what is executed here
+    is what the fence received. The unmasked listing is run beside it: an empty
+    listing proves nothing unless the same listing shows content without the
+    mask.
+    """
+    captured: list[list[str]] = []
+
+    def launcher(plan, *, log_path, stderr_path, prompt_path):
+        captured.append(list(plan.argv))
+        return 0
+
+    result = dispatch_module.dispatch_pair(
+        node=_node(spec_level="guided"),
+        project=PROJECT,
+        repo=repo,
+        config=_candidate_config(),
+        session="sess",
+        pair_backend=PAIR_BACKEND,
+        launcher=launcher,
+    )
+    primary_argv = captured[0]
+    shadow_session_dir = Path(result["shadow"]["worktree"]).parent
+    masks = [
+        primary_argv[index + 1]
+        for index, part in enumerate(primary_argv)
+        if part == "--tmpfs"
+    ]
+    # The session directory exists before the primary launches, so the mask
+    # composes; the worktree it will hold does not, so masking that alone would
+    # have emitted nothing.
+    assert shadow_session_dir.is_dir()
+    assert str(shadow_session_dir) in masks
+    assert str(Path(result["shadow"]["worktree"])) not in masks
+
+    # The shadow's dispatch writes its worktree and its answer beneath this
+    # directory while the primary runs.
+    shadow_tree = shadow_session_dir / "shadow-worktree"
+    shadow_tree.mkdir()
+    (shadow_tree / "answer.txt").write_text("the shadow's answer\n", encoding="utf-8")
+
+    stub = tmp_path / "list.sh"
+    stub.write_text(_LIST_STUB, encoding="utf-8")
+    stub.chmod(0o755)
+    results = tmp_path / "results.txt"
+
+    def listing(masked: tuple[str, ...]) -> str:
+        argv = _backends.launch_plan(
+            backend_name="b",
+            backend={
+                "launch": "cli",
+                "command": str(stub),
+                "dialect": "claude",
+                "sandbox": "worktree-full",
+            },
+            prompt="p",
+            worktree=str(shadow_session_dir),
+            manifest_path=str(tmp_path / "manifest.md"),
+            fence=True,
+            fence_home=str(home),
+            masked_paths=masked,
+        ).argv
+        proc = subprocess.run(
+            argv,
+            env={
+                **os.environ,
+                "HOME": str(home),
+                "FENCE_RESULTS": str(results),
+                "FENCE_TARGET": str(shadow_session_dir),
+            },
+            cwd=str(tmp_path),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert proc.returncode == 0, proc.stderr
+        return results.read_text()
+
+    assert listing(tuple(masks)) == ""
+    assert "shadow-worktree" in listing(())
 
 
 def _paired_arms(root: Path) -> tuple[Arm, Arm]:
