@@ -24,7 +24,7 @@
   <title>A Paired Shadow Runs On Its Named Backend | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -76,7 +76,7 @@ Resolve with `reckon crew shadow --backend &lt;candidate&gt;` after correcting t
         so no clive-specific setting carries onto another backend.</li>
       <li>Keep D21 for the one case that remains: a candidate that no layer defines.
         <code>_effective_backend</code> (<code>reckon/crew/routing.py:126</code>) already raises <code>CrewError</code>
-        naming the backend and listing the defined ones. Raise D21 with that text as its detail.</li>
+        naming the backend and listing the defined ones. Raise D21 with that text as its detail. Catch it in <code>_shadow_dispatch_config</code>, not in the shared resolver. <code>resolve_role_override</code> has five other callers (<code>reckon/crew/dispatch_plan.py:425</code>, <code>reckon/crew/dispatch_admission.py:409</code> and <code>:1515</code>, <code>reckon/crew/picker/snapshot.py:1030</code>, <code>reckon/crew/routing.py:373</code>), <code>resolve_role</code> shares <code>_effective_backend</code> as well, and none of those is a shadow. D21 names the shadow's candidate, so raising it in the resolver would give the budget-fallback, admission and picker paths a refusal that does not describe them.</li>
       <li>Rewrite D21's remedy in <code>reckon/crew/refusals.py</code> so it names the real fix for both verbs: pass a
         backend declared under <code>backends</code> in the flight, to <code>--pair-backend</code> or
         <code>crew shadow --backend</code>. It must not mention a flight override.</li>
