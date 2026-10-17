@@ -1268,7 +1268,12 @@ def parse_health_review(text: str) -> dict[str, Any]:
 # measurement the reviewer made.
 ADDED_FAILURES_TOTAL_CAP = REVIEW_MAX_SCORE // 4
 
-_GATE_FAILURE_RE = re.compile(r"^(?:FAILED|ERROR)\s+(\S+)", re.MULTILINE)
+# A pytest short-summary failure line is ``FAILED <node id>`` or ``FAILED
+# <node id> - <reason>``. A parametrised node id prints whole, spaces inside
+# its brackets included, so the id is everything after the prefix up to pytest's
+# `` - `` reason separator; the remainder is trimmed and split.
+_SUMMARY_REASON_SEPARATOR = " - "
+_GATE_FAILURE_RE = re.compile(r"^(?:FAILED|ERROR)\s+(.+)$", re.MULTILINE)
 
 # A ctest gate log's failure summary. Every entry under the block header is a
 # failure, so a test reported ``(Not Run)`` counts as one. The entry shape is
@@ -1531,8 +1536,10 @@ def _pytest_failure_ids(
     """Return the pytest node ids a gate log reports FAILED or ERROR.
 
     A pytest summary line is one node id per line prefixed ``FAILED`` (or
-    ``ERROR`` for a collection or setup error). Node ids run to the end of the
-    line, so the whole token after the prefix is taken and surrounding
+    ``ERROR`` for a collection or setup error), optionally followed by
+    `` - <reason>``. A parametrised node id prints whole with spaces inside its
+    brackets, so the id runs from after the prefix to the reason separator, or
+    to the end of the line when the line carries no reason; surrounding
     whitespace is stripped. Both logs of a difference are read through
     :func:`canonical_node_id`, so the two sides are compared as ids rather than
     as the working directory each arm happened to be invoked from, and the
@@ -1543,7 +1550,8 @@ def _pytest_failure_ids(
     for raw in log_text.splitlines():
         match = _GATE_FAILURE_RE.match(raw.strip())
         if match:
-            ids.add(canonical_node_id(match.group(1), arm_directory))
+            node_id = match.group(1).partition(_SUMMARY_REASON_SEPARATOR)[0]
+            ids.add(canonical_node_id(node_id.strip(), arm_directory))
     return ids
 
 
