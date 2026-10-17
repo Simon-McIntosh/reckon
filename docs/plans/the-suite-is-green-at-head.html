@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="364">
+<meta name="plan-version" content="365">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1742,6 +1742,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261017T092105807109-review-of-the-change-watch-test-builds-with-mounts-8bcdbd59293b" data-who="reckon-build" data-when="2026-10-17T09:26:46.245Z">
     <div class="r-comment-body"><p>§17 review of the-change-watch-test-builds-with-mounts at head 8bcdbd59293b (base da2eb1096d8da9d389b3de8fb90d56f4e73714dc): scores goal_fidelity 20, evidence 18, scope_discipline 20, durability 18, fit 19, reuse 20 (total 115); one follow-on finding (load-flaky invalidation deadline at tests/test_metadata_index_survives_restart.py:339); no blocking findings; added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261017T090923058922-the-change-watch-test-builds-with-mounts" data-who="reckon-build" data-when="2026-10-17T09:42:39Z">
+    <div class="r-comment-body"><p>§17 The change-watch test builds the watch with its mounts — test_the_change_watch_invalidates_the_tree now constructs serve._FleetChangeWatch({_PROJECT: docs_dir}), a project-to-docs-directory mapping as production&#x27;s start_fleet_change_watch does, replacing the list it passed since __init__ took a mapping; and it waits 4 * serve._CROSS_NODE_FAST_S for the invalidation instead of a bare 10 s that equalled the cross-node detector&#x27;s own interval, so a write the kernel does not report still has the detector&#x27;s pass to be seen in. Invalidation assertions unchanged. Single id 20/20 pass alone (EXIT=0); file 8 passed alone and 8 passed with -n 4 (EXIT=0); at the base revision the id fails on AttributeError: &#x27;list&#x27; object has no attribute &#x27;items&#x27; (EXIT=1).</p></div>
 </div>
 </section>
 </main>
