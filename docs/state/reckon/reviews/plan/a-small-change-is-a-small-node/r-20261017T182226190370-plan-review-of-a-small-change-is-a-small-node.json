@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T18:36:18.025Z",
+  "dispatched_at": "2026-10-17T18:23:10Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-small-change-is-a-small-node.html:97",
+      "id": "done_when-1",
+      "reason": "the node stops on a scope refusal rather than on a defect, so \u00a78's write paths must name the two snapshot tests or the change must be sequenced after them.",
+      "text": "\u00a78 edits `reckon/crew/prompts.py`, but `tests/test_brief_prompt.py:292-304` carries an exact snapshot of the landing contract and the artifact clause, and `tests/test_small_node_prompt.py:143-157` pins the clause wording, neither of which is in \u00a78's write paths (`reckon/crew/prompts.py`, the review rubric file, the new test file) \u2014 so a node granted exactly those paths reddens two existing test files it is fenced out of repairing and cannot satisfy its own done-when",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-small-change-is-a-small-node.html:97",
+      "id": "done_when-2",
+      "reason": "the arm that is untested is the one that reddened the ledger \u00a711 review, so the measure would certify a partial fix as complete.",
+      "text": "\u00a78's measure asserts \"no sentence forbidding evidence prose without excepting the fragment\" only on the no-figure prompt, while the figure-named clause (`ARTIFACT_NAMED_CLAUSE`, `reckon/crew/prompts.py:110-112`) carries the same \"permits no other figure and no evidence prose\" ban, so a fix that adds the fragment exception only on the no-figure clause passes the test while the figure-named node's prompt still forbids the landing fragment its own contract asks for",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-small-change-is-a-small-node.html:97",
+      "id": "anchors_resolve-1",
+      "reason": "the dispatched node must guess the file named by a write path that does not resolve.",
+      "text": "\u00a78's write paths include \"the review rubric file that quotes the clause\", but no rubric quotes it: a search of `reckon/crew/prompts/*.md` (`review.md`, `plan_review.md`, `health_review.md`, `claims_review.md`, `portfolio_review.md`) and of `skills/` returns no file carrying the artifact clause or its wording, so the path names nothing a node can open",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-small-change-is-a-small-node.html:93",
+      "id": "single_goal-1",
+      "reason": "the roadmap schedules sections, so \u00a77 as written is dispatched as a node with no deliverable, and removing it (letting \u00a72\u2013\u00a76 be scheduled directly) is a plan edit.",
+      "text": "\u00a77 is declared an implementable section with its own effort (`data-effort-hours=\"1.0\"`, class general) yet its deliverable is \"\u00a73, \u00a74 and \u00a75 are ready now; \u00a72 waits on the brief carrier; \u00a76 measures after the rest\" and its done-when is \"\u00a73\u2013\u00a75 land, \u00a72 after the brief carrier, and \u00a76 measures\" \u2014 five other sections' completion \u2014 so a worker dispatched to \u00a77 has nothing of its own to build and \u00a77's verdict closes none of the sections it lists",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9af9fe23af497fae56006cf8a6424dbd9c01a8d018eb7c21a3fbaa03b48c365d",
+  "plan_slug": "a-small-change-is-a-small-node",
+  "plan_version": 20,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T182226190370-plan-review-of-a-small-change-is-a-small-node",
+  "reviewed_blob_sha": "562949d4c06545b23acc8cc3b46ae1af1565bc74",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a78's write path \"the review rubric file that quotes the clause\" names no file: no file under `reckon/crew/prompts/`, `skills/`, or elsewhere quotes the artifact clause.",
+    "done_when": "a finding \u2014 \u00a78's done-when requires a green prompt change but its write paths exclude the tests that pin the very clause it edits.",
+    "evidence_paths": "pass \u2014 the gates cite `docs/evidence/archive/` records and \u00a78's gate log goes under the run directory, both durable; nothing lands in a session scratchpad or node-local temp.",
+    "naming": "pass \u2014 the proposed symbol and file names are mechanism-named (`ARTIFACT_UNNAMED_CLAUSE`, `tests/test_a_worker_prompt_never_forbids_its_landing_record.py`); no plan label, stage name, ticket number or changelog prose reaches code, and the followup and section ids in the plan HTML are plan-record identifiers, which are permitted there.",
+    "reasoning": "pass \u2014 \u00a78's root cause matches its cited evidence (the follow-on in `r-20261017T150323696679-review-of-a-failing-test-id-with-a-space-is-read-whole-4e8161114760.json` and the blocking finding in `r-20261017T180859807314-review-of-a-failed-landing-says-whether-its-row-survived-130d54a39f83.json`, whose `finding_dispositions` both point at the prompt's own contradiction), \u00a71's figures reconcile with `docs/research/orchestrator-crew-pattern-review.html` \u00a74 (9.8/43.8 median, 5.35 record lines) and \u00a710 (83 minutes, the 20-minute-edit case), and \u00a78's mechanism runs on the real path named \u2014 the prompt composer at `reckon/crew/prompts.py:543-546`, reached by every landing-capable implement dispatch.",
+    "single_goal": "a finding \u2014 \u00a77 is declared implementable but carries only other sections' completion as its deliverable.",
+    "wiring": "pass \u2014 every declared relationship resolves: `plan-after` names three existing plans, gate `g-ascsn-brief-carrier` gates s2 on a-worker-can-take-a-brief#s2 (landed), gate `g-ascsn-measured-after` gates s6 on a-review-is-sized-to-its-risk#s2 (landed), and s8 is reachable through the open followup f-ascisan-008."
+  },
+  "section_digests": {
+    "_document": "41a4263aea5d8cc5a5766cca53855488408706583986d046002d29b783d1efe8",
+    "s1": "1137de485d7c34fbfad7052e94a8e4bbd1b09d8c5ba52468ef2e513a4fff70ba",
+    "s2": "c5f1887e4b21db5873c634b228aa6994858f7b4fedf16614d6aa00bf2285a7f5",
+    "s3": "b80d519b23ca56d06dcd4bcb411d9101df143ff4a2a063045efc68e8185d061e",
+    "s4": "762e5207e2d58251d8c0c29434612facfc7fff2e001e7d7bd65f34364314a80d",
+    "s5": "b0856766d2be8da97731ee5739477d3b57d68454ca2ba11004260bb96a8a832d",
+    "s6": "0cbc3b2c1ff2af8544b77747580b9bedb31c5fdcb74d45621c2b44cc9621804c",
+    "s7": "19574507a8ca118b0f0297798ed0d0d99448b5248a7cef5d61d6371a1b8c8560",
+    "s8": "02d86481e31508f681a1b80b891e3f2c9d2683c910dfac6874b6b1c98dfb2130"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T18:41:31.020673+00:00"
+}
