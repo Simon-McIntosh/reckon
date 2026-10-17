@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s31">
+  <meta name="plan-recorded-at" content="2026-10-17">
+  <meta name="plan-verdict" content="passed">
+  <title>Building the store writes it once | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="building-the-store-writes-it-once-landing" data-node="building-the-store-writes-it-once" data-reckon="landed" data-when="2026-10-17">
+  <h2 id="building-the-store-writes-it-once-title">One discovery pass writes the persisted store once</h2>
+  <p id="building-the-store-writes-it-once-summary">The persisted index is one flat JSON blob, and <code>metadata_index.record_discovery</code> rewrote the whole blob for every file whose digest moved, so a first read re-serialised it once per discovered document. <code>record_discovery</code> now records into a batch that <code>serve._discover_plans_uncached</code> opens with <code>begin_discovery</code> around its document loop and flushes once with <code>flush_discovery</code> in a <code>finally</code>, so a parse that fails mid-loop still writes the entries gathered before it and frees the batch rather than leaving it registered for a later pass; a caller outside a pass still writes immediately, and the store's content after the pass equals the per-document writes'. <code>tests/test_building_the_store_writes_it_once.py</code> builds a 25-plan tree and counts <code>_store_persisted</code> calls in one first read over an empty store: two at the change (the flush and the covered-shape write from the tree walk) against 26 at the base tree (<code>fb7d74b8</code>), the negative-control log <code>negative-control-base-tree.log</code> ending <code>EXIT=1</code> with 26 store writes in one read. Three fresh-process first reads per arm over one frozen corpus (the docs tree at <code>fb7d74b8</code>, 1326 HTML files, 186 plans), on one exclusive all_debug node (<code>98dci4-clu-3142</code>) submitted with <code>sbatch</code> and waited for in the foreground, give base median 78.804 s against head median 20.491 s — a 58.313 s saving, ahead of the 30 s required; each log names its revision, corpus, host and literal command, shows <code>reckon.__file__</code> under its arm's tree, and ends <code>EXIT=0</code> (<code>measure-first-read.log</code>).</p>
+</article>
+</body>
+</html>

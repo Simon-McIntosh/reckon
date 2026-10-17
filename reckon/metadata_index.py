@@ -110,6 +110,15 @@ class IndexBuild:
 _LOCK = threading.Lock()
 _CACHE: dict[tuple[str, str, bool], IndexBuild] = {}
 
+#: Discovery batches in flight, keyed by (resolved docs dir, project). A batch
+#: holds the persisted entries as loaded when it opened; :func:`record_discovery`
+#: updates them in memory, and one :func:`flush_discovery` writes the store, so a
+#: pass that records hundreds of discoveries encodes and writes the whole store
+#: once rather than once per document. The store is one flat JSON blob, so a
+#: per-document write re-serialises every entry each time; accumulating the
+#: entries and flushing at the end of the pass removes that quadratic cost.
+_DISCOVERY_BATCHES: dict[tuple[str, str], dict[str, dict]] = {}
+
 #: A parse of a document's metadata, keyed by its bytes rather than its path.
 #: One promotion reads the same documents from several trees — the main
 #: checkout, the run's worktree and the tip tree — and the path-keyed memo in
@@ -815,6 +824,43 @@ def discovery_state(docs_dir: Path, project: str) -> dict[str, dict]:
     return fresh
 
 
+def _batch_key(docs_dir: Path, project: str) -> tuple[str, str]:
+    return (str(Path(docs_dir).resolve()), project)
+
+
+def begin_discovery(docs_dir: Path, project: str) -> None:
+    """Open a discovery batch: recorded entries accumulate, one flush writes.
+
+    The batch holds the store as loaded now, so a pass that records a parse for
+    each file whose digest moved updates that snapshot in memory and
+    :func:`flush_discovery` writes it once when the pass ends. Opening a batch
+    for a project that already has one replaces it rather than nesting.
+    """
+
+    docs_dir = Path(docs_dir)
+    _DISCOVERY_BATCHES[_batch_key(docs_dir, project)] = _load_persisted(
+        docs_dir, project
+    )
+
+
+def flush_discovery(docs_dir: Path, project: str) -> None:
+    """Write the store once for everything the batch recorded; a no-op without one.
+
+    The entries are the store as loaded when the batch opened, with each
+    recorded parse written back under its file's new digest. A file left out of
+    the store — one it does not cover — stays out, and the directory stamps are
+    re-read here so a walk that ran during the pass is preserved.
+    """
+
+    docs_dir = Path(docs_dir)
+    known = _DISCOVERY_BATCHES.pop(_batch_key(docs_dir, project), None)
+    if known is None:
+        return
+    _store_persisted(
+        docs_dir, project, list(known.values()), _load_dir_stamps(docs_dir, project)
+    )
+
+
 def record_discovery(docs_dir: Path, project: str, relative: str) -> None:
     """Write a file the caller has just read into the persisted index.
 
@@ -825,11 +871,18 @@ def record_discovery(docs_dir: Path, project: str, relative: str) -> None:
     per-file parse rather than a second read. A path the store does not cover,
     or one whose digest already matches, is left alone: the file set and the
     directory stamps are the full build's to record.
+
+    Inside a :func:`begin_discovery` batch the entry is accumulated and the
+    write is deferred to :func:`flush_discovery`, so a pass that records one
+    parse per moved file writes the whole store once instead of once per
+    document. With no batch open the entry is written immediately, so a caller
+    outside a pass still persists its parse at once.
     """
 
     docs_dir = Path(docs_dir)
     path = docs_dir / relative
-    known = _load_persisted(docs_dir, project)
+    batch = _DISCOVERY_BATCHES.get(_batch_key(docs_dir, project))
+    known = batch if batch is not None else _load_persisted(docs_dir, project)
     if relative not in known:
         return
     try:
@@ -857,9 +910,10 @@ def record_discovery(docs_dir: Path, project: str, relative: str) -> None:
         if plan is not None and not plan["unreadable"]:
             entry["plan"] = plan
     known[relative] = entry
-    _store_persisted(
-        docs_dir, project, list(known.values()), _load_dir_stamps(docs_dir, project)
-    )
+    if batch is None:
+        _store_persisted(
+            docs_dir, project, list(known.values()), _load_dir_stamps(docs_dir, project)
+        )
 
 
 def _unreadable_record(archived: bool) -> dict:
