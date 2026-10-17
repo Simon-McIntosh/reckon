@@ -1138,9 +1138,14 @@ _GATE_LOG_ARMS = (("baseline_suite", "base"), ("after_suite", "head"))
 # revision=<sha> tree=...``. The label is required rather than any hexadecimal
 # run: a first line naming only a tree or a working directory carries digits
 # that a bare hex scan would read as a revision, and reading a timestamp as the
-# revision is how this check would pass a log that names none.
+# revision is how this check would pass a log that names none. The label is read
+# in any case, because a capture that wrote ``REV=`` or ``Revision:`` names the
+# same revision and the audit must reach it as written, rather than driving a
+# writer to rewrite its own log's first line after the run. Requiring the label
+# still refuses a bare hex run under any case.
 _GATE_LOG_REVISION = re.compile(
-    r"\brev(?:ision)?\b[^0-9A-Za-z]{0,8}([0-9a-fA-F]{7,64})"
+    r"\brev(?:ision)?\b[^0-9A-Za-z]{0,8}([0-9a-fA-F]{7,64})",
+    re.IGNORECASE,
 )
 
 # A revision the audit can hold a first line against: a hexadecimal object id
