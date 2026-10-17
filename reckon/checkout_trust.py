@@ -62,6 +62,20 @@ def committed_head(root: Path) -> str | None:
     return commit if result.returncode == 0 and len(commit) == 40 else None
 
 
+def source_code_identity(package_dir: Path, *, source_root: Path | None = None) -> str:
+    """Identify the shared source commit, or hash a package outside Git."""
+    if source_root is None:
+        source_root = Path(
+            os.environ.get("RECKON_FOLLOWER_SOURCE_ROOT", str(package_dir.parent))
+        )
+    head = committed_head(source_root)
+    if head is not None:
+        return head
+    from reckon.crew.obligation_snapshot import code_stamp
+
+    return code_stamp(package_dir)
+
+
 def _committed_tree_cache() -> Path:
     from reckon.crew.obligation_snapshot import crew_home
 

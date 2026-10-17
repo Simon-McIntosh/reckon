@@ -2824,7 +2824,7 @@ def _project_watch_claim(project: str, stall_window: str):
             # The code this producer is actually executing. The version names
             # the install and holds still while commits land in the checkout, so
             # a reader cannot tell a producer running stale code from a current
-            # one without this: the content-hash stamp the follower reloads on,
+            # one without this: the source commit the follower reloads on,
             # recorded where the seat is read.
             "code_stamp": follower_code_stamp(),
         }

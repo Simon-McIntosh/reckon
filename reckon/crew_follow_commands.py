@@ -256,8 +256,7 @@ class _FollowerReloader:
             os.environ.get(_FOLLOWER_SOURCE_ROOT_ENV, str(self.import_root))
         ).resolve()
         self.code_stamp = os.environ.get(_FOLLOWER_IMAGE_COMMIT_ENV) or (
-            checkout_trust.committed_head(self.source_root)
-            or runs.follower_code_stamp()
+            runs.follower_code_stamp()
         )
         self.replacement_root = self.import_root
         self.checked_at: float | None = None

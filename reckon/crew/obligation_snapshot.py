@@ -421,12 +421,11 @@ def code_stamp(package_dir: Path | None = None) -> str:
 
 
 def source_code_stamp(package_dir: Path | None = None) -> str:
-    """A stamp that advances when the source a restarted producer would run changes.
+    """Read the source identity used by producer records and followers."""
+    from reckon import checkout_trust
 
-    The producer's recorded stamp and the one computed here are the same
-    function, so they are comparable by construction.
-    """
-    return code_stamp(package_dir)
+    package = Path(package_dir) if package_dir is not None else _PACKAGE_DIR
+    return checkout_trust.source_code_identity(package)
 
 
 def freshness_reading(

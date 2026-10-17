@@ -81,6 +81,42 @@ def test_dirty_checkout_reloads_the_committed_tree(source, capsys):
     assert execs[0][2][follow._FOLLOWER_IMAGE_COMMIT_ENV] == second
 
 
+def test_materialized_image_tracks_later_source_commit(source, monkeypatch):
+    root, first, execs = source
+    reloader = follow._FollowerReloader("test-project", None)
+    assert reloader.code_stamp == first
+    second = _commit(root, "second")
+    reloader.poll({})
+    assert len(execs) == 1
+    second_root = _executed_root(execs)
+    carried = execs[0][2]
+    monkeypatch.setenv(
+        follow._FOLLOWER_SOURCE_ROOT_ENV, carried[follow._FOLLOWER_SOURCE_ROOT_ENV]
+    )
+    monkeypatch.setenv(
+        follow._FOLLOWER_IMAGE_COMMIT_ENV, carried[follow._FOLLOWER_IMAGE_COMMIT_ENV]
+    )
+    monkeypatch.setattr(follow, "_import_root", lambda module: second_root)
+    replacement = follow._FollowerReloader("test-project", None)
+    assert replacement.import_root == second_root
+    assert replacement.source_root == root
+    assert replacement.code_stamp == second
+
+    clock = [100.0]
+    monkeypatch.setattr(follow.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(runs, "FOLLOWER_FRESHNESS_SECONDS", 1.0)
+    replacement.poll({})
+    third = _commit(root, "third")
+    clock[0] += 2.0
+    replacement.poll({})
+
+    assert len(execs) == 2
+    third_root = _executed_root([execs[1]])
+    assert third_root != second_root
+    assert third in str(third_root)
+    assert (third_root / "reckon" / "example.py").read_text() == "VALUE = 'third'\n"
+
+
 def test_unimportable_committed_module_defers_and_names_it(source, capsys):
     root, first, execs = source
     reloader = follow._FollowerReloader("test-project", None)
