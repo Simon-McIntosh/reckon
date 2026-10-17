@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/gc.py:356",
+    "reckon/crew/gc.py:262",
+    "reckon/crew_run_commands.py:1240",
+    "reckon/crew.py:85"
+  ],
+  "completed_at": "2026-10-17T02:57:23.880Z",
+  "dispatched_at": "2026-10-17T02:49:47Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-crew-home-has-a-bound/a-single-run-gc-reads-its-own-run-directory.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the landing contract for a node whose done-when names no artifact says it writes one landing: line and neither evidence prose nor a figure, but this six-line fragment carries three paragraphs of measure narrative; the anchor itself is correct (id prefixed with the node id) and the deviation is presentational, not functional"
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against base 7b312c82a: gc.py:356 passes run_id into the extraction scan (1 line); routing.py:540-569 adds the optional run_id parameter and the confined run_dirs branch; a new 112-line test file; and a 6-line evidence fragment \u2014 135 insertions/7 deletions, all inside the declared scope.",
+    "done_when": "the done_when lives in the plan at docs/plans/the-crew-home-has-a-bound.html \u00a710 and in the node's own fence; the gate the worker ran (tests/test_a_single_run_gc_reads_its_own_run_directory.py) builds 200 run directories, four holding a git-less base-source extraction, asserts a --run gc lists only run-000 and its one extraction (test at lines 82-99) and a no-arg gc still lists all four (lines 101-112); manifest tests line records '2 passed, EXIT=0' and the negative control reddens the base tree on the listed-directory count.",
+    "goal": "the source node's goal is 'Confine a single-run gc extraction scan to the named run directory'; the landed change is exactly that \u2014 routing._run_directory_extractions now accepts an optional run_id and scans only runs_root/<run_id> when given (routing.py:540-569), and gc.py:356 passes the invoked run_id.",
+    "manifest": "read; it records the one commit f95f0a792, the gate command and '2 passed EXIT=0', the regression suite '42 passed EXIT=0', a negative_control_log path whose log shows EXIT=1 with test_a_single_run_gc_reads_only_that_runs_directory failing at base, and its baseline_suite/after_suite are both null (no armed suite was run).",
+    "write_paths": "the node's declared paths are reckon/crew/gc.py, reckon/crew/routing.py, tests/test_a_single_run_gc_reads_its_own_run_directory.py and the evidence fragment; the whole diff against base 7b312c82a touches exactly those four and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_single_run_gc_reads_its_own_run_directory.py:96 fails when the confined scan is reverted \u2014 the negative control at base 7b312c82a shows the same test reddening on the listed-directory count \u2014 and the assertion compares the report against an independently computed expected path, not a value the test passed in.",
+    "evidence": "tests/test_a_single_run_gc_reads_its_own_run_directory.py:95 asserts the reported extraction list equals the one expected from the filesystem layout, and the manifest records that gate run as 2 passed EXIT=0 with gate-head.log on disk.",
+    "fit": "the change follows the helper's existing signature style in reckon/crew/routing.py:540 and adds no plan, ticket or version identifier to any name, comment or the fragment.",
+    "goal_fidelity": "reckon/crew/routing.py:552-566 scans only runs_root/<run_id> when run_id is given, and reckon/crew/gc.py:356 now passes the invoked run_id, which is the goal's confined single-run extraction scan.",
+    "reuse": "the confined branch reuses the existing owners run_directory_source_trees and carries_git_directory (reckon/crew/fleet_supervisor.py:664) rather than reimplementing the extraction walk, so it extends the owner of that capability.",
+    "scope_discipline": "every path in the diff (gc.py, routing.py, the new test, the fragment) is inside the node's declared write paths, and no unrelated file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is 'Confine a single-run gc extraction scan to the named run directory'; the landed change is exactly that \u2014 routing._run_directory_extractions now accepts an optional run_id and scans only runs_root/<run_id> when given (routing.py:540-569), and gc.py:356 passes the invoked run_id.\nVERDICT done_when: the done_when lives in the plan at docs/plans/the-crew-home-has-a-bound.html \u00a710 and in the node's own fence; the gate the worker ran (tests/test_a_single_run_gc_reads_its_own_run_directory.py) builds 200 run directories, four holding a git-less base-source extraction, asserts a --run gc lists only run-000 and its one extraction (test at lines 82-99) and a no-arg gc still lists all four (lines 101-112); manifest tests line records '2 passed, EXIT=0' and the negative control reddens the base tree on the listed-directory count.\nVERDICT write_paths: the node's declared paths are reckon/crew/gc.py, reckon/crew/routing.py, tests/test_a_single_run_gc_reads_its_own_run_directory.py and the evidence fragment; the whole diff against base 7b312c82a touches exactly those four and nothing else.\nVERDICT manifest: read; it records the one commit f95f0a792, the gate command and '2 passed EXIT=0', the regression suite '42 passed EXIT=0', a negative_control_log path whose log shows EXIT=1 with test_a_single_run_gc_reads_only_that_runs_directory failing at base, and its baseline_suite/after_suite are both null (no armed suite was run).\nVERDICT diff: read commit by commit against base 7b312c82a: gc.py:356 passes run_id into the extraction scan (1 line); routing.py:540-569 adds the optional run_id parameter and the confined run_dirs branch; a new 112-line test file; and a 6-line evidence fragment \u2014 135 insertions/7 deletions, all inside the declared scope.\nCALL_SITES: reckon/crew/gc.py:356, reckon/crew/gc.py:262, reckon/crew_run_commands.py:1240, reckon/crew.py:85\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:552-566 scans only runs_root/<run_id> when run_id is given, and reckon/crew/gc.py:356 now passes the invoked run_id, which is the goal's confined single-run extraction scan.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_a_single_run_gc_reads_its_own_run_directory.py:95 asserts the reported extraction list equals the one expected from the filesystem layout, and the manifest records that gate run as 2 passed EXIT=0 with gate-head.log on disk.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (gc.py, routing.py, the new test, the fragment) is inside the node's declared write paths, and no unrelated file is touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_single_run_gc_reads_its_own_run_directory.py:96 fails when the confined scan is reverted \u2014 the negative control at base 7b312c82a shows the same test reddening on the listed-directory count \u2014 and the assertion compares the report against an independently computed expected path, not a value the test passed in.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the helper's existing signature style in reckon/crew/routing.py:540 and adds no plan, ticket or version identifier to any name, comment or the fragment.\nSCORE reuse: 20\nJUSTIFICATION reuse: the confined branch reuses the existing owners run_directory_source_trees and carries_git_directory (reckon/crew/fleet_supervisor.py:664) rather than reimplementing the extraction walk, so it extends the owner of that capability.\nFINDING docs/evidence/fragments/the-crew-home-has-a-bound/a-single-run-gc-reads-its-own-run-directory.html:1 follow-on: the landing contract for a node whose done-when names no artifact says it writes one landing: line and neither evidence prose nor a figure, but this six-line fragment carries three paragraphs of measure narrative; the anchor itself is correct (id prefixed with the node id) and the deviation is presentational, not functional\n",
+  "review_run_id": "r-20261017T024854758850-review-of-a-single-run-gc-reads-its-own-run-directory-f95f0a792ccd",
+  "reviewed_base_sha": "7b312c82af50f330173348ec9f7d87b1b04f2a87",
+  "reviewed_head_sha": "f95f0a792ccdf8dbb9132874acf321d0d91de06f",
+  "reviewed_run_id": "r-20261017T023056594694-a-single-run-gc-reads-its-own-run-directory",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T02:54:36.158407+00:00",
+  "total": 115
+}
