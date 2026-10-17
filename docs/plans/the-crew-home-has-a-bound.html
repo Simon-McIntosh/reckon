@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="50">
+<meta name="plan-version" content="52">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -160,7 +160,7 @@
 
     <h2 id="s9">§9 — A test writes no ledger index into the real cache</h2>
 <section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> After §5, ledger indexes appeared in the real <code>~/.cache/reckon</code> keyed to temporary repositories under <code>/tmp/.../pytest-of-mcintos/.../test_a_refused_envelope_puts_t0/repo</code> and <code>.../entry-points0</code>. So some tests resolve <code>_store.cache_root("pick-input")</code> to the real cache. That is a write outside the repository under test, which the project's test rules forbid. Each such index is orphaned the moment pytest removes its temporary directory.</p><p><strong>Deliverable.</strong> Every test that builds a ledger uses a temporary cache root.</p><p><strong>Done when</strong> a guard runs every test file that imports <code>reckon/ledger.py</code> or <code>reckon/_store.py</code>, which together cover every test that can build a ledger, and finds that the real cache gained no file during the run. The suite's selection for <code>reckon/ledger.py</code> shows no added failure against base. The negative control removes the redirection, and the guard must then see a new file.</p><p><strong>Write paths:</strong> the test files that write the real cache, found by the node, and the guard test.</p>
+<p><strong>Why.</strong> After §5, ledger indexes appeared in the real <code>~/.cache/reckon</code> keyed to temporary repositories under <code>/tmp/.../pytest-of-mcintos/.../test_a_refused_envelope_puts_t0/repo</code> and <code>.../entry-points0</code>. So some tests resolve <code>_store.cache_root("pick-input")</code> to the real cache. That is a write outside the repository under test, which the project's test rules forbid. Each such index is orphaned the moment pytest removes its temporary directory.</p><p><strong>Deliverable.</strong> Every test that builds a ledger uses a temporary cache root.</p><p><strong>Done when</strong> a session-scoped autouse guard in <code>tests/conftest.py</code> records the real cache's listing when a test session starts, and fails the session if the cache gained a file by its end. So every test session is guarded, whatever its selection. A ledger index is built by any reader of a project ledger, through <code>_run_index_path</code> in <code>reckon/ledger.py</code> and <code>_ledgered_records</code> in <code>reckon/crew/routing.py</code>, not only by files importing <code>reckon/ledger.py</code> or <code>reckon/_store.py</code>. So the gate runs the guard over every test file importing <code>reckon/ledger.py</code>, <code>reckon/_store.py</code>, <code>reckon/crew/routing.py</code>, <code>reckon/crew/gc.py</code> or <code>reckon/crew/obligations.py</code>, and finds that the real cache gained no file. The suite's selection for <code>reckon/ledger.py</code> shows no added failure against base. The negative control removes the redirection, and the guard must then see a new file.</p><p><strong>Write paths:</strong> <code>tests/conftest.py</code>, the test files that write the real cache, found by the node, and the guard test.</p>
 
     <h2 id="s10">§10 — A single-run gc reads only that run&#x27;s directory</h2>
 <section data-reckon="section" data-id="s10" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -186,15 +186,26 @@
     <pre class="r-fu-prompt">/reckon-build the-crew-home-has-a-bound §5</pre>
     <p class="r-fu-outcome"><p>The reclaim ran on 2026-10-16 with the lead's go-ahead. It freed 162.6 GB and took no worktree. It did not bring the four stores 100 GB below §1, because other projects' report stores grew past it. See <code>c-close-s5</code>.</p></p>
     </article>
-<article class="r-fu" data-id="f-tchhab-004" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tchhab-004" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="" data-resolved-at="2026-10-17T02:13:17+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Stop the two ledger-index leaks (§8, §9)</h4>
     <div class="r-fu-body"><p>§8 makes a read of a missing ledger build no index. §9 keeps tests out of the real cache. They write different files, so they can run in parallel. One question is not this plan's to settle: <code>crew/reports</code> is now 187 GB, mostly imas-efit's 139 GB and nova's 35 GB. Those projects' coordinators own that data, so any bound on it is the lead's decision.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-crew-home-has-a-bound §8 §9</pre>
+    <p class="r-fu-outcome">split into f-tchhab-008 and f-tchhab-009: the invocation grammar takes one section, so the second token never dispatched §9</p>
     </article>
 <article class="r-fu" data-id="f-tchhab-010" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-17" data-recommends-skill="/reckon-build the-crew-home-has-a-bound §10" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Confine a single-run gc&#x27;s extraction scan (§10)</h4>
     <div class="r-fu-body"><p>A gc naming one run still walks every run directory for extractions, nearly 14,000 on GPFS, and runs past its 300 s bound. §10 confines the scan to the named run.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-crew-home-has-a-bound §10</pre>
+    </article>
+<article class="r-fu" data-id="f-tchhab-008" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-17" data-recommends-skill="/reckon-build the-crew-home-has-a-bound §8" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A read of a missing ledger builds no index (§8)</h4>
+    <div class="r-fu-body"><p>§8 makes a read of a ledger that does not exist build no index. It writes different files from §9, so the two can run in parallel.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-crew-home-has-a-bound §8</pre>
+    </article>
+<article class="r-fu" data-id="f-tchhab-009" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-17" data-recommends-skill="/reckon-build the-crew-home-has-a-bound §9" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A test writes no ledger index into the real cache (§9)</h4>
+    <div class="r-fu-body"><p>§9 keeps tests out of the real cache, guarded for every test session whatever its selection.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-crew-home-has-a-bound §9</pre>
     </article>
 </section>
   
