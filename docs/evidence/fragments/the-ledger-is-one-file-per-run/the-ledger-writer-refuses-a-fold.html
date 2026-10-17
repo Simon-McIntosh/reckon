@@ -22,10 +22,13 @@
 
   <p id="the-ledger-writer-refuses-a-fold-negative-control"><strong>Declared negative control,
   executed and logged.</strong> Against the base tree (<code>2e9a07c237</code>, guard absent) the
-  union write is accepted: the same test file run there is <strong>4 failed, EXIT=1</strong>, with
-  the two refusal cases failing on <em>DID NOT RAISE</em> for the acceptance the base writer
-  permits, and the append and hold cases failing because the base run-count guard measures the
-  union. Log: <code>logs/negative-control-base-arm.log</code>.</p>
+  union write is accepted: the same test file run there is <strong>4 failed, EXIT=1</strong>. The
+  two refusal cases fail on <em>DID NOT RAISE</em>, the append case fails on the base run-count
+  guard measuring the union (<em>“this write takes the committed run count from 60 to 11”).
+  The hold case fails because the base hold path folds the fifty rows: its aggregate row list
+  comes back with 50 more items, first extra <code>f-000</code>, which is the defect this node
+  closes reproduced rather than asserted. Log:
+  <code>logs/negative-control-base-arm.log</code>.</p>
 
   <p id="the-ledger-writer-refuses-a-fold-callers"><strong>Other callers that write the
   aggregate, and how they read.</strong> Every one below reads <code>ledger.load</code>'s union
@@ -37,4 +40,18 @@
   <code>scripts/derive_run_figures.py:42→64</code> and
   <code>scripts/backfill_run_durations.py:124→215</code> (row backfills). Each is outside this
   node's write scope and is listed in <code>follow_ons</code>.</p>
+
+  <p id="the-ledger-writer-refuses-a-fold-neighbours"><strong>Neighbouring suites, base against
+  head.</strong> <code>test_ledger_write_keeps_run_files.py</code>,
+  <code>test_ledger_write_cannot_shrink.py</code>, <code>test_roster_loss_guard.py</code> and
+  <code>test_hold_check_leaves_the_tree_clean.py</code> run as one arm per revision: base
+  <strong>32 passed, EXIT=0</strong>; head <strong>29 passed, 3 errors, EXIT=1</strong>. All three
+  errors are the same fixture in <code>test_hold_check_leaves_the_tree_clean.py</code>, which
+  seeds dual placement by writing <code>ledger.load</code>'s union back — the shape this writer
+  now refuses — so the repair is to seed the aggregate row directly. A seven-file head arm over
+  the same four plus <code>test_append_run_writes_one_run_file.py</code>,
+  <code>test_ledger_files_and_index_agree.py</code> and <code>test_ledger.py</code> reached 215 of
+  250 cases with no failure and no error beyond those three, then its launcher was killed at the
+  background ceiling, so that log carries no <code>EXIT=</code> line and is reported as
+  incomplete rather than as green.</p>
 </section>
