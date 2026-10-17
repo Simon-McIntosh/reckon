@@ -91,3 +91,37 @@ def test_positive_control_a_test_resolves_the_real_cache(monkeypatch) -> None:
     assert Path.home() / ".cache" in resolved.resolve().parents, (
         "the positive control did not leave the run's temp tree"
     )
+
+
+# The variable that arms the teardown control below. Left unset, the whole
+# suite runs without it; the run that proves a reload cannot disarm the guard
+# sets it.
+TEARDOWN_CONTROL_ENV = "RECKON_CACHE_GUARD_TEARDOWN_CONTROL"
+
+
+@pytest.mark.skipif(
+    not os.environ.get(TEARDOWN_CONTROL_ENV),
+    reason=f"armed by {TEARDOWN_CONTROL_ENV}, so the suite is not run with it",
+)
+def test_teardown_control_a_reload_then_a_teardown_resolves_the_real_cache(
+    request, monkeypatch
+) -> None:
+    """Reload the store in the body, resolve the real cache from the teardown.
+
+    A reload re-executes ``reckon/_store.py`` and rebinds ``cache_root``, so a
+    guard re-armed only at a test boundary is absent while this test's own
+    finalizers run and the resolution below goes unrecorded — the leak the
+    record exists to name would sit in a window nothing watched. The guard
+    names it when the reload itself re-arms the wrapper. ``cache_root`` returns
+    a path and creates nothing, so this resolves the real root without writing
+    to it.
+    """
+    from tests.mcp_family_reload import reload_mcp_family
+
+    def teardown_resolves_the_real_root() -> None:
+        reload_mcp_family()
+        monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
+        monkeypatch.delenv("RECKON_HOME", raising=False)
+        _store.cache_root("velocity")
+
+    request.addfinalizer(teardown_resolves_the_real_root)

@@ -132,19 +132,53 @@ def install_cache_root_guard() -> None:
                 continue
 
 
+def arm_the_guard_against_a_reload() -> None:
+    """Keep the wrapper armed across a module reload.
+
+    ``importlib.reload(_store)`` re-executes ``reckon/_store.py``, which rebinds
+    ``cache_root`` to the module's own function and takes the wrapper with it.
+    ``tests/mcp_family_reload.py`` reloads the store so the MCP tools' exception
+    classes stay in step with a test that redirected storage, and the MCP test
+    modules reload it in-process. Re-arming at a test boundary repairs that only
+    once the body has finished, so a resolution the reloading test's own
+    teardown makes — or one a module-scoped fixture finalised before the next
+    setup makes — would go unrecorded. Wrapping ``reload`` re-arms the instant a
+    reload returns, which closes that window rather than narrowing it.
+    """
+    import importlib
+
+    reload_ = importlib.reload
+    if getattr(reload_, "_cache_root_guard_rearms", False):
+        return
+
+    def reloading(module):
+        reloaded = reload_(module)
+        install_cache_root_guard()
+        return reloaded
+
+    reloading._cache_root_guard_rearms = True  # type: ignore[attr-defined]
+    importlib.reload = reloading
+
+
 def pytest_runtest_setup(item: pytest.Item) -> None:
     """Attribute any resolution a test's setup makes to that test's id.
 
-    The wrapper is re-armed here as well as at import, because a reload of
-    ``reckon._store`` — which ``tests/mcp_family_reload.py`` performs so the
-    MCP tools' store classes stay in step — re-executes the module and rebinds
-    ``cache_root`` to the module's own function, dropping the wrapper with it.
-    Re-arming at every test boundary leaves only the reloading test's own body
-    unwatched, and keeps the wrapper present for the guard test, which runs
-    last in its worker.
+    The wrapper is re-armed here as well as at import, so a worker that reaches
+    the guard test with it absent for any other reason is repaired before the
+    record is read.
     """
     install_cache_root_guard()
     _GUARD_STATE["nodeid"] = item.nodeid
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_teardown(item: pytest.Item) -> None:
+    """Re-arm before the test's teardown, so a reload in the body is repaired.
+
+    The nodeid is still the finished test's here, so a root its finalizers
+    resolve is attributed to the test that reloaded the store.
+    """
+    install_cache_root_guard()
 
 
 # Installed at import rather than in a hook: every xdist worker imports this
@@ -152,6 +186,7 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
 # a worker's resolutions unwatched. The allowed root is filled in by the
 # session fixture below, which every worker runs too.
 install_cache_root_guard()
+arm_the_guard_against_a_reload()
 
 
 ARMING_MARKER = "arms_watch_producer"
