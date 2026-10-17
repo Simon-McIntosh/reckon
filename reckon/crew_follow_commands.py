@@ -349,6 +349,32 @@ class _FollowerReloader:
             record["reload_deferral"] = deferral
             runs._write_watch_record(handle, record)
 
+    def _record_reload_prune(
+        self, removed: Iterable[Path], kept: Iterable[Path]
+    ) -> None:
+        """Keep the last prune on the seat's record rather than in the ticker.
+
+        A reload prunes its own cache as housekeeping on every move of HEAD, so
+        a ticker line per tree per reload repeats for as long as a lease lives
+        and asks no reader to do anything. The seat's record holds the last
+        prune instead: when it ran, how many trees went, and which trees a lease
+        kept, which is what a diagnosis reads without relaying a stream.
+        """
+        if not self.seat:
+            return
+        from reckon.crew import runs
+
+        handle = runs._WATCH_SEAT_HANDLES.get(self.project)
+        if handle is None:
+            return
+        record = runs._read_watch_record(handle)
+        record["reload_prune"] = {
+            "when": runs._utc_now(),
+            "removed": len(list(removed)),
+            "kept": [str(path) for path in kept],
+        }
+        runs._write_watch_record(handle, record)
+
     def _clear_reload_deferral(self) -> None:
         """Clear the refusal as this producer begins its replacement."""
         if not self.seat:
@@ -437,17 +463,7 @@ class _FollowerReloader:
             if materialized is None:
                 return
             self.replacement_root, removed, kept, self.replacement_pin = materialized
-            for path in removed:
-                _echo_follow_line(
-                    f"reckon {self.label} removed old reload tree {path}",
-                    stream=self.stream,
-                )
-            for path in kept:
-                _echo_follow_line(
-                    f"reckon {self.label} kept reload tree {path}: "
-                    "live or recently renewed lease",
-                    stream=self.stream,
-                )
+            self._record_reload_prune(removed, kept)
         else:
             # A non-commit stamp belongs to an older or non-Git image. Keep its
             # existing trust check until it can reload from a source checkout.
