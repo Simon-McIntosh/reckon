@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1509",
+    "reckon/crew_dispatch_commands.py:1521"
+  ],
+  "completed_at": "2026-10-17T01:14:51.316Z",
+  "dispatched_at": "2026-10-17T00:59:45Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T000127932636-a-paired-dispatch-hides-each-arm/manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest names no baseline_suite and no after_suite gate log, so the added-failure count this review must derive is unmeasured (null) rather than a measured zero, and this delta recorded no ruff check on its changed Python paths though the source done_when names one (prompt.txt:94-95)."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit from base 53a5c7f7754852cceb8ab3088a2db66cf2c782ed to head b49fd40aac385d41f1d280957943ff2017a6b312; d54d898dc removes the eight duplicate keywords from the shadow arm's dispatch() call and moves run_id/worktree_session/partner_masks/paired_shadow_run_id from explicit keywords into the primary arm's override mapping (reckon/crew/dispatch.py:849-885), 783beb5be adds test_a_paired_launch_starts_both_arms and test_the_cli_pair_flag_resolves_a_paired_dry_run (tests/test_a_paired_dispatch_hides_each_arm.py:239-331), and b49fd40aa/22cbb2b49 update the evidence fragment's counts and prose.",
+    "done_when": "the done_when (prompt.txt:88-95) names a paired dry run, both run directories allocated before either arm launches, a real-bwrap fence stub, the primary's masks naming the shadow's run directory, an unpaired dispatch composing none, a logged negative control, the dispatch.py-importer population adding no failure id against base, and clean ruff on the changed paths; this delta records gate.log (6 passed for tests/test_a_paired_dispatch_hides_each_arm.py at 783beb5be), wider-population.log (192 passed for tests/test_crew.py at d54d898dc) and negative-control-reverted-fix.log (EXIT=1), but the full importer population and the ruff checks are still unrun and no baseline_suite/after_suite pair is recorded, so the suite delta is unmeasured.",
+    "goal": "the node's goal is that `crew dispatch --pair-backend <backend>` launches a primary and a shadow arm from one base with each arm fenced from the other (prompt.txt:21); this delta repairs the dispatch keyword collision that stopped the pair launching, and reckon/crew/dispatch.py:849-885 now supplies each arm's keywords from one source so the launch proceeds.",
+    "manifest": "read; manifest.md:8 records status complete, manifest.md:10 the seven commits including the three reviewed here, manifest.md:17-18 name the reverted-fix negative control and its observed TypeError, and manifest.md:19 (follow_ons) discloses that only tests/test_crew.py of the importer population was run and that reckon/crew/promotion_scope.py carries pre-existing format backlog.",
+    "write_paths": "the source node's declared scope is reckon/crew/dispatch.py, reckon/crew_dispatch_commands.py, reckon/crew/promotion_scope.py, tests/test_a_paired_dispatch_hides_each_arm.py plus one evidence fragment and a figure directory (prompt.txt:57-63); this delta's three paths (reckon/crew/dispatch.py, tests/test_a_paired_dispatch_hides_each_arm.py, docs/evidence/fragments/a-shadow-cannot-see-its-primary/a-paired-dispatch-hides-each-arm.html) are all inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_paired_dispatch_hides_each_arm.py:254 raises on the reinstated duplicate-keyword TypeError, which negative-control-reverted-fix.log shows reddening at EXIT=1, so the guard is proven to fail on the regression it was added for.",
+    "evidence": "gate.log records 6 passed and wider-population.log records 192 passed for tests/test_crew.py, but the done_when's ruff checks and full importer population (prompt.txt:93-95) are unrun and the reviewed manifest carries no baseline_suite/after_suite pair, so added_failure_count is unmeasured.",
+    "fit": "the delta uses mechanism names only, and the added tests (tests/test_a_paired_dispatch_hides_each_arm.py:239,271) follow the file's existing stub-and-fixture idiom with no plan or ticket label in any symbol, comment or path.",
+    "goal_fidelity": "reckon/crew/dispatch.py:849-885 now routes every per-arm keyword through _paired_arm_kwargs exactly once, and tests/test_a_paired_dispatch_hides_each_arm.py:239 drives the non-dry-run path to two launched arms, so the paired launch the goal names runs.",
+    "reuse": "the delta adds no production definition; the call-site rewrite (reckon/crew/dispatch.py:849-885) reuses the existing _paired_arm_kwargs helper, and a search of reckon/crew for a competing keyword-composition owner found only the unrelated _directory_claim_acceptance_kwargs (reckon/crew/dispatch_claims.py:1204).",
+    "scope_discipline": "every path in the delta (reckon/crew/dispatch.py, tests/test_a_paired_dispatch_hides_each_arm.py, docs/evidence/fragments/a-shadow-cannot-see-its-primary/a-paired-dispatch-hides-each-arm.html) is inside the source node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that `crew dispatch --pair-backend <backend>` launches a primary and a shadow arm from one base with each arm fenced from the other (prompt.txt:21); this delta repairs the dispatch keyword collision that stopped the pair launching, and reckon/crew/dispatch.py:849-885 now supplies each arm's keywords from one source so the launch proceeds.\nVERDICT done_when: the done_when (prompt.txt:88-95) names a paired dry run, both run directories allocated before either arm launches, a real-bwrap fence stub, the primary's masks naming the shadow's run directory, an unpaired dispatch composing none, a logged negative control, the dispatch.py-importer population adding no failure id against base, and clean ruff on the changed paths; this delta records gate.log (6 passed for tests/test_a_paired_dispatch_hides_each_arm.py at 783beb5be), wider-population.log (192 passed for tests/test_crew.py at d54d898dc) and negative-control-reverted-fix.log (EXIT=1), but the full importer population and the ruff checks are still unrun and no baseline_suite/after_suite pair is recorded, so the suite delta is unmeasured.\nVERDICT write_paths: the source node's declared scope is reckon/crew/dispatch.py, reckon/crew_dispatch_commands.py, reckon/crew/promotion_scope.py, tests/test_a_paired_dispatch_hides_each_arm.py plus one evidence fragment and a figure directory (prompt.txt:57-63); this delta's three paths (reckon/crew/dispatch.py, tests/test_a_paired_dispatch_hides_each_arm.py, docs/evidence/fragments/a-shadow-cannot-see-its-primary/a-paired-dispatch-hides-each-arm.html) are all inside it.\nVERDICT manifest: read; manifest.md:8 records status complete, manifest.md:10 the seven commits including the three reviewed here, manifest.md:17-18 name the reverted-fix negative control and its observed TypeError, and manifest.md:19 (follow_ons) discloses that only tests/test_crew.py of the importer population was run and that reckon/crew/promotion_scope.py carries pre-existing format backlog.\nVERDICT diff: read commit by commit from base 53a5c7f7754852cceb8ab3088a2db66cf2c782ed to head b49fd40aac385d41f1d280957943ff2017a6b312; d54d898dc removes the eight duplicate keywords from the shadow arm's dispatch() call and moves run_id/worktree_session/partner_masks/paired_shadow_run_id from explicit keywords into the primary arm's override mapping (reckon/crew/dispatch.py:849-885), 783beb5be adds test_a_paired_launch_starts_both_arms and test_the_cli_pair_flag_resolves_a_paired_dry_run (tests/test_a_paired_dispatch_hides_each_arm.py:239-331), and b49fd40aa/22cbb2b49 update the evidence fragment's counts and prose.\nCALL_SITES: reckon/crew_dispatch_commands.py:1509, reckon/crew_dispatch_commands.py:1521\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:849-885 now routes every per-arm keyword through _paired_arm_kwargs exactly once, and tests/test_a_paired_dispatch_hides_each_arm.py:239 drives the non-dry-run path to two launched arms, so the paired launch the goal names runs.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate.log records 6 passed and wider-population.log records 192 passed for tests/test_crew.py, but the done_when's ruff checks and full importer population (prompt.txt:93-95) are unrun and the reviewed manifest carries no baseline_suite/after_suite pair, so added_failure_count is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the delta (reckon/crew/dispatch.py, tests/test_a_paired_dispatch_hides_each_arm.py, docs/evidence/fragments/a-shadow-cannot-see-its-primary/a-paired-dispatch-hides-each-arm.html) is inside the source node's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_paired_dispatch_hides_each_arm.py:254 raises on the reinstated duplicate-keyword TypeError, which negative-control-reverted-fix.log shows reddening at EXIT=1, so the guard is proven to fail on the regression it was added for.\nSCORE fit: 19\nJUSTIFICATION fit: the delta uses mechanism names only, and the added tests (tests/test_a_paired_dispatch_hides_each_arm.py:239,271) follow the file's existing stub-and-fixture idiom with no plan or ticket label in any symbol, comment or path.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no production definition; the call-site rewrite (reckon/crew/dispatch.py:849-885) reuses the existing _paired_arm_kwargs helper, and a search of reckon/crew for a competing keyword-composition owner found only the unrelated _directory_claim_acceptance_kwargs (reckon/crew/dispatch_claims.py:1204).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T000127932636-a-paired-dispatch-hides-each-arm/manifest.md:17 follow-on: the reviewed manifest names no baseline_suite and no after_suite gate log, so the added-failure count this review must derive is unmeasured (null) rather than a measured zero, and this delta recorded no ruff check on its changed Python paths though the source done_when names one (prompt.txt:94-95).\n",
+  "review_run_id": "r-20261017T005915361698-review-of-a-paired-dispatch-hides-each-arm-b49fd40aac38",
+  "reviewed_base_sha": "53a5c7f7754852cceb8ab3088a2db66cf2c782ed",
+  "reviewed_head_sha": "b49fd40aac385d41f1d280957943ff2017a6b312",
+  "reviewed_run_id": "r-20261017T000127932636-a-paired-dispatch-hides-each-arm",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T01:17:33.989345+00:00",
+  "total": 112
+}
