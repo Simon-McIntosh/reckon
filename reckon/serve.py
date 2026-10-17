@@ -2281,6 +2281,9 @@ def _discover_plans_uncached(
     # re-parses the whole tree before the first read answers.
     persisted_discovery = metadata_index.discovery_state(docs_dir, project)
 
+    # One batch for the whole document loop: each parse records into it and the
+    # store is written once when the loop ends, rather than once per document.
+    metadata_index.begin_discovery(docs_dir, project)
     for resource in resources:
         if resource.type not in {"plan", "research", "evidence"}:
             continue
@@ -2378,6 +2381,8 @@ def _discover_plans_uncached(
             if rec.get("north_star"):
                 item["north_star"] = rec["north_star"]
         inventory.append(item)
+
+    metadata_index.flush_discovery(docs_dir, project)
 
     # Figure rows are appended after the typed resources; figures are
     # infrastructure to resource_map, so they never collide with a plan slug.
