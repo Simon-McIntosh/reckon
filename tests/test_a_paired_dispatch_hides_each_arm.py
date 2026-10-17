@@ -276,6 +276,59 @@ def test_a_paired_launch_starts_both_arms(home, repo) -> None:
     assert primary["manifest_path"].startswith(str(run_dir(result["primary_run_id"])))
 
 
+def test_the_cli_pair_flag_resolves_a_paired_dry_run(home, repo, monkeypatch) -> None:
+    """The flag reaches the paired path through the command line itself.
+
+    The paired branch is entered before the ordinary dispatch path, so a wiring
+    error there is invisible to every other test in this file.
+    """
+    import json
+
+    monkeypatch.setattr(
+        _test_crew.crew_dispatch_commands,
+        "_resolved_flight",
+        lambda *args, **kwargs: _candidate_config(),
+    )
+    node = _node()
+    result = _test_crew.CliRunner().invoke(
+        _test_crew.cli_module.main,
+        [
+            "crew",
+            "dispatch",
+            "--project",
+            PROJECT,
+            "--plan",
+            node.plan,
+            "--section",
+            node.section,
+            "--spec-level",
+            "guided",
+            "--node",
+            node.id,
+            "--goal",
+            node.goal,
+            "--done-when",
+            node.done_when,
+            "--write-path",
+            node.write_paths[0],
+            "--session",
+            "sess",
+            "--repo",
+            str(repo),
+            "--negative-control",
+            "none: the dry run prepares no worktree and executes no check",
+            "--pair-backend",
+            PAIR_BACKEND,
+            "--dry-run",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["paired"] is True
+    assert payload["primary_run_id"] != payload["shadow_run_id"]
+    assert payload["shadow"]["lineage"]["primary_run_id"] == payload["primary_run_id"]
+
+
 def _paired_arms(root: Path) -> tuple[Arm, Arm]:
     """Two arms over one pair of allocated run ids, each naming the other."""
     run_a = new_run_id("primary-node")
