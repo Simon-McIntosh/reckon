@@ -271,6 +271,15 @@ refused with nothing written. Pass `--candidate <sha>` to land a merge commit
 already built, whose parents must be the pinned HEAD and the head, so the tree a
 measured population reviewed is the tree that lands.
 
+The push is the one step that can fail after the branch has moved. When it
+does, the verb reports the landed merge commit and the base and exits with a
+status distinct from a refusal: the merge is in place and only the push is
+outstanding, so rerun the same head to push — it finds the merge already in
+HEAD and does not build a second merge. A compute node refuses GitHub SSH on
+port 22, so the push retries over the port-443 route, the caller's
+`GIT_SSH_COMMAND` or the stated fallback `ssh -o Hostname=ssh.github.com -o
+Port=443`.
+
 The landing beat ticks a section rather than collapsing it, and leaves the
 section body as authored: the tick records completion without moving the design
 out of the page. It is three `edit_plan` ops, not a hand edit:

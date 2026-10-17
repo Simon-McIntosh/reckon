@@ -319,6 +319,23 @@ def test_ship_skill_carries_the_uniform_dispatch_instruction() -> None:
     assert "Branch once, on the returned `launch` kind" in ship
 
 
+def test_ship_integrate_step_names_the_port_443_push_route() -> None:
+    """The integrate step names the port-443 route a landed merge's push falls to.
+
+    A compute node refuses GitHub SSH on port 22, so the landing retries over
+    the port-443 route — the caller's ``GIT_SSH_COMMAND`` or the stated
+    fallback — and a head already in HEAD is pushed rather than re-merged.
+    """
+    ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
+    norm = normalized(ship)
+
+    assert "port-443 route" in norm
+    assert "ssh.github.com" in norm
+    assert "Port=443" in norm
+    assert "GIT_SSH_COMMAND" in ship
+    assert "already in HEAD" in norm
+
+
 def test_ship_skill_routes_local_requests_through_the_declared_flag() -> None:
     ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
 
