@@ -27,6 +27,15 @@ disagree. <code>dispatch</code> threads the partner surfaces to
 <code>launch_plan</code> in place of the committed-row lookup a standalone
 shadow performs, and skips that lookup only when the allocation supplies them.</p>
 
+<p>Each arm supplies its dispatch keywords through one source, the per-arm
+mapping that strips what that arm fixes before it re-adds them, so no key can
+arrive twice however the caller's keyword surface grows. The identity
+arguments stay explicit because the two arms deliberately differ in config.
+That the pair can launch at all is itself asserted: the gate drives the launch
+path with a stub in place of the harness and requires both arms to launch under
+their own allocated run directories, because a dry run never reaches the arm
+dispatch calls and so cannot see a keyword collision at them.</p>
+
 <h2 id="a-paired-dispatch-hides-each-arm-measure">Measure</h2>
 <p>The gate executes the composed argument vector under a real bubblewrap
 fence, never inspecting its shape: each arm lists its partner's run directory
@@ -35,13 +44,15 @@ directory and worktree. With the primary arm's masks dropped the same listing
 is non-empty (<code>partner-run-dir [stream.jsonl,]</code>), which is the
 declared negative control and is what makes the empty listing mean anything.</p>
 
-<pre>tests/test_a_paired_dispatch_hides_each_arm.py: 4 passed
-negative control (primary arm's masks dropped): EXIT=1, listing non-empty</pre>
+<pre>tests/test_a_paired_dispatch_hides_each_arm.py: 5 passed
+negative control (primary arm's masks dropped): EXIT=1, listing non-empty
+negative control (the launch-path check's change reverted): EXIT=1,
+  TypeError: got multiple values for keyword argument 'route'</pre>
 
 <h2 id="a-paired-dispatch-hides-each-arm-limits">Limits</h2>
-<p>The wider population of test files importing <code>reckon/crew/dispatch.py</code>
-was not run here; only this node's own gate ran. The coordinator runs the
-wider population at merge. <code>ruff format --check</code> is clean on three
+<p>The wider population of test files importing <code>reckon/crew/dispatch</code>
+was not run to completion here; this node's own gate ran, and the coordinator
+runs the wider population at merge. <code>ruff format --check</code> is clean on three
 of the four changed paths; <code>reckon/crew/promotion_scope.py</code> carries
 pre-existing formatting backlog in regions this node did not touch.</p>
 
