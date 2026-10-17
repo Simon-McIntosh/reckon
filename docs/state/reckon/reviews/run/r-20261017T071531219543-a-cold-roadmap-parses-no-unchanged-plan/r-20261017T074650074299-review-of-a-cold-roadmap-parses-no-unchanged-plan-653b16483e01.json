@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log, so the added-failure count was not taken",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/mcp.py:2556",
+    "reckon/mcp.py:509",
+    "reckon/mcp.py:1440",
+    "reckon/mcp.py:1551",
+    "reckon/mcp_edit_plan.py:679",
+    "reckon/mcp_edit_plan.py:688"
+  ],
+  "completed_at": "2026-10-17T07:59:37.091Z",
+  "dispatched_at": "2026-10-17T07:47:21Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "2074",
+      "severity": "follow-on",
+      "text": "follow-on: _docs_relative re-implements the byte-identical helper already owned by reckon/serve.py:2576 (relative_to/as_posix with a ValueError guard), so the docs-relative key now has two private homes that can drift; the substantive store read correctly extends metadata_index.discovery_state, so this is a helper duplication rather than a forked capability and it does not hold the node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit; the single commit replaces two parse-per-plan cross-plan scans with one shared store-backed reader, adds the count gate with its uncached comparator and staleness check, and records the landing fragment under docs/evidence/fragments/.",
+    "done_when": "the done_when names tests/test_a_cold_roadmap_parses_no_unchanged_plan.py; the manifest records \"3 passed; EXIT=0\" for that exact command and gate-head.log's own summary line reads \"3 passed in 138.51s\" with EXIT=0.",
+    "goal": "the node's goal is a fresh process over a built store parsing no unchanged plan on every cold-roadmap path; reckon/_store.py:2083 _plan_states yields each plan's state from metadata_index.discovery_state and parses only a file the store cannot answer for, replacing the per-plan _plan_html.parse_plan scan in list_followups_across and list_questions_across (reckon/_store.py:2109, 2166).",
+    "manifest": "read; it records commits 653b16483, the head arm 3 passed EXIT=0, the base-tree negative control 3 failed EXIT=1, the ruff delta on the changed files, and the scaffolding attribution for the renamed changed-plan assertion.",
+    "write_paths": "the manifest declares reckon/_store.py, the test file and the evidence fragment; git diff c8911c29..653b16483 touches exactly those three paths and nothing else (356 insertions, 40 deletions)."
+  },
+  "justifications": {
+    "durability": "tests/test_a_cold_roadmap_parses_no_unchanged_plan.py:198. The count assertion fails on the regression it guards: reinstating the base behaviour makes parse_plan_calls 24, not 0, exactly as negative-control-base-tree.log shows with \"assert 24 == 0\".",
+    "evidence": "the gate runs tests/test_a_cold_roadmap_parses_no_unchanged_plan.py to \"3 passed; EXIT=0\" and the base-tree negative control shows the count guard firing at 24 parses with EXIT=1.",
+    "fit": "reckon/_store.py:2083 follows the surrounding scan idiom (a generator over resource_map) and the new names _plan_states, _stored_plan_states and _docs_relative carry no plan or ticket label.",
+    "goal_fidelity": "reckon/_store.py:2109 reads the plan state from the store and reckon/_store.py:2117 parses only a file the store omits, so the cold-roadmap follow-up and question reads no longer parse an unchanged plan.",
+    "reuse": "the store read delegates to the owner metadata_index.discovery_state at reckon/_store.py:2071 (the same owner serve.py:2282 uses), but the new reckon/_store.py:2074 _docs_relative duplicates the identical private helper at reckon/serve.py:2576 rather than sharing one.",
+    "scope_discipline": "every path in git diff c8911c29..653b16483 is inside the declared write paths (reckon/_store.py, the test file, the evidence fragment) and no undeclared file is touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a fresh process over a built store parsing no unchanged plan on every cold-roadmap path; reckon/_store.py:2083 _plan_states yields each plan's state from metadata_index.discovery_state and parses only a file the store cannot answer for, replacing the per-plan _plan_html.parse_plan scan in list_followups_across and list_questions_across (reckon/_store.py:2109, 2166).\nVERDICT done_when: the done_when names tests/test_a_cold_roadmap_parses_no_unchanged_plan.py; the manifest records \"3 passed; EXIT=0\" for that exact command and gate-head.log's own summary line reads \"3 passed in 138.51s\" with EXIT=0.\nVERDICT write_paths: the manifest declares reckon/_store.py, the test file and the evidence fragment; git diff c8911c29..653b16483 touches exactly those three paths and nothing else (356 insertions, 40 deletions).\nVERDICT manifest: read; it records commits 653b16483, the head arm 3 passed EXIT=0, the base-tree negative control 3 failed EXIT=1, the ruff delta on the changed files, and the scaffolding attribution for the renamed changed-plan assertion.\nVERDICT diff: read commit by commit; the single commit replaces two parse-per-plan cross-plan scans with one shared store-backed reader, adds the count gate with its uncached comparator and staleness check, and records the landing fragment under docs/evidence/fragments/.\nCALL_SITES: reckon/mcp.py:2556, reckon/mcp.py:509, reckon/mcp.py:1440, reckon/mcp.py:1551, reckon/mcp_edit_plan.py:679, reckon/mcp_edit_plan.py:688\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_store.py:2109 reads the plan state from the store and reckon/_store.py:2117 parses only a file the store omits, so the cold-roadmap follow-up and question reads no longer parse an unchanged plan.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate runs tests/test_a_cold_roadmap_parses_no_unchanged_plan.py to \"3 passed; EXIT=0\" and the base-tree negative control shows the count guard firing at 24 parses with EXIT=1.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff c8911c29..653b16483 is inside the declared write paths (reckon/_store.py, the test file, the evidence fragment) and no undeclared file is touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_cold_roadmap_parses_no_unchanged_plan.py:198. The count assertion fails on the regression it guards: reinstating the base behaviour makes parse_plan_calls 24, not 0, exactly as negative-control-base-tree.log shows with \"assert 24 == 0\".\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_store.py:2083 follows the surrounding scan idiom (a generator over resource_map) and the new names _plan_states, _stored_plan_states and _docs_relative carry no plan or ticket label.\nSCORE reuse: 16\nJUSTIFICATION reuse: the store read delegates to the owner metadata_index.discovery_state at reckon/_store.py:2071 (the same owner serve.py:2282 uses), but the new reckon/_store.py:2074 _docs_relative duplicates the identical private helper at reckon/serve.py:2576 rather than sharing one.\nFINDING reckon/_store.py:2074 follow-on: _docs_relative re-implements the byte-identical helper already owned by reckon/serve.py:2576 (relative_to/as_posix with a ValueError guard), so the docs-relative key now has two private homes that can drift; the substantive store read correctly extends metadata_index.discovery_state, so this is a helper duplication rather than a forked capability and it does not hold the node.",
+  "review_run_id": "r-20261017T074650074299-review-of-a-cold-roadmap-parses-no-unchanged-plan-653b16483e01",
+  "reviewed_base_sha": "c8911c2941553e72d01f3bae63a448cde8749865",
+  "reviewed_head_sha": "653b16483e01776a591d16258e6f3aca57f6d708",
+  "reviewed_run_id": "r-20261017T071531219543-a-cold-roadmap-parses-no-unchanged-plan",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T07:58:00.209077+00:00",
+  "total": 106
+}
