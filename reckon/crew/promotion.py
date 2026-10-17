@@ -380,6 +380,7 @@ def complete(
             overridden_worktree_changes,
             _manifest_status,
             live_run_waived,
+            _partner_hold,
             _shadow_commit,
             commit_list_shortfall,
             _commits_beyond_base,
@@ -406,6 +407,12 @@ def complete(
                 lambda: _require_worker_stopped_before_promotion(
                     run_id, record, waiver_reason=live_run_waiver
                 ),
+                # A paired dispatch starts both arms from one base, and that
+                # only holds while neither lands first: an arm promoted while
+                # its partner is still running would put its result in the main
+                # checkout for the partner to read. The hold lifts once the
+                # partner's pointer is terminal or gone.
+                lambda: _require_partner_terminal_before_promotion(run_id, record),
                 lambda: _refuse_commits_for_a_shadow(run_id, record, commit_list),
                 lambda: _require_gate_evidence(
                     run_id,
@@ -1762,6 +1769,7 @@ from reckon.crew.promotion_checks import (
     _require_gate_check_precondition,
     _require_impl_moved,
     _require_independently,
+    _require_partner_terminal_before_promotion,
     _require_plan_review_delivered_in_its_directory,
     _require_recognised_manifest_status,
     _require_resume_waiver,

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-shadow-cannot-see-its-primary">
+  <meta name="plan-verifies" content="reckon:a-shadow-cannot-see-its-primary#s6">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-17">
+  <title>A paired arm waits for its partner | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-paired-arm-waits-for-its-partner">
+  <h2>A paired arm waits for its partner</h2>
+
+  <p><strong>Change.</strong> <code>_require_partner_terminal_before_promotion</code>
+  (<code>reckon/crew/promotion_checks.py</code>) refuses a promotion whose partner arm is
+  non-terminal. The partner is resolved from the record's own pairing:
+  <code>paired_shadow_run_id</code> on a primary arm, or the shadow lineage's
+  <code>primary_run_id</code> on a shadow arm. A partner pointer that is absent reads as
+  terminal — the partner has been promoted — and one whose <code>phase</code> is in the
+  terminal set lifts the hold. Anything else refuses, naming the partner run id and the phase
+  it is in, before any store is written. The check is registered in the lambda list
+  <code>reckon/crew/promotion.py</code> passes to <code>_require_independently</code>, beside
+  <code>_require_worker_stopped_before_promotion</code>.</p>
+
+  <p><strong>Gate.</strong> Both arms ran under <code>pytest -n 8 --timeout=300</code> with
+  <code>-p no:cacheprovider</code>, each from the tree under test with its own log in the run
+  directory. The base arm (<code>git archive</code> of <code>8b6f57f1</code>, the nine test
+  files that import <code>reckon/crew/promotion_checks.py</code>) reports <strong>64
+  passed</strong>, <code>EXIT=0</code>. The head arm (the same nine files plus
+  <code>tests/test_a_paired_arm_waits_for_its_partner.py</code>) reports <strong>71
+  passed</strong>, <code>EXIT=0</code>; added failure ids: <strong>none</strong>. Each arm's
+  header names the <code>promotion_checks.py</code> it imported (<code>module.__file__</code>):
+  the head arm's is the worktree's own, the base arm's is the scratch extraction's, so neither
+  could have been served by the other tree. <code>ruff check</code> over the changed paths
+  reports the same four findings at head as at base — <code>S110</code>, <code>BLE001</code>
+  in <code>promotion.py</code> and two <code>UP017</code> in
+  <code>promotion_checks.py</code>, all pre-existing, line numbers shifted by the insertion —
+  so the change adds none; <code>ruff format --check</code> passes on the new test file, and
+  the two product files were already unformatted at base.</p>
+
+  <p><strong>New tests</strong> (<code>tests/test_a_paired_arm_waits_for_its_partner.py</code>,
+  each in a temporary repository with <code>RECKON_HOME</code> under <code>tmp_path</code>):</p>
+  <ul>
+    <li>a paired primary arm whose partner's pointer reads <code>working</code> is refused, the
+      refusal naming the partner id and the phase, and nothing lands — no ledger row for the
+      run and its live pointer intact;</li>
+    <li>the shadow arm is refused the same way through its lineage, so either arm can be
+      held;</li>
+    <li>the same promotion succeeds once the partner's pointer is terminal
+      (<code>complete</code>), and succeeds when the partner's pointer is gone;</li>
+    <li>an unpaired run, and a standalone shadow whose primary was already promoted, promote
+      unchanged;</li>
+    <li>a shadow whose stream reads its primary's run directory promotes with
+      <code>shadow_contaminated: primary_run_directory_read</code> and
+      <code>shadow_controlled: false</code> on the stored row, guarding the
+      <code>_shadow_control_marks</code> call in <code>_complete_locked</code>.</li>
+  </ul>
+
+  <p><strong>Negative control.</strong> With the check removed from the composed list (the
+  declared mutation: the lambda and its unpack slot dropped together), the two refusal tests
+  fail and the rest pass — <code>EXIT=1</code>, failing ids
+  <code>test_a_paired_arm_is_refused_while_its_partner_works</code> and
+  <code>test_the_shadow_arm_is_refused_while_its_primary_works</code>, neither of which the
+  head arm fails. Log:
+  <code>~/.config/reckon/crew/runs/r-20261017T042118495050-a-paired-arm-waits-for-its-partner/gate-negative-control.log</code>.</p>
+</section>
+</main>
+</body>
+</html>
