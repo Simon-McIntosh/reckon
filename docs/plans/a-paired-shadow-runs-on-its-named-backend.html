@@ -24,7 +24,7 @@
   <title>A Paired Shadow Runs On Its Named Backend | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -101,8 +101,12 @@ Resolve with `reckon crew shadow --backend &lt;candidate&gt;` after correcting t
             overlay routes the node's spec level to <code>alpha</code>. The shadow arm's backend is still
             <code>candidate</code>.</li>
           <li><code>pair_backend="nonesuch"</code>, a backend no layer defines, raises <code>CrewError</code> carrying
-            D21. The detail names <code>nonesuch</code> as undefined, and the message does not contain the words
-            "flight override".</li>
+            D21. The rendered text has no literal "D21". <code>format_refusal</code>
+            (<code>reckon/crew/refusals.py:98</code>) appends <code>Resolve with &lt;remedy&gt;.</code> to the detail.
+            So the case reads the remedy from <code>DISPATCH_REFUSAL_REMEDIES["D21"]</code> at assertion time and asserts
+            three things: the message ends with that exact sentence; the detail names <code>nonesuch</code> as
+            undefined; and the message does not contain the words "flight override". The raw error from
+            <code>_effective_backend</code>, without the D21 wrap, must fail this case.</li>
           <li>The same paired dry run through the CLI (<code>reckon crew dispatch … --pair-backend candidate
             --dry-run</code>, as <code>tests/test_a_paired_dispatch_hides_each_arm.py</code> already drives it)
             exits 0 against that config. The payload reads <code>"paired": true</code>, and the shadow arm's backend
@@ -133,10 +137,10 @@ Resolve with `reckon crew shadow --backend &lt;candidate&gt;` after correcting t
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-apsronb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-17" data-recommends-skill="/reckon-build a-paired-shadow-runs-on-its-named-backend §1" data-resolved-at="" data-resolved-by="">
-    <h4 class="r-fu-title">Route a paired dispatch's shadow arm to the backend it names</h4>
+    <h4 class="r-fu-title">Route a paired dispatch&#x27;s shadow arm to the backend it names</h4>
     <div class="r-fu-body"><p>Filed after nova reported <code>--pair-backend codex</code> refused while the flight's default backend is clive. §1 carries the remedy and its done-when.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-paired-shadow-runs-on-its-named-backend §1</pre>
-</article>
+    </article>
 </section>
   </main>
 </body>
