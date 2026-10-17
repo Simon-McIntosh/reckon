@@ -24,7 +24,7 @@
   <title>A Velocity Window May Open Before The Ledger | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -60,8 +60,10 @@
         <code>read_blobs</code> (<code>reckon/velocity.py:395</code>), which maps a missing object to
         <code>None</code>. A <code>None</code> means there is no ledger at that revision, and the function returns no
         records. <code>_read_run_rows</code> still supplies the per-run files.</li>
-      <li><code>recover_ledger_clocks</code> stops parsing the ledger itself (<code>reckon/velocity.py:1182</code>
-        to 1192). It takes the runs present at the base from
+      <li><code>recover_ledger_clocks</code> stops parsing the ledger itself: the else-branch parse at
+        <code>reckon/velocity.py:1191</code> to 1192 goes. Keep the <code>path</code> assignment at line 1182, because
+        the same function's <code>git log</code> search for a run's first appearance still uses it at line 1221. It
+        takes the runs present at the base from
         <code>_read_ledger(repo, base, project["project"], None)</code>, so a base with no ledger has no runs present
         and every candidate is searched.</li>
       <li>For an absent ledger, the digest the snapshot reports is <code>None</code>, not the digest of an empty
