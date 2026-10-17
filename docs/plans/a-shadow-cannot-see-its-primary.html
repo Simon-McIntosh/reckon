@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-shadow-cannot-see-its-primary">
   <meta name="plan-title" content="A Shadow Cannot See Its Primary">
   <meta name="plan-summary" content="A pair is reported controlled only when the shadow never read its primary&#x27;s records, worktree or landed result, and the fence hides those records.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.75">
   <meta name="plan-capability-version" content="1.0">
@@ -26,7 +26,7 @@
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="40">
+<meta name="plan-version" content="41">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -285,15 +285,23 @@
     <pre class="r-fu-prompt">/reckon-build a-shadow-cannot-see-its-primary §2</pre>
     <p class="r-fu-outcome">§2 (merge 18521070b), §3 (merge 8d04b07e1) and §4 (merge 24a6968fb) landed and are ticked done; nova-2c was told on 2026-10-17. The lead locked shadow-isolation-scope as paired-dispatch, and §5 and §6 were written as its build. §5 is dispatched as r-20261017T000127932636.</p>
     </article>
-<article class="r-fu" data-id="f-ascp-004" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-17 00:03" data-recommends-skill="/reckon-build a-shadow-cannot-see-its-primary §5" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ascp-004" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-17 00:03" data-recommends-skill="/reckon-build a-shadow-cannot-see-its-primary §5" data-resolved-at="2026-10-17T06:56:41+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Land §5, then build §6</h4>
     <div class="r-fu-body"><p>§5 (paired dispatch, each arm fenced from the other) is in flight. §6 holds a paired arm's promotion until its partner is terminal, and its test also covers the <code>_shadow_control_marks</code> call that §2 landed untested; it follows §5 because it reads the pairing §5 records. Tell nova-2c when §5 and §6 land.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-shadow-cannot-see-its-primary §5</pre>
+    <p class="r-fu-outcome">§5 merged as 5130388c0 and §6 as ee7dcf4ed, both ticked done; nova-2c was told that paired dispatch is available.</p>
     </article>
-<article class="r-fu" data-id="f-ascp-005" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-17 05:05" data-recommends-skill="/reckon-build a-shadow-cannot-see-its-primary §7" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ascp-005" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-17 05:05" data-recommends-skill="/reckon-build a-shadow-cannot-see-its-primary §7" data-resolved-at="2026-10-17T06:56:41+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build §7 to return main&#x27;s width test to green</h4>
     <div class="r-fu-body"><p>§2 pushed <code>reckon/ledger.py</code> past the worker-window bound, so main is red on <code>tests/test_every_module_fits_a_worker_window.py</code>. §7 moves the shadow-read scan into its own module. It writes paths disjoint from §6 and runs beside it. reckon-0e has sequenced its own <code>ledger.py</code> work after it; tell reckon-0e when it merges.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-shadow-cannot-see-its-primary §7</pre>
+    <p class="r-fu-outcome">§7 merged as 6daf2f41a: ledger.py is back under the worker-window bound and the width test passes on main; reckon-0e was told that its ledger.py work is unblocked.</p>
+    </article>
+<article class="r-fu" data-id="f-ascp-006" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-17 07:15" data-recommends-skill="/reckon-build a-shadow-cannot-see-its-primary" data-resolved-at="2026-10-17T07:15:00Z" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Plan complete</h4>
+    <div class="r-fu-body"><p>All seven sections are landed and merged. A shadow's reads of its primary void the pair (§2). Its worktree and prompt no longer name the primary (§3), and its fence hides the primary's records (§4). <code>crew dispatch --pair-backend</code> launches both arms from one base (§5), and neither arm lands while its partner works (§6). The scan lives in its own module (§7).</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-shadow-cannot-see-its-primary</pre>
+    <p class="r-fu-outcome">done — no followup. Residuals, recorded in the landing record: both arms share one git object store, so a deliberate walk of git objects is detected by §2 but not prevented; and the contamination scan reads only a shadow's stream, not the primary arm's.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
