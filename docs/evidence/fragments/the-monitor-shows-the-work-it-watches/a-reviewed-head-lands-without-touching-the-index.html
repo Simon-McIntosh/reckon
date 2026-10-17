@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-title" content="A reviewed head lands without touching the shared index">
+  <meta name="plan-summary" content="reckon crew merge lands a reviewed head by building the merge from objects with merge-tree and commit-tree and moving the branch with a fast-forward, so the index and working tree are never staged and a held index.lock or a moved HEAD costs a retry.">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s42">
+  <meta name="plan-recorded-at" content="2026-10-17">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,merge,git,index">
+  <title>A reviewed head lands without touching the shared index — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-reviewed-head-lands-without-touching-the-index" data-node="a-reviewed-head-lands-without-touching-the-index" data-reckon="landed" data-when="2026-10-17">
+  <h2>A reviewed head lands without touching the shared index</h2>
+  <p>``reckon crew merge --project &lt;p&gt; --head &lt;sha&gt; --message &lt;subject&gt; --body &lt;text&gt;`` pins the base at HEAD, builds the merged tree with ``git merge-tree --write-tree`` and the commit with ``git commit-tree``, lands it with ``git merge --ff-only`` (retrying a held ``index.lock`` or a moved HEAD), and pushes, confirming the remote head matches. A conflicting head is refused naming the conflicted paths with nothing written, and ``--candidate`` lands an already-built merge commit whose parents are the pinned HEAD and the head. The verb is named in the reckon-build skill's Integrate step.</p>
+</article>
+</body>
+</html>

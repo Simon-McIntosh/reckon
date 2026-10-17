@@ -46,6 +46,51 @@ def crew_resume_ready(project, dry_run, pretty):
 
 
 
+@crew.command(name="merge")
+@click.option(
+    "--project",
+    required=True,
+    help="Project whose branch the head lands on.",
+)
+@click.option("--head", required=True, help="Reviewed commit to land as a merge.")
+@click.option("--message", default="", help="Merge commit subject.")
+@click.option(
+    "--body",
+    default="",
+    help="Merge commit body; a subject-only message is refused.",
+)
+@click.option(
+    "--candidate",
+    default=None,
+    help="A merge commit already built, landed unchanged if its parents match.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_merge(project, head, message, body, candidate, pretty):
+    """Land a reviewed head on the primary branch without touching the shared index.
+
+    The merge is built from objects — ``merge-tree`` computes the tree,
+    ``commit-tree`` the commit — so nothing is staged and the checkout is
+    touched only by the closing fast-forward. A conflicting head is refused
+    with nothing written, and a held ``index.lock`` is retried rather than
+    leaving the staged tree a hand repair.
+    """
+    from reckon.crew import merge
+
+    try:
+        repository = merge.project_repository(project)
+        report = merge.land_merge(
+            repository,
+            head=head,
+            message=message,
+            body=body,
+            candidate=candidate or None,
+        )
+    except merge.MergeError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit_crew_result(report, pretty)
+
+
+
 @crew.command(name="unwatch")
 @click.option("--project", required=True, help="Project whose watcher to stop.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
