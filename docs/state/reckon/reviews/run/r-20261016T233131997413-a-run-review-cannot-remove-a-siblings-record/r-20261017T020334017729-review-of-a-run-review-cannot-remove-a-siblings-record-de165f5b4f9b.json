@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:165",
+    "reckon/crew/recovery_review_delivery.py:229",
+    "reckon/crew/obligations.py:163",
+    "reckon/crew/obligation_snapshot.py:841",
+    "reckon/crew/dispatch_launch.py:3246",
+    "reckon/crew/promotion.py:1722"
+  ],
+  "completed_at": "2026-10-17T02:18:59.967Z",
+  "dispatched_at": "2026-10-17T02:04:19Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the coordinator accepts the obligations.py edit: it repairs the cross-session review suppression the run-directory delivery broke, the 216-file population re-measure includes obligations.py's importers, and promotion records it with --accept-path",
+      "recorded_at": "2026-10-17T02:21:22.348164+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "152",
+      "severity": "follow-on",
+      "text": "follow-on: obligations.py is outside the reviewed node's declared write paths; the manifest's evidence_inputs (1) discloses it under the coordinator's instruction to fix the code rather than the test, so the coordinator owns accepting or reverting it at merge."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read commit by commit against base 81f568878; the three gained commits (5e87722ae fix obligations, 2b3e90ef5 fix delivery, de165f5b4 docs) change reckon/crew/obligations.py:152, reckon/crew/recovery_review_delivery.py:93-131, the two dispatch tests and the evidence fragment.",
+    "done_when": "The source node's done_when names tests/test_a_run_review_cannot_remove_a_siblings_record.py with an executed bwrap refusal arm and three negative controls; the reviewed manifest records its run (gate.log 15 passed EXIT=0) and three control logs at EXIT=1, and the gained commits' readers are measured by the regression suites (regression-suites.log 22 passed EXIT=0, including tests/test_crew_obligations.py and tests/test_review_in_flight_by_record_path.py).",
+    "goal": "The reviewed node's goal is to deliver run review records through the run directory so a run review is granted no writable directory holding another run record; the gained commits keep that delivery working for every reader, the obligations duty matching the record by its file name (reckon/crew/obligations.py:152) and the delivery reader locating a declaration by its shape (reckon/crew/recovery_review_delivery.py:100), so the moved record still suppresses the review-missing duty and a re-review is not reported as a run owing one.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T233131997413-a-run-review-cannot-remove-a-siblings-record/manifest.md; status complete, commits fbceb4ce8,1313ddc96,81f568878,5e87722ae,2b3e90ef5,de165f5b4, gate 15 passed EXIT=0, regression suites 22 passed EXIT=0, delivery population 88 passed EXIT=0, and three negative controls at EXIT=1.",
+    "write_paths": "The source manifest declares reckon/crew/recovery_review_subject.py, recovery_review_delivery.py, review.py, dispatch_launch.py, dispatch_admission.py, promotion.py, two tests and two docs paths; every path in the gained diff is inside that scope except reckon/crew/obligations.py, which the manifest's evidence_inputs (1) discloses as taken under the coordinator's fix-the-code-not-the-test instruction."
+  },
+  "justifications": {
+    "durability": "logs/failures.log:24-26 reproduces each defect red at 81f568878 and the regression suites are green at 2b3e90ef5, so reckon/crew/obligations.py:152 and recovery_review_delivery.py:100 each have a guard that reddens on revert; the store-name assertion at tests/test_review_store_reads_and_fences_by_head.py:245 compares two derivations sharing _blob_suffix so it cannot fail on a shared naming-rule change, though it does catch a store filing under the legacy name.",
+    "evidence": "the reviewed manifest records the gate (logs/gate.log 15 passed EXIT=0), the regression suites for the gained readers (logs/regression-suites.log 22 passed EXIT=0) and the three red controls, and logs/failures.log:24-26 quotes each reproduction, though the gained commits are guarded in the regression suites rather than the node's own file.",
+    "fit": "reckon/crew/recovery_review_delivery.py:81 and :100 name their mechanism in the surrounding reader idiom with no plan, stage or version label.",
+    "goal_fidelity": "reckon/crew/obligations.py:152 and reckon/crew/recovery_review_delivery.py:100 make the moved record findable by every reader, which keeps the node's run-directory delivery a working goal rather than a declaration no reader follows.",
+    "reuse": "the shape locator reuses the owner's reckon/crew/review.py:2450 RUN_REVIEW_RECORD_DIRNAME and review.py:2477 run_review_record_location rather than re-deriving the record path, and anchors on runs.runs_dir(); a search over reckon/crew for an existing declared-record locator found only that owner.",
+    "scope_discipline": "reckon/crew/obligations.py:152 is outside the source manifest's declared write paths and is disclosed at evidence_inputs (1), while every other gained-diff path is inside the declared scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The reviewed node's goal is to deliver run review records through the run directory so a run review is granted no writable directory holding another run record; the gained commits keep that delivery working for every reader, the obligations duty matching the record by its file name (reckon/crew/obligations.py:152) and the delivery reader locating a declaration by its shape (reckon/crew/recovery_review_delivery.py:100), so the moved record still suppresses the review-missing duty and a re-review is not reported as a run owing one.\nVERDICT done_when: The source node's done_when names tests/test_a_run_review_cannot_remove_a_siblings_record.py with an executed bwrap refusal arm and three negative controls; the reviewed manifest records its run (gate.log 15 passed EXIT=0) and three control logs at EXIT=1, and the gained commits' readers are measured by the regression suites (regression-suites.log 22 passed EXIT=0, including tests/test_crew_obligations.py and tests/test_review_in_flight_by_record_path.py).\nVERDICT write_paths: The source manifest declares reckon/crew/recovery_review_subject.py, recovery_review_delivery.py, review.py, dispatch_launch.py, dispatch_admission.py, promotion.py, two tests and two docs paths; every path in the gained diff is inside that scope except reckon/crew/obligations.py, which the manifest's evidence_inputs (1) discloses as taken under the coordinator's fix-the-code-not-the-test instruction.\nVERDICT manifest: Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261016T233131997413-a-run-review-cannot-remove-a-siblings-record/manifest.md; status complete, commits fbceb4ce8,1313ddc96,81f568878,5e87722ae,2b3e90ef5,de165f5b4, gate 15 passed EXIT=0, regression suites 22 passed EXIT=0, delivery population 88 passed EXIT=0, and three negative controls at EXIT=1.\nVERDICT diff: Read commit by commit against base 81f568878; the three gained commits (5e87722ae fix obligations, 2b3e90ef5 fix delivery, de165f5b4 docs) change reckon/crew/obligations.py:152, reckon/crew/recovery_review_delivery.py:93-131, the two dispatch tests and the evidence fragment.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:165, reckon/crew/recovery_review_delivery.py:229, reckon/crew/obligations.py:163, reckon/crew/obligation_snapshot.py:841, reckon/crew/dispatch_launch.py:3246, reckon/crew/promotion.py:1722\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:152 and reckon/crew/recovery_review_delivery.py:100 make the moved record findable by every reader, which keeps the node's run-directory delivery a working goal rather than a declaration no reader follows.\nSCORE evidence: 17\nJUSTIFICATION evidence: the reviewed manifest records the gate (logs/gate.log 15 passed EXIT=0), the regression suites for the gained readers (logs/regression-suites.log 22 passed EXIT=0) and the three red controls, and logs/failures.log:24-26 quotes each reproduction, though the gained commits are guarded in the regression suites rather than the node's own file.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: reckon/crew/obligations.py:152 is outside the source manifest's declared write paths and is disclosed at evidence_inputs (1), while every other gained-diff path is inside the declared scope.\nSCORE durability: 18\nJUSTIFICATION durability: logs/failures.log:24-26 reproduces each defect red at 81f568878 and the regression suites are green at 2b3e90ef5, so reckon/crew/obligations.py:152 and recovery_review_delivery.py:100 each have a guard that reddens on revert; the store-name assertion at tests/test_review_store_reads_and_fences_by_head.py:245 compares two derivations sharing _blob_suffix so it cannot fail on a shared naming-rule change, though it does catch a store filing under the legacy name.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_review_delivery.py:81 and :100 name their mechanism in the surrounding reader idiom with no plan, stage or version label.\nSCORE reuse: 18\nJUSTIFICATION reuse: the shape locator reuses the owner's reckon/crew/review.py:2450 RUN_REVIEW_RECORD_DIRNAME and review.py:2477 run_review_record_location rather than re-deriving the record path, and anchors on runs.runs_dir(); a search over reckon/crew for an existing declared-record locator found only that owner.\nFINDING reckon/crew/obligations.py:152 follow-on: obligations.py is outside the reviewed node's declared write paths; the manifest's evidence_inputs (1) discloses it under the coordinator's instruction to fix the code rather than the test, so the coordinator owns accepting or reverting it at merge.\n",
+  "review_run_id": "r-20261017T020334017729-review-of-a-run-review-cannot-remove-a-siblings-record-de165f5b4f9b",
+  "reviewed_base_sha": "81f56887847dc4674c684a6779a43a9a09635fd1",
+  "reviewed_head_sha": "de165f5b4f9bcb91932932917107dbbc1442a637",
+  "reviewed_run_id": "r-20261016T233131997413-a-run-review-cannot-remove-a-siblings-record",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T02:14:40.373306+00:00",
+  "total": 104
+}
