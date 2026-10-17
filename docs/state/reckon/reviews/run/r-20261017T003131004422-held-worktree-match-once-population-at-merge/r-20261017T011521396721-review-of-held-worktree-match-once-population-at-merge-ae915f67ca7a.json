@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 6,
+  "added_failure_ids": [
+    "tests/test_held_worktrees_read_run_files.py::test_a_mixed_state_goes_to_the_run[aggregate-only]",
+    "tests/test_held_worktrees_read_run_files.py::test_a_mixed_state_goes_to_the_run[completed-at-tie]",
+    "tests/test_held_worktrees_read_run_files.py::test_a_mixed_state_goes_to_the_run[completion-reverses-dispatch]",
+    "tests/test_held_worktrees_read_run_files.py::test_a_mixed_state_goes_to_the_run[file-and-aggregate-row]",
+    "tests/test_held_worktrees_read_run_files.py::test_a_mixed_state_goes_to_the_run[per-run-only]",
+    "tests/test_held_worktrees_read_run_files.py::test_the_held_set_equals_the_whole_ledger_derivation"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or the six ids' own repetition summary; total not capped",
+  "base_log_revision": "ae915f67ca7a9d7a5a207744c2f467f3538603c9",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T01:23:48.696Z",
+  "dispatched_at": "2026-10-17T01:16:22Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T003131004422-held-worktree-match-once-population-at-merge/manifest.md",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: the after_suite block records failure_count 7 with only the seven FAILED node ids, while the same log's summary reads \"7 failed, 911 passed, 8 warnings, 5 errors\" and gate-candidate.log:24-496 names five setup ERROR node ids in tests/test_held_worktree_records_match_each_record_once.py that repeats2/summary.txt:3-7 records explicitly and that run 5/5 alone at the candidate, so a reader of the structured field alone learns of six added failures rather than eleven and never sees that the merge adds a file whose every test errors; the information is present in failure_attribution so the whole manifest is not misleading."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T003131004422-held-worktree-match-once-population-at-merge/manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: all six added ids are 0/5 alone at both revisions, yet 3/3 loaded candidate runs failed at least one and 0/3 loaded base runs failed any (repeats2/summary.txt), and the node labels them load-only without measuring whether the candidate's new test module - whose module-scoped fixture redirects RECKON_HOME and creates real repositories - is itself what destabilises its siblings under -n 10, so a candidate-introduced load interaction is left as an untested alternative to pure load and the node's central verdict is weaker than its wording."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T003131004422-held-worktree-match-once-population-at-merge/manifest.md",
+      "line": "8",
+      "severity": "follow-on",
+      "text": "follow-on: changed_paths reads \"none\" while eleven artifacts were written into the granted report scope, so a coordinator reconciling the record against the tree cannot tell that the report directory was written."
+    }
+  ],
+  "head_log_revision": "4babb5feec80c8c9a7494744c3e7d289d4d5fc4d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the reviewed node commits nothing (manifest.md:7), so there is no diff; its worktree HEAD is ae915f67ca7a9d7a5a207744c2f467f3538603c9 with an empty git status --short, so no path under reckon/ or tests/ changed and the only durable artifacts are the logs and id lists in the granted report scope.",
+    "done_when": "the done_when (prompt.txt:79) asks for two run-directory logs that each name their revision, host and literal command, prove reckon.__file__ under that revision's own checkout, carry pytest's summary for the 105-file list at base and candidate and end EXIT=, plus five alone runs per revision per added id; gate-base.log and gate-candidate.log carry REVISION/HOST/TREE/CWD/COMMAND/MODULE_FILE headers (module under /tmp/.../base and /tmp/.../cand) and end EXIT=1 with summaries \"1 failed, 917 passed\" and \"7 failed, 911 passed, 8 warnings, 5 errors\", and repeats/summary.txt records 0/5 failed runs at both revisions for each of the six added ids.",
+    "goal": "the node goal (prompt.txt:30) is to measure the importer population of the held-worktree record index at base and at its merge candidate on an exclusive node; the manifest's landing, tests and artifacts lines (manifest.md:10-11,18) report exactly that measurement and name the six added ids.",
+    "manifest": "read; manifest.md records both arms' summaries with EXIT codes and log paths (manifest.md:11-12), the six added ids each with a verdict and a per-id failure_attribution (manifest.md:17), the five candidate-only setup errors, the one scaffolding retry, and the follow-on naming the new test file's RECKON_HOME fixture.",
+    "write_paths": "the dispatch (prompt.txt:63) granted one report directory, reports/reckon/a-read-answers-inside-its-deadline/held-worktree-match-once-population-at-merge, which holds 11 written artifacts (both gate logs, the three id lists, both repetition summaries and both job scripts); the reviewed worktree is clean at ae915f67c with HEAD equal to its base, so nothing under reckon/ or tests/ changed."
+  },
+  "justifications": {
+    "durability": "the reviewed node adds no code and so adds no regression assertion, and its central finding rests on six ids that failed 0/5 alone at both revisions (repeats/summary.txt:1-12), so a re-run need not reproduce the count it recorded.",
+    "evidence": "gate-base.log and gate-candidate.log carry the revision, host, literal command and MODULE_FILE headers the done_when requires and end EXIT=1, and repeats/summary.txt records 0/5 failed runs at each revision for all six added ids.",
+    "fit": "the manifest and its id lists follow the dispatch manifest contract with no symbol, file or comment a naming rule forbids.",
+    "goal_fidelity": "the source manifest's tests line (manifest.md:11) reports \"1 failed, 917 passed\" at ae915f67c against \"7 failed, 911 passed, 5 errors\" at 4babb5fee and names the six added ids, which is the base-versus-candidate attribution the goal states.",
+    "reuse": "the node adds no definition that could fork an owner, and the durable added-failure record it feeds is reduced by the existing owner reckon/crew/review.py:2100 added_failures_from_gate_logs, which over these two logs returns the same six ids.",
+    "scope_discipline": "every artifact sits inside the one granted report directory (prompt.txt:63) plus the brief-mandated run directory, and the reviewed worktree is clean at ae915f67c with no commit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal (prompt.txt:30) is to measure the importer population of the held-worktree record index at base and at its merge candidate on an exclusive node; the manifest's landing, tests and artifacts lines (manifest.md:10-11,18) report exactly that measurement and name the six added ids.\nVERDICT done_when: the done_when (prompt.txt:79) asks for two run-directory logs that each name their revision, host and literal command, prove reckon.__file__ under that revision's own checkout, carry pytest's summary for the 105-file list at base and candidate and end EXIT=, plus five alone runs per revision per added id; gate-base.log and gate-candidate.log carry REVISION/HOST/TREE/CWD/COMMAND/MODULE_FILE headers (module under /tmp/.../base and /tmp/.../cand) and end EXIT=1 with summaries \"1 failed, 917 passed\" and \"7 failed, 911 passed, 8 warnings, 5 errors\", and repeats/summary.txt records 0/5 failed runs at both revisions for each of the six added ids.\nVERDICT write_paths: the dispatch (prompt.txt:63) granted one report directory, reports/reckon/a-read-answers-inside-its-deadline/held-worktree-match-once-population-at-merge, which holds 11 written artifacts (both gate logs, the three id lists, both repetition summaries and both job scripts); the reviewed worktree is clean at ae915f67c with HEAD equal to its base, so nothing under reckon/ or tests/ changed.\nVERDICT manifest: read; manifest.md records both arms' summaries with EXIT codes and log paths (manifest.md:11-12), the six added ids each with a verdict and a per-id failure_attribution (manifest.md:17), the five candidate-only setup errors, the one scaffolding retry, and the follow-on naming the new test file's RECKON_HOME fixture.\nVERDICT diff: the reviewed node commits nothing (manifest.md:7), so there is no diff; its worktree HEAD is ae915f67ca7a9d7a5a207744c2f467f3538603c9 with an empty git status --short, so no path under reckon/ or tests/ changed and the only durable artifacts are the logs and id lists in the granted report scope.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the source manifest's tests line (manifest.md:11) reports \"1 failed, 917 passed\" at ae915f67c against \"7 failed, 911 passed, 5 errors\" at 4babb5fee and names the six added ids, which is the base-versus-candidate attribution the goal states.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-base.log and gate-candidate.log carry the revision, host, literal command and MODULE_FILE headers the done_when requires and end EXIT=1, and repeats/summary.txt records 0/5 failed runs at each revision for all six added ids.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every artifact sits inside the one granted report directory (prompt.txt:63) plus the brief-mandated run directory, and the reviewed worktree is clean at ae915f67c with no commit.\nSCORE durability: 15\nJUSTIFICATION durability: the reviewed node adds no code and so adds no regression assertion, and its central finding rests on six ids that failed 0/5 alone at both revisions (repeats/summary.txt:1-12), so a re-run need not reproduce the count it recorded.\nSCORE fit: 18\nJUSTIFICATION fit: the manifest and its id lists follow the dispatch manifest contract with no symbol, file or comment a naming rule forbids.\nSCORE reuse: 19\nJUSTIFICATION reuse: the node adds no definition that could fork an owner, and the durable added-failure record it feeds is reduced by the existing owner reckon/crew/review.py:2100 added_failures_from_gate_logs, which over these two logs returns the same six ids.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T003131004422-held-worktree-match-once-population-at-merge/manifest.md:16 follow-on: the after_suite block records failure_count 7 with only the seven FAILED node ids, while the same log's summary reads \"7 failed, 911 passed, 8 warnings, 5 errors\" and gate-candidate.log:24-496 names five setup ERROR node ids in tests/test_held_worktree_records_match_each_record_once.py that repeats2/summary.txt:3-7 records explicitly and that run 5/5 alone at the candidate, so a reader of the structured field alone learns of six added failures rather than eleven and never sees that the merge adds a file whose every test errors; the information is present in failure_attribution so the whole manifest is not misleading.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T003131004422-held-worktree-match-once-population-at-merge/manifest.md:17 follow-on: all six added ids are 0/5 alone at both revisions, yet 3/3 loaded candidate runs failed at least one and 0/3 loaded base runs failed any (repeats2/summary.txt), and the node labels them load-only without measuring whether the candidate's new test module - whose module-scoped fixture redirects RECKON_HOME and creates real repositories - is itself what destabilises its siblings under -n 10, so a candidate-introduced load interaction is left as an untested alternative to pure load and the node's central verdict is weaker than its wording.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T003131004422-held-worktree-match-once-population-at-merge/manifest.md:8 follow-on: changed_paths reads \"none\" while eleven artifacts were written into the granted report scope, so a coordinator reconciling the record against the tree cannot tell that the report directory was written.",
+  "review_run_id": "r-20261017T011521396721-review-of-held-worktree-match-once-population-at-merge-ae915f67ca7a",
+  "reviewed_base_sha": "ae915f67ca7a9d7a5a207744c2f467f3538603c9",
+  "reviewed_head_sha": "ae915f67ca7a9d7a5a207744c2f467f3538603c9",
+  "reviewed_run_id": "r-20261017T003131004422-held-worktree-match-once-population-at-merge",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T01:25:52.174937+00:00",
+  "total": 108
+}
