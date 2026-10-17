@@ -26,7 +26,7 @@
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -247,7 +247,7 @@
 
     <h2 id="s7">§7 — The shadow-read scan lives in its own module</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> §2 added about 150 lines to <code>reckon/ledger.py</code>, taking it from 4,238 to 4,387 lines and to 51,295 estimated tokens, above the 50,000-token worker-window bound in <code>tests/test_every_module_fits_a_worker_window.py</code>. <code>ledger.py</code> is not allowlisted, so main has been red on that test since §2 merged. reckon-0e found it in two population runs on 2026-10-17. The added lines belong to the shadow-read scan, which is one self-contained block in <code>ledger.py</code>, from <code>_SHADOW_SHA_PREFIX_MIN</code> through <code>_path_reads_primary_changed</code>. Nothing else in <code>ledger.py</code> calls into that block.</p>
+<p><strong>Why.</strong> §2 added about 150 lines to <code>reckon/ledger.py</code>, taking it from 4,238 to 4,387 lines and to 51,295 estimated tokens, above the 50,000-token worker-window bound in <code>tests/test_every_module_fits_a_worker_window.py</code>. <code>ledger.py</code> is not allowlisted, so main has been red on that test since §2 merged. reckon-0e found it in two population runs on 2026-10-17. The added lines belong to the shadow-read scan, which is one self-contained block in <code>ledger.py</code>, under the banner “Shadow contamination: a stream that read its primary’s answer”, from <code>_SHADOW_GIT_READ_VERBS</code> and <code>_SHADOW_GIT_CONTENT_READ_VERBS</code> through <code>_path_reads_primary_changed</code>. Nothing else in <code>ledger.py</code> calls into that block.</p>
 <p><strong>Deliverable.</strong> The block moves whole into a new module, <code>reckon/shadow_reads.py</code>: <code>stream_tool_calls</code>, <code>shadow_primary_read</code>, the reason priority, and every private helper and pattern they use. It is a move, not a copy. <code>ledger.py</code> keeps no re-export or wrapper, and its callers import from the new module: <code>promotion_scope._shadow_stream_contamination</code> and <code>tests/test_crew_shadow_contamination.py</code>. <code>ledger.shadow_controlled</code> and the <code>shadow_contaminated</code> record field stay in <code>ledger.py</code>, because the record builder owns them. No behaviour changes.</p>
 <p><strong>Write paths.</strong> <code>reckon/ledger.py</code>, <code>reckon/shadow_reads.py</code>, <code>reckon/crew/promotion_scope.py</code> and <code>tests/test_crew_shadow_contamination.py</code>.</p>
 <p><strong>Done when</strong> <code>tests/test_every_module_fits_a_worker_window.py</code> passes, and <code>tests/test_crew_shadow_contamination.py</code> passes with the same test ids it has at base, now calling the new module. No name defined in the moved block remains in <code>ledger.py</code>. The test files that import <code>ledger.py</code> or <code>promotion_scope.py</code> show no added failure id against the base revision; the coordinator runs that population at merge. Negative control: putting the block back into <code>ledger.py</code> makes the width test fail again, logged under the run directory. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the changed files relative to the base revision.</p>
@@ -289,6 +289,11 @@
     <h4 class="r-fu-title">Land §5, then build §6</h4>
     <div class="r-fu-body"><p>§5 (paired dispatch, each arm fenced from the other) is in flight. §6 holds a paired arm's promotion until its partner is terminal, and its test also covers the <code>_shadow_control_marks</code> call that §2 landed untested; it follows §5 because it reads the pairing §5 records. Tell nova-2c when §5 and §6 land.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-shadow-cannot-see-its-primary §5</pre>
+    </article>
+<article class="r-fu" data-id="f-ascp-005" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-17 05:05" data-recommends-skill="/reckon-build a-shadow-cannot-see-its-primary §7" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §7 to return main&#x27;s width test to green</h4>
+    <div class="r-fu-body"><p>§2 pushed <code>reckon/ledger.py</code> past the worker-window bound, so main is red on <code>tests/test_every_module_fits_a_worker_window.py</code>. §7 moves the shadow-read scan into its own module. It writes paths disjoint from §6 and runs beside it. reckon-0e has sequenced its own <code>ledger.py</code> work after it; tell reckon-0e when it merges.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-shadow-cannot-see-its-primary §7</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
