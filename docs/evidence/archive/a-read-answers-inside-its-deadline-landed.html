@@ -160,6 +160,11 @@
     <p>Run <code>r-20261017T153357520669</code>, reviewed head <code>c03a18d74</code>, merged as <code>beb584bac</code>. One cold roadmap read lists each authored docs directory once and reads each authored file at most once. The listing and the reads are shared across discovery, the resource scan, the covered-file check, sprint liveness and the roadmap's three plan readers. The node was widened to <code>reckon/roadmap.py</code> mid-build, and text and byte reads share one count. A plan written between two reads in the same process is seen by the second, so the shared listing never outlives a read.</p><p>Evidence. On a 24-plan, four-research, three-sprint built tree, the head passed. The base failed at 10 scans of <code>docs/plans</code> and seven reads per plan. The direct-importer gate passed 412/412. The first stacked whole-suite measure found 2 scan-count controls that counted no walk, and both were repointed. The second (<code>r-20261017T212309947469</code>, stacked with ledger §9) attributed no added failing id to either run. Reviews scored 112, 114 and 115.</p>
   </section>
 
+  <section id="s30">
+    <h2>§30 — a roadmap reads the project watch stream once, landed</h2>
+    <p>Run <code>r-20261017T222835968437</code>, reviewed head <code>98338aa3f</code>, merged as <code>0ab2f5363</code>. A roadmap read parses the project watch stream once through <code>runs.watch_stream_latest_events</code>, and <code>sprint_liveness._recorded_states</code> and the live-run classification share the result. A long-lived process parses only the bytes appended since its last read. A truncated or replaced stream is read again from the start. Over a 10,000-line stream, <code>parse_stream_line</code> calls per read fell from 40,000 to 10,000. Ten appended lines parsed as 10, and a truncated-and-rewritten five-line stream parsed as 5.</p><p>Evidence. The review scored 115/120. Its one follow-on concerns a recovery-classification event with a blank state, which <code>runs._stream_transition</code> cannot produce today. The importer population at merge (<code>r-20261017T225646473009</code>, 113 files) added no failing id; both arms fail the same four pre-existing ids. A control showed the reader reports an injected candidate-only failure as added.</p>
+  </section>
+
 </main>
 </body>
 </html>
