@@ -2871,7 +2871,6 @@ from .dispatch_sessions import (  # noqa: E402
     FENCE_WORKERS as FENCE_WORKERS,
     _apply_orientation_check as _apply_orientation_check,
     _backend_settings as _backend_settings,
-    _capture_member_session as _capture_member_session,
     _capture_session_absence as _capture_session_absence,
     _carry_declared_placement as _carry_declared_placement,
     _carry_fence_unprotected as _carry_fence_unprotected,

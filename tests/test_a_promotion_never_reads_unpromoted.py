@@ -177,14 +177,14 @@ def test_a_recorded_report_reads_recorded_at_the_promote_boundary(
     assert before["classification"] == "promotable"
 
     observed = []
-    original = promotion._capture_member_session
+    original = promotion.capture_run_session
 
     def boundary_hook(record):
         snap = _snapshot(run_id)
         observed.append((snap["state"], snap["classification"]))
         return original(record)
 
-    monkeypatch.setattr(promotion, "_capture_member_session", boundary_hook)
+    monkeypatch.setattr(promotion, "capture_run_session", boundary_hook)
 
     result = crew.complete(
         run_id,
