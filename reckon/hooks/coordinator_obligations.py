@@ -121,6 +121,7 @@ AUTHORITY_LINE = "mirror these into your task list; reckon's list is the authori
 # module is stdlib-only, so loading it by path keeps the prompt path inside the
 # standard library plus the formatting here.
 _SNAPSHOT_MODULE_NAME = "reckon.crew.obligation_snapshot"
+_SESSION_HOST_STATE_DIR_ENV = "RECKON_SESSION_HOST_STATE_DIR"
 
 
 @cache
@@ -386,7 +387,10 @@ def _claude_pid() -> int | None:
 
 
 def _live_session_host_pid() -> int | None:
-    """The running host recorded for this hook's harness process, if any."""
+    """The running host recorded for this hook's harness process, if any.
+
+    The host's state-directory override takes precedence over the crew home.
+    """
     owner_pid = _claude_pid()
     if owner_pid is None:
         return None
@@ -394,7 +398,9 @@ def _live_session_host_pid() -> int | None:
     owner_start = module.process_start_time(owner_pid)
     if not owner_start:
         return None
-    path = module.crew_home() / "session-hosts" / f"{owner_pid}-{owner_start}.json"
+    override = os.environ.get(_SESSION_HOST_STATE_DIR_ENV)
+    directory = Path(override) if override else module.crew_home() / "session-hosts"
+    path = directory / f"{owner_pid}-{owner_start}.json"
     try:
         record = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
