@@ -332,7 +332,7 @@ def test_the_change_watch_invalidates_the_tree(project_tree, monkeypatch):
         real(root, changed_at=changed_at)
 
     monkeypatch.setattr(serve, "_invalidate_tree_views", spy)
-    watch = serve._FleetChangeWatch([docs_dir])
+    watch = serve._FleetChangeWatch({_PROJECT: docs_dir})
     watch.start()
     try:
         _rewrite(docs_dir / "plans" / "plan-001.html", "plan-001", "a watched change")

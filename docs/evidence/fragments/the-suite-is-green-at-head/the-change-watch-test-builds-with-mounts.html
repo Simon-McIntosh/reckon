@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s17">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-17">
+  <meta name="plan-tags" content="serve,change-watch,mounts,test">
+  <title>The change-watch test builds the watch with its mounts | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-change-watch-test-builds-with-mounts-landed" data-node="the-change-watch-test-builds-with-mounts" data-reckon="landed" data-when="2026-10-17">
+  <h2 id="the-change-watch-test-builds-with-mounts-heading">The change-watch test builds the watch with its mounts</h2>
+  <p id="the-change-watch-test-builds-with-mounts-landing"><code>tests/test_metadata_index_survives_restart.py::test_the_change_watch_invalidates_the_tree</code> now constructs <code>serve._FleetChangeWatch({_PROJECT: docs_dir})</code> — a project-to-docs-directory mapping, as production does — in place of the list it passed since <code>_FleetChangeWatch.__init__</code> changed to take a mapping; the invalidation assertions are unchanged. <code>tests/test_metadata_index_survives_restart.py</code> is <code>8 passed</code> alone and <code>8 passed</code> with <code>-n 4</code> (<code>EXIT=0</code>), and at the base revision the id fails on <code>AttributeError: 'list' object has no attribute 'items'</code> (<code>EXIT=1</code>).</p>
+</article>
+</body>
+</html>
