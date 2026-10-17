@@ -23,7 +23,7 @@
 <meta name="plan-capability-reasoning" content="deep">
 <meta name="plan-capability-verification" content="strict">
 <meta name="plan-capability-risk" content="moderate">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;}">
 </head>
@@ -49,6 +49,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-close-s1" data-who="reckon-build" data-when="2026-10-17T01:08:00Z">
     <div class="r-comment-body"><p>§1 landed. A process is named for a run only when its environment resolves to the run's own crew home through <code>_config_home</code>. So another crew home's process carrying the same run id is neither read as the run's worker nor signalled by a stop (merged as <code>5f7969ab1</code>). Gate: 6 passed. The control is red. The 206-file population adds no failing id. Review: 110. <a href="/reckon/evidence/archive/a-run-mark-is-read-in-its-own-crew-home-landed.html#s1">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261017T000411306781-a-run-mark-is-read-in-its-own-crew-home" data-who="reckon-build" data-when="2026-10-17T00:23:47.086Z">
+    <div class="r-comment-body"><p>_processes_owning_run in reckon/crew/process_signal.py now takes the run&#x27;s own crew home and names a process only when its environment, resolved by _config_home (extended to accept an environment mapping), places it in that home; _env_scan_run_pid passes crew_home() and the stop path passes the crew_home() under which run_dir() found the run, with no caller of local_liveness changed. tests/test_a_run_mark_is_read_in_its_own_crew_home.py (6 tests) starts a live child in each of two homes carrying one RECKON_RUN_ID and shows each door names only the given home&#x27;s child, a child with no RECKON_HOME matches only the resolved default (XDG and ~/docs-server), a trailing-slash and a symlinked spelling still match, and a record with dead pids reads not alive while only another home&#x27;s child carries the mark: 6 passed EXIT=0, and 86 passed EXIT=0 across the focused regression set. Negative control (crew-home comparison removed) EXIT=1 with 5 failing ids. Record: docs/evidence/fragments/a-run-mark-is-read-in-its-own-crew-home/a-run-mark-is-read-in-its-own-crew-home.html</p></div>
 </div>
 </section>
 </main>
