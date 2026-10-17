@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="59">
+<meta name="plan-version" content="60">
 <meta name="plan-modified" content="2026-10-17">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="f2ea9301,5b1759ab,428477c7">
 <meta name="plan-impl" content="0.4">
 </head>
@@ -223,7 +223,7 @@
 <p><strong>Why.</strong> §3 states the evaluation and its pairs. This section is its executable node, with the gate §3 does not carry.</p><p><strong>Deliverable.</strong> The five pairs in §3's table are drawn as figures, each kept as the SVG it was drawn in and as a PNG rendered from it, under <code>docs/figures/figure-review-pairs/</code>. Each figure is presented on its own to the codex lane §7 declared, through §6's dispatch path, with one prompt naming the rule under test.</p><p><strong>Done when</strong> the report under the run directory records, for each pair and each format, the lane's verdict verbatim on the bad figure and on the good one. A pair discriminates when the bad figure fails and the good one passes on the rule named. The report states how many of the five pairs discriminate as PNG and how many as SVG. The negative control sends each bad figure's prompt with the image withheld: a verdict that still fails the rule shows the lane answering from the prompt, and that pair does not count. This section runs after §7, on a metered lane: twenty figure prompts and five controls. Write paths: <code>docs/figures/figure-review-pairs/</code> and the run's report directory.</p>
 
     <h2 id="s9">§9 — A test holds the codex image declaration</h2>
-<section data-reckon="section" data-id="s9" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s9" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> §7 declared <code>input_modalities: [text, image]</code> on <code>backends.codex</code> in <code>docs/state/reckon/flight.yaml</code> after a measured delivery, and §8 measured that the lane judges five known PNG pairs correctly. Nothing tests the declaration itself. An edit to the project layer could drop it, and nothing would turn red until a figure review was refused at dispatch.</p><p><strong>Deliverable.</strong> One test resolves reckon's project flight layer from the repository under test, with the user layer pointed at an empty file in the test's temporary directory. It asserts that <code>reckon.flight.declared_input_modalities</code> returns image input for <code>codex</code>. The layer path is a parameter, so the negative control can point it at a copy.</p><p><strong>Done when</strong> <code>tests/test_codex_declares_image_input.py</code> passes. The test reads no file outside the repository and its temporary directory, and the test files importing <code>reckon/flight.py</code> show no added failure against base. The negative control points the test at a scratch copy of the layer with the <code>input_modalities</code> line removed, and the test must then fail. It is logged under the run directory. Write paths: <code>tests/test_codex_declares_image_input.py</code>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -252,10 +252,11 @@
     <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §8</pre>
     <p class="r-fu-outcome"><p>§8 ran on the lead's go-ahead. Codex discriminates all five pairs as PNG and none as SVG, because the lane receives no SVG as an image. The controls were all honest. The follow-ons are §9, a test that holds the declaration, and two decisions for the lead: how a figure review handles an SVG, and whether one may run on a metered lane.</p></p>
     </article>
-<article class="r-fu" data-id="f-arcstf-005" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-17" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arcstf-005" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-17" data-recommends-skill="" data-resolved-at="2026-10-17T16:28:28+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build §9, and the lead decides how figure reviews handle SVGs and metered lanes</h4>
     <div class="r-fu-body"><p>§9 is a test that holds codex's image declaration. It spends nothing and can be dispatched now. §4 stays deferred until the lead decides <code>svg-figure-delivery</code> and <code>figure-review-on-metered-lane</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §9</pre>
+    <p class="r-fu-outcome"><p>§9 landed: a test now holds codex's image declaration (<code>a68042d64</code>). Every section that can run without the lead has landed. What remains waits on the lead's two open decisions, <code>svg-figure-delivery</code> and <code>figure-review-on-metered-lane</code>, which hold §4. If <code>render-to-png</code> is chosen, the lock adds a section that renders an SVG figure to PNG on the dispatch's image path before §4 is rewritten.</p></p>
     </article>
 </section>
 
@@ -408,7 +409,10 @@
     <div class="r-comment-body"><p>test(flight): tests/test_codex_declares_image_input.py resolves the repository's own docs/state/reckon/flight.yaml with an empty host layer and asserts the codex backend declares image (declared_input_modalities contains "image"); focused gate 1 passed, negative control EXIT=1, flight-importing population 2 failed / 749 passed unchanged base-&gt;head (0 added failures)</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261017T160709927481-review-of-a-test-holds-the-codex-image-declaration-885bb448a5a9" data-who="reckon-build" data-when="2026-10-17T16:21:42.890Z">
-    <div class="r-comment-body"><p>review of run r-20261017T154304943398-a-test-holds-the-codex-image-declaration at head 885bb448a5a9: scores goal_fidelity 20, evidence 15, scope_discipline 20, durability 19, fit 19, reuse 20 (total 113); added_failure_count 0 from the reviewed run&#x27;s own baseline_suite/after_suite logs; two follow-on findings on the reviewed run&#x27;s arm-revision headers, no blocking finding; record stored under review-records/</p></div>
+    <div class="r-comment-body"><p>review of run r-20261017T154304943398-a-test-holds-the-codex-image-declaration at head 885bb448a5a9: scores goal_fidelity 20, evidence 15, scope_discipline 20, durability 19, fit 19, reuse 20 (total 113); added_failure_count 0 from the reviewed run's own baseline_suite/after_suite logs; two follow-on findings on the reviewed run's arm-revision headers, no blocking finding; record stored under review-records/</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-17T16:35:00Z">
+    <div class="r-comment-body"><p>§9 landed. <code>tests/test_codex_declares_image_input.py</code> resolves the repository's own project flight layer with an empty host layer and asserts codex declares image input, so an edit that drops the declaration now turns the suite red. 1 passed, and the stripped-line control fails. Merged as <code>a68042d64</code>, and <code>verify-gate</code> passed. 0 added failures over the flight importers. Review: 113/120. Spent nothing: it ran on the local lane. <a href="/reckon/evidence/archive/a-review-can-see-the-figure-landed.html#s9-declaration-held-by-test">evidence</a></p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
