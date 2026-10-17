@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T15:40:04.326Z",
+  "dispatched_at": "2026-10-17T15:25:15Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-velocity-window-may-open-before-the-ledger/r-20261017T152433832879-plan-review-of-a-velocity-window-may-open-before-the-ledger/plan.html:134",
+      "id": "done_when-1",
+      "reason": "without a declared injection point the node's two load-bearing cases are unbuildable as written; naming one is a one-clause change and the earlier line-134 finding on this same test was amended for exactly this class of gap.",
+      "text": "\u00a72's done-when requires the test to run \"with the slice size set to one commit\" (plan.html:134), and its second case and its third (interruption/resume) case both depend on the window taking several slices, but the section names no knob the test can set: line 124 fixes the size as a property of \"this checkout\" and the section adds \"no public name\", so a builder that writes the size as a local constant produces a test that can only ever take one slice and a third case that cannot exercise the resume the section's own negative control reddens; declarable as a module-level constant or a keyword parameter, either of which the test can set",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "65aebaf7ee3d84007f8d83ce42b7ad04a1139f820ce1a2c2d954af92397fe195",
+  "plan_slug": "a-velocity-window-may-open-before-the-ledger",
+  "plan_version": 16,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-17T15:40:53.811891+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T15:40:53.811891+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-velocity-window-may-open-before-the-ledger.v16.json",
+  "review_run_id": "r-20261017T152433832879-plan-review-of-a-velocity-window-may-open-before-the-ledger",
+  "reviewed_blob_sha": "f8b70ad9ae60cab8f77679ee6228dd548fbca328",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor in \u00a72 resolves: `reckon/velocity.py:149` is the `run_git` signature whose `timeout=180` bounds each git call, `reckon/velocity.py:1217` is the `git(...)` search, `reckon/velocity.py:2149` is `promotion_clock_sources` and `reckon/velocity.py:1249` the `first_primary_ledger_appearance_upper_bound` literal, commits `440ce55a6`, `534f6536e`, `e080ed967`, `af650745d`, `69fb3c1e5` and `3e4736687` all resolve to commits, and the cited `docs/state/<project>/runs/<run_id>.json` naming matches the writer at `reckon/ledger.py:885`; no extensionless href is involved.",
+    "done_when": "a finding \u2014 \u00a72's second and third test cases are only constructible if the test can force the slice size to one commit, and the section declares no injection point for it.",
+    "evidence_paths": "pass \u2014 the section's diagnostic evidence is at `~/.cache/reckon-velocity-window-check/`, the `~/.cache/<repo>-<topic>/` path the workspace sanctions for logs a later reader needs, and I opened all three files there; no gate log is placed in a session scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 the new report value `first_primary_record_file_addition_upper_bound` and the new test path `tests/test_velocity_places_a_run_by_its_record_file.py` name the mechanism, carry no plan label, stage name, ticket number or version tag, and the section's prose is mechanism, not changelog.",
+    "reasoning": "pass \u2014 all three checks hold. The root cause matches the cited evidence: the `TimeoutExpired` logs name the same `git log --first-parent --since\u2026 -p -G <ids> origin..head -- crew.json runs/` argv the section describes, and the 2026-09-01 log (`# revision 534f6536e\u2026`, `EXIT=1 seconds=410`) was taken at a head whose base already carries a ledger, so the section is right that the timeout predates \u00a71 rather than being caused by it. Each mechanism can produce its half of the done-when: bounding each git call by ledger-touching-commit slices with the cache's existing `walked` resume keeps every call inside `run_git`'s 180 s bound while carrying the walk across calls, and taking runs out of the `-G` expression via `--diff-filter=A` reduces the search's remaining work without generating a patch. The mechanism runs on the real path: `recover_ledger_clocks` is what `reckon crew velocity \u2026` calls, which is the command both post-merge checks run.",
+    "single_goal": "pass \u2014 \u00a72 carries one verdict (a long window's ledger search completes inside its per-call bound and its post-merge checks exit 0); the slicing and the record-file placement are two mechanisms serving that one gate, and the section declares one negative control per mechanism rather than a second deliverable.",
+    "wiring": "pass \u2014 `plan-blocks` names `the-ledger-is-one-file-per-run#s4`, and \u00a74 of that plan is the section whose commit deletes `crew.json` (`docs/plans/the-ledger-is-one-file-per-run.html:489`), so the declared relationship points at the node it says it blocks; the plan's other prerequisite, \u00a71, is declared `done` in `plan-section-declarations` and its code is in the tree."
+  },
+  "section_digests": {
+    "_document": "7438dc3857ea67728ccc6b0036805dda4784857bac216f4a9af3f3706a75a653",
+    "s1": "7fb9f51fa9b87a449b336034d21038a82939900b9d4f0f7601d78920d33f60b5",
+    "s2": "2624771bd0b885fa8592162aa081a36f12e50589d7bc59f0888f2171c0adea07"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T15:40:51.059111+00:00"
+}
