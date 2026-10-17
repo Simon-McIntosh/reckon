@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import json
 import shlex
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -30,7 +30,11 @@ from reckon._timestamps import parse_utc
 from reckon.crew import recovery, review_dispositions, review_lifecycle, runs
 from reckon.crew import review as review_module
 from reckon.crew.node import INTERRUPTED_RUN_PHASE, parse_duration
-from reckon.crew.routing import _registered_worktrees, record_names_worktree
+from reckon.crew.routing import (
+    WorktreeRecordIndex,
+    _registered_worktrees,
+    record_names_worktree,
+)
 
 CLASSIFICATION_DUTY_KINDS = {
     "scoring": "review-missing",
@@ -491,26 +495,20 @@ def _ledger_order_key(record: Mapping[str, Any]) -> tuple[str, str]:
 
 def _holding_record(
     worktree: Path,
-    rows: Sequence[Mapping[str, Any]],
-    records: Sequence[Mapping[str, Any]],
+    index: WorktreeRecordIndex,
     *,
     merged_order: bool,
 ) -> Mapping[str, Any] | None:
     """The run the whole-ledger reader attributes a tree to, or None.
 
-    Records are taken from both sources: the aggregate rows, which carry a run
-    the split has written no file for, and the per-run files the aggregate does
-    not carry. A run both sources carry is read once, at the position the
-    merged reader gives it. Which of them names a tree is decided by the
-    record's own two namings, exactly as the whole-ledger reader decides it: a
-    run's node id need not match the tree's directory name, so a file's name
-    cannot tell whether its record names the tree.
+    The tree is looked up in an index built from the records' own naming keys,
+    so each record is filed once and the work is proportional to records plus
+    trees rather than to their product. Which records name a tree is decided by
+    the record's own two namings, exactly as the whole-ledger reader decides it.
+    The order the merged reader gives the candidates is kept: a tree two records
+    name goes to the one that reader puts last.
     """
-    candidates = [
-        record
-        for record in (*rows, *records)
-        if isinstance(record, Mapping) and _names_worktree(record, worktree)
-    ]
+    candidates = index.records_naming(worktree)
     if not candidates:
         return None
     if merged_order:
@@ -538,8 +536,10 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     Each per-run file the aggregate does not carry is read once for the call,
     whatever tree it names: a run's node id need not match the tree's directory
     name, so which tree a file's record names is knowable only by reading it.
-    The aggregate's rows, which carry the runs the split has written no file
-    for, are matched the same way, and the run the merged ledger's own order
+    Records from both sources are filed into one index of the trees they name,
+    so an inspected tree is one lookup rather than a comparison against every
+    record. The aggregate's rows, which carry the runs the split has written no
+    file for, are filed the same way, and the run the merged ledger's own order
     puts last holds the tree. A tree neither source names falls back to the
     whole ledger, which reads the merged history once for the session however
     many trees need it.
@@ -575,10 +575,15 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     # appends a run the aggregate does not carry; without one the aggregate's own
     # order is the answer, so the candidates keep the order they were gathered in.
     merged_order = any(source.stem not in known for source in sources)
+    index = WorktreeRecordIndex()
+    for record in rows:
+        index.add(record)
+    for record in records:
+        index.add(record)
     matched: dict[Path, Mapping[str, Any]] = {}
     unresolved: list[Path] = []
     for worktree in inspected:
-        record = _holding_record(worktree, rows, records, merged_order=merged_order)
+        record = _holding_record(worktree, index, merged_order=merged_order)
         if record is None:
             unresolved.append(worktree)
         else:

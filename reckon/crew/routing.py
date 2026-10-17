@@ -1030,6 +1030,25 @@ def _live_pointer_worktrees() -> dict[Path, list[str]]:
     return claims
 
 
+def _retained_worktree(record: Mapping[str, Any]) -> Path | None:
+    """The resolved path a record's retention names, or None when it names none."""
+    retention = record.get("worktree_retention")
+    if isinstance(retention, Mapping):
+        value = str(retention.get("worktree") or "").strip()
+        if value:
+            return Path(value).expanduser().resolve()
+    return None
+
+
+def _node_worktree_identity(record: Mapping[str, Any]) -> tuple[str, str]:
+    """The node id and session a record names a tree by."""
+    node = record.get("node")
+    node_id = (
+        str(node.get("id") or "") if isinstance(node, Mapping) else str(node or "")
+    )
+    return node_id, str(record.get("session") or "").strip()
+
+
 def record_names_worktree(record: Mapping[str, Any], worktree: Path) -> bool:
     """Whether a run's record names this retained tree.
 
@@ -1042,19 +1061,77 @@ def record_names_worktree(record: Mapping[str, Any], worktree: Path) -> bool:
     session the node id alone would resolve to whichever same-named tree
     registers first, which may be a peer session's.
     """
-    retention = record.get("worktree_retention")
-    if isinstance(retention, Mapping):
-        value = str(retention.get("worktree") or "").strip()
-        if value and Path(value).expanduser().resolve() == worktree:
-            return True
-    node = record.get("node")
-    node_id = (
-        str(node.get("id") or "") if isinstance(node, Mapping) else str(node or "")
-    )
+    retained = _retained_worktree(record)
+    if retained is not None and retained == worktree:
+        return True
+    node_id, session = _node_worktree_identity(record)
     if not node_id or worktree.name != node_id:
         return False
-    session = str(record.get("session") or "").strip()
     return not session or worktree.parent.name == session
+
+
+class WorktreeRecordIndex:
+    """Run records filed by the trees they name, so each tree is one lookup.
+
+    ``record_names_worktree`` is the one rule for what names a tree, and this
+    index is built from the same key derivation rather than restating it, so an
+    index answer and the rule cannot disagree. Each record is filed once under
+    the retained path it carries and once under the node id it names, and a
+    tree is matched by consulting those buckets instead of comparing every
+    record against it: the work is proportional to records plus trees rather
+    than to their product. A retained path is resolved once, when its record is
+    filed.
+    """
+
+    def __init__(self) -> None:
+        self._by_path: dict[Path, list[tuple[int, Mapping[str, Any]]]] = {}
+        self._by_session_node: dict[
+            tuple[str, str], list[tuple[int, Mapping[str, Any]]]
+        ] = {}
+        self._by_node: dict[str, list[tuple[int, Mapping[str, Any]]]] = {}
+        self._filed = 0
+
+    def add(self, record: Mapping[str, Any]) -> None:
+        """File one record under every key by which it names a tree."""
+        position = self._filed
+        self._filed += 1
+        retained = _retained_worktree(record)
+        if retained is not None:
+            self._by_path.setdefault(retained, []).append((position, record))
+        node_id, session = _node_worktree_identity(record)
+        if not node_id:
+            return
+        if session:
+            self._by_session_node.setdefault((session, node_id), []).append(
+                (position, record)
+            )
+        else:
+            self._by_node.setdefault(node_id, []).append((position, record))
+
+    def records_naming(self, worktree: Path) -> list[Mapping[str, Any]]:
+        """The filed records that name ``worktree``, each once, in filing order.
+
+        ``worktree`` is the resolved path, as every caller resolves one; a path
+        the record retained is compared resolved, and the node id is matched
+        against the tree's own directories. A record naming a tree by both keys
+        is filed under both, so the buckets are merged on each record's filing
+        position: a tree two records name is attributed to the one filed later,
+        which is the order the reader that gathered the records would give.
+        """
+        buckets = (
+            self._by_path.get(worktree),
+            self._by_session_node.get((worktree.parent.name, worktree.name)),
+            self._by_node.get(worktree.name),
+        )
+        found: dict[int, Mapping[str, Any]] = {}
+        for bucket in buckets:
+            for position, record in bucket or ():
+                found.setdefault(position, record)
+        return [found[position] for position in sorted(found)]
+
+    def names(self, record: Mapping[str, Any], worktree: Path) -> bool:
+        """Whether ``record`` names ``worktree``, by the rule's own keys."""
+        return any(record is existing for existing in self.records_naming(worktree))
 
 
 def _run_worktree_path(repo: Path, project: str | None, run_id: str) -> Path:
