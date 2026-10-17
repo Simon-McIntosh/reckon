@@ -1854,15 +1854,21 @@ def _landing_refusal(message: str, rollback: Mapping[str, bool]) -> CrewError:
 
 
 def _ledger_holds_row(project: str, root: str | Path | None, run_id: str) -> bool:
-    """Whether the ledger this promotion resolved carries ``run_id``.
+    """Whether the durable ledger a reader will open carries ``run_id``.
 
     The row is read back from the same store the append targeted rather than
     inferred from the append's return: a rollback can have re-read the file
-    since. An unreadable ledger answers present, so a receipt never claims a
-    rollback the reader cannot confirm.
+    since. The read names the aggregate and the per-run files directly, never
+    the derived index, because the index is a disposable cache whose served
+    snapshot can still name a run the rollback has removed: when its refresh is
+    refused — a locked or unwritable index — ``ledger.load`` returns the last
+    published snapshot, so a real rollback would read as a surviving row and
+    the receipt would forbid the re-promotion that recovers it. An unreadable
+    ledger answers present, so a receipt never claims a rollback the reader
+    cannot confirm.
     """
     try:
-        data, _version = ledger.load(project, root=root)
+        data, _version = ledger.load(project, root=root, use_index=False)
     except (OSError, ValueError, ledger.LedgerError):
         return True
     return any(

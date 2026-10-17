@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>the-ledger-is-one-file-per-run §11 — a failed landing says whether its row survived</title>
+<meta name="plan-slug" content="the-ledger-is-one-file-per-run">
+<meta name="plan-node" content="a-failed-landing-says-whether-its-row-survived">
+</head>
+<body>
+<article class="r-evidence"
+         id="a-failed-landing-says-whether-its-row-survived">
+  <h2 id="a-failed-landing-says-whether-its-row-survived-h">A failed landing's receipt never lets a cached index decide its row</h2>
+  <p id="a-failed-landing-says-whether-its-row-survived-why">
+    A landing that fails to stage or commit rolls its own writes back, and the
+    ledger row is one of them. The receipt raised around that landing warns
+    against re-promoting in its "already written" branch, so a real rollback
+    read as a surviving row forbids the one action that recovers it. The
+    read-back chose between "rolled back" and "already written" from
+    <code>ledger.load</code>, which serves the derived index and, when its
+    refresh is refused, falls back to the last published snapshot — a snapshot
+    that can still name a run whose per-run file the rollback has removed and
+    whose row the aggregate never held.
+  </p>
+
+  <section id="a-failed-landing-says-whether-its-row-survived-change">
+    <h3>Change</h3>
+    <ul>
+      <li id="a-failed-landing-says-whether-its-row-survived-readback">
+        <code>_ledger_holds_row</code> in
+        <code>reckon/crew/promotion_scope.py</code> reads the ledger with
+        <code>use_index=False</code>, so the row is decided from the aggregate
+        and the per-run files a reader will open, never from the derived index.
+        A cached index can no longer decide the receipt.
+      </li>
+      <li id="a-failed-landing-says-whether-its-row-survived-otherbranches">
+        The receipt's other branches are unchanged: a path the rollback
+        preserved, or a ledger the read-back cannot open, still keeps the
+        already-written wording.
+      </li>
+    </ul>
+  </section>
+
+  <section id="a-failed-landing-says-whether-its-row-survived-measure">
+    <h3>Measure</h3>
+    <p id="a-failed-landing-says-whether-its-row-survived-gate">
+      <code>tests/test_a_failed_landing_says_whether_its_row_survived.py</code>
+      passes (2 passed), logged under the run directory with the literal
+      command, its revision and an <code>EXIT=0</code> line.
+    </p>
+    <ul>
+      <li id="a-failed-landing-says-whether-its-row-survived-c1">
+        The stale-index case: a promotion appends its per-run file, publishes
+        the index while that file exists, then a peer's
+        <code>.git/index.lock</code> refuses the staging. The rollback removes
+        the file, the aggregate holds no row, and the index is left unwritable
+        so the receipt's read-back is refused and served the last-good
+        snapshot. The receipt reads "was written and has been rolled back …
+        re-promote", the per-run file is absent, and a second promotion lands
+        once the lock is released.
+      </li>
+      <li id="a-failed-landing-says-whether-its-row-survived-c2">
+        The aggregate-row case: a run whose row is seeded in the aggregate
+        itself, with no per-run file, reads "already written; do not
+        re-promote" — the durable row is present.
+      </li>
+    </ul>
+    <p id="a-failed-landing-says-whether-its-row-survived-negative">
+      The declared negative control — restore the index-served read-back
+      against the base tree — is executed and logged under the run directory:
+      the first case fails with the received "already written" wording and a
+      non-zero <code>EXIT</code>.
+    </p>
+  </section>
+</article>
+</body>
+</html>
