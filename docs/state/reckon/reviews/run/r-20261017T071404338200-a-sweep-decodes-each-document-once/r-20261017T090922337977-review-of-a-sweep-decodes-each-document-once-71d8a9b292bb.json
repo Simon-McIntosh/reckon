@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/ledger.py:1104",
+    "reckon/crew/obligations.py:431",
+    "reckon/crew/obligations.py:471",
+    "reckon/crew/obligation_snapshot.py:892"
+  ],
+  "completed_at": "2026-10-17T09:21:24.105Z",
+  "dispatched_at": "2026-10-17T09:09:59Z",
+  "findings": [
+    {
+      "file": "reckon/file_memo.py",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the commit deletes the crew decode memo's own bound and per-sweep release, so the only ceiling on the per-run document memo is file_memo._MAX_ENTRIES, which no test exercises; removing or raising the eviction loop would leave a long-lived producer unbounded and nothing would redden."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "1095",
+      "severity": "follow-on",
+      "text": "follow-on: release_unopened_documents is removed, so a run file deleted or renamed between sweeps now keeps its parse until LRU eviction (up to 50,000 entries) rather than being dropped at the next sweep, a retention change the fragment discloses but no test pins."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read the single gained commit 71d8a9b292bb against dc586bfe9; it deletes the forked _DOCUMENT_CACHE, document_identity and release_unopened_documents from reckon/ledger.py and the _held_worktree_duties split from reckon/crew/obligations.py, routes read_document (:1095) and _aggregate_rows (:471) through reckon/file_memo.py, and replaces two durability tests with one deep-copy-isolation test.",
+    "done_when": "the done_when names tests/test_a_sweep_decodes_each_document_once.py over a fixture of 200 per-run files and 20 live pointers counting json.loads per sweep; logs/head-gate.log records \"69 passed in 206.55s\" EXIT=0 at 71d8a9b292bb and negative-control/base-tree-count.log records the base arm \"3 failed, 1 passed in 21.27s\" EXIT=1 with test_one_sweep_decodes_each_document_once failing, but the done_when's ruff arm is recorded by no log and by no manifest line.",
+    "goal": "the node goal is one obligation sweep decoding each crew document at most once and a later sweep skipping a stat-unchanged document; this gained commit is a refactor of that landed work, at reckon/ledger.py:1095 read_document delegates to reckon/file_memo.py:43 memoized, so the behaviour is preserved and only its ownership moves.",
+    "manifest": "read; it names the six commits, the head arm \"69 passed\" EXIT=0 at 71d8a9b292bb, the base arm \"3 failed 1 passed\" EXIT=1, and discloses under follow_ons that live-pointer documents, mounts.json and ledger index payloads remain multi-decoded outside the fence.",
+    "write_paths": "the manifest declares reckon/crew/obligations.py, reckon/ledger.py, reckon/crew/recovery_classification.py, tests/test_a_sweep_decodes_each_document_once.py, the evidence fragment and a figures directory; git diff dc586bfe928a1dc8a4dd9a30d135ddb47e44a3d4..71d8a9b292bb57d97a4fbb024af73f7252d2d8b4 touches only ledger.py, obligations.py, the test file and the fragment, all inside the declared set, with recovery_classification.py and the figures path declared but untouched."
+  },
+  "justifications": {
+    "durability": "the added assertion at tests/test_a_sweep_decodes_each_document_once.py:210 reddens if read_document stops returning an isolated record (the base arm shows it failing), but the commit also removed test_a_sweep_drops_the_documents_it_did_not_open and test_the_memo_stays_within_its_bound_across_changing_files, so the bound and per-sweep-release guarantees on this path now rest on reckon/file_memo.py:21, which no test exercises.",
+    "evidence": "the pytest gate and its base negative control are recorded in logs/head-gate.log and negative-control/base-tree-count.log, but the done_when's ruff arm is named by no log and by no manifest line, so one of the declared arms is claimed rather than measured.",
+    "fit": "reckon/ledger.py:1092 names the memo kind by mechanism and the added comment at :1085 follows the module's stated-rationale idiom, and no name or comment carries a plan, ticket or release label.",
+    "goal_fidelity": "reckon/ledger.py:1095 keeps the per-run decode memoised through reckon/file_memo.py:43 and the second-sweep skip is still proven at tests/test_a_sweep_decodes_each_document_once.py:184, but the goal's \"each crew document\" remains unmet for live pointers, mounts.json and the ledger index, which the manifest's own follow_ons names.",
+    "reuse": "reckon/ledger.py:1097 and reckon/crew/obligations.py:471 route the crew decode and row identity through the owner reckon/file_memo.py:43 memoized / :30 file_signature, removing the fork the previous revision carried rather than adding a second memo.",
+    "scope_discipline": "every path in git diff dc586bfe928a1dc8a4dd9a30d135ddb47e44a3d4..71d8a9b292bb57d97a4fbb024af73f7252d2d8b4 (reckon/ledger.py, reckon/crew/obligations.py, tests/test_a_sweep_decodes_each_document_once.py, the fragment) is inside the write paths the manifest declares."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is one obligation sweep decoding each crew document at most once and a later sweep skipping a stat-unchanged document; this gained commit is a refactor of that landed work, at reckon/ledger.py:1095 read_document delegates to reckon/file_memo.py:43 memoized, so the behaviour is preserved and only its ownership moves.\nVERDICT done_when: the done_when names tests/test_a_sweep_decodes_each_document_once.py over a fixture of 200 per-run files and 20 live pointers counting json.loads per sweep; logs/head-gate.log records \"69 passed in 206.55s\" EXIT=0 at 71d8a9b292bb and negative-control/base-tree-count.log records the base arm \"3 failed, 1 passed in 21.27s\" EXIT=1 with test_one_sweep_decodes_each_document_once failing, but the done_when's ruff arm is recorded by no log and by no manifest line.\nVERDICT write_paths: the manifest declares reckon/crew/obligations.py, reckon/ledger.py, reckon/crew/recovery_classification.py, tests/test_a_sweep_decodes_each_document_once.py, the evidence fragment and a figures directory; git diff dc586bfe928a1dc8a4dd9a30d135ddb47e44a3d4..71d8a9b292bb57d97a4fbb024af73f7252d2d8b4 touches only ledger.py, obligations.py, the test file and the fragment, all inside the declared set, with recovery_classification.py and the figures path declared but untouched.\nVERDICT manifest: read; it names the six commits, the head arm \"69 passed\" EXIT=0 at 71d8a9b292bb, the base arm \"3 failed 1 passed\" EXIT=1, and discloses under follow_ons that live-pointer documents, mounts.json and ledger index payloads remain multi-decoded outside the fence.\nVERDICT diff: read the single gained commit 71d8a9b292bb against dc586bfe9; it deletes the forked _DOCUMENT_CACHE, document_identity and release_unopened_documents from reckon/ledger.py and the _held_worktree_duties split from reckon/crew/obligations.py, routes read_document (:1095) and _aggregate_rows (:471) through reckon/file_memo.py, and replaces two durability tests with one deep-copy-isolation test.\nCALL_SITES: reckon/ledger.py:1104, reckon/crew/obligations.py:431, reckon/crew/obligations.py:471, reckon/crew/obligation_snapshot.py:892\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1095 keeps the per-run decode memoised through reckon/file_memo.py:43 and the second-sweep skip is still proven at tests/test_a_sweep_decodes_each_document_once.py:184, but the goal's \"each crew document\" remains unmet for live pointers, mounts.json and the ledger index, which the manifest's own follow_ons names.\nSCORE evidence: 15\nJUSTIFICATION evidence: the pytest gate and its base negative control are recorded in logs/head-gate.log and negative-control/base-tree-count.log, but the done_when's ruff arm is named by no log and by no manifest line, so one of the declared arms is claimed rather than measured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff dc586bfe928a1dc8a4dd9a30d135ddb47e44a3d4..71d8a9b292bb57d97a4fbb024af73f7252d2d8b4 (reckon/ledger.py, reckon/crew/obligations.py, tests/test_a_sweep_decodes_each_document_once.py, the fragment) is inside the write paths the manifest declares.\nSCORE durability: 15\nJUSTIFICATION durability: the added assertion at tests/test_a_sweep_decodes_each_document_once.py:210 reddens if read_document stops returning an isolated record (the base arm shows it failing), but the commit also removed test_a_sweep_drops_the_documents_it_did_not_open and test_the_memo_stays_within_its_bound_across_changing_files, so the bound and per-sweep-release guarantees on this path now rest on reckon/file_memo.py:21, which no test exercises.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/ledger.py:1092 names the memo kind by mechanism and the added comment at :1085 follows the module's stated-rationale idiom, and no name or comment carries a plan, ticket or release label.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/ledger.py:1097 and reckon/crew/obligations.py:471 route the crew decode and row identity through the owner reckon/file_memo.py:43 memoized / :30 file_signature, removing the fork the previous revision carried rather than adding a second memo.\nFINDING reckon/file_memo.py:21 follow-on: the commit deletes the crew decode memo's own bound and per-sweep release, so the only ceiling on the per-run document memo is file_memo._MAX_ENTRIES, which no test exercises; removing or raising the eviction loop would leave a long-lived producer unbounded and nothing would redden.\nFINDING reckon/ledger.py:1095 follow-on: release_unopened_documents is removed, so a run file deleted or renamed between sweeps now keeps its parse until LRU eviction (up to 50,000 entries) rather than being dropped at the next sweep, a retention change the fragment discloses but no test pins.\nREVIEWED_BASE_SHA: dc586bfe928a1dc8a4dd9a30d135ddb47e44a3d4\nREVIEWED_HEAD_SHA: 71d8a9b292bb57d97a4fbb024af73f7252d2d8b4",
+  "review_run_id": "r-20261017T090922337977-review-of-a-sweep-decodes-each-document-once-71d8a9b292bb",
+  "reviewed_base_sha": "dc586bfe928a1dc8a4dd9a30d135ddb47e44a3d4",
+  "reviewed_head_sha": "71d8a9b292bb57d97a4fbb024af73f7252d2d8b4",
+  "reviewed_run_id": "r-20261017T071404338200-a-sweep-decodes-each-document-once",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T09:18:46.126510+00:00",
+  "total": 103
+}
