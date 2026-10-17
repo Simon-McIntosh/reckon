@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T05:14:33.318Z",
+  "dispatched_at": "2026-10-17T05:07:18Z",
+  "findings": [
+    {
+      "file": "run-importer-population.sh",
+      "line": "69",
+      "severity": "follow-on",
+      "text": "follow-on: the in-job extraction greps gate-candidate.log while the candidate arm writes gate-cand.log, so it read a missing file and wrote cand-failed-ids.txt, cand-error-names.txt and added-ids.txt from effectively blank input without checking grep's exit status; the 0 in those artifacts is not a measured zero, and a reader of added-ids.txt alone would trust an absence that no check produced."
+    },
+    {
+      "file": "run-importer-population.sh",
+      "line": "68",
+      "severity": "follow-on",
+      "text": "follow-on: this extraction step re-implements reckon/crew/review.py:2100 added_failures_from_gate_logs by hand (grep -E '^FAILED ', awk, sort, comm -13) instead of calling it, duplicating a capability the repository owns and producing the defect above that the owner would not have."
+    },
+    {
+      "file": "extraction-note.txt",
+      "line": "31",
+      "severity": "follow-on",
+      "text": "follow-on: the second positive control states that a deliberately failing fixture printed 'FAILED test_extraction_control.py::test_control_fails, 1 failed, exit 1', but no receipt for that run is on disk under the run directory, so the control is recoverable only from the session transcript rather than from the artifacts the record cites."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the node made no commits - git log fc866dda257d..HEAD in its worktree is empty and its tree is clean - so there is no product diff to read, consistent with its brief stating it changes no product code and commits nothing.",
+    "done_when": "the done_when's evidence fence requires two logs naming revision, host and command, proving reckon.__file__ under each arm's own checkout, carrying pytest's summary and ending in EXIT=; gate-base.log and gate-cand.log each carry all four, verified by reading their headers and tails.",
+    "goal": "the node's goal is to measure the review-dispatch importer population at base and at the merge candidate on an exclusive node; the run's report.md and manifest.md record an exclusive all_debug job (1287867, host 98dci4-clu-3141) running one pytest arm per revision over the 56-file population, which is that measurement.",
+    "manifest": "read in full; it records both arms' pass/fail counts with log paths, added failing ids as none, the absent-at-base file, and a self-disclosed defect in the in-job extraction step with its re-derivation.",
+    "write_paths": "the node's declared scope is the report directory under crew/reports/reckon/a-worker-cannot-write-your-home/review-records-admission-population-at-merge plus the run directory its host line grants for logs; every path in its changed_paths lies in one of the two, and git status in its worktree is clean."
+  },
+  "justifications": {
+    "durability": "the measured zero is reproducible from the two gate logs, but the run added no guard of its own and run-importer-population.sh:69 read a missing log without failing, so the harness did not redden when its input vanished.",
+    "evidence": "gate-base.log and gate-cand.log carry revision, host, command, the reckon.__file__ proof and EXIT=0 with 779/782 passed, and I reproduced the added-failure derivation from those two logs with reckon/crew/review.py:2100 returning (0, []).",
+    "fit": "naming sweeps over manifest.md, extraction-note.txt, run-importer-population.sh and report.md return no plan labels, deliverable IDs, ticket references or AI attribution, and the script names its arms and files by what they are.",
+    "goal_fidelity": "report.md records both arms over population.txt (55 files at base a0cc37c3, 56 at candidate b2d6b489) in exclusive job 1287867, which is the goal's measurement.",
+    "reuse": "run-importer-population.sh:68-72 hand-rolls the FAILED/ERROR extraction and comm diff that reckon/crew/review.py:2100 added_failures_from_gate_logs already owns, without calling or extending it, so the landed extraction forks a capability the repository owns.",
+    "scope_discipline": "nothing under reckon/ or tests/ changed (git status clean in the reviewed worktree at fc866dda), and every changed path lies in the declared report directory or the run directory."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure the review-dispatch importer population at base and at the merge candidate on an exclusive node; the run's report.md and manifest.md record an exclusive all_debug job (1287867, host 98dci4-clu-3141) running one pytest arm per revision over the 56-file population, which is that measurement.\nVERDICT done_when: the done_when's evidence fence requires two logs naming revision, host and command, proving reckon.__file__ under each arm's own checkout, carrying pytest's summary and ending in EXIT=; gate-base.log and gate-cand.log each carry all four, verified by reading their headers and tails.\nVERDICT write_paths: the node's declared scope is the report directory under crew/reports/reckon/a-worker-cannot-write-your-home/review-records-admission-population-at-merge plus the run directory its host line grants for logs; every path in its changed_paths lies in one of the two, and git status in its worktree is clean.\nVERDICT manifest: read in full; it records both arms' pass/fail counts with log paths, added failing ids as none, the absent-at-base file, and a self-disclosed defect in the in-job extraction step with its re-derivation.\nVERDICT diff: the node made no commits - git log fc866dda257d..HEAD in its worktree is empty and its tree is clean - so there is no product diff to read, consistent with its brief stating it changes no product code and commits nothing.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: report.md records both arms over population.txt (55 files at base a0cc37c3, 56 at candidate b2d6b489) in exclusive job 1287867, which is the goal's measurement.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-base.log and gate-cand.log carry revision, host, command, the reckon.__file__ proof and EXIT=0 with 779/782 passed, and I reproduced the added-failure derivation from those two logs with reckon/crew/review.py:2100 returning (0, []).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: nothing under reckon/ or tests/ changed (git status clean in the reviewed worktree at fc866dda), and every changed path lies in the declared report directory or the run directory.\nSCORE durability: 12\nJUSTIFICATION durability: the measured zero is reproducible from the two gate logs, but the run added no guard of its own and run-importer-population.sh:69 read a missing log without failing, so the harness did not redden when its input vanished.\nSCORE fit: 16\nJUSTIFICATION fit: naming sweeps over manifest.md, extraction-note.txt, run-importer-population.sh and report.md return no plan labels, deliverable IDs, ticket references or AI attribution, and the script names its arms and files by what they are.\nSCORE reuse: 5\nJUSTIFICATION reuse: run-importer-population.sh:68-72 hand-rolls the FAILED/ERROR extraction and comm diff that reckon/crew/review.py:2100 added_failures_from_gate_logs already owns, without calling or extending it, so the landed extraction forks a capability the repository owns.\nFINDING run-importer-population.sh:69 follow-on: the in-job extraction greps gate-candidate.log while the candidate arm writes gate-cand.log, so it read a missing file and wrote cand-failed-ids.txt, cand-error-names.txt and added-ids.txt from effectively blank input without checking grep's exit status; the 0 in those artifacts is not a measured zero, and a reader of added-ids.txt alone would trust an absence that no check produced.\nFINDING run-importer-population.sh:68 follow-on: this extraction step re-implements reckon/crew/review.py:2100 added_failures_from_gate_logs by hand (grep -E '^FAILED ', awk, sort, comm -13) instead of calling it, duplicating a capability the repository owns and producing the defect above that the owner would not have.\nFINDING extraction-note.txt:31 follow-on: the second positive control states that a deliberately failing fixture printed 'FAILED test_extraction_control.py::test_control_fails, 1 failed, exit 1', but no receipt for that run is on disk under the run directory, so the control is recoverable only from the session transcript rather than from the artifacts the record cites.\nREVIEWED_BASE_SHA: fc866dda257d97ce7d44a508567fc8ce4ce8feba\nREVIEWED_HEAD_SHA: fc866dda257d97ce7d44a508567fc8ce4ce8feba\n\nThe reviewed node is a read-only measurement node. It committed nothing, so\nreviewed_base_sha and reviewed_head_sha are one revision, the worktree head it\nwas cut at and left unchanged. The revisions its measurement is about are base\na0cc37c395ef01bb79cee2e54b23658c511876fd (main) and candidate\nb2d6b489dc26471597b3895290af4efee7af0b28 (the merge whose tree would land); I\nconfirmed that candidate's diff against base is exactly two files -\nreckon/crew/dispatch_admission.py modified and\ntests/test_a_run_review_with_run_directory_records_dispatches.py added - matching\nthe manifest's evidence_inputs, and that the new file holds three test functions,\nso the 779 -> 782 pass count reconciles as the node states.\n",
+  "review_run_id": "r-20261017T050646658586-review-of-review-records-admission-population-at-merge-fc866dda257d",
+  "reviewed_base_sha": "fc866dda257d97ce7d44a508567fc8ce4ce8feba",
+  "reviewed_head_sha": "fc866dda257d97ce7d44a508567fc8ce4ce8feba",
+  "reviewed_run_id": "r-20261017T044346092022-review-records-admission-population-at-merge",
+  "scores": {
+    "durability": 12,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T05:13:16.972170+00:00",
+  "total": 85
+}
