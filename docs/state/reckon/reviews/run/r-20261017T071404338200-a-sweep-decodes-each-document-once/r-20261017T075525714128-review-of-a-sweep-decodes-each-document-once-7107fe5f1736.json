@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligations.py:521",
+    "reckon/ledger.py:1200",
+    "reckon/ledger.py:1370",
+    "reckon/crew/obligation_snapshot.py:856"
+  ],
+  "completed_at": "2026-10-17T08:08:19.458Z",
+  "dispatched_at": "2026-10-17T07:56:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "466",
+      "severity": "follow-on",
+      "text": "follow-on: _aggregate_rows already keys a parsed crew document (crew.json) on the same four-field stat identity the new ledger.document_identity recomputes, so the repository now holds two private stat-identity document caches in one write scope that can drift; the general memoised reader is a legitimate new capability, so this is a helper duplication rather than a forked owner and it does not hold the node."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "1092",
+      "severity": "follow-on",
+      "text": "follow-on: _DOCUMENT_CACHE is process-lifetime and drops an entry only when a later read is attempted after its file is gone, so a long-lived producer that watches run files appear and then be deleted or renamed retains every document it ever parsed, leaving the memo uncapped across the producer's life."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base c8911c29; 4eaa7422d adds the memoised reader and switches both callers, and 7107fe5f1 only re-annotates the counter's __enter__ return as Self, changing no behaviour.",
+    "done_when": "the done_when names tests/test_a_sweep_decodes_each_document_once.py building at least 200 per-run files and 20 live pointers and counting json.loads across one sweep; logs/head-gate.log records \"7 passed in 21.64s\" EXIT=0 for that test plus test_every_module_fits_a_worker_window.py, and negative-control/base-tree-count.log records the base arm failing the first count with \"a sweep decoded 400 run documents from 200 files\", EXIT=1.",
+    "goal": "the node's goal is that one obligation sweep decode each crew document at most once and a later sweep skip documents whose stat identity is unchanged; the diff routes the per-run read in reckon/crew/obligations.py:431 (_run_file_record) and reckon/ledger.py:1121 (_read_run) through the stat-identity-keyed memo at reckon/ledger.py:1104, so one sweep's two readers of each run file share a single parse.",
+    "manifest": "read; it names commits 4eaa7422d and 7107fe5f1, the head arm \"7 passed in 21.64s\" EXIT=0, the base-tree negative control \"3 failed in 22.75s\" EXIT=1, and it discloses under follow_ons that live-pointer documents, mounts.json and the ledger index payloads remain multi-decoded outside the fence.",
+    "write_paths": "the manifest declares reckon/crew/obligations.py, reckon/ledger.py, reckon/crew/recovery_classification.py, the test file and the evidence fragment; git diff c8911c29..7107fe5f1 touches only obligations.py, ledger.py, the test file and the fragment, all inside the declared set, with recovery_classification.py declared but untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_sweep_decodes_each_document_once.py:168 fails if any run file is decoded twice (the base arm reddens at \"assert 400 <= 200\"), :186 fails unless a later sweep decodes exactly the one changed file (the base arm reddens at 201), and :204 fails if the memo changes the written snapshot.",
+    "evidence": "the pytest arm of the done_when is recorded in logs/head-gate.log (\"7 passed in 21.64s\", EXIT=0) and negative-control/base-tree-count.log (EXIT=1), but the done_when's ruff arm is claimed only by commit 7107fe5f1 and no ruff log is recorded.",
+    "fit": "reckon/ledger.py:1104 follows the module's private-helper and module-global memo idiom and the added names read_document, document_identity and _DOCUMENT_CACHE carry no plan or ticket label.",
+    "goal_fidelity": "reckon/ledger.py:1104 holds each decoded document against its (st_dev, st_ino, st_size, st_mtime_ns) identity, and corroborating negative-control/base-tree-count.log shows the sweep's two readers no longer decode a run file twice (400 decodes fall to 200).",
+    "reuse": "reckon/crew/obligations.py:459 _aggregate_rows already owns a parse-once-per-stat-identity cache of a crew document and computes the identical (st_dev, st_ino, st_size, st_mtime_ns) key at reckon/crew/obligations.py:466, so reckon/ledger.py:1095 document_identity restates that identity rather than sharing one owner.",
+    "scope_discipline": "every path in git diff c8911c29..7107fe5f1 is inside the write paths declared in the manifest, and recovery_classification.py is declared but not touched, so nothing out of scope is carried."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that one obligation sweep decode each crew document at most once and a later sweep skip documents whose stat identity is unchanged; the diff routes the per-run read in reckon/crew/obligations.py:431 (_run_file_record) and reckon/ledger.py:1121 (_read_run) through the stat-identity-keyed memo at reckon/ledger.py:1104, so one sweep's two readers of each run file share a single parse.\nVERDICT done_when: the done_when names tests/test_a_sweep_decodes_each_document_once.py building at least 200 per-run files and 20 live pointers and counting json.loads across one sweep; logs/head-gate.log records \"7 passed in 21.64s\" EXIT=0 for that test plus test_every_module_fits_a_worker_window.py, and negative-control/base-tree-count.log records the base arm failing the first count with \"a sweep decoded 400 run documents from 200 files\", EXIT=1.\nVERDICT write_paths: the manifest declares reckon/crew/obligations.py, reckon/ledger.py, reckon/crew/recovery_classification.py, the test file and the evidence fragment; git diff c8911c29..7107fe5f1 touches only obligations.py, ledger.py, the test file and the fragment, all inside the declared set, with recovery_classification.py declared but untouched.\nVERDICT manifest: read; it names commits 4eaa7422d and 7107fe5f1, the head arm \"7 passed in 21.64s\" EXIT=0, the base-tree negative control \"3 failed in 22.75s\" EXIT=1, and it discloses under follow_ons that live-pointer documents, mounts.json and the ledger index payloads remain multi-decoded outside the fence.\nVERDICT diff: read commit by commit against base c8911c29; 4eaa7422d adds the memoised reader and switches both callers, and 7107fe5f1 only re-annotates the counter's __enter__ return as Self, changing no behaviour.\nCALL_SITES: reckon/crew/obligations.py:521, reckon/ledger.py:1200, reckon/ledger.py:1370, reckon/crew/obligation_snapshot.py:856\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1104 holds each decoded document against its (st_dev, st_ino, st_size, st_mtime_ns) identity, and corroborating negative-control/base-tree-count.log shows the sweep's two readers no longer decode a run file twice (400 decodes fall to 200).\nSCORE evidence: 15\nJUSTIFICATION evidence: the pytest arm of the done_when is recorded in logs/head-gate.log (\"7 passed in 21.64s\", EXIT=0) and negative-control/base-tree-count.log (EXIT=1), but the done_when's ruff arm is claimed only by commit 7107fe5f1 and no ruff log is recorded.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff c8911c29..7107fe5f1 is inside the write paths declared in the manifest, and recovery_classification.py is declared but not touched, so nothing out of scope is carried.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_sweep_decodes_each_document_once.py:168 fails if any run file is decoded twice (the base arm reddens at \"assert 400 <= 200\"), :186 fails unless a later sweep decodes exactly the one changed file (the base arm reddens at 201), and :204 fails if the memo changes the written snapshot.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/ledger.py:1104 follows the module's private-helper and module-global memo idiom and the added names read_document, document_identity and _DOCUMENT_CACHE carry no plan or ticket label.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/obligations.py:459 _aggregate_rows already owns a parse-once-per-stat-identity cache of a crew document and computes the identical (st_dev, st_ino, st_size, st_mtime_ns) key at reckon/crew/obligations.py:466, so reckon/ledger.py:1095 document_identity restates that identity rather than sharing one owner.\nFINDING reckon/crew/obligations.py:466 follow-on: _aggregate_rows already keys a parsed crew document (crew.json) on the same four-field stat identity the new ledger.document_identity recomputes, so the repository now holds two private stat-identity document caches in one write scope that can drift; the general memoised reader is a legitimate new capability, so this is a helper duplication rather than a forked owner and it does not hold the node.\nFINDING reckon/ledger.py:1092 follow-on: _DOCUMENT_CACHE is process-lifetime and drops an entry only when a later read is attempted after its file is gone, so a long-lived producer that watches run files appear and then be deleted or renamed retains every document it ever parsed, leaving the memo uncapped across the producer's life.\nREVIEWED_BASE_SHA: c8911c2941553e72d01f3bae63a448cde8749865\nREVIEWED_HEAD_SHA: 7107fe5f1736aff307d188e7bbe0852cddd20a2c\n",
+  "review_run_id": "r-20261017T075525714128-review-of-a-sweep-decodes-each-document-once-7107fe5f1736",
+  "reviewed_base_sha": "c8911c2941553e72d01f3bae63a448cde8749865",
+  "reviewed_head_sha": "7107fe5f1736aff307d188e7bbe0852cddd20a2c",
+  "reviewed_run_id": "r-20261017T071404338200-a-sweep-decodes-each-document-once",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T08:05:37.683330+00:00",
+  "total": 99
+}
