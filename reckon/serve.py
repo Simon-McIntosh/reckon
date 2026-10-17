@@ -2281,108 +2281,115 @@ def _discover_plans_uncached(
     # re-parses the whole tree before the first read answers.
     persisted_discovery = metadata_index.discovery_state(docs_dir, project)
 
-    # One batch for the whole document loop: each parse records into it and the
-    # store is written once when the loop ends, rather than once per document.
+    # One batch for the whole document loop: each parse records into it and
+    # the store is written once when the pass ends, rather than once per
+    # document. Flush in a finally so a failure inside the loop still closes
+    # the batch: the entries recorded before the failure are complete
+    # per-file records, so writing them keeps the store current for the next
+    # read, and the batch key is always freed.
     metadata_index.begin_discovery(docs_dir, project)
-    for resource in resources:
-        if resource.type not in {"plan", "research", "evidence"}:
-            continue
-        html_file = resource.path
+    try:
+        for resource in resources:
+            if resource.type not in {"plan", "research", "evidence"}:
+                continue
+            html_file = resource.path
 
-        # Scalar inventory stays on the lightweight meta path. Gates, decisions,
-        # and open followups are the body state needed to explain roadmap
-        # readiness. The SPA fetches the remaining full state per document.
-        relative = _docs_relative(html_file, docs_dir)
-        stored = persisted_discovery.get(relative) if relative is not None else None
-        if stored is not None and stored.get("readiness") is not None:
-            rec = stored["meta"]
-            gates, decisions, followups, declarations = stored["readiness"]
-            # Seed the shared parse with the persisted state so every later
-            # reader of this unchanged file — the roadmap's authored-section
-            # read among them — reuses it rather than rebuilding the soup.
-            if stored.get("state") is not None:
-                _plan_html.reuse_parsed_state(html_file, stored["state"])
-        else:
-            rec = _plan_html.parse_meta(html_file)
-            gates, decisions, followups, declarations = _read_readiness_state(html_file)
-            # A file the store could not answer for was read here, so write that
-            # read back under its new digest: the next process reuses it instead
-            # of parsing it again.
-            if relative is not None:
-                metadata_index.record_discovery(docs_dir, project, relative)
-        slug = resource.slug
-        artifact_type = resource.type
-        created, edited = _row_times(html_file, repo_dir, git_times, git_last_times)
-        item = {
-            "slug": slug,
-            "resource_id": resource.identity.key,
-            "href": str(
-                (
-                    resource.relative_path
-                    if resource.legacy
-                    else resource.canonical_relative_path
-                ).with_suffix("")
-            ),
-            "canonical_href": resource.canonical_href,
-            # A document saves as a print of its reader, rendered on request
-            # at its canonical route with a .pdf suffix.
-            "download": f"{resource.canonical_href}.pdf",
-            "legacy": resource.legacy,
-            "title": rec["title"],
-            "type": artifact_type,
-            "summary": rec.get("summary", ""),
-            "owner": rec.get("owner", ""),
-            "last": rec.get("modified", ""),
-            "created": created,
-            "edited": edited,
-            "version": rec["version"],
-            "archived": rec.get("archived") or ("1" if resource.archived else ""),
-            "read": rec.get("read") or "",
-            "reviewed_at": rec.get("reviewed_at", ""),
-            "recorded_at": rec.get("recorded_at", ""),
-            "verdict": rec.get("verdict", ""),
-            "environment": rec.get("environment", ""),
-            "source": rec.get("source", ""),
-            "source_quality": rec.get("source_quality", ""),
-            "informs": rec.get("informs", []),
-            "evidence_for": rec.get("evidence_for", []),
-            "verifies": rec.get("verifies", []),
-            "supersedes": rec.get("supersedes", []),
-            "commits": rec.get("commits", []),
-            "artifacts": rec.get("artifacts", []),
-        }
-        if artifact_type == "plan":
-            item.update(
-                {
-                    "status": rec["status"],
-                    "ms": rec.get("milestone", "—"),
-                    "roi": rec.get("roi", "mid"),
-                    "effort": rec.get("effort", "M"),
-                    # Authored hours must reach the roadmap: dropping them here
-                    # silently substitutes the legacy letter's default, so a
-                    # 12-hour plan reports as its size letter's 2.
-                    "effort_hours": rec.get("effort_hours"),
-                    "wall_clock_hours": rec.get("wall_clock_hours"),
-                    "effort_calibrated": rec.get("effort_calibrated"),
-                    "sprint": rec.get("sprint") or None,
-                    "capability": rec.get("capability"),
-                    "tier": rec.get("tier"),
-                    "graph_handle": rec.get("graph_handle") or None,
-                    "impl": rec["impl"],
-                    "dec_open": rec["dec_open"],
-                    "decisions": decisions,
-                    "followups": followups,
-                    "blockers": rec["blockers"],
-                    "gates": gates,
-                    "section_declarations": declarations,
-                    **edge_row(rec),
-                }
-            )
-            if rec.get("north_star"):
-                item["north_star"] = rec["north_star"]
-        inventory.append(item)
-
-    metadata_index.flush_discovery(docs_dir, project)
+            # Scalar inventory stays on the lightweight meta path. Gates, decisions,
+            # and open followups are the body state needed to explain roadmap
+            # readiness. The SPA fetches the remaining full state per document.
+            relative = _docs_relative(html_file, docs_dir)
+            stored = persisted_discovery.get(relative) if relative is not None else None
+            if stored is not None and stored.get("readiness") is not None:
+                rec = stored["meta"]
+                gates, decisions, followups, declarations = stored["readiness"]
+                # Seed the shared parse with the persisted state so every later
+                # reader of this unchanged file — the roadmap's authored-section
+                # read among them — reuses it rather than rebuilding the soup.
+                if stored.get("state") is not None:
+                    _plan_html.reuse_parsed_state(html_file, stored["state"])
+            else:
+                rec = _plan_html.parse_meta(html_file)
+                gates, decisions, followups, declarations = _read_readiness_state(
+                    html_file
+                )
+                # A file the store could not answer for was read here, so write that
+                # read back under its new digest: the next process reuses it instead
+                # of parsing it again.
+                if relative is not None:
+                    metadata_index.record_discovery(docs_dir, project, relative)
+            slug = resource.slug
+            artifact_type = resource.type
+            created, edited = _row_times(html_file, repo_dir, git_times, git_last_times)
+            item = {
+                "slug": slug,
+                "resource_id": resource.identity.key,
+                "href": str(
+                    (
+                        resource.relative_path
+                        if resource.legacy
+                        else resource.canonical_relative_path
+                    ).with_suffix("")
+                ),
+                "canonical_href": resource.canonical_href,
+                # A document saves as a print of its reader, rendered on request
+                # at its canonical route with a .pdf suffix.
+                "download": f"{resource.canonical_href}.pdf",
+                "legacy": resource.legacy,
+                "title": rec["title"],
+                "type": artifact_type,
+                "summary": rec.get("summary", ""),
+                "owner": rec.get("owner", ""),
+                "last": rec.get("modified", ""),
+                "created": created,
+                "edited": edited,
+                "version": rec["version"],
+                "archived": rec.get("archived") or ("1" if resource.archived else ""),
+                "read": rec.get("read") or "",
+                "reviewed_at": rec.get("reviewed_at", ""),
+                "recorded_at": rec.get("recorded_at", ""),
+                "verdict": rec.get("verdict", ""),
+                "environment": rec.get("environment", ""),
+                "source": rec.get("source", ""),
+                "source_quality": rec.get("source_quality", ""),
+                "informs": rec.get("informs", []),
+                "evidence_for": rec.get("evidence_for", []),
+                "verifies": rec.get("verifies", []),
+                "supersedes": rec.get("supersedes", []),
+                "commits": rec.get("commits", []),
+                "artifacts": rec.get("artifacts", []),
+            }
+            if artifact_type == "plan":
+                item.update(
+                    {
+                        "status": rec["status"],
+                        "ms": rec.get("milestone", "—"),
+                        "roi": rec.get("roi", "mid"),
+                        "effort": rec.get("effort", "M"),
+                        # Authored hours must reach the roadmap: dropping them here
+                        # silently substitutes the legacy letter's default, so a
+                        # 12-hour plan reports as its size letter's 2.
+                        "effort_hours": rec.get("effort_hours"),
+                        "wall_clock_hours": rec.get("wall_clock_hours"),
+                        "effort_calibrated": rec.get("effort_calibrated"),
+                        "sprint": rec.get("sprint") or None,
+                        "capability": rec.get("capability"),
+                        "tier": rec.get("tier"),
+                        "graph_handle": rec.get("graph_handle") or None,
+                        "impl": rec["impl"],
+                        "dec_open": rec["dec_open"],
+                        "decisions": decisions,
+                        "followups": followups,
+                        "blockers": rec["blockers"],
+                        "gates": gates,
+                        "section_declarations": declarations,
+                        **edge_row(rec),
+                    }
+                )
+                if rec.get("north_star"):
+                    item["north_star"] = rec["north_star"]
+            inventory.append(item)
+    finally:
+        metadata_index.flush_discovery(docs_dir, project)
 
     # Figure rows are appended after the typed resources; figures are
     # infrastructure to resource_map, so they never collide with a plan slug.

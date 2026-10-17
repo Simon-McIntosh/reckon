@@ -125,8 +125,8 @@ def test_persisted_store_equals_the_per_document_writes(
     serve.discover_plans(docs_dir, project, None)
     batched = metadata_index._load_persisted(docs_dir, project)
 
-    # Rebuild over an empty store with the batch disabled, so record_discovery
-    # writes the store once per document exactly as it did before the batch.
+    # Rebuild over an empty store with no batch open: record_discovery then
+    # writes the store on every call, one write per discovered document.
     _empty_store(docs_dir, project)
     store_writes.clear()
     monkeypatch.setattr(metadata_index, "begin_discovery", lambda *a, **k: None)
@@ -136,5 +136,34 @@ def test_persisted_store_equals_the_per_document_writes(
     per_document = metadata_index._load_persisted(docs_dir, project)
 
     assert per_document == batched
-    # The unbatched path is the defect the batch removes: one write per document.
+    # With no batch open each call writes the store, so the count is the
+    # document count rather than the single flush the batch produces.
     assert len(store_writes) > 2, len(store_writes)
+
+
+def test_a_failure_mid_loop_leaves_no_open_batch(docs_tree, store_writes, monkeypatch):
+    docs_dir, project = docs_tree
+    real_row_times = serve._row_times
+    calls: list[int] = []
+
+    def failing(html_file, *args, **kwargs):
+        calls.append(1)
+        if len(calls) == 5:
+            raise RuntimeError("parse failed mid-loop")
+        return real_row_times(html_file, *args, **kwargs)
+
+    monkeypatch.setattr(serve, "_row_times", failing)
+
+    with pytest.raises(RuntimeError, match="parse failed mid-loop"):
+        serve.discover_plans(docs_dir, project, None)
+
+    # The finally flushed and freed the key, so no batch is left registered for
+    # the next pass to inherit.
+    assert (
+        metadata_index._batch_key(docs_dir, project)
+        not in metadata_index._DISCOVERY_BATCHES
+    )
+    # Positive control: the flush carried the parses recorded before the
+    # failure, so the store holds discovered entries and not just covered paths.
+    persisted = metadata_index._load_persisted(docs_dir, project)
+    assert any("digest" in entry for entry in persisted.values())
