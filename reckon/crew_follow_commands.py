@@ -363,13 +363,43 @@ class _FollowerReloader:
             record.pop("reload_deferral")
             runs._write_watch_record(handle, record)
 
+    def _materialize_replacement(
+        self, commit: str
+    ) -> tuple[Path, list[Path], list[Path], int] | None:
+        """Publish this arming's replacement image, retrying one raced prune.
+
+        A second materialiser on this host or another sorts the published
+        images, keeps the newest few and removes the rest, so the tree this one
+        has just published but not yet leased can be removed underneath it.
+        Re-publishing once recovers a single such loss. A target that vanishes
+        again is a prune that is not a race, so the reload defers naming the
+        vanished path rather than spending the cadence's budget on it.
+        """
+        failure: OSError | RuntimeError | None = None
+        for _ in range(2):
+            try:
+                return checkout_trust.materialize_committed_tree(
+                    self.source_root, commit, active_root=self.import_root
+                )
+            except (OSError, RuntimeError) as exc:
+                failure = exc
+        self._record_reload_deferral(f"could not materialize HEAD ({failure})")
+        _echo_follow_line(
+            f"reckon {self.label} deferred its reload: could not "
+            f"materialize HEAD ({failure})",
+            stream=self.stream,
+        )
+        return None
+
     def poll(self, checkpoint: Mapping[str, Any]) -> None:
         """Check at a bounded cadence and re-exec with the reader checkpoint."""
         from reckon.crew import runs
         from reckon.crew.dispatch import _export_launched_workers_for_reexec
 
         if self.image_pin is not None:
-            checkout_trust.refresh_materialized_tree_pin(self.image_pin)
+            checkout_trust.refresh_materialized_tree_pin(
+                self.image_pin, self.import_root
+            )
         if self.failed:
             return
         moment = time.monotonic()
@@ -403,20 +433,10 @@ class _FollowerReloader:
             # longer describes the one now on disk: this checkout starts afresh.
             self._clear_probe_retry()
         if current_head and current_stamp == current_head:
-            try:
-                self.replacement_root, removed, kept, self.replacement_pin = (
-                    checkout_trust.materialize_committed_tree(
-                        self.source_root, current_head, active_root=self.import_root
-                    )
-                )
-            except (OSError, RuntimeError) as exc:
-                self._record_reload_deferral(f"could not materialize HEAD ({exc})")
-                _echo_follow_line(
-                    f"reckon {self.label} deferred its reload: could not "
-                    f"materialize HEAD ({exc})",
-                    stream=self.stream,
-                )
+            materialized = self._materialize_replacement(current_head)
+            if materialized is None:
                 return
+            self.replacement_root, removed, kept, self.replacement_pin = materialized
             for path in removed:
                 _echo_follow_line(
                     f"reckon {self.label} removed old reload tree {path}",
@@ -424,7 +444,8 @@ class _FollowerReloader:
                 )
             for path in kept:
                 _echo_follow_line(
-                    f"reckon {self.label} kept reload tree {path}: live image lease",
+                    f"reckon {self.label} kept reload tree {path}: "
+                    "live or recently renewed lease",
                     stream=self.stream,
                 )
         else:

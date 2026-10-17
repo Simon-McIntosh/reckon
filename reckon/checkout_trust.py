@@ -34,6 +34,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -46,6 +47,53 @@ from reckon.crew.obligation_snapshot import FOLLOWER_RELOAD_PROBE_TIMEOUT_SECOND
 # module that defines it can import this one without a cycle.
 IMPORT_PROBE_TIMEOUT = FOLLOWER_RELOAD_PROBE_TIMEOUT_SECONDS
 COMMITTED_TREE_RETENTION = 3
+
+# Pruning keeps the newest images and removes the rest, but two states must
+# never be removed whatever the ranking says.
+#
+# A materialiser publishes a tree by rename and takes its lease a moment
+# later, so between those two steps the tree is complete, ranked old, and
+# holds nothing a pruner can see: it is removable, and a concurrent
+# materialiser does remove it. A tree published within the grace below whose
+# lease has not been taken yet is exactly that gap, and is skipped.
+#
+# A lease is a ``flock``, which does not cross nodes on a shared GPFS home, so
+# a lease held from another host is invisible to a pruner here. Every follower
+# renews its lease on each poll (:func:`refresh_materialized_tree_pin`), and a
+# renewal stamps a marker beside the tree, so a tree whose lease was renewed
+# within the window below is still imported from somewhere and keeps its tree.
+# The marker is what separates a renewal from the lease taken at publication:
+# the lease's own mtime cannot, because this filesystem stamps a lease created
+# moments ago and one renewed moments ago with the same value.
+COMMITTED_TREE_PUBLISH_GRACE_SECONDS = 120.0
+COMMITTED_TREE_LEASE_WINDOW_SECONDS = 600.0
+COMMITTED_TREE_LEASE_MARKER = ".lease"
+
+
+def _marker_age_seconds(path: Path) -> float | None:
+    """Seconds since ``path`` was last modified, or None if it is not there."""
+    try:
+        return time.time() - path.stat().st_mtime
+    except OSError:
+        return None
+
+
+def _prune_must_keep(entry: Path) -> bool:
+    """Whether pruning must leave a published tree alone.
+
+    A tree published but not yet leased -- no ``.in-use`` -- is one lying in
+    the publish-to-lease gap, and is left alone while it is younger than the
+    grace. A tree whose ``.in-use`` was renewed within the lease window, and
+    which carries the renewal marker, is one a follower is still importing
+    from, on this host or another.
+    """
+    if not (entry / ".in-use").exists():
+        age = _marker_age_seconds(entry / ".complete")
+        return age is not None and age < COMMITTED_TREE_PUBLISH_GRACE_SECONDS
+    if not (entry / COMMITTED_TREE_LEASE_MARKER).exists():
+        return False
+    age = _marker_age_seconds(entry / ".in-use")
+    return age is not None and age < COMMITTED_TREE_LEASE_WINDOW_SECONDS
 
 
 def committed_head(root: Path) -> str | None:
@@ -123,9 +171,16 @@ def pin_materialized_tree(root: Path) -> int:
     return descriptor
 
 
-def refresh_materialized_tree_pin(descriptor: int) -> None:
-    """Renew the held image lease on every follower or producer poll."""
+def refresh_materialized_tree_pin(descriptor: int, root: Path) -> None:
+    """Renew the held image lease on every follower or producer poll.
+
+    The renewal is stamped on the lease and recorded in a marker beside the
+    tree. Pruning reads the marker, because the lease's own mtime cannot be
+    told from the one it was created with: a renewal only milliseconds old is
+    stamped identically to the lease taken at publication.
+    """
     os.utime(descriptor, None)
+    (root / COMMITTED_TREE_LEASE_MARKER).touch()
 
 
 def materialize_committed_tree(
@@ -174,6 +229,9 @@ def materialize_committed_tree(
             if entry == target:
                 continue
             if entry == active_root:
+                kept.append(entry)
+                continue
+            if _prune_must_keep(entry):
                 kept.append(entry)
                 continue
             descriptor = os.open(entry / ".in-use", os.O_CREAT | os.O_RDWR, 0o600)
