@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T09:25:37.295Z",
+  "dispatched_at": "2026-10-17T09:18:23Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:163",
+      "id": "reasoning-1",
+      "reason": "a repair built for the stated cause (shipping each worker's leak records to the reporting process, the second option in revised bullet 3) leaves the wrapper uninstalled and the record empty, so the node would build the wrong fix for the observed symptom.",
+      "text": "\u00a79 bullet 1 diagnoses the xdist failure as \"the guard keeps its leak record in one process's memory\", but the cited measurement r-20261017T082654021736 records the failure as the wrapper never being installed at all (\"AssertionError: the cache_root wrapper was never installed, so an empty leak record proves nothing\"; guard_self_check_failed_not_leak true; follow-on: \"Confirm whether install_cache_root_guard runs only in the controller process\"), and \u00a79's own next clause already says the test \"found the guard uninstalled in its own worker\" \u2014 a wrapper that is not installed has no record to share",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:163",
+      "id": "single_goal-1",
+      "reason": "a node's fence is derived from its write paths and it cannot fence itself from two declarations that differ in both the file list and in whether the set is fixed or \"found by the node\", so the delivered scope is undetermined.",
+      "text": "\u00a79 closes with two Write-paths statements that disagree: \"Write paths, as revised: tests/conftest.py, tests/test_no_test_resolves_the_real_cache.py, tests/test_gc_sweeps_ledger_indexes.py and tests/test_split_existing_runs.py\", and then, unlabelled, \"Write paths: tests/conftest.py, the test files that set a cache root of their own, found by the node, and the guard test\"; the second is the superseded pre-revision scope, left beside the revision that replaced it",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:163",
+      "id": "reasoning-2",
+      "reason": "all four are enumerated and each is covered by the revised done-when bullets and write paths, so the count is a prose slip rather than a repair silently dropped from the plan.",
+      "text": "the revision's lead sentence says \"three defects in the paragraph above showed through\" and then lists four bullets (the xdist guard, the uv cache moved by XDG_CACHE_HOME, the per-kind override outranking RECKON_HOME, and the eight split-existing-runs tests refusing vacuously)",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "bf8f8a936b4870cad2ea88f00874e09baa03749b39307b0c802c5326730a94cd",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 60,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T091746554848-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "0a717c970a0f4f203282dccc82b1cca3e4c365b6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited commits ab3da5d91 and 98ca42916, tests/conftest.py, tests/test_spa_crew_stylesheet.py, tests/test_no_test_resolves_the_real_cache.py (present at ab3da5d91), _store.cache_root and the measurement run r-20261017T082654021736 all resolve.",
+    "done_when": "pass \u2014 \u00a79's revised done-when is measurable and names a falsification: a positive-control test that deliberately resolves the real cache, which the guard must name under -n 4, with its log under the run directory.",
+    "evidence_paths": "pass \u2014 the gate logs and the guard's positive-control log are directed to the run directory, a durable path.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach any symbol or comment in \u00a79.",
+    "reasoning": "a finding \u2014 \u00a79 bullet 1 states a root cause for the xdist failure that its own cited measurement does not support, and its lead sentence miscounts the defects it lists.",
+    "single_goal": "a finding \u2014 \u00a79 carries two contradictory Write-paths declarations for its one deliverable.",
+    "wiring": "pass \u2014 \u00a79's followup f-tchhab-009 and its parallel relationship to \u00a78 (different files) resolve, and the section needs no depends-on it has not declared."
+  },
+  "section_digests": {
+    "_document": "4dc163aaf3971781a60f3a42d1ae1a5f5e8120d9456c429e5adc0ea60acb2b52",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s10": "56c18da5f95c1af6bc07050b4374f565f11fa8750f575894cd4e1cc2b5ea773a",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "ea437bee063bb05e8f8ddb6f7a30f7f066d66dff1770c1488e31b86a6f5c7ba8",
+    "s5": "75a8a336e2ee62426e5a8c3ed3310e0cf614b82a8cf7ae6a5985fcb99f2b1648",
+    "s6": "3f82b3311550663b1d18b1428203c2b44805aff91f1c998049de11dd82bfe201",
+    "s7": "d966e9dc54000fcf7d43d9d39567b2a791c2670b0224b881649472a126a8f106",
+    "s8": "07d9242815cd2c19cf76c9484aa28c908834190af477f204091de9d695b3e8a5",
+    "s9": "b72064a366b9ef33c129ee874579eda1592d306791263eac0ba8904b097760bf"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T09:30:56.957967+00:00"
+}
