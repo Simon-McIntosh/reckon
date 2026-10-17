@@ -1,0 +1,87 @@
+{
+  "artifacts": [
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/the-production-lag-is-split/report.md (the reviewed report, read-only)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/the-production-lag-is-split/analyze_passes.py (the cited aggregation, re-run)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/the-production-lag-is-split/logs/ (pass-{node-1,node-2,gpfs}-{1..5}.log, sbatch-1287755.out, sbatch-1287743.out, census.log, prev-run-400s/inventory.log; read-only, re-reduced)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T004310272170-review-of-the-production-lag-is-split-128540cc768a/claims-rerun.log (this review's re-run log: cited analysis EXIT=0, plus the corpus du re-run)"
+  ],
+  "claim_lines": [
+    "CLAIM 1: reproduced: re-ran the cited aggregation `python analyze_passes.py logs` from the report's own directory (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/the-production-lag-is-split); it printed node_local_call1_median=30.582 s, gpfs_call1_median=37.388 s, difference_seconds=6.806, share_of_60.3s_lag=11.3% - the split the report states (+6.806 s, 11.3 percent of the 60.3 s lag; call-1 medians 37.4 s GPFS vs 30.6 s node-local). EXIT=0.",
+    "CLAIM 2: differs: the report states `crew/reports/` alone is 188,261,606,400 bytes; re-running a `du -sb` on that live tree gave 187,794,037,967 B, then 187,798,832,031 B on a second run - a different figure by about 0.25 percent, produced because the tree is live and other sessions write under it (the two re-runs differ from each other by ~4.8 MB). The operative claim - reports/ alone is ~188 GB, far above section 20's 20 GB gate - holds; the exact byte count does not reproduce.",
+    "CLAIM 3: reproduced: re-ran the same cited `python analyze_passes.py logs` from the report's own directory; it printed node_local_call2_median=26.249 s, gpfs_call2_median=25.974 s, difference_seconds=-0.275 - the steady-state no-penalty the report states (26.2 s node-local vs 26.0 s GPFS, a -0.275 s difference). EXIT=0."
+  ],
+  "claim_summary": {
+    "detail": "agrees: the report's summary line reads 'The crew state's storage medium explains +6.8 s of the 60.3 s lag - about 11 percent'; the medians table beneath it carries GPFS call-1 median 37.388 s against node-local pooled 30.582 s, a difference of 6.806 s, which is 11.3 percent of 60.3 s - so +6.8 s and about 11 percent are the table's own figures. The same headline's '26.0 s on GPFS vs 26.2 s node-local, a -0.3 s difference' matches the table's 25.974 vs 26.249 (-0.275), and its '2.0 percent' A/A control matches the table's 2.0 percent. Re-running the cited aggregation re-emitted every one of these cells.",
+    "verdict": "agrees"
+  },
+  "claim_summary_line": "CLAIM_SUMMARY: agrees: the report's summary line reads 'The crew state's storage medium explains +6.8 s of the 60.3 s lag - about 11 percent'; the medians table beneath it carries GPFS call-1 median 37.388 s against node-local pooled 30.582 s, a difference of 6.806 s, which is 11.3 percent of 60.3 s - so +6.8 s and about 11 percent are the table's own figures. The same headline's '26.0 s on GPFS vs 26.2 s node-local, a -0.3 s difference' matches the table's 25.974 vs 26.249 (-0.275), and its '2.0 percent' A/A control matches the table's 2.0 percent. Re-running the cited aggregation re-emitted every one of these cells.",
+  "claim_verdicts": {
+    "CLAIM 1": {
+      "cites": "report.md Headline and 'Timed passes' medians table; analyze_passes.py (the cited aggregation); logs/pass-{node-1,node-2,gpfs}-{1..5}.log",
+      "detail": "Re-ran `python analyze_passes.py logs` from the report's own directory; it printed node_local_call1_median=30.582 gpfs_call1_median=37.388 difference_seconds=6.806 share_of_60.3s_lag=11.3% - the report's +6.806 s and 11.3 percent. Log: claims-rerun.log.",
+      "finding": "rank 1 (the headline result): the crew state's storage medium explains +6.806 s of the 60.3 s lag - 11.3 percent",
+      "verdict": "reproduced"
+    },
+    "CLAIM 2": {
+      "cites": "report.md 'The literal corpus trips section 20's gate'; logs/sbatch-1287743.out (inventory_rc=124, GATE-TRIPPED); logs/prev-run-400s/inventory.log (rsync SIGINT/SIGTERM code 20); no log preserves the du of reports/",
+      "detail": "The gating fact reproduces: logs/sbatch-1287743.out carries inventory_rc=124 and GATE-TRIPPED reason=inventory-incomplete, and logs/prev-run-400s/inventory.log carries rsync's SIGINT/SIGTERM exit. The stated size does not reproduce exactly: a `du -sb -- /home/ITER/mcintos/.config/reckon/crew/reports` run twice gave 187,794,037,967 B and 187,798,832,031 B against the report's 188,261,606,400 B - a 0.25 percent gap, and the two re-runs differ from each other by ~4.8 MB, because the tree is live and other sessions write under it. Magnitude and conclusion hold (reports/ alone is ~188 GB, far over the 20 GB gate); the exact byte count is not reproducible and the report preserves no log of the du that produced it. Log: claims-rerun.log.",
+      "finding": "rank 2: the literal live crew home trips section 20's gate - crew/reports/ alone is 188,261,606,400 bytes, and a bounded census of the uncut home did not finish (rc=124)",
+      "verdict": "differs"
+    },
+    "CLAIM 3": {
+      "cites": "report.md Headline and medians table; analyze_passes.py; logs/pass-*-{1..5}.log",
+      "detail": "Re-ran the same `python analyze_passes.py logs`; it printed node_local_call2_median=26.249 gpfs_call2_median=25.974 difference_seconds=-0.275 - the report's -0.275 s (26.0 s GPFS vs 26.2 s node-local). Log: claims-rerun.log.",
+      "finding": "rank 3: no measurable storage penalty at steady state - call-2 medians 26.249 s node-local vs 25.974 s GPFS, -0.275 s",
+      "verdict": "reproduced"
+    }
+  },
+  "claims": [
+    {
+      "cites": "analyze_passes.py; report.md medians table; logs/pass-*-{1..5}.log",
+      "finding": "storage medium explains +6.806 s of the 60.3 s lag (11.3 percent) on the first call",
+      "rank": 1,
+      "report_figure": "call-1 medians 37.388 s GPFS vs 30.582 s node-local pooled; split +6.806 s, 11.3 percent of 60.3 s",
+      "rerun_figure": "identical: node_local_call1_median=30.582, gpfs_call1_median=37.388, difference_seconds=6.806, share_of_60.3s_lag=11.3%",
+      "verdict": "reproduced"
+    },
+    {
+      "cites": "report.md 'The literal corpus trips section 20's gate'; logs/sbatch-1287743.out; du (no log preserved by the report)",
+      "finding": "crew/reports/ alone is 188,261,606,400 bytes; the uncut home census did not finish (rc=124)",
+      "rank": 2,
+      "report_figure": "crew/reports/ = 188,261,606,400 B; inventory rc=124 (GATE-TRIPPED)",
+      "rerun_figure": "du -sb crew/reports/ = 187,794,037,967 B, then 187,798,832,031 B (live churn ~4.8 MB between runs); rc=124 gate reproduced from logs/sbatch-1287743.out",
+      "verdict": "differs"
+    },
+    {
+      "cites": "analyze_passes.py; report.md medians table; logs/pass-*-{1..5}.log",
+      "finding": "call-2 steady-state medians 26.249 s node-local vs 25.974 s GPFS, difference -0.275 s",
+      "rank": 3,
+      "report_figure": "call-2 medians 25.974 s GPFS vs 26.249 s node-local pooled; -0.275 s",
+      "rerun_figure": "identical: node_local_call2_median=26.249, gpfs_call2_median=25.974, difference_seconds=-0.275",
+      "verdict": "reproduced"
+    }
+  ],
+  "completed_at": "2026-10-17T00:55:10.340Z",
+  "dimensions": null,
+  "dispatched_at": "2026-10-17T00:43:55Z",
+  "method": "The reviewed run is read-only: its manifest records commits: none - an investigation node whose write scope was its crew report directory - so reviewed_base_sha == reviewed_head_sha == 128540cc768abfc716440436be08d85739269ba9 and there is no diff to read and no gate suite to count. The report is report.md under the run's report directory. The three findings taken as its highest-ranked are: (1) the headline split (the report's first and bolded result); (2) the corpus finding (its own titled section, 'The literal corpus trips section 20's gate', which governs whether the measurement means anything); (3) the steady-state no-penalty (the headline's second quantified result). The report's A/A control (2.0 percent) was also reproduced - it is an instrument check rather than a finding, so it is recorded under supporting, not as a CLAIM line. Each cited command was re-run from the report's own directory against the run's on-disk inputs: `python analyze_passes.py logs` (the aggregation the report names, reproducing the whole per-pass and medians tables, the censored list, the split, the steady-state difference and the A/A control), and a `du -sb` on the live crew/reports tree (the figure the report states for the corpus gate, for which the report preserves no log of its own). No re-measurement of the timed passes is possible: the passes' arms and their node-local scratch were removed at job end, so the pass logs are re-reduced rather than re-run. Full re-run log: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T004310272170-review-of-the-production-lag-is-split-128540cc768a/claims-rerun.log.",
+  "project": "reckon",
+  "report_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/the-production-lag-is-split/report.md",
+  "report_present": true,
+  "review_run_id": "r-20261017T004310272170-review-of-the-production-lag-is-split-128540cc768a",
+  "reviewed_base_sha": "128540cc768abfc716440436be08d85739269ba9",
+  "reviewed_head_sha": "128540cc768abfc716440436be08d85739269ba9",
+  "reviewed_run_id": "r-20261016T231931115493-the-production-lag-is-split",
+  "rubric": "claims",
+  "status": "parsed",
+  "suite_delta_fields_omitted": "added_failure_count and added_failure_ids are intentionally absent: the reviewed run ran no gate suite (this review runs none). The record does not score the six landed-node dimensions; dimensions is null.",
+  "supporting": {
+    "A/A control": "reproduced: A/A_control node-1=30.180 node-2=30.779 relative_gap=2.0% - the report's 2.0 percent, inside its 15 percent bound",
+    "censored count": "reproduced: every pass log ends EXIT=0 and analyze_passes.py printed censored=0 for all three arms; no timing is a kill survivor",
+    "census corpus": "reproduced: logs/census.log and logs/sbatch-1287755.out both carry files=31,282 bytes=770,155,526 - the report's corpus figures",
+    "method honesty": "the report itself records its narrowing of section 20's literal corpus (runs/ excluded as unwalkable, reports/ and reviews-quarantine/ excluded as artifact stores the read-set audit shows no producer read) under 'Shortfall against the done-when'; it is a stated shortfall, not a hidden one",
+    "provenance": "reproduced: all 15 pass logs carry reckon_under_code_tree=True at revision 128540cc768abfc716440436be08d85739269ba9"
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T00:52:34.557189+00:00"
+}
