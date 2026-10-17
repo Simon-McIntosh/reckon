@@ -1303,6 +1303,13 @@ def session_cache_roots_are_isolated(tmp_path_factory):
                 os.environ.pop(name, None)
             else:
                 os.environ[name] = value
+        leaks = cache_root_leaks()
+        if leaks:
+            raise AssertionError(
+                "a test or fixture resolved a cache root outside the session "
+                f"temp tree ({len(leaks)} resolution(s)); the guard test names "
+                "them in its own report"
+            )
 
 
 @pytest.fixture(autouse=True)
