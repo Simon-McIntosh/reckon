@@ -387,8 +387,6 @@ def _persist_runs(project: str, root: Path, union: dict[str, Any]) -> None:
     under test. Handing that union back to ``ledger.write`` would copy every
     per-run row into the tracked aggregate, which the writer refuses.
     """
-    from reckon._store import write_atomically
-
     aggregate, version = ledger.load_aggregate(project, root)
     held = {
         str(row["run_id"]): row
@@ -399,12 +397,7 @@ def _persist_runs(project: str, root: Path, union: dict[str, Any]) -> None:
     for row in union["runs"]:
         home = held.get(str(row.get("run_id") or ""))
         if home is None:
-            path = ledger.run_path(project, str(row["run_id"]), root)
-            write_atomically(
-                path,
-                lambda stream, record=row: stream.write(ledger.serialize_run(record)),
-                mode=0o600,
-            )
+            ledger.write_run_file(project, row, root)
             continue
         if home is not row:
             home.clear()

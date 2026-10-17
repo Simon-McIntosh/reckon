@@ -885,6 +885,35 @@ def run_path(project: str, run_id: str, root: str | Path | None = None) -> Path:
     return ledger_path(project, root).parent / "runs" / f"{run_id}.json"
 
 
+def write_run_file(
+    project: str,
+    row: Mapping[str, Any],
+    root: str | Path | None = None,
+    *,
+    fsync: bool = True,
+    mode: int | None = 0o600,
+) -> Path:
+    """Persist one run where it is held: its own file under ``runs/``.
+
+    The record goes through :func:`serialize_run`, the one encoder for a run, so
+    the file cannot drift from a copy of the same row the aggregate holds, which
+    :func:`load` refuses to read as the same history. Every writer that amends a
+    row that owns a file calls this rather than encoding the row itself.
+
+    ``mode`` is the permission bits the file must carry. A caller amending a
+    file it did not create passes ``None``, leaving the bits the file already
+    has, which is what a rewrite that only re-encodes an existing row wants.
+    """
+    target = run_path(project, str(row["run_id"]), root)
+    _store.write_atomically(
+        target,
+        lambda handle: handle.write(serialize_run(row)),
+        mode=mode,
+        fsync=fsync,
+    )
+    return target
+
+
 def _run_files(project: str, root: str | Path | None = None) -> list[Path]:
     return sorted((ledger_path(project, root).parent / "runs").glob("*.json"))
 
@@ -1641,11 +1670,7 @@ def _keep_run_files_identical(
             prior = target.read_text(encoding="utf-8")
             if prior == encoded:
                 continue
-            _store.write_atomically(
-                target,
-                lambda handle, encoded=encoded: handle.write(encoded),
-                fsync=False,
-            )
+            write_run_file(project, row, root, fsync=False, mode=None)
         except OSError as exc:
             _restore_run_files(snapshots)
             raise LedgerError(
@@ -3627,20 +3652,6 @@ def _worker_seconds(dispatched_at: Any, completed_at: Any) -> int | None:
     return max(0, int((finish - start).total_seconds()))
 
 
-def _write_run_row(
-    project: str, row: Mapping[str, Any], root: str | Path | None
-) -> None:
-    """Amend one run's own file through the canonical serialiser.
-
-    A record that owns a file under ``runs/`` is persisted there rather than in
-    the aggregate, so the two never hold the same run file twice.
-    """
-    path = run_path(project, str(row["run_id"]), root)
-    _store.write_atomically(
-        path, lambda stream: stream.write(serialize_run(row)), mode=0o600
-    )
-
-
 def _persist_repaired_rows(
     project: str,
     aggregate: dict[str, Any],
@@ -3670,7 +3681,7 @@ def _persist_repaired_rows(
             continue
         home = held.get(run_id)
         if home is None:
-            _write_run_row(project, record, root)
+            write_run_file(project, record, root)
             continue
         home.clear()
         home.update(record)

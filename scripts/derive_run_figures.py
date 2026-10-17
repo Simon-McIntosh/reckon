@@ -78,7 +78,7 @@ def backfill_run_figures(
             home["orientation_input_tokens"] = figures["orientation_input_tokens"]
             aggregate_changed = True
         else:
-            _write_run_row(project, {**row, **figures}, root)
+            ledger.write_run_file(project, {**row, **figures}, root)
     if aggregate_changed:
         ledger.write(project, aggregate, version, root=root)
     return {
@@ -88,18 +88,6 @@ def backfill_run_figures(
         "rows_unmeasurable": unmeasurable,
         "ledger_version": version,
     }
-
-
-def _write_run_row(
-    project: str, row: dict[str, Any], root: str | Path | None
-) -> None:
-    """Amend one run's own file through the canonical serialiser."""
-    from reckon._store import write_atomically
-
-    path = ledger.run_path(project, str(row["run_id"]), root)
-    write_atomically(
-        path, lambda stream: stream.write(ledger.serialize_run(row)), mode=0o600
-    )
 
 
 def _parse(argv: list[str]) -> argparse.Namespace:

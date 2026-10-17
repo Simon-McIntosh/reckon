@@ -236,24 +236,12 @@ def backfill_run_durations(
 
     if counts["rows_processed"]:
         for run_id in sorted(processed_files):
-            _write_run_row(project, file_rows[run_id], root)
+            ledger.write_run_file(project, file_rows[run_id], root)
         if aggregate_changed:
             counts["ledger_version"] = ledger.write(
                 project, aggregate, version, root=root
             )
     return counts
-
-
-def _write_run_row(
-    project: str, row: dict[str, Any], root: str | Path | None
-) -> None:
-    """Amend one run's own file through the canonical serialiser."""
-    from reckon._store import write_atomically
-
-    path = ledger.run_path(project, str(row["run_id"]), root)
-    write_atomically(
-        path, lambda stream: stream.write(ledger.serialize_run(row)), mode=0o600
-    )
 
 
 def _parse(argv: list[str]) -> argparse.Namespace:
