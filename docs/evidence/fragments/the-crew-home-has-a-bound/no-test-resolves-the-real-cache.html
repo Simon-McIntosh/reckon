@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-crew-home-has-a-bound">
+  <meta name="plan-evidence-for" content="reckon:the-crew-home-has-a-bound">
+  <meta name="plan-verifies" content="reckon:the-crew-home-has-a-bound#s9">
+  <meta name="plan-recorded-at" content="2026-10-17">
+  <meta name="plan-verdict" content="passed">
+  <title>no test resolves the real cache — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="no-test-resolves-the-real-cache" data-node="no-test-resolves-the-real-cache" data-reckon="landed" data-when="2026-10-17">
+  <h2>no test resolves the real cache</h2>
+  <p>A session-scoped autouse fixture in <code>tests/conftest.py</code> moves <code>XDG_CACHE_HOME</code> — the one lever every kind in <code>reckon/_store.py</code> reads — to a session temporary directory before any module- or function-scoped fixture runs, and pins <code>UV_CACHE_DIR</code> to uv's own directory as resolved before the redirect so a wheel build still resolves its backend. It sets no per-kind override and leaves <code>RECKON_HOME</code> as found, so a test that steers a root through that variable still steers it.</p>
+  <p>A wrapper around <code>_store.cache_root</code>, installed when the conftest is imported — a point every xdist worker reaches in its own process — records every ambient resolution that leaves the run's temp tree. The guard test in <code>tests/test_no_test_resolves_the_real_cache.py</code> reads the record, and the session fixture's teardown fails the session of whichever worker recorded a leak.</p>
+  <p>Measured in the foreground: the 21 ids the first whole-suite measurement attributed to this node pass at <code>ca161be6e</code> (14 isolation ids under <code>-n 4</code>, 7 wheel-build ids under <code>-n 4</code>), and the armed positive control is named by the guard under <code>-n 4</code>, resolving <code>/home/ITER/mcintos/.cache/reckon/velocity</code> without writing to it.</p>
+</article>
+</body>
+</html>
