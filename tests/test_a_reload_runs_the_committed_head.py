@@ -41,7 +41,11 @@ def _commit(root: Path, value: str) -> str:
 
 @pytest.fixture()
 def source(tmp_path: Path, monkeypatch):
-    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    monkeypatch.setattr(
+        follow.checkout_trust,
+        "_committed_tree_cache",
+        lambda: tmp_path / "home" / "crew" / "reload-trees",
+    )
     root = tmp_path / "source"
     (root / "reckon").mkdir(parents=True)
     (root / "reckon" / "__init__.py").write_text("")
