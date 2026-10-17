@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "both arms of the reviewed run read green: gate-head.log reports 24 passed EXIT=0 and gate-base.log reports 24 passed EXIT=0, each with no FAILED line, so the reviewed run added no failing test",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2459",
+    "reckon/crew_run_commands.py:1777",
+    "reckon/crew/recovery_review_acceptance.py:214",
+    "reckon/crew/recovery_watch.py:2636"
+  ],
+  "completed_at": "2026-10-17T13:42:56.504Z",
+  "dispatched_at": "2026-10-17T13:33:04Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": "360",
+      "severity": "follow-on",
+      "text": "follow-on: the capture call reachable through `crew observe` (reckon/crew_dispatch_commands.py:2459) and the promotion_records call at reckon/crew/promotion_records.py:185 were renamed but carry no moved monkeypatch, and no test asserts the alias is absent tree-wide, so a future reintroduction of the alias at either site would not redden the gate; the done-when guards those two with a manual grep only."
+    },
+    {
+      "file": "gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head-arm gate log's revision header names the base sha 923c00534... while the arm actually ran against the head worktree, so the file does not name the revision it measured: the head sha 15dff49be appears only in the manifest's after_suite block, and a reader opening the log alone cannot tell which revision passed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read against 923c00534536c83f829c54e16b2c932454062e29: one commit, 10 insertions and 17 deletions across the seven declared files, deleting the alias definition and its two import lines, repointing the five call sites to capture_run_session, and moving the three monkeypatches off the alias name.",
+    "done_when": "the done_when has three clauses: the alias grep empty at head and present at base (verified: head exit 1 / base 7 files), pytest over tests/test_rollback_asks_head.py, tests/test_a_promotion_never_reads_unpromoted.py and tests/test_dispatch_reads_the_resolved_session.py adding no failure (gate-head.log \"24 passed in 53.82s\" EXIT=0 vs gate-base.log \"24 passed in 81.19s\" EXIT=0), and ruff adding no finding on the staged paths (ruff.log \"new findings in head vs base (normalised)\" empty).",
+    "goal": "the goal is that the _capture_member_session alias is deleted and every caller uses capture_run_session; at the reviewed head `git grep _capture_member_session -- reckon/ tests/` prints nothing, and the diff removes the definition at reckon/crew/dispatch_sessions.py (was line 822), the two imports (reckon/crew/promotion.py:68, reckon/crew/promotion_records.py:15), the re-export (reckon/crew/dispatch.py:2874) and the reckon/crew.py:159 export entry, repointing every call at capture_run_session.",
+    "manifest": "read; it states status complete, commit 15dff49be0646763534f7c1a283e790d2ce6af99, a head gate of 24 passed EXIT=0 against 24 base EXIT=0 (0 added failures), a negative control of \"3 failed, 15 passed\", and both suite blocks record completed true with failure_count 0 and an empty failure_ids list.",
+    "write_paths": "the plan \u00a710 and the source manifest declare the five reckon/crew modules and the two test files; the diff touches exactly those seven paths and nothing else, and the manifest's changed_paths matches the diff line for line."
+  },
+  "justifications": {
+    "durability": "the two moved monkeypatches guard the promotion call name: tests/test_rollback_asks_head.py:183 points the capture injection at promotion.capture_run_session and tests/test_rollback_asks_head.py:274 and tests/test_a_promotion_never_reads_unpromoted.py:187 patch it directly, so re-reverting promotion.py to call _capture_member_session would leave the patch on a name the code no longer calls (or raise AttributeError on the removed import) and redden all three; the recorded negative control (negative-control.log, 3 failed EXIT=1) demonstrates exactly that sensitivity by aiming each patch at promotion.scoped_diff_stat. The weaker half: no test asserts the alias is absent tree-wide, the done-when's primary guard is a manual grep, and the changed calls at dispatch_sessions.py:360 and promotion_records.py:185 have no moved patch, so those two call sites carry no automated regression guard.",
+    "evidence": "the done_when's three clauses are each recorded against a log under the run: the alias grep is empty at head (measured here) and present at base, gate-head.log records \"24 passed in 53.82s\" EXIT=0 against gate-base.log's \"24 passed in 81.19s\" EXIT=0 (0 added failures), and ruff.log reports no new finding in head vs base with format both \"3 files would be reformatted\"; the head arm's own log header names the base revision (gate-head.log:1), so the head sha is only in the manifest's after_suite block, a labelling weakness rather than a missing result.",
+    "fit": "the change follows the module's import idiom, moving the changed callers onto the same `from reckon.crew.runs import (...)` block that already owns capture_run_session (reckon/crew/promotion.py:128, reckon/crew/promotion_records.py:34), and it adds no symbol, filename, comment or ticket reference the naming rules forbid.",
+    "goal_fidelity": "the goal is that the _capture_member_session alias is deleted and every caller uses capture_run_session; `git grep _capture_member_session 15dff49be -- reckon/ tests/` prints nothing (exit 1) against 7 files at the base, and the diff repoints the call at reckon/crew/dispatch_sessions.py:360, the calls at reckon/crew/promotion.py:763 and reckon/crew/promotion.py:1370 and the call at reckon/crew/promotion_records.py:185, with the two imports and the dispatch.py:2874 re-export and the reckon/crew.py _MODULE_EXPORTS entry removed.",
+    "reuse": "the diff adds no definition at all: it deletes the alias and routes all four call sites through the sole owner capture_run_session (reckon/crew/runs.py:91), which the repository already owns; a capability search over reckon/ for `def capture`/`capture_run_session` found no other run-session capture mechanism (reckon/crew/dispatch_sessions.py:1235 is a nested per-response capture and reckon/velocity.py:797 a project capture, both unrelated), so there is nothing to fork.",
+    "scope_discipline": "every path in the diff is inside the plan \u00a710 write paths and the source manifest's changed_paths: the seven files touched are exactly reckon/crew.py, reckon/crew/dispatch.py, reckon/crew/dispatch_sessions.py, reckon/crew/promotion.py, reckon/crew/promotion_records.py, tests/test_rollback_asks_head.py and tests/test_a_promotion_never_reads_unpromoted.py, and the diff carries no evidence fragment, figure or unrelated edit."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 923c00534536c83f829c54e16b2c932454062e29\nreviewed_head_sha: 15dff49be0646763534f7c1a283e790d2ce6af99\n\nVERDICT goal: the goal is that the _capture_member_session alias is deleted and every caller uses capture_run_session; at the reviewed head `git grep _capture_member_session -- reckon/ tests/` prints nothing, and the diff removes the definition at reckon/crew/dispatch_sessions.py (was line 822), the two imports (reckon/crew/promotion.py:68, reckon/crew/promotion_records.py:15), the re-export (reckon/crew/dispatch.py:2874) and the reckon/crew.py:159 export entry, repointing every call at capture_run_session.\nVERDICT done_when: the done_when has three clauses: the alias grep empty at head and present at base (verified: head exit 1 / base 7 files), pytest over tests/test_rollback_asks_head.py, tests/test_a_promotion_never_reads_unpromoted.py and tests/test_dispatch_reads_the_resolved_session.py adding no failure (gate-head.log \"24 passed in 53.82s\" EXIT=0 vs gate-base.log \"24 passed in 81.19s\" EXIT=0), and ruff adding no finding on the staged paths (ruff.log \"new findings in head vs base (normalised)\" empty).\nVERDICT write_paths: the plan \u00a710 and the source manifest declare the five reckon/crew modules and the two test files; the diff touches exactly those seven paths and nothing else, and the manifest's changed_paths matches the diff line for line.\nVERDICT manifest: read; it states status complete, commit 15dff49be0646763534f7c1a283e790d2ce6af99, a head gate of 24 passed EXIT=0 against 24 base EXIT=0 (0 added failures), a negative control of \"3 failed, 15 passed\", and both suite blocks record completed true with failure_count 0 and an empty failure_ids list.\nVERDICT diff: read against 923c00534536c83f829c54e16b2c932454062e29: one commit, 10 insertions and 17 deletions across the seven declared files, deleting the alias definition and its two import lines, repointing the five call sites to capture_run_session, and moving the three monkeypatches off the alias name.\nCALL_SITES: reckon/crew_dispatch_commands.py:2459, reckon/crew_run_commands.py:1777, reckon/crew/recovery_review_acceptance.py:214, reckon/crew/recovery_watch.py:2636\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the goal is that the _capture_member_session alias is deleted and every caller uses capture_run_session; `git grep _capture_member_session 15dff49be -- reckon/ tests/` prints nothing (exit 1) against 7 files at the base, and the diff repoints the call at reckon/crew/dispatch_sessions.py:360, the calls at reckon/crew/promotion.py:763 and reckon/crew/promotion.py:1370 and the call at reckon/crew/promotion_records.py:185, with the two imports and the dispatch.py:2874 re-export and the reckon/crew.py _MODULE_EXPORTS entry removed.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when's three clauses are each recorded against a log under the run: the alias grep is empty at head (measured here) and present at base, gate-head.log records \"24 passed in 53.82s\" EXIT=0 against gate-base.log's \"24 passed in 81.19s\" EXIT=0 (0 added failures), and ruff.log reports no new finding in head vs base with format both \"3 files would be reformatted\"; the head arm's own log header names the base revision (gate-head.log:1), so the head sha is only in the manifest's after_suite block, a labelling weakness rather than a missing result.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the plan \u00a710 write paths and the source manifest's changed_paths: the seven files touched are exactly reckon/crew.py, reckon/crew/dispatch.py, reckon/crew/dispatch_sessions.py, reckon/crew/promotion.py, reckon/crew/promotion_records.py, tests/test_rollback_asks_head.py and tests/test_a_promotion_never_reads_unpromoted.py, and the diff carries no evidence fragment, figure or unrelated edit.\nSCORE durability: 15\nJUSTIFICATION durability: the two moved monkeypatches guard the promotion call name: tests/test_rollback_asks_head.py:183 points the capture injection at promotion.capture_run_session and tests/test_rollback_asks_head.py:274 and tests/test_a_promotion_never_reads_unpromoted.py:187 patch it directly, so re-reverting promotion.py to call _capture_member_session would leave the patch on a name the code no longer calls (or raise AttributeError on the removed import) and redden all three; the recorded negative control (negative-control.log, 3 failed EXIT=1) demonstrates exactly that sensitivity by aiming each patch at promotion.scoped_diff_stat. The weaker half: no test asserts the alias is absent tree-wide, the done-when's primary guard is a manual grep, and the changed calls at dispatch_sessions.py:360 and promotion_records.py:185 have no moved patch, so those two call sites carry no automated regression guard.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module's import idiom, moving the changed callers onto the same `from reckon.crew.runs import (...)` block that already owns capture_run_session (reckon/crew/promotion.py:128, reckon/crew/promotion_records.py:34), and it adds no symbol, filename, comment or ticket reference the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition at all: it deletes the alias and routes all four call sites through the sole owner capture_run_session (reckon/crew/runs.py:91), which the repository already owns; a capability search over reckon/ for `def capture`/`capture_run_session` found no other run-session capture mechanism (reckon/crew/dispatch_sessions.py:1235 is a nested per-response capture and reckon/velocity.py:797 a project capture, both unrelated), so there is nothing to fork.\nFINDING reckon/crew/dispatch_sessions.py:360 follow-on: the capture call reachable through `crew observe` (reckon/crew_dispatch_commands.py:2459) and the promotion_records call at reckon/crew/promotion_records.py:185 were renamed but carry no moved monkeypatch, and no test asserts the alias is absent tree-wide, so a future reintroduction of the alias at either site would not redden the gate; the done-when guards those two with a manual grep only.\nFINDING gate-head.log:1 follow-on: the head-arm gate log's revision header names the base sha 923c00534... while the arm actually ran against the head worktree, so the file does not name the revision it measured: the head sha 15dff49be appears only in the manifest's after_suite block, and a reader opening the log alone cannot tell which revision passed.",
+  "review_run_id": "r-20261017T133219053883-review-of-a-runs-session-has-one-capture-name-15dff49be064",
+  "reviewed_base_sha": "923c00534536c83f829c54e16b2c932454062e29",
+  "reviewed_head_sha": "15dff49be0646763534f7c1a283e790d2ce6af99",
+  "reviewed_run_id": "r-20261017T110626399745-a-runs-session-has-one-capture-name",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T13:45:00.000000+00:00",
+  "total": 113
+}
