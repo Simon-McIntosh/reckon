@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-reload-probe-timeout-is-retried">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s40">
+  <meta name="plan-recorded-at" content="2026-10-17">
+  <meta name="plan-verdict" content="passed">
+  <title>A reload probe timeout is retried | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-reload-probe-timeout-is-retried-landing" data-node="a-reload-probe-timeout-is-retried" data-reckon="landed" data-when="2026-10-17">
+  <h2>A timed-out reload probe is named a timeout and retried at the next check</h2>
+  <p><code>checkout_trust.reckon_imports</code> now reports a probe that ran out of its bound as <code>ImportProbeTimedOut</code> rather than as a failed import, and <code>_FollowerReloader.poll</code> leaves <code>deferred_stamp</code> unset on that answer, echoes "the import probe timed out after N s" instead of "does not import", and probes again at the next poll past the freshness window; a genuine import failure still defers until the code moves. At base <code>c752ea8eb</code> the same call returned <code>(False, "TimeoutExpired: Command 'probe' timed out after 30.0 seconds")</code> with a plain-<code>str</code> reason, which the follower could not tell from a failed import. The new <code>tests/test_a_reload_probe_timeout_is_not_a_broken_image.py</code> passes 2/2 with EXIT=0; the declared mutation (setting <code>deferred_stamp</code> on a timeout) turns the retry case red, EXIT=1.</p>
+</article>
+</body>
+</html>

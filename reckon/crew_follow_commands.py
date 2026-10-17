@@ -350,6 +350,21 @@ class _FollowerReloader:
         self.dirty_deferral = False
         reloadable, reason = self._replacement_imports()
         if not reloadable:
+            if isinstance(reason, checkout_trust.ImportProbeTimedOut):
+                # A probe that ran out of its bound says nothing about the code:
+                # the checkout may load perfectly and merely have been slow under
+                # load. So the reload is retried at the next check rather than
+                # held until the code moves -- ``deferred_stamp`` is left unset,
+                # and the freshness window alone bounds the re-probe.
+                self._record_reload_deferral(f"the import probe timed out ({reason})")
+                line = (
+                    f"reckon {self.label} deferred its reload: {reason}; "
+                    "keeping the current image, probing again at the next check"
+                )
+                if self.color:
+                    line = _dim_history_line(line)
+                _echo_follow_line(line, stream=self.stream)
+                return
             self._record_reload_deferral(f"new image does not import ({reason})")
             self.deferred_stamp = current_stamp
             line = (

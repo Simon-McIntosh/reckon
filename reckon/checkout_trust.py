@@ -46,6 +46,21 @@ def _import_probe() -> str:
     return _FOLLOWER_RELOAD_PROBE
 
 
+class ImportProbeTimedOut(str):
+    """The probe ran out of its bound instead of answering.
+
+    A probe that ran out of time and a probe that ran and failed both leave the
+    image unproven, so both are reported as a refusal and every reader that only
+    asks whether the code loads keeps its answer. They are not the same fact,
+    though: a failed import is a property of the checkout and holds until the
+    code changes, while a timeout is the instrument running out of budget under
+    load on a checkout that may be perfectly loadable. A reader that must react
+    differently -- the follower, which retries a timeout at its next check
+    rather than waiting for the code to move -- tells the two apart by this
+    type; every other reader takes it as the printable reason it also is.
+    """
+
+
 @dataclass(frozen=True)
 class CheckoutTrust:
     """The answer: ``trusted``, and when it is false, which condition refused.
@@ -105,7 +120,13 @@ def tracked_reckon_tree_is_dirty(root: Path) -> tuple[bool, str]:
 
 
 def reckon_imports(root: Path) -> tuple[bool, str]:
-    """Whether the checkout's current code loads in a throwaway interpreter."""
+    """Whether the checkout's current code loads in a throwaway interpreter.
+
+    The reason returned with a refusal is an :class:`ImportProbeTimedOut` when
+    the probe ran out of its bound rather than answering, and a line of the
+    failed import's own output otherwise. Both still refuse: a timeout is not a
+    proof that the image loads, whatever the reader does with the distinction.
+    """
     try:
         completed = subprocess.run(
             [sys.executable, "-c", _import_probe(), str(root)],
@@ -113,6 +134,10 @@ def reckon_imports(root: Path) -> tuple[bool, str]:
             text=True,
             timeout=IMPORT_PROBE_TIMEOUT,
             check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        return False, ImportProbeTimedOut(
+            f"the import probe timed out after {exc.timeout:g} s"
         )
     except (OSError, subprocess.SubprocessError) as exc:
         return False, f"{type(exc).__name__}: {exc}"
