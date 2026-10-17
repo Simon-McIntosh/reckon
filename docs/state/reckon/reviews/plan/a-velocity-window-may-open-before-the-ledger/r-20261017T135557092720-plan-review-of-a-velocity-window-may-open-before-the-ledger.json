@@ -1,0 +1,78 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T14:07:11.375Z",
+  "dispatched_at": "2026-10-17T13:56:47Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-velocity-window-may-open-before-the-ledger.html:123",
+      "id": "reasoning-1",
+      "reason": "done-when item 4 names those two windows as the pass condition, and the remedy leaves the expensive search running for the runs in them, so the node would reach its own `blocked` fallback instead of its goal; the plan needs a mechanism that bounds the `crew.json` search itself (for example placing crew.json-recorded runs without `-p` patch generation) or an honest restatement of item 4.",
+      "text": "\u00a72 keeps the `-G` search over `crew.json` for every id not placed by its per-run-file addition scan. Per-run files first appear 2026-09-25 (`git log --diff-filter=A -- 'docs/state/reckon/runs/*.json'` \u2192 first addition `e080ed967`, 0 added before 2026-09-01), so no run promoted before that date can be placed by the new scan. Measured on the head ledger: of the runs in the 2026-08-01 window that lack `promotion_commits`, 1803 carry no per-run file, and 1446 for the 2026-09-01 window. Those ids reach exactly the tens-of-megabyte `crew.json` patch generation \u00a72 names as the cost driver, so the 180-second timeout persists and done-when item 4's two commands cannot both exit 0.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-velocity-window-may-open-before-the-ledger.html:140",
+      "id": "wiring-1",
+      "reason": "the \u00a705 invocation is the plan's pointer to the next build, and this one names a finished section, so a coordinator dispatching from followups is sent to completed work instead of \u00a72; resolving it and writing the \u00a72 invocation changes the plan's followup block.",
+      "text": "followup `f-avwmobl-001` is still `data-status=\"open\"` with `data-resolved-at=\"\"` and `data-recommends-skill=\"/reckon-build a-velocity-window-may-open-before-the-ledger \u00a71\"`, but \u00a71 is declared done and its code landed (comments at lines 150-158); the plan now declares \u00a72 implementable and no followup invokes it.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e885c7013d58c43143df6e714677df9eaeacca67aa89d828cd89fd8e57366859",
+  "plan_slug": "a-velocity-window-may-open-before-the-ledger",
+  "plan_version": 8,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-17T14:08:32.019943+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-17T14:08:37.164900+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T14:08:32.019943+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T14:08:37.164900+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-velocity-window-may-open-before-the-ledger.v8.json",
+  "review_run_id": "r-20261017T135557092720-plan-review-of-a-velocity-window-may-open-before-the-ledger",
+  "reviewed_blob_sha": "ee3fe4910279cc0f0517f8f4cdf020a248b3c87c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/velocity.py:149` is `def run_git`, `:1217` is the `raw = git(` search call, every cited test file exists (the \u00a72 test is declared new), all cited commits resolve, and the `the-ledger-is-one-file-per-run#s4` anchor names a real section.",
+    "done_when": "pass \u2014 \u00a72's four done-when items are measurable (argv assertion, no added failures, clean lint, two live commands exiting 0) and it declares a negative control that reddens the first case; item 4's achievability under the two remedies is a separate concern raised under reasoning.",
+    "evidence_paths": "pass \u2014 the cited logs exist at `~/.cache/reckon-velocity-window-check/` (shared home, not node-local `/tmp`) and the 2026-09-01 log matches \u00a72's quoted `EXIT=1 seconds=410`.",
+    "naming": "pass \u2014 the new test path and every symbol named are mechanism-based, with no plan labels, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a72's remedy keeps the same patch-generating `crew.json` search it blames for the timeout, and cannot place the runs in the two windows it names because per-run records began 2026-09-25.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable, bounding the recovery search inside the git timeout.",
+    "wiring": "a finding \u2014 the plan's only followup, `f-avwmobl-001`, still recommends building \u00a71 (which has landed) and no followup names the newly implementable \u00a72, so the plan's next-step relationship points at completed work."
+  },
+  "section_digests": {
+    "_document": "7438dc3857ea67728ccc6b0036805dda4784857bac216f4a9af3f3706a75a653",
+    "s1": "7fb9f51fa9b87a449b336034d21038a82939900b9d4f0f7601d78920d33f60b5",
+    "s2": "0de16f7b44f83ea5813ba024ad5b3a393b279867719e85edf10342c0d68bed52"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T14:08:29.077167+00:00"
+}
