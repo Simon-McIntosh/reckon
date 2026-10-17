@@ -2245,7 +2245,11 @@ def register_member(
         raise LedgerError(f"member id {member_id!r} must match {_SAFE_ID.pattern}")
     if not str(harness).strip():
         raise LedgerError("a member must name the harness it dispatches to")
-    data, version = load(project, root)
+    # The roster write carries the aggregate's own collections: the union
+    # :func:`load` merges adds every run that owns a file, and writing those
+    # rows back would copy each of them into the tracked aggregate beside its
+    # own file, which :func:`write` refuses.
+    data, version = _load_aggregate(project, root)
     if commit:
         _refuse_dirty_roster_commit(
             project,
