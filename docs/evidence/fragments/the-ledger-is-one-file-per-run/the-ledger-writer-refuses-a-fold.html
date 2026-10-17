@@ -90,4 +90,20 @@
   that folds: each seeds an aggregate owning all rows at that point, edits a row the aggregate
   holds, or expects the refusal. Those files, less the three above, run to <strong>68 passed,
   EXIT=0</strong>.</p>
+
+  <p id="the-ledger-writer-refuses-a-fold-completion-repair"><strong>The completion
+  repair, and the seventh writer.</strong> An independent review found that
+  <code>ledger.repair_completion</code> read <code>ledger.load</code>’s union and handed it back to
+  <code>ledger.write</code>, so over a project holding per-run files it raised the fold refusal
+  instead of persisting — the CLI reaches it through the crew run command, and its own cases seed an
+  unsplit aggregate, so nothing caught it. It now measures every run from the union, because the
+  repair is about the whole history, and persists through one helper that patches an aggregate-held
+  row in the aggregate and writes any other repaired row through that run’s own file, writing the
+  aggregate only when one of its own rows changed. A case drives it over the ten-row, fifty-file
+  project with a stream per run and asserts both halves landed: the aggregate still holds its ten
+  ids with the repaired stamp, and each of the fifty files carries it. Reverted, the repair fails
+  that case with the fold refusal the review named. Head gate over the fold and hold-check suites
+  plus the six completion-repair cases: <strong>19 passed, EXIT=0</strong>. A rescan of every
+  <code>ledger.load</code>-then-<code>ledger.write</code> function under <code>reckon/</code> and
+  <code>scripts/</code> finds no other union-fed writer.</p>
 </section>
