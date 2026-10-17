@@ -1,0 +1,51 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite key, so no base-vs-head added-failure count exists",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T07:53:49.992Z",
+  "dispatched_at": "2026-10-17T07:41:08Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none: the gained commits add only a test file and an evidence fragment, so no production call site reaches the landed change.",
+    "diff": "read commit by commit against cda97a7959; 191935ef7 adds four clock-driven cases to tests/test_a_reload_probe_timeout_is_not_a_broken_image.py, 682cf679e updates the fragment's test count and its doubling claim, and no production code changes in the diff.",
+    "done_when": "the done_when names tests/test_a_reload_probe_timeout_is_not_a_broken_image.py and the timeout/retry/import-failure cases; the manifest records the file 7 passed inside a 30-passed EXIT=0 head gate at 682cf679e, and the gained cases add the doubling and cap guards the prior review found missing.",
+    "goal": "the goal is that a reload probe which runs out of its bound retries and names itself a timeout rather than a broken image; the gained commits guard and document that behaviour in tests/test_a_reload_probe_timeout_is_not_a_broken_image.py:164-265 and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reload-probe-timeout-is-retried.html:20.",
+    "manifest": "read; it reports status complete, four commits to the resume, the 30-passed head gate at 682cf679e, both negative controls red EXIT=1, and names no baseline_suite or after_suite key, so the added-failure count is unmeasured.",
+    "write_paths": "the manifest declares reckon/crew_follow_commands.py, reckon/checkout_trust.py, the test file, the fragment and the figures directory; every path in git diff cda97a7959..682cf679e (the test file and the fragment) is inside that set, and the figures directory is untouched."
+  },
+  "justifications": {
+    "durability": "negative-control-constant-gap.log:89-91 reddens nothing else; it reddens test_a_second_timeout_doubles_the_gap, test_the_gap_stops_doubling_at_its_cap and test_an_answer_resets_the_gap on exactly the constant-gap regression they claim to guard.",
+    "evidence": "gate-head.log records 30 passed EXIT=0 at rev 682cf679e with its command and cwd, and negative-control-constant-gap.log records 3 failed, 4 passed, EXIT=1 on the constant-gap mutation.",
+    "fit": "tests/test_a_reload_probe_timeout_is_not_a_broken_image.py:164 reuses the module's _probe/_advance/reloader idiom and introduces no plan, ticket, version or attribution label.",
+    "goal_fidelity": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reload-probe-timeout-is-retried.html:20 states the 60 s doubling to a 15-minute cap that plan section 40 as amended requires, and tests/test_a_reload_probe_timeout_is_not_a_broken_image.py:164-265 pin it.",
+    "reuse": "the gained diff adds no production definition; the new cases extend the test module's existing helpers (_probe, _advance, reloader) rather than duplicating a capability, and no other owner of a clock-driven reload-probe test exists in the tree.",
+    "scope_discipline": "both files in git diff cda97a7959..682cf679e are inside the manifest's declared write paths; no production file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a reload probe which times out retries and names itself a timeout rather than a broken image; the gained commits guard and document that behaviour in tests/test_a_reload_probe_timeout_is_not_a_broken_image.py:164-265 and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reload-probe-timeout-is-retried.html:20.\nVERDICT done_when: the done_when names tests/test_a_reload_probe_timeout_is_not_a_broken_image.py and the timeout/retry/import-failure cases; the manifest records the file 7 passed inside a 30-passed EXIT=0 head gate at 682cf679e, and the gained cases add the doubling and cap guards the prior review found missing.\nVERDICT write_paths: the manifest declares five paths (manuscript lines 3 and 8); every path in git diff cda97a7959..682cf679e, the test file and the fragment, is inside them.\nVERDICT manifest: read; it reports status complete, four commits to the resume, the 30-passed head gate at 682cf679e, both negative controls red EXIT=1, and names no baseline_suite or after_suite so the added-failure count is unmeasured.\nVERDICT diff: read commit by commit against cda97a7959; 191935ef7 adds four clock-driven cases to tests/test_a_reload_probe_timeout_is_not_a_broken_image.py (doubling, cap, reset-on-answer, un-nested reason), 682cf679e updates the fragment's test count and its doubling claim; no production code changed in the diff.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reload-probe-timeout-is-retried.html:20 states the 60 s doubling to a 15-minute cap that plan section 40 as amended requires, and tests/test_a_reload_probe_timeout_is_not_a_broken_image.py:164-265 pin it.\nSCORE evidence: 20\nJUSTIFICATION evidence: gate-head.log records 30 passed EXIT=0 at rev 682cf679e with its command and cwd, and negative-control-constant-gap.log records 20 rows ending 3 failed, 4 passed in 1.13s, EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both files in git diff cda97a7959..682cf679e (tests/test_a_reload_probe_timeout_is_not_a_broken_image.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reload-probe-timeout-is-retried.html) are inside the manifest's declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: negative-control-constant-gap.log:89-91 reddens test_a_second_timeout_doubles_the_gap, test_the_gap_stops_doubling_at_its_cap and test_an_answer_resets_the_gap on exactly the constant-gap regression they claim to guard.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_reload_probe_timeout_is_not_a_broken_image.py:164 reuses the module's _probe/_advance/reloader idiom and introduces no plan, ticket, version or attribution label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained diff adds no production definition; the new cases extend the test module's existing helpers (_probe, _advance, reloader) rather than duplicating a capability, and no other owner of a clock-driven reload-probe test exists in the tree.\n",
+  "review_run_id": "r-20261017T073814731553-review-of-a-reload-probe-timeout-is-retried-682cf679e59e",
+  "reviewed_base_sha": "cda97a7959328432383abf0c938f5e9b0de9006d",
+  "reviewed_head_sha": "682cf679e59ec45063b13cd6dd92a4d0faaacb70",
+  "reviewed_run_id": "r-20261017T052406604938-a-reload-probe-timeout-is-retried",
+  "reviewer": "review-of-a-reload-probe-timeout-is-retried-682cf679e59e",
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T07:55:58.251998+00:00",
+  "total": 119
+}
