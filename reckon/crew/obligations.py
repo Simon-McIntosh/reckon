@@ -25,7 +25,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from reckon import _store, flight, ledger
+from reckon import _store, file_memo, flight, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew import recovery, review_dispositions, review_lifecycle, runs
 from reckon.crew import review as review_module
@@ -428,7 +428,7 @@ def _run_file_record(source: Path) -> Mapping[str, Any] | None:
     itself would not.
     """
     try:
-        record = json.loads(source.read_text(encoding="utf-8"))
+        record = ledger.read_document(source)
     except (OSError, ValueError):
         return None
     if (
@@ -449,8 +449,10 @@ def _names_worktree(record: Mapping[str, Any], worktree: Path) -> bool:
 
 
 # The rows crew.json holds, keyed by the stat identity of the file they were
-# parsed from. A ledger that has not moved answers from memory, so a call stats
-# it once and parses it only when a promotion rewrote it.
+# parsed from — the same :func:`file_memo.file_signature` every other memoised
+# parse in the repository keys on, so there is one rule for when a file has
+# moved. A ledger that has not moved answers from memory, so a call stats it
+# once and parses it only when a promotion rewrote it.
 _AGGREGATE_ROWS: dict[
     Path, tuple[tuple[int, int, int, int], tuple[Mapping[str, Any], ...]]
 ] = {}
@@ -466,10 +468,9 @@ def _aggregate_rows(project: str, repository: Path) -> tuple[Mapping[str, Any], 
     """
     path = ledger.ledger_path(project, repository)
     try:
-        status = path.stat()
+        identity = file_memo.file_signature(path)
     except OSError:
         return ()
-    identity = (status.st_dev, status.st_ino, status.st_size, status.st_mtime_ns)
     cached = _AGGREGATE_ROWS.get(path)
     if cached is not None and cached[0] == identity:
         return cached[1]

@@ -55,7 +55,7 @@ from typing import Any, Iterable, Mapping, Sequence
 # Reached through the module rather than by importing its names: a reload
 # rebinds the store's classes in place, and a captured exception class would
 # then no longer match the one its own function raises.
-from reckon import _store
+from reckon import _store, file_memo
 from reckon._plan_html import SECTION_NUMBER_PATTERN
 from reckon._timestamps import parse_utc
 
@@ -1081,9 +1081,29 @@ def picker_runs(project: str, root: str | Path | None = None) -> list[dict[str, 
         return [picker_record(row) for row in data["runs"]]
 
 
+# One sweep reads a per-run document through several readers — the ledger's own
+# :func:`_read_run` and the held-worktree scan in
+# :mod:`reckon.crew.obligations` both decode every run file — so the decode is
+# held in :mod:`reckon.file_memo`, the repository's one memo for a parse keyed
+# on a file's stat identity. It is keyed on the file rather than on anything
+# the sweep knows, so it survives between two sweeps of the same process, and a
+# document that cannot be read is parsed uncached and so reads as absent exactly
+# as it always did.
+_RUN_DOCUMENT_KIND = "ledger-run"
+
+
+def read_document(source: Path) -> Any:
+    """Decode one JSON document, reusing the parse while its file is unchanged."""
+    return file_memo.memoized(
+        _RUN_DOCUMENT_KIND,
+        source,
+        lambda: json.loads(source.read_text(encoding="utf-8")),
+    )
+
+
 def _read_run(source: Path) -> dict[str, Any]:
     try:
-        record = json.loads(source.read_text(encoding="utf-8"))
+        record = read_document(source)
     except (OSError, ValueError) as exc:
         raise LedgerError(
             f"cannot read run {source.stem!r} at {source}: {exc}"
