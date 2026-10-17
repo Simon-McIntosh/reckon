@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="55">
+<meta name="plan-version" content="56">
 <meta name="plan-modified" content="2026-10-17">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="f2ea9301,5b1759ab,428477c7">
 <meta name="plan-impl" content="0.4">
 </head>
@@ -219,8 +219,12 @@
 <p><strong>Why.</strong> A lane's <code>input_modalities</code> is a claim about what its model receives, not about the flag it accepts. So the declaration follows a measured delivery, and §3's pairs run only on a lane that has one.</p><p><strong>Deliverable.</strong> One node dispatched through §6's path to one codex backend carries a figure whose content its prompt does not state, and asks for a description. If the description matches the figure, <code>input_modalities: [text, image]</code> is declared on that backend in <code>docs/state/reckon/flight.yaml</code>. If it does not, nothing is declared and the report says what the lane answered. This runs on a metered lane: one prompt.</p><p><strong>Done when</strong> the report under the run directory holds the figure, the prompt, the lane's answer verbatim and the verdict. When the verdict is delivered, <code>declared_input_modalities</code> in <code>reckon/flight.py</code> returns image for that backend, and the test files importing <code>reckon/flight.py</code> show no added failure against base. The negative control is a figure the prompt describes in words, which shows only that the lane can repeat a prompt. This section runs after §6. Write paths: <code>docs/state/reckon/flight.yaml</code> and the run's report directory.</p>
 
     <h2 id="s8">§8 — The lane discriminates five known pairs</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> §3 states the evaluation and its pairs. This section is its executable node, with the gate §3 does not carry.</p><p><strong>Deliverable.</strong> The five pairs in §3's table are drawn as figures, each kept as the SVG it was drawn in and as a PNG rendered from it, under <code>docs/figures/figure-review-pairs/</code>. Each figure is presented on its own to the codex lane §7 declared, through §6's dispatch path, with one prompt naming the rule under test.</p><p><strong>Done when</strong> the report under the run directory records, for each pair and each format, the lane's verdict verbatim on the bad figure and on the good one. A pair discriminates when the bad figure fails and the good one passes on the rule named. The report states how many of the five pairs discriminate as PNG and how many as SVG. The negative control sends each bad figure's prompt with the image withheld: a verdict that still fails the rule shows the lane answering from the prompt, and that pair does not count. This section runs after §7, on a metered lane: twenty figure prompts and five controls. Write paths: <code>docs/figures/figure-review-pairs/</code> and the run's report directory.</p>
+
+    <h2 id="s9">§9 — A test holds the codex image declaration</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §7 declared <code>input_modalities: [text, image]</code> on <code>backends.codex</code> in <code>docs/state/reckon/flight.yaml</code> after a measured delivery, and §8 measured that the lane judges five known PNG pairs correctly. Nothing tests the declaration itself. An edit to the project layer could drop it, and nothing would turn red until a figure review was refused at dispatch.</p><p><strong>Deliverable.</strong> One test resolves reckon's project flight layer from the repository under test, with the user layer pointed at an empty file in the test's temporary directory. It asserts that <code>reckon.flight.declared_input_modalities</code> returns image input for <code>codex</code>. The layer path is a parameter, so the negative control can point it at a copy.</p><p><strong>Done when</strong> <code>tests/test_codex_declares_image_input.py</code> passes. The test reads no file outside the repository and its temporary directory, and the test files importing <code>reckon/flight.py</code> show no added failure against base. The negative control points the test at a scratch copy of the layer with the <code>input_modalities</code> line removed, and the test must then fail. It is logged under the run directory. Write paths: <code>tests/test_codex_declares_image_input.py</code>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -242,10 +246,16 @@
     <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §6</pre>
     <p class="r-fu-outcome"><p>§6 and §7 have landed. A node's figures now reach every launch path (§6, <code>f69ac2ae7</code>). The codex lane receives an attached figure and declares image input (§7, <code>81e7d55ed</code>), so §8's pairs can run on it.</p></p>
     </article>
-<article class="r-fu" data-id="f-arcstf-004" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arcstf-004" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="" data-resolved-at="2026-10-17T14:59:31+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Run the five known pairs on codex (§8), on the lead&#x27;s go-ahead</h4>
     <div class="r-fu-body"><p>§7 declared image input on codex. §8 sends 20 figure prompts and 5 image-withheld controls on that metered lane, so it waits for the lead's go-ahead. §7's review also left a follow-on: nothing tests the real project declaration, so an edit could retract it without anything turning red.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §8</pre>
+    <p class="r-fu-outcome"><p>§8 ran on the lead's go-ahead. Codex discriminates all five pairs as PNG and none as SVG, because the lane receives no SVG as an image. The controls were all honest. The follow-ons are §9, a test that holds the declaration, and two decisions for the lead: how a figure review handles an SVG, and whether one may run on a metered lane.</p></p>
+    </article>
+<article class="r-fu" data-id="f-arcstf-005" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-17" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §9, and the lead decides how figure reviews handle SVGs and metered lanes</h4>
+    <div class="r-fu-body"><p>§9 is a test that holds codex's image declaration. It spends nothing and can be dispatched now. §4 stays deferred until the lead decides <code>svg-figure-delivery</code> and <code>figure-review-on-metered-lane</code>.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §9</pre>
     </article>
 </section>
 
@@ -391,6 +401,30 @@
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261017T102733187283-figure-judgement-ctl-5" data-who="reckon-build" data-when="2026-10-17T10:29:21Z">
     <div class="r-comment-body"><p>The lane returned NO IMAGE RECEIVED verbatim because the prompt carried no image.</p></div>
 </div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-17T15:00:00Z">
+    <div class="r-comment-body"><p>§8 landed. Codex (<code>gpt-6-sol</code>) judged five known pairs. <strong>As PNG, all 5 discriminate:</strong> every bad figure failed and every good one passed, with a reason naming what it showed. <strong>As SVG, none do:</strong> all ten SVG runs answered <code>NO IMAGE RECEIVED</code>, though each carried its <code>-i</code> flag. All five image-withheld controls answered <code>NO IMAGE RECEIVED</code>, so no verdict came from the prompt. A local audit re-derived every verdict from the run streams and checked every copy by sha256, and its claims review reproduced the counts. The figures were merged as <code>32b241c9d</code>, and <code>verify-gate</code> passed. Spend: 25 runs, the codex weekly window 89% to 90%. <a href="/reckon/evidence/archive/a-review-can-see-the-figure-landed.html#s8-codex-judges-five-png-pairs">evidence</a></p></div>
+</div>
+</section>
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="svg-figure-delivery" data-choice="" data-by="" data-when="" data-sections="s4,s8" data-recommended="render-to-png" data-recommended-by="reckon-build">
+    <p class="r-dec-q">How should a figure review handle an SVG figure?</p>
+    <p class="r-dec-ctx">&lt;p&gt;§8 measured that codex judges a PNG correctly and receives nothing from an SVG: all ten SVG runs answered &lt;code&gt;NO IMAGE RECEIVED&lt;/code&gt;, though each launch carried the &lt;code&gt;-i&lt;/code&gt; flag naming the file. The workstation&#x27;s figure rule is one SVG per figure under &lt;code&gt;docs/figures/&lt;/code&gt;, so most figures a review would check are SVGs. Today a figure review of an SVG would therefore see nothing.&lt;/p&gt;</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="render-to-png">The dispatch renders each SVG figure to PNG (as rsvg-convert -w 1400 does for the producer&#x27;s own check) and attaches the PNG</button>
+      <button class="r-opt" data-value="png-only-scope">A figure review accepts PNG figures only and refuses a node whose figures are SVG</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="figure-review-on-metered-lane" data-choice="" data-by="" data-when="" data-sections="s4" data-recommended="exempt-figure-reviews" data-recommended-by="reckon-build">
+    <p class="r-dec-q">May a figure review run on a metered lane?</p>
+    <p class="r-dec-ctx">&lt;p&gt;§4 has been deferred on this question since 2026-10-13, but it was never recorded as a decision. No local lane declares image input, so every figure review would run on codex. &lt;code&gt;review_excluded_backends&lt;/code&gt; keeps reviews off metered lanes. §8 measured the cost: 25 lean figure prompts moved the codex weekly window from 89% to 90%, about 0.04 points a prompt.&lt;/p&gt;</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="exempt-figure-reviews">A figure review may run on a metered lane that declares image input, after the text review</button>
+      <button class="r-opt" data-value="hold-for-a-local-image-lane">Figure reviews wait until a local lane declares image input</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
 </section>
 </main>
 </body>
