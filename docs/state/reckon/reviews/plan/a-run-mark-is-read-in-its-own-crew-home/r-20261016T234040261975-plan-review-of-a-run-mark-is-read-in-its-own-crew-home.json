@@ -1,0 +1,39 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-16T23:52:02.094Z",
+  "dispatched_at": "2026-10-16T23:41:16Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-mark-is-read-in-its-own-crew-home.html:34",
+      "id": "reasoning-1",
+      "reason": "the plan should state that the door resolves the run's home from the ambient `crew_home()` (the same home the record was read from), which keeps the change inside `reckon/_store.py`, `reckon/crew/process_signal.py`, `reckon/crew/recovery_liveness.py` and the test, and drops the unsupportable \"a caller with a stale or isolated ambient `RECKON_HOME` still matches the run's own worker\" claim for that door.",
+      "text": "the deliverable says each door passes \"the home of the run it holds: `_env_scan_run_pid` the home its record was read from\", but `local_liveness(record)` and `_env_scan_run_pid(record)` receive only a record and no home, and a live pointer carries no home field; `local_liveness` has five call sites (`sprint_liveness.py:153`, `resumption.py:1012`, `recovery_watch.py:1059`, `recovery_classification.py:209`, `runs.py:1624`), none of which names a home, so \"the home its record was read from\" is the ambient `crew_home()` and nowhere else \u2014 a literal reading sends the implementer to plumb a home through five files that are not in the declared write paths",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "25f46e2274c993007c1934961d172ba85fba19960649a97c4b4bdb382de810a3",
+  "plan_slug": "a-run-mark-is-read-in-its-own-crew-home",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261016T234040261975-plan-review-of-a-run-mark-is-read-in-its-own-crew-home",
+  "reviewed_blob_sha": "358772d3f5357c1c58b991cf7980e94d505b83d7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves at the named module (`_processes_owning_run` `process_signal.py:148`; `local_liveness` `recovery_liveness.py:1001`; `_env_scan_run_pid` `:1091`; `_config_home` `_store.py:128`; `crew_home` `run_paths.py:19`; `run_dir` `runs.py:81`), the cited test id and its `[codex]` parametrization exist, the evidence run and job `1287701` resolve, and `a-run-has-one-live-writer` \u00a72 exists.",
+    "done_when": "pass \u2014 \u00a71's done-when (`docs/plans/a-run-mark-is-read-in-its-own-crew-home.html:34`) is measurable (a named new test asserting one child named, `local_liveness` not-alive, the no-`RECKON_HOME` case both ways, and slash/symlink equivalence) and declares a negative control that flips the asserted outcome \u2014 removing the crew-home comparison makes `_processes_owning_run` name both children, so the \"only the first child\" assertion fails.",
+    "evidence_paths": "pass \u2014 the only evidence location named is \"the run directory\", a durable path under the crew home, and the run's own record (`~/.config/reckon/crew/runs/r-20261016T212841719818-\u2026/`) confirms run directories are where a node's gate logs live; nothing points at a scratchpad or node-local `/tmp`.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches code; the proposed test filename reads as a mechanism sentence without the plan, and the plan's own `a-run-has-one-live-writer \u00a72` reference lives in plan prose, which the tracker owns.",
+    "reasoning": "a finding \u2014 the root cause matches the evidence and the mechanism produces the measure, but the deliverable's home-provenance claim is not implementable as written at the `local_liveness` door.",
+    "single_goal": "pass \u2014 one deliverable (narrow the one matcher to the run's crew home); the four write paths, the ruff floor and the merge-time population run are conditions on that deliverable, not a second one.",
+    "wiring": "pass \u2014 the plan declares `plan-standalone` with a reason (\"no live plan waits on it, and it waits on none\"), the one plan it references (`a-run-has-one-live-writer`) is `plan-status: done` and carries the cited \u00a72 (\"A worker never outlives its supervisor\"), and no other plan under `docs/plans/` names this slug, so no dependency edge is owed or missing."
+  },
+  "section_digests": {
+    "_document": "40c223e122141aaad1c7ab22cae8e33a116eff433615b56d0541fe1781a07af4",
+    "s1": "282be5118a0fd3c66dfaf4e8bff683efd4daf064905d1877c0424bfa8ee93de4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T00:02:03.567282+00:00"
+}
