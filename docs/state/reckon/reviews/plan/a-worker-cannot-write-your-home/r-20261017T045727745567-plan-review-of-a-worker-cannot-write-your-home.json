@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T05:09:45.150Z",
+  "dispatched_at": "2026-10-17T04:58:15Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:1532",
+      "id": "reasoning-1",
+      "reason": "as written a dispatcher reads s13 as unbuilt while s14 asserts it landed, so it either schedules \u00a713 over code that has since merged (6dcb6cc1d) or dispatches \u00a714 against a helper it cannot find; the two must be reconciled by advancing s13's declaration if \u00a713 has landed, else by making s14's premise conditional.",
+      "text": "s14's Why opens \"\u00a713 landed `_review_record_directory_grant` in `reckon/crew/dispatch_admission.py`\" and its deliverable and done-when treat \u00a713's output as already present (\"the parts-count rule in `_review_record_directory_grant` is removed\", \"the file's existing cases still pass\" in `tests/test_a_run_review_with_run_directory_records_dispatches.py`), but the plan declares s13 `implementable` (line 26) and at the reviewed revision the helper and that test file are both absent and \u00a713's code commit f912c7ec5 is not an ancestor (gate-anchors.log) \u2014 so s14's prose and the plan's declaration disagree inside the same commit",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9d9bffd20ea84b2011b3581db95738c08a3b727e5cae2684e9347dddd162412d",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 174,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T045727745567-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "e51a4ddf3419033b62d660b231ff74f386df6ec9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `review.run_review_record_location`, `_resolved_reviewed_run_id`, `_delivered_record_location`, `_declared_write_grant` and `fenced_write_roots` all resolve, and the cited review run r-20261017T040235877031 exists with reuse 8; `_review_record_directory_grant` is \u00a713's own symbol, carried by the reasoning finding below.",
+    "done_when": "pass \u2014 s14's done-when is measurable (a run-A record path admitted, a run-B path refused `scoped`) and names a negative control (restore the any-run grant; the run-B case must fail).",
+    "evidence_paths": "pass \u2014 the negative-control log is declared under the run directory, a durable path, not a scratchpad or node-local temporary.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach the new symbols or the test filename; \u00a712/\u00a713 are in-document section cross-references, the plan's convention.",
+    "reasoning": "a finding \u2014 s14's Why asserts \"\u00a713 landed `_review_record_directory_grant`\", a state its own plan declaration denies and the reviewed tree does not hold.",
+    "single_goal": "pass \u2014 s14 carries one deliverable, confining a review node's record-path grant to the run its node id reviews.",
+    "wiring": "pass \u2014 s14's dependency on s13 is carried by the open followup f-awcwyh-015 (\"Build it after \u00a713 merges, because both write `dispatch_admission.py` and the same test file\"); no relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "96c18ef1e856aa4d30c9551479b64172c22b45f9371a77bf1b590c034d12b954",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "c5c7fe720643fd4e73b5f1c9fff30c26f8357f46808e3b91eb33b5271d3a19bc",
+    "s11": "f2f305292dacd47d88930479053d919c6bce05b3f863e60a502ce40a2b1c1239",
+    "s12": "bcbf84b314096bf944f58481d98177c11ed6732c763472dc6bc259bc0ad8f54e",
+    "s13": "274d2cd914af10830f75d7ac253c9a1833d25cf9ac0e37e28c0c48ba60b77628",
+    "s14": "fcefb6cd20b26029bf0d8c785373a493532289cca9f2b4b01a93bf7b4ef7c19a",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T05:12:52.762291+00:00"
+}
