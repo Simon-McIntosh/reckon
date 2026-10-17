@@ -2933,6 +2933,11 @@ reckon/crew/dispatch.py:4535: TypeError
     <p>Run <code>r-20261017T094200953914</code> (commit <code>9e793167d</code>) changed <code>test_consumers_share_the_one_reader</code> to compare each consumer's reader by <code>__module__</code> and <code>__qualname__</code>.</p><p>Gate: the trigger, <code>test_edit_forced_to_lose_a_landing_race_is_refused_not_raised</code>, followed by <code>tests/test_one_sprint_item_slug.py</code> in one process, with no xdist and no random order. 12 passed, EXIT=0. The same pair at base fails the identity assertion, EXIT=1. A consumer given a local copy of the reader still fails the test, EXIT=1.</p><p>Merged as <code>2f88401e2</code>. Run review: 18 to 20 on every dimension. Its one follow-on is exempted: the head log names the working tree rather than the commit, though their contents are equal.</p>
   </section>
 
+  <section id="s19">
+    <h2>§19 — a failing test id with a space is read whole, landed</h2>
+    <p>Run <code>r-20261017T144737349372</code>, reviewed head <code>4e8161114</code>, merged as <code>f639f1fd5</code>. In <code>reckon/crew/review.py</code>, <code>_GATE_FAILURE_RE</code> now captures the rest of a <code>FAILED</code> or <code>ERROR</code> line. <code>added_failures_from_gate_logs</code> takes the node id up to pytest's <code>" - "</code> reason separator, or the line end. So a parametrised id with a space inside its brackets is read whole. Given a base log failing <code>t.py::f[opus 4.7]</code> and a head log failing <code>t.py::f[opus 5.5]</code>, the reader finds one added id, where the base reader found none.</p><p>Evidence. Head gate: 23 passed, EXIT=0. Negative control on the base extraction: 3 failed and 1 passed, EXIT=1. The coordinator's importer population at merge (run <code>r-20261017T151112883507</code>, 121 files) found base <code>6a74a7fe6</code> at 1 failed and 1,248 passed, and the candidate at 1 failed and 1,252 passed. The one failure was the same pre-existing id in both arms, so zero ids were added. The review scored 114/120. Its one follow-on, prose in the fragment, was exempted. The same truncation also showed in §28's population manifest (<code>…across_names[opus</code>). That review finding was folded into this node.</p>
+  </section>
+
 </main>
 </body>
 </html>
