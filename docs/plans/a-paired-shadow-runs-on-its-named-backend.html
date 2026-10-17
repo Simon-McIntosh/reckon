@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-paired-shadow-runs-on-its-named-backend">
   <meta name="plan-title" content="A Paired Shadow Runs On Its Named Backend">
   <meta name="plan-summary" content="crew dispatch --pair-backend refuses every pair backend except the one the role already resolves to; the shadow arm must resolve against the backend it names.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="1.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,7 +24,7 @@
   <title>A Paired Shadow Runs On Its Named Backend | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -136,10 +136,17 @@ Resolve with `reckon crew shadow --backend &lt;candidate&gt;` after correcting t
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-apsronb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-17" data-recommends-skill="/reckon-build a-paired-shadow-runs-on-its-named-backend §1" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-apsronb-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-17" data-recommends-skill="/reckon-build a-paired-shadow-runs-on-its-named-backend §1" data-resolved-at="2026-10-17T21:57:24+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Route a paired dispatch&#x27;s shadow arm to the backend it names</h4>
     <div class="r-fu-body"><p>Filed after nova reported <code>--pair-backend codex</code> refused while the flight's default backend is clive. §1 carries the remedy and its done-when.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-paired-shadow-runs-on-its-named-backend §1</pre>
+    <p class="r-fu-outcome"><p>§1 landed at merge <code>35df08fa6</code> (review 119). A codex-paired dry run on the clive-default flight now pairs, with the shadow on codex.</p></p>
+    </article>
+<article class="r-fu" data-id="f-apsronb-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-17" data-recommends-skill="/reckon-build a-paired-shadow-runs-on-its-named-backend" data-resolved-at="2026-10-17T22:00:00Z" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Plan closed</h4>
+    <div class="r-fu-body"><p>Every section has landed and the post-merge check passed. One residual is recorded in the evidence: <code>_shadow_dispatch_config</code>'s broad <code>except CrewError</code> would re-word a missing-role error as D21, which a paired dispatch cannot reach today.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-paired-shadow-runs-on-its-named-backend</pre>
+    <p class="r-fu-outcome">done — no followup</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -150,7 +157,10 @@ Resolve with `reckon crew shadow --backend &lt;candidate&gt;` after correcting t
     <div class="r-comment-body"><p>§1 landed: a paired dispatch's shadow arm resolves against the backend it names, and D21 now has an accurate remedy (commit <code>06a9328b9</code>). Gate: 79 passed at head, 75 at base. Both negative controls fail their cases. Review total 119, no added failures. The post-merge <code>--pair-backend codex</code> dry run against this host's flight is still owed. <a href="/reckon/evidence/archive/a-paired-shadow-runs-on-its-named-backend-landed.html#s1">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261017T210358439242-a-paired-shadow-resolves-its-named-backend" data-who="reckon-build" data-when="2026-10-17T21:31:34.030Z">
-    <div class="r-comment-body"><p>Resolved a paired dispatch&#x27;s shadow arm against the backend it names: `_shadow_dispatch_config` now calls `resolve_role_override(config, node.role, node.spec_level, candidate_backend)` instead of refusing a candidate the role does not already route to, keeps D21 only for a candidate no layer defines (detail from `_effective_backend`, caught in `_shadow_dispatch_config`), and D21&#x27;s remedy names a backend declared under `backends` in the flight for both verbs with no flight-override mention. Measure: `tests/test_a_paired_shadow_runs_on_its_named_backend.py` 4 passed; the 9-file gate adds no failure against the base (79 passed vs 75).</p></div>
+    <div class="r-comment-body"><p>Resolved a paired dispatch's shadow arm against the backend it names: `_shadow_dispatch_config` now calls `resolve_role_override(config, node.role, node.spec_level, candidate_backend)` instead of refusing a candidate the role does not already route to, keeps D21 only for a candidate no layer defines (detail from `_effective_backend`, caught in `_shadow_dispatch_config`), and D21's remedy names a backend declared under `backends` in the flight for both verbs with no flight-override mention. Measure: `tests/test_a_paired_shadow_runs_on_its_named_backend.py` 4 passed; the 9-file gate adds no failure against the base (79 passed vs 75).</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-s1-integration-check" data-who="reckon-build" data-when="2026-10-17T22:00:00Z">
+    <div class="r-comment-body"><p>Post-merge check for §1, run at merge <code>35df08fa6</code> against this host's flight, whose <code>default_backend</code> is <code>clive</code>. The command was <code>reckon crew dispatch --dry-run</code> for an implement node with <code>--pair-backend codex</code>. It exits 0 with <code>"paired": true</code>, the primary arm on clive (<code>deepseek-v4.1-flash</code>) and the shadow arm on codex (<code>gpt-6-sol</code>). The fourth done-when item holds.</p></div>
 </div>
 </section>
 </main>
