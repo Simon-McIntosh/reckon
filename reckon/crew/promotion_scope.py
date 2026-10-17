@@ -1919,8 +1919,9 @@ def _commit_landing_writes(
 ) -> dict[str, Any]:
     """Commit promotion's own store writes in one landing commit.
 
-    Stages exactly the given paths (never a whole-tree add) and commits them
-    under a subject naming the promoted run and its gate verdict, so a landing
+    Stages exactly the given paths (never a whole-tree add) and commits only
+    those paths under a subject naming the promoted run and its gate verdict.
+    Other changes already staged in the shared index remain staged. A landing
     leaves the checkout with no uncommitted change at the paths promotion
     wrote. A write that cannot be staged or committed attempts to restore
     those paths and refuses. A blocked restore preserves paths held by HEAD;
@@ -1960,10 +1961,13 @@ def _commit_landing_writes(
     committed = _git(
         checkout,
         "commit",
+        "--only",
         "-m",
         subject,
         "-m",
         body,
+        "--",
+        *(str(p) for p in targets),
         check=False,
     )
     if committed.returncode != 0:
