@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:415",
+    "reckon/crew/promotion.py:1772"
+  ],
+  "completed_at": "2026-10-17T05:12:26.606Z",
+  "dispatched_at": "2026-10-17T05:05:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "line": "642",
+      "severity": "follow-on",
+      "text": "follow-on: _partner_phase only catches CrewError, so its docstring's promise that a present-but-unreadable pointer is read as unreadable holds for malformed JSON but not for an OSError from path.read_text (for example EACCES), which would propagate out of the promotion instead of being read as non-terminal."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 8b6f57f1c; the one commit 5a33d1eb0 touches reckon/crew/promotion.py (+8), reckon/crew/promotion_checks.py (+78), tests/test_a_paired_arm_waits_for_its_partner.py (+284) and docs/evidence/fragments/a-shadow-cannot-see-its-primary/a-paired-arm-waits-for-its-partner.html (+77), all inside the declared scope.",
+    "done_when": "the plan's done-when names tests/test_a_paired_arm_waits_for_its_partner.py plus a no-added-failure-id check; the manifest records the head arm (71 passed, EXIT=0) against the base arm (64 passed, EXIT=0), and gate-negative-control.log shows the two refusal tests failing on the declared mutation.",
+    "goal": "the goal is that crew complete refuses to promote a paired arm while its partner is still running; reckon/crew/promotion_checks.py:647 defines _require_partner_terminal_before_promotion and reckon/crew/promotion.py:415 registers it in the lambda list complete() passes to _require_independently.",
+    "manifest": "read; status complete, baseline_suite and after_suite both present with completed true and failure_count 0, and the landing line states the hold and the negative-control failing ids.",
+    "write_paths": "the declared fence is promotion_checks.py, promotion.py, the new test module and the plan fragment; git show --stat of 5a33d1eb0 lists exactly those four files and nothing else."
+  },
+  "justifications": {
+    "durability": "gate-negative-control.log drops the check from the composed list and reddens tests/test_a_paired_arm_waits_for_its_partner.py:118 and :133 (EXIT=1) while the head arm passes them, so the guard is shown to fire.",
+    "evidence": "gate-head-arm.log ends '71 passed in 76.54s' and EXIT=0 with module.__file__ under the reviewed worktree, and gate-base-arm.log ends '64 passed' EXIT=0 under the scratch base tree, so the recorded gate measures the done_when.",
+    "fit": "promotion_checks.py:647 is a _require_* sibling of _require_worker_stopped_before_promotion registered beside it in promotion.py:415, reusing _TERMINAL_RUN_PHASES, pointer_path, read_pointer and CrewError, with mechanism names and no plan labels.",
+    "goal_fidelity": "reckon/crew/promotion_checks.py:647 refuses only when the partner pointer is present and its phase is outside _TERMINAL_RUN_PHASES, naming the partner run id and phase, which is exactly the stated goal.",
+    "reuse": "promotion_checks.py:629 reads the partner through the existing pointer helpers and extends the promotion-check owner; the closest existing partner readers, promotion_scope.py:1176 and dispatch_sessions.py:100, resolve a shadow's primary against ledger rows for masks, not the symmetric live-pointer partner this resolves.",
+    "scope_discipline": "git show --stat 5a33d1eb0 lists only the four declared paths (reckon/crew/promotion_checks.py, reckon/crew/promotion.py, tests/test_a_paired_arm_waits_for_its_partner.py, the plan fragment)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that crew complete refuses to promote a paired arm while its partner is still running; reckon/crew/promotion_checks.py:647 defines _require_partner_terminal_before_promotion and reckon/crew/promotion.py:415 registers it in the lambda list complete() passes to _require_independently.\nVERDICT done_when: the plan's done-when names tests/test_a_paired_arm_waits_for_its_partner.py plus a no-added-failure-id check; the manifest records the head arm (71 passed, EXIT=0) against the base arm (64 passed, EXIT=0), and gate-negative-control.log shows the two refusal tests failing on the declared mutation.\nVERDICT write_paths: the declared fence is promotion_checks.py, promotion.py, the new test module and the plan fragment; git show --stat of 5a33d1eb0 lists exactly those four files and nothing else.\nVERDICT manifest: read; status complete, baseline_suite and after_suite both present with completed true and failure_count 0, and the landing line states the hold and the negative-control failing ids.\nVERDICT diff: read commit by commit against base 8b6f57f1c; the one commit 5a33d1eb0 touches reckon/crew/promotion.py (+8), reckon/crew/promotion_checks.py (+78), tests/test_a_paired_arm_waits_for_its_partner.py (+284) and docs/evidence/fragments/a-shadow-cannot-see-its-primary/a-paired-arm-waits-for-its-partner.html (+77), all inside the declared scope.\nCALL_SITES: reckon/crew/promotion.py:415, reckon/crew/promotion.py:1772\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_checks.py:647 refuses only when the partner pointer is present and its phase is outside _TERMINAL_RUN_PHASES, naming the partner run id and phase, which is exactly the stated goal.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head-arm.log ends '71 passed in 76.54s' and EXIT=0 with module.__file__ under the reviewed worktree, and gate-base-arm.log ends '64 passed' EXIT=0 under the scratch base tree, so the recorded gate measures the done_when.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 5a33d1eb0 lists only the four declared paths (reckon/crew/promotion_checks.py, reckon/crew/promotion.py, tests/test_a_paired_arm_waits_for_its_partner.py, the plan fragment).\nSCORE durability: 19\nJUSTIFICATION durability: gate-negative-control.log drops the check from the composed list and reddens tests/test_a_paired_arm_waits_for_its_partner.py:118 and :133 (EXIT=1) while the head arm passes them, so the guard is shown to fire.\nSCORE fit: 19\nJUSTIFICATION fit: promotion_checks.py:647 is a _require_* sibling of _require_worker_stopped_before_promotion registered beside it in promotion.py:415, reusing _TERMINAL_RUN_PHASES, pointer_path, read_pointer and CrewError, with mechanism names and no plan labels.\nSCORE reuse: 18\nJUSTIFICATION reuse: promotion_checks.py:629 reads the partner through the existing pointer helpers and extends the promotion-check owner; the closest existing partner readers, promotion_scope.py:1176 and dispatch_sessions.py:100, resolve a shadow's primary against ledger rows for masks, not the symmetric live-pointer partner this resolves.\nFINDING reckon/crew/promotion_checks.py:642 follow-on: _partner_phase only catches CrewError, so its docstring's promise that a present-but-unreadable pointer is read as unreadable holds for malformed JSON but not for an OSError from path.read_text (for example EACCES), which would propagate out of the promotion instead of being read as non-terminal.",
+  "review_run_id": "r-20261017T050433152614-review-of-a-paired-arm-waits-for-its-partner-5a33d1eb026b",
+  "reviewed_base_sha": "8b6f57f1ceea340535475c961e7921791c2bf24a",
+  "reviewed_head_sha": "5a33d1eb026b9643bb034374f360be34018f47f7",
+  "reviewed_run_id": "r-20261017T042118495050-a-paired-arm-waits-for-its-partner",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261017T050433152614-review-of-a-paired-arm-waits-for-its-partner-5a33d1eb026b",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T05:13:58.772334+00:00",
+  "total": 115
+}
