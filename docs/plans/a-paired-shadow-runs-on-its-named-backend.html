@@ -24,7 +24,7 @@
   <title>A Paired Shadow Runs On Its Named Backend | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -148,6 +148,9 @@ Resolve with `reckon crew shadow --backend &lt;candidate&gt;` after correcting t
 </div>
 <div class="r-comment" data-section="s1" data-id="c-close-s1" data-who="reckon-build" data-when="2026-10-17T21:52:00Z">
     <div class="r-comment-body"><p>§1 landed: a paired dispatch's shadow arm resolves against the backend it names, and D21 now has an accurate remedy (commit <code>06a9328b9</code>). Gate: 79 passed at head, 75 at base. Both negative controls fail their cases. Review total 119, no added failures. The post-merge <code>--pair-backend codex</code> dry run against this host's flight is still owed. <a href="/reckon/evidence/archive/a-paired-shadow-runs-on-its-named-backend-landed.html#s1">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261017T210358439242-a-paired-shadow-resolves-its-named-backend" data-who="reckon-build" data-when="2026-10-17T21:31:34.030Z">
+    <div class="r-comment-body"><p>Resolved a paired dispatch&#x27;s shadow arm against the backend it names: `_shadow_dispatch_config` now calls `resolve_role_override(config, node.role, node.spec_level, candidate_backend)` instead of refusing a candidate the role does not already route to, keeps D21 only for a candidate no layer defines (detail from `_effective_backend`, caught in `_shadow_dispatch_config`), and D21&#x27;s remedy names a backend declared under `backends` in the flight for both verbs with no flight-override mention. Measure: `tests/test_a_paired_shadow_runs_on_its_named_backend.py` 4 passed; the 9-file gate adds no failure against the base (79 passed vs 75).</p></div>
 </div>
 </section>
 </main>
