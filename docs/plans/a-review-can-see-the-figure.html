@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="56">
+<meta name="plan-version" content="57">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="f2ea9301,5b1759ab,428477c7">
@@ -409,7 +409,7 @@
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="svg-figure-delivery" data-choice="" data-by="" data-when="" data-sections="s4,s8" data-recommended="render-to-png" data-recommended-by="reckon-build">
     <p class="r-dec-q">How should a figure review handle an SVG figure?</p>
-    <p class="r-dec-ctx">&lt;p&gt;§8 measured that codex judges a PNG correctly and receives nothing from an SVG: all ten SVG runs answered &lt;code&gt;NO IMAGE RECEIVED&lt;/code&gt;, though each launch carried the &lt;code&gt;-i&lt;/code&gt; flag naming the file. The workstation&#x27;s figure rule is one SVG per figure under &lt;code&gt;docs/figures/&lt;/code&gt;, so most figures a review would check are SVGs. Today a figure review of an SVG would therefore see nothing.&lt;/p&gt;</p>
+    <p class="r-dec-ctx">§8 measured that codex judges a PNG correctly and receives nothing from an SVG: all ten SVG runs answered NO IMAGE RECEIVED, though each launch carried the -i flag naming the file. The workstation&#x27;s figure rule is one SVG per figure under docs/figures/, so most figures a review would check are SVGs. Today a figure review of an SVG would therefore see nothing.</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="render-to-png">The dispatch renders each SVG figure to PNG (as rsvg-convert -w 1400 does for the producer&#x27;s own check) and attaches the PNG</button>
       <button class="r-opt" data-value="png-only-scope">A figure review accepts PNG figures only and refuses a node whose figures are SVG</button>
@@ -418,7 +418,7 @@
     </div>
 <div class="r-dec" data-key="figure-review-on-metered-lane" data-choice="" data-by="" data-when="" data-sections="s4" data-recommended="exempt-figure-reviews" data-recommended-by="reckon-build">
     <p class="r-dec-q">May a figure review run on a metered lane?</p>
-    <p class="r-dec-ctx">&lt;p&gt;§4 has been deferred on this question since 2026-10-13, but it was never recorded as a decision. No local lane declares image input, so every figure review would run on codex. &lt;code&gt;review_excluded_backends&lt;/code&gt; keeps reviews off metered lanes. §8 measured the cost: 25 lean figure prompts moved the codex weekly window from 89% to 90%, about 0.04 points a prompt.&lt;/p&gt;</p>
+    <p class="r-dec-ctx">§4 has been deferred on this question since 2026-10-13, but it was never recorded as a decision. No local lane declares image input, so every figure review would run on codex. review_excluded_backends keeps reviews off metered lanes. §8 measured the cost: 25 lean figure prompts moved the codex weekly window from 89% to 90%, about 0.04 points a prompt.</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="exempt-figure-reviews">A figure review may run on a metered lane that declares image input, after the text review</button>
       <button class="r-opt" data-value="hold-for-a-local-image-lane">Figure reviews wait until a local lane declares image input</button>
