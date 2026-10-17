@@ -236,6 +236,46 @@ def test_the_pair_masks_name_the_partners_run_directory(home, repo) -> None:
     )
 
 
+def test_a_paired_launch_starts_both_arms(home, repo) -> None:
+    """The paired launch itself runs: both arms are dispatched, not merely planned.
+
+    A dry run never reaches the arm dispatch calls, so it cannot see a keyword
+    the two arms pass twice — the composition raises before either arm
+    launches, and the pair the flag exists to start never starts. This drives
+    the launch path with a stub in place of the harness and asserts each arm
+    landed its own record.
+    """
+    launched: list[str] = []
+
+    def launcher(plan, *, log_path, stderr_path, prompt_path):
+        launched.append(str(log_path))
+        return 0
+
+    result = dispatch_module.dispatch_pair(
+        node=_node(spec_level="guided"),
+        project=PROJECT,
+        repo=repo,
+        config=_candidate_config(),
+        session="sess",
+        pair_backend=PAIR_BACKEND,
+        launcher=launcher,
+    )
+    assert result["ok"] is True
+    primary, shadow = result["primary"], result["shadow"]
+    assert primary["run_id"] == result["primary_run_id"]
+    assert shadow["run_id"] == result["shadow_run_id"]
+    # Both arms launched, and each under its own allocated run directory: a
+    # duplicated keyword stops the composition before either arm is reached.
+    assert len(launched) == 2
+    assert launched[0].startswith(str(run_dir(result["primary_run_id"])))
+    assert launched[1].startswith(str(run_dir(result["shadow_run_id"])))
+    assert primary["paired_shadow_run_id"] == result["shadow_run_id"]
+    assert shadow["lineage"]["kind"] == "shadow"
+    assert shadow["lineage"]["primary_run_id"] == result["primary_run_id"]
+    assert shadow["manifest_path"].startswith(str(run_dir(result["shadow_run_id"])))
+    assert primary["manifest_path"].startswith(str(run_dir(result["primary_run_id"])))
+
+
 def _paired_arms(root: Path) -> tuple[Arm, Arm]:
     """Two arms over one pair of allocated run ids, each naming the other."""
     run_a = new_run_id("primary-node")
