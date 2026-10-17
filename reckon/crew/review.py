@@ -1333,7 +1333,11 @@ _MEASUREMENT_CWD_FIELD = "measurement_cwd"
 # <sha> tree <path>``; a promotion replay spells it ``revision: <sha>`` and an
 # arm log may spell it ``revision=<sha>``. Only the header line is read, so a
 # revision-shaped token in a test's own output cannot be mistaken for the log's.
-_LOGGED_REVISION_RE = re.compile(r"revision\s*[:=]?\s*(?P<sha>[0-9a-fA-F]{7,40})\b")
+# The pattern itself is the audit's own — ``reports._GATE_LOG_REVISION`` — so the
+# reader here and the write-time check read the same labels, in the same case,
+# and a log the audit accepts always annotates with the revision it names. A
+# second pattern here would drift from that one and report a null revision for a
+# log the check had already passed.
 
 # The keys the annotated review carries for the revision each arm's gate log
 # names. They sit beside the added-failure count so a reader can tell the
@@ -1716,8 +1720,10 @@ def recorded_log_revision(log_text: str | None) -> str | None:
     lines = log_text.splitlines()
     if not lines:
         return None
-    match = _LOGGED_REVISION_RE.search(lines[0])
-    return match.group("sha") if match else None
+    from reckon.crew.reports import _GATE_LOG_REVISION
+
+    match = _GATE_LOG_REVISION.search(lines[0])
+    return match.group(1) if match else None
 
 
 def _manifest_prose(manifest_text: str) -> str:

@@ -34,6 +34,18 @@
   else about the match changed: the label is still required, so a first line carrying only
   a bare hexadecimal run — a tree path with digits, a timestamp — still names no revision.
   The label is read as written, so no writer is driven to edit its own capture.</p>
+  <p id="a-revision-label-is-read-in-any-case-sibling"><strong>Sibling reader.</strong>
+  The annotated review reads the same first-line revision through
+  <code>recorded_log_revision</code> in <code>reckon/crew/review.py</code>, behind its
+  own pattern <code>_LOGGED_REVISION_RE</code>. That pattern was case-sensitive and
+  required the full word <code>revision</code>, so it also returned <code>None</code>
+  for <code>REV=</code>, <code>Revision:</code> and <code>rev=</code> — meaning a log
+  the audit now accepted annotated with a null <code>head_log_revision</code>, and the
+  two readers disagreed about the same line. <code>_LOGGED_REVISION_RE</code> is
+  removed and <code>recorded_log_revision</code> now reads
+  <code>reports._GATE_LOG_REVISION</code>, imported lazily inside the function so the
+  module-level <code>reports</code> → <code>review</code> import is not closed into a
+  cycle. One pattern now answers for both the write-time check and the annotation.</p>
   <p id="a-revision-label-is-read-in-any-case-new-case"><strong>New case.</strong>
   <code>tests/test_a_revision_label_is_read_in_any_case.py</code> holds both halves through
   the audit's public entry point, <code>audit_manifest</code>. Four first-line labels —
@@ -42,20 +54,25 @@
   followed by the forty-hex sha the manifest records for the arm, and each must produce no
   finding naming the head log. The negative half feeds a first line naming only a tree path
   carrying the same forty hex digits and requires the audit to report that the log names no
-  revision.</p>
+  revision. Three further cases call <code>recorded_log_revision</code> directly:
+  <code>REV=</code>, <code>Revision:</code> and <code>rev=</code> each yield the sha, and a
+  bare hex tree path yields <code>None</code>, so the annotation and the audit are pinned to
+  one reading of the same line.</p>
   <p id="a-revision-label-is-read-in-any-case-measure"><strong>Measure.</strong> Logs are
-  under the run directory. Head arm (change present, revision
-  <code>91a8aea54</code>): <code>5 passed</code>, <code>EXIT=0</code> — all four labelled
-  cases and the tree-path case. Negative control — the declared mutation, the pattern
-  compiled without <code>re.IGNORECASE</code>, run against the base tree extracted at
-  <code>91a8aea54</code> with only this node's test file copied in:
-  <code>3 failed, 2 passed</code>, <code>EXIT=1</code>. The three red ids are the
-  <code>REV=</code>, <code>Revision:</code> and <code># arm=head REVISION=</code> cases; the
-  lower-case <code>rev=</code> case passes at base (it already did) and the tree-path case
-  passes at base and head alike, since the label is required in both. <code>ruff check</code>
-  and <code>ruff format --check</code> add no finding on the changed files: the base tree
+  under the run directory. Head arm (change present): <code>9 passed</code>,
+  <code>EXIT=0</code> — the four labelled audit cases, the audit tree-path case, the three
+  labelled annotation cases and the annotation tree-path case. Negative control — the
+  declared mutation, both readers case-sensitive and the annotation pattern also requiring
+  the full word <code>revision</code>, run against the base tree extracted at
+  <code>91a8aea54</code> with only this node's test file copied in: <code>6 failed, 3
+  passed</code>, <code>EXIT=1</code>. The six red ids are the audit <code>REV=</code>,
+  <code>Revision:</code> and <code>REVISION=</code> cases, and the three annotation cases;
+  the lower-case <code>rev=</code> audit case, and both tree-path cases, pass at base and
+  head alike, since the label is required in both. <code>ruff check</code> and
+  <code>ruff format --check</code> add no finding on the changed files: the base tree
   carries one pre-existing <code>SIM102</code> in <code>reports.py</code> (line 702) and
-  the changed tree carries the same one, so the delta is zero.</p>
+  <code>review.py</code> is clean at base; the changed tree carries the same one
+  <code>SIM102</code> and nothing new, so the delta is zero.</p>
 </article>
 </body>
 </html>

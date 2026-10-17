@@ -25,6 +25,7 @@ from pathlib import Path
 import pytest
 
 from reckon.crew.reports import audit_manifest
+from reckon.crew.review import recorded_log_revision
 
 BASE_REVISION = "1f0c5a7d94e2b6839c4d5e6f708192a3b4c5d6e7"
 HEAD_REVISION = "9a8b7c6d5e4f3021122334455667788990aabbcc"
@@ -119,3 +120,27 @@ def test_a_tree_path_with_hex_digits_names_no_revision(tmp_path: Path) -> None:
 
     assert findings, audit_manifest(body, manifest_path=manifest_path)["findings"]
     assert any("revision" in finding for finding in findings)
+
+
+# ── The annotated review reads the same label the audit does ────────────────
+
+
+@pytest.mark.parametrize(
+    "first_line",
+    [
+        f"REV={HEAD_REVISION} tree=/tmp/head",
+        f"Revision: {HEAD_REVISION} tree=/tmp/head",
+        f"rev={HEAD_REVISION} tree=/tmp/head",
+    ],
+    ids=["upper-equals", "title-colon", "lower-equals"],
+)
+def test_the_annotated_review_reads_the_label_in_any_case(first_line: str) -> None:
+    """A log the audit accepts annotates with the sha it names, not a null."""
+    assert recorded_log_revision(first_line) == HEAD_REVISION
+
+
+def test_the_annotated_review_reads_no_revision_from_a_tree_path() -> None:
+    """The label is required here too: a bare hex tree path names no revision."""
+    line = f"tree=/scratch/runs/{HEAD_REVISION} source=/srv/repo"
+
+    assert recorded_log_revision(line) is None
