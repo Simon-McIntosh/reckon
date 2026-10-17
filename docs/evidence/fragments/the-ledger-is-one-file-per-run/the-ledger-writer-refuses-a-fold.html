@@ -23,7 +23,7 @@
   Five further cases drive one production writer each over that same project — the idle-member
   reap, the disposable-identity retirement, the gate re-run record, and the figure and duration
   backfills — and each finds the aggregate's ten rows and fifty files still standing after the
-  writer ran. Head gate: <strong>12 passed, EXIT=0</strong>.</p>
+  writer ran. Head gate: <strong>13 passed, EXIT=0</strong>.</p>
 
   <p id="the-ledger-writer-refuses-a-fold-negative-control"><strong>Declared negative control,
   executed and logged.</strong> Against the base tree (<code>2e9a07c23</code>, guard absent) the
@@ -112,16 +112,28 @@
   private helper inside <code>ledger.py</code>, and one in each of the two backfill scripts,
   each re-encoding one run through <code>serialize_run</code> into that run's own file
   beside <code>_keep_run_files_identical</code>, which did the same thing inline. All four
-  are now one public helper, <code>ledger.write_run_file</code>, which every writer that
-  amends a row owning a file calls. The two script copies and the private one are deleted.
+  are now one public helper, <code>ledger.write_run_file</code>, and the three in this
+  node's scope route through it: <code>_persist_repaired_rows</code>, which the completion
+  repair calls; <code>_keep_run_files_identical</code>, which re-encodes the copy of an
+  aggregate row; and the figure and duration backfills. The two script copies and the
+  private one are deleted. <code>reckon/crew/promotion_release.py</code>'s
+  <code>_update_run_record</code> re-encodes a run file itself and is <em>not</em> routed
+  through the helper — it sits outside this node's write scope, so it keeps its own copy
+  and this paragraph does not claim otherwise.
   The helper keeps each caller's permission bits: the callers that amend or create a run
   file pass the <em>0o600</em> they used before, while
   <code>_keep_run_files_identical</code> passes <code>mode=None</code> so a rewrite that
   only re-encodes a file already on disk leaves its bits as they were, which is what its
   inline write did. No behaviour changes: the bytes written are
-  <code>serialize_run(row)</code> in every path, exactly as before. Head gate over the fold
-  suite and the hold-check suite: <strong>13 passed, EXIT=0</strong>; the three widened
-  files in full: <strong>60 passed, EXIT=0</strong>; the suites covering the ledger
-  and the run-file write path, including the two backfill scripts:
-  <strong>134 passed, EXIT=0</strong>.</p>
+  <code>serialize_run(row)</code> in every path, exactly as before. A later review found the
+  fold test file added one ruff finding of its own, a <code>timezone.utc</code> where the
+  <code>UTC</code> alias belongs; that is fixed, and the same check applied over every
+  Python file this node changed found one more, a <code>typing.Mapping</code> import the
+  figure backfill had gained, which now comes from <code>collections.abc</code>. The four
+  files those two findings touched are clean under <code>ruff check</code>, and across all
+  eleven changed files the head holds 15 findings against 15 of the same rules at the base
+  revision, so the node adds none. Head gate over the fold suite and the hold-check suite:
+  <strong>13 passed, EXIT=0</strong>; the three widened files in full: <strong>60 passed,
+  EXIT=0</strong>; the suites covering the ledger and the run-file write path, including
+  the two backfill scripts: <strong>134 passed, EXIT=0</strong>.</p>
 </section>
