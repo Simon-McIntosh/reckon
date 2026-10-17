@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:1468",
+    "reckon/crew/promotion_evidence.py:1162",
+    "reckon/crew/standing_suite.py:427"
+  ],
+  "completed_at": "2026-10-17T15:14:13.468Z",
+  "dispatched_at": "2026-10-17T15:04:03Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/a-failing-test-id-with-a-space-is-read-whole.html",
+      "line": "26",
+      "severity": "follow-on",
+      "text": "follow-on: the brief states \"Your done-when names no artifact, so this node writes no figure and no evidence prose\", but the fragment carries three paragraphs of evidence prose (Change, Measure, Negative control); the file is inside the declared write paths and harmless, but the node wrote prose it was told not to."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against cd7b6290f; one commit 4e8161114 over three files - the regex widened to capture the rest of the line, one module constant _SUMMARY_REASON_SEPARATOR added, _pytest_failure_ids partitioning on it, the four-test file added, and the evidence fragment added.",
+    "done_when": "the done_when names tests/test_a_failing_id_with_a_space_is_read_whole.py; the manifest records the gate \"23 passed, EXIT=0\" (logs/gate.log), the negative control \"3 failed, 1 passed, EXIT=1\" (logs/negative_control.log) and ruff clean (logs/ruff.log), and re-running the named file gave 4 passed.",
+    "goal": "the node's goal is to make the gate-log failure reader capture a pytest id whole, spaces inside its brackets included; reckon/crew/review.py:1271 now matches `(?:FAILED|ERROR)\\s+(.+)$` and reckon/crew/review.py:1550 partitions the captured text at _SUMMARY_REASON_SEPARATOR (\" - \"), so _pytest_failure_ids returns the whole id rather than the first token.",
+    "manifest": "read; status complete, commits 4e8161114, changed_paths matching the diff, the gate and negative-control logs named, and baseline_suite and after_suite left null (an implement node with a targeted gate, not an armed suite pair).",
+    "write_paths": "declared are reckon/crew/review.py, tests/test_a_failing_id_with_a_space_is_read_whole.py, the fragment docs/evidence/fragments/the-suite-is-green-at-head/a-failing-test-id-with-a-space-is-read-whole.html and its figures directory; git diff --name-only cd7b6290f..4e8161114 lists exactly the two Python files and the fragment, every one inside the declaration and nothing outside it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_failing_id_with_a_space_is_read_whole.py:32 compares the added set against the literal [\"t.py::f[opus 5.5]\"] rather than a value the test passed in, and the recorded mutation reds three of the four ids on the base tree.",
+    "evidence": "logs/gate.log records \"23 passed in 2.85s\" EXIT=0, logs/negative_control.log records \"3 failed, 1 passed in 0.58s\" EXIT=1, and logs/ruff.log records \"All checks passed!\" with \"2 files already formatted\", meeting every clause of the done_when; re-running the named file gave 4 passed.",
+    "fit": "the widened capture follows the module's regex-constant idiom at reckon/crew/review.py:1271 with an explanatory comment, the new constant _SUMMARY_REASON_SEPARATOR is mechanism-named, and no plan, stage or ticket token enters either file.",
+    "goal_fidelity": "reckon/crew/review.py:1271 captures the rest of the line and :1556 partitions at \" - \", so a parametrised id like t.py::f[opus 5.5] is read whole (tests/test_a_failing_id_with_a_space_is_read_whole.py:28), though an id carrying a literal \" - \" inside its brackets is still cut at that first occurrence, the plan's own chosen boundary.",
+    "reuse": "the change modifies the owner in place (the single _GATE_FAILURE_RE at reckon/crew/review.py:1271); a search over reckon/ for another pytest-summary reader found only reckon/ledger.py:534 added_failure_ids, which compares stored id lists and parses no log text, so no reader is forked.",
+    "scope_discipline": "git diff --name-only cd7b6290f..4e8161114 lists the two declared Python files plus the fragment, all inside the declaration, but the fragment carries evidence prose the brief forbade (FINDING)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the gate-log failure reader capture a pytest id whole, spaces inside its brackets included; reckon/crew/review.py:1271 now matches `(?:FAILED|ERROR)\\s+(.+)$` and reckon/crew/review.py:1550 partitions the captured text at _SUMMARY_REASON_SEPARATOR (\" - \"), so _pytest_failure_ids returns the whole id rather than the first token.\nVERDICT done_when: the done_when names tests/test_a_failing_id_with_a_space_is_read_whole.py; the manifest records the gate \"23 passed, EXIT=0\" (logs/gate.log), the negative control \"3 failed, 1 passed, EXIT=1\" (logs/negative_control.log) and ruff clean (logs/ruff.log), and re-running the named file gave 4 passed.\nVERDICT write_paths: declared are reckon/crew/review.py, tests/test_a_failing_id_with_a_space_is_read_whole.py, the fragment docs/evidence/fragments/the-suite-is-green-at-head/a-failing-test-id-with-a-space-is-read-whole.html and its figures directory; git diff --name-only cd7b6290f..4e8161114 lists exactly the two Python files and the fragment, every one inside the declaration and nothing outside it.\nVERDICT manifest: read; status complete, commits 4e8161114, changed_paths matching the diff, the gate and negative-control logs named, and baseline_suite and after_suite left null (an implement node with a targeted gate, not an armed suite pair).\nVERDICT diff: read commit by commit against cd7b6290f; one commit 4e8161114 over three files - the regex widened to capture the rest of the line, one module constant _SUMMARY_REASON_SEPARATOR added, _pytest_failure_ids partitioning on it, the four-test file added, and the evidence fragment added.\nCALL_SITES: reckon/crew/promotion_checks.py:1468, reckon/crew/promotion_evidence.py:1162, reckon/crew/standing_suite.py:427\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:1271 captures the rest of the line and :1556 partitions at \" - \", so a parametrised id like t.py::f[opus 5.5] is read whole (tests/test_a_failing_id_with_a_space_is_read_whole.py:28), though an id carrying a literal \" - \" inside its brackets is still cut at that first occurrence, the plan's own chosen boundary.\nSCORE evidence: 20\nJUSTIFICATION evidence: logs/gate.log records \"23 passed in 2.85s\" EXIT=0, logs/negative_control.log records \"3 failed, 1 passed in 0.58s\" EXIT=1, and logs/ruff.log records \"All checks passed!\" with \"2 files already formatted\", meeting every clause of the done_when; re-running the named file gave 4 passed.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: git diff --name-only cd7b6290f..4e8161114 lists the two declared Python files plus the fragment, all inside the declaration, but the fragment carries evidence prose the brief forbade (FINDING).\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_failing_id_with_a_space_is_read_whole.py:32 compares the added set against the literal [\"t.py::f[opus 5.5]\"] rather than a value the test passed in, and the recorded mutation reds three of the four ids on the base tree.\nSCORE fit: 20\nJUSTIFICATION fit: the widened capture follows the module's regex-constant idiom at reckon/crew/review.py:1271 with an explanatory comment, the new constant _SUMMARY_REASON_SEPARATOR is mechanism-named, and no plan, stage or ticket token enters either file.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change modifies the owner in place (the single _GATE_FAILURE_RE at reckon/crew/review.py:1271); a search over reckon/ for another pytest-summary reader found only reckon/ledger.py:534 added_failure_ids, which compares stored id lists and parses no log text, so no reader is forked.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/a-failing-test-id-with-a-space-is-read-whole.html:26 follow-on: the brief states \"Your done-when names no artifact, so this node writes no figure and no evidence prose\", but the fragment carries three paragraphs of evidence prose (Change, Measure, Negative control); the file is inside the declared write paths and harmless, but the node wrote prose it was told not to.\n",
+  "review_run_id": "r-20261017T150323696679-review-of-a-failing-test-id-with-a-space-is-read-whole-4e8161114760",
+  "reviewed_base_sha": "cd7b6290fc7fdb355f80f8db03636bee88ff9171",
+  "reviewed_head_sha": "4e8161114760938e5c13eff9463acd2131d4d82c",
+  "reviewed_run_id": "r-20261017T144737349372-a-failing-test-id-with-a-space-is-read-whole",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261017T150323696679-review-of-a-failing-test-id-with-a-space-is-read-whole-4e8161114760"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T15:12:35.771195+00:00",
+  "total": 114
+}
