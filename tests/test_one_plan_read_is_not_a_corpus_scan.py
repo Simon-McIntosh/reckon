@@ -23,7 +23,7 @@ import os
 from pathlib import Path
 from typing import Self
 
-from reckon import _store, resources
+from reckon import _store, metadata_index, resources
 from reckon._plan_html import write_state
 
 PLAN_COUNT_SMALL = 5
@@ -190,6 +190,7 @@ def test_one_plan_read_counts_flat_in_corpus_size(tmp_path: Path, monkeypatch) -
         # zeros would prove nothing.
         with monkeypatch.context() as context:
             _disable_direct_resolution(context)
+            context.setattr(metadata_index, "_reuse_covered", lambda *a, **k: None)
             forced_small = _warm_scandir_count(small_root)
             forced_large = _warm_scandir_count(large_root)
         assert forced_large > forced_small > 0

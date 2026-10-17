@@ -178,6 +178,7 @@ def test_summary_view_scandir_is_flat_in_corpus_size(tmp_path, monkeypatch) -> N
         # zeros would prove nothing.
         with monkeypatch.context() as context:
             _force_walk(context)
+            context.setattr(metadata_index, "_reuse_covered", lambda *a, **k: None)
             _payload, forced_small = _warm_scandir_count(small_root)
             _payload, forced_large = _warm_scandir_count(large_root)
         assert forced_large > forced_small > 0

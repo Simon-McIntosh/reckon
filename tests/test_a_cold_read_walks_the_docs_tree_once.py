@@ -33,6 +33,21 @@ DRIVER = dedent(
         print(json.dumps({"primed": True, "module": str(mcp.__file__), "cwd": str(Path.cwd().resolve())}))
         raise SystemExit(0)
 
+    if sys.argv[2] == "freshness":
+        before = mcp._roadmap("probe", checkout_path=str(checkout), view="raw")
+        existing = (docs / "plans" / "plan-00.html").read_text(encoding="utf-8")
+        (docs / "plans" / "added-plan.html").write_text(
+            existing.replace("plan-00", "added-plan"), encoding="utf-8"
+        )
+        after = mcp._roadmap("probe", checkout_path=str(checkout), view="raw")
+        print(json.dumps({
+            "before": before["data"]["scope"]["plans"],
+            "after": after["data"]["scope"]["plans"],
+            "module": str(mcp.__file__),
+            "cwd": str(Path.cwd().resolve()),
+        }))
+        raise SystemExit(0)
+
     if sys.argv[2] == "unshared":
         metadata_index._covered_files = lambda root, *args: metadata_index._walk_covered(root)[0]
 
@@ -205,3 +220,16 @@ def test_one_cold_roadmap_reads_each_authored_file_once(measured: dict) -> None:
     assert cold["reads"][str(checkout / "docs" / "plans" / "plan-00.html")] >= 1
     assert cold["byte_reads"][str(checkout / "docs" / "plans" / "plan-00.html")] >= 1
     assert max(cold["reads"].values(), default=0) <= 1, cold["reads"]
+
+
+def test_later_read_sees_plan_added_between_reads(tmp_path: Path) -> None:
+    checkout = _build_checkout(tmp_path)
+    home = tmp_path / "home"
+    home.mkdir()
+    driver = tmp_path / "driver.py"
+    driver.write_text(DRIVER, encoding="utf-8")
+    assert _run(driver, checkout, home, "prime")["primed"]
+
+    result = _run(driver, checkout, home, "freshness")
+    assert result["before"] == DOCUMENT_COUNT
+    assert result["after"] == DOCUMENT_COUNT + 1
