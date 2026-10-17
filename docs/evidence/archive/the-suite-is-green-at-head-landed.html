@@ -2928,6 +2928,11 @@ reckon/crew/dispatch.py:4535: TypeError
     <p>Run <code>r-20261017T090923058922</code> (commits <code>8bcdbd592</code> and <code>d7cf76b47</code>) fixed <code>test_the_change_watch_invalidates_the_tree</code>.</p><ul><li>It builds <code>serve._FleetChangeWatch({_PROJECT: docs_dir})</code>, a project-to-docs mapping as production's <code>start_fleet_change_watch</code> does.</li><li>It waits <code>4 * serve._CROSS_NODE_FAST_S</code> for the invalidation, rather than a bare 10 s equal to the detector's own interval.</li></ul><p>The first delivery passed 8 of 10 single runs, and its run review traced the flake to that deadline. After the resume it passed 20 of 20 alone. The file passes in full alone and with <code>-n 4</code>, 8 passed. At base the test fails on <code>AttributeError: 'list' object has no attribute 'items'</code>.</p><p>Merged as <code>4de441c3f</code>. Re-review: reuse 20, durability 12. Two follow-ons are exempted: the deadline reads the module constant rather than the environment-overridable getter, which the suite never overrides; and the rescue for a missed inotify event is not exercised.</p>
   </section>
 
+  <section id="s18-shared-reader-survives-reload">
+    <h2>§18 — the shared-reader test survives a module reload</h2>
+    <p>Run <code>r-20261017T094200953914</code> (commit <code>9e793167d</code>) changed <code>test_consumers_share_the_one_reader</code> to compare each consumer's reader by <code>__module__</code> and <code>__qualname__</code>.</p><p>Gate: the trigger, <code>test_edit_forced_to_lose_a_landing_race_is_refused_not_raised</code>, followed by <code>tests/test_one_sprint_item_slug.py</code> in one process, with no xdist and no random order. 12 passed, EXIT=0. The same pair at base fails the identity assertion, EXIT=1. A consumer given a local copy of the reader still fails the test, EXIT=1.</p><p>Merged as <code>2f88401e2</code>. Run review: 18 to 20 on every dimension. Its one follow-on is exempted: the head log names the working tree rather than the commit, though their contents are equal.</p>
+  </section>
+
 </main>
 </body>
 </html>
