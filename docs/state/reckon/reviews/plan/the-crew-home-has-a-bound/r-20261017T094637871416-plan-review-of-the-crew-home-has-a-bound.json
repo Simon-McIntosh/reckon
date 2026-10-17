@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T10:02:53.203Z",
+  "dispatched_at": "2026-10-17T09:47:14Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-home-has-a-bound/r-20261017T094637871416-plan-review-of-the-crew-home-has-a-bound/plan.html:163",
+      "id": "reasoning-1",
+      "reason": "\u00a79 is the live section whose last build failed precisely because its guard proved nothing, and this leaves the node to invent the predicate that decides both the guard and its positive control, so the delivered guard is undetermined by the plan.",
+      "text": "\u00a79's revised done-when names the environment the session fixture sets (XDG_CACHE_HOME at the session directory, UV_CACHE_DIR pinned aside, no per-kind override, RECKON_HOME untouched) but never states what the guard *fails on*, and the only statement of that predicate is in the superseded paragraph (\"fails the session naming any fixture or test that resolved a root outside the session temporary directory\"); applied here, that predicate fires on essentially every test rather than on a leak: `tests/conftest.py:1160-1173` installs `isolated_reckon_home` `autouse=True` and sets `RECKON_HOME` to a per-test temporary directory, and `reckon/_store.py:190-196` resolves `pick-input` and `run-time-profile` through `RECKON_HOME` *before* `XDG_CACHE_HOME`, so `cache_root(\"pick-input\")` \u2014 the ledger-index root \u2014 resolves outside the session directory for any test that reads a ledger, and the revised bullet 2 (\"A test that steers a root through `RECKON_HOME` still steers it\") confirms those resolutions are legitimate; the top-line claim \"keeps every `_store.cache_root` resolution in the session temporary directory\" and its own detail therefore cannot both hold, and a node implementing a guard on the stated predicate reddens the suite it exists to protect, while a guard that merely records leaves the leak it is written for unproven.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-home-has-a-bound/r-20261017T094637871416-plan-review-of-the-crew-home-has-a-bound/plan.html:42",
+      "id": "anchors_resolve-1",
+      "reason": "every affected section (\u00a71, \u00a73, \u00a74) is landed and merged, the author already declined this same finding on r-20261017T093350140791 with the landing records holding the as-built locations, and no node remaining in this build (\u00a78, \u00a79) reads a line anchor, so correcting them changes no node's path.",
+      "text": "the line anchors have drifted off the code they name at the reviewed head: \u00a71 cites `_run_index_path` at `reckon/ledger.py:896-899` (defined at 996), `_pointer_lock` at `reckon/crew/runs.py:549-559` (defined at 316) and the `picker-*.json` name at `reckon/capabilities.py:1190` (built at 1285-1289), \u00a71's run-directory retention rule at `reckon/crew/routing.py:1764-1771` lands in lock pruning while `_unledgered_run_directories` lives at 1831, \u00a73 names `garbage_collect (reckon/crew/routing.py:1520)` where the function is defined at `reckon/crew/gc.py:262` (`routing.py:1520` is a comment on `STREAM_DERIVED_FIELDS`, and `routing.py:3701` only re-exports the name), and \u00a74 cites `trim_service_log` at `fleet_supervisor.py:548-574` and its constants \"at line 223\" where the function is at 595 and the constants at 226-227.",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-home-has-a-bound/r-20261017T094637871416-plan-review-of-the-crew-home-has-a-bound/plan.html:131",
+      "id": "done_when-1",
+      "reason": "\u00a75 is deferred and out of this build, the open decision `reports-bound-across-projects` (recommended option `rebaseline-the-clause`) already carries the remedy, and the author declined this same finding on r-20261017T093350140791 as rewritten when \u00a75 is next triaged.",
+      "text": "\u00a75's measure \"the combined size of the four stores is at least 100 GB lower than the \u00a71 figures\" is asserted against \u00a71's 330 GB while the plan's own comments (`c-close-s5`, `c-s5-reopened-on-review`) record the same four stores at 494 GB after the reclaim, so the claim is unsupported by the plan's own content and the population it measures is mostly other projects' data that a `--project reckon` sweep cannot reach; \u00a75 is also the one section whose done-when declares no negative control.",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "c921dab01aaa51cd77b65e412c0a811118b84ba7cff3632001332a8b8183270c",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 64,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T094637871416-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "038b065ba17a209c2977eed4574d6c2f5e49fa81",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the file:line anchors in \u00a71's table, \u00a73 and \u00a74 point at unrelated code at the reviewed head, though every symbol they name still lives in the file they name.",
+    "done_when": "a finding \u2014 \u00a75's measure is asserted against \u00a71's superseded store figures, which the plan's own comments already record as unmet.",
+    "evidence_paths": "pass \u2014 every cited gate or control log is directed to the run directory (`~/.config/reckon/crew/runs/<run-id>/`) or to a named path under the crew reports tree, and the archive record `docs/evidence/archive/the-crew-home-has-a-bound-landed.html` exists with all eight section anchors (`#s2-ledger-index-sweep` \u2026 `#s10-single-run-gc-confined`) resolving.",
+    "naming": "pass \u2014 the section ids (`s1`\u2013`s10`) are the plan surface's own identifiers, and the symbols named (`_run_index_path`, `_pointer_lock`, `_pinnable_unique_commits`, `_releasable_roots`, `_declared_arm_paths`, `_run_directory_extractions`, `already-removed`) are mechanism names; no ticket number, version tag or stage label reaches code.",
+    "reasoning": "a finding \u2014 \u00a79's revised mechanism cannot produce its own done-when, because the only statement of the guard's failure predicate sits in the paragraph the revision supersedes, and that predicate fires on the ordinary test rather than on a leak.",
+    "single_goal": "pass \u2014 \u00a72\u2013\u00a710 each carry one deliverable; \u00a79's revised write-path list names such, and no section carries two verdicts.",
+    "wiring": "pass \u2014 the plan declares `plan-standalone` with a stated reason, \u00a76's ordering constraint is against a run (`r-20261012T051827498181-a-worktree-release-is-whole`, which resolves) rather than a plan, and the two live sections \u00a78 and \u00a79 write disjoint files (`reckon/ledger.py` + a new test versus `tests/conftest.py` and three test modules), so the declared parallel run is correct."
+  },
+  "section_digests": {
+    "_document": "4dc163aaf3971781a60f3a42d1ae1a5f5e8120d9456c429e5adc0ea60acb2b52",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s10": "56c18da5f95c1af6bc07050b4374f565f11fa8750f575894cd4e1cc2b5ea773a",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "ea437bee063bb05e8f8ddb6f7a30f7f066d66dff1770c1488e31b86a6f5c7ba8",
+    "s5": "75a8a336e2ee62426e5a8c3ed3310e0cf614b82a8cf7ae6a5985fcb99f2b1648",
+    "s6": "3f82b3311550663b1d18b1428203c2b44805aff91f1c998049de11dd82bfe201",
+    "s7": "d966e9dc54000fcf7d43d9d39567b2a791c2670b0224b881649472a126a8f106",
+    "s8": "07d9242815cd2c19cf76c9484aa28c908834190af477f204091de9d695b3e8a5",
+    "s9": "5e8a5c96b9e0b65736bdee8a24254ce6fe4a12c73dcb34c44b3a5a72b6e6d9c8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T10:04:51.828537+00:00"
+}
