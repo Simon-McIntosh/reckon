@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="jev-learns-from-its-routes">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;a-shadow-cannot-see-its-primary#s2&quot;, &quot;a-shadow-cannot-see-its-primary#s3&quot;], &quot;s5&quot;: [&quot;a-shadow-cannot-see-its-primary#s4&quot;], &quot;s6&quot;: [&quot;a-shadow-cannot-see-its-primary#s5&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>A Shadow Cannot See Its Primary | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -188,7 +188,7 @@
     </p>
 
     <h2 id="s5">§5 — A paired dispatch launches both arms from one base</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>
       <strong>Why.</strong> §3 and §4 remove the shadow's cheap routes to its primary. A shadow dispatched after its
       primary has landed can still find the result in the project's main checkout or in git history, because main
@@ -305,6 +305,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261017T013629272667-review-of-a-paired-dispatch-hides-each-arm-86a51bdc6d84" data-who="reckon-build" data-when="2026-10-17T01:54:53.957Z">
     <div class="r-comment-body"><p>review of r-20261017T000127932636-a-paired-dispatch-hides-each-arm at head 86a51bdc6 over base b49fd40aa: goal_fidelity 19, evidence 15, scope_discipline 20, durability 19, fit 19, reuse 20 (total 112); 6 dimensions, 2 call sites, 1 follow-on finding (no baseline/after suite pair so added_failure_count is unmeasured)</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-17T04:05:00Z">
+    <div class="r-comment-body"><p>§5 landed: <code>crew dispatch --pair-backend</code> launches a primary and a shadow arm from one base, and each arm's fence hides its partner's run directory and, through the shadow's session directory, its worktree (commits <code>0e648e452</code>–<code>86a51bdc6</code>). 9 bwrap tests pass, the 295-file population shows no added failure, and the negative control fails. <a href="/reckon/evidence/archive/a-shadow-cannot-see-its-primary-landed.html#s5">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-s4-resolution-layer" data-who="reckon-build" data-when="2026-10-16T19:52:00Z">
     <div class="r-comment-body"><p>Content review <code>r-20261016T193510730111</code>, finding <code>reasoning-1</code>: §4 puts the resolution of the primary's paths in two layers. One sentence has <code>launch_plan</code> gain the paths to hide. The other has the launch look up the primary's ledger row, but <code>launch_plan</code> in <code>reckon/_backends.py</code> takes no project or ledger. The fix, to be written into §4 before it dispatches: each crew-layer caller (dispatch, session launch, resume) looks up the primary's row from the lineage and calls <code>promotion_scope._primary_read_targets</code>. It passes the resolved paths to <code>launch_plan</code> as a plain list of paths to hide, and <code>launch_plan</code> hands them to <code>fence_argv</code>. <code>_backends.py</code> gains no ledger parameter and no crew import.</p></div>
