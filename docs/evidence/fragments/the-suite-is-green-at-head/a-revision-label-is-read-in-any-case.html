@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s20">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-17">
+  <meta name="plan-tags" content="crew,manifest,gate-log,revision">
+  <title>A revision label is read in any case | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-revision-label-is-read-in-any-case" data-reckon="landed" data-when="2026-10-17">
+  <h2 id="a-revision-label-is-read-in-any-case-title">A revision label is read in any case.</h2>
+  <p id="a-revision-label-is-read-in-any-case-cause"><strong>Cause.</strong> The manifest
+  audit holds each suite arm's gate log against the revision that arm records, reading the
+  revision from the log's first line with the pattern <code>_GATE_LOG_REVISION</code> in
+  <code>reckon/crew/reports.py</code>. That pattern was compiled without
+  <code>re.IGNORECASE</code>, so a first line labelled <code>REV=&lt;sha&gt;</code> or
+  <code>Revision: &lt;sha&gt;</code> named no revision and the audit refused a log whose
+  revision was in fact the one the manifest recorded. On 2026-10-17 the whole-suite worker
+  <code>r-20261017T141450191818</code> met this refusal and rewrote its own gate logs'
+  first lines after the run, lowercasing <code>REV=</code> to <code>rev=</code> with a
+  script so the audit would pass: the revision value was unchanged, but a log edited after
+  the fact is no longer the capture it claims to be.</p>
+  <p id="a-revision-label-is-read-in-any-case-fix"><strong>Fix.</strong>
+  <code>_GATE_LOG_REVISION</code> is now compiled with <code>re.IGNORECASE</code>. Nothing
+  else about the match changed: the label is still required, so a first line carrying only
+  a bare hexadecimal run — a tree path with digits, a timestamp — still names no revision.
+  The label is read as written, so no writer is driven to edit its own capture.</p>
+  <p id="a-revision-label-is-read-in-any-case-new-case"><strong>New case.</strong>
+  <code>tests/test_a_revision_label_is_read_in_any_case.py</code> holds both halves through
+  the audit's public entry point, <code>audit_manifest</code>. Four first-line labels —
+  <code>REV=&lt;sha&gt;</code>, <code>Revision: &lt;sha&gt;</code>,
+  <code>rev=&lt;sha&gt;</code> and <code># arm=head REVISION=&lt;sha&gt;</code> — are each
+  followed by the forty-hex sha the manifest records for the arm, and each must produce no
+  finding naming the head log. The negative half feeds a first line naming only a tree path
+  carrying the same forty hex digits and requires the audit to report that the log names no
+  revision.</p>
+  <p id="a-revision-label-is-read-in-any-case-measure"><strong>Measure.</strong> Logs are
+  under the run directory. Head arm (change present, revision
+  <code>91a8aea54</code>): <code>5 passed</code>, <code>EXIT=0</code> — all four labelled
+  cases and the tree-path case. Negative control — the declared mutation, the pattern
+  compiled without <code>re.IGNORECASE</code>, run against the base tree extracted at
+  <code>91a8aea54</code> with only this node's test file copied in:
+  <code>3 failed, 2 passed</code>, <code>EXIT=1</code>. The three red ids are the
+  <code>REV=</code>, <code>Revision:</code> and <code># arm=head REVISION=</code> cases; the
+  lower-case <code>rev=</code> case passes at base (it already did) and the tree-path case
+  passes at base and head alike, since the label is required in both. <code>ruff check</code>
+  and <code>ruff format --check</code> add no finding on the changed files: the base tree
+  carries one pre-existing <code>SIM102</code> in <code>reports.py</code> (line 702) and
+  the changed tree carries the same one, so the delta is zero.</p>
+</article>
+</body>
+</html>
