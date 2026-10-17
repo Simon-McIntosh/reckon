@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "after_suite failures [] minus baseline_suite failures ['tests/test_metadata_index_survives_restart.py::test_the_change_watch_invalidates_the_tree'] is []: the base arm fails ['tests/test_metadata_index_survives_restart.py::test_the_change_watch_invalidates_the_tree'] and the head arm fails none, so 0 added failures across the reviewed gate. Note the reviewed_base_sha recorded here is the reviewed run's own base arm revision, da2eb10, and this review read the diff of the gained commit against its parent 8bcdbd59.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/serve.py:4444 start_fleet_change_watch",
+    "reckon/serve.py:379 _FleetChangeWatch.__init__",
+    "reckon/serve.py:455 fast_s = max(_cross_node_fast_s()",
+    "0.05)",
+    "reckon/serve.py:297 _CROSS_NODE_FAST_S"
+  ],
+  "completed_at": "2026-10-17T09:53:57.663Z",
+  "dispatched_at": "2026-10-17T09:44:15Z",
+  "findings": [
+    {
+      "file": "tests/test_metadata_index_survives_restart.py",
+      "line": "344",
+      "severity": "follow-on",
+      "text": "follow-on: the deadline derives from the module constant serve._CROSS_NODE_FAST_S while the detector reads the env-overridable serve._cross_node_fast_s() at reckon/serve.py:455, so under a RECKON_CROSS_NODE_FAST_S override the wait no longer spans several detector passes as the comment at :339-343 claims, and the flake returns."
+    },
+    {
+      "file": "tests/test_metadata_index_survives_restart.py",
+      "line": "344",
+      "severity": "follow-on",
+      "text": "follow-on: the widened deadline is unverified - the manifest's evidence_inputs records all 20 runs resolving via inotify at about 1.6 s, so nothing demonstrates the wider wait rescuing the missed-inotify case it exists for, and reverting it reddens no test."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read the gained commit d7cf76b4 against base 8bcdbd59293b4a05bee5c518029fc03cbceda732; one file, 6 added and 1 removed line - the deadline at tests/test_metadata_index_survives_restart.py:344 moves from a literal 10 to 4 * serve._CROSS_NODE_FAST_S plus a five-line comment, and the invalidation assertions at :355-361 are unchanged.",
+    "done_when": "the done_when names the file passing in full alone and with -n 4, the base revision failing on the AttributeError with a logged EXIT=, and ruff; every clause is recorded and I opened each log - gate-alone.log 8 passed EXIT=0, gate-xdist.log 8 passed EXIT=0, negative-control-base-arm.log 1 failed EXIT=1 on AttributeError: 'list' object has no attribute 'items', ruff.log All checks passed EXIT=0.",
+    "goal": "the node goal is \"Make the change-watch test build _FleetChangeWatch from a mapping of project to docs directory, as production does\"; the gained commit d7cf76b4 leaves that intact at tests/test_metadata_index_survives_restart.py:335, which still constructs serve._FleetChangeWatch({_PROJECT: docs_dir}), and production reckon/serve.py:383 resolves that mapping through mounts.items().",
+    "manifest": "read; status complete, commits 8bcdbd59 and d7cf76b4, and it records baseline_suite (da2eb10, 1 failed, test_the_change_watch_invalidates_the_tree) and after_suite (d7cf76b4, 0 failed) with log paths matching the logs I opened.",
+    "write_paths": "the manifest declares tests/test_metadata_index_survives_restart.py, docs/evidence/fragments/the-suite-is-green-at-head/the-change-watch-test-builds-with-mounts.html and the figures directory; git diff 8bcdbd59293b4a05bee5c518029fc03cbceda732..d7cf76b479b0fe2a5157c934cea5273d3d5a1acb touches only tests/test_metadata_index_survives_restart.py, inside them."
+  },
+  "justifications": {
+    "durability": "no test reddens if tests/test_metadata_index_survives_restart.py:344 reverts to the literal 10, because the base arm's failure is the mapping AttributeError at reckon/serve.py:383 rather than the wait, and the added assertion-free lines guard nothing.",
+    "evidence": "gate-alone.log and gate-xdist.log close on \"8 passed in 4.76s\" and \"8 passed in 4.21s\" with EXIT=0 respectively, and negative-control-base-arm.log closes on \"1 failed in 1.64s\" EXIT=1 for tests/test_metadata_index_survives_restart.py::test_the_change_watch_invalidates_the_tree, though no recorded run exercises the extended deadline's fallback.",
+    "fit": "the comment at tests/test_metadata_index_survives_restart.py:337-343 states the mechanism in the surrounding test idiom, but the wait reads the module constant serve._CROSS_NODE_FAST_S where the detector reads the env-overridable accessor at reckon/serve.py:455.",
+    "goal_fidelity": "tests/test_metadata_index_survives_restart.py:335 passes {_PROJECT: docs_dir}, the mapping shape reckon/serve.py:4444 start_fleet_change_watch hands to reckon/serve.py:383, and the gained commit does not disturb it.",
+    "reuse": "the commit adds no definition and reuses the existing reckon/serve.py:297 _CROSS_NODE_FAST_S constant, forking no capability.",
+    "scope_discipline": "git diff 8bcdbd59293b4a05bee5c518029fc03cbceda732..d7cf76b479b0fe2a5157c934cea5273d3d5a1acb lists only tests/test_metadata_index_survives_restart.py, inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Make the change-watch test build _FleetChangeWatch from a mapping of project to docs directory, as production does\"; the gained commit d7cf76b4 leaves that intact at tests/test_metadata_index_survives_restart.py:335, which still constructs serve._FleetChangeWatch({_PROJECT: docs_dir}), and production reckon/serve.py:383 resolves that mapping through mounts.items().\nVERDICT done_when: the done_when names the file passing in full alone and with -n 4, the base revision failing on the AttributeError with a logged EXIT=, and ruff; every clause is recorded and I opened each log - gate-alone.log 8 passed EXIT=0, gate-xdist.log 8 passed EXIT=0, negative-control-base-arm.log 1 failed EXIT=1 on AttributeError: 'list' object has no attribute 'items', ruff.log All checks passed EXIT=0.\nVERDICT write_paths: the manifest declares tests/test_metadata_index_survives_restart.py, docs/evidence/fragments/the-suite-is-green-at-head/the-change-watch-test-builds-with-mounts.html and the figures directory; git diff 8bcdbd59293b4a05bee5c518029fc03cbceda732..d7cf76b479b0fe2a5157c934cea5273d3d5a1acb touches only tests/test_metadata_index_survives_restart.py, inside them.\nVERDICT manifest: read; status complete, commits 8bcdbd59 and d7cf76b4, and it records baseline_suite (da2eb10, 1 failed, test_the_change_watch_invalidates_the_tree) and after_suite (d7cf76b4, 0 failed) with log paths matching the logs I opened.\nVERDICT diff: read the gained commit d7cf76b4 against base 8bcdbd59293b4a05bee5c518029fc03cbceda732; one file, 6 added and 1 removed line - the deadline at tests/test_metadata_index_survives_restart.py:344 moves from a literal 10 to 4 * serve._CROSS_NODE_FAST_S plus a five-line comment, and the invalidation assertions at :355-361 are unchanged.\nCALL_SITES: reckon/serve.py:4444 start_fleet_change_watch, reckon/serve.py:379 _FleetChangeWatch.__init__, reckon/serve.py:455 fast_s = max(_cross_node_fast_s(), 0.05), reckon/serve.py:297 _CROSS_NODE_FAST_S\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_metadata_index_survives_restart.py:335 passes {_PROJECT: docs_dir}, the mapping shape reckon/serve.py:4444 start_fleet_change_watch hands to reckon/serve.py:383, and the gained commit does not disturb it.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-alone.log and gate-xdist.log close on \"8 passed in 4.76s\" and \"8 passed in 4.21s\" with EXIT=0 respectively, and negative-control-base-arm.log closes on \"1 failed in 1.64s\" EXIT=1 for tests/test_metadata_index_survives_restart.py::test_the_change_watch_invalidates_the_tree, though no recorded run exercises the extended deadline's fallback.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 8bcdbd59293b4a05bee5c518029fc03cbceda732..d7cf76b479b0fe2a5157c934cea5273d3d5a1acb lists only tests/test_metadata_index_survives_restart.py, inside the declared write paths.\nSCORE durability: 12\nJUSTIFICATION durability: no test reddens if tests/test_metadata_index_survives_restart.py:344 reverts to the literal 10, because the base arm's failure is the mapping AttributeError at reckon/serve.py:383 rather than the wait, and the added assertion-free lines guard nothing.\nSCORE fit: 17\nJUSTIFICATION fit: the comment at tests/test_metadata_index_survives_restart.py:337-343 states the mechanism in the surrounding test idiom, but the wait reads the module constant serve._CROSS_NODE_FAST_S where the detector reads the env-overridable accessor at reckon/serve.py:455.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no definition and reuses the existing reckon/serve.py:297 _CROSS_NODE_FAST_S constant, forking no capability.\nFINDING tests/test_metadata_index_survives_restart.py:344 follow-on: the deadline derives from the module constant serve._CROSS_NODE_FAST_S while the detector reads the env-overridable serve._cross_node_fast_s() at reckon/serve.py:455, so under a RECKON_CROSS_NODE_FAST_S override the wait no longer spans several detector passes as the comment at :339-343 claims, and the flake returns.\nFINDING tests/test_metadata_index_survives_restart.py:344 follow-on: the widened deadline is unverified - the manifest's evidence_inputs records all 20 runs resolving via inotify at about 1.6 s, so nothing demonstrates the wider wait rescuing the missed-inotify case it exists for, and reverting it reddens no test.\n",
+  "review_run_id": "r-20261017T094343670519-review-of-the-change-watch-test-builds-with-mounts-d7cf76b479b0",
+  "reviewed_base_sha": "8bcdbd59293b4a05bee5c518029fc03cbceda732",
+  "reviewed_head_sha": "d7cf76b479b0fe2a5157c934cea5273d3d5a1acb",
+  "reviewed_run_id": "r-20261017T090923058922-the-change-watch-test-builds-with-mounts",
+  "scores": {
+    "durability": 12,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T09:50:57.196291+00:00",
+  "total": 106
+}
