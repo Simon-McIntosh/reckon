@@ -3627,6 +3627,59 @@ def _worker_seconds(dispatched_at: Any, completed_at: Any) -> int | None:
     return max(0, int((finish - start).total_seconds()))
 
 
+def _write_run_row(
+    project: str, row: Mapping[str, Any], root: str | Path | None
+) -> None:
+    """Amend one run's own file through the canonical serialiser.
+
+    A record that owns a file under ``runs/`` is persisted there rather than in
+    the aggregate, so the two never hold the same run file twice.
+    """
+    path = run_path(project, str(row["run_id"]), root)
+    _store.write_atomically(
+        path, lambda stream: stream.write(serialize_run(row)), mode=0o600
+    )
+
+
+def _persist_repaired_rows(
+    project: str,
+    aggregate: dict[str, Any],
+    aggregate_version: int,
+    repaired: Sequence[Mapping[str, Any]],
+    changed_ids: set[str],
+    root: str | Path | None,
+) -> int:
+    """Persist repaired rows where each is held, returning the aggregate version.
+
+    Rows are decided from the union :func:`load` returns, so every run is
+    measured, but only the aggregate's own rows may go back to the writer: an
+    aggregate-held row is patched in place, and a row that owns a file under
+    ``runs/`` is written through that file. Handing the whole history to
+    :func:`write` would copy each per-run row into the tracked aggregate, which
+    :func:`write` refuses.
+    """
+    held = {
+        str(row["run_id"]): row
+        for row in aggregate["runs"]
+        if isinstance(row, Mapping) and row.get("run_id")
+    }
+    aggregate_changed = False
+    for record in repaired:
+        run_id = str(record.get("run_id") or "")
+        if run_id not in changed_ids:
+            continue
+        home = held.get(run_id)
+        if home is None:
+            _write_run_row(project, record, root)
+            continue
+        home.clear()
+        home.update(record)
+        aggregate_changed = True
+    if not aggregate_changed:
+        return aggregate_version
+    return write(project, aggregate, aggregate_version, root)
+
+
 def repair_completion(
     project: str,
     *,
@@ -3705,8 +3758,15 @@ def repair_completion(
     new_version = version
     written = False
     if write_changes and changes:
-        repaired = {**data, "runs": repaired_runs}
-        new_version = write(project, repaired, version, root)
+        aggregate, aggregate_version = _load_aggregate(project, root)
+        new_version = _persist_repaired_rows(
+            project,
+            aggregate,
+            aggregate_version,
+            repaired_runs,
+            {str(row["run_id"]) for row in rows if row["action"] == "updated"},
+            root,
+        )
         written = True
     return {
         "project": project,

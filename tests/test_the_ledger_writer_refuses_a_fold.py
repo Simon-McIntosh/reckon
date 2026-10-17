@@ -17,15 +17,16 @@ Every case drives a throwaway project under ``tmp_path`` whose aggregate holds
 ten rows and whose ``runs/`` holds fifty files, so the two sources disagree by
 a known count before the write under test runs.
 
-Five further cases drive one production writer each over that project: the idle
+Six further cases drive one production writer each over that project: the idle
 session-member reap, the disposable-identity retirement, the gate re-run record,
-and the figure and duration backfills. Each writer reads the aggregate's own
-rows and leaves the fifty files standing, and each case asserts that. Against
-the base tree, with no guard, all nine cases fail — the writer cases because
-each writer folds the fifty rows into the aggregate, which is the defect
-reproduced through the production path rather than asserted. With the guard
-present and the writers unrepaired they fail the other way, each writer refused.
-The cases hold the guard and the repairs together; neither half is green alone.
+the completion repair, and the figure and duration backfills. Each writer reads
+the aggregate's own rows and leaves the fifty files standing, and each case
+asserts that. Against the base tree, with no guard, all ten cases fail — the
+writer cases because each writer folds the fifty rows into the aggregate, which
+is the defect reproduced through the production path rather than asserted. With
+the guard present and the writers unrepaired they fail the other way, each
+writer refused. The cases hold the guard and the repairs together; neither half
+is green alone.
 """
 
 from __future__ import annotations
@@ -318,6 +319,48 @@ def test_the_figure_backfill_leaves_the_aggregate_row_count_unchanged(
     backfill_run_figures(PROJECT, root=git_project)
 
     _assert_aggregate_rows_unchanged(git_project)
+
+
+def test_the_completion_repair_leaves_the_aggregate_row_count_unchanged(
+    project: Path,
+) -> None:
+    """The repair measures every run and persists each row where it is held.
+
+    Both sources are repaired: the ten rows the aggregate holds are patched in
+    it, and each of the fifty rows is written through the run's own file, which
+    is asserted at the file rather than only through the union a reader sees.
+    """
+    streams = project.parent / "streams"
+    stamped = "2026-10-17T12:34:56Z"
+    run_ids = [
+        *(f"a-{index:03d}" for index in range(AGGREGATE_ROWS)),
+        *(f"f-{index:03d}" for index in range(PER_RUN_FILES)),
+    ]
+    for run_id in run_ids:
+        stream = streams / run_id / "stream.jsonl"
+        stream.parent.mkdir(parents=True, exist_ok=True)
+        stream.write_text(json.dumps({"timestamp": stamped}) + "\n", encoding="utf-8")
+
+    result = ledger.repair_completion(
+        PROJECT,
+        root=project,
+        write_changes=True,
+        streams_root=streams,
+    )
+
+    assert result["written"] is True
+    assert result["updated"] == AGGREGATE_ROWS + PER_RUN_FILES
+    _assert_aggregate_rows_unchanged(project)
+    stored = {row["run_id"]: row for row in _aggregate(project)["runs"]}
+    assert stored["a-000"]["completed_at"] == stamped
+    for index in range(PER_RUN_FILES):
+        run_id = f"f-{index:03d}"
+        held = json.loads(
+            ledger.run_path(PROJECT, run_id, project).read_text(encoding="utf-8")
+        )
+        assert held["completed_at"] == stamped, run_id
+    reread, _ = ledger.load(PROJECT, project)
+    assert len(reread["runs"]) == AGGREGATE_ROWS + PER_RUN_FILES
 
 
 def test_the_duration_backfill_leaves_the_aggregate_row_count_unchanged(
