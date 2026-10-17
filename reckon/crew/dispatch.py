@@ -2878,7 +2878,6 @@ from .dispatch_sessions import (  # noqa: E402
     _dispatch_session_absence as _dispatch_session_absence,
     _harness_behind_the_fence as _harness_behind_the_fence,
     _inherited_worktree_reading as _inherited_worktree_reading,
-    _is_review_run as _is_review_run,
     _lane_prompt as _lane_prompt,
     _names_the_fence as _names_the_fence,
     _prior_same_task_run as _prior_same_task_run,

@@ -26,6 +26,7 @@ from reckon.crew.prompts import (
     time_fence_statement,
 )
 from reckon.crew.recovery import (
+    PLAN_REVIEW_NODE_PREFIX,
     REVIEW_NODE_PREFIX,
     _resolve_commit,
     resume_window_refusal,
@@ -453,19 +454,6 @@ def _record_plan(record: Mapping[str, Any]) -> str:
     return str(record.get("plan") or "")
 
 
-def _is_review_run(record: Mapping[str, Any]) -> bool:
-    """Whether a record is a review, by its role or by its node id.
-
-    The role survives a renamed node id and the prefix survives a record
-    written before a role was carried, so either alone recognises a review —
-    and a review left unrecognised would take a fresh session where its own
-    task has one to continue.
-    """
-    from reckon.crew.recovery import _is_review_node
-
-    return str(record.get("role") or "") == "review" or _is_review_node(record)
-
-
 def _reviewed_run_id(source: str, records: Iterable[Mapping[str, Any]]) -> str:
     """Resolve what a review node's source names to the reviewed run's id.
 
@@ -503,11 +491,23 @@ def _task_identity(
     id); a review's is the run it reviews. Two dispatches may therefore share a
     task without sharing a legacy roster member, and a member may hold sessions
     of several tasks — which is exactly why the member is the wrong key.
+
+    A plan review's task is the plan it reviews, taken from the slug its node id
+    carries rather than from a reviewed run, because a plan review names no run.
+    Either kind of review of one plan — a design review and a content review —
+    therefore shares one key, which is accepted because both review the same
+    plan.
     """
+    from reckon.crew.recovery import _is_review_run
+
+    node_id = _record_node_id(record)
     if _is_review_run(record):
-        source = round_node_source(_record_node_id(record), REVIEW_NODE_PREFIX)
-        return ("review", str(project), _reviewed_run_id(source, records))
-    return ("node", str(project), _record_plan(record), _record_node_id(record))
+        if node_id.startswith(PLAN_REVIEW_NODE_PREFIX):
+            slug = round_node_source(node_id, PLAN_REVIEW_NODE_PREFIX)
+            return ("plan-review", str(project), slug)
+        source = round_node_source(node_id, REVIEW_NODE_PREFIX)
+        return ("review", str(project), _reviewed_run_id(source, records) or node_id)
+    return ("node", str(project), _record_plan(record), node_id)
 
 
 def _run_stream_path(record: Mapping[str, Any]) -> Path | None:

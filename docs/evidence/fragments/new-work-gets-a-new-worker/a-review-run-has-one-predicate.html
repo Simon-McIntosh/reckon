@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="new-work-gets-a-new-worker">
+  <meta name="plan-title" content="New Work Gets A New Worker">
+  <meta name="plan-evidence-for" content="reckon:new-work-gets-a-new-worker">
+  <meta name="plan-verifies" content="reckon:new-work-gets-a-new-worker#s11">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-17">
+  <title>A review run has one predicate | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-review-run-has-one-predicate">
+  <h2>One review predicate, and each review keyed by what it reviews</h2>
+
+  <p><strong>What changed.</strong> The second copy of the review predicate is
+  gone. <code>reckon/crew/dispatch_sessions.py</code> no longer defines
+  <code>_is_review_run</code>; <code>_task_identity</code> imports the owner,
+  <code>reckon.crew.recovery._is_review_run</code>, inside the function, because
+  <code>recovery</code> loads modules that import from
+  <code>dispatch_sessions</code>. The old copy read the role from the record
+  root alone, so a record whose <code>review</code> role sat only on its node
+  was a review to recovery but not to dispatch, and its task keyed as a plain
+  node. The re-export at <code>reckon/crew/dispatch.py</code> is removed and its
+  one reader imports the owner directly.</p>
+
+  <p><strong>The second defect, and its fix.</strong> The review branch of
+  <code>_task_identity</code> stripped only <code>REVIEW_NODE_PREFIX</code>
+  (<code>review-of-</code>), but plan reviews are minted
+  <code>plan-review-of-&lt;slug&gt;</code>. Their source came out empty, so every
+  plan review in a project keyed <code>("review", project, "")</code> &mdash; one
+  shared key across every plan. A run whose node id starts with
+  <code>PLAN_REVIEW_NODE_PREFIX</code> now keys
+  <code>("plan-review", project, &lt;slug&gt;)</code>, the slug taken from
+  <code>round_node_source(node_id, PLAN_REVIEW_NODE_PREFIX)</code>. A review
+  whose reviewed run cannot be resolved from its node id keys by its own node
+  id, <code>("review", project, node_id)</code>, never by an empty string.</p>
+
+  <p><strong>Measured.</strong> The defect reproduces at the base before the
+  repair: a node-only <code>review</code> role reads
+  <code>False</code> to dispatch against recovery's <code>True</code> and keys
+  <code>("node", "reckon", "", "implement-fixture")</code>, while
+  <code>plan-review-of-alpha</code> and <code>plan-review-of-beta</code> both key
+  <code>("review", "reckon", "")</code>. At the head the same records key
+  <code>("review", "reckon", "implement-fixture")</code>,
+  <code>("plan-review", "reckon", "alpha")</code> and
+  <code>("plan-review", "reckon", "beta")</code>. The gate
+  <code>tests/test_plan_review_prefix_is_one_constant.py</code>,
+  <code>tests/test_a_resumed_head_is_reviewed.py</code>,
+  <code>tests/test_session_resumes_only_its_own_task.py</code> and
+  <code>tests/test_dispatch_reads_the_resolved_session.py</code> is 31 passed,
+  <code>EXIT=0</code> at the head against 25 passed, <code>EXIT=0</code> at the
+  base &mdash; the six non-failing tests are the new whole-key cases, and no
+  failure is added against the base.</p>
+
+  <p><strong>The declared negative controls failed as named.</strong> Restoring
+  the root-only predicate in <code>_task_identity</code> reds
+  <code>test_node_only_review_role_keys_the_run_it_reviews</code>
+  (<code>1 failed, 10 passed</code>, <code>EXIT=1</code>). Stripping the
+  <code>PLAN_REVIEW_NODE_PREFIX</code> branch reds the alpha, beta and
+  two-reviews-share-a-key cases (<code>3 failed, 8 passed</code>,
+  <code>EXIT=1</code>). Each mutation was applied alone and the fixed file
+  restored between them.</p>
+
+  <p><strong>Scope retained, deliberately.</strong> The driving followup stays
+  open and no terminal status is set: a worker knows its node landed, not
+  whether the section closed. &sect;7 must not flip <code>session_reuse</code>
+  before this lands.</p>
+</section>
+</main>
+</body>
+</html>
