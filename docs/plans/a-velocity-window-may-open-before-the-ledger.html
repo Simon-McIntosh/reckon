@@ -24,7 +24,7 @@
   <title>A Velocity Window May Open Before The Ledger | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -121,7 +121,7 @@
 <ul>
 <li><strong>Search the ledger in slices.</strong> List the first-parent commits in <code>origin..head</code> that touch the ledger paths, with a plain path-limited <code>git log --first-parent --format=%H</code> that generates no patch. Run the existing <code>-G</code> search over consecutive slices of them, oldest first. Each slice drops the ids already placed from the expression.
   <ul>
-  <li>Choose the slice size so that one slice's search finishes well inside <code>run_git</code>'s 180-second bound on this checkout. Record the size and the measured worst slice time in the manifest.</li>
+  <li>Hold the slice size, a count of ledger-touching commits, in a module-level private constant, <code>_LEDGER_SEARCH_SLICE_COMMITS</code>. The search reads it at call time, so a test can set it to one with <code>monkeypatch.setattr</code>. Choose its value so that one slice's search finishes well inside <code>run_git</code>'s 180-second bound on this checkout, and record the value and the measured worst slice time in the manifest.</li>
   <li>After each slice, store the cache with <code>head</code> set to the slice's last commit. The cache's existing <code>walked</code> resume then carries a long window across slices.</li>
   <li>A read interrupted after some slices resumes where it stopped. A repeated read of a window already walked runs no search at all.</li>
   </ul></li>
