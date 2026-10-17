@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import os
 import subprocess
 from importlib import import_module
 from pathlib import Path
@@ -12,13 +13,21 @@ import pytest
 from reckon import crew_follow_commands as follow
 from reckon.crew import runs
 
+_GIT_HOME = os.environ.get("RECKON_HOME")
+
 
 def _git(root: Path, *args: str) -> str:
+    environment = dict(os.environ)
+    if _GIT_HOME is None:
+        environment.pop("RECKON_HOME", None)
+    else:
+        environment["RECKON_HOME"] = _GIT_HOME
     result = subprocess.run(
         ["git", "-C", str(root), *args],
         check=True,
         capture_output=True,
         text=True,
+        env=environment,
     )
     return result.stdout.strip()
 

@@ -41,6 +41,7 @@ WINDOW = 1.0
 STEP = 1.0
 
 STALE_STAMP = "0" * 64
+_GIT_HOME = os.environ.get("RECKON_HOME")
 
 
 @pytest.fixture()
@@ -217,11 +218,17 @@ def test_a_producer_on_source_head_is_current_after_a_reload(
     (package / "__init__.py").write_text("")
 
     def git(*args: str) -> str:
+        environment = dict(os.environ)
+        if _GIT_HOME is None:
+            environment.pop("RECKON_HOME", None)
+        else:
+            environment["RECKON_HOME"] = _GIT_HOME
         return subprocess.run(
             ["git", "-C", str(root), *args],
             check=True,
             capture_output=True,
             text=True,
+            env=environment,
         ).stdout.strip()
 
     git("init")
