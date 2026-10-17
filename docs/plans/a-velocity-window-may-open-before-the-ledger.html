@@ -24,7 +24,7 @@
   <title>A Velocity Window May Open Before The Ledger | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -170,6 +170,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-17T20:40:00Z">
     <div class="r-comment-body"><p>§2 landed: the ledger search places runs by their record file first, then searches in cached 128-commit slices (commits <code>caf08d8e8</code>, <code>0bb5da164</code>). Gate: 27 passed at head, 24 at base. Both negative controls fail their case. Review total 98, no added failures. The post-merge runs of both real windows are still owed. <a href="/reckon/evidence/archive/a-velocity-window-may-open-before-the-ledger-landed.html#s2">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T161034396287-a-long-window-ledger-search-stays-bounded" data-who="reckon-build" data-when="2026-10-17T16:57:17Z">
+    <div class="r-comment-body"><p>recover_ledger_clocks now places a run by the commit that added its per-run record file (source first_primary_record_file_addition_upper_bound, no patch generated) and searches the remaining ids over the window&#x27;s ledger-touching commits in slices of _LEDGER_SEARCH_SLICE_COMMITS=128, storing the cache after each slice so a long window is walked across slices and an interrupted read resumes where it stopped; gate 27 passed at head / 24 at base, both negative controls EXIT=1, measured worst slice 1.68 s. Follow-up commit 0bb5da164 wrapped the two new expressions to the project width with no behaviour change, leaving the file&#x27;s pre-existing format debt untouched: ruff format --diff reckon/velocity.py now counts 11 changed lines, matching the base.</p></div>
 </div>
 </section>
 </main>
