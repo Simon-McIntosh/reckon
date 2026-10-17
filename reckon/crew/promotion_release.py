@@ -9,9 +9,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from reckon import (
-    ledger,
-)
+from reckon import _store, ledger
 from reckon.crew import review as review_module
 from reckon.crew import rollout
 from reckon.crew.dispatch import (
@@ -578,19 +576,22 @@ def _record_release_on_ledger(
             if per_run:
                 updated = _update_run_record(path, run_id, {"release": dict(release)})
             else:
-                data, version = ledger.load(project, root=root)
-                updated = None
-                replaced = []
-                for row in data.get("runs") or []:
-                    candidate = dict(row)
-                    if str(candidate.get("run_id") or "") == run_id:
-                        candidate["release"] = dict(release)
-                        updated = candidate
-                    replaced.append(candidate)
-                if updated is None:
-                    return dict(release), None
-                data["runs"] = replaced
-                ledger.write(project, data, version, root=root)
+                with ledger._ledger_write_lock(project):
+                    data, version = ledger._load_aggregate(project, root)
+                    updated = None
+                    replaced = []
+                    for row in data["runs"]:
+                        candidate = dict(row)
+                        if str(candidate.get("run_id") or "") == run_id:
+                            candidate["release"] = dict(release)
+                            updated = candidate
+                        replaced.append(candidate)
+                    if updated is None:
+                        return dict(release), None
+                    data["runs"] = replaced
+                    _store._write_json_envelope(
+                        path, project, ledger.LEDGER_SLUG, data, version
+                    )
             if checkout is not None:
                 staged = _git(checkout, "add", "--", str(path), check=False)
                 if staged.returncode:
@@ -601,7 +602,13 @@ def _record_release_on_ledger(
                         rollback,
                     )
                 unchanged = _git(
-                    checkout, "diff", "--cached", "--quiet", "--", str(path), check=False
+                    checkout,
+                    "diff",
+                    "--cached",
+                    "--quiet",
+                    "--",
+                    str(path),
+                    check=False,
                 )
                 if unchanged.returncode == 0:
                     return dict(release), updated
@@ -625,7 +632,13 @@ def _record_release_on_ledger(
                         f"{committed.stderr.strip() or committed.stdout.strip()}",
                         rollback,
                     )
-        except (ledger.LedgerError, CrewError, OSError, ValueError) as exc:
+        except (
+            ledger.LedgerError,
+            _store.VersionConflict,
+            CrewError,
+            OSError,
+            ValueError,
+        ) as exc:
             last_error = exc
             continue
         return dict(release), updated
@@ -1019,7 +1032,6 @@ def _run_promoted_revision(
     if tree is None:
         return ""
     return _promoted_revision(tree, commit_list)
-
 
 
 from reckon.crew.promotion_evidence import (
