@@ -228,18 +228,21 @@ def test_the_review_dispatch_grants_the_head_keyed_record_path(
     assert result["dispatched"] is True
 
     node = captured["node"]
-    legacy = review_module.review_path(PROJECT, run_id)
-    keyed = review_module.review_path(PROJECT, run_id, reviewed_head_sha=head)
-    assert legacy != keyed
+    declared = review_module.run_review_record_paths(
+        runs.run_dir(run_id), run_id, reviewed_head_sha=head
+    )
+    assert len(declared) == 2, declared
+    legacy, keyed = Path(declared[0]), Path(declared[1])
+    assert legacy.name != keyed.name
     granted = [Path(str(path)) for path in node.write_paths]
     assert legacy in granted
     assert keyed in granted
 
-    # A record stored through store_review at that head lands inside the grant:
-    # the head the record names is the path the dispatch handed the reviewer.
+    # A record stored through store_review at that head is written under the
+    # head-keyed name the dispatch handed the reviewer, so the filed record
+    # carries the head the reviewer was granted and every store reader finds it.
     stored = _store_review(run_id, base=base, head=head)
-    assert stored == keyed
-    assert stored in granted
+    assert stored.name == keyed.name
 
 
 # (2) The classifier reads the review of the head being classified.

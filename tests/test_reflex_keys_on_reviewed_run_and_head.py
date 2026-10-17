@@ -350,14 +350,14 @@ def test_a_run_resumed_to_a_new_head_gets_one_review_and_a_second_sweep_none(
     assert len(fleet.launches) == 1, first
     assert len(first["dispatched"]) == 1
     brief = fleet.launches[0].stdin_text
-    assert (
-        str(review.review_path(PROJECT, SOURCE_RUN, reviewed_head_sha=new_head))
-        in brief
+    declared = review.run_review_record_paths(
+        runs.run_dir(SOURCE_RUN), SOURCE_RUN, reviewed_head_sha=new_head
     )
-    assert (
-        str(review.review_path(PROJECT, SOURCE_RUN, reviewed_head_sha=old_head))
-        not in brief
+    stale = review.run_review_record_paths(
+        runs.run_dir(SOURCE_RUN), SOURCE_RUN, reviewed_head_sha=old_head
     )
+    assert declared[1] in brief
+    assert stale[1] not in brief
 
     second = fleet.sweep()
 

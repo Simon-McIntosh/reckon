@@ -129,8 +129,12 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
 
     The reflex's own claim is honoured whatever revision the run now carries.
     A hand-launched review carries no such record, so it is recognised by the
-    head-keyed record path its reviewer was granted, which keeps a review of an
-    older revision from reading as a review of the current one.
+    head-keyed record its reviewer was granted, which keeps a review of an
+    older revision from reading as a review of the current one. The record is
+    matched by its file name rather than by its whole path: the name spells the
+    reviewed run and the head that review read wherever the record is
+    delivered, so a review dispatched before the record moved out of the store
+    still suppresses the duty for the head it stands at.
     """
     if _reflex_review_in_flight(pointer):
         return True
@@ -145,8 +149,8 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     if not head_keyed:
         return True
     node = review_pointer.get("node") or {}
-    granted = {str(path) for path in node.get("write_paths") or ()}
-    return any(str(path) in granted for path in head_keyed)
+    granted = {Path(str(path)).name for path in node.get("write_paths") or ()}
+    return any(Path(str(path)).name in granted for path in head_keyed)
 
 
 def _live_review_runs(project: str, session: str) -> set[str]:
