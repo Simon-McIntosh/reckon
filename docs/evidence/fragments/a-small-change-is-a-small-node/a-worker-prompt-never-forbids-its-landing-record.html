@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="The landing fragment is excepted from the no-evidence-prose rule, so no clause of an implement prompt forbids the record its landing contract asks for.">
   <meta name="plan-evidence-for" content="reckon:a-small-change-is-a-small-node">
   <meta name="plan-verifies" content="reckon:a-small-change-is-a-small-node#s8">
-  <meta name="plan-commits" content="2212fa6c">
+  <meta name="plan-commits" content="2212fa6c, 0d499d75">
   <meta name="plan-recorded-at" content="2026-10-17">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-tags" content="crew,prompt,dispatch,small-node,landing,negative-control">
@@ -27,24 +27,26 @@
     <p>An implement prompt carried two clauses that met as a contradiction. The landing
     contract asked the worker to write its evidence anchor into its scope's fragment under
     <code>docs/evidence/fragments/&lt;plan&gt;/&lt;node-id&gt;.html</code>; the artifact clause said the
-    node wrote no figure and no evidence prose. Composed at the base revision by the new
-    check's own composer, both prompts — the unnamed-artifact one and the figure-named one —
-    carried exactly two sentences mentioning the prompt's evidence prose, and neither
-    excepted the fragment:</p>
+    node wrote no figure and no evidence prose. Composed at the base revision through the
+    shared builder, both prompts — the unnamed-artifact one and the figure-named one — carried
+    exactly two sentences mentioning the prompt's evidence prose, and neither excepted the
+    fragment:</p>
     <pre id="a-worker-prompt-never-forbids-its-landing-record-repro">A small node writes one `landing:` line in its manifest, stating what changed and its
 measure's figure, and writes neither evidence prose nor a figure unless its done-when
 names that artifact; naming one does not permit the other.
 Your done-when names no artifact, so this node writes no figure and no evidence prose.</pre>
-    <p>The base-arm log records the refusal: three failing test ids, a non-zero exit line.</p>
+    <p>The base-arm log records the refusal on each prompt: a non-zero exit line and failing
+    test ids.</p>
   </section>
 
   <section id="a-worker-prompt-never-forbids-its-landing-record-fix">
     <h3>The fix, stated once</h3>
     <p>The landing fragment is the node's evidence anchor and is always permitted at its
     scope path; a figure still needs the done-when to name it; the withheld evidence prose is
-    the prose outside the fragment. The exception is carried by the small-node rule and by
-    both artifact clauses, so no clause forbids the prose the landing contract asks for. The
-    named clause reads:</p>
+    the prose outside the fragment. The permission is stated, not merely implied by a
+    qualified ban: the small-node rule says the fragment is always permitted at its scope path
+    and then withholds the prose beyond it, and both artifact clauses say the withheld prose is
+    the prose outside the fragment. The named clause reads:</p>
     <pre id="a-worker-prompt-never-forbids-its-landing-record-clause">Your done-when names an artifact, so this node may write that artifact. It permits no
 other figure and no evidence prose outside the landing fragment, which is always
 permitted.</pre>
@@ -54,25 +56,32 @@ permitted.</pre>
     <h3>Gate</h3>
     <p><code>tests/test_a_worker_prompt_never_forbids_its_landing_record.py</code> composes the
     implement prompt for a node whose done-when names no figure and for one whose done-when
-    names a figure: both carry the landing-fragment instruction, neither carries a sentence
-    forbidding evidence prose without excepting the fragment (the named clause is held to the
-    same test), and the figure-named prompt still grants its figure. It scans every sentence
-    that mentions the prompt's evidence prose and requires each to except the fragment, so a
-    rewording that keeps the rule passes and one that reinstates the ban fails.</p>
+    names a figure, through the small-node suite's own builder helpers. It asserts three
+    things on each: the prompt carries the landing-fragment instruction; the prompt explicitly
+    permits the landing fragment at its scope path; and every sentence that mentions the
+    prompt's evidence prose names the fragment <em>and</em> permits it — so a reworded ban
+    that names the fragment while still forbidding it is rejected, not waved through by the
+    word alone. A mutation case states such a ban and requires the guard to refuse it. The
+    figure-named prompt still grants its figure.</p>
     <p>The clause-wording assertions in <code>tests/test_brief_prompt.py</code> (the plan-prompt
     snapshot) and <code>tests/test_small_node_prompt.py</code> are updated to the new wording. The head
-    arm passed: <code>40 passed</code>, exit 0.</p>
+    arm passed: <code>43 passed</code>, exit 0.</p>
+    <pre id="a-worker-prompt-never-forbids-its-landing-record-mutation">mutation: "Your done-when names no artifact, so this node writes no figure and no
+evidence prose, including inside the landing fragment."
+the guard asserts _excepts_the_fragment(sentence) and the mutation raises AssertionError</pre>
   </section>
 
   <section id="a-worker-prompt-never-forbids-its-landing-record-negative-control">
     <h3>Negative control</h3>
-    <p>The new check was run against the base tree (the base revision's <code>reckon/crew/prompts.py</code>
-    with the new test added) in a scratch tree under the run's scratch, with the module under
-    test resolved to that tree. It failed on each prompt:</p>
-    <pre id="a-worker-prompt-never-forbids-its-landing-record-negative-control-failures">FAILED tests/test_a_worker_prompt_never_forbids_its_landing_record.py::test_no_prompt_forbids_evidence_prose_without_excepting_the_fragment[unnamed]
+    <p>The check was run against the base tree (the base revision's <code>reckon/crew/prompts.py</code>
+    and <code>tests/test_small_node_prompt.py</code>, with the new test added) in a scratch tree under the
+    run's scratch, with the module under test resolved to that tree. It failed on each prompt:</p>
+    <pre id="a-worker-prompt-never-forbids-its-landing-record-negative-control-failures">FAILED tests/test_a_worker_prompt_never_forbids_its_landing_record.py::test_both_prompts_permit_the_landing_fragment_at_its_scope_path[unnamed]
+FAILED tests/test_a_worker_prompt_never_forbids_its_landing_record.py::test_both_prompts_permit_the_landing_fragment_at_its_scope_path[named]
+FAILED tests/test_a_worker_prompt_never_forbids_its_landing_record.py::test_no_prompt_forbids_evidence_prose_without_excepting_the_fragment[unnamed]
 FAILED tests/test_a_worker_prompt_never_forbids_its_landing_record.py::test_no_prompt_forbids_evidence_prose_without_excepting_the_fragment[named]
 FAILED tests/test_a_worker_prompt_never_forbids_its_landing_record.py::test_the_named_artifact_clause_excepts_the_fragment_too
-3 failed, 3 passed in 0.59s
+5 failed, 4 passed in 1.19s
 EXIT=1</pre>
   </section>
 
