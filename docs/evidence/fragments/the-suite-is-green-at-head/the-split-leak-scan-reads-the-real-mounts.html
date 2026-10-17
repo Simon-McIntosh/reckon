@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s21">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-17">
+  <meta name="plan-tags" content="tests,xdist,fixture-order,mounts">
+  <title>The split leak scan reads the operator's mounts | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-split-leak-scan-reads-the-real-mounts-landed" data-node="the-split-leak-scan-reads-the-real-mounts" data-reckon="landed" data-when="2026-10-17">
+  <h2 id="the-split-leak-scan-reads-the-real-mounts-heading">The split leak scan reads the operator's mounts</h2>
+  <p id="the-split-leak-scan-reads-the-real-mounts-landing">The leak scan's fixture resolved the mounts file through the configuration home in force when it first ran, so under xdist the first worker to request it could read a peer's throwaway home, see no registry and fire the vacuity guard on a fixture-order accident. <code>tests/conftest.py</code> captures the mounts file path at import, before any fixture replaces <code>RECKON_HOME</code> or <code>RECKON_MOUNTS_PATH</code>, and <code>workstation_mounts()</code> reads that captured path; the fixture reads through it. <code>tests/test_the_split_leak_scan_reads_the_real_mounts.py</code> empties the configuration home and finds the reader still returns the operator's mounts. <code>tests/test_split_existing_runs.py</code> passes three times under <code>-n 4</code> (8 passed each). Against the mutation that resolves the live home, the vacuity guard fires: <code>1 failed</code>, the reader returned no mounts.</p>
+</article>
+</body>
+</html>
