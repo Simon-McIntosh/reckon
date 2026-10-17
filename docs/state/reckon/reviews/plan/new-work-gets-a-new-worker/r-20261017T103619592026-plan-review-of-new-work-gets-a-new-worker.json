@@ -1,0 +1,191 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T10:56:15.720Z",
+  "dispatched_at": "2026-10-17T10:36:59Z",
+  "findings": [
+    {
+      "anchor": "plan.html:328",
+      "id": "done_when-1",
+      "reason": "the census must be conditioned on reuse being on (so it runs after \u00a77), or \u00a76 records a vacuous pass and the fleet's cross-task resume rate stays unmeasured.",
+      "text": "\u00a76's done-when reads \"a census over at least the next 50 dispatches reports zero cross-task resumes\", and the section's own after-note at line 389 records that the zero was produced with `session_reuse` off, so no session was inherited at all (\"this reads as the stopgap rather than as the rule's selectivity\"); a census that reports zero for every dispatch regardless of the fix cannot distinguish the fix from the stopgap measured beside it",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:440",
+      "id": "single_goal-1",
+      "reason": "a node carrying \u00a79 has no single measure that can pass or fail it, so its outcome is unreviewable and the cross-harness case can land ungraded behind the config flip.",
+      "text": "\u00a79 \"Move sessions off the roster, then lift the stopgap\" lists (1) move session capture off the roster members and carry the cross-harness resume defect, (2) stop a no-member dispatch serialising on one session-derived member, and (3) restore `session_reuse` after \u00a72/\u00a73 pass, and its done-when conjoins all three (\"\u00a73's falsifier passes at merged head, a redispatched-then-resumed run uses its own harness's session, and \u00a77 restores session_reuse only after \u00a72/\u00a73\") \u2014 three deliverables cannot be closed on one verdict, and one gate proves none of the three",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:495",
+      "id": "evidence_paths-1",
+      "reason": "the artifact \u00a71 is graded against is unopenable, so no later reader can check its falsifier's five sites resolved, and \u00a710's premise that the sites are known rests on it.",
+      "text": "\u00a71's landing record names its whole deliverable at `~/.config/reckon/crew/reports/reckon/ship-s19-20260922/session-carry-sites.md`, and that path does not exist: the `ship-s19-20260922` directory is absent from the crew reports tree and a search under `~/.config/reckon/crew/reports` for `session-carry-sites*` returns nothing, while \u00a71 is declared `done` at line 28 \u2014 the 34-row reuse map is the section's only artifact",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:323",
+      "id": "anchors_resolve-1",
+      "reason": "the section's evidence link 404s, so the grep gate and its base-revision control that \u00a75 is credited to cannot be reached from the plan.",
+      "text": "\u00a75's landed record closes with a \"Full record\" link to `/reckon/evidence/new-work-gets-a-new-worker-landed`; resolving the extensionless href the way the surface does (`<path>.html`) gives `docs/evidence/new-work-gets-a-new-worker-landed.html`, which does not exist \u2014 the file is at `docs/evidence/archive/new-work-gets-a-new-worker-landed.html`, the form every other section's link uses",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:41",
+      "id": "anchors_resolve-2",
+      "reason": "the one site the plan's headline claim stands on cannot be opened by a reader or a later repair node, so \"the decision was made here\" is unverifiable.",
+      "text": "the plan's opening states the defect \"was made at `reckon/crew/dispatch.py:3622-3634`\", and \u00a71's falsifier at line 81 repeats the same anchor, but `reckon/crew/dispatch.py` is 2,949 lines in the repository this review searched, so the pointer resolves to no line; unlike \u00a710, whose line anchors are pinned to main `b92e1691e` (and which this review verified to the line), this one carries no revision",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:440",
+      "id": "reasoning-1",
+      "reason": "a node dispatched at \u00a79 is instructed to rebuild landed sections, so it would duplicate \u00a73's cross-harness repair and \u00a74's disposable-identity work, or stall on a done-when whose first two clauses already hold.",
+      "text": "\u00a79 opens \"Next, in order\" and issues (1) \u00a73 and (2) \u00a74 as work to be done, but the plan declares `s3` and `s4` `done` at line 28 and the currency comment at line 501 records \"\u00a73 met, \u00a74 met, \u00a77 unmet (session_reuse false in both layers)\"; only \u00a77 remains",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:436",
+      "id": "reasoning-2",
+      "reason": "\u00a78's first option is the pattern \u00a74 retires, so a reader reopening \u00a78, or a node taking its stated \"Next action\", reintroduces the shared-member route the plan's other sections exist to remove.",
+      "text": "\u00a78, declared `done` at line 28, states its repair as \"either have dispatch attach a default roster member when none is named, or have `crew complete` retain the run's session against its member\", and asserts the guidance \"tells orchestrators to dispatch as a member by default\"; \u00a74 of this plan lands the opposite (line 230: \"a dispatch that names no member no longer binds to one session-derived member ... registers nothing in `crew.json`\"), and the ruling recorded at line 570 retires member registration as a concurrency tool entirely",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c05f309cd9dd4ce6d0f2cb65fbb5d955c866b240ba44b4dafc3b1b03f037ec2e",
+  "plan_slug": "new-work-gets-a-new-worker",
+  "plan_version": 48,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "\u00a76 is landed and its after-note already records that the zero census measures the stopgap; a census conditioned on reuse being on belongs with \u00a77, which restores session_reuse, and is outside \u00a710, the section this review releases",
+      "when": "2026-10-17T10:58:21.284534+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "\u00a79 is a carried ordering note, not a node: its items (1) and (2) landed as \u00a73 and \u00a74, and (3) is \u00a77's own work and done-when; retiring \u00a79 is a currency edit for whoever builds \u00a77, outside \u00a710, the section this review releases",
+      "when": "2026-10-17T10:58:33.535854+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "evidence_paths-1",
+      "reason": "\u00a71 landed on 2026-09-22 and its reuse-map report is no longer on disk; the \u00a71 correction note keeps its 34-row class breakdown, and \u00a710 does not rest on it: its sites were re-derived by grep at main b92e1691e and verified to the line by this review",
+      "when": "2026-10-17T10:58:39.490187+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "\u00a75 is landed; the extensionless href lacking archive/ is a link-currency repair on a landed section, outside \u00a710, the section this review releases",
+      "when": "2026-10-17T10:58:44.267446+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-2",
+      "reason": "the header cites where the defect was made before dispatch.py was split and \u00a72 replaced that code; it is a historical anchor on landed work, outside \u00a710, the section this review releases",
+      "when": "2026-10-17T10:58:49.371607+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "true of \u00a79's text: \u00a73 and \u00a74 are done and only \u00a77 remains; \u00a79 is not dispatched as a node, and retiring it is the currency edit named in the single_goal-1 answer, outside \u00a710, the section this review releases",
+      "when": "2026-10-17T10:59:01.674754+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "\u00a78 is landed; reconciling its stated repair options with \u00a74's disposable-identity ruling is a currency edit on landed prose, outside \u00a710, the section this review releases",
+      "when": "2026-10-17T10:59:07.003941+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a75 is landed; the extensionless href lacking archive/ is a link-currency repair on a landed section, outside \u00a710, the section this review releases",
+      "when": "2026-10-17T10:58:44.267446+00:00"
+    },
+    "anchors_resolve-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "the header cites where the defect was made before dispatch.py was split and \u00a72 replaced that code; it is a historical anchor on landed work, outside \u00a710, the section this review releases",
+      "when": "2026-10-17T10:58:49.371607+00:00"
+    },
+    "done_when-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a76 is landed and its after-note already records that the zero census measures the stopgap; a census conditioned on reuse being on belongs with \u00a77, which restores session_reuse, and is outside \u00a710, the section this review releases",
+      "when": "2026-10-17T10:58:21.284534+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a71 landed on 2026-09-22 and its reuse-map report is no longer on disk; the \u00a71 correction note keeps its 34-row class breakdown, and \u00a710 does not rest on it: its sites were re-derived by grep at main b92e1691e and verified to the line by this review",
+      "when": "2026-10-17T10:58:39.490187+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "true of \u00a79's text: \u00a73 and \u00a74 are done and only \u00a77 remains; \u00a79 is not dispatched as a node, and retiring it is the currency edit named in the single_goal-1 answer, outside \u00a710, the section this review releases",
+      "when": "2026-10-17T10:59:01.674754+00:00"
+    },
+    "reasoning-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a78 is landed; reconciling its stated repair options with \u00a74's disposable-identity ruling is a currency edit on landed prose, outside \u00a710, the section this review releases",
+      "when": "2026-10-17T10:59:07.003941+00:00"
+    },
+    "single_goal-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a79 is a carried ordering note, not a node: its items (1) and (2) landed as \u00a73 and \u00a74, and (3) is \u00a77's own work and done-when; retiring \u00a79 is a currency edit for whoever builds \u00a77, outside \u00a710, the section this review releases",
+      "when": "2026-10-17T10:58:33.535854+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-new-work-gets-a-new-worker.v48.json",
+  "review_run_id": "r-20261017T103619592026-plan-review-of-new-work-gets-a-new-worker",
+  "reviewed_blob_sha": "ed2c88a5a2064bfcf6dca40937809f4d74a9e9b3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a75's evidence href resolves to a file that does not exist, and the header's line-number anchor resolves to nothing in the current tree.",
+    "done_when": "a finding \u2014 \u00a76's done-when is satisfiable while `session_reuse` is false, so its zero measures the stopgap rather than the fix.",
+    "evidence_paths": "a finding \u2014 \u00a71's sole artifact path no longer exists.",
+    "naming": "pass \u2014 the symbols the implementable sections touch are named by mechanism and no plan label or ticket number meets code; the \u00a7-numbering is the plan's own structure, not a leaked stage name.",
+    "reasoning": "a finding \u2014 \u00a79 re-issues \u00a73 and \u00a74 as work to do though the plan declares both done, and \u00a78's prescribed mechanism contradicts \u00a74's landed rule.",
+    "single_goal": "a finding \u2014 \u00a79 carries three deliverables under one done-when.",
+    "wiring": "pass \u2014 every relationship this plan declares resolves (`plan-informs` \u2192 a-review-dies-where-nobody-is-looking, worker-death-is-recorded), and no dependency it needs is unmet: the one gate the plan asserts (\u00a79, snapshot line 440 \u2014 the-ledger-is-one-file-per-run \u00a74 waits on this \u00a73) has its target declared `done` at line 28, so the unwired gate can no longer misdispatch."
+  },
+  "section_digests": {
+    "_document": "0979feac0413e4b1cd8565f48c3d9f234200d67273c224e4197047641fd04b3c",
+    "s1": "7ae481f20fd378b05cffc9c48902a38d550eec6f7589c443213410b5f47f177a",
+    "s10": "6b15d321c8851726303c56e548f95ef6c83ef712f4640d3ce8e4d5c3cbb4f33d",
+    "s2": "75d73add22c27081b096fbdcbfbc7697419fa7455957b55868131e78e8cea099",
+    "s3": "90ebc1798198683841ca985b63d8727ae245d96081f932e024091baac997f5c8",
+    "s4": "04abf1a2e284917d50d9de69a07ea00857d2fb87e04187c0da8008db1f8b03a5",
+    "s5": "cee83946379f7c1418833601209e1a1c211cf9f61c5a75c7f90ce16c60d879bd",
+    "s6": "856fa7deb260fdf62fc25617aa7b562fc3fd2f3c632a71a2a547d4be7bc182b0",
+    "s7": "f2736058e910493b80de5f74b27c2de19c4abd4736246d5108772877b7667b13",
+    "s8": "e7c8f9518519552098b55b1826ee16e97b986001f47d42c07440dc2a4d559e71",
+    "s9": "9bf545205641e1d550ff7dd622b064a3e3b029ef013519fe991543ae7ab7cfe9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T10:58:18.251461+00:00"
+}
