@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 8,
+  "added_failure_ids": [
+    "tests/test_spa_rendered_semantics.py::test_compact_progress_renders_label_tooltip_and_navigation_target",
+    "tests/test_spa_rendered_semantics.py::test_handoff_renders_live_source_and_loaded_plan_version",
+    "tests/test_spa_rendered_semantics.py::test_refresh_revalidates_discovery_without_document_navigation",
+    "tests/test_spa_rendered_semantics.py::test_shell_renders_snapshot_source_resource_count_load_time_and_refresh",
+    "tests/test_standing_suite.py::test_a_run_past_its_budget_is_stopped_with_its_whole_group",
+    "tests/test_stop_before_spawn_spawns_nothing.py::test_a_stop_between_the_check_and_the_spawn_spawns_no_worker",
+    "tests/test_stop_before_spawn_spawns_nothing.py::test_a_stop_during_the_pre_spawn_snapshot_spawns_no_worker",
+    "tests/test_unwatch_leaves_a_sender_record.py::test_unwatch_refusal_leaves_one_refused_record"
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-17T18:35:01Z",
+  "findings": [
+    {
+      "file": "whole-suite-arms/finalize_manifest.py",
+      "line": "75",
+      "severity": "follow-on",
+      "text": "follow-on: alone_counts globs runs*.txt, which matches both the cumulative runs.txt and each per-id runs-<id>.txt, so a row present in both is counted twice; the handoff id's five base rows appear in both files and the manifest therefore records base_fail 10 where its five base-alone logs report 5. The verdict is unaffected, but a recorded alone count that does not reconcile with the log it cites is a measurement a later reader cannot check."
+    },
+    {
+      "file": "whole-suite-arms/alone/runs.txt",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the file the manifest names as the aggregate alone-run index holds 15 of the 80 alone rows (compact progress's 10 plus the handoff id's 5 base rows), so a reader taking it for the complete index finds no runs recorded for the other seven ids and for handoff's candidate arm."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the node commits nothing, so it has no diff of its own; its reviewed revision pair is b3315147a4845df5755a6b769470d08057ed8806 at both ends, and the tree it measured carries both runs' changes, confirmed on reckon/crew/reports.py:1146, tests/conftest.py:1398 and reckon/flight.py:458.",
+    "done_when": "the fence requires lowercase rev= labels, host and literal command, module.__file__ under each checkout, the whole-suite summary line at each revision and EXIT=; whole-suite-arms/base-d133f043.log and candidate-131faa43.log carry every one of these, and the manifest records the 8 added ids with alone counts and a verdict each.",
+    "goal": "the goal is a whole-suite measurement at base d133f04391fa2e21fe142934fcd857dd9c0e7780 and at the stacked candidate 131faa43ddcc96a86f3ec625aeac9d93e2cb65dc of the revision-label and leak-scan runs; both arms ran, and candidate 131faa43's two parents (0620f793, a merge of base with d474ea8, and 837cee27) put both runs' changes in the tree it measured.",
+    "manifest": "read in full \u2014 it records the base arm at 31 failed/14192 passed and the candidate at 33 failed/14195 passed with log paths, derives 8 added ids, gives each alone counts and a verdict (four also at base, four load-only), and states no added id is attributable to either run's files.",
+    "write_paths": "the declared scope is the reports directory .../reports/reckon/the-suite-is-green-at-head/stacked-revision-label-and-leak-scan-whole-suite-at-merge with the repository read-only; manifest changed_paths is none and every artefact named lies under whole-suite-arms/ in the run directory or under that reports path."
+  },
+  "justifications": {
+    "durability": "the node lands no code, so there is no regression surface for a test to guard, and its declared negative control (none: a measurement of an existing merge candidate adds no test of its own) is the correct form for the role.",
+    "evidence": "the arm logs carry the required header and summary lines and the 8 added ids reproduce independently from them, but whole-suite-arms/finalize_manifest.py:80 records base_fail 10 for the handoff id where its five base-alone logs each report exactly one failure.",
+    "fit": "the arm header lines in whole-suite-arms/base-d133f043.log:1 follow the shape the fence dictates (rev=, host=, cmd=, module.__file__) and no path or symbol the node wrote carries a plan or version identifier.",
+    "goal_fidelity": "both arms exist at the revisions the goal names (whole-suite-arms/base-d133f043.log:1, whole-suite-arms/candidate-131faa43.log:1) and candidate 131faa43's ancestry carries both d474ea8 and 837cee27, so both runs are measured.",
+    "reuse": "the added-id derivation delegates to the repository's own reckon.crew.review.added_failures_from_gate_logs (whole-suite-arms/derive_added.py:20) rather than re-implementing a gate-log reader, so the node extends that owner.",
+    "scope_discipline": "the node changed no repository file (manifest changed_paths: none) and wrote its scripts, indexes and logs only under whole-suite-arms/ in its own run directory, with report.md under the declared reports path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a whole-suite measurement at base d133f04391fa2e21fe142934fcd857dd9c0e7780 and at the stacked candidate 131faa43ddcc96a86f3ec625aeac9d93e2cb65dc of the revision-label and leak-scan runs; both arms ran, and candidate 131faa43's two parents (0620f793, a merge of base with d474ea8, and 837cee27) put both runs' changes in the tree it measured.\nVERDICT done_when: the fence requires lowercase rev= labels, host and literal command, module.__file__ under each checkout, the whole-suite summary line at each revision and EXIT=; whole-suite-arms/base-d133f043.log and candidate-131faa43.log carry every one of these, and the manifest records the 8 added ids with alone counts and a verdict each.\nVERDICT write_paths: the declared scope is the reports directory .../reports/reckon/the-suite-is-green-at-head/stacked-revision-label-and-leak-scan-whole-suite-at-merge with the repository read-only; manifest changed_paths is none and every artefact named lies under whole-suite-arms/ in the run directory or under that reports path.\nVERDICT manifest: read in full \u2014 it records the base arm at 31 failed/14192 passed and the candidate at 33 failed/14195 passed with log paths, derives 8 added ids, gives each alone counts and a verdict (four also at base, four load-only), and states no added id is attributable to either run's files.\nVERDICT diff: the node commits nothing, so it has no diff of its own; its reviewed revision pair is b3315147a4845df5755a6b769470d08057ed8806 at both ends, and the tree it measured carries both runs' changes, confirmed on reckon/crew/reports.py:1146, tests/conftest.py:1398 and reckon/flight.py:458.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: both arms exist at the revisions the goal names (whole-suite-arms/base-d133f043.log:1, whole-suite-arms/candidate-131faa43.log:1) and candidate 131faa43's ancestry carries both d474ea8 and 837cee27, so both runs are measured.\nSCORE evidence: 15\nJUSTIFICATION evidence: the arm logs carry the required header and summary lines and the 8 added ids reproduce independently from them, but whole-suite-arms/finalize_manifest.py:80 records base_fail 10 for the handoff id where its five base-alone logs each report exactly one failure.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the node changed no repository file (manifest changed_paths: none) and wrote its scripts, indexes and logs only under whole-suite-arms/ in its own run directory, with report.md under the declared reports path.\nSCORE durability: 18\nJUSTIFICATION durability: the node lands no code, so there is no regression surface for a test to guard, and its declared negative control (none: a measurement of an existing merge candidate adds no test of its own) is the correct form for the role.\nSCORE fit: 18\nJUSTIFICATION fit: the arm header lines in whole-suite-arms/base-d133f043.log:1 follow the shape the fence dictates (rev=, host=, cmd=, module.__file__) and no path or symbol the node wrote carries a plan or version identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: the added-id derivation delegates to the repository's own reckon.crew.review.added_failures_from_gate_logs (whole-suite-arms/derive_added.py:20) rather than re-implementing a gate-log reader, so the node extends that owner.\nFINDING whole-suite-arms/finalize_manifest.py:75 follow-on: alone_counts globs runs*.txt, which matches both the cumulative runs.txt and each per-id runs-<id>.txt, so a row present in both is counted twice; the handoff id's five base rows appear in both files and the manifest therefore records base_fail 10 where its five base-alone logs report 5. The verdict is unaffected, but a recorded alone count that does not reconcile with the log it cites is a measurement a later reader cannot check.\nFINDING whole-suite-arms/alone/runs.txt:1 follow-on: the file the manifest names as the aggregate alone-run index holds 15 of the 80 alone rows (compact progress's 10 plus the handoff id's 5 base rows), so a reader taking it for the complete index finds no runs recorded for the other seven ids and for handoff's candidate arm.",
+  "review_run_id": "legacy-e06525dc0576",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "b3315147a4845df5755a6b769470d08057ed8806",
+  "reviewed_head_sha": "b3315147a4845df5755a6b769470d08057ed8806",
+  "reviewed_run_id": "r-20261017T183424471538-stacked-revision-label-and-leak-scan-whole-suite-at-merge",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T19:51:51.616932+00:00",
+  "total": 108
+}
