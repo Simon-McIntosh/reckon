@@ -23,7 +23,7 @@ import importlib
 import json
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 import pytest
 
@@ -130,7 +130,7 @@ class _DecodeCounter:
         self.per_document: dict[str, int] = {}
         self.total = 0
 
-    def __enter__(self) -> "_DecodeCounter":
+    def __enter__(self) -> Self:
         self._real = json.loads
         counter = self
 
@@ -144,7 +144,7 @@ class _DecodeCounter:
         json.loads = counting
         return self
 
-    def __exit__(self, *exc: Any) -> None:
+    def __exit__(self, *exc: object) -> None:
         json.loads = self._real
 
 
