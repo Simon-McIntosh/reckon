@@ -25,6 +25,11 @@
     <p>Confirmed landed by the S25 currency audit (run <code>r-20261002T115340812142-s25-currency-audit</code>, base <code>0da2431ed</code>). Dispatch accepts <code>--accept-directory-claim</code> (<code>reckon/cli.py</code>), and <code>reckon/crew/dispatch.py</code> words the warning and the refusal for a directory claim that overlaps a peer's. <code>tests/test_directory_claim_asks_first.py</code> holds 12 tests, including the uncreated-directory and dotted-name cases. Landings <code>e554b4d8</code>, <code>3129f05e</code>, <code>4af67bd</code>; review score 96, no findings.</p>
   </section>
 
+  <section id="s8">
+    <h2>§8 — a worker prompt never both asks for its landing record and forbids it, landed</h2>
+    <p>Run <code>r-20261017T184328023788</code>, reviewed head <code>ef0c7053d</code>, merged as <code>b20f4dd6c</code>. Both artifact clauses in <code>reckon/crew/prompts.py</code> now state one rule. <code>ARTIFACT_UNNAMED_CLAUSE</code> reads "Your done-when names no artifact, so this node writes no figure and no evidence prose outside the landing fragment, which is always permitted." <code>ARTIFACT_NAMED_CLAUSE</code> carries the same exception, and a figure still needs the done-when to name it. The clause snapshots in <code>tests/test_brief_prompt.py</code> and <code>tests/test_small_node_prompt.py</code> follow the new wording. After review, the new test asserts the exception itself and reuses the existing prompt-test helpers.</p><p>Evidence. The reviews scored 107 and then 111. The importer population at merge (<code>r-20261017T205254076326</code>, 50 files, exclusive all_debug job 1288362) passed 3,707 at base <code>eb50d488b</code> and 3,716 at the candidate, with zero added. Before this change, two reviews on 2026-10-17 had enforced the no-prose clause against a landing fragment, and one repair round deleted it.</p>
+  </section>
+
 </main>
 </body>
 </html>

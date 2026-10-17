@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="a-review-is-sized-to-its-risk,a-refusal-is-about-the-work,a-landing-record-never-conflicts">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;}">
   <title>A Small Change Is A Small Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-impl" content="0.6">
 </head>
@@ -93,7 +93,7 @@
 <p>§3, §4 and §5 are ready now; §2 waits on the brief carrier; §6 measures after the rest.</p><p><strong>Done when</strong> §3–§5 land, §2 after the brief carrier, and §6 measures.</p><p>Moved from followup f-ascsn-001 on a-small-change-is-a-small-node by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.6</p>
 
     <h2 id="s8">§8 — A worker prompt never both asks for its landing record and forbids it</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> Every implement prompt carries two clauses from <code>reckon/crew/prompts.py</code> that contradict each other for any node whose done-when names no figure. The landing-record clause (near line 158) says "Write your landing record to your own fragment path… your evidence anchor to your scope's fragment under docs/evidence/fragments/&lt;plan&gt;/&lt;node-id&gt;.html". Dispatch also adds that fragment path to the node's write scope. <code>ARTIFACT_UNNAMED_CLAUSE</code> (near line 115) then says "Your done-when names no artifact, so this node writes no figure and no evidence prose." Workers follow the first and write the fragment, and reviewers enforce the second. On 2026-10-17, two reviews flagged it. The review of suite-green §19 raised it as a follow-on. The review of ledger §11 raised it as blocking, and the repair reflex then resumed that worker to delete its own landing fragment.</p><p><strong>Deliverable.</strong> One rule, stated once. The landing fragment is the node's evidence anchor. It is always permitted at its scope path, and a figure still needs the done-when to name it. The artifact clause withholds figures and any evidence prose outside the fragment. It never forbids the fragment the landing clause asks for. The review rubric's reading of the clause follows the same rule.</p><p><strong>Done when</strong> a new test, <code>tests/test_a_worker_prompt_never_forbids_its_landing_record.py</code>, composes the implement prompt twice: once for a node whose done-when names no figure, and once for a node whose done-when names one. Both prompts carry the landing-fragment instruction. Neither carries a sentence that forbids evidence prose without excepting the fragment, and <code>ARTIFACT_NAMED_CLAUSE</code> is held to that too. The figure-named prompt still grants its figure. Negative control: against the base tree, both prompts carry the fragment instruction beside a blanket ban on evidence prose, and the test fails on each. The snapshots of the clause wording in <code>tests/test_brief_prompt.py</code> (near lines 292 to 304) and <code>tests/test_small_node_prompt.py</code> (near lines 143 to 157) are updated to the new wording. No review rubric quotes the clause; the plan review searched <code>reckon/crew/prompts/*.md</code> and <code>skills/</code>. The log goes under the run directory. ruff check and ruff format --check add no findings on the changed Python files. Write paths: <code>reckon/crew/prompts.py</code>, <code>tests/test_brief_prompt.py</code>, <code>tests/test_small_node_prompt.py</code> and the new test file.</p>
 
     <section data-reckon="gates" id="gates" class="r-gates">
@@ -124,10 +124,11 @@
     <pre class="r-fu-prompt">/reckon-build a-small-change-is-a-small-node §5</pre>
     <p class="r-fu-outcome">Landed: an absent, suffix-less directory declared inside another live run's claimed directory now warns and requires --accept-directory-claim, as an existing directory does; review 95 with added 0, merged at 9c31c44c. The review's one finding, that a dotted directory name such as 2026.09 reads as a file and takes the plain refusal, is being worked by the reflex's repair round repair-of-directory-claim-sees-uncreated-dirs-3129f05e8a6d.</p>
     </article>
-<article class="r-fu" data-id="f-ascisan-008" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build coordinator" data-written-at="2026-10-17" data-recommends-skill="/reckon-build a-small-change-is-a-small-node §8" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ascisan-008" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build coordinator" data-written-at="2026-10-17" data-recommends-skill="/reckon-build a-small-change-is-a-small-node §8" data-resolved-at="2026-10-17T21:27:59+00:00" data-resolved-by="reckon-build coordinator">
     <h4 class="r-fu-title">Build §8: a worker prompt never both asks for its landing record and forbids it</h4>
     <div class="r-fu-body"><p>Two reviews on 2026-10-17 enforced the no-prose clause against the landing fragment the same prompt asks for, and one repair round deleted a landing record. A one-rule fix in <code>prompts.py</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-small-change-is-a-small-node §8</pre>
+    <p class="r-fu-outcome"><p>§8 merged as <code>b20f4dd6c</code>, with zero added failures at merge.</p></p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -180,7 +181,10 @@
     <div class="r-comment-body"><p>the review record for r-20261017T184328023788-a-worker-prompt-never-forbids-its-landing-record stores a parsed record scoring all 6 dimensions (goal_fidelity 19, evidence 19, scope_discipline 19, durability 18, fit 18, reuse 14; total 107) at reviewed_base_sha 3fb05adbf83f841e2e49ce11ec011db18436142f and reviewed_head_sha 20520a2d077c6ddbb2b823c087fa49b8965611cc, with added_failure_count 0 and added_failure_ids [], plus two follow-on findings; no blocking finding</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261017T203930337310-review-of-a-worker-prompt-never-forbids-its-landing-record-ef0c7053de13" data-who="reckon-build" data-when="2026-10-17T20:51:29.652Z">
-    <div class="r-comment-body"><p>the review of run r-20261017T184328023788 at head ef0c7053 scores goal_fidelity 19, evidence 19, scope_discipline 19, durability 18, fit 18, reuse 18 (total 111) with one follow-on finding; the record names reviewed_base_sha 3fb05adb and reviewed_head_sha ef0c7053 and derived 0 added failures from the reviewed run&#x27;s own arms (head-arm.log 0 failing ids at ef0c7053, base-arm.log its negative-control 5), and the named gate module re-run at the reviewed head passed 9</p></div>
+    <div class="r-comment-body"><p>the review of run r-20261017T184328023788 at head ef0c7053 scores goal_fidelity 19, evidence 19, scope_discipline 19, durability 18, fit 18, reuse 18 (total 111) with one follow-on finding; the record names reviewed_base_sha 3fb05adb and reviewed_head_sha ef0c7053 and derived 0 added failures from the reviewed run's own arms (head-arm.log 0 failing ids at ef0c7053, base-arm.log its negative-control 5), and the named gate module re-run at the reviewed head passed 9</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-17T21:29:00Z">
+    <div class="r-comment-body"><p>§8 landed. The worker prompt always permits the landing fragment and withholds only figures the done-when does not name (merge <code>b20f4dd6c</code>). Zero added failures over 50 files. <a href="/reckon/evidence/archive/a-small-change-is-a-small-node-landed.html#s8">evidence</a></p></div>
 </div>
 </section>
 </main>
