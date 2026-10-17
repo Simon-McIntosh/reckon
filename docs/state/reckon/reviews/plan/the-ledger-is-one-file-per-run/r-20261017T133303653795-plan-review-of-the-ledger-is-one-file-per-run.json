@@ -1,0 +1,87 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T13:40:33.557Z",
+  "dispatched_at": "2026-10-17T13:33:46Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-ledger-is-one-file-per-run.html:524",
+      "id": "reasoning-1",
+      "reason": "\"one caller\" understates the defect's reach, so \u00a79's guard and \u00a78's fix could both land while the hold path keeps folding.",
+      "text": "\u00a79 asserts \"\u00a78 repairs the one caller that wrote `ledger.load()`'s union back as the aggregate\", but \u00a77 (`:516`) records that the hold-check path rewrote the aggregate carrying \"810 run rows that already existed under `docs/state/reckon/runs/`\", and `record_hold_checks` at `reckon/ledger.py:3654` still does `data, version = load(project, root)` then writes \u2014 the identical fold, one caller \u00a78 does not touch",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-ledger-is-one-file-per-run.html:524",
+      "id": "reasoning-2",
+      "reason": "the plan would have one section land a refusal that breaks a section the plan records as done, and no node is told to reconcile them.",
+      "text": "\u00a79 makes `ledger.write` refuse \"a write that would add to the aggregate rows already held as per-run files\", but \u00a77's landed hold path calls `ledger.load()` (which folds every per-run file) and writes that union back, so \u00a79's guard refuses \u00a77's mechanism unless the hold path is repointed to the holds file or the run's own file; \u00a79 does not name \u00a77",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-ledger-is-one-file-per-run.html:524",
+      "id": "wiring-1",
+      "reason": "with the edge undeclared the roadmap can dispatch both nodes onto `reckon/ledger.py` concurrently, which is the collision \u00a79's sentence exists to prevent.",
+      "text": "\u00a79 says \"Build it after read-deadline \u00a728, which also writes `reckon/ledger.py`\", but the plan's head declares only `plan-informs` (`:21`) and no dependency edge to `a-read-answers-inside-its-deadline`, whose \u00a728 also lists `reckon/ledger.py` in its write paths",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-ledger-is-one-file-per-run.html:435",
+      "id": "done_when-1",
+      "reason": "without a control the split's gate shows only that the happy path runs, never that the \"writes nothing\" guards can fail.",
+      "text": "\u00a73's Falsifier asserts a second run and a dry run write nothing but declares no negative control, unlike every other implementable section",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-ledger-is-one-file-per-run.html:510",
+      "id": "single_goal-1",
+      "reason": "the node cannot be closed on one verdict, and its gate proves neither the read-back nor the landing.",
+      "text": "\u00a76's done-when requires both \"a local read-back of `ca99eae1` finds no load-bearing two-reading sentence\" and \"\u00a72\u2192\u00a71\u2192\u00a73\u2192\u00a74 land in order with the two-part gate\", two unrelated deliverables",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-ledger-is-one-file-per-run.html:512",
+      "id": "anchors_resolve-1",
+      "reason": "a later reader cannot confirm \u00a76's read-back claim or reuse the reports, and the section text would have to name where they now live or drop the citation.",
+      "text": "\u00a76 and followup f-tlofpr-003 cite read-back reports under `~/.config/reckon/crew/reports/reckon/ship-s19-20260922/`, a directory that does not exist, so the three cited read-backs cannot be opened",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "928477178553af4a0ab4a55cd438d9dbc6f8832ca05958fa05f05be2bfa4c894",
+  "plan_slug": "the-ledger-is-one-file-per-run",
+  "plan_version": 61,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261017T133303653795-plan-review-of-the-ledger-is-one-file-per-run",
+  "reviewed_blob_sha": "c46e9560b47639cb40fe082274f443a7c15f5353",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a76 cites read-back reports under `~/.config/reckon/crew/reports/reckon/ship-s19-20260922/`, which does not exist.",
+    "done_when": "a finding \u2014 \u00a73's falsifier (`:435`\u2013`:441`) names no negative control, so its gate cannot show the split's guard fires.",
+    "evidence_paths": "pass \u2014 landing evidence resolves to `docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html` and figures to `docs/figures/the-ledger-is-one-file-per-run/`, both durable committed paths; \u00a78/\u00a79 send their logs to the run directory.",
+    "naming": "pass \u2014 the new test and symbol names in \u00a78 and \u00a79 (`test_a_release_never_folds_run_files_into_the_aggregate.py`, `_record_release_on_ledger`, `ledger.write`) state the mechanism and carry no plan label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 \u00a79's premise that \u00a78 \"repairs the one caller\" that folds `ledger.load()`'s union into the aggregate is contradicted by this plan's own \u00a77 record, and \u00a79's guard would refuse \u00a77's landed hold path.",
+    "single_goal": "a finding \u2014 \u00a76 (`:510`\u2013`:512`) carries two deliverables, a read-back verdict and the whole \u00a72\u2192\u00a71\u2192\u00a73\u2192\u00a74 landing, on one done-when.",
+    "wiring": "a finding \u2014 `the-ledger-is-one-file-per-run.html:524` (\u00a79) requires the node be built after `a-read-answers-inside-its-deadline` \u00a728, which the plan declares nowhere in its wiring."
+  },
+  "section_digests": {
+    "_document": "52a891e330b8a3e8d5b72cdff94b733c99095e6420e3c384c16c4e52bfec22a3",
+    "s1": "457845e844fa9bec63333cc35d867a85aa18bde3b16278a87a8dd315cae98e60",
+    "s2": "f264807d1fd48d466dfe9f9126f75e341e735d9a86b54ba342cf0012dfcdddfc",
+    "s3": "922052455a1c2af498bccd801f0e6db8ab3616bba71d823efa03641ce2332fa7",
+    "s4": "2eb77001999bc36a32f304d3ff896caf2c803489ea790ad39bae324fd7f92a9e",
+    "s5": "60e425e1d2d0d1a1f973eb32c4d3e72fa080e1a616ff0f462d20aefbd1fc522d",
+    "s6": "a344122c7f73694668e843366730c1d1cc881b97ba06225f376f01012af5936b",
+    "s7": "6128dbd3b5deb9351318b08d168c55ae2e7290f079a109ee1241b2fb4a938b62",
+    "s8": "4fd66254949d010496f756785c135e15e159bb0086f024e60e75bb19df9665a9",
+    "s9": "ee8fac4910232a127e596fb1c99574980e135089beadec64ecdf81e8f0e2768d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T13:45:06.434238+00:00"
+}
