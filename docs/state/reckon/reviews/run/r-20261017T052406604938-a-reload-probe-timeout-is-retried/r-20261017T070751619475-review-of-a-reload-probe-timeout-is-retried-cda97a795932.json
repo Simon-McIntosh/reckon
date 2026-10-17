@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:472 _StampPoll._tick",
+    "reckon/crew_follow_commands.py:2943 stream_events.poll"
+  ],
+  "completed_at": "2026-10-17T07:21:55.329Z",
+  "dispatched_at": "2026-10-17T07:08:19Z",
+  "findings": [
+    {
+      "file": "tests/test_a_reload_probe_timeout_is_not_a_broken_image.py",
+      "line": "120",
+      "severity": "follow-on",
+      "text": "follow-on: no assertion pins the doubling or the cap at reckon/crew_follow_commands.py:408-410; replacing the doubling with a constant 60 s gap leaves all three tests green, so the growth the plan's Deliverable names is documented but unguarded."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 4ee320b9f; e9e0b65dc adds the retry gap, its cap, the once-per-run echo and the un-nested recorded reason in reckon/crew_follow_commands.py:203-211 and :272-285 and :388-421, cda97a795 updates docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reload-probe-timeout-is-retried.html to the backoff, and tests/test_a_reload_probe_timeout_is_not_a_broken_image.py gains the clock-driven poll cases.",
+    "done_when": "the done_when names tests/test_a_reload_probe_timeout_is_not_a_broken_image.py and asks for a poll inside the retry interval that does not probe, a second timeout that does not echo again, the first poll past the interval probing again and reloading, and a failed-import case that does not re-probe; tests/test_a_reload_probe_timeout_is_not_a_broken_image.py:99-121 and :145-163 drive exactly those, and gate-head.log records the run.",
+    "goal": "the goal is that a reload probe which runs out of its bound retries instead of reading as a broken image; reckon/crew_follow_commands.py:388-420 has poll wait out a gap starting at 60 s, doubling to 900 s and reset when the stamp moves or a probe answers, which is plan \u00a740's deliverable as amended on 2026-10-17 (docs/plans/the-monitor-shows-the-work-it-watches.html).",
+    "manifest": "read; it reports status complete, three commits, the 26-passed head gate at cda97a795, the red negative control, the two pre-existing ruff findings and the verified deferral-record check, and it names no baseline_suite or after_suite key, so the added-failure count is unmeasured.",
+    "write_paths": "the manifest declares reckon/crew_follow_commands.py, reckon/checkout_trust.py, the test file, the fragment and the figures directory; every path in git diff 4ee320b9f..cda97a795 is inside that set, and the declared figures directory is left untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reload_probe_timeout_is_not_a_broken_image.py:102-103 reddens if the gap guard at reckon/crew_follow_commands.py:388 is removed and :141 reddens if the stamp-move reset at :366 is removed, but nothing pins the doubling at :408.",
+    "evidence": "gate-head.log records 26 passed EXIT=0 at rev cda97a795 with its command and cwd, negative-control.log records 1 failed EXIT=1 on the declared mutation, and deferral-record-check.log records the recorded deferral reason with one occurrence of \"timed out\".",
+    "fit": "reckon/crew_follow_commands.py:203-211 states the mechanism in the module's comment-and-named-constant idiom and introduces no plan, version, ticket or attribution label.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:407-409 sets probe_retry_at from a gap that doubles to FOLLOWER_RELOAD_PROBE_RETRY_CAP_SECONDS, and :280-285 resets it when the stamp moves or a probe answers, which is what plan \u00a740 now requires.",
+    "reuse": "no owner of a shared doubling-to-cap backoff exists -- searched reckon/ for backoff and found reckon/crew/fleet_supervisor.py:539 next_backoff, reckon/crew/queue_admission.py:374 and reckon/ledger.py:811, each local to its own domain and none parameterised for reuse -- so the gap is a further bespoke instance rather than a fork of a named owner.",
+    "scope_discipline": "the three paths in git diff 4ee320b9f..cda97a795 (reckon/crew_follow_commands.py, tests/test_a_reload_probe_timeout_is_not_a_broken_image.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reload-probe-timeout-is-retried.html) are each inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a reload probe which runs out of its bound retries instead of reading as a broken image; reckon/crew_follow_commands.py:388-420 has poll wait out a gap starting at 60 s, doubling to 900 s and reset when the stamp moves or a probe answers, which is plan \u00a740's deliverable as amended on 2026-10-17 (docs/plans/the-monitor-shows-the-work-it-watches.html).\nVERDICT done_when: the done_when names tests/test_a_reload_probe_timeout_is_not_a_broken_image.py and asks for a poll inside the retry interval that does not probe, a second timeout that does not echo again, the first poll past the interval probing again and reloading, and a failed-import case that does not re-probe; tests/test_a_reload_probe_timeout_is_not_a_broken_image.py:99-121 and :145-163 drive exactly those, and gate-head.log records the run.\nVERDICT write_paths: the manifest declares reckon/crew_follow_commands.py, reckon/checkout_trust.py, the test file, the fragment and the figures directory; every path in git diff 4ee320b9f..cda97a795 is inside that set, and the declared figures directory is left untouched.\nVERDICT manifest: read; it reports status complete, three commits, the 26-passed head gate at cda97a795, the red negative control, the two pre-existing ruff findings and the verified deferral-record check, and it names no baseline_suite or after_suite key, so the added-failure count is unmeasured.\nVERDICT diff: read commit by commit against 4ee320b9f; e9e0b65dc adds the retry gap, its cap, the once-per-run echo and the un-nested recorded reason in reckon/crew_follow_commands.py:203-211 and :272-285 and :388-421, cda97a795 updates docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reload-probe-timeout-is-retried.html to the backoff, and tests/test_a_reload_probe_timeout_is_not_a_broken_image.py gains the clock-driven poll cases.\nCALL_SITES: reckon/crew_follow_commands.py:472 _StampPoll._tick, reckon/crew_follow_commands.py:2943 stream_events.poll\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:407-409 sets probe_retry_at from a gap that doubles to FOLLOWER_RELOAD_PROBE_RETRY_CAP_SECONDS, and :280-285 resets it when the stamp moves or a probe answers, which is what plan \u00a740 now requires.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head.log records 26 passed EXIT=0 at rev cda97a795 with its command and cwd, negative-control.log records 1 failed EXIT=1 on the declared mutation, and deferral-record-check.log records the recorded deferral reason with one occurrence of \"timed out\".\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three paths in git diff 4ee320b9f..cda97a795 (reckon/crew_follow_commands.py, tests/test_a_reload_probe_timeout_is_not_a_broken_image.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reload-probe-timeout-is-retried.html) are each inside the manifest's declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_reload_probe_timeout_is_not_a_broken_image.py:102-103 reddens if the gap guard at reckon/crew_follow_commands.py:388 is removed and :141 reddens if the stamp-move reset at :366 is removed, but nothing pins the doubling at :408.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew_follow_commands.py:203-211 states the mechanism in the module's comment-and-named-constant idiom and introduces no plan, version, ticket or attribution label.\nSCORE reuse: 16\nJUSTIFICATION reuse: no owner of a shared doubling-to-cap backoff exists -- searched reckon/ for backoff and found reckon/crew/fleet_supervisor.py:539 next_backoff, reckon/crew/queue_admission.py:374 and reckon/ledger.py:811, each local to its own domain and none parameterised for reuse -- so the gap is a further bespoke instance rather than a fork of a named owner.\nFINDING tests/test_a_reload_probe_timeout_is_not_a_broken_image.py:120 follow-on: no assertion pins the doubling or the cap at reckon/crew_follow_commands.py:408-410; replacing the doubling with a constant 60 s gap leaves all three tests green, so the growth the plan's Deliverable names is documented but unguarded.\n",
+  "review_run_id": "r-20261017T070751619475-review-of-a-reload-probe-timeout-is-retried-cda97a795932",
+  "reviewed_base_sha": "4ee320b9fc52817769301e805b0ddb19b79b00af",
+  "reviewed_head_sha": "cda97a7959328432383abf0c938f5e9b0de9006d",
+  "reviewed_run_id": "r-20261017T052406604938-a-reload-probe-timeout-is-retried",
+  "reviewer": "review-of-a-reload-probe-timeout-is-retried-cda97a795932",
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T07:23:37.725461+00:00",
+  "total": 110
+}
