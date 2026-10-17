@@ -1,0 +1,23 @@
+<section id="the-attempt-memo-names-its-stamp-members-record" data-reckon="fragment" data-node="the-attempt-memo-names-its-stamp-members">
+  <h3 id="the-attempt-memo-names-its-stamp-members-h">The attempt memo names the stamp members it compares</h3>
+  <p id="the-attempt-memo-names-its-stamp-members-p1">
+    The section-attempts memo compared the ledger index stamp by a positional
+    slice, <code>stamp[0][:4]</code>, so a member added to or reordered within
+    <code>ledger.index_stamp</code> silently changed the state the memo keyed on.
+    The ledger now exposes <code>index_state_stamp</code>: the same members without
+    the index file's own identity, returned as a record keyed by member name.
+    <code>mcp_views._attempt_state</code> reads that record by name. The index
+    file's identity stays out of the comparison, because a read rewrites it.
+  </p>
+  <p id="the-attempt-memo-names-its-stamp-members-p2">
+    <strong>Measure.</strong> <code>tests/test_the_attempt_memo_names_its_stamp_members.py</code>
+    inserts an extra member at the front of the stamp the ledger builds and drives
+    one memoised read. Head: memo holds on an unchanged stamp (1 aggregation over
+    two reads), invalidates when the runs directory's identity moves (2), and holds
+    when only the index file's identity moves (2) — 4 passed with the existing
+    attempts-cache tests, <code>EXIT=0</code>. Base arm: the inserted member pushes
+    the runs directory's identity out of the four-member slice, the memo misses the
+    change, and the runs-directory assertion fails with <code>assert 1 == 2</code>,
+    <code>EXIT=1</code>. ruff check and format add no findings on the changed files.
+  </p>
+</section>

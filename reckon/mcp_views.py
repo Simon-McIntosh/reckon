@@ -1528,7 +1528,12 @@ def _attempt_inputs(
             if pointers is not None
             else None
         )
-        return ledger.index_stamp(project, root), newest_stamp, tuple(live), supplied
+        return (
+            ledger.index_state_stamp(project, root),
+            newest_stamp,
+            tuple(live),
+            supplied,
+        )
     except OSError:
         return None
 
@@ -1536,14 +1541,21 @@ def _attempt_inputs(
 def _attempt_state(stamp: Any) -> Any:
     """The part of an attempt stamp that names the state behind a value.
 
-    The index file's own identity is dropped: a read rewrites the index, so
-    that identity moves across every refresh without the source changing, and
-    comparing it would make the second caller of one read a miss. ``None``
+    The ledger's index members are read by name, not by position, so a member
+    added to or reordered within the ledger stamp can no longer shift which
+    member this compares. The index file's own identity is not among the
+    members ``ledger.index_state_stamp`` returns, because a read rewrites that
+    file: its identity moves across every refresh without the source changing,
+    and comparing it would make the second caller of one read a miss. ``None``
     stands for a stamp that could not be taken, which matches nothing.
     """
     if stamp is None:
         return None
-    return (tuple(stamp[0][:4]), stamp[1], tuple(stamp[2]), stamp[3])
+    index = stamp[0]
+    if not isinstance(index, Mapping):
+        return None
+    members = tuple((name, index[name]) for name in sorted(index))
+    return (members, stamp[1], tuple(stamp[2]), stamp[3])
 
 
 def _cached_attempts(

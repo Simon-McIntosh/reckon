@@ -1141,6 +1141,29 @@ def index_stamp(project: str, root: str | Path | None = None) -> list[Any]:
     ]
 
 
+def index_state_stamp(project: str, root: str | Path | None = None) -> dict[str, Any]:
+    """The ledger index members a read is a reading of, keyed by member name.
+
+    This is :func:`index_stamp` without the index file's own identity. A read
+    refreshes that file, so its identity moves across every refresh while the
+    ledger behind it is unchanged; a caller keyed on the state of the ledger
+    must not move with it.
+
+    Members are named rather than ordered so a caller compares the state it
+    means by name. A member added to or reordered within :func:`index_stamp`
+    can then no longer shift which member a positional read compares, which is
+    how a silent miss entered before. Every other member ``index_stamp`` builds
+    is carried here under its own name.
+    """
+    aggregate = ledger_path(project, root)
+    return {
+        "aggregate": str(aggregate.resolve()),
+        "version": _RUN_INDEX_VERSION,
+        "aggregate_identity": _file_identity(aggregate),
+        "runs_identity": _file_identity(aggregate.parent / "runs"),
+    }
+
+
 # Persist exactly the history fields consumed by picker outcomes, return times,
 # attempts and budget readers. Full records remain available to other callers.
 _PICKER_FIELDS = (
