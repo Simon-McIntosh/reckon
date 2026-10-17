@@ -1,0 +1,75 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T10:59:07.081Z",
+  "dispatched_at": "2026-10-17T10:38:04Z",
+  "findings": [
+    {
+      "anchor": "reckon/velocity.py:719",
+      "id": "reuse_search-1",
+      "reason": "the plan would name `read_blobs` as the reader and re-express its third done-when case and its negative control, which are written against `git show` raising `CalledProcessError` and so bake in the very mechanism this finding would replace.",
+      "text": "the remedy's first bullet, \"Decide absence from the tree, using the existing `_blob_sha` helper. Do not catch the failed `git show`\", adds a second absent-path mechanism to a module that already exports an absent-tolerant revision reader: `read_blobs` (reckon/velocity.py:395; exported at reckon/velocity.py:66), whose docstring is \"maps each entry to its blob bytes, or to None when git reports the object missing\". The plan neither cites it nor says why the ledger read cannot go through it. Inside the module the missing-object branch is already pinned to one function by tests/test_one_blob_reader_serves_velocity_and_the_counter.py:110 and :186, and it is `_read_ledger`'s own :716 call into the same ownership. Every instance of the same ad-hoc variant, for the census: reckon/velocity.py:719 and reckon/velocity.py:1191 (the two sites this plan edits, each becoming a presence-check-then-read pair), plus the pre-existing per-module copies reckon/crew/routing.py:963 (`_git_blob`, `check=False`), reckon/crew/promotion_scope.py:1263, reckon/crew/promotion_scope.py:1533, reckon/crew/dispatch_sections.py:230 and reckon/ledger.py:1946 \u2014 against in-module consumers that do reach the owner, reckon/served_code.py:794 and reckon/crew/plan_review.py:1554 (whose docstring names `reckon.velocity.read_blobs` as the batched source of a revision's bytes). Two recent commits in this file consolidated exactly this mechanism \u2014 `1123e4910 refactor(velocity): read bare object names through one batched reader` and `24e780675 refactor(clones): read revision sources through velocity's reader` \u2014 so the plan is adding a third shape to a surface the module has been deliberately collapsing. The rule has a second, smaller instance in the same section: the null digest for an existing convention the plan does not cite \u2014 reckon/crew/window_reading.py:28 records \"an ``unknown`` reading is never reported as ``0.0`` or ``1.0``. The utilisation is ``None`` in that case\" \u2014 so the null-vs-empty choice is right and is already this repo's idiom, and the plan should cite it rather than present it as new.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/velocity.py:1191",
+      "id": "duplicate_owner-1",
+      "reason": "routing the base read through `_read_ledger` gives one owner that accepts the absent ledger and one place for the ledger-deleting section to retire, instead of two edits to two parses of a file that section deletes at every head \u2014 which is the fix's own premise.",
+      "text": "`recover_ledger_clocks` reads the committed ledger by re-implementing `_read_ledger`: both parse the same document the same way, `payload.get(\"data\", payload).get(\"runs\", [])` at reckon/velocity.py:721 and reckon/velocity.py:1192, and both would now need the identical absent-ledger rule. The plan patches the two copies independently (\"`recover_ledger_clocks` treats every candidate run as absent at the base\" and \"`_read_ledger` returns no records\"), so one rule lands in two places and the next absence-shaped change has to be made twice. The owner to extend is `_read_ledger` (reckon/velocity.py:708): `recover_ledger_clocks` already holds `project[\"project\"]` and the base revision, so the base read is `_read_ledger(repo, base, project[\"project\"], None)`, whose run_id set is exactly the run ids the current inline read computes as `present`. The census of the duplicate is those two sites and no others: `_read_ledger` is called from reckon/velocity.py:854 only, and `_read_run_rows` (reckon/velocity.py:729) reads per-run files whose paths come from a tree listing, so it is not a third copy of this read.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4df6d6c55f9f2935705878beeff4260084f58e2f8e1af3fee0679ef889d9dd6a",
+  "plan_slug": "a-velocity-window-may-open-before-the-ledger",
+  "plan_version": 2,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-17T11:02:24.636922+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-17T11:02:29.805327+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T11:02:29.805327+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T11:02:24.636922+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-velocity-window-may-open-before-the-ledger.v2.json",
+  "review_run_id": "r-20261017T103722105353-plan-review-of-a-velocity-window-may-open-before-the-ledger",
+  "reviewed_blob_sha": "4d0c537adfea54e45b315a2a18ef027c10f75994",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no module and no public name (\"No new public name is added\"); it changes two existing functions in place, so there is no new interface to weigh against what it hides.",
+    "duplicate_owner": "a finding \u2014 the rule \"a revision without the ledger reads as one with no runs\" is applied to two independent implementations of the same committed-ledger read: `_read_ledger` (reckon/velocity.py:708) and the inline parse inside `recover_ledger_clocks` (reckon/velocity.py:1182-1192); `_read_ledger` is the owner to extend rather than fork.",
+    "interface_budget": "pass \u2014 public_definitions 1775, cli_options 356, mcp_views 34, refusal_families 23; the section adds no name to any of the four families and says so in its own text (\"No new public name is added\") \u2014 no CLI option, no MCP view and no refusal is added or retired, so there is nothing to merge or justify.",
+    "reuse_search": "a finding \u2014 the remedy decides absence with a fresh per-site `_blob_sha` check plus an unconditional `git show` at two sites, while `reckon/velocity.py` already exports `read_blobs` (reckon/velocity.py:395, `__all__` at :66), whose documented contract is bytes-or-`None` for a missing object at a revision.",
+    "thin_wrapper": "pass \u2014 the plan adds no layer over existing machinery: it edits the two existing read sites rather than wrapping them, and it reuses the existing `_blob_sha` helper rather than writing a new one."
+  },
+  "section_digests": {
+    "_document": "7d915faa8929cabb97477644071e2b7b72b93d1e67fce3b4102ec81eb37a2f82",
+    "s1": "a9b1aafb8e8ca9fd861e47ce728d99027b625129f347d6ba420351ab4b4eb04a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T11:02:22.384160+00:00"
+}
