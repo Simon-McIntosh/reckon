@@ -1,0 +1,101 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 21,
+  "added_failure_ids": [
+    "tests/test_build.py::test_installed_wheel_build_emits_complete_static_site",
+    "tests/test_build.py::test_installed_wheel_build_emits_usable_state",
+    "tests/test_build.py::test_wheel_contains_canonical_frontend_assets",
+    "tests/test_build.py::test_wheel_version_ignores_non_release_tag",
+    "tests/test_dispatch_speed.py::test_a_pick_with_no_persisted_profile_serves_none",
+    "tests/test_gc_sweeps_ledger_indexes.py::test_a_live_process_holds_its_index",
+    "tests/test_gc_sweeps_ledger_indexes.py::test_gc_reports_and_removes_orphan_ledger_indexes",
+    "tests/test_gc_sweeps_ledger_indexes.py::test_the_real_cache_is_untouched",
+    "tests/test_no_test_resolves_the_real_cache.py::test_no_test_resolves_the_real_cache",
+    "tests/test_packaging_metadata.py::test_built_wheel_carries_discovery_metadata",
+    "tests/test_packaging_metadata.py::test_tagged_build_matches_tag",
+    "tests/test_packaging_metadata.py::test_untagged_wheel_version_has_no_local_segment",
+    "tests/test_spa_figure_reader.py::test_figure_reloads_after_a_dropped_connection",
+    "tests/test_split_existing_runs.py::test_a_differing_file_stops_that_project_while_a_sibling_migrates",
+    "tests/test_split_existing_runs.py::test_a_dry_run_names_the_differing_file_the_real_run_would_refuse",
+    "tests/test_split_existing_runs.py::test_a_dry_run_reports_the_counts_and_writes_nothing",
+    "tests/test_split_existing_runs.py::test_a_project_without_a_ledger_or_runs_key_is_reported_as_skipped",
+    "tests/test_split_existing_runs.py::test_a_promoted_run_beside_the_list_is_left_alone_and_not_counted",
+    "tests/test_split_existing_runs.py::test_a_second_invocation_writes_nothing_and_commits_nothing",
+    "tests/test_split_existing_runs.py::test_an_empty_runs_list_migrates_to_the_key_s_removal_alone",
+    "tests/test_split_existing_runs.py::test_the_split_writes_every_row_to_its_own_file_in_one_commit"
+  ],
+  "added_failures_note": "",
+  "base_log_revision": "c5d4cc9aff99966ecf8996d5f11dee9092cba88b",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T09:21:01.518Z",
+  "dispatched_at": "2026-10-17T09:11:33Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 15,
+      "severity": "follow-on",
+      "text": "the landing says '15 of them deterministic at the candidate' while artifacts.deterministic_added is 16 and the alone_counts show 16 ids at candidate_pass 0/candidate_fail 5; 15+4+1 does not sum to the 21 added ids, so the prose decomposition disagrees with the run's own counts."
+    },
+    {
+      "file": "manifest.md",
+      "line": 11,
+      "severity": "follow-on",
+      "text": "the checkpoint says '125 pass, 80 fail' for the 210 alone-repeat runs, but artifacts record repeat_pass 125 / repeat_fail 85; 125+80=205, not the 210 runs stated, so the pass/fail counts are internally inconsistent."
+    },
+    {
+      "file": "manifest.md",
+      "line": 25,
+      "severity": "follow-on",
+      "text": "the alone_counts verdicts label the 7 wheel-build ids and the 8 split_existing_runs ids 'deterministic regression at the candidate', a causal claim, while candidate_causes attributes the wheel-build failures to uv failing to resolve hatchling/hatch-vcs at a pyproject.toml byte-identical between the arms; the counts show fails-alone-at-candidate but not that the merge caused it."
+    },
+    {
+      "file": "manifest.md",
+      "line": 13,
+      "severity": "follow-on",
+      "text": "the declared FENCE \u2014 SCOPE write path .../reports/reckon/the-crew-home-has-a-bound/cache-guard-whole-suite-at-merge is empty at review time and every artefact sits under the run directory outside that declared scope; the node discloses this in evidence_inputs.check_manifest_caveat, tracing it to the brief directing logs to the run directory, but the declared scope and the write location disagree."
+    }
+  ],
+  "head_log_revision": "5e58a9e97ae27a754ab7324373083e892ca2233e",
+  "item_aggregate": null,
+  "item_verdicts": {
+    "diff": "the node authored no commit; git diff c5d4cc9a..5e58a9e9 shows the reviewed merge adds only tests/conftest.py (+155) and tests/test_no_test_resolves_the_real_cache.py (+61), and the reviewed node's own change is its scripts, logs and manifest under the run directory rather than any path under reckon/ or tests/.",
+    "done_when": "the done_when names two per-arm logs with revision/host/command/reckon.__file__ headers and a pytest summary and EXIT=, the guard verdict at the candidate, and the added ids derived with reckon.crew.review.added_failures_from_gate_logs and each run alone 5x per revision; both logs exist with those headers (gate-base.log:1-20, gate-candidate.log:1-20) and the manifest records the guard verdict, the empty named-test list, and the 210 alone runs.",
+    "goal": "the node was to run the whole tests/ suite at base c5d4cc9a and at the merge candidate 5e58a9e9 under the cache-root guard on two exclusive nodes; its manifest records both arms completing (gate-base.log, gate-candidate.log) and answers both briefed questions.",
+    "manifest": "read; it records per-arm summaries (base 33 failed/14135 passed, candidate 41 failed/12 errors/14115 passed), baseline_suite and after_suite with the reviewed revisions, failure_attribution for all 21 added ids, the guard verdict, and a disclosed scaffolding retry; its two prose count lines disagree with its own artifacts.",
+    "write_paths": "the fence named only /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-crew-home-has-a-bound/cache-guard-whole-suite-at-merge, which is empty at review time; every artefact sits under the run directory, which the brief directed and the manifest's evidence_inputs.check_manifest_caveat discloses."
+  },
+  "justifications": {
+    "durability": "The reviewed change is a measurement, not a guarded behaviour, so nothing regresses; its durability is that the record survives \u2014 the helper reproduces the count, but the logs (gate-base.log, gate-candidate.log) live only as untracked run artefacts rather than a committed or tested record.",
+    "evidence": "Both gate logs carry the required headers (gate-base.log:1-20, gate-candidate.log:1-20, MODULE_UNDER_CHECKOUT=yes) and a summary; re-running reckon.crew.review.added_failures_from_gate_logs over the two log files reproduces the manifest's added count of 21 exactly.",
+    "fit": "Artefact names (gate-base.sbatch, gate-candidate.log, repeat-added.sh, added-ids.txt) describe the mechanism and carry no plan, sprint, version or ticket identifier, matching the run-artefact idiom of reckon/crew.",
+    "goal_fidelity": "The manifest (manifest.md:6, 16) records both arms completing on two exclusive all_debug nodes and answers both briefed questions \u2014 the candidate suite adds 21 ids (16 deterministic) and the guard is inert rather than clean \u2014 matching the node's goal of measuring the guard merge.",
+    "reuse": "The node used the existing reckon.crew.review.added_failures_from_gate_logs helper (reckon/crew/review.py:2100) and the baseline_suite/after_suite/failure_attribution manifest schema rather than re-implementing added-failure derivation.",
+    "scope_discipline": "The change contains no path under reckon/ or tests/ and every artefact is under the run directory, but the declared fence scope names only the reports path .../cache-guard-whole-suite-at-merge (empty at review time), so the write location and the declared scope disagree (manifest.md:26)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node was to run the whole tests/ suite at base c5d4cc9a and at the merge candidate 5e58a9e9 under the cache-root guard on two exclusive nodes; its manifest records both arms completing (gate-base.log, gate-candidate.log) and answers both briefed questions.\nVERDICT done_when: the done_when names two per-arm logs with revision/host/command/reckon.__file__ headers and a pytest summary and EXIT=, the guard verdict at the candidate, and the added ids derived with reckon.crew.review.added_failures_from_gate_logs and each run alone 5x per revision; both logs exist with those headers (gate-base.log:1-20, gate-candidate.log:1-20) and the manifest records the guard verdict, the empty named-test list, and the 210 alone runs.\nVERDICT write_paths: the fence named only /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-crew-home-has-a-bound/cache-guard-whole-suite-at-merge, which is empty at review time; every artefact sits under the run directory, which the brief directed and the manifest's evidence_inputs.check_manifest_caveat discloses.\nVERDICT manifest: read; it records per-arm summaries (base 33 failed/14135 passed, candidate 41 failed/12 errors/14115 passed), baseline_suite and after_suite with the reviewed revisions, failure_attribution for all 21 added ids, the guard verdict, and a disclosed scaffolding retry; its two prose count lines disagree with its own artifacts.\nVERDICT diff: the node authored no commit; git diff c5d4cc9a..5e58a9e9 shows the reviewed merge adds only tests/conftest.py (+155) and tests/test_no_test_resolves_the_real_cache.py (+61), and the reviewed node's own change is its scripts, logs and manifest under the run directory rather than any path under reckon/ or tests/.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: The manifest (manifest.md:6, 16) records both arms completing on two exclusive all_debug nodes and answers both briefed questions \u2014 the candidate suite adds 21 ids (16 deterministic) and the guard is inert rather than clean \u2014 matching the node's goal of measuring the guard merge.\nSCORE evidence: 17\nJUSTIFICATION evidence: Both gate logs carry the required headers (gate-base.log:1-20, gate-candidate.log:1-20, MODULE_UNDER_CHECKOUT=yes) and a summary; re-running reckon.crew.review.added_failures_from_gate_logs over the two log files reproduces the manifest's added count of 21 exactly.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: The change contains no path under reckon/ or tests/ and every artefact is under the run directory, but the declared fence scope names only the reports path .../cache-guard-whole-suite-at-merge (empty at review time), so the write location and the declared scope disagree (manifest.md:26).\nSCORE durability: 16\nJUSTIFICATION durability: The reviewed change is a measurement, not a guarded behaviour, so nothing regresses; its durability is that the record survives \u2014 the helper reproduces the count, but the logs (gate-base.log, gate-candidate.log) live only as untracked run artefacts rather than a committed or tested record.\nSCORE fit: 18\nJUSTIFICATION fit: Artefact names (gate-base.sbatch, gate-candidate.log, repeat-added.sh, added-ids.txt) describe the mechanism and carry no plan, sprint, version or ticket identifier, matching the run-artefact idiom of reckon/crew.\nSCORE reuse: 20\nJUSTIFICATION reuse: The node used the existing reckon.crew.review.added_failures_from_gate_logs helper (reckon/crew/review.py:2100) and the baseline_suite/after_suite/failure_attribution manifest schema rather than re-implementing added-failure derivation.\nFINDING manifest.md:15 follow-on: the landing says '15 of them deterministic at the candidate' while artifacts.deterministic_added is 16 and the alone_counts show 16 ids at candidate_pass 0/candidate_fail 5; 15+4+1 does not sum to the 21 added ids, so the prose decomposition disagrees with the run's own counts.\nFINDING manifest.md:11 follow-on: the checkpoint says '125 pass, 80 fail' for the 210 alone-repeat runs, but artifacts record repeat_pass 125 / repeat_fail 85; 125+80=205, not the 210 runs stated, so the pass/fail counts are internally inconsistent.\nFINDING manifest.md:25 follow-on: the alone_counts verdicts label the 7 wheel-build ids and the 8 split_existing_runs ids 'deterministic regression at the candidate', a causal claim, while candidate_causes attributes the wheel-build failures to uv failing to resolve hatchling/hatch-vcs at a pyproject.toml byte-identical between the arms; the counts show fails-alone-at-candidate but not that the merge caused it.\nFINDING manifest.md:13 follow-on: the declared FENCE \u2014 SCOPE write path .../reports/reckon/the-crew-home-has-a-bound/cache-guard-whole-suite-at-merge is empty at review time and every artefact sits under the run directory outside that declared scope; the node discloses this in evidence_inputs.check_manifest_caveat, tracing it to the brief directing logs to the run directory, but the declared scope and the write location disagree.",
+  "review_run_id": "r-20261017T091103780256-review-of-cache-guard-whole-suite-at-merge-c5d4cc9aff99",
+  "reviewed_base_sha": "c5d4cc9aff99966ecf8996d5f11dee9092cba88b",
+  "reviewed_head_sha": "c5d4cc9aff99966ecf8996d5f11dee9092cba88b",
+  "reviewed_run_id": "r-20261017T082654021736-cache-guard-whole-suite-at-merge",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T09:16:00+00:00",
+  "total": 106
+}
