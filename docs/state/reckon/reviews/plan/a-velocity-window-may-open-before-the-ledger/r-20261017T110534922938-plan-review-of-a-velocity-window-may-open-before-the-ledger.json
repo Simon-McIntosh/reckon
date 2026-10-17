@@ -1,0 +1,77 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-17T11:19:47.493Z",
+  "dispatched_at": "2026-10-17T11:07:43Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-velocity-window-may-open-before-the-ledger.html:63",
+      "id": "reasoning-1",
+      "reason": "the range must name the else-branch parse (lines 1191\u20131192), not lines 1182\u20131192; as written it directs the node to delete a variable its own recovery walk needs, breaking the mechanism the plan exists to preserve.",
+      "text": "\u00a71 says `recover_ledger_clocks` \"stops parsing the ledger itself (reckon/velocity.py:1182 to 1192)\", but line 1182 is the `path = \"docs/state/\" + project[\"project\"] + \"/crew.json\"` assignment, and that `path` is a live dependency used at line 1221 as the first pathspec of the function's `git log --first-parent` search for the run's first durable appearance. A worker applying the range literally \u2014 which the node's `exact` SPEC invites \u2014 removes `path` and breaks that search (`path` is also the ledger file the recovery still scans, alongside `runs/`, for the mixed state \u00a74 has not yet changed).",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-velocity-window-may-open-before-the-ledger.html:63",
+      "id": "reasoning-2",
+      "reason": "both callers exist and are reachable from the command the plan cites (`_read_ledger` at `reckon/velocity.py:854` inside `capture_project`; `recover_ledger_clocks` at `reckon/velocity.py:2528` and :2949), so the mechanism does run on the real path \u2014 naming them would document the path, not change what is built.",
+      "text": "\u00a71 edits both `_read_ledger` and `recover_ledger_clocks` but names no production caller for either.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "3698372ed79170241b30ffc736f6c0a0c63f57abe396fe6201bdbecf2fd49a17",
+  "plan_slug": "a-velocity-window-may-open-before-the-ledger",
+  "plan_version": 3,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-17T11:20:38.752688+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "the finding records WOULD_CHANGE_THE_PLAN: no; both callers exist and are reached by the command the plan cites, so naming them would document the path without changing what is built",
+      "when": "2026-10-17T11:20:44.323825+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-17T11:20:38.752688+00:00"
+    },
+    "reasoning-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "the finding records WOULD_CHANGE_THE_PLAN: no; both callers exist and are reached by the command the plan cites, so naming them would document the path without changing what is built",
+      "when": "2026-10-17T11:20:44.323825+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-velocity-window-may-open-before-the-ledger.v3.json",
+  "review_run_id": "r-20261017T110534922938-plan-review-of-a-velocity-window-may-open-before-the-ledger",
+  "reviewed_blob_sha": "247ef55c0cd44d5f6745962dc5f7ca77a3fb0dcb",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited source location resolves at `3e4736687`: `read_blobs` at `reckon/velocity.py:395`, `_blob_sha` returning `None` for an absent path at :693, `_read_*` boundaries at :708 and :719, `recover_ledger_clocks` at :1153 with the raising call at :1191, and the `None`-for-unknown convention at `reckon/crew/window_reading.py:28`. The three commit citations resolve to the stated dates: `_read_run_rows`'s sibling \u2014 base `69fb3c1e5` (2026-07-30), ledger first added by `af650745d` (2026-08-12), main `3e4736687` (2026-10-17).",
+    "done_when": "pass \u2014 \u00a71's done-when is a measurable three-case test (base predating the ledger reports the window's runs; head predating it reports zero runs with a `None` digest; a failing batched read still raises) and names a declared negative control (restore the inline `git show` \u2192 the matching case fails with `CalledProcessError`; replace the `None` check with a blanket `except` \u2192 the third case fails). Each arm can fail, so the measure is not one that holds however the code behaves.",
+    "evidence_paths": "pass \u2014 the write paths are tracked repository paths (`reckon/velocity.py` and a new `tests/` file); the coordinator's post-merge integration check is delegated and explicitly excluded from the worker gate, so no evidence depends on a scratchpad or node-local path.",
+    "naming": "pass \u2014 the new test file is named for the mechanism (`reads_a_revision_without_the_ledger`), the edited symbols keep their existing mechanism names, and no plan label, stage name, ticket number or version tag is introduced into code.",
+    "reasoning": "a finding \u2014 the root cause matches the cited evidence and the mechanism reaches the real code path, but the line range named for the one parse to retire is wrong and would break a variable the same function still uses.",
+    "single_goal": "pass \u2014 one deliverable: a revision with no committed ledger reads as one with no runs, carried as one behaviour across the two reads rather than as two independent goals.",
+    "wiring": "pass \u2014 the sole relationship, `plan-blocks=the-ledger-is-one-file-per-run#s4`, resolves: that plan exists and its \u00a74 (`docs/plans/the-ledger-is-one-file-per-run.html:494`) is the section whose commit deletes `crew.json`, which this plan must precede. No dependency it needs is missing."
+  },
+  "section_digests": {
+    "_document": "7d915faa8929cabb97477644071e2b7b72b93d1e67fce3b4102ec81eb37a2f82",
+    "s1": "57e4ab3544e5e1bf5d84aef6ba198cb4839425047c9c6f32020bd6a52d8ac8ac"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T11:20:35.992187+00:00"
+}
