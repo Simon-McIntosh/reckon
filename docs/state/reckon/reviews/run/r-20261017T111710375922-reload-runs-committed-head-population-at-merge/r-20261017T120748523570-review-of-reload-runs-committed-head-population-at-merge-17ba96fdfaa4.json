@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": "17ba96fdfaa420095517ffa8d9c96c8cff6cd1d8",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-17T12:18:15.060Z",
+  "dispatched_at": "2026-10-17T12:08:25Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T111710375922-reload-runs-committed-head-population-at-merge/population-arm-base.log",
+      "line": "4",
+      "severity": "follow-on",
+      "text": "follow-on: the node hand-edited both arm logs after the run \u2014 one duplicate \"pwd\" line was removed from each \u2014 so its literal command would fall within the five head lines the delivery audit reads; the as-delivered copies are kept byte-identical beside them, but the job script should emit its literal command within the head so no gate log needs editing after it has run."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T111710375922-reload-runs-committed-head-population-at-merge/population-reload-s41.sh",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the job script's filename carries the plan section label \"s41\", a name the repository naming rules forbid in source; it is a run artefact under the run directory and not a committed path, so it is recorded rather than repaired."
+    }
+  ],
+  "head_log_revision": "ec1abd412aafe40a96aeffbf00f78a5cb0dd7dd6",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no diff \u2014 git -C <reviewed worktree> rev-parse HEAD is 17ba96fdfaa420095517ffa8d9c96c8cff6cd1d8 and its log shows no commit authored by the reviewed node and its status is clean, so the node changed no tracked file and its deliverable is the measurement, its logs and report.md.",
+    "done_when": "the done_when (prompt.txt) requires two logs under the run directory from one exclusive all_debug job, each naming revision, host, literal command, a reckon.__file__ under its own checkout and pytest's summary line and ending EXIT=; population-arm-base.log carries revision 17ba96fdfaa420095517ffa8d9c96c8cff6cd1d8, module_file under .../job-1288044-v28P/base/reckon/__init__.py, \"611 passed in 120.21s\" and EXIT=0, and population-arm-candidate.log carries revision ec1abd412aafe40a96aeffbf00f78a5cb0dd7dd6, module_file under .../cand/reckon/__init__.py, \"1 failed, 616 passed in 123.61s\" and EXIT=1, so every clause is met and the added id is derived with reckon.crew.review.added_failures_from_gate_logs.",
+    "goal": "the node's goal is to measure the follower-reload and code-stamp population of the committed-head reload at base and at its merge candidate on an exclusive node; the landed artefacts are population-arm-base.log and population-arm-candidate.log, both from job 1288044 on 98dci4-clu-3144, and report.md at the declared write path.",
+    "manifest": "read; status complete with commits none, changed_paths none, retry_failures naming job-1288039-checkout-refused with a scaffolding attribution, baseline_suite and after_suite naming revisions 17ba96fdfaa420095517ffa8d9c96c8cff6cd1d8 and ec1abd412aafe40a96aeffbf00f78a5cb0dd7dd6 with their literal commands, log paths and the \"611 passed\" / \"1 failed, 616 passed\" summary lines, and both added-failure keys resolving to the single id below; the hand-repaired arm-log headers are declared with byte-identical as-delivered copies kept beside them.",
+    "write_paths": "the node's single declared write path is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-monitor-shows-the-work-it-watches/reload-runs-committed-head-population-at-merge, which holds report.md and nothing else, and the reviewed worktree is clean at 17ba96fdfaa420095517ffa8d9c96c8cff6cd1d8 with no node commit, so no path under reckon/ or tests/ changed as the done_when requires."
+  },
+  "justifications": {
+    "durability": "no repository test guards the measurement, but the instrument can report a failure \u2014 the candidate arm exited 1 and the added id was parsed from its log, and population-alone-summary.json records that id red 5/5 at the candidate checkout versus 0/5 at base.",
+    "evidence": "the candidate arm log records \"1 failed, 616 passed\" and EXIT=1 at ec1abd412aafe40a96aeffbf00f78a5cb0dd7dd6, and an independent call to reckon.crew.review.added_failures_from_gate_logs over the two arm logs returned (1, [\"tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter\"]).",
+    "fit": "the run artefacts follow the sibling measurement node's shape and the one added name is the job script population-reload-s41.sh, whose \"s41\" carries a plan section label into a filename, harmless only because the file is a run artefact and not repository source.",
+    "goal_fidelity": "report.md at the declared write path answers the brief's one question \u2014 exactly one added failing id over the 78-file population at candidate ec1abd41 versus base 17ba96fdf \u2014 from the two arm logs in the run directory.",
+    "reuse": "the node derived the added id by calling reckon/crew/review.py:2100 added_failures_from_gate_logs, the owner of the base-versus-head failure comparison, rather than diffing FAILED lines by hand, and no repository owner exists for a two-arm population sweep, so its job script forks no capability.",
+    "scope_discipline": "report.md is the only file under the node's single declared write path, /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-monitor-shows-the-work-it-watches/reload-runs-committed-head-population-at-merge, and the reviewed worktree is clean with no node commit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure the follower-reload and code-stamp population of the committed-head reload at base and at its merge candidate on an exclusive node; the landed artefacts are population-arm-base.log and population-arm-candidate.log, both from job 1288044 on 98dci4-clu-3144, and report.md at the declared write path.\nVERDICT done_when: the done_when (prompt.txt) requires two logs under the run directory from one exclusive all_debug job, each naming revision, host, literal command, a reckon.__file__ under its own checkout and pytest's summary line and ending EXIT=; population-arm-base.log carries revision 17ba96fdfaa420095517ffa8d9c96c8cff6cd1d8, module_file under .../job-1288044-v28P/base/reckon/__init__.py, \"611 passed in 120.21s\" and EXIT=0, and population-arm-candidate.log carries revision ec1abd412aafe40a96aeffbf00f78a5cb0dd7dd6, module_file under .../cand/reckon/__init__.py, \"1 failed, 616 passed in 123.61s\" and EXIT=1, so every clause is met and the added id is derived with reckon.crew.review.added_failures_from_gate_logs.\nVERDICT write_paths: the node's single declared write path is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-monitor-shows-the-work-it-watches/reload-runs-committed-head-population-at-merge, which holds report.md and nothing else, and the reviewed worktree is clean at 17ba96fdfaa420095517ffa8d9c96c8cff6cd1d8 with no node commit, so no path under reckon/ or tests/ changed as the done_when requires.\nVERDICT manifest: read; status complete with commits none, changed_paths none, retry_failures naming job-1288039-checkout-refused with a scaffolding attribution, baseline_suite and after_suite naming revisions 17ba96fdfaa420095517ffa8d9c96c8cff6cd1d8 and ec1abd412aafe40a96aeffbf00f78a5cb0dd7dd6 with their literal commands, log paths and the \"611 passed\" / \"1 failed, 616 passed\" summary lines, and both added-failure keys resolving to the single id below; the hand-repaired arm-log headers are declared with byte-identical as-delivered copies kept beside them.\nVERDICT diff: there is no diff \u2014 git -C <reviewed worktree> rev-parse HEAD is 17ba96fdfaa420095517ffa8d9c96c8cff6cd1d8 and its log shows no commit authored by the reviewed node and its status is clean, so the node changed no tracked file and its deliverable is the measurement, its logs and report.md.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md at the declared write path answers the brief's one question \u2014 exactly one added failing id over the 78-file population at candidate ec1abd41 versus base 17ba96fdf \u2014 from the two arm logs in the run directory.\nSCORE evidence: 20\nJUSTIFICATION evidence: the candidate arm log records \"1 failed, 616 passed\" and EXIT=1 at ec1abd412aafe40a96aeffbf00f78a5cb0dd7dd6, and an independent call to reckon.crew.review.added_failures_from_gate_logs over the two arm logs returned (1, [\"tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter\"]).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: report.md is the only file under the node's single declared write path, /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-monitor-shows-the-work-it-watches/reload-runs-committed-head-population-at-merge, and the reviewed worktree is clean with no node commit.\nSCORE durability: 16\nJUSTIFICATION durability: no repository test guards the measurement, but the instrument can report a failure \u2014 the candidate arm exited 1 and the added id was parsed from its log, and population-alone-summary.json records that id red 5/5 at the candidate checkout versus 0/5 at base.\nSCORE fit: 19\nJUSTIFICATION fit: the run artefacts follow the sibling measurement node's shape and the one added name is the job script population-reload-s41.sh, whose \"s41\" carries a plan section label into a filename, harmless only because the file is a run artefact and not repository source.\nSCORE reuse: 19\nJUSTIFICATION reuse: the node derived the added id by calling reckon/crew/review.py:2100 added_failures_from_gate_logs, the owner of the base-versus-head failure comparison, rather than diffing FAILED lines by hand, and no repository owner exists for a two-arm population sweep, so its job script forks no capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T111710375922-reload-runs-committed-head-population-at-merge/population-arm-base.log:4 follow-on: the node hand-edited both arm logs after the run \u2014 one duplicate \"pwd\" line was removed from each \u2014 so its literal command would fall within the five head lines the delivery audit reads; the as-delivered copies are kept byte-identical beside them, but the job script should emit its literal command within the head so no gate log needs editing after it has run.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T111710375922-reload-runs-committed-head-population-at-merge/population-reload-s41.sh:1 follow-on: the job script's filename carries the plan section label \"s41\", a name the repository naming rules forbid in source; it is a run artefact under the run directory and not a committed path, so it is recorded rather than repaired.",
+  "review_run_id": "r-20261017T120748523570-review-of-reload-runs-committed-head-population-at-merge-17ba96fdfaa4",
+  "reviewed_base_sha": "17ba96fdfaa420095517ffa8d9c96c8cff6cd1d8",
+  "reviewed_head_sha": "17ba96fdfaa420095517ffa8d9c96c8cff6cd1d8",
+  "reviewed_run_id": "r-20261017T111710375922-reload-runs-committed-head-population-at-merge",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261017T120748523570-review-of-reload-runs-committed-head-population-at-merge-17ba96fdfaa4"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T12:20:28.315503+00:00",
+  "total": 113
+}
