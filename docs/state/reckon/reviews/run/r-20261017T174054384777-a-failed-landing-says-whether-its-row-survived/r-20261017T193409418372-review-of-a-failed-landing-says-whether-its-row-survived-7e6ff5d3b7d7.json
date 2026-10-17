@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own base and head gate logs named in manifest.md:11 (negative_control_base_arm.log, one failing id; head_arm.log, none); its manifest carries no baseline_suite/after_suite fields, so the count was taken from the arm logs the manifest does name.",
+  "base_log_revision": "91a8aea54aca17e98ce06aa7d3012bfe361105ef",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:732",
+    "reckon/crew/promotion.py:1301"
+  ],
+  "completed_at": "2026-10-17T19:47:13.009Z",
+  "dispatched_at": "2026-10-17T19:35:30Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the head-arm gate log stamps revision 4fe693d81 (+ working-tree fix) while the reviewed head is 7e6ff5d3b, so a reader cannot tie the recorded head result to the reviewed revision from the log alone."
+    },
+    {
+      "file": "manifest.md",
+      "line": "6",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest carries no baseline_suite/after_suite fields, so the added-failure count cannot be derived from the declared fields and had to be read from the named arm logs."
+    }
+  ],
+  "head_log_revision": "4fe693d81a8b971ebfb84d98aa8aaa2f606315c6",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit - 130d54a39 flips _ledger_holds_row to use_index=False with an expanded docstring, 4fe693d81 deletes the 76-line fragment, 7e6ff5d3b imports _git/_rows from the sibling receipt test and adds the stale-index precondition assertion; all inside declared scope.",
+    "done_when": "prompt.txt:96 names the stale-index stage-lock case and the aggregate-row case; tests/test_a_failed_landing_says_whether_its_row_survived.py:74-142 and :145-187 assert them, with a red base arm (negative_control_base_arm.log) and a green head arm (head_arm.log) logged in the reviewed run.",
+    "goal": "prompt.txt:30 asks the receipt to name a rolled-back row when the run's per-run file is gone and the aggregate holds no row; reckon/crew/promotion_scope.py:1871 now reads ledger.load(..., use_index=False), so the durable files decide and the cached index cannot.",
+    "manifest": "manifest.md:5-11 records status complete, commits 130d54a39/4fe693d81/7e6ff5d3b, the 5-passed head arm and the 1-failed base control, but carries no baseline_suite/after_suite fields and its head_arm.log stamps revision 4fe693d81.",
+    "write_paths": "prompt.txt:68-73 declares promotion_scope.py, promotion.py, the new test, a fragment path and a figures path; the head diff 91a8aea..7e6ff5d3b changes only promotion_scope.py and the test file, and the earlier out-of-contract fragment was deleted by 4fe693d81."
+  },
+  "justifications": {
+    "durability": "restoring the index-served read at reckon/crew/promotion_scope.py:1871 reddens tests/test_a_failed_landing_says_whether_its_row_survived.py:124, which the reviewed base arm logs as its one failure, and :119-122 now proves the stale-index precondition.",
+    "evidence": "head_arm.log records 5 passed at EXIT=0 and negative_control_base_arm.log records the base failing at tests/test_a_failed_landing_says_whether_its_row_survived.py:124, but manifest.md names no baseline_suite/after_suite and the head log stamps revision 4fe693d81, not the reviewed head 7e6ff5d3b.",
+    "fit": "the change reuses the existing ledger.load(use_index=...) parameter and the repo's cross-test helper-import idiom, matching the surrounding convention at reckon/crew/promotion_scope.py:1856.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:1871 reads the aggregate and per-run files directly, which is the section's deliverable that a cached index never decides the row.",
+    "reuse": "the diff forks no capability - it changes one existing predicate and imports _git/_rows from tests/test_receipt_names_the_rolled_back_row.py:30 rather than duplicating them.",
+    "scope_discipline": "the diff at 91a8aea..7e6ff5d3b touches only reckon/crew/promotion_scope.py and tests/test_a_failed_landing_says_whether_its_row_survived.py, both inside the prompt.txt:68-73 scope, and deletes the out-of-contract fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks the receipt to name a rolled-back row when the run's per-run file is gone and the aggregate holds no row; reckon/crew/promotion_scope.py:1871 now reads ledger.load(..., use_index=False), so the durable files decide and the cached index cannot.\nVERDICT done_when: prompt.txt:96 names the stale-index stage-lock case and the aggregate-row case; tests/test_a_failed_landing_says_whether_its_row_survived.py:74-142 and :145-187 assert them, with a red base arm (negative_control_base_arm.log) and a green head arm (head_arm.log) logged in the reviewed run.\nVERDICT write_paths: prompt.txt:68-73 declares promotion_scope.py, promotion.py, the new test, a fragment path and a figures path; the head diff 91a8aea..7e6ff5d3b changes only promotion_scope.py and the test file, and the earlier out-of-contract fragment was deleted by 4fe693d81.\nVERDICT manifest: manifest.md:5-11 records status complete, commits 130d54a39/4fe693d81/7e6ff5d3b, the 5-passed head arm and the 1-failed base control, but carries no baseline_suite/after_suite fields and its head_arm.log stamps revision 4fe693d81.\nVERDICT diff: read commit by commit - 130d54a39 flips _ledger_holds_row to use_index=False with an expanded docstring, 4fe693d81 deletes the 76-line fragment, 7e6ff5d3b imports _git/_rows from the sibling receipt test and adds the stale-index precondition assertion; all inside declared scope.\nCALL_SITES: reckon/crew/promotion.py:732, reckon/crew/promotion.py:1301\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:1871 reads the aggregate and per-run files directly, which is the section's deliverable that a cached index never decides the row.\nSCORE evidence: 16\nJUSTIFICATION evidence: head_arm.log records 5 passed at EXIT=0 and negative_control_base_arm.log records the base failing at tests/test_a_failed_landing_says_whether_its_row_survived.py:124, but manifest.md names no baseline_suite/after_suite and the head log stamps revision 4fe693d81, not the reviewed head 7e6ff5d3b.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff at 91a8aea..7e6ff5d3b touches only reckon/crew/promotion_scope.py and tests/test_a_failed_landing_says_whether_its_row_survived.py, both inside the prompt.txt:68-73 scope, and deletes the out-of-contract fragment.\nSCORE durability: 18\nJUSTIFICATION durability: restoring the index-served read at reckon/crew/promotion_scope.py:1871 reddens tests/test_a_failed_landing_says_whether_its_row_survived.py:124, which the reviewed base arm logs as its one failure, and :119-122 now proves the stale-index precondition.\nSCORE fit: 18\nJUSTIFICATION fit: the change reuses the existing ledger.load(use_index=...) parameter and the repo's cross-test helper-import idiom, matching the surrounding convention at reckon/crew/promotion_scope.py:1856.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff forks no capability - it changes one existing predicate and imports _git/_rows from tests/test_receipt_names_the_rolled_back_row.py:30 rather than duplicating them.\nFINDING manifest.md:11 follow-on: the head-arm gate log stamps revision 4fe693d81 (+ working-tree fix) while the reviewed head is 7e6ff5d3b, so a reader cannot tie the recorded head result to the reviewed revision from the log alone.\nFINDING manifest.md:6 follow-on: the manifest carries no baseline_suite/after_suite fields, so the added-failure count cannot be derived from the declared fields and had to be read from the named arm logs.\n",
+  "review_run_id": "r-20261017T193409418372-review-of-a-failed-landing-says-whether-its-row-survived-7e6ff5d3b7d7",
+  "reviewed_base_sha": "91a8aea54aca17e98ce06aa7d3012bfe361105ef",
+  "reviewed_gate_logs": {
+    "base": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T174054384777-a-failed-landing-says-whether-its-row-survived/logs/negative_control_base_arm.log",
+    "head": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T174054384777-a-failed-landing-says-whether-its-row-survived/logs/head_arm.log"
+  },
+  "reviewed_head_sha": "7e6ff5d3b7d772d7350dbe064b423e370a748d26",
+  "reviewed_run_id": "r-20261017T174054384777-a-failed-landing-says-whether-its-row-survived",
+  "rubric": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T19:52:27.989605+00:00",
+  "total": 112
+}
