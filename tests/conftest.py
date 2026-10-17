@@ -60,8 +60,23 @@ _GUARD_STATE: dict[str, Path | str | None] = {"allowed_root": None, "nodeid": No
 
 
 def cache_root_leaks() -> list[dict[str, object]]:
-    """Every ambient ``cache_root`` resolution recorded outside the session temp."""
+    """Every ambient ``cache_root`` resolution recorded outside the temp tree."""
     return list(_CACHE_ROOT_LEAKS)
+
+
+def cache_root_leak_report() -> str:
+    """Name every recorded leak, its caller and the test it happened under."""
+    named = "\n".join(
+        f"  {leak['kind']} -> {leak['resolved']}\n    from {leak['caller']}"
+        + (f"\n    during {leak['nodeid']}" if leak["nodeid"] else "")
+        for leak in cache_root_leaks()
+    )
+    return (
+        "a test or fixture resolved a cache root outside the session temp "
+        f"tree:\n{named}\n"
+        "point the root at a session temporary directory before the module- "
+        "or session-scoped fixture runs."
+    )
 
 
 def _guard_is_within(path: Path, root: Path) -> bool:
@@ -120,6 +135,13 @@ def install_cache_root_guard() -> None:
 def pytest_runtest_setup(item: pytest.Item) -> None:
     """Attribute any resolution a test's setup makes to that test's id."""
     _GUARD_STATE["nodeid"] = item.nodeid
+
+
+# Installed at import rather than in a hook: every xdist worker imports this
+# file in its own process, and a hook the controller alone reaches would leave
+# a worker's resolutions unwatched. The allowed root is filled in by the
+# session fixture below, which every worker runs too.
+install_cache_root_guard()
 
 
 ARMING_MARKER = "arms_watch_producer"
@@ -1262,39 +1284,47 @@ def _run_cache_root_guard_last(items: list[pytest.Item]) -> None:
     items[:] = rest + guard
 
 
-# The per-kind cache roots ``_store.cache_root`` reads, each named by the
-# variable it honours. One session temp directory holds them all, so a
-# resolution that leaves it is a leak whichever kind asked.
-_SESSION_CACHE_ENV = (
-    "RECKON_VELOCITY_CACHE",
-    "RECKON_CLONE_CACHE",
-    "RECKON_SESSION_HOST_CACHE",
-    "RECKON_PICK_CACHE",
-    "RECKON_RUN_TIME_PROFILE_CACHE",
-    "RECKON_CLIENT_CACHE",
-)
+# The variable a caller sets to own uv's cache. uv reads ``XDG_CACHE_HOME``
+# for its default location, so redirecting the cache home moves uv's cache with
+# it and a wheel build then cannot resolve its backend from the shared store.
+UV_CACHE_DIR_ENV = "UV_CACHE_DIR"
+
+
+def _uv_cache_dir_before_the_redirect() -> Path:
+    """uv's own cache directory, as it resolves before ``XDG_CACHE_HOME`` moves."""
+    already = os.environ.get(UV_CACHE_DIR_ENV)
+    if already:
+        return Path(already)
+    cache_home = os.environ.get("XDG_CACHE_HOME")
+    base = Path(cache_home) if cache_home else Path.home() / ".cache"
+    return base / "uv"
 
 
 @pytest.fixture(scope="session", autouse=True)
 def session_cache_roots_are_isolated(tmp_path_factory):
-    """Redirect every cache root before any module- or function-scoped fixture.
+    """Keep every ``_store.cache_root`` resolution inside the session temp tree.
 
     pytest sets a session-scoped fixture up before a module-scoped one, so this
     runs before the module-scoped fixture that renders the SPA and builds a
-    ledger index. ``cache_root("pick-input")`` follows ``RECKON_HOME`` before
-    it reads ``XDG_CACHE_HOME``, and a ledger index reaches the cache through
-    the CLI entry point as well as through an import, so both are set here
-    along with the per-kind overrides. The per-test ``isolated_reckon_home``
-    narrows ``RECKON_HOME`` further, within this directory.
+    ledger index. The mechanism follows ``_store.cache_root``'s own order:
+    ``XDG_CACHE_HOME`` is the one lever every kind reads, so it alone is moved;
+    no per-kind override is set and ``RECKON_HOME`` is left as found, because a
+    test that steers a root through ``cache_root``'s environment — the kinds
+    read before the cache home included — must still steer it, and an override
+    the fixture set would outrank the ``RECKON_HOME`` the test chose.
+
+    uv's cache would move with ``XDG_CACHE_HOME``, so its own directory is
+    pinned first, which a wheel build needs to resolve its backend. A caller
+    that already owns ``UV_CACHE_DIR`` keeps what it set.
     """
     root = tmp_path_factory.mktemp("session-cache")
-    assignments = {
-        "RECKON_HOME": str(root / "home"),
-        "XDG_CACHE_HOME": str(root / "cache"),
-        **{name: str(root / name) for name in _SESSION_CACHE_ENV},
-    }
+    assignments = {"XDG_CACHE_HOME": str(root)}
+    if not os.environ.get(UV_CACHE_DIR_ENV):
+        assignments[UV_CACHE_DIR_ENV] = str(_uv_cache_dir_before_the_redirect())
     previous = {name: os.environ.get(name) for name in assignments}
     os.environ.update(assignments)
+    # Every worker's own base temp is the tree its resolutions must stay in.
+    _GUARD_STATE["allowed_root"] = tmp_path_factory.getbasetemp()
     try:
         yield Path(root)
     finally:
@@ -1305,11 +1335,7 @@ def session_cache_roots_are_isolated(tmp_path_factory):
                 os.environ[name] = value
         leaks = cache_root_leaks()
         if leaks:
-            raise AssertionError(
-                "a test or fixture resolved a cache root outside the session "
-                f"temp tree ({len(leaks)} resolution(s)); the guard test names "
-                "them in its own report"
-            )
+            raise AssertionError(cache_root_leak_report())
 
 
 @pytest.fixture(autouse=True)
