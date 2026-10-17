@@ -26,7 +26,7 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.99">
-<meta name="plan-version" content="169">
+<meta name="plan-version" content="170">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -2066,7 +2066,10 @@
     <div class="r-comment-body"><p>A run review delivers its record through `&lt;runs&gt;/&lt;reviewed-run&gt;/review-records/`, the fence binds that directory rather than the store's project directory, and the three readers that had keyed the reviewer's grant to the store's layout now read the declaration the composer produces — 7 cases in the node's suite (15 with the sibling delivery suite), 22 across the four reviewer suites, 88 across the surrounding delivery and promotion suites, and all three declared negative controls red at EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261017T020553297680-review-record-delivery-repaired-population-at-merge" data-who="reckon-build" data-when="2026-10-17T02:47:12.047Z">
-    <div class="r-comment-body"><p>Over the 216-file importer population, merging f5f008fd4513ba3d35bde15214a45f328559f46e onto 7a9a36eb3983dd0eedbd791f5239f0006c22b220 adds no failing test id — the candidate arm is green (1922 passed, exit 0) against base&#x27;s 2 pre-existing failures (1913 passed), measured in one exclusive all_debug job.</p></div>
+    <div class="r-comment-body"><p>Over the 216-file importer population, merging f5f008fd4513ba3d35bde15214a45f328559f46e onto 7a9a36eb3983dd0eedbd791f5239f0006c22b220 adds no failing test id — the candidate arm is green (1922 passed, exit 0) against base's 2 pre-existing failures (1913 passed), measured in one exclusive all_debug job.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-s12-follower-gap" data-who="reckon-build" data-when="2026-10-17T03:25:00Z">
+    <div class="r-comment-body"><p>Correction to the close above: the seal is not yet live for every reflex review. Reflex reviews are launched by each session's own follower as well as by the producer. Followers reload only when their import probe passes. This session's follower (pid 674338 on <code>98dci4-clu-2002</code>, up 9 h 47 min) deferred its reload twice after the merge: once on a probe timeout, which is monitor §40, and once on a tree caught mid-merge. A review it launched at 03:19:11Z, after the merge, still declared store paths and was granted <code>--bind ~/.config/reckon/crew/reviews/reckon</code>. So the seal reaches a session's reflex reviews only once that session's follower reloads. A CLI-dispatched review gets it at once. Monitor §40 makes the reload succeed reliably. Until then, a follower can be cycled to pick the code up.</p></div>
 </div>
 </section>
 </main>
