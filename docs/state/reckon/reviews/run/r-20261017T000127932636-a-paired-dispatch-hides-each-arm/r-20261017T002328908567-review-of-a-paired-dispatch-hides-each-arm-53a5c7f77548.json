@@ -1,0 +1,96 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1467",
+    "reckon/crew_dispatch_commands.py:1509",
+    "reckon/crew_dispatch_commands.py:1521"
+  ],
+  "completed_at": "2026-10-17T00:34:14.175Z",
+  "dispatched_at": "2026-10-17T00:23:58Z",
+  "finding_dispositions": {
+    "1": {
+      "kind": "folded",
+      "node": "a-paired-dispatch-hides-each-arm",
+      "recorded_at": "2026-10-17T00:34:16.856710+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "a-paired-dispatch-hides-each-arm",
+      "recorded_at": "2026-10-17T00:34:27.734337+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "a-paired-dispatch-hides-each-arm",
+      "recorded_at": "2026-10-17T00:34:39.298312+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "863",
+      "severity": "blocking",
+      "text": "blocking: the shadow-arm dispatch() call passes worktree_session, lineage_override, backend_override, default_backend_override, route, picker_selection, local and peer_scopes both explicitly and again through **_paired_arm_kwargs(dispatch_kwargs, {...}) at line 879, which returns every override key, so `crew dispatch --pair-backend <backend>` (reckon/crew_dispatch_commands.py:1521) raises \"TypeError: dispatch() got multiple values for keyword argument 'worktree_session'\" before either arm launches \u2014 the paired launch, which is the node's entire goal, cannot run."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "741",
+      "severity": "follow-on",
+      "text": "follow-on: dispatch_pair creates both run directories before the `if dry_run:` branch at line 807, so `crew dispatch --dry-run --pair-backend` writes two empty run directories into the live run store, and a preview that mutates the store it previews can leave orphan run rows behind."
+    },
+    {
+      "file": "tests/test_a_paired_dispatch_hides_each_arm.py",
+      "line": "191",
+      "severity": "follow-on",
+      "text": "follow-on: both dispatch_pair calls in the file pass dry_run=True (lines 191 and 222) and the fence test drives launch_plan directly, so no added assertion can redden on the duplicate-keyword TypeError at reckon/crew/dispatch.py:863 \u2014 a launch-path regression is invisible to this suite."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T000127932636-a-paired-dispatch-hides-each-arm/manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when's population arm and its ruff checks were not run and the manifest carries no baseline_suite/after_suite fields, so the added-failure count this review must derive from the reviewed run's own gate logs is unmeasured (null) rather than a measured zero."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit from base 7f28ec3571c1418c6840fbaf9202c3afd261b96a to head 53a5c7f7754852cceb8ab3088a2db66cf2c782ed; it adds dispatch_pair and _paired_arm_kwargs (reckon/crew/dispatch.py:675,686), _allocated_read_surfaces (reckon/crew/promotion_scope.py:1107), the --pair-backend option (reckon/crew_dispatch_commands.py:1170) and a 326-line test file, and the shadow-arm dispatch call at reckon/crew/dispatch.py:863-891 passes eight duplicate keywords.",
+    "done_when": "the done_when (prompt.txt:88-95) names a paired dry run, both run directories allocated before either arm launches, a real-bwrap stub listing the partner's run directory empty while its own run directory and worktree stay writable, the primary's masks naming the shadow's run directory through promotion_scope._primary_read_surfaces, an unpaired dispatch composing none, a logged negative control, the dispatch.py-importer population adding no failure id against base, and clean ruff on the changed paths; tests/test_a_paired_dispatch_hides_each_arm.py and gate.log:4-6 cover the first five (4 passed), but the population arm and the ruff checks were not run and the manifest carries no baseline_suite/after_suite pair.",
+    "goal": "the node's goal is that `crew dispatch --pair-backend <backend>` launches a primary and a shadow arm from one base with each arm fenced from the other (prompt.txt:21); reckon/crew_dispatch_commands.py:1467 and reckon/crew/dispatch.py:686 implement that surface, but the launch path raises TypeError, so the goal is not reached.",
+    "manifest": "read; manifest.md:5-7 records status complete, the three commits and a landing line, manifest.md:11 names the gate and its 4-passed result, manifest.md:13 names the negative-control log, and manifest.md:17 discloses that the dispatch.py importer population was not run.",
+    "write_paths": "the declared scope is reckon/crew/dispatch.py, reckon/crew_dispatch_commands.py, reckon/crew/promotion_scope.py, tests/test_a_paired_dispatch_hides_each_arm.py plus one evidence fragment and a figure directory (prompt.txt:53-58); all five paths in the diff are inside it and the figure directory is unused, which the small-node rule permits."
+  },
+  "justifications": {
+    "durability": "tests/test_a_paired_dispatch_hides_each_arm.py:253 is a real guard (gate.log:4-6 green, the negative control at negative-control-primary-masks-dropped.log:2 reddens it), but no assertion reaches the non-dry-run path, so the TypeError at reckon/crew/dispatch.py:863 passes the suite.",
+    "evidence": "gate.log:4-6 records 4 passed for the named test file and manifest.md:11 states it, but the done_when's other arms (the dispatch.py-importer population and the ruff checks, prompt.txt:93-95) were never run and no baseline_suite/after_suite log exists, so the suite delta is unmeasured.",
+    "fit": "the additions follow the module's idiom and use mechanism names only (_paired_arm_kwargs, dispatch_pair, _allocated_read_surfaces at reckon/crew/promotion_scope.py:1107), with no plan or ticket label in any symbol, comment or path.",
+    "goal_fidelity": "reckon/crew/dispatch.py:863 passes worktree_session, route and six more both explicitly and through **_paired_arm_kwargs at line 879, so the paired launch cannot run and the goal's verb (\"launches\") is unmet.",
+    "reuse": "_allocated_read_surfaces (reckon/crew/promotion_scope.py:1107) is a thin wrapper over the existing owner _primary_read_surfaces and reuses _shadow_dispatch_config and shadow_worktree_session, but it rebuilds the lineage dict that reckon/crew/dispatch.py:625 already builds for the same shadow kind.",
+    "scope_discipline": "every path in the diff (reckon/crew/dispatch.py, reckon/crew/promotion_scope.py, reckon/crew_dispatch_commands.py, tests/test_a_paired_dispatch_hides_each_arm.py, docs/evidence/fragments/a-shadow-cannot-see-its-primary/a-paired-dispatch-hides-each-arm.html) is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that `crew dispatch --pair-backend <backend>` launches a primary and a shadow arm from one base with each arm fenced from the other (prompt.txt:21); reckon/crew_dispatch_commands.py:1467 and reckon/crew/dispatch.py:686 implement that surface, but the launch path raises TypeError, so the goal is not reached.\nVERDICT done_when: the done_when (prompt.txt:88-95) names a paired dry run, both run directories allocated before either arm launches, a real-bwrap stub listing the partner's run directory empty while its own run directory and worktree stay writable, the primary's masks naming the shadow's run directory through promotion_scope._primary_read_surfaces, an unpaired dispatch composing none, a logged negative control, the dispatch.py-importer population adding no failure id against base, and clean ruff on the changed paths; tests/test_a_paired_dispatch_hides_each_arm.py and gate.log:4-6 cover the first five (4 passed), but the population arm and the ruff checks were not run and the manifest carries no baseline_suite/after_suite pair.\nVERDICT write_paths: the declared scope is reckon/crew/dispatch.py, reckon/crew_dispatch_commands.py, reckon/crew/promotion_scope.py, tests/test_a_paired_dispatch_hides_each_arm.py plus one evidence fragment and a figure directory (prompt.txt:53-58); all five paths in the diff are inside it and the figure directory is unused, which the small-node rule permits.\nVERDICT manifest: read; manifest.md:5-7 records status complete, the three commits and a landing line, manifest.md:11 names the gate and its 4-passed result, manifest.md:13 names the negative-control log, and manifest.md:17 discloses that the dispatch.py importer population was not run.\nVERDICT diff: read commit by commit from base 7f28ec3571c1418c6840fbaf9202c3afd261b96a to head 53a5c7f7754852cceb8ab3088a2db66cf2c782ed; it adds dispatch_pair and _paired_arm_kwargs (reckon/crew/dispatch.py:675,686), _allocated_read_surfaces (reckon/crew/promotion_scope.py:1107), the --pair-backend option (reckon/crew_dispatch_commands.py:1170) and a 326-line test file, and the shadow-arm dispatch call at reckon/crew/dispatch.py:863-891 passes eight duplicate keywords.\nCALL_SITES: reckon/crew_dispatch_commands.py:1467, reckon/crew_dispatch_commands.py:1509, reckon/crew_dispatch_commands.py:1521\nSCORE goal_fidelity: 8\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:863 passes worktree_session, route and six more both explicitly and through **_paired_arm_kwargs at line 879, so the paired launch cannot run and the goal's verb (\"launches\") is unmet.\nSCORE evidence: 10\nJUSTIFICATION evidence: gate.log:4-6 records 4 passed for the named test file and manifest.md:11 states it, but the done_when's other arms (the dispatch.py-importer population and the ruff checks, prompt.txt:93-95) were never run and no baseline_suite/after_suite log exists, so the suite delta is unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/dispatch.py, reckon/crew/promotion_scope.py, reckon/crew_dispatch_commands.py, tests/test_a_paired_dispatch_hides_each_arm.py, docs/evidence/fragments/a-shadow-cannot-see-its-primary/a-paired-dispatch-hides-each-arm.html) is inside the declared write paths.\nSCORE durability: 7\nJUSTIFICATION durability: tests/test_a_paired_dispatch_hides_each_arm.py:253 is a real guard (gate.log:4-6 green, the negative control at negative-control-primary-masks-dropped.log:2 reddens it), but no assertion reaches the non-dry-run path, so the TypeError at reckon/crew/dispatch.py:863 passes the suite.\nSCORE fit: 18\nJUSTIFICATION fit: the additions follow the module's idiom and use mechanism names only (_paired_arm_kwargs, dispatch_pair, _allocated_read_surfaces at reckon/crew/promotion_scope.py:1107), with no plan or ticket label in any symbol, comment or path.\nSCORE reuse: 15\nJUSTIFICATION reuse: _allocated_read_surfaces (reckon/crew/promotion_scope.py:1107) is a thin wrapper over the existing owner _primary_read_surfaces and reuses _shadow_dispatch_config and shadow_worktree_session, but it rebuilds the lineage dict that reckon/crew/dispatch.py:625 already builds for the same shadow kind.\nFINDING reckon/crew/dispatch.py:863 blocking: the shadow-arm dispatch() call passes worktree_session, lineage_override, backend_override, default_backend_override, route, picker_selection, local and peer_scopes both explicitly and again through **_paired_arm_kwargs(dispatch_kwargs, {...}) at line 879, which returns every override key, so `crew dispatch --pair-backend <backend>` (reckon/crew_dispatch_commands.py:1521) raises \"TypeError: dispatch() got multiple values for keyword argument 'worktree_session'\" before either arm launches \u2014 the paired launch, which is the node's entire goal, cannot run.\nFINDING reckon/crew/dispatch.py:741 follow-on: dispatch_pair creates both run directories before the `if dry_run:` branch at line 807, so `crew dispatch --dry-run --pair-backend` writes two empty run directories into the live run store, and a preview that mutates the store it previews can leave orphan run rows behind.\nFINDING tests/test_a_paired_dispatch_hides_each_arm.py:191 follow-on: both dispatch_pair calls in the file pass dry_run=True (lines 191 and 222) and the fence test drives launch_plan directly, so no added assertion can redden on the duplicate-keyword TypeError at reckon/crew/dispatch.py:863 \u2014 a launch-path regression is invisible to this suite.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T000127932636-a-paired-dispatch-hides-each-arm/manifest.md:17 follow-on: the done_when's population arm and its ruff checks were not run and the manifest carries no baseline_suite/after_suite fields, so the added-failure count this review must derive from the reviewed run's own gate logs is unmeasured (null) rather than a measured zero.\n",
+  "review_run_id": "r-20261017T002328908567-review-of-a-paired-dispatch-hides-each-arm-53a5c7f77548",
+  "reviewed_base_sha": "7f28ec3571c1418c6840fbaf9202c3afd261b96a",
+  "reviewed_head_sha": "53a5c7f7754852cceb8ab3088a2db66cf2c782ed",
+  "reviewed_run_id": "r-20261017T000127932636-a-paired-dispatch-hides-each-arm",
+  "role": "review",
+  "scores": {
+    "durability": 7,
+    "evidence": 10,
+    "fit": 18,
+    "goal_fidelity": 8,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T00:36:32.992415+00:00",
+  "total": 77
+}
