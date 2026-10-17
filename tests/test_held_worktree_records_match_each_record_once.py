@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
+import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -24,7 +26,7 @@ import pytest
 
 from reckon import ledger
 from reckon.crew import routing
-from tests.helpers.git import git as _git
+from reckon.worker_git_shim import RUN_ID_ENV
 
 obligations_module = importlib.import_module("reckon.crew.obligations")
 
@@ -33,6 +35,29 @@ SESSION = "match-once-fixture"
 TREE_COUNT = 20
 RECORD_COUNT = 500
 BASE_COMPLETED = datetime(2026, 10, 1, 12, 0, tzinfo=UTC) - timedelta(seconds=5000)
+
+
+def _git(repository: Path, *arguments: str) -> str:
+    """Run git in ``repository`` without this process's run identity.
+
+    A crew worker exports the run it serves, and the git shim refuses a
+    mutating verb whose run's live pointer it cannot read — which is precisely
+    the state a test is in, because its configuration home is a temporary one.
+    The fixture's repository is a throwaway, so its git calls run with that
+    identity removed and the shim transparent; they change nothing the shim
+    exists to protect. Reads need no such care, but run through here too so a
+    fixture never depends on which verbs the shim leaves alone.
+    """
+    environment = {key: value for key, value in os.environ.items() if key != RUN_ID_ENV}
+    result = subprocess.run(
+        ["git", *arguments],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+        text=True,
+        env=environment,
+    )
+    return result.stdout.strip()
 
 
 def _tree_name(index: int) -> str:
@@ -69,26 +94,21 @@ def _build_case(index: int, trees: list[Path]) -> dict[str, Any]:
 
 
 @pytest.fixture(scope="module")
-def fleet(
+def _fleet_build(
     tmp_path_factory: pytest.TempPathFactory,
-) -> tuple[Path, list[Path], list[dict[str, Any]]]:
-    """A synthesised checkout holding many trees and more records.
+) -> tuple[Path, Path, list[Path], list[dict[str, Any]]]:
+    """The costly half of the fleet: a synthesised checkout and its records.
 
-    Built once for the module: the fixture is the costly part, and every case
-    reads it without writing. Returns the repository root, the inspected tree
-    paths, and the records as the producer wrote them.
+    Built once for the module and read by every case without writing. No
+    environment is touched here: a module-scoped fixture outlives the tests
+    that use it, and a worker running several test modules on one process would
+    carry its redirected home into whatever ran next. Returns the temporary
+    root the per-test home is made under, the repository root, the inspected
+    tree paths, and the records as the producer wrote them.
     """
-    monkeypatch = pytest.MonkeyPatch()
     tmp_path = tmp_path_factory.mktemp("held-tree-index")
     config_home = tmp_path / "config"
     config_home.mkdir()
-    monkeypatch.setenv("RECKON_HOME", str(config_home))
-    # The mounts file is named explicitly: the autouse per-test home fixture
-    # overwrites RECKON_HOME once each test runs, and a module-scoped fixture
-    # cannot depend on the function-scoped one to supply it. RECKON_MOUNTS_PATH
-    # is read ahead of RECKON_HOME, so the project resolves to this checkout
-    # whatever the per-test home says.
-    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(config_home / "mounts.json"))
     root = tmp_path / "repo"
     (root / "docs" / "state" / PROJECT).mkdir(parents=True)
     (root / "seed.txt").write_text("seed\n", encoding="utf-8")
@@ -104,30 +124,66 @@ def fleet(
         json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
     )
 
-    trees = [_worktree(root, _tree_name(index)) for index in range(TREE_COUNT)]
-    records: list[dict[str, Any]] = []
-    for index in range(RECORD_COUNT):
-        case = _build_case(index, trees)
-        completed = BASE_COMPLETED + timedelta(seconds=index)
-        run_id = f"r-20261016T{100000 + index:06d}-r{index:03d}"
-        record = ledger.build_record(
-            run_id=run_id,
-            plan="fixture-plan",
-            gate="passed",
-            node=case["node"],
-            session=case["session"],
-            completed_at=completed.isoformat(),
-        )
-        worktree = case["worktree"]
-        record["worktree_retention"] = (
-            {"worktree": str(worktree), "retained_at": completed.isoformat()}
-            if worktree is not None
-            else None
-        )
-        ledger.append_run(PROJECT, record, root=root, allow_create=True)
-        records.append(record)
-    yield root, trees, records
-    monkeypatch.undo()
+    # Publishing a run resolves the checkout that owns the project through the
+    # mount registry, and this module-scoped build runs before the per-test home
+    # fixture exists. The two keys are therefore named for the length of the
+    # build and put back before it returns, so nothing here outlives the setup
+    # that needed it.
+    previous = {
+        key: os.environ.get(key) for key in ("RECKON_HOME", "RECKON_MOUNTS_PATH")
+    }
+    os.environ["RECKON_HOME"] = str(config_home)
+    os.environ["RECKON_MOUNTS_PATH"] = str(config_home / "mounts.json")
+    try:
+        trees = [_worktree(root, _tree_name(index)) for index in range(TREE_COUNT)]
+        records: list[dict[str, Any]] = []
+        for index in range(RECORD_COUNT):
+            case = _build_case(index, trees)
+            completed = BASE_COMPLETED + timedelta(seconds=index)
+            run_id = f"r-20261016T{100000 + index:06d}-r{index:03d}"
+            record = ledger.build_record(
+                run_id=run_id,
+                plan="fixture-plan",
+                gate="passed",
+                node=case["node"],
+                session=case["session"],
+                completed_at=completed.isoformat(),
+            )
+            worktree = case["worktree"]
+            record["worktree_retention"] = (
+                {"worktree": str(worktree), "retained_at": completed.isoformat()}
+                if worktree is not None
+                else None
+            )
+            ledger.append_run(PROJECT, record, root=root, allow_create=True)
+            records.append(record)
+    finally:
+        for key, value in previous.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+    return tmp_path, root, trees, records
+
+
+@pytest.fixture
+def fleet(
+    _fleet_build: tuple[Path, Path, list[Path], list[dict[str, Any]]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[Path, list[Path], list[dict[str, Any]]]:
+    """Point this test, and only this test, at the fixture's checkout.
+
+    The project is resolved through the configuration home, so the derivation
+    reads the fixture's checkout only while this test runs. The home is set for
+    one test and restored when it ends, because a worker runs several modules
+    in one process and a home left pointed here would answer a peer module's
+    lookup with a project its mounts file does not carry.
+    """
+    tmp_path, root, trees, records = _fleet_build
+    config_home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(config_home / "mounts.json"))
+    return root, trees, records
 
 
 def _whole_ledger_held(root: Path) -> dict[str, str]:
