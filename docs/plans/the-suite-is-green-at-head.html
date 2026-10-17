@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="382">
+<meta name="plan-version" content="383">
 <meta name="plan-modified" content="2026-10-17">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1809,10 +1809,13 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
     <div class="r-comment-body"><p>Reviewed r-20261017T173945029495-a-revision-label-is-read-in-any-case at 91a8aea54..58efccfe838c: goal_fidelity 19, evidence 17, scope_discipline 20, durability 19, fit 18, reuse 18, total 111; two follow-on findings — the evidence fragment mislabels the head arm's revision as the base sha (fragment:48), and the sibling first-line reader review.py:1336 stays case-sensitive so REV=/rev= logs annotate a null head_log_revision.</p></div>
 </div>
 <div class="r-comment" data-section="s20" data-id="c-run-r-20261017T181653056625-review-of-a-revision-label-is-read-in-any-case-d474ea8fcfe6" data-who="reckon-build" data-when="2026-10-17T18:28:36.321Z">
-    <div class="r-comment-body"><p>Independent review of r-20261017T173945029495-a-revision-label-is-read-in-any-case at head d474ea8fcfe67d286265f8ac113b1e8b9344e0d2 scored 112/120 (goal_fidelity 20, evidence 17, scope_discipline 18, durability 19, fit 18, reuse 20), added_failure_count 0 from the base arm&#x27;s 6 red ids against the head arm&#x27;s 0, with two follow-on findings (fragment carries evidence prose the node contract forbids; the done-when&#x27;s ruff clause has no log behind it); no blocking finding.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261017T173945029495-a-revision-label-is-read-in-any-case at head d474ea8fcfe67d286265f8ac113b1e8b9344e0d2 scored 112/120 (goal_fidelity 20, evidence 17, scope_discipline 18, durability 19, fit 18, reuse 20), added_failure_count 0 from the base arm's 6 red ids against the head arm's 0, with two follow-on findings (fragment carries evidence prose the node contract forbids; the done-when's ruff clause has no log behind it); no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20261017T175648147679-review-of-the-split-leak-scan-reads-the-real-mounts-e0272364a413" data-who="reckon-build" data-when="2026-10-17T18:03:25.463Z">
     <div class="r-comment-body"><p>Reviewed run r-20261017T173820732307-the-split-leak-scan-reads-the-real-mounts at head e0272364a: goal met (conftest captures the mounts path at import, the fixture reads it), scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 15, fit 18, reuse 5 (total 93), with two follow-on findings — workstation_mounts() forks reckon/flight.py:458's parse, and the fixture's use of the reader at tests/test_split_existing_runs.py:85 is unpinned.</p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261017T182025109019-review-of-the-split-leak-scan-reads-the-real-mounts-837cee27f062" data-who="reckon-build" data-when="2026-10-17T18:32:50.824Z">
+    <div class="r-comment-body"><p>reviewed r-20261017T173820732307-the-split-leak-scan-reads-the-real-mounts at base 91a8aea54 to head 837cee27f; the record scores goal_fidelity 20, evidence 16, scope_discipline 20, durability 19, fit 18, reuse 20 (total 113), and the prior review&#x27;s two follow-ons are resolved: reckon/flight.py&#x27;s mounted_project_docs now owns the mounts-file parse so the conftest helper no longer forks it, and the new fixture-level case fails when the leak scan resolves the live home.</p></div>
 </div>
 </section>
 </main>

@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 15,
+  "call_sites": [
+    "reckon/flight.py:506",
+    "reckon/flight.py:2535",
+    "reckon/crew_dispatch_commands.py:598",
+    "reckon/mcp.py:1983",
+    "reckon/ledger.py:858",
+    "reckon/ledger.py:3301",
+    "reckon/velocity.py:3120",
+    "reckon/crew/dispatch_plan.py:1063",
+    "reckon/run_store.py:356",
+    "reckon/crew/routing.py:1813",
+    "reckon/crew/runs.py:1402",
+    "reckon/crew/picker/outcomes.py:667",
+    "reckon/crew/standing_suite.py:572",
+    "reckon/crew/plan_review.py:1126",
+    "reckon/crew/recovery_review_subject.py:267"
+  ],
+  "completed_at": "2026-10-17T18:32:50.824Z",
+  "dispatched_at": "2026-10-17T18:21:13Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T173820732307-the-split-leak-scan-reads-the-real-mounts/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when's ruff check and ruff format --check clause is asserted in the manifest artifacts line but no ruff log exists in the run directory, so one of the five named clauses is claimed rather than recorded."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 15 production call site(s)",
+    "diff": "read commit by commit against 91a8aea54; 7ccd35eb7 captures the path and adds the reader, 2930951d1 sharpens the assertion to the vacuity guard, e0272364a records evidence, 3c64e60c2 delegates the reader to reckon/flight.py and adds the fixture pin, 837cee27f updates the fragment, all inside the declared scope.",
+    "done_when": "read the node's done_when and the five logs under the run directory; the new file's two cases, three -n 4 runs of tests/test_split_existing_runs.py and the vacuity negative control are recorded, but the done_when's ruff-clean clause carries no log.",
+    "goal": "read node.goal from the run record and the landed reader; tests/conftest.py:1398 captures _mounts_path() at import and tests/test_split_existing_runs.py:85 reads the leak scan through workstation_mounts(), so the scan no longer resolves the configuration home in force at fixture time.",
+    "manifest": "read; it records the new file 2 passed, tests/test_split_existing_runs.py 8 passed three times under -n 4, the importers 121 passed 1 skipped, and names its five logs and the negative control.",
+    "write_paths": "read the manifest's orientation paths and the run record's declared write_paths; every path in the diff is inside the record's list, which includes reckon/flight.py added on resume (resume-1-advice.txt) so the fenced scope is intact."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows tests/test_the_split_leak_scan_reads_the_real_mounts.py reddens when the fixture resolves the live home, and the reader case at line 42 fails if the import-time capture or the mounts_file parameter is reverted.",
+    "evidence": "head-new-test.log (2 passed, EXIT=0), the three -n 4 split logs (8 passed each) and negative-control.log (1 failed, EXIT=1) are recorded, but they name revision 3c64e60c2 rather than the reviewed head 837cee27f and the done_when's ruff-clean clause has no log.",
+    "fit": "tests/conftest.py:1401 follows the surrounding conftest idiom and the added names (workstation_mounts, WORKSTATION_MOUNTS_PATH) carry no plan, stage, version or ticket label.",
+    "goal_fidelity": "tests/conftest.py:1398 captures the mounts path at import and the leak-scan fixture at tests/test_split_existing_runs.py:85 reads through it, which is exactly the node goal.",
+    "reuse": "tests/conftest.py:1411 now delegates to reckon/flight.py:458 mounted_project_docs with the captured path, so the mounts-file parser has one owner and the prior fork is removed.",
+    "scope_discipline": "every path in the diff (tests/conftest.py, tests/test_split_existing_runs.py, tests/test_the_split_leak_scan_reads_the_real_mounts.py, the evidence fragment, reckon/flight.py) is inside the run record's declared write_paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read node.goal from the run record and the landed reader; tests/conftest.py:1398 captures _mounts_path() at import and tests/test_split_existing_runs.py:85 reads the leak scan through workstation_mounts(), so the scan no longer resolves the configuration home in force at fixture time.\nVERDICT done_when: read the node's done_when and the five logs under the run directory; the new file's two cases, three -n 4 runs of tests/test_split_existing_runs.py and the vacuity negative control are recorded, but the done_when's ruff-clean clause carries no log.\nVERDICT write_paths: read the manifest's orientation paths and the run record's declared write_paths; every path in the diff is inside the record's list, which includes reckon/flight.py added on resume (resume-1-advice.txt) so the fenced scope is intact.\nVERDICT manifest: read; it records the new file 2 passed, tests/test_split_existing_runs.py 8 passed three times under -n 4, the importers 121 passed 1 skipped, and names its five logs and the negative control.\nVERDICT diff: read commit by commit against 91a8aea54; 7ccd35eb7 captures the path and adds the reader, 2930951d1 sharpens the assertion to the vacuity guard, e0272364a records evidence, 3c64e60c2 delegates the reader to reckon/flight.py and adds the fixture pin, 837cee27f updates the fragment, all inside the declared scope.\nCALL_SITES: reckon/flight.py:506, reckon/flight.py:2535, reckon/crew_dispatch_commands.py:598, reckon/mcp.py:1983, reckon/ledger.py:858, reckon/ledger.py:3301, reckon/velocity.py:3120, reckon/crew/dispatch_plan.py:1063, reckon/run_store.py:356, reckon/crew/routing.py:1813, reckon/crew/runs.py:1402, reckon/crew/picker/outcomes.py:667, reckon/crew/standing_suite.py:572, reckon/crew/plan_review.py:1126, reckon/crew/recovery_review_subject.py:267\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/conftest.py:1398 captures the mounts path at import and the leak-scan fixture at tests/test_split_existing_runs.py:85 reads through it, which is exactly the node goal.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-new-test.log (2 passed, EXIT=0), the three -n 4 split logs (8 passed each) and negative-control.log (1 failed, EXIT=1) are recorded, but they name revision 3c64e60c2 rather than the reviewed head 837cee27f and the done_when's ruff-clean clause has no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (tests/conftest.py, tests/test_split_existing_runs.py, tests/test_the_split_leak_scan_reads_the_real_mounts.py, the evidence fragment, reckon/flight.py) is inside the run record's declared write_paths.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log shows tests/test_the_split_leak_scan_reads_the_real_mounts.py reddens when the fixture resolves the live home, and the reader case at line 42 fails if the import-time capture or the mounts_file parameter is reverted.\nSCORE fit: 18\nJUSTIFICATION fit: tests/conftest.py:1401 follows the surrounding conftest idiom and the added names (workstation_mounts, WORKSTATION_MOUNTS_PATH) carry no plan, stage, version or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: tests/conftest.py:1411 now delegates to reckon/flight.py:458 mounted_project_docs with the captured path, so the mounts-file parser has one owner and the prior fork is removed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T173820732307-the-split-leak-scan-reads-the-real-mounts/manifest.md:15 follow-on: the done_when's ruff check and ruff format --check clause is asserted in the manifest artifacts line but no ruff log exists in the run directory, so one of the five named clauses is claimed rather than recorded.\n",
+  "review_run_id": "r-20261017T182025109019-review-of-the-split-leak-scan-reads-the-real-mounts-837cee27f062",
+  "reviewed_base_sha": "91a8aea54aca17e98ce06aa7d3012bfe361105ef",
+  "reviewed_head_sha": "837cee27f0621f67ebf6d7b3e94764ea499abedc",
+  "reviewed_run_id": "r-20261017T173820732307-the-split-leak-scan-reads-the-real-mounts",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T18:36:12.518443+00:00",
+  "total": 113
+}
