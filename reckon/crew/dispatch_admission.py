@@ -58,6 +58,7 @@ from reckon.crew.reserve import (
     admit_windows as reserve_admit_windows,
 )
 from reckon.crew.review import (
+    RUN_REVIEW_RECORD_DIRNAME,
     review_store_root,
 )
 from reckon.crew.routing import (
@@ -69,8 +70,8 @@ from reckon.crew.runs import (
     delivery_roots,
     list_live,
     reports_dir,
+    runs_dir,
 )
-
 
 
 def _actionable_budget_hold(
@@ -1814,6 +1815,15 @@ def _sandbox_reachability(
         manifest_path=node.manifest_path,
         review_store_directory=review_store_root(),
     )
+    if node.role == "review" and roots is not None:
+        record_directories = {
+            directory
+            for declared in node.write_paths
+            if (directory := _review_record_directory_grant(declared)) is not None
+        }
+        roots = tuple(
+            sorted({*roots, *record_directories}, key=lambda path: path.as_posix())
+        )
     if "execution_capable" not in backend:
         return roots, []
     tier = str(backend.get("sandbox") or _backends.READ_ONLY)
@@ -1837,6 +1847,25 @@ def _sandbox_reachability(
         }
         for path in unreachable
     ]
+
+
+def _review_record_directory_grant(declared: str) -> Path | None:
+    """Accept a review record only where the fence binds its existing directory."""
+    raw = Path(declared).expanduser()
+    if not raw.is_absolute():
+        return None
+    path = raw.resolve()
+    try:
+        within_runs = path.relative_to(runs_dir().resolve())
+    except ValueError:
+        return None
+    if (
+        len(within_runs.parts) != 3
+        or within_runs.parts[1] != RUN_REVIEW_RECORD_DIRNAME
+        or not path.parent.is_dir()
+    ):
+        return None
+    return path.parent
 
 
 def _fence_write_roots(
