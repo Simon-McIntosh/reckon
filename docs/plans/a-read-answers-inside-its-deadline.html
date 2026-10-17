@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="214">
+<meta name="plan-version" content="215">
 <meta name="plan-modified" content="2026-10-17">
 </head>
 <body>
@@ -723,6 +723,9 @@
 </div>
 <div class="r-comment" data-section="s31" data-id="c-run-r-20261017T101826502129-review-of-building-the-store-writes-it-once-0d5bdf3417fd" data-who="reckon-build" data-when="2026-10-17T10:29:10.978Z">
     <div class="r-comment-body"><p>Incremental review of r-20261017T091418241771-building-the-store-writes-it-once over the two commits it gained since its prior review (base 9cc65a412, head 0d5bdf341): fcc87c188 wraps the discovery document loop in try/finally so a mid-loop failure still flushes and frees the batch, adds tests/test_building_the_store_writes_it_once.py::test_a_failure_mid_loop_leaves_no_open_batch, and rewrites two changelog-phrased comments; 0d5bdf341 states the finally in the evidence fragment; the increment closes the prior review's follow-on. Six dimensions scored goal_fidelity 19, evidence 17, scope_discipline 20, durability 19, fit 18, reuse 20 (total 113); one follow-on class of finding in two files (perf artefact and gate log both name a revision earlier than the reviewed head).</p></div>
+</div>
+<div class="r-comment" data-section="s31" data-id="c-run-r-20261017T091418241771-building-the-store-writes-it-once" data-who="reckon-build" data-when="2026-10-17T10:17:48Z">
+    <div class="r-comment-body"><p>One discovery pass now writes the persisted metadata store once: record_discovery accumulates into a begin_discovery/flush_discovery batch opened around serve._discover_plans_uncached&#x27;s document loop and closed in a finally so a failure mid-loop still flushes and frees the batch key, so one first read over an empty 25-plan store makes 2 _store_persisted calls (the batch flush plus the covered-shape write) against 26 at base, and three fresh-process first reads per arm over the frozen 1326-file docs corpus on one exclusive all_debug node give head median 20.491 s vs base 78.804 s, a 58.313 s saving ahead of the 30 s required.</p></div>
 </div>
 <div class="r-comment" data-section="s28" data-id="c-run-r-20261017T113208074260-review-of-a-fresh-read-takes-the-ledger-from-its-index-faee86b8e84f" data-who="reckon-build" data-when="2026-10-17T11:48:12.512Z">
     <div class="r-comment-body"><p>review of r-20261017T104516290345-a-fresh-read-takes-the-ledger-from-its-index scored 18/18/20/17/17/12 (goal_fidelity/evidence/scope_discipline/durability/fit/reuse), total 102, 4 follow-on findings, added_failure_count 0</p></div>
