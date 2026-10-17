@@ -114,19 +114,31 @@ def _record_lease_node(root: Path) -> None:
 def _prune_must_keep(entry: Path) -> bool:
     """Whether pruning must leave a published tree alone.
 
-    A tree published but not yet leased -- no ``.in-use`` -- is one lying in
-    the publish-to-lease gap, and is left alone while it is younger than the
-    grace. A tree whose lease record names a node other than this one, and was
+    A tree whose lease record names a node other than this one, and was
     renewed within the lease window, is one a node that is not this one is
     importing from: the tree is held, and no lock here would say so.
+
+    A tree carrying an in-use mark and no record at all is one in the instant
+    between a pin creating that mark and the same pin writing its record, where
+    the mark exists before a name does. Its own recency is what says a pin is
+    in flight, and a pruner reading the entry in between would otherwise find
+    no name to refuse it and take a tree a node is taking; a mark old enough
+    that no pin could still be writing is let go.
+
+    A tree with no in-use mark is one lying in the publish-to-lease gap, and is
+    left alone while its completion marker is younger than the grace.
     """
-    if not (entry / ".in-use").exists():
-        age = _marker_age_seconds(entry / ".complete")
+    named = _lease_nodes(entry)
+    if named - {_lock_node_name()}:
+        age = _marker_age_seconds(entry / COMMITTED_TREE_LEASE_MARKER)
+        return age is not None and age < COMMITTED_TREE_LEASE_WINDOW_SECONDS
+    if (entry / ".in-use").exists():
+        if named:
+            return False
+        age = _marker_age_seconds(entry / ".in-use")
         return age is not None and age < COMMITTED_TREE_PUBLISH_GRACE_SECONDS
-    if not (_lease_nodes(entry) - {_lock_node_name()}):
-        return False
-    age = _marker_age_seconds(entry / COMMITTED_TREE_LEASE_MARKER)
-    return age is not None and age < COMMITTED_TREE_LEASE_WINDOW_SECONDS
+    age = _marker_age_seconds(entry / ".complete")
+    return age is not None and age < COMMITTED_TREE_PUBLISH_GRACE_SECONDS
 
 
 def committed_head(root: Path) -> str | None:

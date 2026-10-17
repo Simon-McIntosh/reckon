@@ -193,6 +193,27 @@ def test_a_tree_a_peer_node_pinned_before_renewing_keeps_its_tree(source, monkey
     assert peer.is_dir(), "a peer node's freshly taken lease did not keep its tree"
 
 
+def test_a_tree_pruned_in_the_gap_before_its_record_keeps_its_tree(source, monkeypatch):
+    """A pin creates its in-use mark before it writes its record.
+
+    A pruner that reads the entry between those two steps finds a mark of use
+    and no name to refuse it, and would take the tree the pin is taking.
+    """
+    root, _, _ = source
+    checkout = follow.checkout_trust
+    subject_commit = _commit(root, "in-the-gap")
+    subject, _, _, pin = checkout.materialize_committed_tree(root, subject_commit)
+    os.close(pin)
+    # The pin's second step is the tree's record write, so removing the record
+    # leaves the entry exactly as a pruner reads it in between.
+    os.remove(subject / checkout.COMMITTED_TREE_LEASE_MARKER)
+
+    for index in range(checkout.COMMITTED_TREE_RETENTION + 1):
+        _publish(root, _commit(root, f"newer-{index}"))
+
+    assert subject.is_dir(), "a tree read in the pin gap lost its tree"
+
+
 def test_a_tree_past_both_windows_with_no_lease_is_pruned(source, monkeypatch):
     """The windows bound how long an in-use tree is spared, as before."""
     root, _, _ = source
