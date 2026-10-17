@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/routing.py:2882 reap_idle_session_members passes ledger.load()'s union to ledger.write (now refused)",
+    "reckon/crew/promotion_gate.py:949 the gate re-run fallback writes ledger.load()'s union (now refused)",
+    "reckon/crew/promotion_records.py:678 identity retirement writes ledger.load()'s union (now refused)",
+    "scripts/derive_run_figures.py:64 row backfill writes ledger.load()'s union (now refused)",
+    "scripts/backfill_run_durations.py:215 row backfill writes ledger.load()'s union (now refused)",
+    "reckon/budget.py:1421 calls ledger.record_hold_checks, which now reads _load_aggregate",
+    "reckon/ledger.py:3092 append_run writes one run file and never routes through write(), so the ordinary promotion path is unaffected"
+  ],
+  "completed_at": "2026-10-17T16:25:50.840Z",
+  "dispatched_at": "2026-10-17T16:09:02Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "2882",
+      "severity": "follow-on",
+      "text": "the idle session-member reap passes ledger.load()'s union to ledger.write and is now refused, so it raises CrewError instead of reaping whenever the project's runs are split; the same shape refuses promotion_records.py:678, promotion_gate.py:949, scripts/derive_run_figures.py:64 and scripts/backfill_run_durations.py:215, each recorded in the node's follow_ons."
+    },
+    {
+      "file": "tests/test_hold_check_leaves_the_tree_clean.py",
+      "line": "58",
+      "severity": "follow-on",
+      "text": "the fixture seeds dual placement by writing ledger.load()'s union back, which the guard now refuses, so all three cases in that file error at head where the four-file arm passes 32 at base; the merged tree stays red here until the fixture seeds the aggregate row directly."
+    },
+    {
+      "file": "logs/negative-control-base-arm.log",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "the header's module.__file__ names the worktree ledger.py rather than the base-tree module the arm imported (the traceback on the same log names base-tree/reckon/ledger.py), so a reader can misread the negative control as run against head."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "960",
+      "severity": "follow-on",
+      "text": "the source worktree at 4a05115a7 carries uncommitted modifications to reckon/ledger.py (load_aggregate), reckon/crew/routing.py and reckon/crew/promotion_records.py that are in neither landed commit; they are the caller repairs this guard requires and must not be lost at promotion."
+    },
+    {
+      "file": "docs/evidence/fragments/the-ledger-is-one-file-per-run/the-ledger-writer-refuses-a-fold.html",
+      "line": "27",
+      "severity": "follow-on",
+      "text": "the quoted base refusal opens with a curly quote and closes with a straight one, leaving a dangling quote in the delivered evidence prose."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T153140915934-the-ledger-writer-refuses-a-fold/logs/head-arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T153140915934-the-ledger-writer-refuses-a-fold/logs/negative-control-base-arm.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read both commits against base 2e9a07c237; 6874bb51d changes reckon/ledger.py (+76/-6) and adds the 184-line test, 4a05115a7 adds the 57-line evidence fragment.",
+    "done_when": "The done_when names tests/test_the_ledger_writer_refuses_a_fold.py over a 10-row aggregate and 50 per-run files; logs/head-arm.log records 4 passed EXIT=0 and logs/negative-control-base-arm.log records 4 failed EXIT=1, so the gate asserts refusal naming 50, the accepted append and the unchanged hold count.",
+    "goal": "The node's goal is to make ledger.write refuse a write that folds per-run rows into the aggregate with record_hold_checks reading the aggregate's own rows; reckon/ledger.py:1813 adds the refusal through _folded_run_ids and reckon/ledger.py:3794 reads the aggregate directly.",
+    "manifest": "Read; the manifest records the head gate 4 passed EXIT=0 at 6874bb51d, the base arm 4 failed EXIT=1, names every log, lists the five other aggregate writers with how each reads, and puts the peer-fixture errors under follow_ons.",
+    "write_paths": "The manifest declares reckon/ledger.py, the test file, one evidence fragment and an unused figures directory; every path the diff changes is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_ledger_writer_refuses_a_fold.py:101 fails when the guard is removed, as logs/negative-control-base-arm.log shows DID NOT RAISE for the same case, and the asserted fold 50 is the fixture's own PER_RUN_FILES count rather than a value handed to write.",
+    "evidence": "logs/head-arm.log ends 4 passed EXIT=0 and logs/negative-control-base-arm.log ends 4 failed EXIT=1 over the same test file, so the done_when's cases are measured and logged, though the ruff no-added-finding clause is claimed as a delta with no log at a named path.",
+    "fit": "_folded_run_ids at reckon/ledger.py:892 is a private helper in the module's existing idiom and names its mechanism, with no plan or ticket label.",
+    "goal_fidelity": "reckon/ledger.py:1813 refuses an incoming row whose per-run file exists and names how many would fold, and reckon/ledger.py:3794 reads _load_aggregate, which is exactly the goal.",
+    "reuse": "a search of reckon/ for an existing fold refusal found none, and _folded_run_ids extends the existing _load_aggregate and _run_files helpers rather than duplicating them.",
+    "scope_discipline": "every path in git diff 2e9a07c237..4a05115a7 is inside the write paths the manifest declares."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make ledger.write refuse a write that folds per-run rows into the aggregate with record_hold_checks reading the aggregate's own rows; reckon/ledger.py:1813 adds the refusal through _folded_run_ids and reckon/ledger.py:3794 reads the aggregate directly.\nVERDICT done_when: the done_when names tests/test_the_ledger_writer_refuses_a_fold.py over a 10-row aggregate and 50 per-run files; logs/head-arm.log records \"4 passed\" EXIT=0 and logs/negative-control-base-arm.log records \"4 failed\" EXIT=1 for the same file one revision apart, so the gate asserts the refusal naming 50, the accepted append and the unchanged hold count.\nVERDICT write_paths: the manifest declares reckon/ledger.py, the test file, one evidence fragment and (unused) a figures directory; every path the diff changes is inside them.\nVERDICT manifest: read; it records the head gate 4 passed EXIT=0 at 6874bb51d, the base arm 4 failed EXIT=1, names every log, lists the five other aggregate writers with how each reads, and puts the peer-fixture errors under follow_ons.\nVERDICT diff: read both commits against base 2e9a07c237; 6874bb51d changes reckon/ledger.py (+76/-6) and adds the 184-line test, 4a05115a7 adds the 57-line evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/routing.py:2882, reckon/crew/promotion_gate.py:949, reckon/crew/promotion_records.py:678, scripts/derive_run_figures.py:64, scripts/backfill_run_durations.py:215, reckon/budget.py:1421, reckon/ledger.py:3092 (append_run, the ordinary promotion writer)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1813 refuses an incoming row whose per-run file exists and names how many would fold, and reckon/ledger.py:3794 reads _load_aggregate, which is exactly the goal.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head-arm.log ends \"4 passed\" EXIT=0 and logs/negative-control-base-arm.log ends \"4 failed\" EXIT=1 over tests/test_the_ledger_writer_refuses_a_fold.py, so the done_when's cases are measured and logged, though the ruff no-added-finding clause is claimed as a delta with no log at a named path.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff 2e9a07c237..4a05115a7 (reckon/ledger.py, the test, the fragment) is inside the write paths the manifest declares.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_ledger_writer_refuses_a_fold.py:101 fails when the guard is removed, as logs/negative-control-base-arm.log shows DID NOT RAISE for the same case, and the asserted \"fold 50\" is the fixture's own PER_RUN_FILES count rather than a value handed to write.\nSCORE fit: 18\nJUSTIFICATION fit: _folded_run_ids at reckon/ledger.py:892 is a private helper in the module's existing idiom and names its mechanism, with no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of reckon/ for an existing fold refusal found none, and _folded_run_ids extends the existing _load_aggregate and _run_files helpers rather than duplicating them.\nFINDING reckon/crew/routing.py:2882 follow-on: the idle session-member reap passes ledger.load()'s union to ledger.write and is now refused, so reap_idle_session_members retries and raises CrewError instead of reaping whenever the project's runs are split; the same shape refuses reckon/crew/promotion_records.py:678 (identity retirement), reckon/crew/promotion_gate.py:949 (gate re-run when the run file is missing) and the scripts at scripts/derive_run_figures.py:64 and scripts/backfill_run_durations.py:215 -- all are listed in the node's follow_ons and must each pass the aggregate's own rows.\nFINDING tests/test_hold_check_leaves_the_tree_clean.py:58 follow-on: the fixture seeds dual placement by writing ledger.load()'s union back, which the guard now refuses, so all three cases in that file error at head where the four-file arm passes 32 at base; the merged tree stays red in this file until the fixture seeds the aggregate row directly.\nFINDING logs/negative-control-base-arm.log:5 follow-on: the header's module.__file__ line names the worktree reckon/ledger.py rather than the base-tree module the arm actually imported (the traceback further down the same log names base-tree/reckon/ledger.py, and the guard-absent behaviour confirms it), because the probe runs under python -c from the worktree cwd, so a reader can misread the negative control as having run against head.\nFINDING docs/evidence/fragments/the-ledger-is-one-file-per-run/the-ledger-writer-refuses-a-fold.html:27 follow-on: the quoted base refusal opens with a curly quote but closes with a straight one, leaving a dangling quote in the delivered evidence prose.\nFINDING reckon/ledger.py:960 follow-on: the source worktree at the reviewed head 4a05115a7 carries uncommitted modifications to reckon/ledger.py (a public load_aggregate helper at :960), reckon/crew/routing.py and reckon/crew/promotion_records.py that are not part of either landed commit; they are the caller repairs this guard requires and a promoting coordinator must not lose them.",
+  "review_run_id": "r-20261017T160825474356-review-of-the-ledger-writer-refuses-a-fold-4a05115a7cc1",
+  "reviewed_base_sha": "2e9a07c237df7e312e81b47ad4d8744bde532dfc",
+  "reviewed_head_sha": "4a05115a7cc13772a51c4d812e767685f40820b6",
+  "reviewed_run_id": "r-20261017T153140915934-the-ledger-writer-refuses-a-fold",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T16:22:32.378422+00:00",
+  "total": 112
+}
