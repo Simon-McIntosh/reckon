@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="52">
 <meta name="plan-modified" content="2026-10-17">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.9">
 <meta name="plan-commits" content="4cfc76a4,798e549d,3a06801e,394acda7,eb8db19a">
 </head>
@@ -440,7 +440,7 @@ resume burn, after</a>.</p>
 <p><strong>Next, in order.</strong> (1) §3: dispatch and observe stop writing session fields onto roster members, and the session lives on the run record. This also carries the cross-harness defect recorded here: a run redispatched to another harness and then resumed breaks, because the resume composes the first harness's session. Done when §3's falsifier passes at the merged head and a redispatched-then-resumed run launches with the new harness's own session. (2) §4: a dispatch that names no member no longer serialises on one session-derived member. (3) §7: <code>session_reuse</code> returns to true only after §2 and §3 pass at the merged head. Done when the first re-review of a reviewed run composes its prior review session and the first new node composes none, both read from the launched argv. §6's after-figure needs at least 50 dispatches after §3. §4 of <code>the-ledger-is-one-file-per-run</code> waits on this §3.</p><p><strong>Done when</strong> §3's falsifier passes at merged head, a redispatched-then-resumed run uses its own harness's session, and §7 restores session_reuse only after §2/§3.</p><p>Moved from followup f-nwgnw-002 on new-work-gets-a-new-worker by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.9; §3 → §4 → §7 order and the cross-harness resume defect are named in the body; §6 needs 50 dispatches after §3</p>
 
     <h2 id="s10">§10 — A run&#x27;s session has one capture name</h2>
-<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="routine" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="routine" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><code>reckon/crew/dispatch_sessions.py</code> still defines <code>_capture_member_session(record)</code>, whose whole body is <code>return capture_run_session(record)</code>. Its docstring calls it a compatibility entry point for promotion. The name comes from the roster-capture contract this plan retired, when capture wrote a session onto a member. The capability's owner is <code>capture_run_session</code> in <code>reckon/crew/runs.py</code>, which writes only the run. A caller holding either name cannot tell which one owns capture. The health review of 2026-10-16 (<code>review-code-2f2060e98013</code>, run <code>r-20261016T194537185630-review-code-2f2060e98013</code>) proposed deleting the alias as its one treatment.</p>
 <p>Delete the alias and call the owner directly. At main <code>b92e1691e</code> the alias has these references, all of which go:</p>
 <ul>
@@ -629,6 +629,9 @@ resume burn, after</a>.</p>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261017T133219053883-review-of-a-runs-session-has-one-capture-name-15dff49be064" data-who="reckon-build" data-when="2026-10-17T13:42:56.504Z">
     <div class="r-comment-body"><p>Reviewed run r-20261017T110626399745-a-runs-session-has-one-capture-name at head 15dff49be; independent review stored at review-records/r-20261017T110626399745-a-runs-session-has-one-capture-name.json (and its .at-15dff49be0646763534f7c1a283e790d2ce6af99.json twin), scoring all six dimensions with reviewed_base_sha 923c00534536c83f829c54e16b2c932454062e29 and reviewed_head_sha 15dff49be0646763534f7c1a283e790d2ce6af99, added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-17T13:50:00Z">
+    <div class="r-comment-body"><p>§10 landed: <code>_capture_member_session</code> is deleted and every caller calls <code>capture_run_session</code> (commit <code>15dff49be</code>). The grep reads 13 lines at base and none at head. Gate: 24 passed at both base and head. The negative control fails its 3 cases. Review 111, no added failures. <a href="/reckon/evidence/archive/new-work-gets-a-new-worker-landed.html#s10">evidence</a></p></div>
 </div>
 </section>
 </main>

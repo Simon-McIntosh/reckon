@@ -871,6 +871,22 @@ tests/test_no_member_dispatch_runs_alone.py::test_two_unnamed_reviews_launch_wit
     it. (4) Six after-window runs pair to no task and three sessions have no rollout file; they are
     excluded from both numerator and denominator and listed in the data file.</p>
   </section>
+  <section id="s10">
+    <h2>§10 — a run&#x27;s session has one capture name</h2>
+    <p>The alias <code>_capture_member_session</code> is gone, and every caller now calls <code>capture_run_session</code> in <code>reckon/crew/runs.py</code> directly. That covers <code>observe</code> in <code>dispatch_sessions.py</code>, the two calls in <code>promotion._complete_locked</code>, and <code>promotion_records._complete_withdrawn_run</code>. The re-export in <code>reckon/crew/dispatch.py</code> and the facade entry in <code>reckon/crew.py</code> went with it. The two tests that patched the alias by name, <code>tests/test_rollback_asks_head.py</code> and <code>tests/test_a_promotion_never_reads_unpromoted.py</code>, now patch <code>promotion.capture_run_session</code>. No name was added. Commit <code>15dff49be</code>: 10 insertions and 17 deletions across 7 files.</p>
+<table>
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td><code>grep -rn _capture_member_session reckon/ tests/</code></td><td>13 lines at base <code>923c00534</code>; none at head</td></tr>
+<tr><td>Gate: the two patched tests plus <code>tests/test_dispatch_reads_the_resolved_session.py</code></td><td>24 passed at head, 24 at base; no failure added</td></tr>
+<tr><td>Negative control: both moved patches pointed at a promotion attribute nothing calls</td><td>the <code>capture</code> injection, <code>refuse</code> and <code>boundary_hook</code> cases fail (3 failed, <code>EXIT=1</code>)</td></tr>
+<tr><td>Ruff on the seven paths</td><td>35 findings at base and at head; <code>format --check</code> flags the same 3 files at both</td></tr>
+<tr><td>Independent review</td><td>111 of 120 (goal 20, evidence 18, scope 20, durability 15, fit 18, reuse 20); no added failures</td></tr>
+</tbody>
+</table>
+<p>The review left two follow-ons, both accepted. No test would catch the alias returning at the <code>observe</code> or <code>promotion_records</code> call sites; only the done-when's grep guards them. And the head gate log's header names the base revision rather than the head it measured. The first review of this run sat queued for two hours: the admit process predated the fence repair and kept rejecting the review-records write path, so it was discarded and redispatched directly. Logs are under <code>~/.config/reckon/crew/runs/r-20261017T110626399745-a-runs-session-has-one-capture-name/</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>
