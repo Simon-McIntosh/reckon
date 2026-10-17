@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-velocity-window-may-open-before-the-ledger">
+  <meta name="plan-title" content="A velocity window may open before the ledger">
+  <meta name="plan-summary" content="The compact summary's 300,000-byte size assertion moves out of compact_summary into velocity(), the census path it was written for, so the crew velocity view is no longer aborted by it; the limit and message are unchanged.">
+  <meta name="plan-evidence-for" content="reckon:a-velocity-window-may-open-before-the-ledger">
+  <meta name="plan-verifies" content="reckon:a-velocity-window-may-open-before-the-ledger#s3">
+  <meta name="plan-recorded-at" content="2026-10-17">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,velocity,census,size-bound">
+  <title>The velocity view is not bounded by the census's size check — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-velocity-view-is-not-bounded-by-the-census" data-reckon="landed" data-when="2026-10-17">
+  <h2 id="a-velocity-view-is-not-bounded-by-the-census-heading">The velocity view is not bounded by the census's size check</h2>
+  <p id="a-velocity-view-is-not-bounded-by-the-census-landing">The 300,000-byte assertion over the dumped compact summary moved out of <code>compact_summary</code> into <code>velocity()</code>, the census path it was written for; the limit (300,000 bytes) and the message (<code>Compact census exceeds its repository size bound</code>) are unchanged, so <code>report()</code> and the <code>crew velocity</code> view — which reuses <code>compact_summary</code> and then adds the largest block, <code>by_project_day_lane</code>, to the same dictionary — are no longer aborted by it. <code>tests/test_a_velocity_view_is_not_bounded_by_the_census.py</code> builds an oversized <code>full</code> the way the session-continuity fixture does and asserts all three cases: <code>compact_summary</code> returns, <code>velocity()</code> raises the message, and <code>report()</code> returns a mapping carrying <code>by_project_day_lane</code>. Gate <strong>33 passed at head</strong> over the seven named files, EXIT=0. This anchor carries the landing statement and no prose of its own.</p>
+</article>
+</body>
+</html>
