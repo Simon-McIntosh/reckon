@@ -455,19 +455,25 @@ def project_config_path(project: str, checkout_path: str | Path | None = None) -
     return docs_root / "state" / project / "flight.yaml"
 
 
-def mounted_project_docs() -> dict[str, Path]:
+def mounted_project_docs(mounts_file: Path | None = None) -> dict[str, Path]:
     """Return every registered project's resolved docs directory.
 
     Mount registration is the host's repository-authority boundary.  Callers
     making a write decision need the lossless set, not the state-directory
     fallback used when an optional project flight layer is absent.  Invalid
     mount data therefore fails closed and names the offending entry.
+
+    ``mounts_file`` names the registry to read.  Without it the configured path
+    is resolved through the configuration home in force now; a caller that must
+    read a registry regardless of a later home override passes the path it
+    captured earlier, which is the path it read then, not the one now in force.
     """
     from reckon._store import _mounts_path
 
     import json
 
-    mounts_file = _mounts_path()
+    if mounts_file is None:
+        mounts_file = _mounts_path()
     if not mounts_file.is_file():
         return {}
     try:

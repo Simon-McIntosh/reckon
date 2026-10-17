@@ -32,6 +32,7 @@ from types import ModuleType
 import pytest
 
 import reckon.crew.dispatch_plan as dispatch_plan_module
+from reckon._store import _mounts_path
 from reckon.cli import CLAUDE_SKILLS_DIR_ENV
 from reckon.crew.dispatch import (
     WATCH_ARMING_ENV,
@@ -39,6 +40,7 @@ from reckon.crew.dispatch import (
     WORKER_SCRATCH_ROOT_NAME,
 )
 from reckon.crew.routing import signal_worker
+from reckon.flight import mounted_project_docs
 
 # ── No test resolves the real cache ────────────────────────────────────────
 #
@@ -1381,6 +1383,32 @@ def session_cache_roots_are_isolated(tmp_path_factory):
         leaks = cache_root_leaks()
         if leaks:
             raise AssertionError(cache_root_leak_report())
+
+
+# ── The operator's mount registry, read before any test override ───────────
+#
+# A session-scoped fixture that read ``flight.mounted_project_docs()`` at its own
+# setup resolved the mounts file through whatever configuration home was in
+# force when it first ran. Under xdist that can be a peer's throwaway home, so
+# the leak scan in tests/test_split_existing_runs.py could watch an empty
+# registry and fire its vacuity guard on a fixture-order accident rather than a
+# defect. The registry the scan must consult is the operator's, so its path is
+# captured here at import — before any fixture replaces RECKON_HOME or
+# RECKON_MOUNTS_PATH.
+WORKSTATION_MOUNTS_PATH = _mounts_path()
+
+
+def workstation_mounts() -> dict[str, Path]:
+    """Every mounted project's docs directory, from the import-time path.
+
+    Delegates to ``reckon.flight.mounted_project_docs`` with the captured mounts
+    file, so the registry the leak scan reads is the operator's rather than the
+    one the configuration home in force now points at — a test that has replaced
+    that home still reads the operator's own registry. The at-least-one-project
+    guard lives with the caller, which fires it rather than watching an empty
+    set in silence.
+    """
+    return mounted_project_docs(WORKSTATION_MOUNTS_PATH)
 
 
 @pytest.fixture(autouse=True)

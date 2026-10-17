@@ -25,6 +25,7 @@ from click.testing import CliRunner
 
 from reckon import _store, flight, ledger
 from reckon.cli import main as cli_main
+from tests.conftest import workstation_mounts
 
 PROJECT = "alpha"
 SIBLING = "beta"
@@ -71,15 +72,17 @@ def _run_ids_under(project: str, docs: Path) -> set[str]:
 
 @pytest.fixture(scope="session")
 def workstation_state():
-    """The workstation's own mounted projects, read before any override.
+    """The workstation's own mounted projects, read from the operator's registry.
 
     Session-scoped because the suite replaces the configuration home for every
-    test, and a wider scope is instantiated first: read at function scope this
-    would resolve the throwaway home's absent registry and watch nothing. The
-    at-least-one-project assertion is the control for that — read too late it
-    fails loudly rather than watching an empty set in silence.
+    test, and a wider scope is instantiated first. The reader reads the mounts
+    file that was captured at conftest import, so the scan is independent of
+    which worker first requests this fixture: resolving the mounts file through
+    the configuration home in force at setup could read a peer's throwaway home
+    under xdist. The at-least-one-project assertion is the control for that —
+    an empty registry fails loudly rather than watching an empty set in silence.
     """
-    mounts = flight.mounted_project_docs()
+    mounts = workstation_mounts()
     assert any(
         (Path(docs) / "state" / project).exists() for project, docs in mounts.items()
     ), (
