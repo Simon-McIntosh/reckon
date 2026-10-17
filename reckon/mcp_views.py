@@ -1567,11 +1567,11 @@ def _cached_attempts(
     recomputes once, on its own stamp, where the pointer is present.
 
     The index file's own identity is left out of that comparison. A read
-    rewrites the index, so that identity moves across every refresh without the
-    ledger behind it changing — comparing it made the second caller of one read
-    a miss and aggregated twice, the cost this memo exists to avoid. The
-    ledger's own identity and version are compared, so a source that changed
-    during the read is re-aggregated rather than published.
+    rewrites that file, so its identity moves across every refresh without the
+    ledger behind it changing, and no caller of the same read needs it to hold
+    still. The ledger's own identity and version, and the volatile members — the
+    newest run file and the live-pointer set — are compared, so a caller whose
+    state moved recomputes rather than being served an older value.
     """
     with _ATTEMPT_CACHE_LOCK:
         before = _attempt_inputs(project, root, pointers)
