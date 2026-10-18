@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="392">
+<meta name="plan-version" content="393">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1855,6 +1855,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s22" data-id="c-run-r-20261018T064937769768-a-test-stops-the-producer-it-starts" data-who="reckon-build" data-when="2026-10-18T07:15:58.004Z">
     <div class="r-comment-body"><p>§22 — tests/test_unmanaged_producer_keeps_a_log.py now stops the watch producer its admission test starts, through dispatch_watch._stop_watch_producer_within in a finally, and its driver handles SIGTERM as the real crew watch does (SystemExit(128+signum)); the gate run of the file under -n 4 ends 7 passed, EXIT=0, with no session error from reaped_watch_producers (5 of 5 runs green), and removing the stop makes the reaper report the leaked producer by pid and home (pid 1630534, EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261018T072131667839-test-stops-its-producer-population-at-merge" data-who="reckon-build" data-when="2026-10-18T07:45:02.728Z">
+    <div class="r-comment-body"><p>Merging 7e30eb750614d74631eac4a322baed55dac36e57 onto f3ed933e53406899af5b050712cd2ceb15cf0ea0 as 006b0966da500f00a12f87648116906b56526193 adds 0 failing test ids over the 11-file importer population: base arm 63 passed/0 failed/1 error (EXIT=1), candidate arm 63 passed/0 failed/0 errors (EXIT=0), no population file absent at base, the added-failure reader positively controlled at 1 planted id and subtractive at 0 when planted in both arms, and the base arm&#x27;s reaper session error is gone at the candidate, so the merge is clean on this measure.</p></div>
 </div>
 </section>
 </main>
