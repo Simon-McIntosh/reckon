@@ -26,7 +26,7 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5,6dcb6cc1d,31e84061f">
 <meta name="plan-impl" content="0.99">
-<meta name="plan-version" content="196">
+<meta name="plan-version" content="197">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-section-depends-on" content="{&quot;s17&quot;: [&quot;a-worker-cannot-write-your-home#s15&quot;], &quot;s16&quot;: [&quot;a-worker-cannot-write-your-home#s15&quot;]}">
 </head>
@@ -2192,6 +2192,9 @@
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261018T191048128078-node-tmp-seal-final-population-at-merge" data-who="reckon-build" data-when="2026-10-18T20:11:30.093Z">
     <div class="r-comment-body"><p>final population at merge of b8c27abd3 onto 865ccf3fc, 42 files: no added failing id (candidate 531 passed); negative control reddens the outside-file test with the node-tmp seal removed; §15 merged as 23396d23c</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261018T124432906024-a-worker-cannot-remove-the-nodes-temporary-files" data-who="reckon-build" data-when="2026-10-18T20:43:58Z">
+    <div class="r-comment-body"><p>complete at the source head c13e3633b (docs head b8c27abd3, which adds only the evidence fragment). The fence seals the node&#x27;s /tmp read-only; the run&#x27;s own scratch, its declared report and record paths, and the enumerated runtime paths stay writable; each runtime directory is created before the argv is composed; every protected path keeps its own read-only bind; a handed root no longer decides a shared seal, so an ancestor of the stores or of the scratch root composes no grant and neither does a root that is not there; and the fence grants the parent of any bind destination it places that is not there yet, so a credential mount into a run&#x27;s harness home can create its mount point. Two of the four failures reported against the merge candidate were a defect the seal exposed in the fence itself and are fixed there (e61ed73e4); the other two were the dispatch tests&#x27; marker directory sitting under the ambient TMPDIR, which the seal now overlays, and that directory is handed to the run as the fleet runtime directory in the test&#x27;s fixture alone (c13e3633b), with no seal weakened and no test-only exemption in the fence.</p></div>
 </div>
 </section>
 </main>
