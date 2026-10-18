@@ -25,7 +25,7 @@
   <title>The Site Answers Fast and Agrees With Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -291,6 +291,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-design-recompute-owner" data-who="reckon-build" data-when="2026-10-18T13:30:00Z">
     <div class="r-comment-body"><p>Design review <code>r-20261018T131121570570</code>, findings <code>reuse_search-1</code>, <code>thin_wrapper-1</code>, <code>deep_module-1</code> and <code>interface_budget-1</code>. <code>/_checks/&lt;project&gt;</code> already recomputes outside the request path. <code>_start_check_refresh</code> and <code>_spawn_check_refresh</code> (<code>reckon/serve.py</code> near line 2889) run a niced child per project, single-flight through <code>_CHECK_REFRESHES</code> (near line 1301), and write the store the route reads. Before §5 is dispatched, it is rewritten to extend that mechanism to <code>/_discover</code>, <code>/_projects/index.json</code> and <code>/crew/velocity</code> rather than add a new module. It names the interface: compute, read the last result, and spawn on change. It also states what it retires, and the worker no longer chooses the mechanism.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-rereview" data-who="reckon-build" data-when="2026-10-18T14:27:00Z">
+    <div class="r-comment-body"><p>Re-review <code>r-20261018T141405710144</code>. Four findings to apply before §5 is dispatched:</p><ul><li><code>wiring-1</code>: add §8 as a predecessor, because the velocity measure needs the all-project request to answer.</li><li><code>done_when-1</code>: give each of the four routes its own forced-refresh case and inline negative control, not only <code>/_discover</code>.</li><li><code>reasoning-1</code>: key the stored velocity result by the normalised query (<code>since</code>, <code>until</code>, <code>fields</code>, <code>limit</code>, <code>cursor</code>) and the moving default window, not by route and project alone (<code>Handler._serve_velocity</code>).</li><li><code>reasoning-2</code>: name the caller that spawns each refresh. <code>_FleetChangeWatch</code> only invalidates and wakes streams, <code>_send_project_changes</code> calls <code>discover_plans</code> inline, and <code>/_checks</code> calls <code>compliance.project_checks</code> on the request. Each of those moves behind a stored result.</li></ul></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-design-duplicate-owner-2-s7" data-who="reckon-build" data-when="2026-10-18T13:30:00Z">
     <div class="r-comment-body"><p>Design review <code>r-20261018T131121570570</code>, finding <code>duplicate_owner-2</code>: see the comment on §6. The roll-up has one owner beside §2's function, and §7 consumes it rather than implementing its own in <code>reckon/roadmap.py</code>.</p></div>
