@@ -804,9 +804,12 @@ def derive_impl_imputing_effort(sections, declarations=None) -> float | None:
     section sits outside it. Each such section weighs the effort its record
     carries, and a section whose record carries no hours — a declared section
     with no record at all is the same case — takes the mean of the hours that
-    are present. When no section carries hours every section weighs the same,
-    so the figure is the count and this returns ``None`` to let the count's own
-    reader answer. A classification other than done counts as open.
+    are present. Only the scoped sections' hours are present for that mean: a
+    deferred section is outside the denominator, so its recorded hours must not
+    weigh a buildable section that states none. When no scoped section carries
+    hours every section weighs the same, so the figure is the count and this
+    returns ``None`` to let the count's own reader answer. A classification
+    other than done counts as open.
 
     A plan with no done or implementable declaration has no denominator and
     derives nothing.
@@ -819,15 +822,19 @@ def derive_impl_imputing_effort(sections, declarations=None) -> float | None:
     ]
     if not scoped:
         return None
+    scoped_ids = {section for section, _ in scoped}
     hours: dict[str, float] = {}
     for record in sections or []:
+        section = str(_record_field(record, "id") or "")
+        if section not in scoped_ids:
+            continue
         effort = _record_field(record, "effort_hours")
         try:
             value = float(effort)
         except (TypeError, ValueError):
             continue
         if value > 0:
-            hours[str(_record_field(record, "id") or "")] = value
+            hours[section] = value
     if not hours:
         return None
     mean = sum(hours.values()) / len(hours)

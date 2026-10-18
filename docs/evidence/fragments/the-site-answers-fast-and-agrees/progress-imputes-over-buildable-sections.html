@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-site-answers-fast-and-agrees">
+  <meta name="plan-evidence-for" content="the-site-answers-fast-and-agrees">
+  <title>The imputed mean weighs only the buildable sections' hours | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>The imputed mean weighs only the buildable sections' hours</h1>
+      <p class="lead">When a plan's records fall short of its declarations, the imputed hours a section without a record takes are now the mean over the sections declared <code>done</code> or <code>implementable</code> alone. A <code>deferred</code> section sits outside the denominator, so its recorded hours no longer weigh a buildable section that states none.</p>
+    </header>
+
+    <section id="progress-imputes-over-buildable-sections-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>derive_impl_imputing_effort</code> in <code>reckon/_plan_html.py</code> built its hours map from every section record carrying hours, including a <code>deferred</code> section's. It now reads a record's hours only when that record's id is in the scoped set — the sections declared <code>done</code> or <code>implementable</code> — so the mean it imputes from is taken over the denominator alone. The docstring states the rule by mechanism.</li>
+        <li>The fix is confined to the imputation path. Records covering every declared buildable section still answer under <code>computed</code> through <code>derive_impl_from_sections</code>, which already kept a deferred record outside both the numerator and the denominator.</li>
+      </ul>
+    </section>
+
+    <section id="progress-imputes-over-buildable-sections-reproduction">
+      <h2>The defect reproduced before the repair</h2>
+      <p>A plan with <code>s1</code> done at 2 h, <code>s2</code> implementable with no hours, <code>s3</code> implementable at 4 h and <code>s4</code> deferred at 40 h, at base revision <code>e57353abd</code>:</p>
+      <pre><code>imputed: 0.09374999999999999
+expected 2/9 = 0.2222222222222222</code></pre>
+      <p>The deferred section's 40 h entered the mean, raising it from <code>(2+4)/2 = 3 h</code> to <code>46/3 h</code> and pushing the plan's figure down to <code>2 / 21.33</code>. With the fix, the same plan reads <code>2 / (2+3+4) = 2/9 = 0.2222222222222222</code> under source <code>declarations</code>.</p>
+    </section>
+
+    <section id="progress-imputes-over-buildable-sections-gate">
+      <h2>Gate</h2>
+      <p>The focused gate ran the impl-derivation and section-record test files that cover the changed module (20 files), each arm on the fleet allocation with its own basetemp. The base arm is a <code>git archive</code> of <code>e57353abd</code> into a scratch tree: <strong>181 passed</strong>, <code>EXIT=0</code>. The head arm, at the same revision with the change in the worktree, is <strong>182 passed</strong>, <code>EXIT=0</code>. Added failure ids: none. The head-arm <code>module.__file__</code> is the worktree's own <code>reckon/_plan_html.py</code>.</p>
+      <p><strong>Negative control.</strong> The declared mutation — "include deferred sections' hours in the imputed mean, as at base, so the deferred-hours case fails" — is the base module with the new test file: <code>1 failed, 5 passed</code>, <code>EXIT=1</code>, the failing id being <code>test_a_deferred_sections_hours_do_not_weigh_the_imputed_mean</code>, which the head arm does not fail. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the changed files (17 findings on <code>reckon/_plan_html.py</code> at both arms, all pre-existing, none on the added lines; the test file is clean at both).</p>
+    </section>
+
+    <section id="progress-imputes-over-buildable-sections-new-tests">
+      <h2>New test</h2>
+      <p><code>tests/test_progress_from_section_effort.py::test_a_deferred_sections_hours_do_not_weigh_the_imputed_mean</code> parses a temporary plan with <code>s1</code> done at 2 h, <code>s2</code> implementable with no hours, <code>s3</code> implementable at 4 h and <code>s4</code> deferred at 40 h, and asserts the plan reads <code>2/9</code> — <code>s2</code> imputed 3 h from <code>s1</code> and <code>s3</code> only — with source <code>declarations</code>, from the full parse and the head-only reader alike. The file's five existing cases still pass.</p>
+    </section>
+  </main>
+</body>
+</html>
