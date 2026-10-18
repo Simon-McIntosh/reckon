@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_count_basis": "after_suite failure_ids minus baseline_suite failure_ids from the reviewed run's manifest; both carry the same 3 ids, so the delta is empty",
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:270",
+    "reckon/crew/picker/__init__.py:488",
+    "reckon/crew/picker/prompts.py:427",
+    "reckon/crew/picker/prompts.py:469",
+    "reckon/crew/picker/lane_context.py:413"
+  ],
+  "completed_at": "2026-10-18T19:32:23.293Z",
+  "dispatched_at": "2026-10-18T19:15:54Z",
+  "findings": [
+    {
+      "file": "tests/test_jev_prompt_carries_what_it_weighs.py",
+      "line": "119",
+      "severity": "follow-on",
+      "text": "follow-on: this key-set assertion was migrated from the independent literal \"remote\" to {prompts.option_key(candidate())}, so its two sides move together and a change to option_key's format would move both the state's keys and the expected set, leaving the assertion green; the durable guard lives instead in tests/test_each_model_of_a_lane_has_its_own_row.py, so this does not hold the node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s): the scan renders through build_state, build_questions names each option key, the picker builds its criteria keys from option_key and matches Jev's choice back to it, and return_times builds each block under the option key.",
+    "diff": "read commit by commit against aac37e7d4: 06eeb6623 moves option_key into lane_context.py and rekeys both tables, eef39ac57 rebases the representative-state byte bound onto the rows plus the keys, 44c3e138b records the frame the repair landed in; 17 files, all inside the declared scope.",
+    "done_when": "the plan requires pytest -rA over the new file and every granted file adding no failure against the base, the representative_state_tokens figure at base and head within 2200, and ruff clean by delta; logs/repair_gate.log (143 passed / 3 failed) and logs/base_* hold the first, head_gate.log:90 prints representative_state_tokens=2167/2200 at the head table, and the manifest records the ruff delta.",
+    "goal": "the plan section 36 goal is to key the pick state's candidate and return-time tables by each option's lane, model and backend; reckon/crew/picker/prompts.py:403 keys candidates by option_key(candidate) and reckon/crew/picker/lane_context.py:413 keys return_times the same way, so the three codex models render three rows.",
+    "manifest": "read; it records the gate command and result, the base arm, three negative-control logs (neg1.log, neg2.log, repair_neg.log), representative_state_tokens base 2082 / head 2167 under the 2200 ceiling, and the repaired byte-bound deviation under follow_ons.",
+    "write_paths": "the manifest's orientation_write_paths are the plan's eighteen granted paths plus the evidence fragment and figure; every path in git diff --stat aac37e7d4..44c3e138b is one of them and nothing else is touched."
+  },
+  "justifications": {
+    "durability": "the negative controls are live (logs/neg1.log reddens four new-test cases when build_state is keyed by candidate.backend again; logs/neg2.log reddens the return-time key cases), but tests/test_jev_prompt_carries_what_it_weighs.py:119 compares the state's keys against prompts.option_key(candidate()) and cannot catch a formula regression.",
+    "evidence": "tests/test_each_model_of_a_lane_has_its_own_row.py runs the real scan and both gate logs are on disk: logs/repair_gate.log reads 143 passed / 3 failed at 44c3e138b and logs/base_arm.log reads 139 passed / 3 failed at aac37e7d4, the same 3 ids, so the node adds no failure.",
+    "fit": "option_key keeps its shape and docstring at reckon/crew/picker/lane_context.py:334 with prompts.py:31 importing it, and the module follows the surrounding lane_context.py style; no plan or ticket identifier appears in any changed path or symbol.",
+    "goal_fidelity": "reckon/crew/picker/prompts.py:403 keys candidates by option_key(candidate) and reckon/crew/picker/lane_context.py:413 keys return_times the same way, so each criteria key finds exactly one row and one block, which is the plan section 36 deliverable.",
+    "reuse": "option_key has one definition at reckon/crew/picker/lane_context.py:334 (imported at prompts.py:31, no second copy); a search of reckon/ for the lane:model:backend composite and for a second keying of these tables found no other owner.",
+    "scope_discipline": "every path in git diff aac37e7d4..44c3e138b is inside the manifest's orientation_write_paths; the byte-bound deviation the prior review flagged at tests/test_picker.py:265 is repaired at eef39ac57 to tests/test_picker.py:270."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the plan section 36 goal is to key the pick state's candidate and return-time tables by each option's lane, model and backend; reckon/crew/picker/prompts.py:403 keys candidates by option_key(candidate) and reckon/crew/picker/lane_context.py:413 keys return_times the same way, so the three codex models render three rows.\nVERDICT done_when: the plan requires pytest -rA over the new file and every granted file adding no failure against the base, the representative_state_tokens figure within 2200, and ruff clean by delta; logs/repair_gate.log (143 passed / 3 failed) and logs/base_arm.log (139 passed / 3 failed, same 3 ids) hold the first, head_gate.log:90 prints representative_state_tokens=2167/2200, and the manifest records the ruff delta.\nVERDICT write_paths: the manifest's orientation_write_paths are the plan's eighteen granted paths plus the evidence fragment and figure; every path in git diff --stat aac37e7d4..44c3e138b is one of them and nothing else is touched.\nVERDICT manifest: read; it records the base arm, three negative-control logs (neg1.log, neg2.log, repair_neg.log), representative_state_tokens base 2082 / head 2167 under the 2200 ceiling, and the repaired byte-bound deviation under follow_ons.\nVERDICT diff: read commit by commit against aac37e7d4: 06eeb6623 moves option_key into lane_context.py and rekeys both tables, eef39ac57 rebases the representative-state byte bound onto the rows plus the keys, 44c3e138b records the frame the repair landed in; 17 files, all inside the declared scope.\nCALL_SITES: reckon/crew/picker/__init__.py:270, reckon/crew/picker/__init__.py:488, reckon/crew/picker/prompts.py:427, reckon/crew/picker/prompts.py:469, reckon/crew/picker/lane_context.py:413\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/picker/prompts.py:403 keys candidates by option_key(candidate) and reckon/crew/picker/lane_context.py:413 keys return_times the same way.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/repair_gate.log reads 143 passed / 3 failed and logs/base_arm.log reads 139 passed / 3 failed with the same 3 ids.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every diff path is inside the declared write scope and the prior byte-bound deviation is repaired at eef39ac57.\nSCORE durability: 17\nJUSTIFICATION durability: the new-test negative controls are live (logs/neg1.log, logs/neg2.log) but tests/test_jev_prompt_carries_what_it_weighs.py:119 compares the state's keys against prompts.option_key(candidate()).\nSCORE fit: 18\nJUSTIFICATION fit: option_key keeps its shape and docstring at reckon/crew/picker/lane_context.py:334 with prompts.py:31 importing it.\nSCORE reuse: 20\nJUSTIFICATION reuse: option_key has one definition at reckon/crew/picker/lane_context.py:334 and a search of reckon/ found no other owner of the lane:model:backend composite.\nFINDING tests/test_jev_prompt_carries_what_it_weighs.py:119 follow-on: the key-set assertion was migrated from the independent literal \"remote\" to {prompts.option_key(candidate())}, so both sides move together and a format regression would leave it green.",
+  "review_run_id": "r-20261018T191457014988-review-of-each-model-of-a-lane-has-its-own-row-44c3e138b5fc",
+  "reviewed_base_sha": "aac37e7d407567916dcd49565b1738e0220bb97a",
+  "reviewed_head_sha": "44c3e138b5fc86f20bf784f55b26f91599271fae",
+  "reviewed_run_id": "r-20261018T173209225855-each-model-of-a-lane-has-its-own-row",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T19:35:39.186517+00:00",
+  "total": 111
+}
