@@ -258,10 +258,13 @@ def test_representative_state_is_bounded_and_comment_verbatim(
         candidates=[c for c in options if not c.reasons],
     )
     # Each candidate now carries its own context block, so the representative
-    # state is larger; the bound still holds the whole prompt to a few KB.
-    assert len(rendered) <= 1500 * 5
+    # state is larger; the bound still holds the whole prompt to a few KB. The
+    # option key naming each row is longer than the bare backend name it
+    # supersedes, so the same state carries more bytes and the bound allows for
+    # it; the token ceiling that governs prompt size is unchanged.
+    assert len(rendered) <= 1600 * 5
     assert json.loads(rendered)["orchestrator_comment"] == request_node.comment
-    assert set(json.loads(rendered)["candidates"]["remote"]) == {
+    assert set(json.loads(rendered)["candidates"][REMOTE_PAIR]) == {
         "backend",
         "lane",
         "model",
@@ -428,7 +431,9 @@ def test_cli_emits_one_selection_without_dispatch(
 ):
     from reckon.crew import picker
 
-    monkeypatch.setattr(crew_dispatch_commands, "_dispatch_resolved_flight", lambda *a: config)
+    monkeypatch.setattr(
+        crew_dispatch_commands, "_dispatch_resolved_flight", lambda *a: config
+    )
     monkeypatch.setattr(picker.snapshot.ledger, "runs", lambda *a, **k: [])
     monkeypatch.setattr(client, "load_key", Mock(side_effect=TimeoutError))
     result = CliRunner().invoke(

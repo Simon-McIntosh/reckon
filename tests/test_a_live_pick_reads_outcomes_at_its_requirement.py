@@ -223,6 +223,12 @@ def _state(selection: Any) -> dict[str, Any]:
     return json.loads(selection.rendered_state)
 
 
+def _candidate_row(candidates: dict[str, Any], backend: str) -> dict[str, Any]:
+    """A rendered candidate row, found under whatever option key it holds."""
+
+    return next(row for row in candidates.values() if row["backend"] == backend)
+
+
 def test_a_live_pick_reads_outcomes_at_the_capability_it_resolved(
     repo: Path, picker_env
 ) -> None:
@@ -233,27 +239,25 @@ def test_a_live_pick_reads_outcomes_at_the_capability_it_resolved(
     selection = _drive_pick(repo, _request())
     candidates = _state(selection)["candidates"]
 
-    a_block = candidates["lanea"]["outcomes_at_requirement"]
+    a_block = _candidate_row(candidates, "lanea")["outcomes_at_requirement"]
     assert a_block["passed"] == 0
     assert a_block["failed"] == 2
     # Lane A's matched rows recorded no review total or wall time.
     assert a_block["review_total_median"] is None
     assert a_block["wall_seconds_median"] is None
 
-    b_block = candidates["laneb"]["outcomes_at_requirement"]
+    b_block = _candidate_row(candidates, "laneb")["outcomes_at_requirement"]
     assert b_block["passed"] == 3
     assert b_block["failed"] == 0
     assert b_block["review_total_median"] == 88.0
     assert b_block["wall_seconds_median"] == 200.0
 
     # The pooled record keeps every row, whatever difficulty it recorded.
-    assert candidates["lanea"]["outcomes"]["passed"] == 4
-    assert candidates["lanea"]["outcomes"]["failed"] == 2
+    assert _candidate_row(candidates, "lanea")["outcomes"]["passed"] == 4
+    assert _candidate_row(candidates, "lanea")["outcomes"]["failed"] == 2
 
 
-def test_a_request_that_carries_a_capability_keeps_it(
-    repo: Path, picker_env
-) -> None:
+def test_a_request_that_carries_a_capability_keeps_it(repo: Path, picker_env) -> None:
     """A request that already states a capability is not re-resolved, and the
     scan filters on the capability it carries."""
 
@@ -262,7 +266,12 @@ def test_a_request_that_carries_a_capability_keeps_it(
     )
     state = _state(selection)
     assert state["node"]["capability"]["requirements"]["reasoning"] == "standard"
-    assert state["candidates"]["lanea"]["outcomes_at_requirement"]["passed"] == 4
+    assert (
+        _candidate_row(state["candidates"], "lanea")["outcomes_at_requirement"][
+            "passed"
+        ]
+        == 4
+    )
 
 
 def test_a_node_with_no_declared_capability_shows_no_block(
@@ -274,7 +283,7 @@ def test_a_node_with_no_declared_capability_shows_no_block(
     candidates = _state(selection)["candidates"]
     # The template drops a null block, so the absence of the key is the block
     # being absent.
-    assert candidates["lanea"].get("outcomes_at_requirement") is None
+    assert _candidate_row(candidates, "lanea").get("outcomes_at_requirement") is None
 
 
 def test_both_stages_are_timed_and_name_their_step(

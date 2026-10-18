@@ -57,8 +57,8 @@ def test_candidates_are_offered_under_pressure(
 
     selection = pick(request_node, config, repo=tmp_path, records=[], caller=caller)
     assert {c["backend"] for c in selection.offered} == {"local", "remote"}
-    assert seen[0]["candidates"]["remote"]["burn_multiple"] == 3.4
-    assert seen[0]["candidates"]["local"]["worker_slots"] == 0
+    assert seen[0]["candidates"][fixtures.REMOTE_PAIR]["burn_multiple"] == 3.4
+    assert seen[0]["candidates"][fixtures.LOCAL_PAIR]["worker_slots"] == 0
     assert selection.backend == "remote"
     assert selection.confidence == 0.23
 
@@ -326,7 +326,7 @@ def test_public_pick_renders_size_matched_return_time_and_budget_provenance(
     reader.assert_called_once_with(request_node.project, root=tmp_path)
     assert view.call_args.args[3] is rows
     state = seen[0]
-    assert state["return_times"]["remote"] == {
+    assert state["return_times"][fixtures.REMOTE_PAIR] == {
         "p50_s": 250.0,
         "p90_s": 400.0,
         "runs": 4,
@@ -336,13 +336,15 @@ def test_public_pick_renders_size_matched_return_time_and_budget_provenance(
         "budget_age_s": pytest.approx(7200, abs=5),
         "stale": True,
     }
-    assert state["candidates"]["remote"]["pace_allowance"] == 0.11
-    assert state["candidates"]["remote"]["days_to_reset"] == pytest.approx(6, abs=0.001)
+    assert state["candidates"][fixtures.REMOTE_PAIR]["pace_allowance"] == 0.11
+    assert state["candidates"][fixtures.REMOTE_PAIR]["days_to_reset"] == pytest.approx(
+        6, abs=0.001
+    )
     assert state["node"]["estimated_hours"] == 0.5
     assert state["node"]["attempts"] == 2
     assert state["node"]["spec_level"] == "guided"
     assert state["node"]["capability"] == request_node.capability
-    assert state["candidates"]["remote"]["outcomes"]["passed"] == 5
+    assert state["candidates"][fixtures.REMOTE_PAIR]["outcomes"]["passed"] == 5
 
 
 def test_pressure_alignment_has_no_coded_or_numeric_threshold():
