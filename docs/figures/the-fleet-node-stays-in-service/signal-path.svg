@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="370" viewBox="0 0 1400 370" role="img" aria-labelledby="title desc">
+  <title id="title">Current fleet worker stop and step ending</title>
+  <desc id="desc">The supervisor spawns an srun client, which starts a bwrap task in a Slurm step. The stop path signals the srun client. Slurm marks the step cancelled; the two drain steps finished 63 seconds after cancellation began.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#333" stroke-width="1.6"/></marker>
+  </defs>
+  <g fill="none" stroke="#333" stroke-width="1.6">
+    <rect x="55" y="82" width="260" height="86" rx="4"/>
+    <rect x="465" y="82" width="260" height="86" rx="4"/>
+    <rect x="875" y="82" width="455" height="86" rx="4"/>
+    <path d="M315 125 H455" marker-end="url(#arrow)"/>
+    <path d="M725 125 H865" marker-end="url(#arrow)"/>
+    <path d="M185 215 H590 V178" stroke="#b44942" marker-end="url(#arrow)"/>
+    <path d="M590 215 V265 H1100" stroke="#b44942" marker-end="url(#arrow)"/>
+  </g>
+  <g font-family="system-ui, sans-serif" fill="#222" text-anchor="middle">
+    <text x="185" y="118" font-size="23">Supervisor</text>
+    <text x="185" y="145" font-size="17">fleet batch child</text>
+    <text x="595" y="118" font-size="23">srun client</text>
+    <text x="595" y="145" font-size="17">recorded worker PID</text>
+    <text x="1102" y="118" font-size="23">Slurm step task</text>
+    <text x="1102" y="145" font-size="17">bwrap → harness</text>
+    <text x="385" y="104" font-size="16">Popen</text>
+    <text x="796" y="104" font-size="16">--overlap</text>
+  </g>
+  <g font-family="system-ui, sans-serif" fill="#a33e38" font-size="18">
+    <text x="235" y="207">signal_worker(pid): SIGTERM</text>
+    <text x="650" y="252">Slurm marks step CANCELLED in the same second</text>
+    <text x="650" y="295">SIGKILL follows after about 12 s; drain steps end 63 s after cancellation</text>
+  </g>
+  <text x="55" y="346" font-family="system-ui, sans-serif" font-size="15" fill="#555">Observed for steps 1281970.251 and 1277272.1549; the step does not end as COMPLETED.</text>
+</svg>

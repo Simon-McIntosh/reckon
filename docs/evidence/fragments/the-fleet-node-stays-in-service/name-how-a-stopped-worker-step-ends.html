@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="name-how-a-stopped-worker-step-ends">
+  <meta name="plan-title" content="A stopped fleet worker cancels its Slurm step through the srun client">
+  <meta name="plan-summary" content="The stop path signals the srun client, so Slurm cancels the step in that second; both drain steps are attributed and 482 cancelled steps are tabulated by reason">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-node-stays-in-service">
+  <meta name="plan-verifies" content="reckon:the-fleet-node-stays-in-service#s2">
+  <meta name="plan-recorded-at" content="2026-10-18">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,fleet">
+  <title>A stopped fleet worker cancels its Slurm step through the srun client — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<section id="name-how-a-stopped-worker-step-ends">
+  <h2>A stopped fleet worker cancels its Slurm step through the srun client</h2>
+  <p><strong>Finding.</strong> The supervisor's recorded worker PID is the
+  <code>srun</code> client on the fleet node. Its argv starts with
+  <code>srun --overlap --jobid=… --ntasks=1 bwrap …</code>; <code>bwrap</code> is
+  the task inside the step. The supervisor sends SIGTERM to that PID after a
+  terminal manifest or a run stop, and can send SIGKILL after the grace. In both
+  drain cases, Slurm marked the step cancelled in the same second as the first
+  delivered SIGTERM to the client; SIGKILL followed about 12 seconds later.
+  Each step ended <code>CANCELLED by 39486</code>, 63 seconds after Slurm's
+  cancellation timestamp, rather than <code>COMPLETED</code>.</p>
+
+  <figure>
+    <img src="/reckon/figures/the-fleet-node-stays-in-service/signal-path.svg"
+         alt="The supervisor spawns an srun client that starts bwrap in a Slurm step. Signalling the client makes Slurm cancel the step; a later SIGKILL does not make it a completed task exit."
+         width="1400" height="370">
+    <figcaption>The actual signal target and scheduler outcome for the two drain steps.
+    The SVG is delivered separately for placement under the project figures path.</figcaption>
+  </figure>
+
+  <h3>Code path</h3>
+  <ol>
+    <li><code>reckon/crew/dispatch_launch.py:1102–1119</code> prefixes the
+    backend launch with the reservation's scheduler; <code>reckon/crew/placement.py:233–240</code>
+    supplies <code>--overlap --jobid=…</code>. The recorded argv in both drain runs
+    has <code>srun</code> first and <code>bwrap</code> fifth.</li>
+    <li><code>reckon/crew/dispatch_launch.py:2256–2285</code> starts that argv with
+    <code>Popen</code> and retains its PID. Because argv begins with
+    <code>srun</code>, this PID belongs to the local srun client. The worker
+    records identify it as PID 1677365 for job 1281970's step and PID 2258183
+    for job 1277272's step.</li>
+    <li><code>reckon/crew/dispatch_launch.py:2860–2884,2936–2963</code> calls
+    <code>signal_worker(pid, SIGTERM)</code> and later
+    <code>signal_worker(pid, SIGKILL)</code>. <code>reckon/crew/process_signal.py:293–324,341–393,450–463</code>
+    expands <code>reach_run</code> to the run's processes and delivers to each PID;
+    it records an outcome before treating a signal as delivered. The directly
+    matched sender receipts target the two srun PIDs, not a bwrap PID. In each
+    receipt the target PID differs from its process-group ID, so
+    <code>_signal_one</code> uses <code>os.kill(pid, sig)</code> for the client,
+    not <code>os.killpg</code>.
+    <code>reckon/crew/dispatch_sessions.py:1889–1927</code> also reaches the
+    supervisor and its run descendants when <code>crew stop</code> is invoked.</li>
+  </ol>
+
+  <h3>Drain-step attribution</h3>
+  <p>The saved <code>sacct</code> timestamps are local CEST. Run names,
+  <code>worker.json</code>, <code>exit.json</code> and <code>senders.jsonl</code>
+  timestamps are UTC, two hours behind the table. Each run's stderr names its
+  exact step ID, so the attribution does not rest on nearest-time matching.</p>
+  <table>
+    <thead><tr><th>Step and run</th><th>Delivered signals, UTC</th><th>Scheduler result, CEST</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>1281970.251</code><br><code>r-20261008T025754782357-a-deferred-section-blocks-only-its-dependents</code>, attempt 5;<br><code>resume-4.stderr.log</code> names the step; worker PID 1677365</td>
+        <td>06:10:37.995 SIGTERM, <code>worker-lingered-after-terminal-manifest</code>;<br>06:10:50.010 SIGKILL, <code>worker-ignored-the-terminal-grace-signal</code></td>
+        <td>Started 07:40:56; Slurm <code>CANCELLED AT 08:10:38</code>;
+        ended 08:11:41, <code>CANCELLED by 39486</code>, <code>0:9</code>.</td>
+      </tr>
+      <tr>
+        <td><code>1277272.1549</code><br><code>r-20261003T132550219496-an-unmeasured-fleet-reading-names-its-cause</code>, attempt 1;<br><code>stderr.log</code> names the step; worker PID 2258183</td>
+        <td>13:53:12.368 SIGTERM, <code>worker-lingered-after-terminal-manifest</code>;<br>13:53:24.371 SIGKILL, <code>worker-ignored-the-terminal-grace-signal</code></td>
+        <td>Started 15:26:27; Slurm <code>CANCELLED AT 15:53:12</code>;
+        ended 15:54:15, <code>CANCELLED by 39486</code>, <code>0:9</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Evidence: the saved <code>sacct-1281970.psv</code> and
+  <code>sacct-1277272.psv</code> under
+  <code>/home/ITER/mcintos/.cache/reckon-fleet-drain/</code>, together with
+  each run's attempt worker, exit, sender, and named stderr records. The sender
+  records show delivery to the srun PIDs. The worker exit records say SIGKILL;
+  the scheduler rows say cancellation. Slurm's <code>CANCELLED AT</code> lines
+  coincide with SIGTERM, so the step was already being cancelled before the
+  harder signal went out. The records do not name the kernel task that delayed
+  teardown.</p>
+
+  <h3>Reasons for job 1281970's 482 user-cancelled steps</h3>
+  <p>Only rows whose state is exactly <code>CANCELLED by 39486</code> are in
+  this table. A run is joined only when its stderr names the exact Slurm step
+  ID. Its sender reason is counted when a delivered record falls within two
+  seconds of Slurm's <code>CANCELLED AT</code>, after CEST-to-UTC conversion.
+  Simultaneous reasons remain paired; no reason is inferred from a nearby run.</p>
+  <table>
+    <thead><tr><th>Sender reason at cancellation</th><th>Steps</th></tr></thead>
+    <tbody>
+      <tr><td><code>promotion-settle</code></td><td>108</td></tr>
+      <tr><td><code>worker-lingered-after-terminal-manifest</code></td><td>102</td></tr>
+      <tr><td><code>run-stop</code></td><td>40</td></tr>
+      <tr><td><code>lane-change</code></td><td>18</td></tr>
+      <tr><td><code>delivered-review-outlived-grace</code></td><td>2</td></tr>
+      <tr><td><code>promotion-settle</code> and <code>run-stop</code> within two seconds</td><td>54</td></tr>
+      <tr><td><code>lane-change</code> and <code>run-stop</code> within two seconds</td><td>7</td></tr>
+      <tr><td><code>promotion-release</code> and <code>run-stop</code> within two seconds</td><td>1</td></tr>
+      <tr><td>Exact step-to-run marker; no matching delivered sender receipt</td><td>1</td></tr>
+      <tr><td>No exact step-to-run marker; reason unattributed</td><td>149</td></tr>
+      <tr><th>Total</th><th>482</th></tr>
+    </tbody>
+  </table>
+  <p>There are 333 exact step-to-run stderr matches, each naming one run. Of
+  these, 332 have one or two delivered sender reasons at cancellation; 149
+  steps have no exact marker in the preserved run stderr logs. The latter
+  include 139 <code>bwrap</code> steps and 10 steps with other job names. The
+  complete per-step join and evidence path are in <code>step_attribution.csv</code>;
+  <code>analyze.py</code> reproduces the counts from saved receipts.</p>
+
+  <h3>Completed-step control</h3>
+  <p><code>1281970.73</code> is <code>COMPLETED</code> with exit <code>0:0</code>
+  in the saved table, 03:58:18–04:09:31 CEST. The unique attempt matching both
+  its start and exit is attempt 2 of
+  <code>r-20261008T015730285964-plan-review-of-a-follower-row-is-worth-a-wake</code>:
+  <code>worker.json</code> gives 01:58:15 UTC and <code>exit.json</code> gives
+  02:09:34 UTC with exit code zero and no exit signal. Its
+  <code>senders.jsonl</code> contains a delivered <code>promotion-settle</code>
+  SIGTERM at 02:09:31.892 UTC to the supervisor, and <strong>no SIGKILL
+  sender record</strong>. This control shows a step can complete as its task
+  exits even when the surrounding run records a late SIGTERM.</p>
+
+  <p><strong>Implication for the next change.</strong> The reaper must be the
+  task inside the step, with the stop signal delivered to that task while the
+  <code>srun</code> client remains alive. The run record should preserve the
+  task's eventual exit instead of asking Slurm to cancel it. This is the
+  mechanism inferred from the current code and the two observed cancellations;
+  the later probe must verify the new behavior.</p>
+</section>
+</body>
+</html>
