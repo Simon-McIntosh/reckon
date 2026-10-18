@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_spa_crew_cards.py::test_cards_keep_poll_timing_and_use_structured_budget_and_gate_marks",
+    "tests/test_spa_state_boundary.py::test_open_page_receives_new_plan_without_navigation_or_polling"
+  ],
+  "added_failures_note": "derived by reckon.crew.review.added_failures_from_gate_logs from the reviewed run's own two gate arms (logs/base-fast-spa.log at revision 4a53860316f27ff60204a2bbf359559093cd92cd, completed, 6 failures; logs/head-fast-spa.log at revision aa11b8800, completed, 7 failures), which the manifest records as its baseline_suite and after_suite; both ids are in the head arm alone and both fail because they assert the window.setInterval call the change removes from docs/ui/crew.jsx. Not annotated with the store's read-time derivation, which reports these as retired by name because the reviewed manifest lists them under follow_ons; this review judges them blocking instead.",
+  "call_site_count": 3,
+  "call_sites": [
+    "docs/ui/shell.jsx:277",
+    "docs/ui/shell.jsx:482",
+    "docs/ui/plan.jsx:617"
+  ],
+  "completed_at": "2026-10-18T15:22:36.953Z",
+  "dispatched_at": "2026-10-18T15:00:26Z",
+  "findings": [
+    {
+      "file": "tests/test_spa_crew_cards.py",
+      "line": "413",
+      "severity": "blocking",
+      "text": "blocking: the change deletes the window.setInterval poller from docs/ui/crew.jsx:319 (the stub-captured globalThis.__pollMs is left null), so its assert result[\"pollMs\"] == 3_000 fails at head while passing at base - the run's own after_suite records it as an added failure - leaving the SPA suite red; the repair is in a file outside this node's write scope and needs its own dispatch."
+    },
+    {
+      "file": "tests/test_spa_state_boundary.py",
+      "line": "253",
+      "severity": "blocking",
+      "text": "blocking: this test asserts the literal source string window.setInterval(poll, CREW_POLL_INTERVAL_MS) in docs/ui/crew.jsx:319, which the change removes, so it fails at head and passes at base (recorded as an added failure in the run's own after_suite), leaving the SPA suite red; the repair is outside this node's write scope."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-poll-waits-for-its-previous-answer.html",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment says All three now go through window.startPoll, but docs/ui/crew.jsx:319 starts no poller at all - it consumes the shell's runs prop - so the claim overstates what landed (the same sentence appears in the landed revision's message), and the fragment is the artefact promotion lands on the plan section."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read aa11b8800 against base 4a53860 revision by revision; it adds startPoll to docs/ui/_shared.jsx, moves the shell's /crew poll onto it and passes runs/loaded/error down to CrewView, calls it from docs/ui/plan.jsx, deletes the crew view's own setInterval poller, and adds the new test and evidence fragment, all within the declared paths.",
+    "done_when": "the measure names a fake-timer helper probe, a base-revision count of two /crew pollers, and no added failure in the SPA test files; tests/test_a_poll_waits_for_its_previous_answer.py:193 asserts peak<=1 and logs/head-suite.log records 3 passed EXIT=0, logs/base-detection.log records 2 -> 1 /crew pollers, but the run's own after_suite arm adds two SPA failures against baseline_suite, so that last clause is unmet.",
+    "goal": "the node goal is to route the SPA's pollers through one helper that schedules the next request only after the previous settles, with the shell and the crew view sharing one /crew poll; docs/ui/_shared.jsx:11 adds window.startPoll and docs/ui/shell.jsx:277 and docs/ui/plan.jsx:617 are its two callers, while docs/ui/crew.jsx:319 takes runs as a prop and starts no poller of its own.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T135000276129-a-poll-waits-for-its-previous-answer/manifest.md; status complete, one landed revision aa11b8800, tests recorded as 3 passed EXIT=0, and both baseline_suite and after_suite present over the same eight SPA test files.",
+    "write_paths": "read the reviewed manifest's declared paths (docs/ui/_shared.jsx, docs/ui/shell.jsx, docs/ui/plan.jsx, docs/ui/crew.jsx, the new test file, the evidence fragment and its figure directory); the diff statistics 4a53860..aa11b880 list six files, every one of which is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_poll_waits_for_its_previous_answer.py:202 asserts peak<=1 against the compiled docs/ui/_shared.jsx itself, and logs/negative-control-setinterval.log shows the same assertion reddening at peak=6 when the helper is swapped for window.setInterval, so reinstating the regression does fail it.",
+    "evidence": "the central measure is taken and its result recorded (logs/head-suite.log 3 passed EXIT=0; logs/base-detection.log 2 -> 1 /crew pollers; logs/negative-control-setinterval.log red at peak=6), but the run's own after_suite arm adds two SPA failures over its baseline_suite arm, so the done-when clause that the SPA test files show no added failure against base is not met.",
+    "fit": "docs/ui/_shared.jsx:11 follows the file's convention of a bare function assigned to window at the foot of the module (docs/ui/_shared.jsx:246), its Exposes header comment is updated in the same change, and no added name carries a plan, issue or version label.",
+    "goal_fidelity": "docs/ui/_shared.jsx:11 implements the settle-then-reschedule loop, docs/ui/shell.jsx:277 and docs/ui/plan.jsx:617 call it, and docs/ui/crew.jsx:319 renders the shell's run list from a prop so only one poller requests /crew, which is what the node goal and plan section 39's deliverable direct.",
+    "reuse": "the only other poll-shaped loop in the SPA is docs/ui/state-loader.js:252, a bounded checks retry with a maximum attempt count rather than a repeating route poll, so no owner of the settle-then-reschedule capability exists and the search over docs/ui and reckon found none to fork.",
+    "scope_discipline": "the diff statistics 4a53860..aa11b880 and the manifest's changed_paths list the same six paths, every one inside the declared write paths, with no plan meta line, project index or concurrent node's path touched."
+  },
+  "node": "review-of-a-poll-waits-for-its-previous-answer-aa11b8800bc5",
+  "node:reviewed": "a-poll-waits-for-its-previous-answer",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to route the SPA's pollers through one helper that schedules the next request only after the previous settles, with the shell and the crew view sharing one /crew poll; docs/ui/_shared.jsx:11 adds window.startPoll and docs/ui/shell.jsx:277 and docs/ui/plan.jsx:617 are its two callers, while docs/ui/crew.jsx:319 takes runs as a prop and starts no poller of its own.\nVERDICT done_when: the measure names a fake-timer helper probe, a base-revision count of two /crew pollers, and no added failure in the SPA test files; tests/test_a_poll_waits_for_its_previous_answer.py:193 asserts peak<=1 and logs/head-suite.log records 3 passed EXIT=0, logs/base-detection.log records 2 -> 1 /crew pollers, but the run's own after_suite arm adds two SPA failures against baseline_suite, so that last clause is unmet.\nVERDICT write_paths: read the reviewed manifest's declared paths (docs/ui/_shared.jsx, docs/ui/shell.jsx, docs/ui/plan.jsx, docs/ui/crew.jsx, the new test file, the evidence fragment and its figure directory); the diff statistics 4a53860..aa11b880 list six files, every one of which is inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T135000276129-a-poll-waits-for-its-previous-answer/manifest.md; status complete, one landed revision aa11b8800, tests recorded as 3 passed EXIT=0, and both baseline_suite and after_suite present over the same eight SPA test files.\nVERDICT diff: read aa11b8800 against base 4a53860 revision by revision; it adds startPoll to docs/ui/_shared.jsx, moves the shell's /crew poll onto it and passes runs/loaded/error down to CrewView, calls it from docs/ui/plan.jsx, deletes the crew view's own setInterval poller, and adds the new test and evidence fragment, all within the declared paths.\nCALL_SITES: docs/ui/shell.jsx:277, docs/ui/shell.jsx:482, docs/ui/plan.jsx:617\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/ui/_shared.jsx:11 implements the settle-then-reschedule loop, docs/ui/shell.jsx:277 and docs/ui/plan.jsx:617 call it, and docs/ui/crew.jsx:319 renders the shell's run list from a prop so only one poller requests /crew, which is what the node goal and plan section 39's deliverable direct.\nSCORE evidence: 13\nJUSTIFICATION evidence: the central measure is taken and its result recorded (logs/head-suite.log 3 passed EXIT=0; logs/base-detection.log 2 -> 1 /crew pollers; logs/negative-control-setinterval.log red at peak=6), but the run's own after_suite arm adds two SPA failures over its baseline_suite arm, so the done-when clause that the SPA test files show no added failure against base is not met.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff statistics 4a53860..aa11b880 and the manifest's changed_paths list the same six paths, every one inside the declared write paths, with no plan meta line, project index or concurrent node's path touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_poll_waits_for_its_previous_answer.py:202 asserts peak<=1 against the compiled docs/ui/_shared.jsx itself, and logs/negative-control-setinterval.log shows the same assertion reddening at peak=6 when the helper is swapped for window.setInterval, so reinstating the regression does fail it.\nSCORE fit: 18\nJUSTIFICATION fit: docs/ui/_shared.jsx:11 follows the file's convention of a bare function assigned to window at the foot of the module (docs/ui/_shared.jsx:246), its Exposes header comment is updated in the same change, and no added name carries a plan, issue or version label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the only other poll-shaped loop in the SPA is docs/ui/state-loader.js:252, a bounded checks retry with a maximum attempt count rather than a repeating route poll, so no owner of the settle-then-reschedule capability exists and the search over docs/ui and reckon found none to fork.\nFINDING tests/test_spa_crew_cards.py:413 blocking: the change deletes the window.setInterval poller from docs/ui/crew.jsx:319 (the stub-captured globalThis.__pollMs is left null), so its assert result[\"pollMs\"] == 3_000 fails at head while passing at base - the run's own after_suite records it as an added failure - leaving the SPA suite red; the repair is in a file outside this node's write scope and needs its own dispatch.\nFINDING tests/test_spa_state_boundary.py:253 blocking: this test asserts the literal source string window.setInterval(poll, CREW_POLL_INTERVAL_MS) in docs/ui/crew.jsx:319, which the change removes, so it fails at head and passes at base (recorded as an added failure in the run's own after_suite), leaving the SPA suite red; the repair is outside this node's write scope.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/a-poll-waits-for-its-previous-answer.html:3 follow-on: the fragment says All three now go through window.startPoll, but docs/ui/crew.jsx:319 starts no poller at all - it consumes the shell's runs prop - so the claim overstates what landed (the same sentence appears in the landed revision's message), and the fragment is the artefact promotion lands on the plan section.",
+  "review_run_id": "r-20261018T145651749169-review-of-a-poll-waits-for-its-previous-answer-aa11b8800bc5",
+  "reviewed_base_sha": "4a53860316f27ff60204a2bbf359559093cd92cd",
+  "reviewed_head_sha": "aa11b8800bc5ecbb0d548f3035ce8d51c45a9107",
+  "reviewed_run_id": "r-20261018T135000276129-a-poll-waits-for-its-previous-answer",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T15:20:00Z",
+  "total": 105
+}
