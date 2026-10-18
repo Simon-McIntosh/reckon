@@ -148,7 +148,10 @@ def test_request_estimate_and_candidate_blocks_are_one_figure(
             }
         }
 
-    monkeypatch.setitem(picker.pick.__kwdefaults__, "caller", stub_ask)
+    # The production dispatch wraps the live client in its own caller so the
+    # reserved lane's reason survives the pick, so the answer is intercepted at
+    # the client the dispatcher calls rather than at pick()'s default caller.
+    monkeypatch.setattr(picker.client, "ask", stub_ask)
 
     dispatch.dispatch_picker_selection(
         node=node,

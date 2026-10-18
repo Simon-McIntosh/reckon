@@ -328,7 +328,10 @@ def test_each_backend_block_carries_its_own_chain_authority(tmp_path, monkeypatc
             }
         }
 
-    monkeypatch.setitem(picker.pick.__kwdefaults__, "caller", stub_ask)
+    # The production dispatch wraps the live client in its own caller so the
+    # reserved lane's reason survives the pick, so the answer is intercepted at
+    # the client the dispatcher calls rather than at pick()'s default caller.
+    monkeypatch.setattr(picker.client, "ask", stub_ask)
 
     dispatch_picker_module.dispatch_picker_selection(
         node=node, config=config, project="proj", repo=repo
