@@ -281,18 +281,8 @@ def test_the_rendered_state_carries_the_move_figures_and_the_glossary(picker_env
         lane={"return_times": {}, "lanes": {}, "local_lane": {}},
         attempts=0,
     )
-    assert (
-        state["candidates"][
-            prompts.option_key(next(c for c in candidates if c.backend == "clive"))
-        ]["moved_off"]
-        == 1
-    )
-    assert (
-        state["candidates"][
-            prompts.option_key(next(c for c in candidates if c.backend == "codex"))
-        ]["moved_in"]["failed"]
-        == 1
-    )
+    assert state["candidates"]["clive"]["moved_off"] == 1
+    assert state["candidates"]["codex"]["moved_in"]["failed"] == 1
 
     glossary = json.loads(prompts.render("questions.jinja", candidates=candidates))[
         "route"
@@ -342,15 +332,9 @@ def test_a_request_naming_no_requirement_renders_the_move_figures(picker_env):
         lane={"return_times": {}, "lanes": {}, "local_lane": {}},
         attempts=0,
     )
-    codex = state["candidates"][
-        prompts.option_key(next(c for c in candidates if c.backend == "codex"))
-    ]
-    clive = state["candidates"][
-        prompts.option_key(next(c for c in candidates if c.backend == "clive"))
-    ]
-    amine = state["candidates"][
-        prompts.option_key(next(c for c in candidates if c.backend == "amine"))
-    ]
+    codex = state["candidates"]["codex"]
+    clive = state["candidates"]["clive"]
+    amine = state["candidates"]["amine"]
     # No requirement was named, so no at-requirement block is rendered...
     assert "outcomes_at_requirement" not in codex
     # ...yet the move figures are, read over every move: a moved-onto candidate

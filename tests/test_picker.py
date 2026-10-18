@@ -257,19 +257,11 @@ def test_representative_state_is_bounded_and_comment_verbatim(
         comment=request_node.comment,
         candidates=[c for c in options if not c.reasons],
     )
-    payload = json.loads(rendered)
-    # The two tables are keyed by each option's lane, model and backend, so the
-    # state carries one option key per table. A key's length is set by how the
-    # option is named, not by any row's content, so the rows are held to the
-    # bound the state has always kept and the keys the state actually carries
-    # are added on top: a row that bloats still fails here, and a key naming one
-    # more part does not need this bound edited.
-    key_bytes = sum(map(len, payload["candidates"])) + sum(
-        map(len, payload["return_times"])
-    )
-    assert len(rendered) - key_bytes <= 1500 * 5
-    assert payload["orchestrator_comment"] == request_node.comment
-    assert set(payload["candidates"][REMOTE_PAIR]) == {
+    # Each candidate now carries its own context block, so the representative
+    # state is larger; the bound still holds the whole prompt to a few KB.
+    assert len(rendered) <= 1500 * 5
+    assert json.loads(rendered)["orchestrator_comment"] == request_node.comment
+    assert set(json.loads(rendered)["candidates"]["remote"]) == {
         "backend",
         "lane",
         "model",
@@ -436,9 +428,7 @@ def test_cli_emits_one_selection_without_dispatch(
 ):
     from reckon.crew import picker
 
-    monkeypatch.setattr(
-        crew_dispatch_commands, "_dispatch_resolved_flight", lambda *a: config
-    )
+    monkeypatch.setattr(crew_dispatch_commands, "_dispatch_resolved_flight", lambda *a: config)
     monkeypatch.setattr(picker.snapshot.ledger, "runs", lambda *a, **k: [])
     monkeypatch.setattr(client, "load_key", Mock(side_effect=TimeoutError))
     result = CliRunner().invoke(

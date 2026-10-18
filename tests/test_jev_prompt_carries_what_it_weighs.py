@@ -116,10 +116,8 @@ def test_rendered_state_is_one_json_object():
     payload = state()
     assert set(payload) == TOP_LEVEL_KEYS
     assert set(payload["node"]) == NODE_FIELDS
-    assert set(payload["candidates"]) == {prompts.option_key(candidate())}
-    assert (
-        set(payload["candidates"][prompts.option_key(candidate())]) == CANDIDATE_FIELDS
-    )
+    assert set(payload["candidates"]) == {"remote"}
+    assert set(payload["candidates"]["remote"]) == CANDIDATE_FIELDS
 
 
 def test_every_fact_the_instructions_name_is_present():
@@ -128,22 +126,18 @@ def test_every_fact_the_instructions_name_is_present():
     for name, entry in payload["candidates"].items():
         assert CANDIDATE_FIELDS <= set(entry), name
     assert LOCAL_LANE_FIELDS <= set(payload["local_lane"])
-    assert prompts.option_key(candidate()) in payload["return_times"]
+    assert "remote" in payload["return_times"]
 
 
 def test_lane_and_model_render_as_separate_fields():
-    entry = state(candidates=[candidate()])["candidates"][
-        prompts.option_key(candidate())
-    ]
+    entry = state(candidates=[candidate()])["candidates"]["remote"]
     assert entry["lane"] == "codex-family"
     assert entry["model"] == "gpt-codex"
     assert entry["lane"] != entry["model"]
 
 
 def test_background_fields_render_when_present_and_null_when_absent():
-    absent = state(candidates=[candidate()])["candidates"][
-        prompts.option_key(candidate())
-    ]
+    absent = state(candidates=[candidate()])["candidates"]["remote"]
     for field in BACKGROUND_FIELDS:
         assert absent[field] is None, field
 
@@ -152,7 +146,7 @@ def test_background_fields_render_when_present_and_null_when_absent():
     present.budget_age_s = 7200.0
     present.stale = True
     present.reset_available = True
-    entry = state(candidates=[present])["candidates"][prompts.option_key(present)]
+    entry = state(candidates=[present])["candidates"]["remote"]
     assert entry["budget_source"] == "ledger"
     assert entry["budget_age_s"] == 7200.0
     assert entry["stale"] is True

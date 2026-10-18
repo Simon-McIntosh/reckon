@@ -336,9 +336,7 @@ def test_each_backend_block_carries_its_own_chain_authority(tmp_path, monkeypatc
 
     blocks = seen["blocks"]
     assert blocks, "the scan offered no candidate with a context block"
-    claude_key = "claude:claude-model:claude_lane"
-    codex_key = "codex:codex-model:codex_lane"
-    assert set(blocks) == {claude_key, codex_key}
+    assert set(blocks) == {"claude_lane", "codex_lane"}
     request = seen["request"]
     assert request and request > 0
 
@@ -353,8 +351,8 @@ def test_each_backend_block_carries_its_own_chain_authority(tmp_path, monkeypatc
     # Each block wears the estimate the context-fit verdict measured for that
     # candidate's own chain, not the request's figure a shared rule would have
     # put on both.
-    assert blocks[claude_key] == claude_only
-    assert blocks[codex_key] == codex_only
-    assert blocks[claude_key] != blocks[codex_key]
+    assert blocks["claude_lane"] == claude_only
+    assert blocks["codex_lane"] == codex_only
+    assert blocks["claude_lane"] != blocks["codex_lane"]
     # The request estimate stays one harness-independent figure.
     assert request == codex_only

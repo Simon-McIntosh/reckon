@@ -199,9 +199,7 @@ def test_rendered_state_carries_the_context_block_on_every_candidate(scan):
     assert payload["candidates"]
     for name, entry in payload["candidates"].items():
         assert set(entry["context"]) == CONTEXT_KEYS, name
-    local = payload["candidates"][
-        prompts.option_key(next(c for c in options if c.backend == "local"))
-    ]
+    local = payload["candidates"]["local"]
     assert local["context"]["headroom_pct"] == pytest.approx(15.0, abs=0.5)
 
 

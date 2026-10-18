@@ -427,10 +427,7 @@ def test_picker_inputs_and_rendered_state_equal_full_build(tmp_path, monkeypatch
             for rows, view in zip((indexed[0], full[0]), views, strict=True)
         ]
         assert contexts[0] == contexts[1]
-        assert (
-            contexts[0]["return_times"][prompts.option_key(candidate)]["p50_s"]
-            is not None
-        )
+        assert contexts[0]["return_times"]["worker"]["p50_s"] is not None
         rendered = [
             prompts.render(
                 "state.jinja",
