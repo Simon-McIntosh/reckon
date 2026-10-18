@@ -1399,11 +1399,10 @@ def fence_argv(
     # re-bound writable by the grant loop below, so a worker can write and
     # delete only what it declared; see :func:`shared_store_seal_roots`. Handing
     # either root writable would re-open every other project's and run's
-    # reports and reviews through the seal, so each sealed store root is skipped
+    # reports and reviews through the seal, so a sealed store root is skipped
     # by the grant loop. A store root is not created here: one that does not
-    # exist has nothing to seal and is not a directory the fence should invent.
+    # exist has nothing to seal, and is not a directory the fence should invent.
     store_seals = shared_store_seal_roots()
-    store_seal_keys = {str(resolved_destination(path)) for path in store_seals}
     protected = [*protected, *store_seals]
 
     # The node's own ``/tmp`` is sealed read-only too, so a run's stray cleanup
@@ -1466,11 +1465,28 @@ def fence_argv(
             fenced += ["--tmpfs", str(target)]
         else:
             fenced += ["--ro-bind", os.devnull, str(target)]
+    shared_seals = [*store_seals, *([scratch_seal] if scratch_seal else [])]
     granted: set[str] = set()
     for root in roots:
         target = resolved_destination(root)
         key = str(target)
-        if key in granted or key in store_seal_keys or not _within_any(target, sealed):
+        if key in granted or not _within_any(target, sealed):
+            continue
+        # A grant is the last word on its own path, so a handed root at or
+        # above a shared seal would re-open it whole — the seal is only ever
+        # reached through a root beneath it. The scratch root carries this
+        # before the node tmp is sealed too: dispatch hands the ambient
+        # ``TMPDIR`` (:func:`reckon._backends.delivery_write_roots`) as well as
+        # the run's own scratch directory, and where the crew home itself sits
+        # under that temp root the ambient root is an ancestor of both stores.
+        if any(seal == target or seal.is_relative_to(target) for seal in shared_seals):
+            continue
+        # A root that is not there holds nothing to re-open, and a bind whose
+        # source is absent refuses the launch outright, so it composes no
+        # grant. The caller creates the roots it means to hand before it
+        # composes the fence, and a root it has not created yet is granted on
+        # the composition after it does.
+        if not target.exists():
             continue
         granted.add(key)
         fenced += ["--bind", key, key]
