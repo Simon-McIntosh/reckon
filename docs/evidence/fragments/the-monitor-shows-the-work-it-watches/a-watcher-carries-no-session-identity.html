@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-title" content="A watcher armed from a session carries none of that session's identity">
+  <meta name="plan-summary" content="Every launch route that starts the watch producer now sheds the coordinator session's environment, so a sweep cannot resolve another session's coordinator or hand a follower to its host.">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s49">
+  <meta name="plan-recorded-at" content="2026-10-18">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,watch,producer,identity">
+  <title>A watcher armed from a session carries none of that session's identity — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-watcher-carries-no-session-identity" data-reckon="landed" data-when="2026-10-18">
+  <h2 id="a-watcher-carries-no-session-identity">A watcher armed from a session carries none of that session's identity</h2>
+  <p id="a-watcher-carries-no-session-identity-summary">Every launch route that starts the watch producer sheds the coordinator session's environment, so a sweep resolves no coordinator runtime session and writes no session-host request.</p>
+</article>
+<article class="landed-report" data-run-id="r-20261018T051327730136-a-watcher-carries-no-session-identity">
+  <p id="a-watcher-carries-no-session-identity-landing">landing: one list, <code>SESSION_IDENTITY_ENV_NAMES</code> plus the <code>CLAUDE_CODE_</code> prefix in <code>reckon/crew/dispatch_watch.py</code>, names every variable that <code>dispatch_accounting._coordinator_runtime</code> and <code>_session_host_owner</code> consult — <code>CLAUDE_PID</code>, <code>CLAUDECODE</code>, every <code>CLAUDE_CODE_*</code> variable, and a Codex session's <code>CODEX_SESSION_ID</code> and <code>CODEX_THREAD_ID</code>. <code>_without_session_identity()</code> and <code>_scrub_session_identity()</code> apply it. <code>_start_watch_producer</code> hands its launcher <code>env=_without_session_identity(os.environ)</code> on the process route; the embedded <code>_WATCH_PRODUCER_SUPERVISOR</code> script now pops those names from <code>os.environ</code> before its first <code>Popen</code>, covering the fleet route where the batch step starts the supervisor from its own environment with the names rendered in from the module's list; and <code>crew_watch</code> in <code>reckon/crew_follow_commands.py</code> calls <code>_scrub_session_identity(os.environ)</code> before its first sweep, so a producer armed before this sheds the identity at its next in-place reload while keeping its pid and seat. Measure: the four done-when cases pass in <code>tests/test_a_watcher_carries_no_session_identity.py</code> — the process route's launcher environment carries none of the six and keeps <code>PATH</code> and <code>RECKON_HOME</code>; each identity variable set alone, scrubbed, leaves <code>_coordinator_runtime()</code> and <code>_session_host_owner()</code> naming no session; <code>crew_watch</code> entered with them set finds both readers inert before its first sweep; the supervisor script run directly from a carrying environment starts a producer without them; and a review dispatched from such a producer records <code>coordinator.runtime_session_id</code> None with a live session-host FIFO left unread. 5 passed, EXIT=0, revision <code>1b0774ef6</code>. The negative control (<code>env=</code> removed from <code>_start_watch_producer</code>'s <code>Popen</code>, so the inherited environment passes through) fails <code>test_start_watch_producer_hands_over_a_scrubbed_environment</code>, EXIT=1, logged under the run directory.</p>
+</article>
+</body>
+</html>
