@@ -1,0 +1,25 @@
+<article class="r-evidence-fragment" data-reckon-fragment="a-producer-sweeps-only-on-change">
+  <h3>A producer sweeps only when the crew home changes</h3>
+  <p>
+    The watch producer's cycle now opens with a stat-only fingerprint of the
+    crew home — <code>live/</code> and <code>runs/</code> by their own
+    timestamps, each live pointer by its own, and, per live run, its newest
+    stream and its manifest. The fleet listing, the run-directory walk, the
+    orphan sweep and the git sweeps run only on a beat where that fingerprint
+    moved. The per-live-run liveness probe stays on the fixed beat, because a
+    worker can die with every file untouched and no stamp would move.
+  </p>
+  <p>
+    Two directories are deliberately outside the fingerprint. The watch
+    directory carries the producer's own seat record, rewritten by an atomic
+    rename on every poll, so stamping it would fire the gate every beat and undo
+    the saving. <code>runs/</code> holds every run the fleet has ever recorded,
+    so it is stamped by its own timestamp rather than enumerated.
+  </p>
+  <p>
+    The stream each run is writing is resolved once, at the sweep, from the
+    pointer, and stamped by mtime and size on every later beat. Resolving it per
+    beat would mean reading a message record per run to find which stream is
+    newest, which is the walk the gate exists to avoid.
+  </p>
+</article>

@@ -1302,15 +1302,11 @@ def _watch_snapshot(
             stored.get("liveness_proven"),
             stored.get("process_descendant_alive"),
         ):
-            return _refresh_snapshot(
-                stored, moment=moment, stall_seconds=stall_seconds
-            )
+            return _refresh_snapshot(stored, moment=moment, stall_seconds=stall_seconds)
     snapshot = _compute_watch_snapshot(
         pointer, moment=moment, stall_seconds=stall_seconds
     )
-    refreshed = _refresh_snapshot(
-        snapshot, moment=moment, stall_seconds=stall_seconds
-    )
+    refreshed = _refresh_snapshot(snapshot, moment=moment, stall_seconds=stall_seconds)
     if run_id and key is not None:
         _remember_snapshot(run_id, key, refreshed, cache=store)
     return refreshed
@@ -1675,9 +1671,9 @@ def fleet_transitions(
         # state it left. Carrying one forward reports a block on the line
         # announcing that the block is over.
         departed = {**known[run_id], "detail": "", "needs_help_complete": None}
-        changes.append((departed, str(known[run_id]["state"]), _departure_word(
-            run_id, recorded
-        )))
+        changes.append(
+            (departed, str(known[run_id]["state"]), _departure_word(run_id, recorded))
+        )
     for run_id in (item for item in current if item not in known):
         changes.append(
             (
@@ -1777,9 +1773,7 @@ def _session_fleet_counts(
     ``""`` entry, which counts only the rows no session owns.
     """
     owners = {str(snapshot.get("session") or "") for snapshot in snapshots.values()}
-    return {
-        owner: _fleet_counts(snapshots, session=owner) for owner in owners | {""}
-    }
+    return {owner: _fleet_counts(snapshots, session=owner) for owner in owners | {""}}
 
 
 def _transition_counts(
@@ -2221,6 +2215,136 @@ IDLE_POLL_INTERVAL_CAP_SECONDS = 30.0
 WATCHER_SWEEP_INTERVAL_SECONDS = 30.0
 
 
+def _stat_stamp(path: Path) -> tuple[int, int] | str:
+    """A path's modification time and size, or a stable absent marker.
+
+    Absence is its own marker rather than a zero: a file that appears where the
+    last poll found none must move the stamp, and a value that could not tell
+    the two apart would leave a fresh manifest or stream unread.
+    """
+    try:
+        info = path.stat()
+    except OSError:
+        return "absent"
+    return (info.st_mtime_ns, info.st_size)
+
+
+def _crew_home_change_token(
+    project: str, streams: Mapping[str, Path]
+) -> tuple[Any, ...]:
+    """A stat-only fingerprint of the crew home a producer's sweep reads.
+
+    The producer runs its fleet listing, its run-directory walk and its git
+    sweeps only when this moves; the per-live-run liveness probe stays on the
+    fixed beat, because a process can die with every file untouched and no
+    stamp would move. The fingerprint covers ``live/`` and ``runs/`` by their
+    own timestamps, every live pointer by its own, and, per live run, the two
+    files whose movement a classification reads first: the newest stream and
+    the manifest. Nothing here opens a file, and nothing walks a directory with
+    thousands of children: ``runs/`` holds every run the fleet has ever
+    recorded, so it is stamped by its own mtime, which moves when a run is
+    added or reclaimed, rather than enumerated.
+
+    The watch directory is deliberately absent. The producer's own seat record
+    and transition stream live there and the seat record is rewritten by an
+    atomic rename on every poll, so that directory's mtime carries the
+    producer's own heartbeat rather than any change in the fleet -- stamping it
+    would fire the gate every beat and undo the whole saving.
+    """
+    live = runs.live_dir()
+    parts: list[Any] = [
+        _stat_stamp(live),
+        _stat_stamp(runs.runs_dir()),
+    ]
+    try:
+        with os.scandir(live) as scan:
+            pointer_names = sorted(
+                entry.name for entry in scan if entry.name.endswith(".json")
+            )
+    except OSError:
+        pointer_names = []
+    for name in pointer_names:
+        run_id = name[: -len(".json")]
+        directory = runs.run_dir(run_id)
+        parts.append(("pointer", name, _stat_stamp(live / name)))
+        # The stream a run is writing is resolved once, at the sweep, from the
+        # pointer itself and kept here: re-resolving it every beat would mean
+        # reading a message record per run to find which stream is newest,
+        # which is the walk this gate exists to avoid.
+        parts.append(("stream", run_id, _stat_stamp(streams.get(run_id, directory))))
+        parts.append(
+            (
+                "manifest",
+                run_id,
+                _stat_stamp(directory / runs.DEFAULT_MANIFEST_NAME),
+            )
+        )
+    return tuple(parts)
+
+
+def _run_streams(pointers: Sequence[Mapping[str, Any]]) -> dict[str, Path]:
+    """Which stream each live run is currently writing, by run id.
+
+    Taken once per sweep, from the pointers the sweep already read, so the
+    change token can stamp each run's stream on every later beat without
+    resolving it again.
+    """
+    found: dict[str, Path] = {}
+    for pointer in pointers:
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id:
+            continue
+        newest = _record_newest_stream(pointer)
+        if newest is not None:
+            found[run_id] = newest[0]
+    return found
+
+
+def _quiet_beat_snapshots(
+    pointers: Sequence[Mapping[str, Any]],
+    cache: dict[str, tuple[str, dict[str, Any]]],
+    *,
+    moment: float,
+    stall_seconds: int,
+) -> dict[str, dict[str, Any]]:
+    """The fleet's snapshots on a beat the crew home did not change.
+
+    Every snapshot input is a file the change token has already proved still,
+    so only the one reading that is not a file is taken again -- the liveness of
+    each live run -- together with the silence derived from the recorded stream
+    instant and the poll's own clock. A run whose liveness moved drops its
+    entry and is classified afresh, so a death with no file touched is reported
+    on the beat it happens. This is the reuse path of :func:`_watch_snapshot`
+    without its input-stamp fan-out, which is exactly the cost the change gate
+    exists to leave unread.
+    """
+    current: dict[str, dict[str, Any]] = {}
+    for pointer in pointers:
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id:
+            continue
+        served = cache.get(run_id)
+        stored = served[1] if served is not None else None
+        if stored is None:
+            current[run_id] = _watch_snapshot(
+                pointer, moment=moment, stall_seconds=stall_seconds, cache=cache
+            )
+            continue
+        if _fresh_liveness(pointer) != (
+            stored.get("process_alive"),
+            stored.get("liveness_proven"),
+            stored.get("process_descendant_alive"),
+        ):
+            current[run_id] = _watch_snapshot(
+                pointer, moment=moment, stall_seconds=stall_seconds, cache=cache
+            )
+        else:
+            current[run_id] = _refresh_snapshot(
+                stored, moment=moment, stall_seconds=stall_seconds
+            )
+    return current
+
+
 def _sweep_lift_rows(
     project: str, seen: dict[str, dict[str, Any]] | None
 ) -> dict[str, dict[str, Any]] | None:
@@ -2367,6 +2491,15 @@ def watch_ticker(
         # a producer taking a seat for a project already holding a session
         # nobody follows sweeps it without waiting out one interval.
         swept_at = 0.0
+        # The crew home's last fingerprint and the fleet it last listed. The
+        # listing, the run-directory walk and the git sweeps run only when the
+        # fingerprint moves; between moves the pointer set and its snapshots
+        # are reused and only the per-run liveness probe is taken again. None
+        # on the first pass, so the seat's opening sweep always runs.
+        home_token: tuple[Any, ...] | None = None
+        streams: dict[str, Path] = {}
+        pointers: list[dict[str, Any]] = []
+        handed: set[str] = set()
         while True:
             if not runs.renew_watch_host_lease(project):
                 return
@@ -2389,38 +2522,60 @@ def watch_ticker(
 
             _backends.take_parsed_stream_bytes()
             take_admission_stream_bytes()
-            handed = handover_run_ids(project)
-            pointers = list_live(project=project)
-            # The lift document is folded on the same poll as the fleet, so a
-            # coordinator watching this project's stream sees a peer lift a
-            # group and sees the lift end on its own. The sweep writes only when
-            # a lift moved, and it never ends the seat: an unreadable document
-            # is the un-lifted state and is skipped with the memory kept.
-            lift_seen = _sweep_lift_rows(project, lift_seen)
-            # The orphan sweep rides the same reconciliation beat, on its own
-            # cadence. A follower's sweep acts only on the session it serves, so
-            # a session that armed no follower has no sweeper and here is the
-            # only pass that reaches it: the watcher names the session
-            # explicitly and records itself as the writer. It is best-effort,
-            # like the lift fold above — a sweep that raises must not end a seat
-            # whose whole job is to go on reporting the fleet.
-            passed_at = _utc_seconds()
-            if passed_at - swept_at >= WATCHER_SWEEP_INTERVAL_SECONDS:
-                swept_at = passed_at
-                try:
-                    runs.sweep_unfollowed_sessions(project)
-                except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
-                    print(f"orphan-sweep-failure: {project}: {exc}", flush=True)
-            _stop_delivered_reviews(pointers, signal_run=signal_run)
+            # The crew home's stat-only fingerprint. The listing, the
+            # run-directory walk and the git sweeps fire only when it moves;
+            # between moves the producer reuses the pointer set it last listed
+            # and takes only the per-run liveness probe, because a process can
+            # die with every file untouched and no stamp would move.
+            token = _crew_home_change_token(project, streams)
+            sweep = home_token is None or token != home_token
+            if sweep:
+                handed = handover_run_ids(project)
+                pointers = list_live(project=project)
+                streams = _run_streams(pointers)
+                home_token = _crew_home_change_token(project, streams)
+                # The lift document is folded on the same poll as the fleet, so
+                # a coordinator watching this project's stream sees a peer lift
+                # a group and sees the lift end on its own. The sweep writes
+                # only when a lift moved, and it never ends the seat: an
+                # unreadable document is the un-lifted state and is skipped
+                # with the memory kept.
+                lift_seen = _sweep_lift_rows(project, lift_seen)
+                # The orphan sweep rides the same reconciliation beat, on its
+                # own cadence. A follower's sweep acts only on the session it
+                # serves, so a session that armed no follower has no sweeper and
+                # here is the only pass that reaches it: the watcher names the
+                # session explicitly and records itself as the writer. It is
+                # best-effort, like the lift fold above — a sweep that raises
+                # must not end a seat whose whole job is to go on reporting the
+                # fleet.
+                passed_at = _utc_seconds()
+                if passed_at - swept_at >= WATCHER_SWEEP_INTERVAL_SECONDS:
+                    swept_at = passed_at
+                    try:
+                        runs.sweep_unfollowed_sessions(project)
+                    except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
+                        print(f"orphan-sweep-failure: {project}: {exc}", flush=True)
+                _stop_delivered_reviews(pointers, signal_run=signal_run)
             moment = _utc_seconds()
-            current = {
-                str(pointer.get("run_id") or ""): _watch_snapshot(
-                    pointer, moment=moment, stall_seconds=stall_seconds,
-                    cache=snapshot_cache,
+            if sweep:
+                current = {
+                    str(pointer.get("run_id") or ""): _watch_snapshot(
+                        pointer,
+                        moment=moment,
+                        stall_seconds=stall_seconds,
+                        cache=snapshot_cache,
+                    )
+                    for pointer in pointers
+                    if pointer.get("run_id")
+                }
+            else:
+                current = _quiet_beat_snapshots(
+                    pointers,
+                    snapshot_cache,
+                    moment=moment,
+                    stall_seconds=stall_seconds,
                 )
-                for pointer in pointers
-                if pointer.get("run_id")
-            }
             if current:
                 # A wake that sees a live run ends any back-off: the producer's
                 # interval is its base again from this pass.
