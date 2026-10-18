@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 3,
+  "added_failure_ids": [
+    "tests/test_follower_checks_its_owner.py::test_a_takeover_records_the_armed_owner_not_the_claimants_parent",
+    "tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter",
+    "tests/test_removed_flag_migration.py::test_the_deprecation_announcement_reaches_stderr_and_not_the_stream"
+  ],
+  "added_failures_note": "total capped at 5: the reviewed run added 3 failing test(s) not retired by name (tests/test_follower_checks_its_owner.py::test_a_takeover_records_the_armed_owner_not_the_claimants_parent, tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter, tests/test_removed_flag_migration.py::test_the_deprecation_announcement_reaches_stderr_and_not_the_stream)",
+  "after_suite": {
+    "completed": true,
+    "failure_count": 3,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T094640247315-a-lift-claim-key-names-a-real-host/logs/importers-head-clean.log",
+    "revision": "929298ea317645f49de528e3b5709d7338dec391"
+  },
+  "baseline_suite": {
+    "completed": true,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T094640247315-a-lift-claim-key-names-a-real-host/logs/importers-base.log",
+    "revision": "2cb8bc901bb5c2d3239062a4bbb689b7a23dfe01"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:lift_claim_dir",
+    "reckon/crew_follow_commands.py:follower_row_path",
+    "reckon/cli.py:407"
+  ],
+  "completed_at": "2026-10-18T11:00:38.443Z",
+  "dispatched_at": "2026-10-18T10:46:34Z",
+  "findings": [
+    {
+      "file": "logs/importers-head-clean.log",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed done-when states the files importing reckon/crew_follow_commands.py show no added failure against base, but the head arm reports 481 passed and 3 failed where the base arm reports 481 passed and 0 failed (tests/test_follower_checks_its_owner.py::test_a_takeover_records_the_armed_owner_not_the_claimants_parent, tests/test_removed_flag_migration.py::test_the_deprecation_announcement_reaches_stderr_and_not_the_stream, tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter); the worker attributes all three to order-dependent flakiness (they pass re-run in isolation at head) but the base arm did pass them, so the no-added-failure clause of the done-when is unmet and its attribution is supported only by the isolation recheck, not by a base repeat."
+    },
+    {
+      "file": "tests/test_a_lift_claim_key_names_a_real_host.py",
+      "line": "117",
+      "severity": "follow-on",
+      "text": "follow-on: the hosted key's node prefix is asserted against NODE computed at tests/test_a_lift_claim_key_names_a_real_host.py:41 by the same _lift_claim_token(socket.gethostname()) the code under test uses, so the startswith check cannot distinguish the code reading the real hostname from any other expression that also reduces to the same string; the independent guard is the equality on line 118 against the hardcoded pid and start."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 2cb8bc901; one commit 929298ea3 changes reckon/crew_follow_commands.py (lift_claim_key) plus one new test file and one edited test file and one evidence fragment, 183 insertions and 16 deletions.",
+    "done_when": "the done-when's items (a) an unhosted reloaded follower takes the per-session key, (b) a hosted key carries the node name, (c) section 51's two-session case still draws one grant and one end are asserted by tests/test_a_lift_claim_key_names_a_real_host.py, but its closing clause (the importing test files show no added failure against base) is not met: logs/importers-head-clean.log reports 3 failing tests the base arm did not.",
+    "goal": "the node's goal is Make a follower's lift-claim key name a real host and its node, and reckon/crew_follow_commands.py:1181-1197 does exactly that: lift_claim_key decides hosted from RECKON_SESSION_HOST_SETTLE only, and prefixes the key with socket.gethostname() so a hosted key reads host-<node>-<pid>-<start>.",
+    "manifest": "read; it reports the gate at logs/head-after-commit.txt 16 passed EXIT=0, records after_suite 3 failures at head from logs/importers-head-clean.log, and names negative control logs/negative-control.txt at EXIT=1.",
+    "write_paths": "the manifest declares five paths (reckon/crew_follow_commands.py, two test files, an evidence fragment, a figures dir); the diff touches four of them and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_lift_claim_key_names_a_real_host.py:99 asserts lift_claim_key(HOST_SESSION) == HOST_SESSION and reddens on the exact regression the negative control reinstates, while the node-naming assertion at line 117 compares against NODE computed by the same helper the code uses.",
+    "evidence": "the section's own gate log logs/head-after-commit.txt records 16 passed EXIT=0 with the negative control red at EXIT=1, but the done-when's no-added-failure clause is contradicted by 3 added failures in logs/importers-head-clean.log.",
+    "fit": "reckon/crew_follow_commands.py:1188 uses socket.gethostname() directly as reckon/crew/claims.py:241 and reckon/crew/runs.py:295 already do, and no plan, ticket or version identifier appears in the landed source.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:1181 returns early when RECKON_SESSION_HOST_SETTLE is unset and otherwise keys on host-<node>-<pid>-<start>, the change the section's deliverable states.",
+    "reuse": "the change modifies the existing owner lift_claim_key in place and reuses _lift_claim_token, adding no new mechanism; a search over reckon/crew found no other lift-claim key owner to fork.",
+    "scope_discipline": "every path in the diff (reckon/crew_follow_commands.py, tests/test_a_lift_claim_key_names_a_real_host.py, tests/test_a_pane_draws_a_lift_once_per_host.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-lift-claim-key-names-a-real-host.html) is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is Make a follower's lift-claim key name a real host and its node, and reckon/crew_follow_commands.py:1181-1197 does exactly that: lift_claim_key decides hosted from RECKON_SESSION_HOST_SETTLE only, and prefixes the key with socket.gethostname() so a hosted key reads host-<node>-<pid>-<start>.\nVERDICT done_when: the done-when's items (a) an unhosted reloaded follower takes the per-session key, (b) a hosted key carries the node name, (c) section 51's two-session case still draws one grant and one end are asserted by tests/test_a_lift_claim_key_names_a_real_host.py, but its closing clause (the importing test files show no added failure against base) is not met: logs/importers-head-clean.log reports 3 failing tests the base arm did not.\nVERDICT write_paths: the manifest declares five paths (reckon/crew_follow_commands.py, two test files, an evidence fragment, a figures dir); the diff touches four of them and nothing outside them.\nVERDICT manifest: read; it reports the gate at logs/head-after-commit.txt 16 passed EXIT=0, records after_suite 3 failures at head from logs/importers-head-clean.log, and names negative control logs/negative-control.txt at EXIT=1.\nVERDICT diff: read commit by commit against base 2cb8bc901; one commit 929298ea3 changes reckon/crew_follow_commands.py (lift_claim_key) plus one new test file and one edited test file and one evidence fragment, 183 insertions and 16 deletions.\nCALL_SITES: reckon/crew_follow_commands.py:lift_claim_dir, reckon/crew_follow_commands.py:follower_row_path, reckon/cli.py:407\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:1181 returns early when RECKON_SESSION_HOST_SETTLE is unset and otherwise keys on host-<node>-<pid>-<start>, the change the section's deliverable states.\nSCORE evidence: 13\nJUSTIFICATION evidence: the section's own gate log logs/head-after-commit.txt records 16 passed EXIT=0 with the negative control red at EXIT=1, but the done-when's no-added-failure clause is contradicted by 3 added failures in logs/importers-head-clean.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew_follow_commands.py, tests/test_a_lift_claim_key_names_a_real_host.py, tests/test_a_pane_draws_a_lift_once_per_host.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-lift-claim-key-names-a-real-host.html) is inside the manifest's declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_lift_claim_key_names_a_real_host.py:99 asserts lift_claim_key(HOST_SESSION) == HOST_SESSION and reddens on the exact regression the negative control reinstates, while the node-naming assertion at line 117 compares against NODE computed by the same helper the code uses.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew_follow_commands.py:1188 uses socket.gethostname() directly as reckon/crew/claims.py:241 and reckon/crew/runs.py:295 already do, and no plan, ticket or version identifier appears in the landed source.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change modifies the existing owner lift_claim_key in place and reuses _lift_claim_token, adding no new mechanism; a search over reckon/crew found no other lift-claim key owner to fork.\nFINDING logs/importers-head-clean.log:20 follow-on: the reviewed done-when states the files importing reckon/crew_follow_commands.py show no added failure against base, but the head arm reports 481 passed and 3 failed where the base arm reports 481 passed and 0 failed (tests/test_follower_checks_its_owner.py::test_a_takeover_records_the_armed_owner_not_the_claimants_parent, tests/test_removed_flag_migration.py::test_the_deprecation_announcement_reaches_stderr_and_not_the_stream, tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter); the worker attributes all three to order-dependent flakiness (they pass re-run in isolation at head) but the base arm did pass them, so the no-added-failure clause of the done-when is unmet and its attribution is supported only by the isolation recheck, not by a base repeat.\nFINDING tests/test_a_lift_claim_key_names_a_real_host.py:117 follow-on: the hosted key's node prefix is asserted against NODE computed at tests/test_a_lift_claim_key_names_a_real_host.py:41 by the same _lift_claim_token(socket.gethostname()) the code under test uses, so the startswith check cannot distinguish the code reading the real hostname from any other expression that also reduces to the same string; the independent guard is the equality on line 118 against the hardcoded pid and start.\n",
+  "review_run_id": "r-20261018T104536503542-review-of-a-lift-claim-key-names-a-real-host-929298ea3176",
+  "reviewed_base_sha": "2cb8bc901bb5c2d3239062a4bbb689b7a23dfe01",
+  "reviewed_commits": [
+    "929298ea317645f49de528e3b5709d7338dec391"
+  ],
+  "reviewed_head_sha": "929298ea317645f49de528e3b5709d7338dec391",
+  "reviewed_run_id": "r-20261018T094640247315-a-lift-claim-key-names-a-real-host",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T11:05:34.712691+00:00",
+  "total": 5
+}
