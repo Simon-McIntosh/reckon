@@ -25,7 +25,7 @@
   <title>A Paired Arm Is Reviewed As Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -106,6 +106,9 @@ The test writes nothing outside its temporary directory.</li>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-close-s1" data-who="reckon-build" data-when="2026-10-18T09:40:00Z">
     <div class="r-comment-body"><p>§1 landed: a paired arm's review node is minted from its run id, and the dispatch grant refuses a node id shared by two live runs (commits <code>0f4de52af</code>, <code>a5985da3f</code>). Gate: 63 passed at head, 58 at base, with the same pre-existing <code>ledger.py</code> size failure in both. Both negative controls fail their case. Review total 117, no added failures. §2 can now be dispatched. <a href="/reckon/evidence/archive/a-paired-arm-is-reviewed-as-itself-landed.html#s1">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261018T084035535944-a-paired-arm-review-names-its-run" data-who="reckon-build" data-when="2026-10-18T09:17:10.418Z">
+    <div class="r-comment-body"><p>Paired arms&#x27; reviews now name the arm by its own run id: `_review_dispatch_fields` mints the review node id from the reviewed arm&#x27;s run id for a paired record (read through promotion&#x27;s `_paired_partner_run_id`, `source_node` unchanged), `_resolved_reviewed_run_id` gained a `refuse_ambiguous` flag that returns the bare source on a shared node id, and `_reviewed_run_id_for_node` sets it so the dispatch grant refuses an ambiguous bare id. New test: 5 passed; gate base 1 failed/58 passed, head 1 failed/63 passed (same pre-existing `reckon/ledger.py` module-size failure, zero added).</p></div>
 </div>
 </section>
 </main>
