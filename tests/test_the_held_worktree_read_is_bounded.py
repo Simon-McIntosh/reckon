@@ -14,6 +14,10 @@ record older than its run file must stat every per-run document once and every
 held tree once, and the reader that supplies the namings charges a few more, so
 no single bound both passes a fresh screen and fails the base, which already
 stats each document once.
+
+The screen is also exercised refused: the reader that supplies the namings is
+made to raise, and the derivation must still answer from the per-run documents,
+because a screen that cannot be built costs a read rather than a duty.
 """
 
 from __future__ import annotations
@@ -291,6 +295,38 @@ def test_the_head_derivation_equals_the_whole_ledger(
         for path, record in obligations_module._held_worktree_records(PROJECT).items()
     }
     assert got == _whole_ledger_held(root)
+
+
+def test_a_refused_namings_reader_leaves_every_run_a_candidate(
+    home: tuple[Path, list[Path]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A refused screen costs a read, never a duty.
+
+    The screen's namings come from the merged ledger's reader. A run is still on
+    disk in the document its own writer put there whatever that reader does, so
+    a refused reader must cost the derivation a full read rather than its
+    answer: every run stays a candidate and the per-run documents are read for
+    themselves. The refusal is shown to be real before it is relied on, so an
+    answer equal to the whole-ledger one is a measurement of the fallback rather
+    than of a patch that never took.
+    """
+    root, _trees = home
+    expected = _whole_ledger_held(root)
+
+    def refuse(*_arguments: Any, **_keywords: Any) -> Any:
+        raise AssertionError("the merged ledger was read for a screen")
+
+    monkeypatch.setattr(ledger, "runs", refuse)
+    with pytest.raises(AssertionError):
+        ledger.runs(PROJECT, root=root)
+
+    got = {
+        str(path.resolve()): str(record.get("run_id") or "")
+        for path, record in obligations_module._held_worktree_records(PROJECT).items()
+    }
+    assert got == expected
+    assert len(expected) == TREE_COUNT
 
 
 def _retain_after_publication(root: Path, run_id: str, tree: Path) -> None:

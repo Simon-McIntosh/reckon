@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import json
 import shlex
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -430,14 +430,14 @@ def _names_worktree(record: Mapping[str, Any], worktree: Path) -> bool:
 
 def _run_namings(
     project: str, repository: Path
-) -> tuple[dict[str, tuple[str, Path | None]], list[dict[str, Any]]]:
+) -> tuple[dict[str, tuple[str, Path | None]], list[dict[str, Any]]] | None:
     """Each run's node id and retained tree, with the rows, from one fresh read.
 
     A per-run document can name an inspected tree by either route
     :func:`record_names_worktree` applies: the node id it carries, or the path
     its retention carries. Both are taken here from the ledger's own reader,
     which stats every per-run document once and re-decodes one only when it has
-    moved since the published index. A screen that acted on the published index
+    moved since the index it holds. A screen that acted on the published index
     unvalidated would answer from a record older than its file — a run that
     starts retaining a tree after publication keeps its old row, and dropping
     that run is the wrong answer this read exists to avoid. The retained path is
@@ -447,13 +447,18 @@ def _run_namings(
     The same rows are returned so the caller files its candidates from the read
     the screen already made, rather than opening each screened-in document a
     second time.
+
+    ``None`` means the reader refused or failed. The caller answers that by
+    dropping the screen rather than the derivation: a screen is a bound on the
+    work, never the source of the answer, so one that cannot be built costs a
+    read and never a duty.
     """
 
     namings: dict[str, tuple[str, Path | None]] = {}
     try:
         rows = ledger.runs(project, root=repository)
     except Exception:  # noqa: BLE001 — a screen must never fail the derivation
-        return {}, []
+        return None
     for row in rows:
         run_id = str(row.get("run_id") or "")
         if not run_id:
@@ -464,6 +469,57 @@ def _run_namings(
         )
         namings[run_id] = (node_id, _retained_worktree(row))
     return namings, rows
+
+
+def _aggregate_rows(project: str, repository: Path) -> list[Mapping[str, Any]]:
+    """The rows the aggregate itself holds, or none when it cannot be read.
+
+    An unreadable or malformed aggregate contributes no rows rather than
+    refusing the fallback: the per-run documents are what it is there to read,
+    and a damaged copy of the other source must not cost the derivation them.
+    """
+
+    try:
+        data, _version = ledger._load_aggregate(project, repository)
+    except Exception:  # noqa: BLE001 — a damaged aggregate is not a lost read
+        return []
+    return [row for row in data.get("runs", []) if isinstance(row, Mapping)]
+
+
+def _run_file_rows(project: str, repository: Path) -> list[Mapping[str, Any]]:
+    """Every row the run documents carry, read without the merged reader.
+
+    This is the path taken when the reader that supplies the namings refuses or
+    fails. The records it would have merged are each still on disk, in the
+    document a run's own writer put there, so the derivation reads those
+    documents for itself rather than answering with nothing: the merged reader
+    is how the answer is reached early, not what the answer is.
+
+    Both sources are read — the aggregate's own rows, which carry the runs the
+    split has written no file for, and the per-run documents. A document that
+    cannot stand for a run, being absent, unreadable, or not the run it is named
+    for, is skipped, so its tree falls to a reader that refuses a damaged record
+    exactly where the merged reader always has.
+
+    The rows are ordered by the merged reader's own key, so a tree two of them
+    name goes to the one that reader would have put last, rather than to
+    whichever document happened to be read last.
+    """
+
+    rows: list[Mapping[str, Any]] = _aggregate_rows(project, repository)
+    for source in ledger._run_files(project, repository):
+        try:
+            record = ledger.read_document(source)
+        except (OSError, ValueError):
+            continue
+        if (
+            not isinstance(record, Mapping)
+            or str(record.get("run_id") or "") != source.stem
+        ):
+            continue
+        rows.append(record)
+    rows.sort(key=_ledger_order_key)
+    return rows
 
 
 def _may_name_a_tree(
@@ -569,7 +625,10 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     admits on both, so a run dispatched for one node and retaining a tree named
     for another still answers. The same rows supply the candidates, so no
     document is opened a second time and only a row that can name an inspected
-    tree is filed.
+    tree is filed. The screen is dropped, not the answer, when that reader
+    refuses or fails: every run stays a candidate and the per-run documents are
+    read for themselves, so a reader that cannot be reached costs a read rather
+    than a duty.
     The whole call runs inside :func:`reckon.file_memo.read_only_region`, so a
     document is stat'ed and decoded once for the call and handed on unshared.
     Records are filed into one index of the trees they name, so an inspected
@@ -602,7 +661,18 @@ def _held_worktree_records_read(
     # One fresh read of the merged ledger supplies both the screen and the
     # records: every per-run document is stat'ed once to detect a write, and one
     # that has moved is re-decoded, so no candidate is ever older than its file.
-    namings, rows = _run_namings(project, repository) if names else ({}, [])
+    fresh = _run_namings(project, repository) if names else ({}, [])
+    namings: Mapping[str, tuple[str, Path | None]]
+    rows: Sequence[Mapping[str, Any]]
+    if fresh is None:
+        # The reader that supplies the namings refused or failed, so the screen
+        # cannot be built. Every run stays a candidate and the documents are
+        # read for themselves: a screen that drops the runs it cannot name turns
+        # a refused reader into a lost duty, which is the one outcome a screen
+        # must never produce.
+        namings, rows = {}, _run_file_rows(project, repository)
+    else:
+        namings, rows = fresh
     index = WorktreeRecordIndex()
     for row in rows:
         # A row that can name no inspected tree on either route the naming rule
