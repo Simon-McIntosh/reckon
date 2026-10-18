@@ -75,8 +75,8 @@ def _named_backend_config() -> dict:
 def _primary_on_candidate_config() -> dict:
     """The implement role routes to ``candidate``, so the primary lands there.
 
-    This is the shape the picker produced in the incident: the primary arm and
-    the shadow arm named the same backend.
+    The primary resolves to ``candidate`` with its one model — the same backend
+    and model the shadow arm names — which is the alike case a pair refuses.
     """
     config = _named_backend_config()
     config["roles"]["implement"] = {"backend": "candidate"}
