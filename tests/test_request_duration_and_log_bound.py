@@ -121,15 +121,15 @@ def test_a_line_written_during_rotation_survives(served) -> None:
 
     copied = threading.Event()
     release = threading.Event()
-    real_copyfile = serve.shutil.copyfile
+    real_copyfileobj = serve.shutil.copyfileobj
 
-    def slow_copyfile(src, dst, **kwargs):
-        result = real_copyfile(src, dst, **kwargs)
+    def slow_copyfileobj(src, dst, *args, **kwargs):
+        result = real_copyfileobj(src, dst, *args, **kwargs)
         copied.set()
         release.wait(5)
         return result
 
-    serve.shutil.copyfile = slow_copyfile
+    serve.shutil.copyfileobj = slow_copyfileobj
     try:
         rotated: list[bool] = []
         rotator = threading.Thread(
@@ -149,7 +149,7 @@ def test_a_line_written_during_rotation_survives(served) -> None:
         rotator.join(5)
         writer.join(5)
     finally:
-        serve.shutil.copyfile = real_copyfile
+        serve.shutil.copyfileobj = real_copyfileobj
 
     assert rotated == [True], "the over-bound log was not rotated"
     live = log.read_text(encoding="utf-8", errors="replace")
