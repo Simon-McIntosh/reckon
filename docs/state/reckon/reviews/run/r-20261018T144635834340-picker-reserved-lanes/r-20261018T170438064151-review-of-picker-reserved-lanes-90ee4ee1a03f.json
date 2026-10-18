@@ -1,0 +1,110 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs gates/base-picker.log (1 failed, 246 passed) and gates/after-picker.log (1 failed, 262 passed); the only failing id is tests/test_picker_helpers_have_one_owner.py::test_rendered_state_matches_the_base_revision_bytes on both arms, so the added count is zero. The reviewed manifest carries no baseline_suite/after_suite keys; these test_logs are the equivalents read here.",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "A routine node at full headroom is offered the reserved lane, which happens when the reserved-lane scan is removed.",
+      "file": "tests/test_picker_reserved_lanes.py",
+      "line": 235
+    },
+    {
+      "condition_to_fail": "A hardest-tier node at or above the ceiling, or on an unknown reading, is offered the reserved lane.",
+      "file": "tests/test_picker_reserved_lanes.py",
+      "line": 268
+    },
+    {
+      "condition_to_fail": "A node one attempt below the policy count is offered the reserved lane.",
+      "file": "tests/test_picker_reserved_lanes.py",
+      "line": 283
+    },
+    {
+      "condition_to_fail": "The answer's reason is dropped between the pick and the run record, or the reserved lane is not named on the selection.",
+      "file": "tests/test_picker_reserved_lanes.py",
+      "line": 377
+    },
+    {
+      "condition_to_fail": "A reserved-lane route with no reason is not refused and re-ask #2 still shows the lane, which is the unreasoned-pick guard.",
+      "file": "tests/test_picker_reserved_lanes.py",
+      "line": 406
+    }
+  ],
+  "base_log_revision": "35aae9475ddccae7d3675a520fd0b540042d7fca",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/picker/snapshot.py:candidates -> reckon/flight.py:reserved_lane_policies",
+    "reckon/crew/picker/__init__.py:pick -> reckon/crew/picker/snapshot.py:candidates",
+    "reckon/crew/dispatch_picker.py:dispatch_picker_selection -> _name_reserved_lane, _reask_off_unreasoned_reserved_lane",
+    "reckon/flight.py:validate_layer -> _validate_picker_reserved_lanes"
+  ],
+  "completed_at": "2026-10-18T17:22:52.270Z",
+  "dispatched_at": "2026-10-18T17:05:44Z",
+  "findings": [
+    {
+      "file": "tests/test_picker_reserved_lanes.py",
+      "line": "243",
+      "severity": "follow-on",
+      "text": "follow-on: a debugging print(', DIAG', ...) is left on the committed test line, emitting stray output on every run of the tier-with-headroom case."
+    },
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "1163",
+      "severity": "follow-on",
+      "text": "follow-on: the attempts-from-ledger enumeration duplicates reckon/crew/picker/__init__.py:422-428 verbatim; the comment claims the policy and the rendered state can never disagree about the figure, yet they are two independent copies that would drift if one is changed."
+    },
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "995",
+      "severity": "follow-on",
+      "text": "follow-on: _reserved_lane_floor_met re-implements the level-ranking comparison already owned by reckon/capability.py:208 _rank (used by worker_satisfies at capability.py:227) rather than extending it, so a second rank-in-levels implementation now exists."
+    },
+    {
+      "file": "reckon/crew/dispatch_picker.py",
+      "line": "749",
+      "severity": "follow-on",
+      "text": "follow-on: the unreasoned-reserved-lane refusal re-picks only when allow is true; a nested re-ask runs with allow=False (set at dispatch_picker.py:929), so a reserved lane reached there can be routed with no reason while the log records refused_unreasoned true."
+    }
+  ],
+  "head_log_revision": "90ee4ee1a03f0de6ac7863d22e30c3da2ddb4972",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "The single commit 90ee4ee1a03f0de6ac7863d22e30c3da2ddb4972 adds the reserved-lane key, defaults and validator to reckon/flight.py, the withheld-lane scan to reckon/crew/picker/snapshot.py, the reason capture and re-ask to reckon/crew/dispatch_picker.py, the policy text to reckon/crew/picker/templates/questions.jinja, and a 512-line test file.",
+    "done_when": "The done_when names tests/test_picker_reserved_lanes.py with a deterministic picker showing each of the seven cases plus a negative control; the file's 16 tests cover every case and the manifest records the head run as 16 passed, EXIT=0.",
+    "goal": "The node goal is to reserve a lane for the orchestrators and offer it to the picker only at the policy's tier and only with the lane's account window below its ceiling, carrying a reason; reckon/flight.py:842 reserved_lane_policies, reckon/crew/picker/snapshot.py:1273 and reckon/crew/dispatch_picker.py:723 implement it.",
+    "manifest": "The source manifest.md:4-23 records status complete, commit 90ee4ee1a03f0de6ac7863d22e30c3da2ddb4972, 16 passing tests, a delta-zero claim, the four gate logs and the negative-control log; it carries no baseline_suite/after_suite keys and states the schema-source write as a follow-on.",
+    "write_paths": "The source brief.md:56 grants seven paths; the base-to-head diff changes five of them (reckon/flight.py, reckon/crew/picker/snapshot.py, reckon/crew/dispatch_picker.py, reckon/crew/picker/templates/questions.jinja, tests/test_picker_reserved_lanes.py) and touches nothing outside them."
+  },
+  "justifications": {
+    "durability": "gates/negative-control.log registers reserved = {} at the scan and 5 tests redden that the head arm passes, so the withheld-lane guard is a real one, but the module's other guard tests/test_picker_helpers_have_one_owner.py::test_rendered_state_matches_the_base_revision_bytes is red on both arms and cannot serve as a regression check here.",
+    "evidence": "gates/base-picker.log and gates/after-picker.log both end '1 failed, 246/262 passed' on the same pre-existing test, gates/negative-control.log reads EXIT=1 with 5 failures, and gates/head-reserved-lanes.log reads '16 passed EXIT=0'.",
+    "fit": "reckon/crew/picker/snapshot.py:1023 and reckon/crew/dispatch_picker.py:749 carry mechanism-named symbols and reuse _ask_excluding_lane and _append_crew_log_line, matching the surrounding idiom; one stray debug print is left at tests/test_picker_reserved_lanes.py:243.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:1273 withholds the reserved lane unless the floor or the attempt count is met and the window is below ceiling, and reckon/crew/dispatch_picker.py:749 records the reason, so all five brief items are met; the schema item lands through the reckon-owned-key pattern at reckon/flight.py:741 rather than the LinkML source.",
+    "reuse": "The policy reader extends the flight-config owner at reckon/flight.py:842 and the re-ask reuses the existing _ask_excluding_lane, but reckon/crew/picker/snapshot.py:1163 re-inlines the attempts-from-rows enumeration owned by reckon/crew/picker/__init__.py:422-428 and snapshot.py:995 re-implements the level ranking owned by reckon/capability.py:208.",
+    "scope_discipline": "The diff from 35aae9475ddccae7d3675a520fd0b540042d7fca to 90ee4ee1a03f0de6ac7863d22e30c3da2ddb4972 changes only five of the seven granted paths, leaving reckon/crew/picker/templates/state.jinja and reckon/_flight_schema.py untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to reserve a lane for the orchestrators and offer it to the picker only at the policy's tier and only with the lane's account window below its ceiling, carrying a reason; reckon/flight.py:842 reserved_lane_policies, reckon/crew/picker/snapshot.py:1273 and reckon/crew/dispatch_picker.py:723 implement it.\nVERDICT done_when: The done_when names tests/test_picker_reserved_lanes.py with a deterministic picker showing each of the seven cases plus a negative control; the file's 16 tests cover every case and the manifest records the head run as 16 passed, EXIT=0.\nVERDICT write_paths: The source brief.md:56 grants seven paths; the base-to-head diff changes five of them (reckon/flight.py, reckon/crew/picker/snapshot.py, reckon/crew/dispatch_picker.py, reckon/crew/picker/templates/questions.jinja, tests/test_picker_reserved_lanes.py) and touches nothing outside them.\nVERDICT manifest: The source manifest.md:4-23 records status complete, commit 90ee4ee1a03f0de6ac7863d22e30c3da2ddb4972, 16 passing tests, a delta-zero claim, the four gate logs and the negative-control log; it carries no baseline_suite/after_suite keys and states the schema-source write as a follow-on.\nVERDICT diff: The single commit 90ee4ee1a03f0de6ac7863d22e30c3da2ddb4972 adds the reserved-lane key, defaults and validator to reckon/flight.py, the withheld-lane scan to reckon/crew/picker/snapshot.py, the reason capture and re-ask to reckon/crew/dispatch_picker.py, the policy text to reckon/crew/picker/templates/questions.jinja, and a 512-line test file.\nCALL_SITES: reckon/crew/picker/snapshot.py:candidates -> reckon/flight.py:reserved_lane_policies, reckon/crew/picker/__init__.py:pick -> snapshot.candidates, reckon/crew/dispatch_picker.py:dispatch_picker_selection -> _name_reserved_lane, reckon/flight.py:validate_layer -> _validate_picker_reserved_lanes\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:1273 withholds the reserved lane unless the floor or the attempt count is met and the window is below ceiling, and reckon/crew/dispatch_picker.py:749 records the reason, so all five brief items are met.\nSCORE evidence: 18\nJUSTIFICATION evidence: gates/base-picker.log and gates/after-picker.log both end '1 failed, 246/262 passed' on the same pre-existing test, gates/negative-control.log reads EXIT=1 with 5 failures, and gates/head-reserved-lanes.log reads '16 passed EXIT=0'.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: The diff from 35aae9475ddccae7d3675a520fd0b540042d7fca to 90ee4ee1a03f0de6ac7863d22e30c3da2ddb4972 changes only five of the seven granted paths, leaving state.jinja and reckon/_flight_schema.py untouched.\nSCORE durability: 17\nJUSTIFICATION durability: gates/negative-control.log registers reserved = {} at the scan and 5 tests redden that the head arm passes, so the withheld-lane guard is real, though the module's stale golden-bytes test is red on both arms.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/picker/snapshot.py:1023 and reckon/crew/dispatch_picker.py:749 carry mechanism-named symbols and reuse existing helpers, matching the surrounding idiom, with one stray debug print at tests/test_picker_reserved_lanes.py:243.\nSCORE reuse: 13\nJUSTIFICATION reuse: The policy reader extends reckon/flight.py:842 and the re-ask reuses _ask_excluding_lane, but snapshot.py:1163 re-inlines reckon/crew/picker/__init__.py:422-428 and snapshot.py:995 re-implements reckon/capability.py:208.\nFINDING tests/test_picker_reserved_lanes.py:243 follow-on: a debugging print is left on the committed test line, emitting stray output on every run.\nFINDING reckon/crew/picker/snapshot.py:1163 follow-on: the attempts-from-ledger enumeration duplicates reckon/crew/picker/__init__.py:422-428 verbatim, so the policy and the rendered state can drift despite the comment claiming they cannot.\nFINDING reckon/crew/picker/snapshot.py:995 follow-on: _reserved_lane_floor_met re-implements the level-ranking comparison owned by reckon/capability.py:208 rather than extending it.\nFINDING reckon/crew/dispatch_picker.py:749 follow-on: the unreasoned-reserved-lane refusal re-picks only when allow is true, so a nested re-ask (allow=False at dispatch_picker.py:929) can leave a reserved lane routed with no reason.\n",
+  "review_run_id": "r-20261018T170438064151-review-of-picker-reserved-lanes-90ee4ee1a03f",
+  "reviewed_base_sha": "35aae9475ddccae7d3675a520fd0b540042d7fca",
+  "reviewed_commits": [
+    "90ee4ee1a03f0de6ac7863d22e30c3da2ddb4972"
+  ],
+  "reviewed_head_sha": "90ee4ee1a03f0de6ac7863d22e30c3da2ddb4972",
+  "reviewed_run_id": "r-20261018T144635834340-picker-reserved-lanes",
+  "rubric": "dimensions",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T17:20:00Z",
+  "total": 102
+}
