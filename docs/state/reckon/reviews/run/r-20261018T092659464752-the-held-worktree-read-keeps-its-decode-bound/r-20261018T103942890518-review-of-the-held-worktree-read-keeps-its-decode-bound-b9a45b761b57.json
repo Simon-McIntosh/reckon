@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T092659464752-the-held-worktree-read-keeps-its-decode-bound/gate-head.log",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Restoring the defect (decoding every per-run document again) raises the hook-counted decoded above 15 and the assertion fails; shown red at base a617367a1 (record 500) and under the recorded negative control (500 <= 15).",
+      "lines": "242"
+    },
+    {
+      "failure_condition": "Making the screen drop the runs it cannot name, rather than falling back to the documents, makes the answered mapping differ from the whole-ledger scan and the assertion fails.",
+      "lines": "300-333"
+    }
+  ],
+  "base_log_revision": "a617367a1f3d03f40fbb1b78e76c5ca0ea17bb6d",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T092659464752-the-held-worktree-read-keeps-its-decode-bound/gate-base-arm.log",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligations.py:_run_file_rows",
+    "reckon/crew/obligations.py:_held_worktrees",
+    "reckon/ledger.py:load",
+    "reckon/ledger.py:_index_payload"
+  ],
+  "completed_at": "2026-10-18T11:00:10.746Z",
+  "dispatched_at": "2026-10-18T10:40:39Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "1696",
+      "severity": "blocking",
+      "text": "blocking: run_rows_from_documents catches only LedgerError around _load_aggregate at reckon/ledger.py:1695-1696, but _store._load_json_envelope raises CorruptEnvelopeError (a plain Exception, reckon/_store.py:113) for a corrupt aggregate, so a corrupt aggregate now propagates out of the fallback where the code it replaced (obligations._aggregate_rows, 'except Exception: return []') answered from the per-run documents; reproduced in isolation, run_rows_from_documents raised reckon._store.CorruptEnvelopeError, and the docstring at reckon/ledger.py:1693 asserting the documents are still read is false."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/the-held-worktree-read-keeps-its-decode-bound.html",
+      "line": "8",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment and gate-head.log name the gate head as f5c1ad2c1, which is the parent of the delivered commit b9a45b761, so a reader cannot tie the recorded 5-passed/decoded-0 result to the revision being promoted."
+    }
+  ],
+  "head_log_revision": "f5c1ad2c1a8750fbf1d7a9d23e0088d8b00adfcf",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against f5c1ad2c1; the single commit b9a45b761 changes 4 files (122 insertions, 99 deletions): it factors load's merge into _merge_run_documents, adds promotion_order_key and run_rows_from_documents, points _run_file_rows at the latter, takes the run id in _may_name_a_tree, and asserts the decode bound.",
+    "done_when": "the done_when requires a decode count of at most the trees that can change the answer, counted across both the namings reader and the fallback and failing at base a617367a1 at 500, with obligations.py holding no union, sort or stem check and the earlier section's cases still passing; the gate the worker ran (tests/test_the_held_worktree_read_is_bounded.py, 5 passed, decoded 0) asserts exactly that measure at tests/test_the_held_worktree_read_is_bounded.py:242.",
+    "goal": "the node goal is to make the held-worktree read assert its decode bound again and read runs through the ledger's own merge; reckon/crew/obligations.py:489 makes _run_file_rows delegate to ledger.run_rows_from_documents, and tests/test_the_held_worktree_read_is_bounded.py:242 asserts decoded <= TREE_COUNT.",
+    "manifest": "read; it reports 5 passed with decoded 0, posix.stat 521 and copy.deepcopy 0, a base arm red at 500, a negative control re-run at b9a45b761, and status complete, but leaves baseline_suite and after_suite empty.",
+    "write_paths": "the declared paths are reckon/crew/obligations.py, reckon/ledger.py, tests/test_the_held_worktree_read_is_bounded.py and the node's landing fragment; the f5c1ad2c1..b9a45b761 diff changes exactly those four files and writes no figure."
+  },
+  "justifications": {
+    "durability": "the added decode assertion is independent (a hook-counted value against the constant TREE_COUNT) and reddens both at base a617367a1 (500 <= 15) and under the recorded negative control, but the diff's narrowing of the fallback's exception breadth at reckon/ledger.py:1696 to LedgerError is a behavioural change no added assertion covers.",
+    "evidence": "gate-head.log records 5 passed with decoded 0 at tests/test_the_held_worktree_read_is_bounded.py:242 and gate-base-arm.log records the same assertion red at 500, but gate-head.log's own revision line names f5c1ad2c1, the parent of the delivered commit, so the log does not name the revision it measured.",
+    "fit": "reckon/ledger.py:1614 promotion_order_key and :1626 _merge_run_documents follow the module's existing helper style and carry no plan, version or ticket label.",
+    "goal_fidelity": "tests/test_the_held_worktree_read_is_bounded.py:242 asserts decoded <= TREE_COUNT and reckon/crew/obligations.py:489 reads rows through ledger.run_rows_from_documents, so both halves of the goal are met.",
+    "reuse": "every added definition lives in reckon/ledger.py, the module that already owns load's union, sort and run-id-against-file check, so _merge_run_documents is that owner's own merge factored out rather than a fork, and obligations.py:489 now calls the owner.",
+    "scope_discipline": "every path in the f5c1ad2c1..b9a45b761 diff (reckon/crew/obligations.py, reckon/ledger.py, tests/test_the_held_worktree_read_is_bounded.py, the landing fragment) is inside the manifest's declared write paths and nothing else is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the held-worktree read assert its decode bound again and read runs through the ledger's own merge; reckon/crew/obligations.py:489 makes _run_file_rows delegate to ledger.run_rows_from_documents, and tests/test_the_held_worktree_read_is_bounded.py:242 asserts decoded <= TREE_COUNT.\nVERDICT done_when: the done_when requires a decode count of at most the trees that can change the answer, counted across both the namings reader and the fallback and failing at base a617367a1 at 500, with obligations.py holding no union, sort or stem check and the earlier section's cases still passing; the gate the worker ran (tests/test_the_held_worktree_read_is_bounded.py, 5 passed, decoded 0) asserts exactly that measure at tests/test_the_held_worktree_read_is_bounded.py:242.\nVERDICT write_paths: the declared paths are reckon/crew/obligations.py, reckon/ledger.py, tests/test_the_held_worktree_read_is_bounded.py and the node's landing fragment; the f5c1ad2c1..b9a45b761 diff changes exactly those four files and writes no figure.\nVERDICT manifest: read; it reports 5 passed with decoded 0, posix.stat 521 and copy.deepcopy 0, a base arm red at 500, a negative control re-run at b9a45b761, and status complete, but leaves baseline_suite and after_suite empty.\nVERDICT diff: read commit by commit against f5c1ad2c1; the single commit b9a45b761 changes 4 files (122 insertions, 99 deletions): it factors load's merge into _merge_run_documents, adds promotion_order_key and run_rows_from_documents, points _run_file_rows at the latter, takes the run id in _may_name_a_tree, and asserts the decode bound.\nCALL_SITES: reckon/crew/obligations.py:_run_file_rows, reckon/crew/obligations.py:_held_worktrees, reckon/ledger.py:load, reckon/ledger.py:_index_payload\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_the_held_worktree_read_is_bounded.py:242 asserts decoded <= TREE_COUNT and reckon/crew/obligations.py:489 reads rows through ledger.run_rows_from_documents, so both halves of the goal are met.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log records 5 passed with decoded 0 at tests/test_the_held_worktree_read_is_bounded.py:242 and gate-base-arm.log records the same assertion red at 500, but gate-head.log's own revision line names f5c1ad2c1, the parent of the delivered commit, so the log does not name the revision it measured.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the f5c1ad2c1..b9a45b761 diff (reckon/crew/obligations.py, reckon/ledger.py, tests/test_the_held_worktree_read_is_bounded.py, the landing fragment) is inside the manifest's declared write paths and nothing else is touched.\nSCORE durability: 15\nJUSTIFICATION durability: the added decode assertion is independent (a hook-counted value against the constant TREE_COUNT) and reddens both at base a617367a1 (500 <= 15) and under the recorded negative control, but the diff's narrowing of the fallback's exception breadth at reckon/ledger.py:1696 to LedgerError is a behavioural change no added assertion covers.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/ledger.py:1614 promotion_order_key and :1626 _merge_run_documents follow the module's existing helper style and carry no plan, version or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: every added definition lives in reckon/ledger.py, the module that already owns load's union, sort and run-id-against-file check, so _merge_run_documents is that owner's own merge factored out rather than a fork, and obligations.py:489 now calls the owner.\nFINDING reckon/ledger.py:1696 blocking: run_rows_from_documents catches only LedgerError around _load_aggregate at reckon/ledger.py:1695-1696, but _store._load_json_envelope raises CorruptEnvelopeError (a plain Exception, reckon/_store.py:113) for a corrupt aggregate, so a corrupt aggregate now propagates out of the fallback where the code it replaced (obligations._aggregate_rows, 'except Exception: return []') answered from the per-run documents; reproduced in isolation, run_rows_from_documents raised reckon._store.CorruptEnvelopeError, and the docstring at reckon/ledger.py:1693 asserting the documents are still read is false.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/the-held-worktree-read-keeps-its-decode-bound.html:8 follow-on: the fragment and gate-head.log name the gate head as f5c1ad2c1, which is the parent of the delivered commit b9a45b761, so a reader cannot tie the recorded 5-passed/decoded-0 result to the revision being promoted.\n",
+  "review_run_id": "r-20261018T103942890518-review-of-the-held-worktree-read-keeps-its-decode-bound-b9a45b761b57",
+  "reviewed_base_sha": "f5c1ad2c1a8750fbf1d7a9d23e0088d8b00adfcf",
+  "reviewed_commits": [
+    "b9a45b761b5783fa30d290b5c21644e836121882"
+  ],
+  "reviewed_head_sha": "b9a45b761b5783fa30d290b5c21644e836121882",
+  "reviewed_run_id": "r-20261018T092659464752-the-held-worktree-read-keeps-its-decode-bound",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T10:54:58.702694+00:00",
+  "total": 106
+}
