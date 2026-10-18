@@ -381,7 +381,8 @@ def test_retire_refuses_steps_and_sessions_then_requires_confirmation(actions: A
     ledger = json.loads(actions.path.read_text())
     assert ledger["retirement"]["job_id"] == "1234"
     assert ledger["next_step"] == "done"
-    assert actions.migrate() == "migration complete"
+    # A done ledger now begins a new move at census on the next invocation.
+    assert actions.migrate(dry_run=True).startswith("census:")
 
 
 def test_retire_requires_all_recorded_sessions_and_a_numeric_job_id(actions: Actions):

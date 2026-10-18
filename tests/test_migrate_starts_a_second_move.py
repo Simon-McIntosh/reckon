@@ -1,10 +1,10 @@
-"""A completed move is followed by a fresh census once the fleet has moved on.
+"""A completed move is followed by a fresh census.
 
-A move promotes one scheduler job to own the fleet and records it under
-``stand_up``. While the fleet record still names that job the newest ledger is
-complete and the command reports it. Once the record names a different job the
-allocation has been replaced, so the next invocation begins a new move at
-census rather than reporting the old one complete.
+The census step is reachable only when no ledger exists, so reporting a done
+ledger complete would let the command carry exactly one move forever. A done
+ledger therefore always makes the next invocation begin a new move at census,
+whatever job the fleet record names; census and layout only read state, so this
+starts nothing costly. The earlier ledger is left untouched.
 """
 
 from __future__ import annotations
@@ -68,31 +68,44 @@ def _record(state: Path, job_id: str) -> None:
     )
 
 
-def test_completed_move_reports_complete_when_the_fleet_is_still_its_own(
+def test_completed_move_starts_a_fresh_census_when_the_fleet_is_its_own(
     tmp_path: Path,
 ) -> None:
+    """The fleet record still names the job the move promoted, so the record
+    cannot signal that another move is due; a done ledger always censuses."""
     state = tmp_path / "state"
     path = _ledger(state, next_step="done", promoted_job="new-job")
     _record(state, "new-job")
+    source = _source(tmp_path)
     before = path.read_bytes()
 
-    def observe() -> dict:
-        raise AssertionError("a completed, unmoved fleet must not census")
-
-    assert (
-        fleet_migrate.migrate(
-            dry_run=True, state=state, layouts_dir=tmp_path, observation=observe
-        )
-        == "migration complete"
+    dry = fleet_migrate.migrate(
+        dry_run=True,
+        state=state,
+        layouts_dir=tmp_path,
+        observation=lambda: source,
+        read_runs=list,
     )
-    assert (
-        fleet_migrate.migrate(
-            state=state, layouts_dir=tmp_path, observation=observe, read_runs=list
-        )
-        == "migration complete"
-    )
+    assert dry.startswith("census:")
+    assert "migration complete" not in dry
     assert path.read_bytes() == before
-    assert list((state / "migration").glob("move-*/ledger.json")) == [path]
+
+    answer = fleet_migrate.migrate(
+        state=state,
+        layouts_dir=tmp_path,
+        observation=lambda: source,
+        read_runs=list,
+    )
+    assert answer.startswith("Recorded")
+    assert "next step: layout" in answer
+    assert path.read_bytes() == before
+    fresh = [
+        candidate
+        for candidate in (state / "migration").glob("move-*/ledger.json")
+        if candidate != path
+    ]
+    assert len(fresh) == 1
+    assert json.loads(fresh[0].read_text())["completed"] == ["census"]
 
 
 def test_completed_move_starts_a_new_census_when_the_fleet_moved_on(
