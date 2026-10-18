@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -26,8 +27,6 @@ def queued_with_host(
     host_tests._claude_env(monkeypatch, runtime)
     fifo = host_tests._session_host_fifo(runtime)
     fifo.parent.mkdir(parents=True, exist_ok=True)
-    import os
-
     os.mkfifo(fifo)
     host = host_tests._StubHost(fifo, "sample", "hosted-session")
     watcher = host_tests._spawn_runner()
@@ -94,7 +93,7 @@ def test_one_admission_pass_launches_without_follower_refusal(queued_with_host) 
         config_for=lambda _pointer: config,
         launcher=lambda *args, **kwargs: 4242,
     )
-    assert len(result["launched"]) == 1, result
+    assert len(result["launched"]) == 1, result["failure_detail"]
     assert not result["failed"]
     assert "_FollowerAdmissionUnmet" not in str(result)
     assert (
