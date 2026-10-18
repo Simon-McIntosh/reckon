@@ -1,0 +1,77 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T14:25:20Z",
+  "dispatched_at": "2026-10-18T14:19:29Z",
+  "findings": [
+    {
+      "anchor": "plan.html:23",
+      "id": "wiring-1",
+      "reason": "add \u00a78 as a predecessor or narrow \u00a75's velocity gate explicitly, so its successful endpoint measure is attainable.",
+      "text": "\u00a75's dependency is only \u00a73, but \u00a75's deliverable and production gate include `/crew/velocity`, while \u00a71 and \u00a78 say its all-project request currently raises `IndexError`; \u00a78 can therefore remain unfinished when \u00a75 is dispatched and measured",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:137",
+      "id": "done_when-1",
+      "reason": "each newly claimed route needs a controlled prior-result/refresh case and an inline negative control to prove its request path no longer recomputes.",
+      "text": "The forced cold recompute and inline negative control exercise only `/_discover`; ten minutes of ordinary activity and a p95 latency can pass without forcing a refresh for `/_projects/index.json`, `/_checks`, or `/crew/velocity`",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:130",
+      "id": "reasoning-1",
+      "reason": "the stored-result identity and refresh inputs must include the normalized velocity query and its moving default window before this route can be served correctly.",
+      "text": "The three-function interface is keyed only by route and project, but `Handler._serve_velocity` in `reckon/serve.py` also varies its answer by `since`, `until`, `fields`, `limit`, and `cursor` (lines 3332\u20133350), with a clock-derived default window; two requests for one project can therefore receive the same stored answer for different questions",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:134",
+      "id": "reasoning-2",
+      "reason": "\u00a75 must name the watcher or write-path caller that starts each child and move the stream and checks-summary derivations behind stored results; generalizing the existing child alone leaves the cited slow request paths in place.",
+      "text": "\u201cSpawn on change\u201d names no production caller for the generalized refresh: `_FleetChangeWatch` currently only invalidates and wakes streams (`reckon/serve.py` lines 525\u2013526, 597\u2013598), `_send_project_changes` still calls `discover_plans` inline (line 3276), and `/_checks` still calls `compliance.project_checks`, which walks every document in the request (lines 3762\u20133773; `reckon/compliance.py` lines 248\u2013285)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "85e3d83816022444bbf9300e8721a5ef12a1c74532a23921495420fbecf757f8",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 6,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T141405710144-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "fe2aee3d424203c2066d4613d7bb03ef5b4e2d4d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a75's `reckon/serve.py`, `reckon/compliance.py`, and \u00a73/\u00a74/\u00a79 anchors resolve; the plan's extensionless links resolve after `.html` is appended.",
+    "done_when": "a finding \u2014 \u00a75 forces and negatively controls only discovery, leaving the other three claimed routes unproved.",
+    "evidence_paths": "pass \u2014 \u00a75 inherits \u00a72's run-directory gate logs and uses \u00a79's served duration record for the production measure.",
+    "naming": "pass \u2014 \u00a75's proposed compute, last-result read, and change-spawn interface has no plan labels or version names in proposed code.",
+    "reasoning": "a finding \u2014 \u00a75's route/project cache key aliases distinct velocity queries, and the cited production change paths still derive inline or only invalidate state.",
+    "single_goal": "pass \u2014 \u00a75 has one goal: serve derived results during recomputation through one shared refresh mechanism.",
+    "wiring": "a finding \u2014 \u00a75 depends on \u00a73 alone although its velocity success gate also needs \u00a78's repair of the all-project request."
+  },
+  "section_digests": {
+    "_document": "88ce37210fb91a9942df0a01024297398c99dbeecebe9b08aad14a9577d150a1",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "b9aa035553d395057dad26d5353e7b79c6bdec033a1ab82eb1042718d03592cd",
+    "s12": "3086e0ba68e51ca085e7178c914c92d64248be41088440dfa18abf077d5819ee",
+    "s13": "fa208e7c5f148ec329458a9824c867762bc66c986ccb7bc85745b08640484173",
+    "s14": "7f21ec58ce9adf4ba663f205fe60555a585a263354e7954c7dd99543a0d56139",
+    "s15": "884c8ab0e973894007385f537b51e29ef55bf2de18ef2cf6a25966e656f62bf2",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s3": "50f2ca1f3b1277d5f4b2d70a240688387a89a3136ad2d6aee26f0b3f324b1afc",
+    "s4": "a1ad15bdafaed28134c2565ad8374bc91928064852c10da6661f2499ca286149",
+    "s5": "47aff61cb094216c1ad26f9d6f4775d88723608b6f1f5752926965338453a5bc",
+    "s6": "fdb08d5e7b8272372c8ced83ee14c031730239025c2a13ccb211329d7951673e",
+    "s7": "90073ced7051cfae8f66fd6b78f99e6ace90b008ffc6c9e5559d87a2e5c31704",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T14:25:50.854617+00:00"
+}
