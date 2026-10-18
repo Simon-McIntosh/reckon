@@ -1,0 +1,79 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T20:57:33.710Z",
+  "dispatched_at": "2026-10-18T20:49:55Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-never-reverts-the-checkout.html:69",
+      "id": "reasoning-1",
+      "reason": "a worker implementing \u00a72 strictly within its fence cannot satisfy the record bullet for one of the three named steps, and would either ship a record that silently omits review-record-store refusals or edit promotion.py outside its granted write paths.",
+      "text": "\u00a72's record bullet says an entry names the step that refused, listing \"review-record store\" alongside stage and commit, while \u00a72's write paths (line 72) are only promotion_scope.py, promotion_release.py and the new test; the review-record-store refusal is `raise _landing_refusal(...)` at promotion.py:1339, and `_landing_refusal(message, rollback)` (promotion_scope.py:1843) carries neither `run_id` nor a step, so no code inside the declared paths can key or record that attempt",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-never-reverts-the-checkout.html:65",
+      "id": "reasoning-2",
+      "reason": "the bullet it follows states the comparison correctly (\"the staged content is exactly what the path held in that commit's parent\"), so a worker implements the right check and only the reuse claim is inaccurate.",
+      "text": "the deliverable says the checks \"build on the comparisons that file already owns \u2026 no third comparator is added\", but the pre-stage reversal test compares the staged (index) blob against the blob a commit's *parent* held, which neither `_path_differs_from_head` (HEAD vs working tree) nor `_path_has_a_staged_change` (HEAD vs index) computes, so a parent-vs-index comparison is unavoidably new",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "42315b54e723c391770518b782cc05905bce8e3a989cfabb65b9d99e53166524",
+  "plan_slug": "a-landing-never-reverts-the-checkout",
+  "plan_version": 14,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-18T20:59:31.099829+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-18T20:59:40.818517+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T20:59:31.099829+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T20:59:40.818517+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-landing-never-reverts-the-checkout.v14.json",
+  "review_run_id": "r-20261018T204905584676-plan-review-of-a-landing-never-reverts-the-checkout",
+  "reviewed_blob_sha": "93ced930908d23f0dbbacd86157fdb6fe8240700",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified against the tree: `_commit_landing_writes` at promotion_scope.py:1916, its callers at promotion.py:751 and :1350 and promotion_gate.py:960, `_record_release_on_ledger` at promotion_release.py:569, `_path_differs_from_head` at promotion_scope.py:1482, `_path_has_a_staged_change` at :1747, and `LANDING_ROLLBACK_ATTRIBUTE` at :1762; the loose \"lines 611 to 650\" range covers the inline stage (613), short-circuit (630), commit (634) and rollback (646).",
+    "done_when": "pass \u2014 all six of \u00a72's done-when items are measurable, and the negative control is both declared (line 73) and shown as a base-revision red log by id (line 79).",
+    "evidence_paths": "pass \u2014 the negative-control log is written \"under the run directory\" (line 79), the durable `run_dir(run_id)`, not a session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach \u00a72's symbols; `landing_check`, `landing_check.reversals` and `landing.json` all name the mechanism.",
+    "reasoning": "a finding \u2014 \u00a72 declares that every refused landing writes a `landing.json` entry naming \"the step that refused (stage, commit or review-record store)\", but the review-record-store refusal is raised in a module outside \u00a72's write paths, so the declared record cannot be produced from the code \u00a72 says it owns.",
+    "single_goal": "pass \u2014 \u00a72 names one deliverable, the landing's own self-check and rollback record, with the release-commit consolidation its stated prerequisite (\"One owner first, then the checks\").",
+    "wiring": "pass \u2014 \u00a72 declares no depends-on and is genuinely independent of \u00a71; the plan's single edge (s3 -> s1, plan.html:24) resolves, and no \u00a72 relationship is missing or misdirected."
+  },
+  "section_digests": {
+    "_document": "479ad99e4e7ec690c76f853bbaa2d01eaa1b8f0a44a8f6ce0f762821bdb2dd5c",
+    "s1": "ee9b8c30fd2d5b2dfb1dc7d01e8045c3f8d91294fd8bfd32b710f64690ad3daf",
+    "s2": "785f2bdf2665e964fffd72ffc3e96fd821001123b8f3542e5dd1474f1f17b8e6",
+    "s3": "5b86c755ce5f9a57c024e57d7a66b2f089c181482d11c34216c6170cb33a2fde"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T20:59:25.069394+00:00"
+}
