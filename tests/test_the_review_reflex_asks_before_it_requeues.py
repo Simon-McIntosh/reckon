@@ -3,9 +3,7 @@
 The reflex composes an automatic review onto the local lane deterministically,
 so a local lane whose router grants this session no worker re-queues the same
 review there on every sweep: the lane grants the session no slot, the review is
-queued on it, and the next sweep composes onto the same lane again. The plan
-records the loop as the review re-queued twice on the local lane 17 minutes
-after the first hold.
+queued on it, and the next sweep composes onto the same lane again.
 
 The retry therefore asks the same route question the picker asks, with the
 refusing lane left out of the offering, and the answer is the retry's. Each
@@ -264,8 +262,54 @@ def _wait_for_stopped_producer() -> None:
 
 def _release_watcher() -> None:
     if crew.watch_state("sample")["watcher_live"]:
+        path = crew.watch_lock_path("sample")
+        deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
+        while True:
+            with path.open("rb") as handle:
+                registration = crew._read_watch_record(handle)
+            if registration.get("project") == "sample" and registration.get("pid"):
+                break
+            if time.monotonic() >= deadline:
+                pytest.fail("watch producer did not publish its registration")
+            time.sleep(0.05)
         recovery.unwatch("sample")
         _wait_for_stopped_producer()
+
+
+def test_teardown_waits_for_the_producer_registration(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    path = crew.watch_lock_path("sample")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.touch()
+    state = {"reads": 0, "stopped": False, "unwatch_calls": 0}
+
+    def delayed_registration(_handle) -> dict:
+        state["reads"] += 1
+        if state["reads"] < 3:
+            return {}
+        return {"project": "sample", "pid": os.getpid()}
+
+    def refuse_unpublished_registration(project: str) -> dict:
+        state["unwatch_calls"] += 1
+        with path.open("rb") as handle:
+            registration = crew._read_watch_record(handle)
+        if registration.get("project") != project:
+            raise crew.CrewError("the locked registration names ''")
+        state["stopped"] = True
+        return {}
+
+    monkeypatch.setattr(
+        crew, "watch_state", lambda _project: {"watcher_live": not state["stopped"]}
+    )
+    monkeypatch.setattr(crew, "_read_watch_record", delayed_registration)
+    monkeypatch.setattr(recovery, "unwatch", refuse_unpublished_registration)
+
+    _release_watcher()
+
+    assert state["reads"] >= 3
+    assert state["unwatch_calls"] == 1
 
 
 def _repo_head(repo: Path) -> str:

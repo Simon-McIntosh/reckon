@@ -270,6 +270,37 @@ def _queued_request_record(
     return record
 
 
+def _arrange_dispatch_follower(
+    project: str,
+    session: str,
+    launch_kind: str,
+    *,
+    watch_required: bool,
+    watch_override: bool,
+) -> tuple[dict[str, Any], str, bool]:
+    """Ensure the producer and ask the calling session's host to attach."""
+    dispatch_watch = watch_state(project, session=session)
+    session_delivery = "monitor"
+    if watch_required and not watch_override and watch_arming_suppressed():
+        watch_override = True
+    if not watch_required or watch_override:
+        return dispatch_watch, session_delivery, watch_override
+
+    dispatch_watch = _ensure_watch_producer(project, session=session)
+    if launch_kind == "cli" and session:
+        attached = bool(dispatch_watch.get("session_attached"))
+        if (not attached or _session_host_waiting()) and _ask_session_host_for_follower(
+            project, session
+        ):
+            session_delivery = "host"
+            dispatch_watch = watch_state(project, session=session)
+        elif _session_host_runs_follower(
+            project, session, (dispatch_watch.get("follower") or {}).get("pid")
+        ):
+            session_delivery = "host"
+    return dispatch_watch, session_delivery, watch_override
+
+
 def _answer_existing_node_run(
     existing: Mapping[str, Any],
     *,
@@ -1470,7 +1501,7 @@ def dispatch(
             and not member_refuses
             and (existing_phase == "queued" or is_local)
         ):
-            raise _answer_existing_node_run(
+            held = _answer_existing_node_run(
                 existing,
                 record=_queued_request_record(
                     run_id=run_id,
@@ -1487,6 +1518,15 @@ def dispatch(
                 backend=backend,
                 lane_allowance=lane_allowance,
             )
+            if existing_phase == "queued":
+                _arrange_dispatch_follower(
+                    project,
+                    session,
+                    launch_kind,
+                    watch_required=watch_required,
+                    watch_override=watch_override,
+                )
+            raise held
 
     # The lane gate is read before anything is created: a paused gate, one that
     # cannot be answered, or a declared path that differs from the lane
@@ -1542,6 +1582,13 @@ def dispatch(
                     run_id=str(queued["run_id"]),
                     queued=True,
                 )
+            _arrange_dispatch_follower(
+                project,
+                session,
+                launch_kind,
+                watch_required=watch_required,
+                watch_override=watch_override,
+            )
             raise held
         raise LaneHeld(lane_allowance)
 
@@ -1791,46 +1838,15 @@ def dispatch(
                 "previous_run_id": str(previous.get("run_id") or ""),
             }
 
-        dispatch_watch = watch_state(project, session=session)
-        session_delivery = "monitor"
+        dispatch_watch, session_delivery, watch_override = _arrange_dispatch_follower(
+            project,
+            session,
+            launch_kind,
+            watch_required=watch_required,
+            watch_override=watch_override,
+        )
         released_follower_warning: str | None = None
-        if watch_required and not watch_override and watch_arming_suppressed():
-            # Opting in is the caller's act. An environment that forbids arming
-            # turns the requirement into the recorded waiver below rather than
-            # into a producer nobody will reap.
-            watch_override = True
         if watch_required and not watch_override:
-            dispatch_watch = _ensure_watch_producer(project, session=session)
-            # A session that is not attached may be run by a host that can attach
-            # it without a turn spent arming a Monitor watch. Asking is a write
-            # to the host's FIFO and a bounded wait, and a session without a host
-            # falls back to the Monitor path unchanged -- so this only ever
-            # upgrades delivery, never refuses a dispatch the old path admitted.
-            if str(launch_kind) == "cli" and session:
-                attached = bool(dispatch_watch.get("session_attached"))
-                # A session attached by a follower the host does not run -- one
-                # armed by hand beside a waiting host -- is still one the host
-                # can take over: the hand-armed follower ends (a Monitor does,
-                # at its lifetime), and asking the host now makes the session
-                # host-delivered rather than resting on an arming the caller
-                # must renew. A host not on its FIFO is not asked, so a session
-                # with no host keeps the Monitor path unchanged.
-                if (not attached or _session_host_waiting()) and (
-                    _ask_session_host_for_follower(project, session)
-                ):
-                    session_delivery = "host"
-                    dispatch_watch = watch_state(project, session=session)
-                # A session may already be attached by a follower the host runs,
-                # whether an earlier dispatch asked it or the plugin's monitor
-                # attached it at session start. That is host delivery just as
-                # much as one just asked for, and reading it as monitor would
-                # hand the caller an arming line for a follower the host already
-                # consumes. The host's census record, not this session's watch
-                # state, is what tells a host's follower from a hand-armed one.
-                elif _session_host_runs_follower(
-                    project, session, (dispatch_watch.get("follower") or {}).get("pid")
-                ):
-                    session_delivery = "host"
             # The watcher requirement is answered by the process, read from the
             # watcher's own state — never by a session's follower, which is how a
             # project with no watcher process at all kept admitting dispatches.
