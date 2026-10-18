@@ -1164,18 +1164,47 @@ def _follow_checkpoint_stale(
 LIFT_CLAIM_MAX_AGE_SECONDS = 24 * 60 * 60.0
 
 
+def lift_claim_key(session: str | None) -> str:
+    """The key one follower's lift claims are filed under, one pane at a time.
+
+    A session host runs every follower of one pane, and it may follow more than
+    one crew session — a coordinator dispatching under two session names, say.
+    Keying the claim on the session therefore draws each lift once per followed
+    session. A follower is hosted exactly when its spawner stamped
+    ``RECKON_FOLLOWER_OWNER`` into its environment, and one host serves one pane,
+    so the presence of that variable selects the host key. The value is the
+    owner pair the host stamped, so two followers of one host agree on the key
+    while a follower under a different host, or under no host, does not. An
+    unhosted follower — a hand-armed one, or a reader driving the command under
+    test — keeps the per-session key it used before, as does a hosted follower
+    whose stamp cannot be read, so a pane is never left with no claim at all.
+    """
+    from reckon.crew import runs
+
+    owner = os.environ.get(runs._FOLLOWER_OWNER_ENV)
+    if not owner:
+        return str(session or "")
+    parsed = runs._parse_follower_owner(owner)
+    if parsed is None:
+        return f"host-{_lift_claim_token(owner)}"
+    pid, start_time = parsed
+    return f"host-{pid}-{start_time or 'unknown'}"
+
+
 def lift_claim_dir(session: str | None) -> Path:
     """The directory holding one pane's lift claims, shared by its followers.
 
-    One pane is one session, and a session's followers all write that one pane,
-    so the claims live under the session's own directory beneath the crew home's
-    watch directory. An exclusive create there is the arbitration every follower
-    of the session shares, whether they run in one process or several on the
-    same shared home.
+    One pane is one session host, and every follower that host runs writes that
+    one pane, so the claims live under the pane's key beneath the crew home's
+    watch directory. The key is the host that spawned the followers when they
+    have one, and the session otherwise, so a host following two sessions draws
+    each lift once rather than once per session. An exclusive create there is the
+    arbitration every follower of the pane shares, whether they run in one
+    process or several on the same shared home.
     """
     from reckon.crew.runs import crew_home
 
-    name = re.sub(r"[^A-Za-z0-9._-]", "-", str(session or "")).strip("-")
+    name = re.sub(r"[^A-Za-z0-9._-]", "-", lift_claim_key(session)).strip("-")
     return crew_home() / "watch" / "lifts" / (name or "pane")
 
 
@@ -1210,11 +1239,11 @@ def take_lift_claim(
 
     Every project's producer sweeps the workstation's whole lift document into
     its own event stream, so the same grant reaches a session's pane once per
-    project the session follows. The followers of one session share one claim
-    per (session, lift id, transition) — a file created with an exclusive
-    create, which the shared home makes atomic across processes and nodes. The
-    first follower to reach the row creates the claim and draws it; the rest
-    find it taken and draw nothing. A claim is taken when the row would print,
+    project the session follows. The followers of one pane share one claim
+    per (pane, lift id, transition) — a file created with an exclusive create,
+    which the shared home makes atomic across processes and nodes. The first
+    follower to reach the row creates the claim and draws it; the rest find it
+    taken and draw nothing. A claim is taken when the row would print,
     never earlier, so no follower claims and then withholds.
 
     A baseline in-force row is inventory of a lift already on the pane, so it
@@ -1278,11 +1307,13 @@ def follower_row_path(
     selection function, the same policy, the same memory — so a measurement
     taken through it is the pane's own answer rather than a second opinion.
 
-    The pane's lift claim is bound to the follower's own session unless a caller
-    supplies its own, so a live follower draws each lift transition once however
-    many projects it follows. A caller that supplies ``lift_claim`` replaces it
-    outright; a caller measuring lift rows without a shared home passes one that
-    always permits.
+    The pane's lift claim is keyed on the host that spawned the follower when it
+    has one and on its own session otherwise, unless a caller supplies its own.
+    Either way a live follower draws each lift transition once however many
+    projects it follows, and a host's followers draw it once between them however
+    many sessions the host serves. A caller that supplies ``lift_claim`` replaces
+    it outright; a caller measuring lift rows without a shared home passes one
+    that always permits.
     """
     from reckon.crew import ticker as ticker_module
 
