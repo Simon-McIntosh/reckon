@@ -1,0 +1,98 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T20:53:18.217Z",
+  "dispatched_at": "2026-10-18T20:48:05Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery_review_delivery.py:236",
+      "id": "reuse_search-1",
+      "reason": "unnamed, the worker must invent a dispatch-time source, and an invented one is a second definition of \"when this review was dispatched\" that no other reader shares.",
+      "text": "condition 4 (\"its modification time is after this review's dispatch\") names no source for the dispatch instant, while `run_id_dispatch_time` (reckon/crew/review.py:2584) and `run_record_times` (reckon/crew/review.py:2541) already derive a run's dispatch time from its id and its record",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_review_subject.py:111",
+      "id": "duplicate_owner-1",
+      "reason": "a second head comparison drifts from the owner it copies (the owner deliberately accepts legacy records whose head is reconstructed, which the new strict-equality predicate would refuse), so the watcher and promotion can disagree about one record.",
+      "text": "the section adds a head predicate (\"its reviewed_head_sha equals that head\") inside the delivery reader, duplicating the shared head-keyed selection `select_review_for_head` (reckon/crew/recovery_review_subject.py:111) with `review_described_head` (:80) and `same_revision` (:102) that promotion and the classifier already share; \u00a72 duplicates the same derivation a second time by re-implementing the head-from-path reading in a new script rather than importing `_review_record_subject` (reckon/crew/recovery_review_dispatch.py:133)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "a-review-promotes-only-its-own-verdict#s2",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the public definitions the script's module-level functions add before the node is built.",
+      "text": "the section adds a new script (`scripts/review_rows_with_another_rounds_verdict.py`) and a new doc without naming what it retires or merges, or why nothing can be, against this week's counts",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c5a77b71e0ce5ed01007eecd101d6247c5018b603be27eb94219961e858465ad",
+  "plan_slug": "a-review-promotes-only-its-own-verdict",
+  "plan_version": 10,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-18T20:54:35.839855+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-18T20:54:46.155606+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "",
+      "when": "2026-10-18T20:54:59.349181+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T20:54:46.155606+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T20:54:59.349181+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T20:54:35.839855+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-review-promotes-only-its-own-verdict.v10.json",
+  "review_run_id": "r-20261018T204653103613-plan-review-of-a-review-promotes-only-its-own-verdict",
+  "reviewed_blob_sha": "4cb8e0237bad48ec6a3ba9c0de821bee28f22c23",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design puts the whole decision behind the single existing function `_delivered_review_record` (reckon/crew/recovery_review_delivery.py:236) so every reader inherits one predicate, which is depth rather than surface; the only caveat is the \u00a71 claim that \"no reader gains a check of its own\" is slightly overstated, since the \"no head-keyed path is reported, not promoted\" refusal lands in the watcher/acceptance path (reckon/crew/recovery_review_acceptance.py:314).",
+    "duplicate_owner": "a finding \u2014 the section re-derives a head-keyed selection and a head-from-path derivation that shared owners already provide.",
+    "interface_budget": "a finding \u2014 public_definitions 1814, cli_options 364, mcp_views 34, refusal_families 23; \u00a72 adds a new script and doc without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan cites `_review_subject` and the declared write paths, but the predicate it proposes needs a dispatch instant and a head comparison whose existing owners (`run_id_dispatch_time`, `select_review_for_head`) it does not cite.",
+    "thin_wrapper": "pass \u2014 \u00a71 extends existing machinery in place rather than wrapping it; there is no new forwarding layer, and \u00a73 adds nothing yet."
+  },
+  "section_digests": {
+    "_document": "a89ba6e7de39330fc5176496045373dcff7a6d34147d487dbd5acaa0ec842ddd",
+    "s1": "155d029b6d8c10e7e5ec32619699425a4da8739d79a617e102b3406648c2330a",
+    "s2": "d2fcef76482885575da5e2b62a2a9029c73b5107f00ed2a305795b30665a7a4c",
+    "s3": "18f479da831c1adb4dd53260c6b8c26ddcb1fc069308b21f243d7216647cd6e8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T20:54:32.158238+00:00"
+}
