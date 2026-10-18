@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T11:24:00Z",
+  "dispatched_at": "2026-10-18T11:18:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:70",
+      "id": "wiring-1",
+      "reason": "scope the decision to \u00a72 so \u00a71 is dispatchable before the choice is locked.",
+      "text": "`gate-time-shape` lacks `data-sections=\"s2\"`, so the open decision holds the whole plan in `roadmap.plan_level_decisions` and prevents the \u00a71 investigation that is supposed to settle it; the snapshot parses to `decision_sections=None`, while adding that scope parses to `{'gate-time-shape': ['s2']}`",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:51",
+      "id": "done_when-1",
+      "reason": "require a known watchdog path and a known timed gate sample to make both absence and timing claims falsifiable.",
+      "text": "the document can say no deadline actor exists or report a zero gate share without proving its scanners detect a known actor and a known timed gate; no negative control is declared",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:55",
+      "id": "evidence_paths-1",
+      "reason": "put the script beside the research document on a committed path so a later reader can rerun its figures.",
+      "text": "the computation script is required in the run directory, outside the declared write paths, while `reckon/crew/gc.py:555-626` can prune ledgered run directories after the retention window",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:36",
+      "id": "anchors_resolve-1",
+      "reason": "cite the observations that establish the plan's motivating failure mode.",
+      "text": "the claim that most blocking findings came from squeezed gates, including a 75-of-104 cutoff and skipped baseline arms, names no nova review, run ID or log that a reader can open",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:72",
+      "id": "reasoning-1",
+      "reason": "the choice must turn on enforcement in the relevant resolved flight and its ability to change, or this optional dormant path selects the more invasive design.",
+      "text": "choosing the gate verb whenever anything acts on the deadline is too broad: `reckon/crew/recovery_stream.py:320-367` has a production caller in `reckon/crew/dispatch_sessions.py:337` that can signal an over-grace CLI worker, but `reckon/schema/flight-defaults.yaml:201-202` disables that watchdog by default",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:63",
+      "id": "reasoning-2",
+      "reason": "specify how the worker-facing deadline or stop instruction accounts for gate time so running a full gate can satisfy \u00a72's goal.",
+      "text": "the proposed gate verb subtracts gate time in the supervisor but leaves `time_fence_statement`'s launch-plus-budget worker deadline in `reckon/crew/prompts.py:382-399`; the worker is still told to stop when that deadline passes",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0ea4ee25aa534502286fe9ce1c1fe3383730d03df2366f597a850b8064be443b",
+  "plan_slug": "test-time-is-not-the-nodes-time",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T110809053755-plan-review-of-test-time-is-not-the-nodes-time",
+  "reviewed_blob_sha": "db729ee31274272c1f4e48e97a145c2b0c564d46",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the central report of truncated gates at docs/plans/test-time-is-not-the-nodes-time.html:36 has no run or review citation; the named source files and section anchors do resolve.",
+    "done_when": "a finding \u2014 \u00a71's measures at docs/plans/test-time-is-not-the-nodes-time.html:51-55 declare no negative control for the deadline scan or stream timing calculation.",
+    "evidence_paths": "a finding \u2014 \u00a71 puts its reproducibility script in a run directory at docs/plans/test-time-is-not-the-nodes-time.html:55.",
+    "naming": "pass \u2014 the proposed research path and gate command at docs/plans/test-time-is-not-the-nodes-time.html:44-65 use capability names, with section identifiers confined to plan markup.",
+    "reasoning": "findings \u2014 the decision rule at docs/plans/test-time-is-not-the-nodes-time.html:72 conflates an optional watchdog with active enforcement, and the gate-verb mechanism at :63 leaves the worker's deadline unchanged.",
+    "single_goal": "pass \u2014 \u00a71 delivers one investigation document and deferred \u00a72 describes one time-budget change, each at docs/plans/test-time-is-not-the-nodes-time.html:44 and :58.",
+    "wiring": "a finding \u2014 the open decision at docs/plans/test-time-is-not-the-nodes-time.html:70 is unscoped although \u00a71 must run before it is locked."
+  },
+  "section_digests": {
+    "_document": "5ba88dc23f1ae71bf9bfce3723cf9f3e15c46065bf244d812cdd9b174bfdb59e",
+    "s1": "4ddf0b7999c0e77a88e887e690f4d9984097bfdd88895aaff81e63bd84ce11c5",
+    "s2": "6016cf9b5f02f611e200c0d7109e90d827e021bf1feaaa51cf57824dd985826b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T11:25:30.289444+00:00"
+}
