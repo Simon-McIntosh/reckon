@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_when": "The refusal helper stops detecting whitespace-only reviewed_run_id; the expectation is a literal no-subject reason independent of the helper's output.",
+      "lines": "tests/test_review_record_contract.py:113"
+    },
+    {
+      "fails_when": "The store accepts a whitespace-only reviewed_run_id or raises an unrelated message.",
+      "lines": "tests/test_review_record_contract.py:114-115"
+    },
+    {
+      "fails_when": "Completion does not refuse the whitespace delivery, does not report review_filed false, or omits the no-subject reason.",
+      "lines": "tests/test_review_record_contract.py:263-267"
+    },
+    {
+      "fails_when": "The obligation ceases to classify the whitespace delivery as review-refused or omits a generic repair-review command; it remains green when the command chooses an unusable --set.",
+      "lines": "tests/test_review_record_contract.py:304-307"
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1893",
+    "reckon/crew/obligations.py:182",
+    "reckon/crew/review.py:627"
+  ],
+  "completed_at": "2026-10-18T21:07:31Z",
+  "dispatched_at": "2026-10-18T20:59:00Z",
+  "evidence": {
+    "after_suite": "completed, exit 0, 0 failures, 99 passes (repair-head-regression.log)",
+    "baseline_suite": "completed, exit 0, 0 failures (baseline-contract-regression.log)",
+    "negative_control": "3 failed, 2 passed, exit 1 (repair-negative-control.log)",
+    "reproduction": "whitespace helper previously returned [] while store refused no subject (whitespace-reproduction.log)"
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "580",
+      "severity": "blocking",
+      "text": "blocking: The new whitespace-subject refusal reaches reckon/crew/obligations.py:191, which recommends --set status=parsed; repair_run_review rejects this still-unfileable record, while --set subject also rejects its nonempty whitespace ID at review.py:2700, so the promised repair path cannot complete."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites",
+    "diff": "The single commit from a7a200799ba23f73d81ef491343e7ea2fe06b3a3 to a0182b4ae72501e2439d50b3ef03634060864573 adds the shared subject check at reckon/crew/review.py:580 and whitespace cases at tests/test_review_record_contract.py:111,256,274.",
+    "done_when": "The source brief.md controls include refusal and repair; repair-head-regression.log records 99 passes and repair-negative-control.log records three failures after reverting this commit, while no added test executes the whitespace remedy.",
+    "goal": "The source brief.md asks that refused reviews become visible and repairable; reckon/crew/review.py:580 now exposes whitespace subjects, but the offered repair cannot fix them.",
+    "manifest": "The source manifest.md records a0182b4ae72501e2439d50b3ef03634060864573, the two changed paths, complete base and after gates, and the mutation log.",
+    "write_paths": "The source manifest.md grants reckon/crew/review.py and tests/test_review_record_contract.py, the only paths changed by a0182b4ae72501e2439d50b3ef03634060864573."
+  },
+  "justifications": {
+    "durability": "tests/test_review_record_contract.py:113,265,304 fail when the new refusal is removed, but line 306 accepts any repair-review command, including the ineffective status command.",
+    "evidence": "repair-head-regression.log records 99 passes and repair-negative-control.log records 3 failed controls, but tests/test_review_record_contract.py:304-307 does not execute the offered repair.",
+    "fit": "reckon/crew/review.py:580 reuses names_a_review_subject from line 1957 and adds no plan-labelled source name.",
+    "goal_fidelity": "reckon/crew/review.py:580 makes the refusal visible, but reckon/crew/obligations.py:191 offers status=parsed for it and reckon/crew/review.py:2700 cannot repair its whitespace subject.",
+    "reuse": "the capability search found names_a_review_subject at reckon/crew/review.py:1957, and the new check at line 580 extends that existing owner.",
+    "scope_discipline": "git show a0182b4ae725 changes only granted reckon/crew/review.py and tests/test_review_record_contract.py, with one incidental formatting edit at review.py:2741."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source brief.md asks that refused reviews become visible and repairable; reckon/crew/review.py:580 now exposes whitespace subjects, but the offered repair cannot fix them.\nVERDICT done_when: The source brief.md controls include refusal and repair; repair-head-regression.log records 99 passes and repair-negative-control.log records three failures after reverting this commit, while no added test executes the whitespace remedy.\nVERDICT write_paths: The source manifest.md grants reckon/crew/review.py and tests/test_review_record_contract.py, the only paths changed by a0182b4ae72501e2439d50b3ef03634060864573.\nVERDICT manifest: The source manifest.md records a0182b4ae72501e2439d50b3ef03634060864573, the two changed paths, complete base and after gates, and the mutation log.\nVERDICT diff: The single commit from a7a200799ba23f73d81ef491343e7ea2fe06b3a3 to a0182b4ae72501e2439d50b3ef03634060864573 adds the shared subject check at reckon/crew/review.py:580 and whitespace cases at tests/test_review_record_contract.py:111,256,274.\nCALL_SITES: reckon/crew_run_commands.py:1893, reckon/crew/obligations.py:182, reckon/crew/review.py:627\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:580 makes the refusal visible, but reckon/crew/obligations.py:191 offers status=parsed for it and reckon/crew/review.py:2700 cannot repair its whitespace subject.\nSCORE evidence: 17\nJUSTIFICATION evidence: repair-head-regression.log records 99 passes and repair-negative-control.log records 3 failed controls, but tests/test_review_record_contract.py:304-307 does not execute the offered repair.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show a0182b4ae725 changes only granted reckon/crew/review.py and tests/test_review_record_contract.py, with one incidental formatting edit at review.py:2741.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_review_record_contract.py:113,265,304 fail when the new refusal is removed, but line 306 accepts any repair-review command, including the ineffective status command.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/review.py:580 reuses names_a_review_subject from line 1957 and adds no plan-labelled source name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found names_a_review_subject at reckon/crew/review.py:1957, and the new check at line 580 extends that existing owner.\nFINDING reckon/crew/review.py:580 blocking: The new whitespace-subject refusal reaches reckon/crew/obligations.py:191, which recommends --set status=parsed; repair_run_review rejects this still-unfileable record, while --set subject also rejects its nonempty whitespace ID at review.py:2700, so the promised repair path cannot complete.\n",
+  "review_run_id": "r-20261018T205749563621-review-of-a-refused-review-says-why-a0182b4ae725",
+  "reviewed_base_sha": "a7a200799ba23f73d81ef491343e7ea2fe06b3a3",
+  "reviewed_head_sha": "a0182b4ae72501e2439d50b3ef03634060864573",
+  "reviewed_run_id": "r-20261018T171221724794-a-refused-review-says-why",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T21:13:01.750237+00:00",
+  "total": 105
+}
