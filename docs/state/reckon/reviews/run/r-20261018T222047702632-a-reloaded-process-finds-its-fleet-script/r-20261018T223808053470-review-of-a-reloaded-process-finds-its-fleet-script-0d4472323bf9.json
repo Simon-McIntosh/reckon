@@ -1,0 +1,124 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite": {
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T222047702632-a-reloaded-process-finds-its-fleet-script/after-suite.log",
+    "revision": "2f752a0b52ff9433e067380ecbf2a24613f2d965"
+  },
+  "assertion_analysis": [
+    {
+      "line": 88,
+      "would_fail_if": "the new identity remained the Git reckon-only tree"
+    },
+    {
+      "line": 93,
+      "would_fail_if": "legacy package-only identities no longer extracted the package"
+    },
+    {
+      "line": 94,
+      "would_fail_if": "legacy package-only extraction unexpectedly included skills"
+    },
+    {
+      "line": 96,
+      "would_fail_if": "a legacy image did not retain its old identity"
+    },
+    {
+      "line": 101,
+      "would_fail_if": "the image resolver refused or the image import failed"
+    },
+    {
+      "line": 103,
+      "would_fail_if": "the child process imported checkout_trust outside the materialized image"
+    },
+    {
+      "line": 104,
+      "would_fail_if": "the resolver returned a script outside the materialized image"
+    },
+    {
+      "line": 111,
+      "would_fail_if": "a skills-only commit left the code identity unchanged"
+    },
+    {
+      "line": 113,
+      "would_fail_if": "an unrelated NOTES commit moved the code identity"
+    },
+    {
+      "line": 138,
+      "would_fail_if": "a package-only image resolved successfully"
+    },
+    {
+      "line": 139,
+      "would_fail_if": "the package-only refusal had another cause"
+    }
+  ],
+  "assertion_independence": "No added assertion compares an output to the same input supplied to the function under test; expected Git tree IDs, image paths, process status, and refusal text are independent observations.",
+  "baseline_suite": {
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T222047702632-a-reloaded-process-finds-its-fleet-script/baseline-suite.log",
+    "revision": "1e44e252f4a6010a871dc74ffeced36aef23500d"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:409",
+    "reckon/crew/follower_registration.py:35",
+    "reckon/crew/routing.py:2172"
+  ],
+  "completed_at": "2026-10-18T22:45:29Z",
+  "dispatched_at": "2026-10-18T22:39:25Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reloaded-process-finds-its-fleet-script.html",
+      "line": "3",
+      "severity": "blocking",
+      "text": "blocking: The report attributes the 21:22Z onset to the old package-only archive, but history-evidence.log checks only whether later candidates changed the resolver or materializer; it does not rule out their dispatch-path changes making the already broken resolver newly reachable, so the required triggering change is not established."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "commits 2f752a0b and 0d447232 respectively change the paired-tree loader and its assertions, then add the six-line evidence fragment, with no other paths in the diff.",
+    "done_when": "prompt.txt:99 and manifest.md:baseline_suite/after_suite require the temporary-image resolver, identity changes, refusal, and no added importer failures; focused-final.log records 2 passed, negative-control.log records 1 failed, and the paired suite logs record 83 passed each.",
+    "goal": "prompt.txt:30 requires a reloaded process to find its versioned fleet script; checkout_trust.py:422 materializes a paired tree that the image resolver can search.",
+    "manifest": "manifest.md reports two commits, focused and importer gates, mutation and lint logs; baseline-suite.log and after-suite.log independently end with 83 passed and EXIT=0.",
+    "write_paths": "prompt.txt:69-75 grants checkout_trust.py, follower_registration.py, the named test, and the evidence fragment; git diff from 1e44e252 to 0d447232 changes only those four paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reloaded_process_finds_its_fleet_script.py:88-139 has independent Git identities, image paths, process exit states, and refusal text; negative-control.log shows the positive test fails when package-only extraction is reinstated.",
+    "evidence": "focused-final.log and the suite receipts verify the runtime gate, but docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reloaded-process-finds-its-fleet-script.html:3 does not rule out changes to the dispatch call path as the 21:22Z trigger.",
+    "fit": "reckon/checkout_trust.py:238-440 extends the existing subprocess and archive idiom and reckon/crew/follower_registration.py:28-35 keeps the production stamp entry point.",
+    "goal_fidelity": "reckon/checkout_trust.py:422 extracts the paired tree and tests/test_a_reloaded_process_finds_its_fleet_script.py:101-106 confirms the resolver uses it, while the required historical trigger remains unproved in the evidence fragment.",
+    "reuse": "capability search found committed_reckon_tree and _reckon_subtree in reckon/checkout_trust.py:214,329, and the new helpers extend those owners rather than adding a second reload mechanism.",
+    "scope_discipline": "git diff 1e44e252..0d447232 touches only the four granted paths in prompt.txt:69-75 and the fragment describes the node's measured change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 requires a reloaded process to find its versioned fleet script; checkout_trust.py:422 materializes a paired tree that the image resolver can search.\nVERDICT done_when: prompt.txt:99 and manifest.md:baseline_suite/after_suite require the temporary-image resolver, identity changes, refusal, and no added importer failures; focused-final.log records 2 passed, negative-control.log records 1 failed, and the paired suite logs record 83 passed each.\nVERDICT write_paths: prompt.txt:69-75 grants checkout_trust.py, follower_registration.py, the named test, and the evidence fragment; git diff from 1e44e252 to 0d447232 changes only those four paths.\nVERDICT manifest: manifest.md reports two commits, focused and importer gates, mutation and lint logs; baseline-suite.log and after-suite.log independently end with 83 passed and EXIT=0.\nVERDICT diff: commits 2f752a0b and 0d447232 respectively change the paired-tree loader and its assertions, then add the six-line evidence fragment, with no other paths in the diff.\nCALL_SITES: reckon/crew_follow_commands.py:409, reckon/crew/follower_registration.py:35, reckon/crew/routing.py:2172\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/checkout_trust.py:422 extracts the paired tree and tests/test_a_reloaded_process_finds_its_fleet_script.py:101-106 confirms the resolver uses it, while the required historical trigger remains unproved in the evidence fragment.\nSCORE evidence: 12\nJUSTIFICATION evidence: focused-final.log and the suite receipts verify the runtime gate, but docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reloaded-process-finds-its-fleet-script.html:3 does not rule out changes to the dispatch call path as the 21:22Z trigger.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 1e44e252..0d447232 touches only the four granted paths in prompt.txt:69-75 and the fragment describes the node's measured change.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_reloaded_process_finds_its_fleet_script.py:88-139 has independent Git identities, image paths, process exit states, and refusal text; negative-control.log shows the positive test fails when package-only extraction is reinstated.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/checkout_trust.py:238-440 extends the existing subprocess and archive idiom and reckon/crew/follower_registration.py:28-35 keeps the production stamp entry point.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability search found committed_reckon_tree and _reckon_subtree in reckon/checkout_trust.py:214,329, and the new helpers extend those owners rather than adding a second reload mechanism.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reloaded-process-finds-its-fleet-script.html:3 blocking: The report attributes the 21:22Z onset to the old package-only archive, but history-evidence.log checks only whether later candidates changed the resolver or materializer; it does not rule out their dispatch-path changes making the already broken resolver newly reachable, so the required triggering change is not established.",
+  "review_run_id": "r-20261018T223808053470-review-of-a-reloaded-process-finds-its-fleet-script-0d4472323bf9",
+  "reviewed_base_sha": "1e44e252f4a6010a871dc74ffeced36aef23500d",
+  "reviewed_commits": [
+    "2f752a0b52ff9433e067380ecbf2a24613f2d965",
+    "0d4472323bf9896056e7fb7ba8ed4e0b75c0ebfe"
+  ],
+  "reviewed_head_sha": "0d4472323bf9896056e7fb7ba8ed4e0b75c0ebfe",
+  "reviewed_run_id": "r-20261018T222047702632-a-reloaded-process-finds-its-fleet-script",
+  "scores": {
+    "durability": 19,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T22:47:35.820492+00:00",
+  "total": 104
+}
