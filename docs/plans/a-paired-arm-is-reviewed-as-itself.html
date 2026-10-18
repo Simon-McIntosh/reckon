@@ -24,7 +24,7 @@
   <title>A Paired Arm Is Reviewed As Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -37,7 +37,7 @@
 <p><strong>Remedy</strong>, two parts:</p>
 <ul>
 <li>In <code>_review_dispatch_fields</code>, mint the returned <code>node_id</code> from the run id, not the node id, when the reviewed record is one arm of a pair. Leave the returned <code>source_node</code> as the node id. <code>compose_repair_for_run</code> also reads <code>source_node</code> (<code>reckon/crew/recovery_repair_dispatch.py:665</code>) to mint a repair's node id, and this section does not change repair node ids. Read whether the record is a paired arm from <code>_paired_partner_run_id</code> (<code>reckon/crew/promotion_checks.py:606</code>), which already resolves a partner from either side: the primary's <code>paired_shadow_run_id</code>, or a shadow lineage's <code>primary_run_id</code>. Do not write a second pairing test. An unpaired run keeps its node id as the source, so its review node ids and every reader of them are unchanged.</li>
-<li>In <code>_resolved_reviewed_run_id</code>, when more than one live pointer carries the source node id, return the bare source rather than the first match. A bare source names no run directory, so the grant is refused rather than given to the wrong run. One matching pointer resolves as today.</li>
+<li>Give <code>_resolved_reviewed_run_id</code> a keyword-only <code>refuse_ambiguous</code> flag, defaulting to false. With it set, when more than one live pointer carries the source node id, the resolver returns the bare source rather than the first match. A bare source names no run directory, so the grant is refused rather than given to the wrong run. One matching pointer resolves as today. Only <code>_reviewed_run_id_for_node</code> (<code>reckon/crew/dispatch_admission.py:1866</code>) sets the flag, so only the dispatch grant changes. The resolver's other readers keep the first match: <code>reckon/crew/recovery_review_delivery.py</code> lines 118 and 233, <code>reckon/crew/recovery_review_dispatch.py:180</code> and <code>reckon/crew/promotion_checks.py:2343</code>. So does <code>_reviewed_run_id</code> in <code>reckon/crew/dispatch_sessions.py</code>. Once a paired arm's review node is minted from its run id, every one of them resolves that arm directly.</li>
 </ul>
 <p><strong>Out of scope.</strong> <code>_reviewed_run_id</code> in <code>reckon/crew/dispatch_sessions.py</code> (line 457) resolves the same source over ledger and live records to pick a review's session, taking the newest match. Once a paired arm's review is minted from its run id, that reader resolves it directly, so it is not changed here. Repair node ids keep the node id, because <code>source_node</code> is unchanged. Whether a repair of a paired arm's review resolves to the right arm is not measured here.</p>
 <p><strong>Write paths:</strong> <code>reckon/crew/recovery_review_subject.py</code>, <code>reckon/crew/recovery_review_delivery.py</code> and <code>tests/test_a_paired_arm_is_reviewed_as_itself.py</code>, which is new.</p>
@@ -47,14 +47,14 @@
   <ul>
   <li>For each arm, the node id in <code>_review_dispatch_fields</code>'s result starts with <code>review-of-</code> followed by that arm's own run id, and its <code>source_node</code> is still <code>pair-node</code>. <code>_reviewed_run_id_for_node</code> on that node id returns that arm's run id.</li>
   <li>For the unpaired run, the node id starts with <code>review-of-solo-node</code>, as it does today, and <code>_reviewed_run_id_for_node</code> on it returns the unpaired run's id.</li>
-  <li><code>_resolved_reviewed_run_id</code> for node id <code>review-of-pair-node</code> returns <code>pair-node</code>, the bare source, and neither arm's run id.</li>
+  <li><code>_reviewed_run_id_for_node</code> for node id <code>review-of-pair-node</code> returns <code>pair-node</code>, the bare source, and neither arm's run id. <code>_resolved_reviewed_run_id</code> called on the same node id without the flag still returns one arm's run id, as today.</li>
   <li><code>_review_record_directory_grant</code> refuses a record path under either arm's <code>review-records/</code> when given that bare source as the reviewed run.</li>
   </ul>
 The test asserts the real crew home is untouched afterwards.</li>
 <li>Pytest over the new file, <code>tests/test_a_resumed_head_is_reviewed.py</code>, <code>tests/test_a_run_review_with_run_directory_records_dispatches.py</code>, <code>tests/test_a_paired_arm_waits_for_its_partner.py</code>, <code>tests/test_a_re_review_is_scoped_to_what_changed.py</code>, <code>tests/test_review_reflex_sweep.py</code>, <code>tests/test_rereview_keeps_its_lane.py</code>, <code>tests/test_a_run_review_cannot_remove_a_siblings_record.py</code>, <code>tests/test_review_of_a_brief_run_names_its_brief.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code> adds no failure against the base. Run it in the foreground.</li>
 <li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths, judged by delta against the base blobs.</li>
 </ul>
-<p><strong>Negative control</strong>, two mutations, each applied alone. With the pairing test removed from <code>_review_dispatch_fields</code>, the first case must fail. With <code>_resolved_reviewed_run_id</code> returning the first match again, the third case must fail.</p>
+<p><strong>Negative control</strong>, two mutations, each applied alone. With the pairing test removed from <code>_review_dispatch_fields</code>, the first case must fail. With <code>_reviewed_run_id_for_node</code> no longer setting the flag, the third case must fail. Each control runs under pytest with its default short summary, so its log lists the failing test id.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
