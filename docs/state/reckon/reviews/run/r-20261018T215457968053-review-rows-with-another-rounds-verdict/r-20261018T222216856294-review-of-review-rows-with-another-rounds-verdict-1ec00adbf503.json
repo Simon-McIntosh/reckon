@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-18T22:41:30.148Z",
+  "dispatched_at": "2026-10-18T22:23:22Z",
+  "findings": [
+    {
+      "file": "scripts/review_rows_with_another_rounds_verdict.py",
+      "line": 53,
+      "severity": "follow-on",
+      "text": "`_NODE_HEAD_DIGITS-12`/`_NODE_HEAD_PATTERN` at scripts/review_rows_with_another_rounds_verdict.py:53-54 re-implement the node-id head-suffix parse that reckon/crew/repair.py:288 `_ROUND_HEAD_DIGITS` and `round_node_source` (reckon/crew/repair.py:310) already own; the census's own docstring names that writer/stripper pair, then re-derives it by regex instead of calling round_node_source, so the twelve-digit grammar lives in two places and can drift."
+    },
+    {
+      "file": "scripts/review_rows_with_another_rounds_verdict.py",
+      "line": 57,
+      "severity": "follow-on",
+      "text": "`_mounts` at scripts/review_rows_with_another_rounds_verdict.py:57 re-reads `~/.config/reckon/mounts.json` directly, duplicating the mounts reader the repository already owns (reckon/flight.py:484 `mounted_project_docs`, reckon/crew/query.py:359 `_mounted_projects`); a fourth copy of the same read is a drift risk on a file several modules resolve."
+    },
+    {
+      "file": "scripts/review_rows_with_another_rounds_verdict.py",
+      "line": 168,
+      "severity": "follow-on",
+      "text": "the unclassifiable branch (scripts/review_rows_with_another_rounds_verdict.py:168) carries no control: the run's stated controls exercise only the mismatched branch (a known positive) and the classified-negative branch, so the documented zero unclassifiable rows in docs/research/review-rows-with-another-rounds-verdict.html \u00a74 is reported by a path the run never shows can fire."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the single commit 1ec00adbf503 against base b731c734 commit by commit; it adds three files (+567 lines, 0 deletions) and nothing else, with no product module or test touched.",
+    "done_when": "read the done_when and checked each clause against docs/research/review-rows-with-another-rounds-verdict.html: per-project counts (\u00a72), all 18 mismatched rows listed by id with both heads, total, promoted_by and landing commit (\u00a73), the stated revision b731c734 and time 2026-10-18T22:10:35Z (\u00a71), the known positive listed (\u00a75, and verified in nova's ledger), the known negative counted not listed (\u00a75), and the script and command named (\u00a71, \u00a76).",
+    "goal": "read the node goal ('count, across every mounted project's committed ledger, the promoted run reviews whose recorded reviewed head is not the head they were dispatched to read') and the landed census at scripts/review_rows_with_another_rounds_verdict.py:99-190 does exactly that, counting 2339 promoted run reviews and 18 mismatched.",
+    "manifest": "read the reviewed run's manifest.md; it states status complete, commits 1ec00adbf503, changed_paths equal to the three committed paths, and the gate PYTHONPATH=$PWD .venv/bin/python scripts/review_rows_with_another_rounds_verdict.py -> exit 0 with totals reviews=2339 mismatched=18 unclassifiable=0.",
+    "write_paths": "read the node's declared write paths (docs/research/review-rows-with-another-rounds-verdict.html, scripts/review_rows_with_another_rounds_verdict.py, docs/evidence/fragments/a-review-promotes-only-its-own-verdict/review-rows-with-another-rounds-verdict.html, docs/figures/a-review-promotes-only-its-own-verdict/review-rows-with-another-rounds-verdict) and every path in the commit is inside them."
+  },
+  "justifications": {
+    "durability": "no test file was added and no assertion in the diff guards the classification, so a regression in _dispatched_head or _recorded_head would change the census figures with nothing reddening.",
+    "evidence": "docs/research/review-rows-with-another-rounds-verdict.html \u00a72 reconciles exactly with the recorded JSON at census-output.log (2339/18/0 across 11 projects), and a re-run reproduced the same 18 mismatched row ids and heads.",
+    "fit": "the script follows the surrounding scripts/ idiom (module docstring, private helpers, a documented entry point) and introduces no name the naming rules forbid.",
+    "goal_fidelity": "scripts/review_rows_with_another_rounds_verdict.py:99-190 walks every mounted project's runs directory and counts role==review rows whose recorded reviewed_head_sha does not begin with the dispatched head, which is the goal verbatim.",
+    "reuse": "scripts/review_rows_with_another_rounds_verdict.py:54 duplicates the node-id head parse owned by reckon/crew/repair.py:310 round_node_source and scripts/review_rows_with_another_rounds_verdict.py:57 duplicates the shared mounts reader, though the .at- head path does extend the delivery predicate at reckon/crew/recovery_review_dispatch.py:133.",
+    "scope_discipline": "the commit 1ec00adbf503 changes exactly the three files named in the manifest's changed_paths, all inside the declared write paths, and touches no product source or shared plan state."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261018T222216856294-review-of-review-rows-with-another-rounds-verdict-1ec00adbf503",
+  "reviewed_base_sha": "b731c734bb583babbf0e3c34468075eecb47e4cf",
+  "reviewed_head_sha": "1ec00adbf503d97efa74bc1867688cf7ef3f26c6",
+  "reviewed_run_id": "r-20261018T215457968053-review-rows-with-another-rounds-verdict",
+  "scores": {
+    "durability": 7,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T22:42:29.421468+00:00"
+}
