@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s23">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-18">
+  <meta name="plan-tags" content="staged-write,inventory,census,checkout-trust">
+  <title>The staged-write inventory lists the reload tree's directory publish | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-inventory-lists-the-reload-tree-publish" data-reckon="landed" data-when="2026-10-18">
+  <h2 id="the-inventory-lists-the-reload-tree-publish-title">The staged-write inventory lists the reload tree's directory publish.</h2>
+  <p id="the-inventory-lists-the-reload-tree-publish-cause"><strong>Cause.</strong>
+  <code>tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner</code>
+  compares the staged-write census of the <code>reckon/</code> tree against a fixed
+  expected set. Commit <code>7628878d7</code> gave
+  <code>reckon/checkout_trust.py::materialize_committed_tree</code> a staged publish:
+  it extracts a commit's <code>reckon</code> package with <code>git archive</code> into a
+  <code>tempfile.mkdtemp</code> directory beside the target inside the cache
+  (<code>staging = Path(tempfile.mkdtemp(prefix=f".{commit}-", dir=cache))</code>, line 314)
+  and publishes it with <code>os.rename(staging, target)</code> (line 328). The census
+  detector reports that function as a staged write, and the test's expected set did not
+  list it, so the test has been red on main. Reproduced at base
+  <code>3a6538e0b</code>: the run reports the extra entry
+  <code>('reckon/checkout_trust.py', 'materialize_committed_tree')</code> and
+  <code>EXIT=1</code> (<code>logs/base_repro.log</code>).</p>
+  <p id="the-inventory-lists-the-reload-tree-publish-fix"><strong>Fix.</strong> From the
+  code, the function has the property the test guards, and the exception the plan already
+  draws applies. The test's rule is that every locally staged file replacement reaches the
+  shared writer <code>_store.write_atomically</code>, which replaces one file.
+  <code>materialize_committed_tree</code> instead publishes a whole directory tree in one
+  rename — the extracted package directory <code>staging</code> is renamed onto
+  <code>target</code>, so the image appears atomically as a directory, not as a file
+  replacement. That is the same shape as <code>_release_worktree_whole</code>
+  (<code>reckon/crew/routing.py</code>), which <code>os.rename</code>-s a worktree tree
+  (<code>os.rename(tree, trash)</code>) and which the expected set already lists with a
+  comment. So the function is added to the expected set with a comment stating why the
+  shared file writer does not apply. No product code changes: the publish already reaches
+  its owner by one directory rename.</p>
+  <p id="the-inventory-lists-the-reload-tree-publish-measure"><strong>Measure.</strong>
+  Logs are under the run directory. Head arm: at <code>3a6538e0b</code> with the entry
+  present, <code>51 passed</code> in <code>tests/test_staged_write_inventory.py</code>,
+  <code>EXIT=0</code> (<code>logs/head_full_file.log</code>). Negative control — the
+  declared mutation, the new entry dropped from the expected set, run in the worktree:
+  <code>1 failed</code>, the failing test naming
+  <code>('reckon/checkout_trust.py', 'materialize_committed_tree')</code>,
+  <code>EXIT=1</code> (<code>logs/negative_control.log</code>). Never-greener check — the
+  other test files importing <code>reckon/interface_counts.py</code> show no added failure
+  against base: at head <code>1 failed, 68 passed</code>
+  (<code>logs/importers_head.log</code>), the one failure
+  <code>test_one_function_resolves_a_citation.py::test_only_the_shared_resolver_peels_a_revision_to_a_commit</code>,
+  and the same file at base in a scratch extraction is <code>1 failed, 1 passed</code>
+  (<code>logs/citation_base.log</code>, module
+  <code>/tmp/r-inv-base-xuyE/reckon/interface_counts.py</code>) — pre-existing and outside
+  this node's scope, reported under follow_ons. <code>ruff check</code> and
+  <code>ruff format --check</code> add no findings on the changed file
+  (<code>All checks passed!</code>, <code>1 file already formatted</code>,
+  <code>logs/ruff.log</code>).</p>
+</article>
+</body>
+</html>
