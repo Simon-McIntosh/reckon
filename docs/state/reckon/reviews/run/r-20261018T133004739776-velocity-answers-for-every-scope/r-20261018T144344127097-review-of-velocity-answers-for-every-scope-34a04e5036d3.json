@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T133004739776-velocity-answers-for-every-scope/gate-head-importers.log",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T133004739776-velocity-answers-for-every-scope/gate-base-importers.log",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/velocity.py:3070",
+    "reckon/velocity.py:2661",
+    "reckon/crew_run_commands.py:2141",
+    "reckon/serve.py:3315"
+  ],
+  "completed_at": "2026-10-18T15:01:16.028Z",
+  "dispatched_at": "2026-10-18T14:45:40Z",
+  "findings": [
+    {
+      "file": "tests/test_velocity_quiet_repository.py",
+      "line": "130",
+      "severity": "follow-on",
+      "text": "follow-on: the coverage assertion compares projects derived from view[\"by_project\"] against view[\"coverage\"], two outputs of the same view, so it is not independent of the value under test and would pass on a trivially empty view were it not for the pinned assertion on line 129."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "4 production call sites reach the change: reckon/velocity.py:report -> _capture_project_cached -> capture_project, reckon/velocity.py:capture -> capture_project, the crew CLI at reckon/crew_run_commands.py:2141 and the /crew/velocity route at reckon/serve.py:3315.",
+    "diff": "read commit by commit; 1e0c78b95 fixes capture_project's base resolution and adds _rev_range/EMPTY_TREE, 34a04e503 adds only the landing fragment - 3 files, all inside the declared scope.",
+    "done_when": "the section's done-when names a test over three synthesised repositories asserting the all-project view returns all three, the quiet one at zero and the first commit counted; tests/test_velocity_quiet_repository.py:128-156 asserts exactly that and the negative control reddens it.",
+    "goal": "the node's goal is that the velocity view answers for a repository with no commits in the window and measures from the empty tree for a window starting at a repository's first commit; reckon/velocity.py:869-880 resolves both bases.",
+    "manifest": "read; it records commits 1e0c78b95 and 34a04e503, the quiet test 4 passed EXIT=0, head 135 passed EXIT=0, base 2 scaffolding failures, and the negative control EXIT=1.",
+    "write_paths": "the manifest declares reckon/velocity.py, tests/test_velocity_quiet_repository.py, the landing fragment and a figures directory; git diff 82f9dd65..34a04e503 touches only the first three, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_velocity_quiet_repository.py:137 and :149 freeze independent literals, so reverting the guard or the first-commit branch reddens them, as the negative-control log's four errors show.",
+    "evidence": "gate-quiet-newtest.log records 4 passed EXIT=0, gate-head-importers.log 135 passed EXIT=0 and negative-control-quiet-index.log 4 errors EXIT=1, all under the run directory.",
+    "fit": "the private _rev_range helper and EMPTY_TREE constant at reckon/velocity.py:120-133 follow the module's private-helper idiom and name no plan or ticket identifier.",
+    "goal_fidelity": "reckon/velocity.py:869-880 sets base to head for an empty window and to None (the empty tree) for a window opening at the first commit, exactly the goal, and tests/test_velocity_quiet_repository.py:137, :149 read the composed view.",
+    "reuse": "a repository search for an existing empty-tree or revision-range owner found none, and _rev_range at reckon/velocity.py:126 consolidates the three duplicated base + \"..\" + head sites it replaces.",
+    "scope_discipline": "git diff 82f9dd658d89f625741211e8aace1f28b7e75dee 34a04e5036d3352b14a0bc1ca1410df72ce264fb changes only the declared paths and writes no figure the done-when does not name."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the velocity view answers for a repository with no commits in the window and measures from the empty tree for a window starting at a repository's first commit; reckon/velocity.py:869-880 resolves both bases.\nVERDICT done_when: the section's done-when names a test over three synthesised repositories asserting the all-project view returns all three, the quiet one at zero and the first commit counted; tests/test_velocity_quiet_repository.py:128-156 asserts exactly that and the negative control reddens it.\nVERDICT write_paths: the manifest declares reckon/velocity.py, tests/test_velocity_quiet_repository.py, the landing fragment and a figures directory; git diff 82f9dd65..34a04e503 touches only the first three, all inside the declared scope.\nVERDICT manifest: read; it records commits 1e0c78b95 and 34a04e503, the quiet test 4 passed EXIT=0, head 135 passed EXIT=0, base 2 scaffolding failures, and the negative control EXIT=1.\nVERDICT diff: read commit by commit; 1e0c78b95 fixes capture_project's base resolution and adds _rev_range/EMPTY_TREE, 34a04e503 adds only the landing fragment - 3 files, all inside the declared scope.\nCALL_SITES: reckon/velocity.py:3070, reckon/velocity.py:2661, reckon/crew_run_commands.py:2141, reckon/serve.py:3315\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/velocity.py:869-880 sets base to head for an empty window and to None (the empty tree) for a window opening at the first commit, exactly the goal, and tests/test_velocity_quiet_repository.py:137, :149 read the composed view.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-quiet-newtest.log records 4 passed EXIT=0, gate-head-importers.log 135 passed EXIT=0 and negative-control-quiet-index.log 4 errors EXIT=1, all under the run directory.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 82f9dd658d89f625741211e8aace1f28b7e75dee 34a04e5036d3352b14a0bc1ca1410df72ce264fb changes only the declared paths and writes no figure the done-when does not name.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_velocity_quiet_repository.py:137 and :149 freeze independent literals, so reverting the guard or the first-commit branch reddens them, as the negative-control log's four errors show.\nSCORE fit: 18\nJUSTIFICATION fit: the private _rev_range helper and EMPTY_TREE constant at reckon/velocity.py:120-133 follow the module's private-helper idiom and name no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: a repository search for an existing empty-tree or revision-range owner found none, and _rev_range at reckon/velocity.py:126 consolidates the three duplicated base + \"..\" + head sites it replaces.\nFINDING tests/test_velocity_quiet_repository.py:130 follow-on: the coverage assertion compares projects derived from view[\"by_project\"] against view[\"coverage\"], two outputs of the same view, so it is not independent of the value under test and would pass on a trivially empty view were it not for the pinned assertion on line 129.\n",
+  "review_run_id": "r-20261018T144344127097-review-of-velocity-answers-for-every-scope-34a04e5036d3",
+  "reviewed_base_sha": "82f9dd658d89f625741211e8aace1f28b7e75dee",
+  "reviewed_commits": [
+    "1e0c78b95712b7a84bb67e2b50ff56298e080efa",
+    "34a04e5036d3352b14a0bc1ca1410df72ce264fb"
+  ],
+  "reviewed_head_sha": "34a04e5036d3352b14a0bc1ca1410df72ce264fb",
+  "reviewed_run_id": "r-20261018T133004739776-velocity-answers-for-every-scope",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T14:58:00+00:00",
+  "total": 113
+}
