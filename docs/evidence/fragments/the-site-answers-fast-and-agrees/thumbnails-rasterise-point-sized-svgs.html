@@ -1,0 +1,15 @@
+<section id="thumbnails-rasterise-point-sized-svgs" class="r-evidence">
+  <h3 id="thumbnails-rasterise-point-sized-svgs-title">A point-sized SVG thumbnails as a raster, not the whole vector</h3>
+  <p>An SVG whose <code>width</code> and <code>height</code> carry a physical unit — as matplotlib writes its canvas, in points — was rejected by the rasteriser with <code>ValueError: SVG has an invalid size</code>, so the thumbnail route fell back to serving the entire vector. The rasteriser is now given a dpi of 96, the CSS reference resolution the source's point size assumes, and such a figure rasterises to a bounded PNG.</p>
+  <table id="thumbnails-rasterise-point-sized-svgs-measure">
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Reproduction at base: <code>svg_to_bytes(width=200, height=171)</code> on a <code>1008pt&#215;864pt</code> SVG at the default dpi</td><td><code>ValueError: SVG has an invalid size</code>; falls back to serving the SVG (<code>image/svg+xml</code>)</td></tr>
+      <tr><td>Head: same call with <code>dpi=96</code></td><td>Renders to a 200&#215;172 PNG</td></tr>
+      <tr><td>Thumbnail test file at head</td><td>8 passed, EXIT=0</td></tr>
+      <tr><td>Figure and thumbnail serving tests at head</td><td>28 passed, EXIT=0</td></tr>
+      <tr><td>Declared negative control: drop the dpi argument</td><td>1 failed, 7 passed, EXIT=1; the point-sized case&#8217;s content-type assertion fails (<code>'image/svg+xml' == 'image/png'</code>)</td></tr>
+      <tr><td>Ruff check and format on changed Python files</td><td>18 existing findings at base and head on <code>serve.py</code>, 0 added; ruff format clean on both files</td></tr>
+    </tbody>
+  </table>
+</section>
