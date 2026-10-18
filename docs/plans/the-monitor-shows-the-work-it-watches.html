@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="333">
+<meta name="plan-version" content="334">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1305,6 +1305,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s53" data-id="c-close-s53" data-who="reckon-build" data-when="2026-10-18T13:40:00Z">
     <div class="r-comment-body"><p>§53 landed. A follower's prune pass removes the lift-claim directories of hosts that ended on this node, and keeps other nodes' (merge <code>e295fe18a</code>). Zero added failures over 118 importer files. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s53">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s53" data-id="c-run-r-20261018T113923635060-abandoned-lift-claim-directories-are-swept" data-who="reckon-build" data-when="2026-10-18T12:22:51.153Z">
+    <div class="r-comment-body"><p>Sweep the lift-claim directories of hosts that ended on this node: _prune_abandoned_lift_claim_dirs in reckon/crew_follow_commands.py, called from _prune_lift_claims, removes a host-keyed directory whose node is this node and whose pid+start tick is not alive (and a node-less directory untouched for seven days), never one naming another node and never a per-session directory; the per-session claim comment in reckon/crew/ticker.py now states the host keying. Measure: one prune pass over five directories removes two (a dead local host&#x27;s, a node-less directory untouched eight days) and keeps three (a live local host&#x27;s, another node&#x27;s host&#x27;s whose pid is absent here, a node-less directory touched now) — 4 passed.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
