@@ -5,7 +5,7 @@ import json
 import math
 import os
 import time
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -17,7 +17,7 @@ from reckon.resources import resource_scan_scope
 from . import client, prompts, snapshot
 from .types import Candidate, PickRequest, Selection
 
-__all__ = ["Candidate", "PickRequest", "Selection", "attempts_for", "pick"]
+__all__ = ["Candidate", "PickRequest", "Selection", "pick"]
 
 #: One JSON line per pick, appended under the crew home. Every production pick
 #: writes its per-stage times here, so a pick that spent its budget -- and one
@@ -28,24 +28,6 @@ PICK_TIMINGS_LOG = "pick-timings.jsonl"
 
 def _milliseconds(started: float) -> float:
     return round((time.perf_counter() - started) * 1000, 3)
-
-
-def attempts_for(request: PickRequest, rows: Sequence[Mapping[str, Any]]) -> int:
-    """The count of prior runs a node carries, from the one owner.
-
-    A caller that states the count on the request has it kept; otherwise it is
-    the ledger rows naming the node and its plan. The reserved-lane policy that
-    may offer a lane and the state rendered beside the pick both read this
-    figure, so the two cannot disagree about how many attempts a node has
-    already been given. The snapshot reads it through a function-level import,
-    because this module imports the snapshot at import time.
-    """
-    if request.attempts is not None:
-        return request.attempts
-    return sum(
-        row.get("node") == request.node.id and row.get("plan") == request.node.plan
-        for row in rows
-    )
 
 
 def _step_label(stage: str) -> str:
@@ -437,7 +419,13 @@ def pick(
             records=rows,
             budget_snapshot=view,
             config=config,
-            attempts=attempts_for(request, rows),
+            attempts=request.attempts
+            if request.attempts is not None
+            else sum(
+                row.get("node") == request.node.id
+                and row.get("plan") == request.node.plan
+                for row in rows
+            ),
             # The coordinator's own reading is built into the state's node block
             # beside the declared capability, so the whole state is encoded once
             # by one encoder and the declared requirement is never displaced.

@@ -1157,14 +1157,17 @@ def candidates(
     # two readings the policy judges a node by: the requirement it declares --
     # the plan's, or the coordinator's own assessment where it states one -- and
     # how many attempts it has already been given. Both are read once for the
-    # whole scan, and the attempts figure is taken from the one owner the state
-    # render beside it also reads, so the policy and the guidance never disagree
-    # about it. The owner is imported here, not at module load, because its
-    # module imports this one.
-    from reckon.crew.picker import attempts_for
-
+    # whole scan, and the attempts figure is the one the state renders beside the
+    # node, so the policy and the guidance never disagree about it.
     reserved = flight.reserved_lane_policies(config)
-    attempts = attempts_for(request, rows)
+    attempts = (
+        request.attempts
+        if request.attempts is not None
+        else sum(
+            row.get("node") == request.node.id and row.get("plan") == request.node.plan
+            for row in rows
+        )
+    )
     declared_requirements = {
         **(request.capability.get("requirements") or {}),
         **(request.orchestrator_assessment or {}),
