@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="308">
+<meta name="plan-version" content="309">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1226,6 +1226,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s49" data-id="c-close-s49" data-who="reckon-build" data-when="2026-10-18T06:30:00Z">
     <div class="r-comment-body"><p>§49 landed. The watch producer runs with no coordinator session's identity on every launch route, and a running producer sheds it at its next reload (merge <code>5161084ad</code>). Zero added failures over 46 importer files. §50 is next. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s49">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s49" data-id="c-run-r-20261018T055211575473-watcher-session-identity-population-at-merge" data-who="reckon-build" data-when="2026-10-18T06:26:40.201Z">
+    <div class="r-comment-body"><p>Measured the 46-file watch-producer, follow and watch-command importer population at base 99d36ae9fd0358b0c0168f50435812457ee6f6f0 and at its merge candidate b99494ef145f7ffb3e7eb5dfcbbbf455eccacebc on an exclusive all_debug job (1288654, node 98dci4-clu-3141): the differential adds one failing id, tests/test_watch_arming_isolation.py::test_arming_proceeds_for_an_ordinary_configuration_home, and it is load-only — 5/5 alone passes at each revision, both arms&#x27; single error is one leaked `crew watch` producer from tests/test_unmanaged_producer_keeps_a_log.py reported by the session-scoped reaped_watch_producers teardown and attributed by -n 10 scheduling to whichever test ran last on gw7 (base pid 1596365, candidate pid 1608184, same leaked home name); no failure is attributable to the candidate, and the candidate&#x27;s 5 extra passes are the new test file tests/test_a_watcher_carries_no_session_identity.py, all passing.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
