@@ -226,6 +226,36 @@ def test_one_derivation_reads_only_the_documents_that_can_change_it(
     assert counts.stat <= RECORD_COUNT + TREE_COUNT * 3, counts.__dict__
 
 
+def test_a_tree_reused_under_a_foreign_parent_stays_a_candidate() -> None:
+    """The screen never drops a tree the naming rule could accept.
+
+    A node's tree directory is named for its node id, so every attempt to
+    launch that node reaches the same directory: a retry, a redispatch and a
+    shadow re-run reuse it rather than naming a new one. The live corpus agrees
+    — of 250 retained worktrees, the two whose parent directory is not the
+    run's own session still carry the node id as their directory name, so the
+    screen's node-id key reaches them and only the naming rule's session rule
+    declines them. A run the projection does not carry stays a candidate too,
+    so a lagging index costs a read rather than a dropped duty.
+    """
+    names = {_tree_name(3)}
+    assert obligations_module._may_name_a_tree(
+        Path("r-20261016T100003-node-03.json"),
+        names,
+        {"r-20261016T100003-node-03": _tree_name(3)},
+    )
+    assert obligations_module._may_name_a_tree(
+        Path("r-20261016T100099-unlisted.json"),
+        names,
+        {"r-20261016T100003-node-03": _tree_name(3)},
+    )
+    assert not obligations_module._may_name_a_tree(
+        Path("r-20261016T100004-other.json"),
+        names,
+        {"r-20261016T100004-other": "other-node"},
+    )
+
+
 def test_the_head_derivation_equals_the_whole_ledger(
     home: tuple[Path, list[Path]],
 ) -> None:
