@@ -1,0 +1,39 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T07:33:26.084Z",
+  "dispatched_at": "2026-10-18T07:23:40Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-pair-never-runs-its-arms-alike.html:45",
+      "id": "done_when-1",
+      "reason": "the case still fails when the check is removed (its declared negative control), so it is a valid measure; tightening the backend-naming assertion is a cosmetic improvement, not a change to what the node builds.",
+      "text": "case 1 asserts the CrewError \"names candidate and its model\", but the pair backend in that case is literally named `candidate`, and D21's registered remedy already reads \"...--pair-backend <candidate>...\" (reckon/crew/refusals.py:82), so the string \"candidate\" is present whether or not the detail names the resolved backend; only the model half of the clause can fail on its own",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "e931898b04d167d2b830628a6f6646048e5dd64c3dd2f2b754b3bea7441f65fd",
+  "plan_slug": "a-pair-never-runs-its-arms-alike",
+  "plan_version": 7,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T072253308653-plan-review-of-a-pair-never-runs-its-arms-alike",
+  "reviewed_blob_sha": "4a7376fc4c115bad3730772ed3ff53b9f2eefe14",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 dispatch_pair (reckon/crew/dispatch.py:690), _shadow_dispatch_config (line 465), shadow (line 558), _candidate_config (tests/test_a_paired_dispatch_hides_each_arm.py:85) and _backend_serving_picked_model (reckon/crew/dispatch_plan.py:207) all resolve, and both cited run directories exist under their full \"-census-certified-convergence\" suffixes.",
+    "done_when": "a finding \u2014 the node's four done-when clauses are measurable and it declares a two-mutation negative control (line 54), but case 1's \"names candidate\" clause cannot fail independently of the registered remedy text.",
+    "evidence_paths": "pass \u2014 the new test and the two modified files are repository paths a later reader can open; the plan names no session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the new symbols name the mechanism (a same-arms refusal); D21 is a registered refusal id in reckon/crew/refusals.py:81, not a plan label, and no ticket number or stage name reaches code.",
+    "reasoning": "pass \u2014 the remedy's condition (\"substituted backend entry carries equal primary and shadow values and model is not among its substituted entries\") reproduces exactly what _shadow_dispatch_config emits: \"backend\" always lands in substituted with via=\"backend\", and the loop puts \"model\" in substituted iff before != after (reckon/crew/dispatch.py:501-521), so the condition is equivalent to \"both backend and model equal\", and the caller dispatch_pair is named and reads the returned `comparison`.",
+    "single_goal": "pass \u2014 \u00a71 carries one deliverable (refuse a pair whose arms resolve to one backend and model); the `_candidate_config` edit in done-when item 2 is the test-helper consequence of landing the check, not a second goal.",
+    "wiring": "pass \u2014 the plan declares data-links=\"\" and plan-standalone, and the two landed plans it names (a-shadow-cannot-see-its-primary, a-paired-shadow-runs-on-its-named-backend) both resolve in docs/plans/."
+  },
+  "section_digests": {
+    "_document": "f69e0ec63ca7c44aed6a2af37349696c5cb319f332df134e6fd7dc890a53dbc5",
+    "s1": "7ad9497069f693a9d5ab07f3642766aa8080e43c6c5e8a28400ad417a81f308f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T07:38:15.205956+00:00"
+}
