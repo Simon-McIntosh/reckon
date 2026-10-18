@@ -124,3 +124,9 @@ def test_local_overrun_keeps_reloading_and_cycle_lines(
     assert "it is reloading itself" in pane[0]
     assert "cycle it with:" in pane[1]
     assert runs.watch_cycle_line(PROJECT) in pane[1]
+    stream = [
+        json.loads(line) for line in _render(monkeypatch, events, json_output=True)
+    ]
+    kinds = [event.get("event") for event in stream]
+    assert kinds.count(cli_module.FOLLOWER_PRODUCER_RELOADING_EVENT) == 2
+    assert kinds.count(cli_module.FOLLOWER_STALE_PRODUCER_EVENT) == 1
