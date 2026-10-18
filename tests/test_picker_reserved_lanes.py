@@ -100,13 +100,28 @@ def _request(*, capability=None, attempts=None, assessment=None, role="implement
     )
 
 
-def _snapshot_view(*, claude_pct: float = 42.0, known: bool = True) -> dict:
+def _snapshot_view(
+    *, claude_pct: float = 42.0, known: bool = True, codex_pct: float | None = None
+) -> dict:
     """One composed budget snapshot: the reserved lane's window at one reading.
 
     ``claude_pct`` is the share of the lane's own account window already spent,
     which is the figure the lanes block publishes as the lane's utilisation.
     ``known`` false is the absent reading: no window figure at all.
+    ``codex_pct`` gives the codex lane the same kind of fresh reading, which a
+    config that also reserves that lane needs before its policy will offer it.
     """
+
+    def _fresh(pct: float) -> dict:
+        return {
+            "headroom": "known",
+            "utilisation_pct": pct,
+            "burn_multiple": 1.0,
+            "resets_at": None,
+            "expired": False,
+            "observed_at": NOW.isoformat(),
+            "source": "account-surface",
+        }
 
     allowance = {
         "state": budget.OBSERVED,
@@ -118,28 +133,16 @@ def _snapshot_view(*, claude_pct: float = 42.0, known: bool = True) -> dict:
     }
     backends = []
     for name in CONFIG["backends"]:
-        if name != "claude-opus":
-            backends.append({"backend": name, "held": False, "state": {}})
-            continue
-        backends.append(
-            {
-                "backend": name,
-                "held": False,
-                "state": (
-                    {
-                        "headroom": "known",
-                        "utilisation_pct": claude_pct,
-                        "burn_multiple": 1.0,
-                        "resets_at": None,
-                        "expired": False,
-                        "observed_at": NOW.isoformat(),
-                        "source": "account-surface",
-                    }
-                    if known
-                    else {"headroom": "unknown", "detail": "no reading"}
-                ),
+        if name == "claude-opus":
+            state = _fresh(claude_pct) if known else {
+                "headroom": "unknown",
+                "detail": "no reading",
             }
-        )
+        elif codex_pct is not None:
+            state = _fresh(codex_pct)
+        else:
+            state = {}
+        backends.append({"backend": name, "held": False, "state": state})
     return {
         "groups": [
             {"group": "claude", "members": ["claude-opus"], "allowance": allowance}
@@ -240,7 +243,6 @@ def test_the_hardest_tier_with_headroom_sees_the_lane(live_facts):
     """The declared hardest tier is offered the lane while its window has room."""
 
     options = _candidates(live_facts, _request(capability=HARDEST), claude_pct=42.0)
-    print("DIAG", [(c.backend, c.availability, c.reasons) for c in options])
     assert "claude-opus" in _offered(options)
 
 
@@ -309,7 +311,16 @@ def test_the_policy_removed_is_the_negative_control(live_facts):
 # --- the reason a reserved-lane pick must carry -------------------------------
 
 
-def _dispatch_pick(repo, monkeypatch, request, choices, assessment=None):
+def _dispatch_pick(
+    repo,
+    monkeypatch,
+    request,
+    choices,
+    assessment=None,
+    *,
+    config=CONFIG,
+    snapshot=None,
+):
     """Run the dispatcher's own picker path with a stubbed Jev client.
 
     ``choices`` is one ``(option_key, reason)`` pair per asking, in order. The
@@ -340,14 +351,14 @@ def _dispatch_pick(repo, monkeypatch, request, choices, assessment=None):
     monkeypatch.setattr(client, "ask", ask)
     selection = dispatch_picker.dispatch_picker_selection(
         node=request.node,
-        config=CONFIG,
+        config=config,
         project="example",
         repo=repo,
         comment="lead note",
         records=[],
         verdict_inputs={},
         orchestrator_assessment=assessment,
-        budget_snapshot=_snapshot_view(claude_pct=42.0),
+        budget_snapshot=snapshot or _snapshot_view(claude_pct=42.0),
     )
     return selection, calls
 
@@ -417,6 +428,69 @@ def test_an_unreasoned_reserved_pick_is_refused_and_re_picked(
     assert refusal["lane"] == "claude"
     assert refusal["reason"] is None
     assert refusal["refused_unreasoned"] is True
+
+
+#: A config that reserves the codex lane as well as the claude lane, so the
+#: reserved-lane re-ask's second asking can land on a reserved lane again.
+TWO_RESERVED = {
+    **CONFIG,
+    "picker_reserved_lanes": {
+        "claude": CONFIG["picker_reserved_lanes"]["claude"],
+        "codex": CONFIG["picker_reserved_lanes"]["claude"],
+    },
+}
+
+
+def test_a_nested_reask_onto_an_unreasoned_reserved_lane_is_held(
+    live_facts, monkeypatch, tmp_path
+):
+    """A reserved lane reached on a nested re-ask with no reason is held.
+
+    The first asking picks the claude lane with no reason and is refused, the
+    lane left out; the second asking, run with re-asking disabled, lands on the
+    codex lane -- also reserved -- and gives no reason again. That nested asking
+    cannot ask a third time, so the pick must be refused as a hold rather than
+    routed while the log records the refusal. On the unfixed code the nested
+    asking routes to codex while the log carries the claude refusal, so the log
+    and the routed lane disagree.
+    """
+
+    home = tmp_path / "home"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    # The nested asking is run by the re-ask helper, which carries the first
+    # asking's selection forward but composes its own budget view. The reserved
+    # lane it lands on is offered only if a window reading reaches that asking
+    # too, so the view the snapshot composes is frozen for both askings.
+    view = _snapshot_view(claude_pct=42.0, codex_pct=10.0)
+    monkeypatch.setattr(snapshot, "budget_view", lambda *a, **k: view)
+    selection, calls = _dispatch_pick(
+        live_facts,
+        monkeypatch,
+        _request(capability=HARDEST),
+        [(CLAUDE_PAIR, None), (CODEX_PAIR, None)],
+        assessment=HARDEST["requirements"],
+        config=TWO_RESERVED,
+        snapshot=view,
+    )
+    assert len(calls) == 2
+    assert CLAUDE_PAIR in calls[0]
+    assert CLAUDE_PAIR not in calls[1]
+    # The nested asking was refused rather than routed: the node is held.
+    assert selection["action"] == "hold"
+    assert not selection.get("backend")
+    rows = [
+        json.loads(line)
+        for line in (home / "crew" / dispatch_picker.RESERVED_LANE_PICKS_LOG)
+        .read_text()
+        .splitlines()
+    ]
+    # The log and the routed lane agree: the claude refusal was re-asked, and the
+    # nested codex pick was held, never routed.
+    assert [row["lane"] for row in rows] == ["claude", "codex"]
+    assert rows[0]["refused_unreasoned"] is True
+    assert rows[0]["disposition"] == "reasked"
+    assert rows[1]["refused_unreasoned"] is True
+    assert rows[1]["disposition"] == "held"
 
 
 def test_an_unreserved_pick_is_left_alone(live_facts, monkeypatch, tmp_path):
