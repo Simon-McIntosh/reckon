@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T13:30:52.052Z",
+  "dispatched_at": "2026-10-18T13:17:13Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:48",
+      "id": "reasoning-1",
+      "reason": "either the section must say a gate is also detected from the run's stream test-command calls (the rule the truncation and background lists already need), or the unmeasurable case is unreachable and the confirmation the change was written for measures nothing.",
+      "text": "the unmeasurable case the last change added (\"a backgrounded gate that cites no log\") cannot arise from the stated gate-identification rule, which makes a run's gates the distinct cited log paths, so a gate with no cited log is invisible and its run is not caught by the unmeasurable handling the change introduced",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:55",
+      "id": "done_when-1",
+      "reason": "the run's wall time is the ratio's denominator and dominates every figure, so leaving it undeclared lets two runs of the script produce different headline medians from the same data.",
+      "text": "the done-when's \"median gate share of wall time\" has no declared wall-time source, while every other input (the gate fields, the fallback, both median populations) is named precisely",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "407a5eae64bd2e8e1b618698b8784b575a3c4ef0e12004c7d594cc38f36c2469",
+  "plan_slug": "test-time-is-not-the-nodes-time",
+  "plan_version": 8,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T131621808391-plan-review-of-test-time-is-not-the-nodes-time",
+  "reviewed_blob_sha": "df0eaddbd85543b0d9febe005d8b95ce1d19d73d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 reckon/crew/node.py:1293, routing.py:473 (resolved_time_ceiling), prompts.py:382, recovery_stream.py:320 and :151 (_budget_overrun_cause), dispatch_sessions.py:337, flight-defaults.yaml:201-202, the crew-observability-truth ruling (recorded at docs/plans/crew-observability-truth.html:2752), and the control run's gate-after.log (\"1 failed, 63 passed in 543.02s\") all resolve.",
+    "done_when": "a finding \u2014 clause 2 at line 55 requires a \"median gate share of wall time\", but the mechanism at line 48 fixes only the numerator's source (the cited gate logs, then the foreground tool-call fallback) and never names the run's wall time, so the denominator of the headline ratio is undeclared.",
+    "evidence_paths": "pass \u2014 the document, script and figures sit on durable in-repo paths (docs/research/, scripts/, docs/figures/), and the 14-day gate-log window is well inside the 30-day run-directory retention.",
+    "naming": "pass \u2014 the new write paths (how-much-of-a-node-is-its-gate, gate_share_of_run_time.py) are named by what they measure, with no plan label, stage name, ticket number or version tag.",
+    "reasoning": "a finding \u2014 the changed clause defines an unmeasurable case (\"a backgrounded gate that cites no log\", line 48) that the same bullet's gate-identification rule \u2014 \"a run's gates are the distinct log paths across all three\" \u2014 cannot produce, since a gate is defined to BE a cited log; a backgrounded gate that was never cited therefore never enters the gate set at all and its run is silently reported with an understated share instead of being listed as unmeasurable.",
+    "single_goal": "pass \u2014 \u00a71 carries one deliverable: the read-only gate-share investigation, one document plus its script and its figures.",
+    "wiring": "pass \u2014 s2 declares depends-on test-time-is-not-the-nodes-time#s1 (line 24) and the gate-time-shape decision carries data-sections=\"s2\" (line 72), so the open decision scopes to \u00a72 and no longer holds \u00a71."
+  },
+  "section_digests": {
+    "_document": "2db4f914f773c39fa5c0355f5fee5250c02797289c687519a353ee05268ffa98",
+    "s1": "8d5a96bfdce471d619297f4a964736fc2fcba8d58da9fa564b9205bc25c1f933",
+    "s2": "e1683f33056739230ebe8f8cc40375d3a6cce727983bbbca1379cf0b80c058f6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T13:35:34.973378+00:00"
+}
