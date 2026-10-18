@@ -1,0 +1,114 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs: gate-base.log reports 1 failed, 58 passed in 501.76s (0:08:21); gate-after.log reports 1 failed, 63 passed in 543.02s (0:09:03); the head adds no failing id the base does not carry (0 added). The lone failure, tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, is reckon/ledger.py exceeding the module-size bound and is outside this node's write scope.",
+  "after_suite": {
+    "command": "env -C /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/36355bc4-c7d8-45bc-a3eb-b6ea284801ec/a-paired-arm-review-names-its-run PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/36355bc4-c7d8-45bc-a3eb-b6ea284801ec/a-paired-arm-review-names-its-run /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_paired_arm_is_reviewed_as_itself.py tests/test_a_resumed_head_is_reviewed.py tests/test_a_run_review_with_run_directory_records_dispatches.py tests/test_a_paired_arm_waits_for_its_partner.py tests/test_a_re_review_is_scoped_to_what_changed.py tests/test_review_reflex_sweep.py tests/test_rereview_keeps_its_lane.py tests/test_a_run_review_cannot_remove_a_siblings_record.py tests/test_review_of_a_brief_run_names_its_brief.py tests/test_every_module_fits_a_worker_window.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 1,
+    "failure_ids": [
+      "tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T084035535944-a-paired-arm-review-names-its-run/gate-after.log",
+    "revision": "0f4de52af0bbc93bc9ccd9d7115ca95402c1f8e3"
+  },
+  "assertion_analysis": [
+    {
+      "file": "tests/test_a_paired_arm_is_reviewed_as_itself.py",
+      "line": "97",
+      "text": "assert fields['node_id'].startswith(f'{REVIEW_PREFIX}{run_id}') fails if the composer keeps the node id as the source for a paired arm; negative-control-1.log shows 'review-of-pair-node'.startswith(...) == False."
+    },
+    {
+      "file": "tests/test_a_paired_arm_is_reviewed_as_itself.py",
+      "line": "99",
+      "text": "assert _reviewed_run_id_for_node(fields['node_id']) == run_id compares the resolver's answer against the fixture's own run id; it is a real round trip, not a self-comparison, because reverting review_node_source to source_node yields pair-node and the assertion reddens (negative-control-1.log)."
+    },
+    {
+      "file": "tests/test_a_paired_arm_is_reviewed_as_itself.py",
+      "line": "113",
+      "text": "assert _reviewed_run_id_for_node(bare) == PAIR_NODE fails when the caller stops passing refuse_ambiguous, resolving the bare id to r-20261018T000000000001-arm-alpha instead (negative-control-2.log), so the ambiguity refusal is guarded."
+    },
+    {
+      "file": "tests/test_a_paired_arm_is_reviewed_as_itself.py",
+      "line": "147",
+      "text": "assert _review_record_directory_grant(primary_path, reviewed_run_id=PRIMARY) == primary_records.resolve() is the positive control that the bare-source refusal at :131 is ambiguity rather than a broken helper."
+    }
+  ],
+  "baseline_suite": {
+    "command": "env -C /tmp/reckon-crew-scratch/r-20261018T084035535944-a-paired-arm-review-names-its-run/base-tree PYTHONPATH=/tmp/reckon-crew-scratch/r-20261018T084035535944-a-paired-arm-review-names-its-run/base-tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_resumed_head_is_reviewed.py tests/test_a_run_review_with_run_directory_records_dispatches.py tests/test_a_paired_arm_waits_for_its_partner.py tests/test_a_re_review_is_scoped_to_what_changed.py tests/test_review_reflex_sweep.py tests/test_rereview_keeps_its_lane.py tests/test_a_run_review_cannot_remove_a_siblings_record.py tests/test_review_of_a_brief_run_names_its_brief.py tests/test_every_module_fits_a_worker_window.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 1,
+    "failure_ids": [
+      "tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T084035535944-a-paired-arm-review-names-its-run/gate-base.log",
+    "revision": "2405a5ba5074956471c82e36197c8ca5fbdea9ad"
+  },
+  "call_site_count": 11,
+  "call_sites": [
+    "reckon/crew/dispatch_admission.py:_sandbox_reachability",
+    "reckon/crew/promotion_checks.py:_review_gate_for_run",
+    "reckon/crew/recovery_review_delivery.py:file_review_records_into_store",
+    "reckon/crew/recovery_review_delivery.py:_review_store_record_for_run",
+    "reckon/crew/recovery_review_dispatch.py:_reviewed_run_for_pointer",
+    "reckon/crew/recovery_review_dispatch.py:_review_command_for_run",
+    "reckon/crew/recovery_review_subject.py:_review_obligation_command",
+    "reckon/crew/recovery_repair_dispatch.py:compose_repair_for_run",
+    "reckon/crew/obligations.py:_review_write_paths",
+    "reckon/crew/ticker.py:_job_name",
+    "reckon/crew/dispatch_sessions.py:_task_identity"
+  ],
+  "completed_at": "2026-10-18T09:33:30.478Z",
+  "dispatched_at": "2026-10-18T09:19:40Z",
+  "findings": [
+    {
+      "file": "tests/test_a_paired_arm_is_reviewed_as_itself.py",
+      "line": "75",
+      "severity": "follow-on",
+      "text": "the shadow fixture carries a lineage naming a still-live primary, so it exercises a paired shadow only; _paired_partner_run_id returns a partner for any kind:shadow lineage (reckon/crew/promotion_checks.py:626-628), including a standalone shadow whose named primary is already promoted, so that record's review node id also changes from the node id to the run id and no assertion covers it, leaving the broadened behaviour unpinned."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 11 production call site(s)",
+    "diff": "Read commit by commit against base 2405a5ba: 0f4de52 changes three source files and adds the 166-line test, and a5985da adds the 93-line landing fragment; no other path changed.",
+    "done_when": "The done_when requires a temp-crew-home test with a paired primary, its shadow and an unpaired run asserting the four cases, the real crew home untouched, and a paired gate adding no failure; tests/test_a_paired_arm_is_reviewed_as_itself.py:93-165 asserts all five and gate-base.log (1 failed/58 passed) vs gate-after.log (1 failed/63 passed) share the one failure id.",
+    "goal": "The node's goal is to name a paired arm's review node by the arm's run id and refuse an ambiguous node id at the dispatch grant; reckon/crew/recovery_review_subject.py:618 sets review_node_source from the record's run id when _paired_partner_run_id(record) is non-empty and reckon/crew/dispatch_admission.py:1885-1888 passes refuse_ambiguous=True, so both halves are delivered.",
+    "manifest": "The source manifest.md records status complete, commits 0f4de52 and a5985da, the five changed paths, both arm gate logs with their failure ids, both negative-control logs and the new test's five passes.",
+    "write_paths": "The source brief fences reckon/crew/recovery_review_subject.py, reckon/crew/recovery_review_delivery.py, reckon/crew/dispatch_admission.py, tests/test_a_paired_arm_is_reviewed_as_itself.py and an evidence fragment; git diff 2405a5ba..a5985da changes exactly those five paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_paired_arm_is_reviewed_as_itself.py:97 reddens when the pairing test is removed from _review_dispatch_fields and :113 reddens when _reviewed_run_id_for_node stops setting the flag, both shown in negative-control-1.log and negative-control-2.log, and no added assertion compares a value against the variable it passed in.",
+    "evidence": "gate-base.log:18-20 and gate-after.log:18-20 each carry a FAILED id and an EXIT= line, the head adds the new file's five passes (58->63) and keeps the identical pre-existing reckon/ledger.py failure; the ruff delta is stated in the manifest but kept in no log of its own.",
+    "fit": "reckon/crew/recovery_review_subject.py:616 imports the pairing test inside the function exactly as the module's other late imports at line 998 do, the added comments state mechanism only, and the new names refuse_ambiguous and review_node_source carry no plan label or ticket reference.",
+    "goal_fidelity": "reckon/crew/recovery_review_subject.py:618 mints the review node id from the reviewed arm's own run id when _paired_partner_run_id (reckon/crew/promotion_checks.py:601) names a partner, and reckon/crew/dispatch_admission.py:1885-1888 sets refuse_ambiguous so the grant refuses a shared bare node id.",
+    "reuse": "reckon/crew/recovery_review_subject.py:618 reuses promotion's existing _paired_partner_run_id (reckon/crew/promotion_checks.py:601) rather than writing a second pairing test, and the refuse_ambiguous flag extends _resolved_reviewed_run_id rather than forking a second resolver.",
+    "scope_discipline": "Every path in git diff 2405a5ba..a5985da - the three source files, tests/test_a_paired_arm_is_reviewed_as_itself.py and the landing fragment - lies inside the source brief's declared write paths, and the node wrote no figure."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to name a paired arm's review node by the arm's own run id and refuse an ambiguous node id at the dispatch grant; reckon/crew/recovery_review_subject.py:618 sets review_node_source from the record's run id when _paired_partner_run_id is non-empty and reckon/crew/dispatch_admission.py:1885-1888 passes refuse_ambiguous=True, so both halves are delivered.\nVERDICT done_when: the done_when requires a temp-crew-home test with a paired primary, its shadow and an unpaired run asserting the four cases plus the untouched real home, and a paired gate adding no failure; tests/test_a_paired_arm_is_reviewed_as_itself.py:93-165 asserts all of them and gate-base.log vs gate-after.log share one failure id (58->63 passed).\nVERDICT write_paths: the source brief fences the three source files, the new test and an evidence fragment; git diff 2405a5ba..a5985da changes exactly those five paths and nothing else.\nVERDICT manifest: read; it records status complete, commits 0f4de52 and a5985da, the five changed paths, both arm gate logs with their failure ids, both negative-control logs and the new test's five passes.\nVERDICT diff: read commit by commit against base 2405a5ba; 0f4de52 changes three source files plus the 166-line test and a5985da adds the 93-line landing fragment, no other path.\nCALL_SITES: reckon/crew/dispatch_admission.py:_sandbox_reachability, reckon/crew/promotion_checks.py:_review_gate_for_run, reckon/crew/recovery_review_delivery.py:file_review_records_into_store, reckon/crew/recovery_review_delivery.py:_review_store_record_for_run, reckon/crew/recovery_review_dispatch.py:_reviewed_run_for_pointer, reckon/crew/recovery_review_dispatch.py:_review_command_for_run, reckon/crew/recovery_review_subject.py:_review_obligation_command, reckon/crew/recovery_repair_dispatch.py:compose_repair_for_run, reckon/crew/obligations.py:_review_write_paths, reckon/crew/ticker.py:_job_name, reckon/crew/dispatch_sessions.py:_task_identity\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_subject.py:618 mints the review node id from the reviewed arm's own run id when _paired_partner_run_id (reckon/crew/promotion_checks.py:601) names a partner, and reckon/crew/dispatch_admission.py:1885-1888 sets refuse_ambiguous so the grant refuses a shared bare node id.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-base.log:18-20 and gate-after.log:18-20 each carry a FAILED id and an EXIT= line, the head adds the new file's five passes (58->63) and keeps the identical pre-existing reckon/ledger.py failure; the ruff delta is stated in the manifest but kept in no log of its own.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 2405a5ba..a5985da lies inside the source brief's declared write paths and no figure was written.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_paired_arm_is_reviewed_as_itself.py:97 reddens when the pairing test is removed and :113 when the flag stops being set, both shown in negative-control-1.log and negative-control-2.log, with no assertion comparing a value against the variable it passed in.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_review_subject.py:616 imports the pairing test inside the function exactly as the module's late imports at line 998 do, and the new names carry no plan label or ticket reference.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/recovery_review_subject.py:618 reuses promotion's existing _paired_partner_run_id (reckon/crew/promotion_checks.py:601) rather than writing a second pairing test.\nFINDING tests/test_a_paired_arm_is_reviewed_as_itself.py:75 follow-on: the shadow fixture's lineage names a still-live primary, so it exercises a paired shadow only.\n",
+  "review_run_id": "r-20261018T091827074986-review-of-a-paired-arm-review-names-its-run-a5985da3f218",
+  "reviewed_base_sha": "2405a5ba5074956471c82e36197c8ca5fbdea9ad",
+  "reviewed_commits": [
+    "0f4de52af0bbc93bc9ccd9d7115ca95402c1f8e3",
+    "a5985da3f21886f8c787820d6f8316e981c18220"
+  ],
+  "reviewed_head_sha": "a5985da3f21886f8c787820d6f8316e981c18220",
+  "reviewed_run_id": "r-20261018T084035535944-a-paired-arm-review-names-its-run",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T09:36:05.240560+00:00",
+  "total": 117
+}
