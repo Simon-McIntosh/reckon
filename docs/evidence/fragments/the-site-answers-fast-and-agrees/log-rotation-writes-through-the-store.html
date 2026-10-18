@@ -1,0 +1,61 @@
+<section id="log-rotation-writes-through-the-store" class="evidence-fragment">
+  <h2>§9 — The rotated log's predecessor is published by the one shared writer</h2>
+  <p>
+    The served log's rotation copied the over-bound live file to a private
+    staging path beside the predecessor (<code>&lt;predecessor&gt;.tmp</code>)
+    and moved it into place with <code>os.replace</code>. That is a second,
+    ownerless staged-file writer sitting beside
+    <code>reckon._store.write_atomically</code>, which the project keeps as the
+    single place a file is published through a sibling temporary: every writer
+    that needs the guarantee renders through its callback rather than keeping a
+    private temporary-and-rename of its own. The staged-write inventory census
+    (<code>tests/test_staged_write_inventory.py</code>) reads exactly that shape
+    and reported the violation directly, naming
+    <code>('reckon/serve.py', '_bound_server_log')</code> as a staged write the
+    census did not expect.
+  </p>
+  <p>
+    <code>_bound_server_log</code> now renders the copy into its destination
+    through <code>write_atomically(predecessor, stage_live, binary=True)</code>:
+    the render callback streams the live file
+    (<code>shutil.copyfileobj</code>) into the temporary the shared writer
+    created, and <code>write_atomically</code> owns the temporary, the flush,
+    the rename and the failure cleanup. There is no local staging path and no
+    <code>os.replace</code> in the function any more, so the census sees one
+    writer for a staged replacement and the module agrees with the rule the rest
+    of the codebase follows.
+  </p>
+  <p>
+    The behaviour the plan's §9 record depends on is unchanged: the copy and the
+    empty still run under <code>_ACCESS_LOG_LOCK</code>, the lock every access
+    line takes, so a line written while the log is rotating is written wholly
+    before the copy or wholly after the empty and is never dropped between them.
+    The copy is still taken before the empty, so a crash between the two leaves
+    the predecessor whole and the live file still carrying the content.
+  </p>
+  <p>
+    The interleaving case in
+    <code>tests/test_request_duration_and_log_bound.py</code> deterministically
+    drives that window by pausing the rotator inside its copy. The pause seam
+    moved with the copy primitive: the test now patches
+    <code>serve.shutil.copyfileobj</code> (the primitive the shared writer's
+    render callback uses) instead of the retired
+    <code>serve.shutil.copyfile</code>. The property it asserts — a sentinel line
+    written mid-rotation is present in the live file afterwards — is unchanged.
+  </p>
+  <p id="log-rotation-writes-through-the-store-measure">
+    Measure: the named check
+    <code>pytest -q tests/test_staged_write_inventory.py
+    tests/test_request_duration_and_log_bound.py</code> reports
+    <strong>54 passed</strong> at the head revision. At the base revision the
+    inventory case fails on the extra item
+    <code>('reckon/serve.py', '_bound_server_log')</code>, reproducing the
+    defect; the same command passes at head. <code>ruff check</code> reports the
+    same 19-finding set on the two changed files at base and at head — the
+    change adds no finding — and <code>ruff format --check</code> is clean on
+    both. The negative control restores the hand-rolled
+    <code>copyfile</code>+<code>os.replace</code> in
+    <code>_bound_server_log</code> and the inventory case fails again on the
+    same extra item.
+  </p>
+</section>
