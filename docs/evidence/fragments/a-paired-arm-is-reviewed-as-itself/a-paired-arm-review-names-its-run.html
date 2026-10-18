@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-paired-arm-is-reviewed-as-itself">
+  <meta name="plan-verifies" content="reckon:a-paired-arm-is-reviewed-as-itself#s1">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-18">
+  <title>A paired arm's review names its run | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-paired-arm-review-names-its-run">
+  <h2>A paired arm's review names its run</h2>
+
+  <p><strong>Change.</strong> A paired dispatch launches two arms under one node id,
+  so a review node id minted from that node id is ambiguous: the codex shadow's
+  printed review command resolved to its clive primary and dispatch refused it as
+  not-dispatchable on the <code>scoped</code> property. Three edits close it.
+  <code>_review_dispatch_fields</code> (<code>reckon/crew/recovery_review_subject.py</code>)
+  mints the review <code>node_id</code> from the reviewed arm's own run id when the record is
+  one arm of a pair, read through <code>_paired_partner_run_id</code>
+  (<code>reckon/crew/promotion_checks.py</code>) — the test promotion already resolves a
+  partner with, not a second pairing test — while <code>source_node</code> stays the node id
+  every other reader composes from. <code>_resolved_reviewed_run_id</code>
+  (<code>reckon/crew/recovery_review_delivery.py</code>) gains a keyword-only
+  <code>refuse_ambiguous</code> flag defaulting false; with it set, more than one live
+  pointer sharing the source node id returns the bare source rather than the first match.
+  <code>_reviewed_run_id_for_node</code> (<code>reckon/crew/dispatch_admission.py</code>) is
+  the only caller that sets the flag, so only the dispatch grant changes; every other reader
+  keeps the first match. An unpaired run is unchanged.</p>
+
+  <p><strong>Gate.</strong> The declared gate ran twice from the tree under test, each log
+  carrying an <code>EXIT=</code> line under the run directory. The base arm
+  (<code>git archive</code> of <code>2405a5ba</code>, the nine pre-existing files) reports
+  <strong>1 failed, 58 passed</strong>, <code>EXIT=1</code>, failure id
+  <code>test_every_module_fits_a_worker_window</code>. The head arm (the same nine plus
+  <code>tests/test_a_paired_arm_is_reviewed_as_itself.py</code>, at commit
+  <code>0f4de52</code>) reports <strong>1 failed, 63 passed</strong>, <code>EXIT=1</code>,
+  the same failure id. The lone failure is pre-existing and outside this node's scope:
+  <code>reckon/ledger.py: 50505 estimated tokens exceeds the 50000 bound</code>, a module this
+  node does not write. Added failure ids: <strong>none</strong>. Each log header names the
+  <code>module.__file__</code> it imported: the head arm's is the worktree's own
+  <code>recovery_review_subject.py</code>, the base arm's is the scratch extraction's, so
+  neither tree could have been served by the other. <code>ruff check</code> and
+  <code>ruff format --check</code> add no finding on the staged paths against the base blobs:
+  the base already carries one unformatted file (<code>recovery_review_delivery.py</code>, an
+  unrelated blank line) and this change adds none.</p>
+
+  <p><strong>New test</strong> (<code>tests/test_a_paired_arm_is_reviewed_as_itself.py</code>,
+  <code>RECKON_HOME</code> under <code>tmp_path</code>, three live pointers written there —
+  a paired primary naming the shadow in <code>paired_shadow_run_id</code>, a shadow naming
+  the primary through a <code>kind: shadow</code> lineage, and an unpaired run):</p>
+  <ul>
+    <li>each paired arm's composed <code>node_id</code> starts with
+      <code>review-of-</code> plus that arm's own run id, its <code>source_node</code> is
+      still the shared node id, and <code>_reviewed_run_id_for_node</code> on that id returns
+      that arm's run id;</li>
+    <li>the unpaired run's node id is unchanged (<code>review-of-solo-node</code>) and
+      resolves to the unpaired run;</li>
+    <li>the bare ambiguous id <code>review-of-pair-node</code> returns the bare source
+      <code>pair-node</code> through the grant, while
+      <code>_resolved_reviewed_run_id</code> without the flag still returns one arm's run id
+      as before;</li>
+    <li><code>_review_record_directory_grant</code> refuses a record under either arm's
+      <code>review-records/</code> given the bare source, and — the positive control — each
+      arm's own run id grants its own directory and refuses the other's, so the refusal is
+      ambiguity and not a broken helper;</li>
+    <li>the real crew home is untouched: no pointer or run directory for any of the three run
+      ids appears there, while the temporary home does hold them.</li>
+  </ul>
+
+  <p><strong>Negative control</strong>, two mutations, each applied alone, each under pytest
+  with its default short summary:</p>
+  <ul>
+    <li>the pairing test removed from <code>_review_dispatch_fields</code> makes
+      <code>test_each_paired_arm_review_names_its_own_run</code> fail
+      (<code>EXIT=1</code>, log <code>negative-control-1.log</code>);</li>
+    <li><code>_reviewed_run_id_for_node</code> no longer setting the flag makes
+      <code>test_a_bare_paired_node_id_is_refused_by_the_grant</code> fail
+      (<code>EXIT=1</code>, log <code>negative-control-2.log</code>, the bare id resolving to
+      <code>r-20261018T000000000001-arm-alpha</code> instead of <code>pair-node</code>).</li>
+  </ul>
+</section>
+</main>
+</body>
+</html>
