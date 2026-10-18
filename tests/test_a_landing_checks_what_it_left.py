@@ -216,7 +216,14 @@ def test_a_release_that_changes_nothing_lands_no_commit(repository: Path) -> Non
         release=release,
         checkout=repository,
     )
-    assert recorded == release
+    # Read the release back from the file the record wrote rather than
+    # comparing the return value against the dict handed in: both sides of that
+    # comparison move together, so it holds even when nothing is recorded. The
+    # persisted value is checked against a literal.
+    persisted = json.loads(run_file.read_text(encoding="utf-8"))
+    assert persisted["release"] == {"worktree_released": True}
+    assert persisted["run_id"] == run_id
+    assert recorded["worktree_released"] is True
     assert row is not None
     assert _head(repository) == after_first
 
