@@ -1,0 +1,93 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T19:45:04.519Z",
+  "dispatched_at": "2026-10-18T19:25:17Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-worker-cannot-write-your-home.html:30",
+      "id": "wiring-1",
+      "reason": "recording `s16\u2192s15` \u2014 for the same \"both write the fence module\" reason the author gave when adding `s17\u2192s15` in the same commit \u2014 changes which nodes may run concurrently.",
+      "text": "`plan-section-depends-on` declares only `s17\u2192s15`, but \u00a716 (heading at `:1539`, write paths at `:1549`) also writes `reckon/_worker_fence.py`, the module \u00a715 holds, and its own open followup f-awcwyh-017 states that it \"waits for \u00a715, which holds `reckon/_worker_fence.py`\"; both `s15` and `s16` are declared `implementable`, so a coordinator reading only the declaration map sees no edge and can dispatch them at once, where they collide on the same fence module",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-cannot-write-your-home.html:1561",
+      "id": "done_when-1",
+      "reason": "a node could add the probe, leave both copies of the rule in place, and still close \u00a717, so the section's own named defect (two copies of the directory-creation rule that \"can drift\") would be delivered unmeasured; a falsifier for the consolidation \u2014 a test that intercepts `create_write_roots` and asserts the runtime-path creation goes through it \u2014 is what makes the deliverable match its measure.",
+      "text": "\u00a717's deliverable has two halves (`create_node_tmp_runtime_paths` routed through `create_write_roots`, and a direct node-tmp probe added to the \u00a715 test), but its done-when falsifies only the probe half: the negative control \"removes the node-tmp seal from `fence_argv`\" and reddens the probe, while the consolidation half is checked only by \"the composed fence argv for a fixed set of roots is identical before and after the change\", an assertion that holds whether or not the consolidation was made",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "70b34ac3354b65ea4c5abb94945e1da13f5d32de3a68adea3abdc3856f2e8ad0",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 193,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-18T19:57:42.275645+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-18T19:57:55.796081+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T19:57:55.796081+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T19:57:42.275645+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-worker-cannot-write-your-home.v193.json",
+  "review_run_id": "r-20261018T192420824234-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "d9ccedc80c45bbae12116cdc1e12fe1cb38dd8e2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `create_write_roots` (`reckon/_worker_fence.py:547`), `worker_scratch_seal_root` (`:1110`), `store_seal_keys` (`:1286`, used at `:1325`), `shared_store_seal_roots` (`:1143`), `_CodexDialect.argv` (`reckon/_backends.py:1203`, `--add-dir` loop at `:1222`\u2013`:1228`) and `_fence_write_roots` (`reckon/crew/dispatch_admission.py:1916`) all resolve; \u00a716's `reckon/_worker_fence.py:1322` is a three-line drift from the skip at `:1325` (same symbol, not a dangling pointer), and \u00a717's `create_node_tmp_runtime_paths` exists only once \u00a715 lands, which \u00a717 declares as its `depends-on`.",
+    "done_when": "a finding \u2014 \u00a717's done-when falsifies only the probe half of its deliverable; the rule-constant-creation half has no observable that can fail.",
+    "evidence_paths": "pass \u2014 \u00a715 and \u00a717 place their gate logs under the run directory, the durable convention the \u00a78\u2013\u00a714 gates also use, and no changed unit names a session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 `create_node_tmp_runtime_paths`, `fence_writable_roots` and the runtime-path list are named by mechanism; no plan label, stage name, ticket number or version tag reaches a symbol or comment, and the `\u00a7N` references are plan structure, not code identifiers.",
+    "reasoning": "pass \u2014 \u00a715's seal of the node's `/tmp` follows its cited `rm -rf /tmp/tmp*` evidence and composes through the caller `_fence_write_roots` that \u00a79 named; \u00a716's root cause (codex declaring as writable the roots \u00a710 seals) matches the cited `bwrap: Can't mkdir \u2026/reports/.aws` evidence and its mechanism acts at the one `launch_plan`\u2192`dialect.argv` call site (`reckon/_backends.py:2189`\u2013`:2198`) that feeds every dialect; \u00a717's consolidation follows \u00a715's own review. Each mechanism is capable of producing its section's done-when.",
+    "single_goal": "pass \u2014 \u00a715 seals the node's `/tmp`, \u00a716 filters the codex writable roots, \u00a717 routes the runtime-path creation through the existing rule and strengthens its probe; each names one capability, and a source file beside its test is this plan's normal shape (\u00a79, \u00a710, \u00a711 alike).",
+    "wiring": "a finding \u2014 \u00a716 needs \u00a715 to have landed, because both write `reckon/_worker_fence.py`, but `plan-section-depends-on` records only \u00a717\u2192\u00a715."
+  },
+  "section_digests": {
+    "_document": "7a4c73d00523126f698b5efba4770f43a92c7ddbaacb58aee1c4194fb6968215",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "c5c7fe720643fd4e73b5f1c9fff30c26f8357f46808e3b91eb33b5271d3a19bc",
+    "s11": "f2f305292dacd47d88930479053d919c6bce05b3f863e60a502ce40a2b1c1239",
+    "s12": "bcbf84b314096bf944f58481d98177c11ed6732c763472dc6bc259bc0ad8f54e",
+    "s13": "274d2cd914af10830f75d7ac253c9a1833d25cf9ac0e37e28c0c48ba60b77628",
+    "s14": "fcefb6cd20b26029bf0d8c785373a493532289cca9f2b4b01a93bf7b4ef7c19a",
+    "s15": "2d4c8c79a854bdbb21757053e30b9cf1366a1b627dc8c8ef6e7760cb15af06a2",
+    "s16": "f2c003eb41a15d4a475407c4f28b7405bf87620a7ee1c9732c823c0bd535923c",
+    "s17": "1d1cbeb2d644793a9da080dc1c47d28f007ce7a52be3a7df5785db7e9df014c6",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T19:57:34.560033+00:00"
+}
