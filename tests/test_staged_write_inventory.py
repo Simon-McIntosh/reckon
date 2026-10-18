@@ -52,6 +52,12 @@ def test_every_staged_write_reaches_the_owner(trees):
         # tree onto a same-filesystem trash directory before git is told to
         # forget it, so the registered path is vacated by one rename.
         ("reckon/crew/routing.py", "_release_worktree_whole"),
+        # materialize_committed_tree stages its replacement: it extracts a
+        # commit's package into a mkdtemp directory beside the target and
+        # os.rename-s that directory onto the target, so the image appears in
+        # one step. The shared file writer replaces a single file, so it does
+        # not apply to a whole directory published in one rename.
+        ("reckon/checkout_trust.py", "materialize_committed_tree"),
     }, sorted(observed)
 
 
