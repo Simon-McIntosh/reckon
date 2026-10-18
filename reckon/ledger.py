@@ -1124,36 +1124,17 @@ def recorded_ledger_path(index: str | Path) -> str | None:
     return str(row[0]) if row and row[0] else None
 
 
-def index_stamp(project: str, root: str | Path | None = None) -> list[Any]:
-    """Constant-cost key for the last indexed content and atomic ledger writes.
+def _index_stamp_members(
+    project: str, root: str | Path | None = None
+) -> dict[str, Any]:
+    """Every member of the ledger index stamp, keyed by member name.
 
-    The index changes when a reader observes an in-place edit. Aggregate writes
-    and atomic per-run replacements also move the source or directory stamp,
-    so a profile cache notices them before another reader refreshes the index.
-    """
-    aggregate = ledger_path(project, root)
-    return [
-        str(aggregate.resolve()),
-        _RUN_INDEX_VERSION,
-        _file_identity(aggregate),
-        _file_identity(aggregate.parent / "runs"),
-        _file_identity(_run_index_path(project, root)),
-    ]
-
-
-def index_state_stamp(project: str, root: str | Path | None = None) -> dict[str, Any]:
-    """The ledger index members a read is a reading of, keyed by member name.
-
-    This is :func:`index_stamp` without the index file's own identity. A read
-    refreshes that file, so its identity moves across every refresh while the
-    ledger behind it is unchanged; a caller keyed on the state of the ledger
-    must not move with it.
-
-    Members are named rather than ordered so a caller compares the state it
-    means by name. A member added to or reordered within :func:`index_stamp`
-    can then no longer shift which member a positional read compares, which is
-    how a silent miss entered before. Every other member ``index_stamp`` builds
-    is carried here under its own name.
+    One owner for the member set. :func:`index_stamp` renders these members as
+    the ordered list its positional callers read, and :func:`index_state_stamp`
+    returns the same members keyed by name. A member added here reaches both, so
+    a member added to the stamp can no longer be invisible to a caller that
+    compares by name. The insertion order of this mapping is the order
+    :func:`index_stamp` returns.
     """
     aggregate = ledger_path(project, root)
     return {
@@ -1161,7 +1142,43 @@ def index_state_stamp(project: str, root: str | Path | None = None) -> dict[str,
         "version": _RUN_INDEX_VERSION,
         "aggregate_identity": _file_identity(aggregate),
         "runs_identity": _file_identity(aggregate.parent / "runs"),
+        "index_identity": _file_identity(_run_index_path(project, root)),
     }
+
+
+# The index file's own identity: a read refreshes that file, so its identity
+# moves across every refresh without the ledger behind it changing. A caller
+# keyed on the ledger's state omits this member by name.
+_INDEX_IDENTITY_MEMBER = "index_identity"
+
+
+def index_stamp(project: str, root: str | Path | None = None) -> list[Any]:
+    """Constant-cost key for the last indexed content and atomic ledger writes.
+
+    The index changes when a reader observes an in-place edit. Aggregate writes
+    and atomic per-run replacements also move the source or directory stamp,
+    so a profile cache notices them before another reader refreshes the index.
+    """
+    return list(_index_stamp_members(project, root).values())
+
+
+def index_state_stamp(project: str, root: str | Path | None = None) -> dict[str, Any]:
+    """The ledger index members a read is a reading of, keyed by member name.
+
+    The same member set :func:`index_stamp` renders, derived from the one owner
+    of that set, without the index file's own identity: a read refreshes that
+    file, so its identity moves across every refresh while the ledger behind it
+    is unchanged, and a caller keyed on the state of the ledger must not move
+    with it.
+
+    Members are keyed by name so a caller compares the state it means by name.
+    The index identity is omitted by name, so a member added to the set ahead of
+    it cannot displace that omission, and a member added to the set reaches this
+    record without a second list to keep in step.
+    """
+    members = _index_stamp_members(project, root)
+    members.pop(_INDEX_IDENTITY_MEMBER, None)
+    return members
 
 
 # Persist exactly the history fields consumed by picker outcomes, return times,

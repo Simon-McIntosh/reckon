@@ -4,20 +4,23 @@
     The section-attempts memo compared the ledger index stamp by a positional
     slice, <code>stamp[0][:4]</code>, so a member added to or reordered within
     <code>ledger.index_stamp</code> silently changed the state the memo keyed on.
-    The ledger now exposes <code>index_state_stamp</code>: the same members without
-    the index file's own identity, returned as a record keyed by member name.
-    <code>mcp_views._attempt_state</code> reads that record by name. The index
-    file's identity stays out of the comparison, because a read rewrites it.
+    The member set now has one owner, <code>ledger._index_stamp_members</code>:
+    <code>index_stamp</code> renders it as the ordered list its positional callers
+    read, and <code>index_state_stamp</code> returns the same members keyed by name
+    with the index file's own identity omitted by name. <code>mcp_views._attempt_state</code>
+    reads that record by name. A member added to the set reaches the memo without a
+    second list to keep in step, and the index identity stays out of the comparison
+    because a read rewrites it.
   </p>
   <p id="the-attempt-memo-names-its-stamp-members-p2">
     <strong>Measure.</strong> <code>tests/test_the_attempt_memo_names_its_stamp_members.py</code>
-    inserts an extra member at the front of the stamp the ledger builds and drives
-    one memoised read. Head: memo holds on an unchanged stamp (1 aggregation over
-    two reads), invalidates when the runs directory's identity moves (2), and holds
-    when only the index file's identity moves (2) — 4 passed with the existing
-    attempts-cache tests, <code>EXIT=0</code>. Base arm: the inserted member pushes
-    the runs directory's identity out of the four-member slice, the memo misses the
-    change, and the runs-directory assertion fails with <code>assert 1 == 2</code>,
-    <code>EXIT=1</code>. ruff check and format add no findings on the changed files.
+    drives memoised reads. Head, 5 passed with the existing attempts-cache tests
+    (<code>EXIT=0</code>): the memo holds on an unchanged stamp, invalidates when the
+    runs directory's identity moves, holds when only the index file's identity moves,
+    and invalidates when a member added to the stamp changes. Base arm: the inserted
+    leading member pushes the runs directory's identity out of the four-member slice,
+    the memo misses the change, and the runs-directory assertion fails with
+    <code>assert 1 == 2</code> (<code>EXIT=1</code>). ruff check and format add no
+    findings on the changed files.
   </p>
 </section>

@@ -104,3 +104,61 @@ def test_attempt_memo_compares_stamp_members_by_name(
     assert aggregations[0] == 2, (
         "an index-file-only change must not invalidate the memo"
     )
+
+
+def test_attempt_memo_notices_a_member_added_to_the_stamp(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A member added to the stamp the ledger builds reaches the memo.
+
+    The ledger owns one member set. A member added to it must reach the record
+    the memo compares, so a change it carries invalidates the memo rather than
+    being invisible to it.
+    """
+    live = tmp_path / "live"
+    live.mkdir()
+    monkeypatch.setattr(runs, "live_dir", lambda: live)
+    monkeypatch.setattr(ledger, "load", lambda *_args: ({"runs": []}, 0))
+    ledger.ledger_path("sample", tmp_path).parent.mkdir(parents=True, exist_ok=True)
+
+    held = ["first"]
+    if hasattr(ledger, "_index_stamp_members"):
+        original_members = ledger._index_stamp_members
+
+        def with_added_member(project, root=None):
+            members = original_members(project, root)
+            members["added_member"] = held[0]
+            return members
+
+        monkeypatch.setattr(ledger, "_index_stamp_members", with_added_member)
+    else:
+        original_stamp = ledger.index_stamp
+
+        def with_added_member(*args, **kwargs):
+            return [held[0], *original_stamp(*args, **kwargs)]
+
+        monkeypatch.setattr(ledger, "index_stamp", with_added_member)
+
+    mcp_views._ATTEMPT_CACHE.clear()
+    original_group = mcp_views._group_section_attempts
+    aggregations = [0]
+
+    def counted(*args, **kwargs):
+        aggregations[0] += 1
+        return original_group(*args, **kwargs)
+
+    monkeypatch.setattr(mcp_views, "_group_section_attempts", counted)
+
+    def read() -> dict:
+        return mcp_views.section_attempts_by_plan("sample", tmp_path)
+
+    assert read() == {}
+    assert aggregations[0] == 1
+    assert read() == {}
+    assert aggregations[0] == 1, "an unchanged stamp must serve from the memo"
+
+    held[0] = "second"
+    read()
+    assert aggregations[0] == 2, (
+        "a member added to the stamp must invalidate the memo when it changes"
+    )
