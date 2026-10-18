@@ -1,0 +1,103 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T195218281977-the-admit-service-runs-current-code/gate-head-arm.log",
+  "assertion_analysis": [
+    {
+      "fails_if": "The driven loop does not enter exactly two passes; it does not establish when a checkout change is sampled.",
+      "test_line": 187
+    },
+    {
+      "fails_if": "The post-pass stamp check does not call the stub re-execution between the first and second calls to admit_once.",
+      "test_line": 191
+    },
+    {
+      "fails_if": "The code-stamp change does not invalidate the failed request backoff, leaving only one dispatch attempt.",
+      "test_line": 194
+    },
+    {
+      "fails_if": "The failure guard omits its code key or records a value other than the supplied old stamp on the first pass.",
+      "test_line": 198
+    },
+    {
+      "fails_if": "The second failure guard omits its code key or records a value other than the supplied new stamp.",
+      "test_line": 199
+    },
+    {
+      "fails_if": "The untrusted path fails to run two passes; it alone does not constrain re-execution.",
+      "test_line": 212
+    },
+    {
+      "fails_if": "The untrusted path calls the stub re-execution.",
+      "test_line": 213
+    },
+    {
+      "fails_if": "The untrusted path emits any event besides its two ordered passes.",
+      "test_line": 214
+    }
+  ],
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T195218281977-the-admit-service-runs-current-code/gate-base-arm.log",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2607",
+    "reckon/crew/queue_admission.py:653",
+    "reckon/crew/queue_admission.py:670",
+    "reckon/crew/queue_admission.py:897"
+  ],
+  "completed_at": "2026-10-18T20:53:59Z",
+  "dispatched_at": "2026-10-18T20:47:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1040",
+      "severity": "blocking",
+      "text": "blocking: The stamp check runs only after admit_once; if the checkout changes after that check during time.sleep, the next iteration validates or launches a queued request with the old code before checking again, violating the goal and the between-pass gate."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T195218281977-the-admit-service-runs-current-code/manifest.md",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "follow-on: The after_suite revision and gate-head-arm.log header name the base SHA although the manifest says this arm used uncommitted head code, so that arm alone does not bind its zero added failures to the reviewed head commit."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read the sole commit 0eb04cb53c7e21ed028074b91ebd3211241b1a69 against parent 61dd0cd9fd451a9d74e1ac4c167d3944964d4540; it adds the stamp guard and post-pass re-execution check in reckon/crew/queue_admission.py:589,1043, two tests, and the evidence fragment.",
+    "done_when": "The \u00a728 gate requires re-execution before a second pass after a between-pass stamp change; tests/test_the_admit_service_runs_current_code.py:159 moves the stamp before the first pass returns, leaving the sleep-to-next-pass interval untested despite gate-head.log recording 2 passed.",
+    "goal": "The source goal in prompt.txt requires a trusted code change to be loaded before another admission; reckon/crew/queue_admission.py:1040 can run an old image after a change during the preceding sleep.",
+    "manifest": "The reviewed manifest.md:5 reports complete and :11-20 records a 2-passed focused gate, a 1-failed negative control, and 63/65-passed suite arms; its head arm is explicitly labeled with the base revision.",
+    "write_paths": "The prompt.txt scope grants reckon/crew/queue_admission.py, tests/test_the_admit_service_runs_current_code.py and the evidence fragment; git diff 61dd0cd9..0eb04cb5 changes exactly those three files."
+  },
+  "justifications": {
+    "durability": "tests/test_the_admit_service_runs_current_code.py:187-214 fails if the post-pass comparison, guard code key or untrusted refusal is removed, while the test never changes the stamp during the interval after that comparison and before the next pass.",
+    "evidence": "gate-head.log records 2 passed and negative-control.log records the missing-comparison failure, but tests/test_the_admit_service_runs_current_code.py:159 moves the stamp before the post-pass check and gate-head-arm.log names the base revision.",
+    "fit": "reckon/crew/queue_admission.py:491-532 follows nearby helper naming and calls the existing follower stamp and checkout trust owners, with no prohibited plan label in the new symbols.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:1040 starts each pass before checking the stamp after time.sleep at :1045, allowing one stale pass when the checkout changes during sleep.",
+    "reuse": "a capability search found the stamp owner in reckon/crew/follower_registration.py:28 and trust owner in reckon/checkout_trust.py:550, which the new wrappers use; the process replacement is local to the admit command beside the follower-specific reload in reckon/crew_follow_commands.py:607.",
+    "scope_discipline": "the one-commit diff changes only reckon/crew/queue_admission.py, tests/test_the_admit_service_runs_current_code.py and the declared docs/evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal in prompt.txt requires a trusted code change to be loaded before another admission; reckon/crew/queue_admission.py:1040 can run an old image after a change during the preceding sleep.\nVERDICT done_when: The \u00a728 gate requires re-execution before a second pass after a between-pass stamp change; tests/test_the_admit_service_runs_current_code.py:159 moves the stamp before the first pass returns, leaving the sleep-to-next-pass interval untested despite gate-head.log recording 2 passed.\nVERDICT write_paths: The prompt.txt scope grants reckon/crew/queue_admission.py, tests/test_the_admit_service_runs_current_code.py and the evidence fragment; git diff 61dd0cd9..0eb04cb5 changes exactly those three files.\nVERDICT manifest: The reviewed manifest.md:5 reports complete and :11-20 records a 2-passed focused gate, a 1-failed negative control, and 63/65-passed suite arms; its head arm is explicitly labeled with the base revision.\nVERDICT diff: Read the sole commit 0eb04cb53c7e21ed028074b91ebd3211241b1a69 against parent 61dd0cd9fd451a9d74e1ac4c167d3944964d4540; it adds the stamp guard and post-pass re-execution check in reckon/crew/queue_admission.py:589,1043, two tests, and the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:2607, reckon/crew/queue_admission.py:653, reckon/crew/queue_admission.py:670, reckon/crew/queue_admission.py:897\nSCORE goal_fidelity: 11\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1040 starts each pass before checking the stamp after time.sleep at :1045, allowing one stale pass when the checkout changes during sleep.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate-head.log records 2 passed and negative-control.log records the missing-comparison failure, but tests/test_the_admit_service_runs_current_code.py:159 moves the stamp before the post-pass check and gate-head-arm.log names the base revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the one-commit diff changes only reckon/crew/queue_admission.py, tests/test_the_admit_service_runs_current_code.py and the declared docs/evidence fragment.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_the_admit_service_runs_current_code.py:187-214 fails if the post-pass comparison, guard code key or untrusted refusal is removed, while the test never changes the stamp during the interval after that comparison and before the next pass.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_admission.py:491-532 follows nearby helper naming and calls the existing follower stamp and checkout trust owners, with no prohibited plan label in the new symbols.\nSCORE reuse: 18\nJUSTIFICATION reuse: a capability search found the stamp owner in reckon/crew/follower_registration.py:28 and trust owner in reckon/checkout_trust.py:550, which the new wrappers use; the process replacement is local to the admit command beside the follower-specific reload in reckon/crew_follow_commands.py:607.\nFINDING reckon/crew/queue_admission.py:1040 blocking: The stamp check runs only after admit_once; if the checkout changes after that check during time.sleep, the next iteration validates or launches a queued request with the old code before checking again, violating the goal and the between-pass gate.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T195218281977-the-admit-service-runs-current-code/manifest.md:18 follow-on: The after_suite revision and gate-head-arm.log header name the base SHA although the manifest says this arm used uncommitted head code, so that arm alone does not bind its zero added failures to the reviewed head commit.\n",
+  "review_run_id": "r-20261018T204557523381-review-of-the-admit-service-runs-current-code-0eb04cb53c7e",
+  "reviewed_base_sha": "61dd0cd9fd451a9d74e1ac4c167d3944964d4540",
+  "reviewed_head_sha": "0eb04cb53c7e21ed028074b91ebd3211241b1a69",
+  "reviewed_run_id": "r-20261018T195218281977-the-admit-service-runs-current-code",
+  "reviewer_run_id": "r-20261018T204557523381-review-of-the-admit-service-runs-current-code-0eb04cb53c7e",
+  "scores": {
+    "durability": 12,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 11,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T195218281977-the-admit-service-runs-current-code/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/530468fb-d739-474c-9fa1-7f1ef4af1afa/the-admit-service-runs-current-code",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T20:51:32.677866+00:00",
+  "total": 93
+}
