@@ -1283,9 +1283,12 @@ def crew_dispatch(
             # serves it, exactly as naming that backend would; the refusal for
             # an ambiguous or unknown name rides the same channel every other
             # request error does.
-            backend = _model_narrowed_backend(config, model_name, backend, local=local)[
-                0
-            ]
+            backend, model_lane, model_key = _model_narrowed_backend(
+                config, model_name, backend, local=local
+            )
+            config = flight_module.select_lane_model(
+                config, backend, model_lane, model_key
+            )
     except click.ClickException as exc:
         if not dry_run:
             raise

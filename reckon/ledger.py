@@ -46,12 +46,13 @@ import subprocess
 import sys
 import tempfile
 import time
+from collections.abc import Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import ContextVar
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
 
 # Reached through the module rather than by importing its names: a reload
 # rebinds the store's classes in place, and a captured exception class would
@@ -312,9 +313,7 @@ def _undeclared_model_refusal(model: str, lane: str | None) -> str:
             "asked for, and names no model, model id or alias the catalogue "
             "declares"
         )
-    return (
-        f"{model!r} names no model, model id or alias the catalogue declares"
-    )
+    return f"{model!r} names no model, model id or alias the catalogue declares"
 
 
 def backend_serving_model(
@@ -325,8 +324,9 @@ def backend_serving_model(
     The pair comes from :func:`resolve_name` over the model catalogue, so a
     model key, a model id and an alias all reach the same ``(lane, model_key)``
     and the configured backend whose entry carries that pair is returned with
-    it. A name no lane declares, a lane that does not declare the name and a
-    pair no configured backend serves are each refused with one message, so
+    it. A lane's own backend serves its other declared models when no separate
+    entry carries the pair. A name no lane declares, a lane that does not
+    declare the name and a pair no configured backend serves are refused, so
     ``--model`` and a picker route refuse an undeclared pair identically rather
     than each spelling its own. Returns ``(backend_name, lane, model_key)``.
     """
@@ -341,6 +341,15 @@ def backend_serving_model(
             and str(entry.get("model_key")) == key
         ):
             return str(name), resolved_lane, key
+    declared_lane = (config.get("lanes") or {}).get(resolved_lane) or {}
+    lane_backend = (config.get("backends") or {}).get(resolved_lane)
+    if (
+        isinstance(declared_lane, Mapping)
+        and key in (declared_lane.get("models") or {})
+        and isinstance(lane_backend, Mapping)
+        and lane_backend.get("lane") == resolved_lane
+    ):
+        return resolved_lane, resolved_lane, key
     raise ValueError(
         f"model {model!r} resolves to lane {resolved_lane!r} model key {key!r}, "
         "which no configured backend serves"
@@ -399,7 +408,9 @@ def normalize_section(value: Any) -> str:
     """Return the canonical spelling for a numbered plan section."""
     section = re.sub(r"\s+", " ", str(value or "").strip())
     match = re.fullmatch(
-        rf"(?:§\s*|#?s(?:ection)?\s*)?({SECTION_NUMBER_PATTERN})", section, re.IGNORECASE
+        rf"(?:§\s*|#?s(?:ection)?\s*)?({SECTION_NUMBER_PATTERN})",
+        section,
+        re.IGNORECASE,
     )
     return f"§{match.group(1)}" if match else section
 
@@ -802,17 +813,13 @@ def evidence_records_for_plan(
 
 
 def _utc_now() -> str:
-    return (
-        datetime.now(tz=timezone.utc)
-        .isoformat(timespec="seconds")
-        .replace("+00:00", "Z")
-    )
+    return datetime.now(tz=UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _retry_backoff(attempt: int) -> None:
     """Yield to competing ledger writers with a small jittered delay."""
     ceiling = min(_MAX_RETRY_DELAY_SECONDS, 0.002 * (2**attempt))
-    time.sleep(random.uniform(ceiling / 2, ceiling))
+    time.sleep(random.uniform(ceiling / 2, ceiling))  # noqa: S311 - scheduling jitter
 
 
 # ── Location and raw access ─────────────────────────────────────────────────
@@ -1115,7 +1122,9 @@ def recorded_ledger_path(index: str | Path) -> str | None:
     distinct state from one whose recorded checkout is gone.
     """
     try:
-        connection = sqlite3.connect(f"file:{Path(index)}?mode=ro", uri=True, timeout=0.2)
+        connection = sqlite3.connect(
+            f"file:{Path(index)}?mode=ro", uri=True, timeout=0.2
+        )
         with contextlib.closing(connection):
             row = connection.execute(
                 "SELECT payload FROM metadata WHERE name=?", (LEDGER_INDEX_PATH_KEY,)
@@ -3777,7 +3786,7 @@ def _stream_completion(paths: list[Path]) -> tuple[str, str]:
         return event_time, "terminal_event"
     newest = max(path.stat().st_mtime for path in paths)
     completed = (
-        datetime.fromtimestamp(newest, tz=timezone.utc)
+        datetime.fromtimestamp(newest, tz=UTC)
         .isoformat(timespec="seconds")
         .replace("+00:00", "Z")
     )
@@ -3948,10 +3957,10 @@ def _parse_timestamp(value: Any, label: str) -> datetime:
     carrying an offset of its own resolves to.
     """
     try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(str(value))
     except (TypeError, ValueError) as exc:
         raise LedgerError(f"{label} {value!r} is not ISO-8601") from exc
-    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
 
 
 def _parse_utc(value: Any) -> datetime:
@@ -4272,9 +4281,7 @@ def summary(
         "passed": 0,
         "work_rejected": 0,
         "pass_rate": None,
-        "excluded": {
-            classification: 0 for classification in FAILURE_CLASSIFICATIONS[1:]
-        },
+        "excluded": dict.fromkeys(FAILURE_CLASSIFICATIONS[1:], 0),
         "unclassified": 0,
     }
     suite_deltas = {"clean": 0, "refused": 0, "waived": 0, "unchanged": 0}

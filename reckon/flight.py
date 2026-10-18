@@ -33,11 +33,11 @@ import re
 import shutil
 import subprocess
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterable, Iterator, Mapping
+from typing import Any
 
 from reckon import capability
 from reckon._store import _config_home
@@ -494,9 +494,9 @@ def mounted_project_docs(mounts_file: Path | None = None) -> dict[str, Path]:
     read a registry regardless of a later home override passes the path it
     captured earlier, which is the path it read then, not the one now in force.
     """
-    from reckon._store import _mounts_path
-
     import json
+
+    from reckon._store import _mounts_path
 
     if mounts_file is None:
         mounts_file = _mounts_path()
@@ -518,15 +518,16 @@ def mounted_project_docs(mounts_file: Path | None = None) -> dict[str, Path]:
 
     resolved: dict[str, Path] = {}
     for project, entry in sorted(entries.items(), key=lambda item: str(item[0])):
+        docs_path = entry
         if isinstance(entry, Mapping):
-            entry = entry.get("docs") or entry.get("path")
-        if not isinstance(entry, str) or not entry.strip():
+            docs_path = entry.get("docs") or entry.get("path")
+        if not isinstance(docs_path, str) or not docs_path.strip():
             raise FlightConfigError(
                 mounts_file,
                 str(project),
                 "must name a docs directory with a string path",
             )
-        resolved[str(project)] = Path(entry).expanduser().resolve()
+        resolved[str(project)] = Path(docs_path).expanduser().resolve()
     return resolved
 
 
@@ -655,11 +656,10 @@ def _inject_map_keys(data: Mapping[str, Any]) -> dict[str, Any]:
             continue
         rebuilt: dict[str, Any] = {}
         for key, value in entries.items():
-            if value is None:
-                value = {}
-            if isinstance(value, Mapping):
-                value = {**value, "name": key}
-            rebuilt[key] = value
+            entry_value = {} if value is None else value
+            if isinstance(entry_value, Mapping):
+                entry_value = {**entry_value, "name": key}
+            rebuilt[key] = entry_value
         out[map_name] = rebuilt
     lanes = out.get("lanes")
     if isinstance(lanes, Mapping):
@@ -671,11 +671,10 @@ def _inject_map_keys(data: Mapping[str, Any]) -> dict[str, Any]:
                 continue
             rebuilt_models: dict[str, Any] = {}
             for key, value in models.items():
-                if value is None:
-                    value = {}
-                if isinstance(value, Mapping):
-                    value = {**value, "name": key}
-                rebuilt_models[key] = value
+                model_value = {} if value is None else value
+                if isinstance(model_value, Mapping):
+                    model_value = {**model_value, "name": key}
+                rebuilt_models[key] = model_value
             lane["models"] = rebuilt_models
     return out
 
@@ -1615,7 +1614,7 @@ def _lane_model_keys() -> tuple[str, ...]:
 LANE_MODEL_KEYS = _lane_model_keys()
 
 
-def _lane_entry(
+def lane_model_entry(
     lane_level: Mapping[str, Any],
     model: Mapping[str, Any] | None,
     lane_name: str,
@@ -1645,6 +1644,29 @@ def _lane_entry(
     if derived_from is not None:
         entry["derived_from"] = derived_from
     return entry
+
+
+def select_lane_model(
+    config: Mapping[str, Any], backend_name: str, lane_name: str, model_key: str
+) -> Mapping[str, Any]:
+    """Select a declared non-default model on its lane backend for dispatch.
+
+    Legacy pair backends already contain their model's settings. The lane's
+    default entry also stays exactly as resolved, including any backend-level
+    values inherited from older configuration layers.
+    """
+    lane = (config.get("lanes") or {}).get(lane_name) or {}
+    if backend_name != lane_name or model_key == lane.get("default_model"):
+        return config
+    lane_level = {
+        key: value
+        for key, value in lane.items()
+        if key not in ("models", "default_model", "name")
+    }
+    selected = lane_model_entry(
+        lane_level, lane["models"][model_key], lane_name, model_key
+    )
+    return {**config, "backends": {**config["backends"], backend_name: selected}}
 
 
 def _lane_provenance(
@@ -1749,7 +1771,7 @@ def expand_lanes(
                 )
             )
         for name, model, model_key, derived_from in entries:
-            entry = _lane_entry(
+            entry = lane_model_entry(
                 lane_level, model, lane_name, model_key, derived_from=derived_from
             )
             existing = backends.get(name)
@@ -2378,6 +2400,7 @@ def _probe_auth(
             capture_output=True,
             text=True,
             timeout=_AUTH_PROBE_TIMEOUT_SECONDS,
+            check=False,
         )
     except (OSError, subprocess.SubprocessError) as exc:
         return {"authenticated": False, "detail": f"auth_check failed to run — {exc}"}
@@ -2791,7 +2814,9 @@ def parse_overrides(pairs: Iterable[str]) -> dict[str, Any]:
         try:
             value = yaml.safe_load(raw)
         except yaml.YAMLError as exc:
-            raise FlightConfigError("<override>", key, f"unparsable value — {exc}")
+            raise FlightConfigError(
+                "<override>", key, f"unparsable value — {exc}"
+            ) from exc
         cursor = overrides
         parts = [part for part in key.strip().split(".") if part]
         for part in parts[:-1]:

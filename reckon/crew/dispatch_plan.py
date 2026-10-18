@@ -69,7 +69,6 @@ from reckon.crew.runs import (
 )
 
 
-
 @dataclass
 class DispatchPlan:
     """Everything a dispatch resolved, before anything on disk has changed.
@@ -144,9 +143,7 @@ class DispatchPlan:
             "lane_reading": (
                 None if self.lane_reading is None else dict(self.lane_reading)
             ),
-            "lane_gate": (
-                None if self.lane_gate is None else dict(self.lane_gate)
-            ),
+            "lane_gate": (None if self.lane_gate is None else dict(self.lane_gate)),
             "lane_allowance": (
                 None if self.lane_allowance is None else dict(self.lane_allowance)
             ),
@@ -206,7 +203,7 @@ class DispatchPlan:
 
 def _backend_serving_picked_model(
     config: Mapping[str, Any], *, backend_name: str, model: str
-) -> str:
+) -> tuple[str, str | None, str | None]:
     """Return the backend whose lane serves the model a picker route chose.
 
     A picker route names a lane's own backend with the chosen model beside it,
@@ -221,14 +218,14 @@ def _backend_serving_picked_model(
     if not isinstance(picked, Mapping):
         # No layer defines the picked backend: routing resolves a missing
         # backend moments later with the routing context a caller needs.
-        return backend_name
+        return backend_name, None, None
     lane = str(picked.get("lane") or "")
     if not lane:
         # A backend that declares no lane carries its own model directly, so
         # there is no lane-and-model pair for the pick to narrow.
-        return backend_name
+        return backend_name, None, None
     try:
-        return ledger.backend_serving_model(config, lane=lane, model=model)[0]
+        return ledger.backend_serving_model(config, lane=lane, model=model)
     except ValueError as exc:
         raise CrewError(str(exc)) from exc
 
@@ -334,9 +331,15 @@ def plan_dispatch(
             # lane's default, which would launch sol while recording astra.
             picked_model = str(picker_selection.get("model") or "").strip()
             if picked_model:
-                requested_backend = _backend_serving_picked_model(
-                    config, backend_name=named_backend, model=picked_model
+                requested_backend, model_lane, model_key = (
+                    _backend_serving_picked_model(
+                        config, backend_name=named_backend, model=picked_model
+                    )
                 )
+                if model_lane and model_key:
+                    config = flight.select_lane_model(
+                        config, requested_backend, model_lane, model_key
+                    )
         elif action in ("route", "refuse", "fallback"):
             # The picker names no backend it can route to — it refused, its route
             # carries no backend, or it fell back — so the dispatch continues
@@ -1315,6 +1318,7 @@ def _carry_declared_gate_documents(
     for key in ("gate_document", "lane_document"):
         if configured.get(key):
             backend[key] = configured[key]
+
 
 from .dispatch_admission import (  # noqa: E402
     LanePaused,
