@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-landing-never-reverts-the-checkout">
+  <meta name="plan-title" content="A Landing Never Reverts The Checkout">
+  <meta name="plan-summary" content="A promotion committed its landing, then nova's checkout held a staged reversal of it; find what turned it back, check every landing, record every rollback.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="4.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-standalone" content="It changes how a promotion&#x27;s landing commit is checked, rolled back and recorded; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-landing-never-reverts-the-checkout#s1&quot;]}">
+  <title>A Landing Never Reverts The Checkout | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-18">
+<meta name="plan-north-star" content="unattended-execution">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Find what turned nova's checkout back below its landing commit</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="standard" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> On 2026-10-18 nova's lead asked reckon to root-cause and fix a promotion that committed its landing and then left nova's shared checkout holding a staged reversal of that same commit. The facts, as reported by the nova session that found it and as read from nova's repository the same evening:</p>
+<ul>
+<li>At 19:23:52 +02:00 nova's HEAD moved to <code>2321fba57</code>, <code>promote(r-20261018T171142922335-review-of-census-proposal-coverage-f7ed7e9d8ef6): not-run</code> (nova's HEAD reflog). No <code>release(...)</code> commit followed. HEAD next moved at 19:37:06, to <code>4ee29141f</code>, another run's promotion.</li>
+<li>Afterwards <code>docs/plans/converged-forward-solve.html</code> was staged as modified, with its index and working tree both at plan-version 395 and without the promotion's comment, while HEAD held 396 and the comment. Three files the commit added were staged as deleted and absent from disk while present in HEAD: <code>docs/state/nova/reviews/run/r-20261018T145203666018-census-proposal-coverage/legacy-5ef79bad605b.json</code>, <code>docs/state/nova/reviews/run/r-20261018T145203666018-census-proposal-coverage/r-20261018T171142922335-review-of-census-proposal-coverage-f7ed7e9d8ef6.json</code> and <code>docs/state/nova/runs/r-20261018T171142922335-review-of-census-proposal-coverage-f7ed7e9d8ef6.json</code>.</li>
+<li>No <code>.git/index.lock</code> and no reckon process held the checkout afterwards. The next promotion re-synced the plan file but not the three deleted paths; the nova session restored those from HEAD with its lead's approval.</li>
+<li>nova's <code>.git/FETCH_HEAD</code> is stamped 19:23:57.9, five seconds after the landing commit. It was written by that session's <code>git pull --no-rebase</code>, run in the same checkout from <code>98dci4-clu-2002</code> and followed by a <code>git merge --no-commit</code> that refused, citing those paths as local changes. The producer seat runs on <code>98dci4-srv-1006</code>, on the same GPFS checkout.</li>
+<li>The run's directory under <code>~/.config/reckon/crew/runs/</code> holds no landing failure record. Its <code>classification.json</code> is stamped 19:24:01, and its live pointer is gone.</li>
+</ul>
+<p>What the code shows. The reverted state is exactly what <code>_restore_landing_writes</code> (<code>reckon/crew/promotion_scope.py:1672</code>) leaves when it runs while HEAD still resolves to the commit before the landing. Its <code>git restore --source=HEAD --staged --worktree</code> (line 1700) returns a tracked path to that commit's content in both the index and the working tree. For a path the landing created, that restore fails, and <code>_restore_one_landing_write</code> finds no <code>HEAD:&lt;path&gt;</code> (line 1734), drops the index entry (line 1737) and unlinks the file (line 1741). Run after HEAD carries the landing commit, the same calls change nothing. So either a rollback read a HEAD that did not yet carry the commit that then landed, or another actor produced the same state. Three candidates, none confirmed:</p>
+<ul>
+<li>reckon's own rollback running against the pre-landing HEAD. It is reached from a refused stage or commit in <code>_commit_landing_writes</code> (lines 1953 and 1980), from a refused review-record store in <code>reckon/crew/promotion.py:1334</code>, and from a refused release in <code>reckon/crew/promotion_release.py:615</code> and <code>:646</code>. One way to reach it is a second promotion of the same run racing the first.</li>
+<li>A peer's git command acting on an index it read before the landing. <code>git pull</code> reads the index and HEAD before it fetches, and when HEAD has moved by the time the fetch returns it tries to fast-forward the working tree from the HEAD it started on ("fetch updated the current branch head").</li>
+<li>Another path, in reckon or outside it, that restores files from a snapshot rather than from HEAD.</li>
+</ul>
+<p><strong>Deliverable.</strong> A read-only investigation that writes <code>docs/research/what-turned-a-landing-back.html</code> and the script that reproduces its finding, <code>scripts/reproduce_landing_reversion.py</code>. It reads these sources: nova's HEAD reflog and the stamps on its <code>.git</code> files; the run directory of <code>r-20261018T171142922335-review-of-census-proposal-coverage-f7ed7e9d8ef6</code>; the logs of the producer, watcher and admission services on <code>98dci4-srv-1006</code> for 19:23 to 19:25; the nova session's own record of its pull and merge, which that session offered; and the promotion code above. From them it names the process and the call, with file and line, that changed nova's index and working tree after <code>2321fba57</code> landed. If the records cannot separate the candidates, it says which remain and names the record that would have separated them; that record is an input to §2.</p>
+<p>It changes no product code.</p>
+<p><strong>Write paths.</strong> <code>docs/research/what-turned-a-landing-back.html</code> and <code>scripts/reproduce_landing_reversion.py</code>, both new, and a timeline figure under <code>docs/figures/what-turned-a-landing-back</code>.</p>
+<p><strong>Done when</strong> all three of these hold:</p>
+<ul>
+<li>The document gives a timeline of every change to HEAD, the index and the working tree at the four paths in nova between 19:23:40 and 19:37:06, each change with the record it was read from. It names the actor and the call, with file and line, that left the reverted state, or names the candidates still standing and the record that would separate them.</li>
+<li>The script reproduces the named mechanism, or the leading candidate, in a repository it creates under a temporary directory. With the interleaving, it ends with HEAD carrying the landing, the tracked path staged back to its pre-landing content, and the created paths staged as deleted and absent from disk. Without the interleaving, the same script ends with all four paths equal in HEAD, the index and the working tree. That second run is the negative control. The document shows both outputs and the command that produced them.</li>
+<li>No file outside the write paths changes.</li>
+</ul>
+
+    <h2 id="s2">§2 — A landing checks what it left at its paths and records every rollback</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> Whatever §1 finds, nothing in reckon looked at nova's checkout after this landing, and no record says whether a rollback ran. A rollback's per-path report travels only on the exception <code>_landing_refusal</code> raises (<code>reckon/crew/promotion_scope.py</code>, <code>LANDING_ROLLBACK_ATTRIBUTE</code>), and the receipt it feeds is printed once to whoever ran the promotion. The ledger cannot hold it either, because the ledger row is one of the writes a rollback takes back. So the landing must check its own result and write what it did where it survives.</p>
+<p><strong>Deliverable.</strong> Two changes to the landing commits reckon makes in a shared checkout: <code>_commit_landing_writes</code> (<code>reckon/crew/promotion_scope.py:1916</code>) and the release-outcome commit in <code>reckon/crew/promotion_release.py</code> (the commit near line 632).</p>
+<ul>
+<li><strong>A check after every landing commit.</strong> Once the commit returns success, read each written path's blob in HEAD, in the index and in the working tree, once. Every path that differs is reported: the landing result carries <code>landing_check</code> with <code>ok</code> and the mismatched paths, each with its three blob ids. The promotion's receipt carries that field, and the promotion prints the mismatched paths on stderr. A mismatch does not roll anything back and does not change the exit status, because the commit has landed and a re-promotion would duplicate it.</li>
+<li><strong>A record of every refusal and rollback.</strong> Every refused landing writes <code>landing.json</code> in the run's directory (<code>run_dir(run_id)</code>), one entry per attempt, appended rather than overwritten. An entry holds the attempt's time, the step that refused (stage, commit or review-record store), git's message, the HEAD each rollback read before restoring, and the rollback's per-path report. A successful landing appends its commit, the HEAD before it, and its <code>landing_check</code>. The write is best-effort: a run directory that cannot be written is reported on the receipt, and it does not replace the landing's own outcome.</li>
+</ul>
+<p>Nothing else changes: the rollback still restores what it restores today, until §3.</p>
+<p><strong>Write paths.</strong> <code>reckon/crew/promotion_scope.py</code>, <code>reckon/crew/promotion_release.py</code>, and <code>tests/test_a_landing_checks_what_it_left.py</code>, which is new.</p>
+<p><strong>Negative control.</strong> At the base revision, the new test's two mismatch and record cases fail: no <code>landing_check</code> is reported, and no <code>landing.json</code> is written.</p>
+<p><strong>Done when</strong> all four of these hold:</p>
+<ul>
+<li>A test lands writes in a repository it creates under a temporary directory, with a commit wrapper that changes one written path in the working tree after git returns. The landing result reports <code>landing_check.ok</code> false and names exactly that path with its three blob ids. A clean landing in the same test reports <code>ok</code> true.</li>
+<li>A test makes the commit refuse, by holding <code>.git/index.lock</code>, and asserts that <code>landing.json</code> in a temporary run directory holds one entry naming the commit step, git's message, the HEAD the rollback read, and the per-path report. A second refused attempt appends a second entry and leaves the first intact.</li>
+<li>The negative control is shown: the new test file, run at the base revision with the same command, reports those cases as FAILED by id in a log under the run directory.</li>
+<li><code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q -rA</code> over the new test file, <code>tests/test_failed_landing_leaves_nothing_behind.py</code>, <code>tests/test_rollback_asks_head.py</code>, <code>tests/test_promotion_release.py</code> and <code>tests/test_a_release_never_folds_run_files_into_the_aggregate.py</code> adds no failure against the base. <code>ruff check</code> and <code>ruff format --check</code> report no new finding on the changed files.</li>
+</ul>
+
+    <h2 id="s3">§3 — The path §1 names can no longer leave a written path behind HEAD</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
+<p><strong>Why.</strong> This is the fix at source nova's lead asked for. It is deferred until §1 names the mechanism, because the three candidates call for different fixes.</p>
+<ul>
+<li>If reckon's rollback ran against the pre-landing HEAD, the rollback captures the HEAD the landing started on before it stages anything. It restores only while HEAD still resolves to that commit. When HEAD carries the landing commit, it restores nothing and reports the landing as committed.</li>
+<li>If a peer's git command rewrote the index and working tree, reckon cannot stop that command. Then the fix is what reckon owns: §2's check sees the result, and the shared-checkout guidance names the command and the safe form.</li>
+<li>If another reckon path restores from a snapshot, that path gets the same guard as the first case.</li>
+</ul>
+<p>The done-when, write paths and negative control are written when §1 lands, and the section is then reviewed before it is built.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-alnrtc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-landing-never-reverts-the-checkout" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Find what turned the landing back, and check and record every landing</h4>
+    <div class="r-fu-body"><p>Filed at nova's lead's request after a promotion's landing was left staged in reverse in nova's checkout. §1 and §2 are independent and can run together; §3 waits on §1.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-landing-never-reverts-the-checkout</pre>
+    </article>
+</section>
+
+</main>
+</body>
+</html>
