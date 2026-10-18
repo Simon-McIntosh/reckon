@@ -2962,7 +2962,13 @@ def _rasterise_svg(source: Path) -> bytes:
     else:
         width = height = THUMB_MAX_EDGE
     svg_text = source.read_text(encoding="utf-8", errors="replace")
-    drawn = resvg_py.svg_to_bytes(svg_string=svg_text, width=width, height=height)
+    # resvg rejects an SVG whose width/height carry a unit it cannot resolve
+    # without a dpi, and matplotlib writes its canvas in points, so without one
+    # the parse fails and the route falls back to serving the whole vector. 96
+    # is the CSS reference resolution, the same one the pt size assumes.
+    drawn = resvg_py.svg_to_bytes(
+        svg_string=svg_text, width=width, height=height, dpi=96
+    )
 
     from PIL import Image
 

@@ -47,6 +47,22 @@ def _dense_svg(width: int, height: int, shapes: int = 3000) -> str:
     )
 
 
+def _point_sized_svg(width_pt: int, height_pt: int) -> str:
+    """An SVG whose width and height name a physical unit, as matplotlib writes.
+
+    The viewBox carries the same numbers, so a rasteriser that cannot resolve
+    the points unit — and so cannot size the drawing — is the only reason this
+    figure would fail to rasterise.
+    """
+
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width_pt}pt" '
+        f'height="{height_pt}pt" viewBox="0 0 {width_pt} {height_pt}">'
+        '<rect x="10" y="10" width="900" height="800" fill="#4477aa"/>'
+        "</svg>"
+    )
+
+
 @contextmanager
 def _served():
     server = serve.ThreadingHTTPServer(("127.0.0.1", 0), serve.Handler)
@@ -79,6 +95,7 @@ class _Project:
         self.plot_svg = docs_dir / "figures" / "demo" / "plot.svg"
         self.tall_svg = docs_dir / "figures" / "demo" / "tall.svg"
         self.broken_svg = docs_dir / "figures" / "demo" / "broken.svg"
+        self.point_svg = docs_dir / "figures" / "demo" / "point.svg"
 
     def thumb_pngs(self) -> list[Path]:
         thumbs = self.config_home / "cache" / "thumbs"
@@ -97,6 +114,7 @@ def project(tmp_path, monkeypatch) -> _Project:
 
     (figures_dir / "plot.svg").write_text(_dense_svg(640, 480))
     (figures_dir / "tall.svg").write_text(_dense_svg(300, 900))
+    (figures_dir / "point.svg").write_text(_point_sized_svg(1008, 864))
     # A vector the rasteriser cannot parse: the extension promises an SVG, the
     # bytes do not deliver one.
     (figures_dir / "broken.svg").write_text("not an svg at all\n")
@@ -162,6 +180,25 @@ def test_a_tall_svg_is_bounded_by_its_long_edge(project):
     with Image.open(io.BytesIO(body)) as thumbnail:
         assert thumbnail.size == (67, 200), thumbnail.size
         assert max(thumbnail.size) <= serve.THUMB_MAX_EDGE
+
+
+def test_a_point_sized_svg_is_rasterised_rather_than_served_whole(project):
+    """A source authored in points, as matplotlib writes one, still rasterises.
+
+    The rasteriser is given a dpi, so the points unit in the source's width and
+    height resolves; without it the parse fails on the invalid size and the
+    route falls back to serving the whole vector, which the content type shows.
+    """
+
+    source_bytes = project.point_svg.read_bytes()
+    with _served() as port:
+        status, headers, body = _get(port, f"/_thumb/{_PROJECT}/figures/demo/point.svg")
+
+    assert status == 200
+    assert headers["Content-Type"] == "image/png"
+    assert body != source_bytes
+    with Image.open(io.BytesIO(body)) as thumbnail:
+        assert max(thumbnail.size) <= serve.THUMB_MAX_EDGE, thumbnail.size
 
 
 def test_a_second_request_reuses_the_cache_without_rendering_again(
