@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="measure-a-watch-producer-poll">
+  <meta name="plan-title" content="A watch producer sweeps the whole fleet every second">
+  <meta name="plan-summary" content="One producer poll lists every project's live pointers, stat-walks run directories and calls git on a 1 s beat whether or not anything moved">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-node-stays-in-service">
+  <meta name="plan-verifies" content="reckon:the-fleet-node-stays-in-service#s7">
+  <meta name="plan-recorded-at" content="2026-10-18">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,fleet">
+  <title>A watch producer sweeps the whole fleet every second — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="measure-a-watch-producer-poll" data-reckon="landed" data-when="2026-10-18">
+  <h2>A watch producer sweeps the whole fleet every second</h2>
+  <p>The poll is <code>watch_ticker</code> in <code>reckon/crew/recovery_watch.py</code>. Each cycle does five things whether or not anything has moved:</p>
+  <ul>
+    <li>It lists <code>live/</code> for every project before filtering (<code>runs.py:705</code>, <code>runs.py:720</code>).</li>
+    <li>It reads the handover and lift documents.</li>
+    <li>It re-takes liveness for every live pointer, with a signal-0 probe and a <code>/proc</code> descendant walk (<code>recovery_watch.py:1050</code>).</li>
+    <li>It parses run stream files for metering and head fingerprints.</li>
+    <li>It calls git through the worker shim for its sweeps.</li>
+  </ul>
+  <p>The cycle period starts at 1.0 s and doubles to a 30 s cap only while the project lists no live pointer. The ledger reader is lazy, firing only when a run departs, so a project's recorded-run count is not a per-cycle cost.</p>
+  <p>The figures come from two 32 s windows on 98dci4-clu-2002 at revision <code>517c1d323</code>. A producer instance was run with <code>strace -f -e trace=%file,getdents64</code> and profiled with <code>py-spy record --rate 100 -d 20</code>. The worker's namespace could not ptrace the live producers (<code>EPERM</code>), so it profiled instances of the same code against an isolated crew home that held a copy of the fleet's 48 live pointers. One populated cycle costs about 1,880 <code>openat</code>, 1,575 <code>stat</code>, 1,396 <code>newfstatat</code>, 618 <code>lstat</code> and 146 <code>getdents64</code> calls. It also makes 1.25 calls to the git shim. Each shim call spawns the shim, <code>dirname</code> and a Python process, and the window shows about 2.9 real <code>git</code> executions per shim call. That is 114 to 115 <code>git</code> executions in 32 s. JSON decoding takes 31 to 35% of profile samples. The cost does not scale with the live pointer count: the 4-pointer and 11-pointer projects carry the same totals to within a few per cent.</p>
+  <p>The corrected git figure comes from the independent review. The report delivered 2.5 shim calls per cycle, which counted <code>dirname</code>'s execve lines as shim spawns. A recount of the delivered strace files gives 40 shim executions for power_convertor and 41 for imas-codex, and 114 and 115 executions of <code>/usr/bin/git</code>.</p>
+  <p>On the live node five producers run this cycle. That is roughly 9,000 file opens a second against GPFS. Git alone accounts for about 35 of the node's measured 80 process creations a second.</p>
+  <p>What the evidence does not show is why the live imas-codex producer averages 56% CPU against power_convertor's 8%. Neither scratch arm reproduced its live figure: power_convertor's scratch instance sampled 37% against 7.9% live. The two frames that best fit the live gap are <code>_terminal_lane_signal</code> (<code>recovery_memo.py:466</code>) and <code>_cached_stream_entry</code> (<code>_backends.py:2565</code>). Attributing it needs a profile of the live process taken from outside a worker sandbox.</p>
+  <p>The change that makes the poll change-driven is this: watch the crew home's <code>live/</code>, <code>runs/</code> and watch directories with inotify, or gate the cycle on one mtime stat of them. Run the listing, the run-directory walk and the git sweeps only when that fires, and keep only the per-run liveness probe on the fixed beat.</p>
+  <p>Raw artefacts are under <code>~/.config/reckon/crew/reports/reckon/the-fleet-node-stays-in-service/measure-a-watch-producer-poll/</code>: <code>report.md</code>, the two strace files, the py-spy raw profiles and the gate logs. The review scored the node 85 out of 120.</p>
+</article>
+</body>
+</html>
