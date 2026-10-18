@@ -1,0 +1,157 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T22:36:13.539Z",
+  "dispatched_at": "2026-10-18T22:23:32Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-shows-the-work-it-watches.html:24",
+      "id": "wiring-1",
+      "reason": "the plan declares ordering for \u00a755 and \u00a757 only in this machine-readable field, so omitting \u00a759 leaves the one ordering its own prose requires unenforceable.",
+      "text": "`plan-section-depends-on` has no entry for s59 or s60, yet \u00a759's Deliverable rewrites `reckon/crew_follow_commands.py` and `tests/test_a_foreign_producer_overrun_is_one_line.py`, the exact two paths \u00a755 creates, and \u00a759 states \"Build it after \u00a755 merges\"; with no edge the roadmap sees an open followup f-tmstwiw-059 beside f-tmstwiw-055 and may dispatch \u00a759 first, where its subject test file does not yet exist",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-shows-the-work-it-watches.html:502",
+      "id": "done_when-1",
+      "reason": "the section's whole measure is an absence, and the contract requires the check to be shown seeing something known present before a zero is reported.",
+      "text": "\u00a758's done-when records that `git grep -nw committed_head -- reckon tests` \"prints nothing\" and treats the empty result as proof of removal, but names no control showing that grep finds anything: at the node's base the name is present at reckon/checkout_trust.py:198, so a mistyped pattern or wrong path would produce the same \"prints nothing\" and close the section with the function still there",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-shows-the-work-it-watches.html:509",
+      "id": "single_goal-1",
+      "reason": "the plan concedes the cause is unidentified and lists three dispatch commits as candidates, so an unmeasured diagnosis lets the node close \u00a760 having proved only the half that may not address the actual trigger.",
+      "text": "\u00a760 states two deliverables, \"First, name the change that made dispatch from a reloaded process start failing, with evidence logged under the run directory, and rule out the other candidates\" and \"Then make a reloaded process find the fleet script at its own version\", while its done-when measures only the second (materialise a tree, resolve `_fleet_script()`, identity moves on a `skills/`-only commit), so a node can land the fix and pass its gate without ever naming the trigger the section itself says is unknown",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3a5bf6be54565af941afbac7cc5a4a525f49f03922c99b6c81bba371be92aca0",
+  "plan_slug": "the-monitor-shows-the-work-it-watches",
+  "plan_version": 354,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-18T22:40:03.597297+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-18T22:40:12.179834+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "",
+      "when": "2026-10-18T22:40:21.993476+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T22:40:12.179834+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T22:40:21.993476+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T22:40:03.597297+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-monitor-shows-the-work-it-watches.v354.json",
+  "review_run_id": "r-20261018T222234505017-plan-review-of-the-monitor-shows-the-work-it-watches",
+  "reviewed_blob_sha": "53341a3a2572244fd8fa890550df891e78113d8d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `committed_head` (reckon/checkout_trust.py:198), `_fleet_script` (reckon/crew/routing.py:2036), `materialize_committed_tree` (reckon/checkout_trust.py:353), `_producer_seat_host` (reckon/crew_follow_commands.py:2139), `skills/reckon-build/scripts/worktree_fleet.py`, commit 91bb3e608, 7da9ee286, 054c27156, fff27c183, da84fdfdc and run r-20261018T214318306394 all resolve; \u00a759's unmerged \u00a755 premise resolves as \u00a755's own deliverable, not a dangling anchor.",
+    "done_when": "a finding \u2014 \u00a758's done-when asserts an absence (`git grep` prints nothing) with no check that the same grep sees `committed_head` at the node's base, so a zero is unproven.",
+    "evidence_paths": "pass \u2014 each of \u00a758\u2013\u00a760 writes its gate and controls \"under the run directory\" with an `EXIT=` terminator, and every path cited (write paths, test files, commit ids, the review run) resolves.",
+    "naming": "pass \u2014 the new identifiers (`_fleet_script`, `_producer_seat_host`, the literal-stamp test) are named by mechanism, and no plan label, ticket number or changelog prose reaches a symbol, comment or filename.",
+    "reasoning": "pass \u2014 \u00a758's premise reproduces (`git grep -nw committed_head -- reckon tests` yields only the definition at reckon/checkout_trust.py:198, no caller), \u00a760's cited failure reproduces verbatim in ten live pointers' `review_dispatch.reason`, and \u00a760's proposed mechanism reaches the real code path: `_fleet_script`'s first candidate is `package_dir.parent / \"skills\"` (reckon/crew/routing.py:2051), exactly the `<tree>/skills` the failure message searched, so a reload tree carrying `skills/` at `<tree>/skills` resolves it.",
+    "single_goal": "a finding \u2014 \u00a760 carries two deliverables, a diagnosis (\"name the change that made dispatch from a reloaded process start failing\") and a code fix, and its done-when measures only the fix.",
+    "wiring": "a finding \u2014 \u00a759 and \u00a760 declare no `depends-on` edge, though \u00a759's own prose says \"Build it after \u00a755 merges\" and both rewrite files \u00a755 owns; \u00a759 in particular can be dispatched before the \u00a755 tree it depends on exists."
+  },
+  "section_digests": {
+    "_document": "1645a54b026e81c39ae3248cfaf44a2b4b908b13ff52b8314604bc506e9cdb87",
+    "s1": "52c4b79a6da0bc1e71b00748d6314e8a255bd5fa91b6acae30f6943e3c16cee5",
+    "s10": "ce58141a18e475a484415380e6ae181e597ad53c112e6cb22e1cfc60bb6b09fc",
+    "s11": "24bc7e718fa0dce82e99f82b1a80aa7f382204659e1a5fe08844c9bd4df9f21d",
+    "s12": "6b56be12afc45f4700363688128158c594eba3edb30de411ea7d4ca356b3335b",
+    "s13": "af506684f5bf69d74d9b3cdbdf5fa5888d1c3e2ec6b43d93fb08dc79c5821889",
+    "s14": "87e50c4f3edfdf578cc4501636727b40a183a8737e7f4673669428dbae23a0e5",
+    "s15": "09f7a8c8a774c6a9eebd4d5d69d79451363a282a7bf1bb77100479e9a7e98a02",
+    "s16": "867b2716d09b2503e28914fb9f8d9ef0902ca6517f1b150bda6a941a7b0be06b",
+    "s17": "141c743461dc46b9edeb2cbc1bdc6d82a711cf479391112777980c80b87d6e01",
+    "s18": "fce8a8c220cf6ee49aad89aea5514558f0aef180fc5f908cd07bf61114fbfbd2",
+    "s19": "cfcf6302efee0b3938220a54ba297408406e7500dc55f2e1a52535b18480b3fb",
+    "s2": "eeca9b70e096de79d92846f4178d8f31832962cb9c7c73d122ac2a9e06546f32",
+    "s20": "d85f627de7ebd9017fa3940ac745a4530bf4158cbe0d02a52677379592397aab",
+    "s21": "87fc24dd24da2dbf4d094ca09e8a791b4a346cc4b6d23073fce5682d4791d5ad",
+    "s22": "b76862cd2ea9a3ac095f2db0f0bf8ed1475a85d382ef62be3a3c21a7f6aa19b5",
+    "s23": "2c68818cff083fb95dc03b3dce7a6999800c0e2ec909807973c07ee3c7c2b63a",
+    "s24": "82fc0276f85695f792d5a131fc6ac6c80f05065cac46605e169da3ddfe73b94c",
+    "s25": "4ed98bf2d9d237fc80769d9520d20ef87865a01298e70c566624d8412f020937",
+    "s26": "028b6535672d666cedba73394169d0c89c7fc30e8981779a21a44fc7235146c9",
+    "s27": "0a82465f086cf4c094d9df870ce77a6deb5938cc9d9cd795215e386331eb7b3f",
+    "s28": "0d5323d3f532639060c3fd28ff891f32e6d16123aba07835cc62bddd4e3c0728",
+    "s29": "8fed01e83927e94fb6ab32a9ae9e24309a3c642cd869712c9750113597a568e2",
+    "s3": "a37e4f17cfa5318f2229db2eabe7a7b80adf7bb6fcb474e3d262981478abba8e",
+    "s30": "5c53f9ee297b70dbd7d31db64b629097dc1e9eaa005de3274cdea6e404cc53e0",
+    "s31": "dfeca997930029f003679001e8d72471eeb2ce58c34fda4b676364eeecbbb488",
+    "s32": "5be2d376bbff3e82775f79e6a1e1e41e9221c1be4c97da3393f2261891fd4733",
+    "s33": "5cc8196457834afa7ddb7efe2230186b4d8ba9353ddddde865c3ce1fbaf07b69",
+    "s34": "886436c28de863836d0e5607759780d04fdf2e73843d9327a5e6e6725c4639fe",
+    "s35": "a43845c7e722fb0e22b4657f07fbac9566fd067bc44c81c3060505cea083af64",
+    "s36": "53bc8596089640ec81d13fca5717a6418dc02868d418066659201f55065fd23f",
+    "s37": "ccc76f8910e97ac82700fd9a207e9c3b9f7a3e53d0211f7547ce94f54445380c",
+    "s38": "1047214aef49fbdf32e78725f3b9ff66b5e43985c73d934203165d23d8c9be93",
+    "s39": "58d61697cb45022b0bb5295b076b5d8b68f5076c66757a845d37fb3686bd8e44",
+    "s4": "fb6bae83cab6ff2e0a33bf64f8a01d35db72cb3113a73e4659d22617724629c9",
+    "s40": "1e4a52765812923b1f08e2323f35d3a32101faa3e19c5819b18c35de584738b8",
+    "s41": "1053d6272682020aa59c509ee9de83776202355bd1aaf88f280211fc84544c72",
+    "s42": "a05961399bc25a1c9ae94147710cf17adb66acb350efcdd336fa105776586c28",
+    "s43": "18e7d5acb8b9d87fd468553f2f6c9b991bd8065727c8511b4a0ad1aa6e87e2cb",
+    "s44": "027bd1a299b4599f8636018ebbe80d6312c96a7825ce950acfb168e3ce02ccf0",
+    "s45": "4e6c4b89c1b241d998c1d2d572a1d4a724232b874745c9320246c787bb0298a3",
+    "s46": "493f94ec982015d5dbf3e08db389457e90024c8e90b84bc1eb038ba280313e3e",
+    "s47": "efbdf84c810a733dfaa45fd6fed04da3aac44d6cc255a877998d765ddbdc43b8",
+    "s48": "431900fc866d5ec582cad79f91ddc4376fb33acaac0ddc152c08b7e48a9a763e",
+    "s49": "e4b53567549112ae207f10ef216caf6e4188262f0b1842022765cdb4db68af8a",
+    "s5": "349ee19ab8c71fbc5e62c4cfa2fd4c32d34af2e2f3e9ced2db0580bfd0e74815",
+    "s50": "1dda886bc4a281a37bf7d0c1671bd88c24c9a8110da0e1730842cf590a5fc5f2",
+    "s51": "792ceb6da6f9eef7ee454c7f9a75ac7be5ab07da354ef19297e421ab0eedaf7b",
+    "s52": "1e1631b3703d8803a0b1d01e4b830ff89ba1fe81f36c7093b8b1f938f232dfb4",
+    "s53": "d5a1f81226f1f12b4297704a9a28d873bc42609de47c9510caa9621de0fd1150",
+    "s54": "2644596d81963c84a3ccc369986cbfe2f6541a87a85ab73583dd4f27e2425fde",
+    "s55": "29eb8b1e688f7577935d7e14f406b65d0283f84dfb3eb9a49b350216f3694747",
+    "s56": "6618b0667fb9d78c7b32cdc6ae7f72347ca8b15bf571018d9010c0e3e848a0d1",
+    "s57": "7ddf2647e9bca714c43b7cdce484ce9d516a9bc8c53186e42ea588ae541010f6",
+    "s58": "0dc821d33ab65c4b21cb08ec2e027ef7cbbd814e9dd7fc880cc1b9029e48b1a6",
+    "s59": "ca4153929e57448fb14a43df50e9780c848e821a522c38cd44638e26cb3953a2",
+    "s6": "301b59df6e0fdccf6650e206628516f0e967dbf4e1b58a616e3d6999015f18cc",
+    "s60": "ee39eef002ce5973e024093096fd67279d383ed09f1ee46e437d3c39023a4074",
+    "s7": "aede0bed1a72c26f45a72032497a3a58f24022a1a5e8cd4f8f6e08aada09aab3",
+    "s8": "7b9b1e94e523da3024a014b4d3d8532114544257c92fcfe64893085d2166840f",
+    "s9": "0b51c578b5acaa51b45a2ede1479404603f3e7aa782a5da380b708f93e5e0b9d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T22:39:57.860016+00:00"
+}
