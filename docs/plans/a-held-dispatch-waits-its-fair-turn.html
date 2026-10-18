@@ -25,7 +25,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="149">
+<meta name="plan-version" content="150">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -544,6 +544,9 @@
 </div>
 <div class="r-comment" data-section="s28" data-id="c-s28-cause-stale-admit" data-who="reckon-build" data-when="2026-10-18T14:20:00Z">
     <div class="r-comment-body"><p>Cause found, 2026-10-18 14:20Z. The grant for a review's record directory was added by <code>f912c7ec5</code> (<em>fix(crew): admit isolated run review records</em>, 2026-10-17 06:11). The clive admit service, pid 2819595, has run since 2026-10-16 14:58 and never reloads, so it validates queued requests with the code from before that fix. Direct dispatch runs current code and accepts the same request. Two observations confirm it. The refusal text lacks the <em>review node … reviews run …</em> suffix that current code appends for a review. And the queued review <code>r-20261018T140449792154-review-of-velocity-answers-for-every-scope-34a04e5036d3</code>, run through current code's <code>_node_from_pointer</code> and <code>_reviewed_run_id_for_node</code>, resolves its reviewed run correctly. So the input that differs is the code version, not the fleet. §28's deliverable becomes that the admit service never validates with code older than the checkout it launches from, re-executing on a code-stamp change as the followers and the served process already do. The section text is revised before §28 is dispatched.</p></div>
+</div>
+<div class="r-comment" data-section="s25" data-id="c-s25-repro-1424" data-who="reckon-build" data-when="2026-10-18T14:26:00Z">
+    <div class="r-comment-body"><p><strong>A second instance, live.</strong> At 14:24:49Z session <code>f653840f</code> dispatched <code>r-20261018T142449227406-review-of-a-worker-cannot-remove-the-nodes-temporary-files-edeb83837f64</code> to the clive lane, and it was queued at position 1. At 14:25:41Z the same session dispatched <code>r-20261018T142541611892-node-tmp-seal-population-at-merge</code>, a test-role node, to the same lane, and it launched at once. Both pointers are in the live directory for the investigation to compare: what each dispatch read as the session's allowance, and whether the role or the node kind changes the decision.</p></div>
 </div>
 </section>
 </main>
