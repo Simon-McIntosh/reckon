@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="322">
+<meta name="plan-version" content="323">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1270,6 +1270,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s51" data-id="c-close-s51" data-who="reckon-build" data-when="2026-10-18T09:15:00Z">
     <div class="r-comment-body"><p>§51 landed. A pane's lift claim is keyed on the session host that spawned its followers, so one host following two sessions draws each lift transition once (merge <code>7ab6d95a5</code>). Zero added failures over 55 importer files. §52 sweeps ended hosts' claim directories. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s51">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s51" data-id="c-run-r-20261018T075720374567-a-pane-draws-a-lift-once-per-host" data-who="reckon-build" data-when="2026-10-18T08:40:41.158Z">
+    <div class="r-comment-body"><p>endpoint lift_claim_key now keys the pane&#x27;s lift claim on RECKON_FOLLOWER_OWNER when present and the session otherwise; one host following two sessions draws one grant row and one end row (test_a_pane_draws_a_lift_once_per_host.py, 4 passed).</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
