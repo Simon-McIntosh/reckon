@@ -70,7 +70,7 @@ from reckon.crew.node import (
     negative_control_is_none,
     parse_duration,
 )
-from reckon.crew.runs import _utc_now
+from reckon.crew.runs import _utc_now, runs_dir
 
 # ── Worker reports ──────────────────────────────────────────────────────────
 
@@ -1660,15 +1660,37 @@ def _review_record_status_findings(node: TaskNode | None) -> list[str]:
     its own record while it still holds its turn rather than leaving a
     coordinator to find it hours later.
 
-    The records read are :func:`_reviewer_store_records`' own, so this audit
-    and the severity and revision audits beside it judge one list of records
-    rather than three readings that could disagree.
+    Stored records retain the legacy status check. Run-directory deliveries
+    also receive the complete filing contract before they can be copied into
+    the store; those records are read from the reviewer's declared paths.
     """
     findings: list[str] = []
     for record_path, _run_id, record in _reviewer_store_records(node):
         refusal = review_module.review_status_refusal(record)
         if refusal:
             findings.append(f"review record {str(record_path)!r} {refusal}")
+    if node is None or not _node_is_a_reviewer(node):
+        return findings
+    for declared in node.write_paths or ():
+        path = Path(str(declared)).expanduser()
+        if (
+            path.parent.name != review_module.RUN_REVIEW_RECORD_DIRNAME
+            or path.parent.parent.parent != runs_dir()
+            or not path.is_file()
+        ):
+            continue
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            findings.append(f"review record {str(path)!r} could not be read: {exc}")
+            continue
+        if not isinstance(record, dict):
+            findings.append(f"review record {str(path)!r} is not an object")
+            continue
+        findings.extend(
+            f"review record {str(path)!r} {refusal}"
+            for refusal in review_module.review_record_refusals(record)
+        )
     return findings
 
 
