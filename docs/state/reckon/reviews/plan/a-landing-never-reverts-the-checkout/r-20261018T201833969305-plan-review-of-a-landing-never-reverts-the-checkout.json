@@ -1,0 +1,100 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T20:32:29.912Z",
+  "dispatched_at": "2026-10-18T20:19:40Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-never-reverts-the-checkout.html:78",
+      "id": "done_when-1",
+      "reason": "a node implementing this literally writes a test whose entry names the stage step while the done-when asserts the commit step, so the node's own gate fails and the plan must either change the method (force the commit failure another way, e.g. a failing commit hook) or change the assertion to expect the stage step.",
+      "text": "\u00a72's third done-when item says a test \"makes the commit refuse, by holding `.git/index.lock`\", then asserts `landing.json` holds \"one entry naming the commit step\". Holding `.git/index.lock` refuses the *stage* step, not the commit: `_commit_landing_writes` runs `git add -- <targets>` first (`reckon/crew/promotion_scope.py:1951`), and `git add` needs the index lock, so it fails with exit 128 and the refusal is `_landing_refusal(\"could not stage the landing writes \u2026\")` (`promotion_scope.py:1952-1960`) \u2014 a \"stage\" entry, never the \"commit\" entry the item requires. Verified in a scratch repo: with `.git/index.lock` present, `git add` exits 128 and `git commit --only` is never reached. The plan's own \u00a72 taxonomy names the three steps as \"(stage, commit or review-record store)\" (plan.html:69), and the plan's own cited suite says the same \u2014 `tests/test_a_failed_landing_says_whether_its_row_survived.py:81` states \"A peer's `.git/index.lock` refuses the staging\".",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-never-reverts-the-checkout.html:65",
+      "id": "anchors_resolve-1",
+      "reason": "the function name resolves and the mechanism it describes (\"HEAD against the index\") is correct, so a reader finds it by name; only a line number is stale.",
+      "text": "\u00a72 cites the second comparator as \"`_path_has_a_staged_change` (line 1743, HEAD against the index)\", but that function is defined at `reckon/crew/promotion_scope.py:1747`; line 1743 is a `return False` inside `_restore_one_landing_write`, not this function. Every other line citation in \u00a72 is exact (`_commit_landing_writes` 1916, `promotion.py` 751/1350, `promotion_gate.py` 960, `promotion_release.py` 569 and range 611\u2013650, `_path_differs_from_head` 1482).",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-never-reverts-the-checkout.html:89",
+      "id": "wiring-1",
+      "reason": "\u00a73 is deferred and its own text says its done-when, write paths and negative control are written when \u00a71 lands and the section is reviewed before it is built, so the missing \u00a72 edge can be declared at that point; declaring it now would only add a build-order edge the section does not yet need.",
+      "text": "\u00a73's second branch states its fix is \"what reckon owns: \u00a72's check sees the result\", relying on `landing_check` that \u00a72 introduces, yet `plan-section-depends-on` (plan.html:24) carries only `s3 -> s1`.",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "567ff8c224f7e4691f892aab7ac9e2141f510ad4b20c24dfa9df904d38b8506a",
+  "plan_slug": "a-landing-never-reverts-the-checkout",
+  "plan_version": 12,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-18T20:33:57.650904+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-18T20:34:09.758554+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "\u00a73 is deferred and its own text says its dependencies, done-when and write paths are written when \u00a71 lands; the \u00a72 edge is declared then if the chosen fix relies on it",
+      "when": "2026-10-18T20:34:22.408617+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T20:34:09.758554+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T20:33:57.650904+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a73 is deferred and its own text says its dependencies, done-when and write paths are written when \u00a71 lands; the \u00a72 edge is declared then if the chosen fix relies on it",
+      "when": "2026-10-18T20:34:22.408617+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-landing-never-reverts-the-checkout.v12.json",
+  "review_run_id": "r-20261018T201833969305-plan-review-of-a-landing-never-reverts-the-checkout",
+  "reviewed_blob_sha": "035fcef3339557dd85eb222aa4e1cf1145a330f2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the line citation for `_path_has_a_staged_change` does not resolve to that function.",
+    "done_when": "a finding \u2014 \u00a72's third done-when item cannot hold: it makes the commit refuse \"by holding .git/index.lock\" and then asserts the record names the commit step, but that lock refuses the stage step first.",
+    "evidence_paths": "pass \u2014 the negative-control log sits \"under the run directory\" and `landing.json` under `run_dir(run_id)`, both durable under `~/.config/reckon/crew/runs/`, not a scratchpad.",
+    "naming": "pass \u2014 the new names (`landing_check`, `landing_check.reversals`, `landing.json`) are mechanism names, carrying no plan label, stage name, ticket number or version tag.",
+    "reasoning": "pass \u2014 the stated cause (nothing checked nova's own checkout after the landing, so a revert 7s later went unseen) matches the cited evidence, the two checks (pre-stage and post-commit) together are capable of producing the done-when, and both run inside `_commit_landing_writes` with its callers named (`reckon/crew/promotion.py:751`, `:1350`, `reckon/crew/promotion_gate.py:960`).",
+    "single_goal": "pass \u2014 \u00a72 lands one deliverable (a landing checks its paths and records every rollback); the `_record_release_on_ledger` routing is the prerequisite that lets the checks be written once, and its own done-when items 5\u20136 gate that refactor directly.",
+    "wiring": "pass \u2014 \u00a72 declares no depends-on because f-alnrtc-002 makes it independent of \u00a71, and the earlier \u00a71\u2192\u00a72 edge has been removed; s3 depends on s1 as \u00a73 states, though \u00a73's text also leans on \u00a72's check (see finding, does not change the plan)."
+  },
+  "section_digests": {
+    "_document": "479ad99e4e7ec690c76f853bbaa2d01eaa1b8f0a44a8f6ce0f762821bdb2dd5c",
+    "s1": "ee9b8c30fd2d5b2dfb1dc7d01e8045c3f8d91294fd8bfd32b710f64690ad3daf",
+    "s2": "a7ca1725792546d7a756c35863eb62dfdc6f890d9805dd3718be5230c9167d69",
+    "s3": "5b86c755ce5f9a57c024e57d7a66b2f089c181482d11c34216c6170cb33a2fde"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T20:33:51.827517+00:00"
+}
