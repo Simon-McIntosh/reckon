@@ -19,7 +19,9 @@ def test_attempt_aggregation_reuses_and_invalidates(
     monkeypatch.setattr(runs, "live_dir", lambda: live)
     history: list[dict] = []
     version = [0]
-    monkeypatch.setattr(ledger, "index_stamp", lambda *_args: [version[0]])
+    monkeypatch.setattr(
+        ledger, "index_state_stamp", lambda *_args: {"version": version[0]}
+    )
     monkeypatch.setattr(
         ledger, "load", lambda *_args: ({"runs": list(history)}, version[0])
     )
@@ -85,7 +87,7 @@ def test_narrowed_count_reuses_indexed_query(tmp_path: Path, monkeypatch) -> Non
     live = tmp_path / "live"
     live.mkdir()
     monkeypatch.setattr(runs, "live_dir", lambda: live)
-    monkeypatch.setattr(ledger, "index_stamp", lambda *_args: [0])
+    monkeypatch.setattr(ledger, "index_state_stamp", lambda *_args: {"version": 0})
     calls = [0]
 
     def headers(*_args):
@@ -110,7 +112,7 @@ def test_newest_run_replacement_invalidates_cache(tmp_path: Path, monkeypatch) -
     live = tmp_path / "live"
     live.mkdir()
     monkeypatch.setattr(runs, "live_dir", lambda: live)
-    monkeypatch.setattr(ledger, "index_stamp", lambda *_args: [0])
+    monkeypatch.setattr(ledger, "index_state_stamp", lambda *_args: {"version": 0})
     row = {
         "project": "sample",
         "role": "implement",
