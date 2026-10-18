@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_follower_hands_off_to_host.py::test_a_reloaded_follower_adopts_launched_workers_before_it_hands_off"
+  ],
+  "added_failures_note": "total capped at 5: the reviewed run added 1 failing test(s) not retired by name (tests/test_follower_hands_off_to_host.py::test_a_reloaded_follower_adopts_launched_workers_before_it_hands_off)",
+  "base_log_revision": "de943e8e352f511fb44e437fe7d767a41c479918",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3276 crew_follow loop consumes _follow_watch_lines",
+    "reckon/crew_follow_commands.py:2369 _producer_code_events within _follow_watch_lines",
+    "reckon/cli.py:338 re-exports _follow_watch_lines"
+  ],
+  "completed_at": "2026-10-18T21:57:22.459Z",
+  "dispatched_at": "2026-10-18T21:45:10Z",
+  "findings": [
+    {
+      "file": "tests/test_a_foreign_producer_overrun_is_one_line.py",
+      "line": "107",
+      "severity": "follow-on",
+      "text": "follow-on: assert str(events[-1][\"current_stamp\"])[:8] in pane[0] compares the rendered pane line against a field of the same event object it renders, so the two sides move together and the assertion holds for any stamp value; it does not independently verify the current stamp reached the pane."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "2274",
+      "severity": "follow-on",
+      "text": "follow-on: pane_line is decided by the key-presence test `\"host\" not in advice` rather than by the foreign-seat fact, so a future host field added to the local branch of _producer_stale_event would silently collapse the local reloading pane line; a named predicate on _producer_seat_host would not."
+    }
+  ],
+  "head_log_revision": "b65d9cd8d67998e68b03648192c5031a1f73c524",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit from de943e8e to 7da9ee28; f6d8156a changes the pane decision, 1aa4615c/b65d9cd8 add the test assertions, d17ca9456/694dbda2/d17ca94 update the docstrings, and deb70bfc/7da9ee28 add the evidence fragment; three files, all inside scope.",
+    "done_when": "the done_when names tests/test_a_foreign_producer_overrun_is_one_line.py; the manifest records that run at focused-final.log as 2 passed EXIT=0, the negative control at negative-control.log as 1 failed EXIT=1, and the paired importer runs at base-importers-four.log and head-importers-four-retry.log.",
+    "goal": "the node goal is to make a foreign producer's reload overrun draw one pane line naming its host; reckon/crew_follow_commands.py:2273-2276 sets pane_line=False for the reloading event when the stale event carries a host, and the advice line at reckon/crew_follow_commands.py:2182-2186 names the seat's host, so a foreign overrun draws that single line.",
+    "manifest": "read; it records commits f6d8156a..7da9ee28, the 2-passed focused gate, the red negative control, ruff-clean changed files, and the paired importer comparison, all with named logs on disk.",
+    "write_paths": "the manifest declares reckon/crew_follow_commands.py, tests/test_a_foreign_producer_overrun_is_one_line.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-foreign-producer-overrun-is-one-line.html; every path the diff changes is one of those three."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows that restoring the two-line pane output for a foreign seat makes tests/test_a_foreign_producer_overrun_is_one_line.py:104 fail with len 2 != 1, so the one-line assertion guards the change, though the stamp assertion at :107 is self-referential.",
+    "evidence": "focused-final.log records 2 passed EXIT=0 and negative-control.log records the reverted two-line case failing EXIT=1, but the pair base-importers-four.log/head-importers-four-retry.log differs by one id attributed to a flaky surface rather than literally showing no added failure.",
+    "fit": "reckon/crew_follow_commands.py:2268-2276 follows the module's existing pane_line idiom and mechanism-named comments, though the key-presence test `\"host\" not in advice` couples the pane decision to the advice event's schema.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:2273-2276 draws the reloading line for a foreign seat off the pane by keying pane_line on the advice event's host field, leaving the host-naming advice line as the one line.",
+    "reuse": "the change adds no definition and consumes the existing reckon/crew/watch_unit.py:60 _seat_names_a_foreign_host owner through _producer_seat_host, so no capability is duplicated.",
+    "scope_discipline": "git diff de943e8e..7da9ee28 changes only the three declared paths reckon/crew_follow_commands.py, tests/test_a_foreign_producer_overrun_is_one_line.py and the fragment html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a foreign producer's reload overrun draw one pane line naming its host; reckon/crew_follow_commands.py:2273-2276 sets pane_line=False for the reloading event when the stale event carries a host, and the advice line at reckon/crew_follow_commands.py:2182-2186 names the seat's host, so a foreign overrun draws that single line.\nVERDICT done_when: the done_when names tests/test_a_foreign_producer_overrun_is_one_line.py; the manifest records that run at focused-final.log as 2 passed EXIT=0, the negative control at negative-control.log as 1 failed EXIT=1, and the paired importer runs at base-importers-four.log and head-importers-four-retry.log.\nVERDICT write_paths: the manifest declares reckon/crew_follow_commands.py, tests/test_a_foreign_producer_overrun_is_one_line.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-foreign-producer-overrun-is-one-line.html; every path the diff changes is one of those three.\nVERDICT manifest: read; it records commits f6d8156a..7da9ee28, the 2-passed focused gate, the red negative control, ruff-clean changed files, and the paired importer comparison, all with named logs on disk.\nVERDICT diff: read commit by commit from de943e8e to 7da9ee28; f6d8156a changes the pane decision, 1aa4615c/b65d9cd8 add the test assertions, d17ca9456/694dbda2/d17ca94 update the docstrings, and deb70bfc/7da9ee28 add the evidence fragment; three files, all inside scope.\nCALL_SITES: reckon/crew_follow_commands.py:3276 crew_follow loop consumes _follow_watch_lines, reckon/crew_follow_commands.py:2369 _producer_code_events within _follow_watch_lines, reckon/cli.py:338 re-exports _follow_watch_lines\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:2273-2276 draws the reloading line for a foreign seat off the pane by keying pane_line on the advice event's host field, leaving the host-naming advice line as the one line.\nSCORE evidence: 17\nJUSTIFICATION evidence: focused-final.log records 2 passed EXIT=0 and negative-control.log records the reverted two-line case failing EXIT=1, but the pair base-importers-four.log/head-importers-four-retry.log differs by one id attributed to a flaky surface rather than literally showing no added failure.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: git diff de943e8e..7da9ee28 changes only the three declared paths reckon/crew_follow_commands.py, tests/test_a_foreign_producer_overrun_is_one_line.py and the fragment html.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log shows that restoring the two-line pane output for a foreign seat makes tests/test_a_foreign_producer_overrun_is_one_line.py:104 fail with len 2 != 1, so the one-line assertion guards the change, though the stamp assertion at :107 is self-referential.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew_follow_commands.py:2268-2276 follows the module's existing pane_line idiom and mechanism-named comments, though the key-presence test `\"host\" not in advice` couples the pane decision to the advice event's schema.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition and consumes the existing reckon/crew/watch_unit.py:60 _seat_names_a_foreign_host owner through _producer_seat_host, so no capability is duplicated.\nFINDING tests/test_a_foreign_producer_overrun_is_one_line.py:107 follow-on: assert str(events[-1][\"current_stamp\"])[:8] in pane[0] compares the rendered pane line against a field of the same event object it renders, so the two sides move together and the assertion holds for any stamp value; it does not independently verify the current stamp reached the pane.\nFINDING reckon/crew_follow_commands.py:2274 follow-on: pane_line is decided by the key-presence test `\"host\" not in advice` rather than by the foreign-seat fact, so a future host field added to the local branch of _producer_stale_event would silently collapse the local reloading pane line; a named predicate on _producer_seat_host would not.\nREVIEWED_BASE: de943e8e352f511fb44e437fe7d767a41c479918\nREVIEWED_HEAD: 7da9ee2861756bfbd8bc15482a17e4d279bd7499",
+  "review_run_id": "r-20261018T214318306394-review-of-a-foreign-producer-overrun-is-one-line-7da9ee286175",
+  "reviewed_base_sha": "de943e8e352f511fb44e437fe7d767a41c479918",
+  "reviewed_head_sha": "7da9ee2861756bfbd8bc15482a17e4d279bd7499",
+  "reviewed_run_id": "r-20261018T200318180119-a-foreign-producer-overrun-is-one-line",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T22:01:23.020381+00:00",
+  "total": 5
+}

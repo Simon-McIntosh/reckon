@@ -26,8 +26,8 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="351">
-<meta name="plan-modified" content="2026-10-18">
+<meta name="plan-version" content="352">
+<meta name="plan-modified" content="2026-10-19">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
 <body>
@@ -1375,6 +1375,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s54" data-id="c-run-r-20261018T153051096441-a-commit-without-code-moves-no-identity" data-who="reckon-build" data-when="2026-10-18T19:16:44Z">
     <div class="r-comment-body"><p>The code identity now names the HEAD:reckon tree id rather than the commit: source_code_identity reads it (new committed_reckon_tree), _FollowerReloader.poll compares it, and materialize_committed_tree extracts with git archive --format=tar --prefix=reckon/ &lt;tree&gt;, resolving an older commit identity to its reckon/ subtree; a commit outside reckon/ moves no identity, so no follower or producer reloads and no reload tree is extracted (6 passed). Two assertions in tests/test_stale_producer_warning_waits_for_its_reload.py pinned the identity to the commit sha and were superseded: each now reads git rev-parse HEAD:reckon from its own temporary repository, keeping its subject, and the registration case is renamed because "commit" no longer names what it holds. The 76-file importer population reads 0 added failures between the merge base e211207b and the base merged with this work (base 3 failed / 614 passed, head 2 failed / 621 passed; both head failures are red at base too).</p></div>
+</div>
+<div class="r-comment" data-section="s55" data-id="c-run-r-20261018T214318306394-review-of-a-foreign-producer-overrun-is-one-line-7da9ee286175" data-who="reckon-build" data-when="2026-10-18T21:57:22.459Z">
+    <div class="r-comment-body"><p>Independent review of r-20261018T200318180119-a-foreign-producer-overrun-is-one-line stored two parsed records at reviewed_base_sha de943e8e352f511fb44e437fe7d767a41c479918 and reviewed_head_sha 7da9ee2861756bfbd8bc15482a17e4d279bd7499, scoring goal_fidelity 19, evidence 17, scope_discipline 17, durability 18, fit 17, reuse 20, with added_failure_count 1 derived from the reviewed run&#x27;s own gate logs and two follow-on findings.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
