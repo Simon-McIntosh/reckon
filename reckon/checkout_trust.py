@@ -211,15 +211,39 @@ def committed_head(root: Path) -> str | None:
     return commit if result.returncode == 0 and len(commit) == 40 else None
 
 
+def committed_reckon_tree(root: Path) -> str | None:
+    """Read the id of the ``reckon/`` tree at the source checkout's HEAD.
+
+    A process's code identity names the content of the package, not the commit
+    that carries it. A commit touching only files outside ``reckon/`` -- a plan
+    edit, a run-state write, a promotion record -- leaves this id unchanged, so
+    it moves no follower or producer and extracts no reload tree. Git names a
+    tree by its content, so two commits with the same package read alike
+    however many commits sit between them.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--verify", "HEAD:reckon"],
+            capture_output=True,
+            text=True,
+            timeout=IMPORT_PROBE_TIMEOUT,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    tree = result.stdout.strip()
+    return tree if result.returncode == 0 and len(tree) == 40 else None
+
+
 def source_code_identity(package_dir: Path, *, source_root: Path | None = None) -> str:
-    """Identify the shared source commit, or hash a package outside Git."""
+    """Identify the shared source package content, or hash a package outside Git."""
     if source_root is None:
         source_root = Path(
             os.environ.get("RECKON_FOLLOWER_SOURCE_ROOT", str(package_dir.parent))
         )
-    head = committed_head(source_root)
-    if head is not None:
-        return head
+    tree = committed_reckon_tree(source_root)
+    if tree is not None:
+        return tree
     from reckon.crew.obligation_snapshot import code_stamp
 
     return code_stamp(package_dir)
@@ -302,19 +326,61 @@ def refresh_materialized_tree_pin(descriptor: int, root: Path) -> None:
         _record_lease_node(root)
 
 
+def _reckon_subtree(root: Path, revision: str) -> str:
+    """Resolve a commit or a ``reckon/`` tree id to the subtree git can archive.
+
+    An identity names the ``reckon/`` tree object itself, whose contents are the
+    package's files without their ``reckon/`` directory. Archiving a commit
+    instead yields the whole repository tree, so a commit -- still carried by an
+    image armed before the identity named the package -- is resolved to its
+    ``reckon/`` subtree first. A revision that is already that subtree, or that
+    cannot be resolved, is returned unchanged.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--verify", f"{revision}:reckon"],
+            capture_output=True,
+            text=True,
+            timeout=IMPORT_PROBE_TIMEOUT,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return revision
+    tree = result.stdout.strip()
+    return tree if result.returncode == 0 and len(tree) == 40 else revision
+
+
 def materialize_committed_tree(
-    root: Path, commit: str, *, active_root: Path | None = None
+    root: Path, revision: str, *, active_root: Path | None = None
 ) -> tuple[Path, list[Path], list[Path], int]:
-    """Publish a package extracted from one commit and prune older images."""
+    """Publish a package extracted from one code identity and prune older images.
+
+    ``revision`` is the identity a follower or producer carries: the ``reckon/``
+    tree object at the source checkout's HEAD, or a commit that still carries
+    one from an image armed before the identity named the package. The archive
+    is written back under the ``reckon/`` prefix, because a tree object holds
+    the package's contents without that directory. The image directory is named
+    by the identity -- a tree id is the 40 hexadecimal digits
+    ``running_code_identity`` reads.
+    """
     source_key = hashlib.sha256(str(root.resolve()).encode()).hexdigest()[:16]
     cache = _committed_tree_cache() / source_key
     cache.mkdir(parents=True, exist_ok=True)
-    target = cache / commit
+    target = cache / revision
     if not (target / ".complete").is_file():
-        staging = Path(tempfile.mkdtemp(prefix=f".{commit}-", dir=cache))
+        staging = Path(tempfile.mkdtemp(prefix=f".{revision}-", dir=cache))
         try:
+            tree = _reckon_subtree(root, revision)
             archive = subprocess.run(
-                ["git", "-C", str(root), "archive", "--format=tar", commit, "reckon"],
+                [
+                    "git",
+                    "-C",
+                    str(root),
+                    "archive",
+                    "--format=tar",
+                    "--prefix=reckon/",
+                    tree,
+                ],
                 capture_output=True,
                 timeout=IMPORT_PROBE_TIMEOUT,
                 check=True,
@@ -322,7 +388,7 @@ def materialize_committed_tree(
             with tarfile.open(fileobj=io.BytesIO(archive.stdout)) as stream:
                 stream.extractall(staging, filter="data")
             if not (staging / "reckon" / "__init__.py").is_file():
-                raise RuntimeError(f"commit {commit} contains no reckon package")
+                raise RuntimeError(f"identity {revision} contains no reckon package")
             (staging / ".complete").touch()
             try:
                 os.rename(staging, target)
@@ -330,7 +396,7 @@ def materialize_committed_tree(
                 if not (target / ".complete").is_file():
                     raise
         except (OSError, subprocess.SubprocessError, tarfile.TarError) as exc:
-            raise RuntimeError(f"cannot unpack commit {commit}: {exc}") from exc
+            raise RuntimeError(f"cannot unpack identity {revision}: {exc}") from exc
         finally:
             if staging.exists():
                 shutil.rmtree(staging)

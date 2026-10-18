@@ -441,10 +441,17 @@ class _FollowerReloader:
             os.close(self.replacement_pin)
             self.replacement_pin = None
         committed_image = bool(re.fullmatch(r"[0-9a-f]{40}", self.code_stamp))
+        # The identity names the content of the reckon/ package at HEAD, not the
+        # commit that carries it: a commit changing no file under reckon/ moves
+        # nothing here, so no reload is owed and no reload tree is extracted for
+        # it. A tree id is a 40-digit git object, which is what a reload tree is
+        # named by; a content stamp is 64 and is handled by the dirty-tree path.
+        current_stamp = runs.follower_code_stamp()
         current_head = (
-            checkout_trust.committed_head(self.source_root) if committed_image else None
+            current_stamp
+            if committed_image and re.fullmatch(r"[0-9a-f]{40}", current_stamp)
+            else None
         )
-        current_stamp = current_head or runs.follower_code_stamp()
         if current_stamp == self.code_stamp:
             # No code has moved, so there is nothing to reload onto: a tree left
             # dirty without a stamp change is not a reload this arming owes.
