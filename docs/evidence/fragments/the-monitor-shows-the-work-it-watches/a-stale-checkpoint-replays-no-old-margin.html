@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-title" content="The Monitor Shows The Work It Watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s50">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-18">
+  <title>A stale follower checkpoint replays no old margin | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-stale-checkpoint-replays-no-old-margin">
+  <h2>A re-arm on a stale checkpoint resumes in baseline mode</h2>
+
+  <p><strong>What changed.</strong> A follower's durable checkpoint
+  (<code>reckon/crew/follow_checkpoint.py</code>) recorded the stream's identity
+  and the byte offset of its place, but never the moment that place was written,
+  so a re-arm whose checkpoint was days old replayed every matching row written
+  since — a burst of days-old transitions the pane never had on screen, which the
+  Monitor then suppressed for exceeding its output rate. The record now carries a
+  <code>written_at</code> stamp, and <code>written_moment()</code> resolves the
+  record's age from that stamp or, for a record written before the stamp existed,
+  from the checkpoint file's own modification time. In
+  <code>reckon/crew_follow_commands.py</code>, <code>_follow_resume_plan</code>
+  compares that age against the pane's history window — resolved through the same
+  <code>_follow_history_caps</code> reader the history replay uses, so the margin
+  and the history replay cannot disagree — and a checkpoint older than the window
+  returns <code>baseline</code> instead of <code>continue</code>. The re-arm then
+  reports each run's current state from live run state, suppressing through
+  <code>runs.read_delivered</code> (the delivered-state record a fresh arm already
+  reads) compared by <code>_follow_gap_rows</code>, and a run that has not moved
+  is not announced again. A margin inside the window is delivered as before.</p>
+
+  <p><strong>Measured (this node's own change).</strong> At head
+  <code>91397e2ce</code>, <code>tests/test_a_stale_checkpoint_replays_no_old_margin.py</code>
+  is 7 passed, <code>EXIT=0</code>. The four cases of the section: (a) a
+  five-day-old checkpoint at offset X with rows five days old must draw none of
+  them and no row for an unmoved run; (b) a ten-minute-old checkpoint draws each
+  margin row once; (c) a run that changed across a stale margin draws one row for
+  its current state; (d) with <code>ticker.history_window</code> at one hour a
+  two-hour-old checkpoint resumes as a baseline, and at one day the same
+  checkpoint delivers its margin. A companion case shows the staleness decision
+  calls <code>_follow_history_caps</code> and suppresses through
+  <code>runs.read_delivered</code>, and a unit case ages an unstamped record by
+  its file's mtime.</p>
+
+  <p><strong>Negative control, observed to fail.</strong> The declared mutation
+  removes the age check from <code>_follow_resume_plan</code>. With the shared
+  test set at that head, case (a)
+  (<code>test_a_stale_checkpoint_draws_none_of_its_margin_rows</code>) fails, as
+  do case (c), the one-hour arm of case (d) and the mechanism case: the run
+  reads 4 failed, 3 passed, <code>EXIT=1</code> against the head arm's 7 passed,
+  <code>EXIT=0</code>.</p>
+
+  <p><strong>No added failure against base.</strong> The test files importing
+  <code>reckon/crew_follow_commands.py</code> or
+  <code>reckon/crew/follow_checkpoint.py</code> run at base <code>56ab504fe</code>
+  as 426 passed, <code>EXIT=0</code>, and at head as 433 passed,
+  <code>EXIT=0</code> — zero added failures. <code>ruff check</code> and
+  <code>ruff format --check</code> add no findings on the shared changed Python
+  files (identical finding counts at base and head); the new gate file is clean
+  under both.</p>
+
+  <p><strong>One scope note.</strong> The added stamp changes the checkpoint
+  document's bytes, so <code>tests/test_writer_callers_second_wave.py</code> —
+  outside this node's declared write paths — was updated to fix the recorded
+  moment in its byte-for-byte golden and expect the stamp
+  (<code>FC_WRITE_MOMENT</code>). Without it that golden asserted the pre-stamp
+  shape and red at head.</p>
+
+  <p><strong>Scope retained, deliberately.</strong> The driving followup stays
+  open and no terminal status is set: a worker knows its node landed, not whether
+  the section closed. Verifying the merged result belongs to a separately
+  dispatched test node.</p>
+</section>
+</main>
+</body>
+</html>
