@@ -481,31 +481,32 @@ def _aggregate_rows(project: str, repository: Path) -> tuple[Mapping[str, Any], 
     return rows
 
 
-def _run_namings(project: str, repository: Path) -> dict[str, tuple[str, Path | None]]:
-    """Each run's node id and the tree it retained, from one index read.
+def _run_namings(
+    project: str, repository: Path
+) -> tuple[dict[str, tuple[str, Path | None]], list[dict[str, Any]]]:
+    """Each run's node id and retained tree, with the rows, from one fresh read.
 
     A per-run document can name an inspected tree by either route
     :func:`record_names_worktree` applies: the node id it carries, or the path
-    its retention carries. Both are taken here from the ledger's index of every
-    run — the reader the derivation's own region already holds, so one
-    derivation builds that index once rather than once per read. The retained
-    path is taken through the naming rule's own helper, so this screen cannot
-    drift from the rule it screens for. A run the index does not carry is left
-    unscreened, so a lagging index costs a read rather than dropping a duty.
+    its retention carries. Both are taken here from the ledger's own reader,
+    which stats every per-run document once and re-decodes one only when it has
+    moved since the published index. A screen that acted on the published index
+    unvalidated would answer from a record older than its file — a run that
+    starts retaining a tree after publication keeps its old row, and dropping
+    that run is the wrong answer this read exists to avoid. The retained path is
+    taken through the naming rule's own helper, so this screen cannot drift from
+    the rule it screens for.
+
+    The same rows are returned so the caller files its candidates from the read
+    the screen already made, rather than opening each screened-in document a
+    second time.
     """
 
     namings: dict[str, tuple[str, Path | None]] = {}
     try:
-        snapshot = ledger._last_good_index_data(
-            project, repository, headers_only=False, picker_only=False
-        )
-        rows = (
-            snapshot[0].get("runs", [])
-            if snapshot is not None
-            else ledger.runs(project, root=repository)
-        )
+        rows = ledger.runs(project, root=repository)
     except Exception:  # noqa: BLE001 — a screen must never fail the derivation
-        return {}
+        return {}, []
     for row in rows:
         run_id = str(row.get("run_id") or "")
         if not run_id:
@@ -515,7 +516,7 @@ def _run_namings(project: str, repository: Path) -> dict[str, tuple[str, Path | 
             str(node.get("id") or "") if isinstance(node, Mapping) else str(node or "")
         )
         namings[run_id] = (node_id, _retained_worktree(row))
-    return namings
+    return namings, rows
 
 
 def _may_name_a_tree(
@@ -542,6 +543,19 @@ def _may_name_a_tree(
         return True
     node_id, retained = naming
     return node_id in names or (retained is not None and retained in trees)
+
+
+def _row_may_name_a_tree(
+    row: Mapping[str, Any],
+    names: set[str],
+    trees: set[Path],
+    namings: Mapping[str, tuple[str, Path | None]],
+) -> bool:
+    """:func:`_may_name_a_tree` for a row, keyed by the run id it carries."""
+    run_id = str(row.get("run_id") or "")
+    return bool(run_id) and _may_name_a_tree(
+        Path(f"{run_id}.json"), names, trees, namings
+    )
 
 
 def _ledger_order_key(record: Mapping[str, Any]) -> tuple[str, str]:
@@ -634,52 +648,33 @@ def _held_worktree_records_read(
     }
     occupied = _live_worktrees(project)
     inspected = sorted(registered - occupied)
-    sources = ledger._run_files(project, repository)
-    rows = _aggregate_rows(project, repository)
-    known = {
-        str(row.get("run_id"))
-        for row in rows
-        if isinstance(row, Mapping) and row.get("run_id")
-    }
-    # A file whose row the aggregate already holds is never opened: the merged
-    # reader reads that run from its row, at the row's own position. Every other
-    # file carries a record no row does, and any of them may name an inspected
-    # tree, so each is read once for this call. A file whose run can name no
-    # inspected tree on either route the naming rule applies is left undecoded:
-    # the read is then bounded by the trees that are held rather than by the
-    # corpus.
     names = {worktree.name for worktree in inspected}
     trees = set(inspected)
-    namings = _run_namings(project, repository) if names else {}
-    records = [
-        record
-        for source in sources
-        if source.stem not in known
-        and _may_name_a_tree(source, names, trees, namings)
-        and (record := _run_file_record(source)) is not None
-    ]
-    # The reader that merges both sources re-sorts the merged list only when it
-    # appends a run the aggregate does not carry; without one the aggregate's own
-    # order is the answer, so the candidates keep the order they were gathered in.
-    merged_order = any(source.stem not in known for source in sources)
+    # One fresh read of the merged ledger supplies both the screen and the
+    # records: every per-run document is stat'ed once to detect a write, and one
+    # that has moved is re-decoded, so no candidate is ever older than its file.
+    namings, rows = _run_namings(project, repository) if names else ({}, [])
     index = WorktreeRecordIndex()
-    for record in rows:
-        index.add(record)
-    for record in records:
-        index.add(record)
+    for row in rows:
+        # A row that can name no inspected tree on either route the naming rule
+        # applies is left out of the index: the match is then bounded by the
+        # trees that are held rather than by the corpus, and the answer is
+        # unchanged because a row the screen excludes names none of them.
+        if _row_may_name_a_tree(row, names, trees, namings):
+            index.add(row)
     matched: dict[Path, Mapping[str, Any]] = {}
     unresolved: list[Path] = []
     for worktree in inspected:
-        record = _holding_record(worktree, index, merged_order=merged_order)
+        record = _holding_record(worktree, index, merged_order=False)
         if record is None:
             unresolved.append(worktree)
         else:
             matched[worktree] = record
     if unresolved:
-        # A tree neither source names is left to the whole-ledger scan, which
-        # matches on every recorded row and refuses a damaged one exactly where
-        # the whole-ledger reader always has.
-        for record in ledger.runs(project, root=repository):
+        # A tree the screened rows do not name is left to the whole-ledger scan,
+        # which matches on every recorded row and refuses a damaged one exactly
+        # where the whole-ledger reader always has.
+        for record in rows:
             for worktree in unresolved:
                 if _names_worktree(record, worktree):
                     matched[worktree] = record
