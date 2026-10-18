@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T133140302224-request-duration-and-bounded-log/logs/suite_head.log",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T133140302224-request-duration-and-bounded-log/logs/suite_base.log",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/serve.py:4679 constructs the served Handler",
+    "reckon/serve.py:3083 Handler.handle_one_request calls _bound_server_log",
+    "reckon/serve.py:4661 main bounds the log at start-up",
+    "reckon/serve.py:3074 Handler.log_message calls _write_access_line",
+    "reckon/service.py:127 log_path names the unit's append file"
+  ],
+  "completed_at": "2026-10-18T15:13:20.535Z",
+  "dispatched_at": "2026-10-18T14:56:19Z",
+  "failure_delta_basis": "baseline_suite completed=true exit=0 failure_ids=[]; after_suite completed=true exit=0 failure_ids=[]; each log ends EXIT=0",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-site-answers-fast-and-agrees/request-duration-and-bounded-log.html",
+      "line": "7",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment says the response carries the same figure as the logged line, but reckon/serve.py:3106 samples at end_headers while reckon/serve.py:3125 samples again after the request returns, so the two differ for any response with a body and the recorded claim overstates what the code does."
+    },
+    {
+      "file": "tests/test_request_duration_and_log_bound.py",
+      "line": "171",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion header_ms >= 0.0, and its twin at line 179, cannot fail because _TIMING_HEADER and _DURATION_ON_LINE at lines 27-28 admit only unsigned digit strings, so the two lines add coverage the change does not have."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T133140302224-request-duration-and-bounded-log/manifest.md",
+      "line": "7",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest records three commits and stops at d08f6e9 with after_suite at d8569aa, while the landed head is 10bf1675, so a promotion comparing the reviewed revision pair against the promoted commits sees a head and a figure path the manifest never names."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read 82f9dd658..10bf1675 commit by commit; c79bbca adds the timing and the copy-then-empty bound, d8569aa adds the shared lock and the O_APPEND access-line writer that closes the window the first review found, and d08f6e9 and 10bf1675 record the lock in the fragment and draw it.",
+    "done_when": "prompt.txt:96 and the plan section's done-when require a duration on the logged line and in the header for one request, one predecessor and a bounded current file past the bound, and a clean ruff and no-added-failure delta; tests/test_request_duration_and_log_bound.py:107-201 asserts each of those and the logs record the results.",
+    "goal": "prompt.txt:30 asks for a per-request duration on the access line and in a Server-Timing header plus a log bounded to one predecessor; reckon/serve.py:3078-3126 times and logs each request, reckon/serve.py:719-762 bounds the log, and all three parts are present at head 10bf1675.",
+    "manifest": "read manifest.md; it reports status complete, commits c79bbca/d8569aa/d08f6e9, a 3-passed focused gate, 70-passed base versus 73-passed head with zero added failures, a clean ruff delta, and both negative controls red at EXIT=1.",
+    "write_paths": "prompt.txt:70-75 declares reckon/serve.py, reckon/service.py, the test, the evidence fragment and the figure directory; the diff 82f9dd658..10bf1675 touches serve.py, the new test, the fragment and the figure directory, and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_request_duration_and_log_bound.py:156 fails if a line written during rotation is dropped and its negative control logs/negative_control_lock.log is red, but lines 171 and 179 are guaranteed by their own digit regexes and no assertion ties the header figure to the logged figure.",
+    "evidence": "the gate at tests/test_request_duration_and_log_bound.py:162-201 asserts the logged duration, the header, the predecessor and the bound, and logs/gate_head.log, logs/suite_base.log and logs/suite_head.log record 3 passed, 70 passed and 73 passed respectively.",
+    "fit": "the change extends the Handler at reckon/serve.py:3067 and the module's existing thin-wrapper idiom, and every new name at reckon/serve.py:640-762 states its mechanism with no plan, ticket or version label.",
+    "goal_fidelity": "every answered request carries its duration both on the logged line and in the Server-Timing header set at reckon/serve.py:3105, and reckon/serve.py:719-762 bounds the log to one predecessor as prompt.txt:30 requires.",
+    "reuse": "the search for a bounded-log owner found reckon/crew/watch_unit.py:795 _WatchLogStream, which rotates by renaming and repointing adopted descriptors; reckon/serve.py:719 is a parallel mechanism chosen because the unit's append descriptor cannot be repointed, so no owner is duplicated but none is extended either.",
+    "scope_discipline": "the diff 82f9dd658..10bf1675 changes only reckon/serve.py, tests/test_request_duration_and_log_bound.py, the evidence fragment and the figure directory, all inside the write paths declared at prompt.txt:70-75."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks for a per-request duration on the access line and in a Server-Timing header plus a log bounded to one predecessor; reckon/serve.py:3078-3126 times and logs each request, reckon/serve.py:719-762 bounds the log, and all three parts are present at head 10bf1675.\nVERDICT done_when: prompt.txt:96 and the plan section's done-when require a duration on the logged line and in the header for one request, one predecessor and a bounded current file past the bound, and a clean ruff and no-added-failure delta; tests/test_request_duration_and_log_bound.py:107-201 asserts each of those and the logs record the results.\nVERDICT write_paths: prompt.txt:70-75 declares reckon/serve.py, reckon/service.py, the test, the evidence fragment and the figure directory; the diff 82f9dd658..10bf1675 touches serve.py, the new test, the fragment and the figure directory, and nothing else.\nVERDICT manifest: read manifest.md; it reports status complete, commits c79bbca/d8569aa/d08f6e9, a 3-passed focused gate, 70-passed base versus 73-passed head with zero added failures, a clean ruff delta, and both negative controls red at EXIT=1.\nVERDICT diff: read 82f9dd658..10bf1675 commit by commit; c79bbca adds the timing and the copy-then-empty bound, d8569aa adds the shared lock and the O_APPEND access-line writer that closes the window the first review found, and d08f6e9 and 10bf1675 record the lock in the fragment and draw it.\nCALL_SITES: reckon/serve.py:4679 constructs the served Handler, reckon/serve.py:3083 Handler.handle_one_request calls _bound_server_log, reckon/serve.py:4661 main bounds the log at start-up, reckon/serve.py:3074 Handler.log_message calls _write_access_line, reckon/service.py:127 log_path names the unit's append file\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: every answered request carries its duration both on the logged line and in the Server-Timing header set at reckon/serve.py:3105, and reckon/serve.py:719-762 bounds the log to one predecessor as prompt.txt:30 requires.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate at tests/test_request_duration_and_log_bound.py:162-201 asserts the logged duration, the header, the predecessor and the bound, and logs/gate_head.log, logs/suite_base.log and logs/suite_head.log record 3 passed, 70 passed and 73 passed respectively.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 82f9dd658..10bf1675 changes only reckon/serve.py, tests/test_request_duration_and_log_bound.py, the evidence fragment and the figure directory, all inside the write paths declared at prompt.txt:70-75.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_request_duration_and_log_bound.py:156 fails if a line written during rotation is dropped and its negative control logs/negative_control_lock.log is red, but lines 171 and 179 are guaranteed by their own digit regexes and no assertion ties the header figure to the logged figure.\nSCORE fit: 18\nJUSTIFICATION fit: the change extends the Handler at reckon/serve.py:3067 and the module's existing thin-wrapper idiom, and every new name at reckon/serve.py:640-762 states its mechanism with no plan, ticket or version label.\nSCORE reuse: 15\nJUSTIFICATION reuse: the search for a bounded-log owner found reckon/crew/watch_unit.py:795 _WatchLogStream, which rotates by renaming and repointing adopted descriptors; reckon/serve.py:719 is a parallel mechanism chosen because the unit's append descriptor cannot be repointed, so no owner is duplicated but none is extended either.\nFINDING docs/evidence/fragments/the-site-answers-fast-and-agrees/request-duration-and-bounded-log.html:7 follow-on: the fragment says the response carries the same figure as the logged line, but reckon/serve.py:3106 samples at end_headers while reckon/serve.py:3125 samples again after the request returns, so the two differ for any response with a body and the recorded claim overstates what the code does.\nFINDING tests/test_request_duration_and_log_bound.py:171 follow-on: the assertion header_ms >= 0.0, and its twin at line 179, cannot fail because _TIMING_HEADER and _DURATION_ON_LINE at lines 27-28 admit only unsigned digit strings, so the two lines add coverage the change does not have.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T133140302224-request-duration-and-bounded-log/manifest.md:7 follow-on: the reviewed manifest records three commits and stops at d08f6e9 with after_suite at d8569aa, while the landed head is 10bf1675, so a promotion comparing the reviewed revision pair against the promoted commits sees a head and a figure path the manifest never names.",
+  "review_run_id": "r-20261018T145512689123-review-of-request-duration-and-bounded-log-10bf1675be92",
+  "reviewed_base_sha": "82f9dd658d89f625741211e8aace1f28b7e75dee",
+  "reviewed_head_sha": "10bf1675be92391b0a37305f850d469aa8c6efd2",
+  "reviewed_run_id": "r-20261018T133140302224-request-duration-and-bounded-log",
+  "reviewer": "review-of-request-duration-and-bounded-log-10bf1675b",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T15:10:41.041028+00:00",
+  "total": 105
+}
