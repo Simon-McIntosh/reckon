@@ -25,7 +25,7 @@
   <title>A Review Promotes Only Its Own Verdict | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -43,7 +43,7 @@
 </ul>
 <p>Plan reviews are unchanged: their record is a report keyed by the plan's blob, not a run's head. Earlier rounds keep being committed as the subject's rounds, as <code>_delivered_review_payloads_for_commit</code> does today. Only the round filed under the promoting run's id must be the round that run delivered.</p>
 <p>The guard fails closed, so measure first what currently passes only because it fails open. Run the gate tests below with the change and list in the manifest every test that relied on the legacy path counting as a delivery. Change such a test only where it encoded this defect, and give the reason for each.</p>
-<p><strong>Write paths.</strong> <code>reckon/crew/recovery_review_delivery.py</code>, <code>reckon/crew/recovery_review_dispatch.py</code>, <code>reckon/crew/recovery_review_acceptance.py</code>, and <code>tests/test_a_review_promotes_only_its_own_verdict.py</code>, which is new.</p>
+<p><strong>Write paths.</strong> <code>reckon/crew/recovery_review_delivery.py</code>, <code>reckon/crew/recovery_review_dispatch.py</code>, <code>reckon/crew/recovery_review_acceptance.py</code>, <code>tests/test_a_review_run_promotes_itself.py</code>, <code>tests/test_a_delivered_review_ends_its_turn.py</code>, and <code>tests/test_a_review_promotes_only_its_own_verdict.py</code>, which is new. The two existing tests are in scope because each stores its record only at the legacy path and declares only that path (lines 147 and 139), which is the defect this section removes.</p>
 <p><strong>Negative control.</strong> At the base revision, the new test's predecessor-round case, its three mismatch cases and its no-head case fail, because the base accepts the predecessor's record as delivered.</p>
 <p><strong>Done when</strong> all five of these hold:</p>
 <ul>
@@ -51,7 +51,7 @@
 <li>Three mismatches are each refused: a record at the H1 path whose <code>reviewed_head_sha</code> is H0; one whose <code>review_run_id</code> names another review run; and one whose modification time precedes the review's dispatch.</li>
 <li>A review run that declares only the legacy write path, beside a complete record there, is refused by <code>promote_review_run_itself</code> with a reason naming the missing head.</li>
 <li>The negative control is shown: the new test file, run at the base revision with the same command, reports the predecessor-round case, the three mismatch cases and the no-head case as FAILED by id, in a log under the run directory.</li>
-<li><code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q -rA</code> over the new test file, <code>tests/test_a_review_run_promotes_itself.py</code>, <code>tests/test_a_delivered_review_ends_its_turn.py</code> and <code>tests/test_a_run_review_cannot_remove_a_siblings_record.py</code> adds no failure against the base, beyond the tests the manifest names as encoding the defect. <code>ruff check</code> and <code>ruff format --check</code> report no new finding on the changed files.</li>
+<li><code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q -rA</code> over the new test file, <code>tests/test_a_review_run_promotes_itself.py</code>, <code>tests/test_a_delivered_review_ends_its_turn.py</code> and <code>tests/test_a_run_review_cannot_remove_a_siblings_record.py</code> adds no failure against the base. The two existing tests that stored their record only at the legacy path now store it at the head-keyed path of the head they dispatch, and the manifest names each change with its reason. <code>ruff check</code> and <code>ruff format --check</code> report no new finding on the changed files.</li>
 </ul>
 
     <h2 id="s2">§2 — Count the promoted review rows that carry another round's verdict</h2>
