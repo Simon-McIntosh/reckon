@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s41">
+  <meta name="plan-recorded-at" content="2026-10-18">
+  <meta name="plan-verdict" content="passed">
+  <title>A review row reads its run's head from git's files | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-review-row-reads-its-head-from-files-landing" data-node="a-review-row-reads-its-head-from-files" data-reckon="landed" data-when="2026-10-18">
+  <h2>A review row reads its run's head from git's files</h2>
+  <p><code>_reviewed_run_head</code> in <code>reckon/crew/recovery_review_subject.py</code> now reads the run worktree's head from git's files through a new <code>_worktree_head_revision</code> in <code>reckon/crew/recovery_memo.py</code>, instead of spawning <code>git rev-parse HEAD</code> once per review row. A detached worktree's <code>HEAD</code> file holds the revision itself; an attached checkout names a ref whose loose file holds it. A ref kept solely in <code>packed-refs</code>, an unreadable git directory, or anything else unresolved returns empty and the caller asks git as before, so no answer changes. The git-directory and ref resolution is factored into <code>_named_ref</code> and <code>_ref_roots</code>, which <code>_worktree_head_identity</code> also uses, keeping its answers unchanged.</p>
+  <p>Gate <code>tests/test_a_review_row_reads_its_head_from_files.py</code>: 4 passed, EXIT=0, at revision <code>4479f14b8</code>. The first case runs one <code>fleet_state</code> over 6 detached review rows and counts 0 <code>git rev-parse HEAD</code> calls through the module that owns the read, with a positive control proving the same spy sees that call when the files cannot answer. A second case shows every row reports the head <code>git rev-parse HEAD</code> reports; a third shows a ref held only in <code>packed-refs</code> still resolves, through git; a fourth shows a commit in one worktree moves that row's head on the next derivation and no other. Negative control: restoring the <code>git rev-parse HEAD</code> subprocess as the first action in <code>_reviewed_run_head</code> makes the first case count 6 calls over 6 rows (1 failed, EXIT=1), logged at <code>logs/negative-control.log</code> under the run directory. Tests importing the changed modules give the same 2 pass/fail ids at head and at base <code>18c55df30</code> (2 failed, 61 passed both arms, no added failure). <code>ruff check</code> and <code>ruff format --check</code> add no findings on the changed Python files.</p>
+</article>
+</body>
+</html>
