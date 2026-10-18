@@ -3,6 +3,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import signal
 import socket
 import sys
@@ -17,7 +18,7 @@ import click
 
 from reckon import checkout_trust
 from reckon._timestamps import parse_utc
-from reckon.crew.session_host import SETTLE_ENV, SETTLED_EXIT_CODE
+from reckon.crew.session_host import SETTLE_ENV, SETTLED_EXIT_CODE, owner_alive
 from reckon.crew_dispatch_commands import _crew_modules, _emit_crew_result, crew
 from reckon.env_duration import read_duration_override
 
@@ -1234,11 +1235,103 @@ def _lift_claimed(session: str | None, lift_id: str) -> bool:
 
 
 def _prune_lift_claims(session: str | None, lift_id: str) -> None:
-    """Remove every claim for one lift id, so the directory keeps no standing one."""
+    """Remove every claim for one lift id, so the directory keeps no standing one.
+
+    The pane's own claims are removed wherever this pass runs, and the pass also
+    sweeps the claim directories hosts that have ended left behind — see
+    :func:`_prune_abandoned_lift_claim_dirs` — so a host's directory does not
+    outlive the host for as long as a lift stays in force.
+    """
     directory = lift_claim_dir(session)
     for stale in directory.glob(f"{_lift_claim_token(lift_id)}__*"):
         with suppress(OSError):
             stale.unlink()
+    _prune_abandoned_lift_claim_dirs()
+
+
+# A claim directory keyed on a host cannot be checked for liveness once the key
+# stops naming the node the owner pair is meaningful on, so such a directory is
+# removed only once nothing has touched it for a week. A host that has ended on
+# this node leaves one directory per pane it served, and nothing else removes
+# them: the per-lift prune takes only the files inside a pane's own directory.
+LIFT_CLAIM_DIR_MAX_AGE_SECONDS = 7 * 24 * 60 * 60.0
+
+# A host key names the node its host ran on and then the owner pair, so a
+# directory reads ``host-<node>-<pid>-<start>`` -- the reading
+# :func:`lift_claim_key` writes. A node name may itself carry dashes, so the pid
+# and the start tick are taken from the right, where each is a run of digits and
+# nothing else is: the greedy node group takes every dash the node's own name
+# holds before the two trailing numeric runs. A node-less directory, from the
+# layout before the node entered the key, carries the owner pair alone.
+_HOST_CLAIM_DIR = re.compile(r"^host-(?P<node>.+)-(?P<pid>\d+)-(?P<start>\d+)$")
+_HOST_CLAIM_DIR_NODELESS = re.compile(r"^host-(?P<pid>\d+)-(?P<start>\d+)$")
+
+
+def _prune_abandoned_lift_claim_dirs(*, now: float | None = None) -> list[Path]:
+    """Remove the lift-claim directories of hosts that have ended on this node.
+
+    A pane's claims live under ``crew_home/watch/lifts`` in a directory keyed on
+    the host that spawned the followers, one directory per session-host lifetime.
+    Nothing else removes them: the per-lift prune empties the directory of the
+    pane that is running, and a host's directory is never that pane's. So a host
+    that ends leaves its directory standing for every pane it served.
+
+    Liveness is the host's pid *and* its kernel start tick, exactly as
+    :func:`reckon.crew.session_host.owner_alive` decides it, so a pid the node has
+    since reused does not keep a dead host's directory alive. Only a directory
+    whose key names this node is judged that way: a pid means nothing on any
+    other node, and a directory naming another node is never removed here. A
+    directory in the node-less layout that predates the node entering the key,
+    ``host-<pid>-<start>``, names no node at all, so its owner pair cannot be
+    placed on this node or another; it is removed only once nothing has touched
+    it for :data:`LIFT_CLAIM_DIR_MAX_AGE_SECONDS`. A host key this node cannot
+    read as either layout is left alone, since it may name another node's host.
+
+    Per-session directories carry no ``host-`` prefix, so they are skipped: a
+    hand-armed follower's claim is that pane's live state, not an abandoned
+    host's. The directory removed is returned, so a caller or a test can see
+    what the pass took.
+    """
+    from reckon.crew.runs import crew_home
+
+    root = crew_home() / "watch" / "lifts"
+    if not root.is_dir():
+        return []
+    node = _lift_claim_token(socket.gethostname())
+    moment = time.time() if now is None else float(now)
+    removed: list[Path] = []
+    for entry in sorted(root.iterdir()):
+        name = entry.name
+        if not name.startswith("host-") or not entry.is_dir():
+            continue
+        keyed = _HOST_CLAIM_DIR.match(name)
+        if keyed is None:
+            if _HOST_CLAIM_DIR_NODELESS.match(name) is None:
+                # A host key naming no node this node can read may name another
+                # node's host, whose pid means nothing here, so it is left alone
+                # rather than guessed at.
+                continue
+            # Node-less: no node to judge the owner pair on, so only the age
+            # bound decides it.
+            try:
+                age = moment - entry.stat().st_mtime
+            except OSError:
+                continue
+            if age < LIFT_CLAIM_DIR_MAX_AGE_SECONDS:
+                continue
+        elif keyed.group("node") != node:
+            # Another node's host: its pid means nothing here, so nothing on this
+            # node can decide that its host has ended.
+            continue
+        elif owner_alive(
+            {"pid": int(keyed.group("pid")), "start_time": keyed.group("start")}
+        ):
+            continue
+        removed.append(entry)
+    for entry in removed:
+        with suppress(OSError):
+            shutil.rmtree(entry)
+    return [entry for entry in removed if not entry.exists()]
 
 
 def take_lift_claim(
