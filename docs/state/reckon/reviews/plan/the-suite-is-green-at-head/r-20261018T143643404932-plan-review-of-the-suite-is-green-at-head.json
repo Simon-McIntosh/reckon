@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T14:50:29Z",
+  "dispatched_at": "2026-10-18T14:42:50Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:728",
+      "id": "reasoning-1",
+      "reason": "the repair needs to cover the preferred-candidate comparison in recovery_review_dispatch.py rather than presume the shared resolver is broken.",
+      "text": "The historical-name resolver already returns ('claude', 'opus') for both failing spellings, and _review_backend_excluded('claude-opus', config) is already true; _ordered_review_lanes admits that preferred alias because it compares only literal strings in the expanded exclusion set, and compose-review reaches it through _review_lane_candidates (reckon/crew/recovery_review_dispatch.py:1978). Directing the fix and a write path to the resolver can leave the actual bypass intact; identify whether any prior revision ever passed before requiring a change that \"stopped\" the names resolving.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:728",
+      "id": "done_when-1",
+      "reason": "add a local-backend negative control to make the stated any-name exclusion fail when either preferred route ignores the resolved pair.",
+      "text": "The three-parameter gate supplies owning_backend='claude-opus' only; with owning_backend empty, local_backend='claude-opus', and exclusion 'opus 5.5', _ordered_review_lanes still returns ['claude-opus', 'other-model'], so an owning-only repair can pass every declared test while the local preference still bypasses the exclusion.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e7c5909cc9b4f1d792c8b3caeaa624ab20efbe2f99b1185228f3bde753b0a9cf",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 399,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T143643404932-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "c9ed624e28f760b9d04554f29832b7de84ad8143",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a724's test and recovery module exist, its linked a-run-mark-is-read-in-its-own-crew-home plan resolves with the docs surface's .html suffix, and the cited read-deadline \u00a736 exists.",
+    "done_when": "a finding \u2014 \u00a724's gate at docs/plans/the-suite-is-green-at-head.html:728 covers an owning backend alias but never the equally preferred local backend alias.",
+    "evidence_paths": "pass \u2014 \u00a724 at docs/plans/the-suite-is-green-at-head.html:728 places its negative-control and gate logs under the persistent run directory.",
+    "naming": "pass \u2014 \u00a724 at docs/plans/the-suite-is-green-at-head.html:728 proposes no plan-labelled source symbol, path, or changelog comment.",
+    "reasoning": "a finding \u2014 \u00a724's resolver-directed repair at docs/plans/the-suite-is-green-at-head.html:728 misses the preferred-lane filter reached by the composed-review caller.",
+    "single_goal": "pass \u2014 \u00a724 at docs/plans/the-suite-is-green-at-head.html:726 has one routing-exclusion outcome, with history identification as diagnostic evidence for it.",
+    "wiring": "pass \u2014 the open f-tsigah-024 followup invokes implementable \u00a724, and \u00a724 declares no prerequisite that needs a depends-on or gate edge."
+  },
+  "section_digests": {
+    "_document": "622300f8f586502300e68516e3322e3d59ad7b443f443a58a0dbdfb633f9399f",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "f84dc4d4bef37307ff05d71bd4f7071e9208e789832e7cb00be82c37bcfde97e",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s17": "01fe3ab4eb2f9f616654a729cf8bef4dcf5b530d4d0c1be3bdfa73999d0ad263",
+    "s18": "15b626822483dd850c2006c1d4255b8386f22ef780237614005178a5b3c15d70",
+    "s19": "94946283d6a94fe284a3f00a5c60fbfdf125cd16b7f43e5e0abdb96b6305cf3b",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s20": "1eef46ce597367c7d533df3c2bbd6d180313a446b7ad270289b1ed3f26857a8c",
+    "s21": "1ed74dec466eb1b0eee98d9d29bba0029e9ecfc126fc5ee67c90c833f03724dd",
+    "s22": "c3a55e73e65fd250ba61d6c2e9966ce88a3f63d70531153347e865c64bbb779d",
+    "s23": "58c7c8fb57b77f817bf210d5bb02d2c42f9794894e0e82f24746c06eaae9b603",
+    "s24": "0f5be19e874a53bcbef3b5d59046aa7327929437f1b37e5d3385d4827ddd6468",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "072f7ace5c2d253a6d4972213a2093233d6f768bd4d1394f2b9eaf1471ff4119",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T14:55:51.725276+00:00"
+}
