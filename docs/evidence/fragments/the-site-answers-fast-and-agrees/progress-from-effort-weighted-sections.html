@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-site-answers-fast-and-agrees">
+  <meta name="plan-evidence-for" content="the-site-answers-fast-and-agrees">
+  <title>A plan's progress is its declared sections' effort-weighted done share | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A plan's progress is its declared sections' effort-weighted done share</h1>
+      <p class="lead">A plan's progress is now the done share of its declared sections weighted by each section's recorded effort, with a section whose hours no record states taking the mean of the hours present; where no section carries hours every section weighs the same, which is the count. The head-only reader that builds discovery rows derives from the declarations even when the document carries no section records, so a plan declared but not yet recorded serves one figure from the fast path and from the full parse.</p>
+    </header>
+
+    <section id="progress-from-effort-weighted-sections-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>derive_impl_with_source</code> in <code>reckon/_plan_html.py</code> is the one entry point every reader of a plan calls. It returns the figure and its source. Records that cover every declared done or implementable section answer with the effort-weighted figure (<code>computed</code>), unchanged.</li>
+        <li>A new <code>derive_impl_imputing_effort</code> weighs the declared sections when the records fall short of the declarations: each section weighs its record's hours, an unrecorded declared section takes the mean of the hours present, and the result answers under source <code>declarations</code>. With no hours present at all the declaration count answers under the same source, and a plan with no declarations keeps its authored <code>plan-impl</code> (<code>authored</code>).</li>
+        <li><code>_parse_meta_uncached</code> now derives from the head's <code>plan-section-declarations</code> meta even when the document carries no section records, via a new <code>_head_declarations</code>, instead of only through the full parse. A declared-but-unrecorded plan therefore reports the same figure and source from discovery rows as from the parse, the state the SPA disagreed on before.</li>
+        <li>Deferred declarations sit outside the denominator. The module docstrings state the rule by mechanism.</li>
+      </ul>
+    </section>
+
+    <section id="progress-from-effort-weighted-sections-the-gate">
+      <h2>The gate</h2>
+      <p><code>tests/test_progress_from_section_effort.py</code> parses temporary plans for all five cases: every section recorded with hours, a partial set of hours (s1 done at 2&nbsp;h, s2 declared with no record, s3 implementable at 4&nbsp;h &mdash; s2 imputed 3&nbsp;h, so the plan reads 2/9), no hours at all (the count), no declarations (the authored figure), and declarations with no records (both readers agree). <code>tests/test_impl_derives_from_declarations.py</code> is edited to the new rule, its partial-records case now asserting the imputed figure 2/9 where the declaration count alone would read 1/3.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>The five named cases, <code>tests/test_progress_from_section_effort.py</code></td><td>5 passed, <code>EXIT=0</code></td><td><code>r-20261018T132829727897-.../newfile-2.log</code></td></tr>
+          <tr><td>The four impl-rule test files plus the new one</td><td>27 passed, <code>EXIT=0</code></td><td><code>r-20261018T132829727897-.../impl-after-3.log</code></td></tr>
+          <tr><td>Readers consuming progress (doccheck, audit, mcp, project_state, roadmap, summary, discovery &mdash; sixteen enumerated files)</td><td>288 passed, <code>EXIT=0</code></td><td><code>r-20261018T132829727897-.../readers-after.log</code></td></tr>
+          <tr><td>Declared negative control, head reader gated on records as at base</td><td>2 failed, 3 passed, <code>EXIT=1</code></td><td><code>r-20261018T132829727897-.../negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>Logs live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T132829727897-progress-from-effort-weighted-sections/</code>. Every arm ran on the fleet allocation (job <code>1281970</code>, node <code>98dci4-clu-2002</code>) in the assigned worktree, importing <code>reckon._plan_html</code> from <code>.../progress-from-effort-weighted-sections/reckon/_plan_html.py</code>.</p>
+    </section>
+
+    <section id="progress-from-effort-weighted-sections-negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>make the head-metadata reader derive only when the document carries section records, as at base, so the declarations-without-records case fails</em>. Applied by removing the <code>_head_declarations</code> branch from <code>_parse_meta_uncached</code> so the fast path derives only inside the <code>_document_carries_records</code> guard. Two cases then fail and the rest pass, <code>EXIT=1</code>: <code>test_declarations_with_no_records_read_alike_in_both_readers</code> at its agreement assertion (<code>light["impl"]</code> reads the stale authored 0.08 against the parse's 2/3), and <code>test_no_hours_falls_back_to_the_count</code>, whose head arm likewise serves the authored figure. Reverted and the tree left clean.</p>
+    </section>
+
+    <section id="progress-from-effort-weighted-sections-commits">
+      <h2>Commits</h2>
+      <p><code>f3e2c497</code> &mdash; feat(plan-html): weight a plan's progress by effort, imputing missing hours. Adds <code>derive_impl_imputing_effort</code> and <code>_head_declarations</code>, routes both readers through <code>derive_impl_with_source</code>. Changes <code>reckon/_plan_html.py</code>, <code>tests/test_impl_derives_from_declarations.py</code>, <code>tests/test_progress_from_section_effort.py</code>.</p>
+    </section>
+  </main>
+</body>
+</html>

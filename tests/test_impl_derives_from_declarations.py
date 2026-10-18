@@ -2,12 +2,13 @@
 
 Three sources answer in order. Records covering every declaration derive the
 effort-weighted figure (``computed``). Records that do not cover the
-declarations fall back to the declaration count (``declarations``), so a plan
-with an implementable declaration never reads 1.0 while its records are
-partial. A plan with no declaration carries no derived figure, so the authored
-``plan-impl`` meta stands (``authored``). The audit reports the file's meta
-against the derived figure, so a reader of the file and a reader of the server
-agree once the next write lands.
+declarations are weighted over the declared sections, with the hours a record
+omits imputed by the mean of the ones present (``declarations``); when no hours
+are present at all the declaration count answers the same way. A plan with no
+declaration carries no derived figure, so the authored ``plan-impl`` meta
+stands (``authored``). The audit reports the file's meta against the derived
+figure, so a reader of the file and a reader of the server agree once the next
+write lands.
 """
 
 from __future__ import annotations
@@ -107,21 +108,24 @@ def test_records_covering_every_declaration_derive_the_effort_weighted_figure(
     assert parse_meta(path)["impl_source"] == "computed"
 
 
-def test_partial_records_derive_the_impl_by_count_from_the_declarations(
+def test_partial_records_impute_the_missing_hours_from_the_declarations(
     tmp_path: Path,
 ) -> None:
+    # s1 done at 2 h and s3 implementable at 4 h are recorded; s2 states no
+    # hours, so it takes their mean of 3 h. The declaration count alone would
+    # read 1/3; imputation reads 2 / (2+3+4).
     text = _plan_text(
-        declarations=PARTIAL_DECLARATIONS,
-        records=[("s1", 4, "done")],
+        declarations={"s1": "done", "s2": "implementable", "s3": "implementable"},
+        records=[("s1", 2, "done"), ("s3", 4, "implementable")],
         impl="1.0",
     )
     path = _write(tmp_path, "partial", text)
 
     state = read_state(text)
-    assert state["impl"] == pytest.approx(0.5)
+    assert state["impl"] == pytest.approx(2 / 9)
     assert state["impl_source"] == "declarations"
-    assert parse_plan(path)["impl"] == pytest.approx(0.5)
-    assert parse_meta(path)["impl"] == pytest.approx(0.5)
+    assert parse_plan(path)["impl"] == pytest.approx(2 / 9)
+    assert parse_meta(path)["impl"] == pytest.approx(2 / 9)
     assert parse_meta(path)["impl_source"] == "declarations"
     # The authored meta on disk is untouched by the parse — only the served
     # figure moves.
