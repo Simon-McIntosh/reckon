@@ -577,6 +577,10 @@ def store_review_refusals(record: Mapping[str, Any]) -> list[str]:
     refusals = []
     if not record.get("project"):
         refusals.append("missing project")
+    if not names_a_review_subject(record):
+        refusals.append(
+            "review record names neither a reviewed run nor a plan, so it has no subject"
+        )
     if not record.get("reviewed_run_id"):
         refusals.append("missing reviewed_run_id")
     if not carries_review_material(record):
@@ -2734,7 +2738,9 @@ def repair_run_review(
     if not preserved.exists():
         preserved.write_bytes(original)
     filed = store_review(body)
-    write_atomically(source, lambda handle: handle.write(rewritten), binary=True, fsync=False)
+    write_atomically(
+        source, lambda handle: handle.write(rewritten), binary=True, fsync=False
+    )
     return {
         "record": str(source),
         "as_delivered": str(preserved),

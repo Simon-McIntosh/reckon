@@ -108,6 +108,13 @@ def test_check_review_names_unfileable_fields_and_accepts_a_valid_record(
     assert filed[0].is_file()
 
 
+def test_store_refusal_matches_whitespace_only_reviewed_run_id() -> None:
+    body = _record(reviewed_run_id="   ")
+    assert any("no subject" in reason for reason in review.store_review_refusals(body))
+    with pytest.raises(ValueError, match="no subject"):
+        review.store_review(body)
+
+
 @pytest.mark.parametrize(
     "changed,field",
     [({"status": "complete"}, "status"), ({"reviewed_run_id": ""}, "reviewed_run_id")],
@@ -242,19 +249,35 @@ def test_subject_repair_fills_only_missing_identity_and_rejects_other_sets(
     )
 
 
-def test_complete_reports_a_refused_review_before_promotion(delivery: Path) -> None:
-    delivery.write_text(json.dumps(_record(status="complete")), encoding="utf-8")
+@pytest.mark.parametrize(
+    "change,reason",
+    [
+        ({"status": "complete"}, "status 'complete'"),
+        ({"reviewed_run_id": "   "}, "no subject"),
+    ],
+)
+def test_complete_reports_a_refused_review_before_promotion(
+    delivery: Path, change: dict, reason: str
+) -> None:
+    delivery.write_text(json.dumps(_record(**change)), encoding="utf-8")
     result = _invoke("complete", "--run", REVIEW_RUN, "--gate", "not-run")
     assert result.exit_code != 0, result.output
     receipt = json.loads(result.output)
     assert receipt["review_filed"] is False
-    assert "status 'complete'" in receipt["refused"][0]["reasons"][0]
+    assert reason in receipt["refused"][0]["reasons"][0]
 
 
+@pytest.mark.parametrize(
+    "change,reason",
+    [
+        ({"status": "complete"}, "status 'complete'"),
+        ({"reviewed_run_id": "   "}, "no subject"),
+    ],
+)
 def test_obligation_names_a_delivered_refusal_and_its_repair(
-    delivery: Path, monkeypatch: pytest.MonkeyPatch
+    delivery: Path, monkeypatch: pytest.MonkeyPatch, change: dict, reason: str
 ) -> None:
-    delivery.write_text(json.dumps(_record(status="complete")), encoding="utf-8")
+    delivery.write_text(json.dumps(_record(**change)), encoding="utf-8")
     monkeypatch.setattr(
         obligations_module.recovery, "_review_in_flight", lambda _pointer: REVIEW_RUN
     )
@@ -279,7 +302,7 @@ def test_obligation_names_a_delivered_refusal_and_its_repair(
         grace=900,
     )
     assert item["kind"] == "review-refused"
-    assert "status 'complete'" in item["reason"]
+    assert reason in item["reason"]
     assert "crew repair-review" in item["next_command"]
     assert "redispatch" not in item["next_command"]
     monkeypatch.setattr(
