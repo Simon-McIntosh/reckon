@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T12:17:57.922Z",
+  "dispatched_at": "2026-10-18T12:07:07Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-worker-cannot-write-your-home.html:1536",
+      "id": "reasoning-1",
+      "reason": "two sections give opposite contracts for the same path, so the plan must state in \u00a715 that it supersedes \u00a79's `/tmp`-writable guarantee (and \u00a79's now-false sentence should be corrected) or the builder of one contradicts the landed record of the other.",
+      "text": "\u00a715 seals the node's `/tmp` read-only, but \u00a79's landed deliverable (line 1512) states \"Writes elsewhere in `/tmp` are unchanged, so `mktemp -d /tmp/\u2026` still works\"; \u00a715 neither marks that guarantee superseded nor reconciles the two sections, so a reader cannot tell which contract the fence enforces",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-cannot-write-your-home.html:1700",
+      "id": "wiring-1",
+      "reason": "an open section carrying a dispatchable followup is hidden by a sentence that reads as current plan state, so the outcome line should name \u00a76 and \u00a715, or be scoped to the moment \u00a714 merged.",
+      "text": "the f-awcwyh-015 outcome states \"The plan's remaining open section is \u00a76\", but \u00a715 is declared `implementable` with an open followup, so a coordinator scanning the plan for remaining work is told only \u00a76 remains",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e6a22b604781b1eda3c4542c5fe8e25e82b4febbeb28d63f3c678d81f39c68db",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 185,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T120447724652-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "3162a083ff8e490416a21cfdc698c6729df20e9c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/_worker_fence.py`, `reckon/crew/dispatch_launch.py`, `worker_scratch_seal_root` (`reckon/_worker_fence.py:1110`), and the cited run id `r-20261018T113703973726-review-of-a-\u2026-d0ae1f516280` all resolve; the \u00a79 and \u00a710 cross-references resolve to real sections.",
+    "done_when": "pass \u2014 \u00a715's done-when names a measurable refusal (the outside file survives, the attempt is refused), a real negative control (\"drops the `/tmp` seal, and the outside file is then removed\"), a per-lane integration measure (claude, codex and local each reach their first turn), and a durable log location (under the run directory).",
+    "evidence_paths": "pass \u2014 \u00a715's gate log goes under the run directory and each arm ends in `EXIT=`, both durable paths a later reader can open.",
+    "naming": "pass \u2014 \u00a715's new test path `tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py` and its prose carry no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a715's mechanism (seal the node's `/tmp` read-only) reverses \u00a79's landed guarantee that writes elsewhere in `/tmp` are unchanged, and \u00a715 never records the supersession, so the plan asserts both that `/tmp` is writable and that it is read-only.",
+    "single_goal": "pass \u2014 \u00a715 carries one deliverable: seal the node's `/tmp` read-only around a fenced worker apart from its own run scratch and the launch's runtime paths.",
+    "wiring": "a finding \u2014 \u00a715 is wired to its followup f-awcwyh-016 (open, recommends `/reckon-build \u2026 \u00a715`), but the resolved followup f-awcwyh-015 still asserts \"The plan's remaining open section is \u00a76\", now false since \u00a715 is open and declared `implementable`."
+  },
+  "section_digests": {
+    "_document": "74d5411887b3e803f4edd7bb7e9107fb57a8290e40cd6ef99e37415aed9613a5",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "c5c7fe720643fd4e73b5f1c9fff30c26f8357f46808e3b91eb33b5271d3a19bc",
+    "s11": "f2f305292dacd47d88930479053d919c6bce05b3f863e60a502ce40a2b1c1239",
+    "s12": "bcbf84b314096bf944f58481d98177c11ed6732c763472dc6bc259bc0ad8f54e",
+    "s13": "274d2cd914af10830f75d7ac253c9a1833d25cf9ac0e37e28c0c48ba60b77628",
+    "s14": "fcefb6cd20b26029bf0d8c785373a493532289cca9f2b4b01a93bf7b4ef7c19a",
+    "s15": "1f04dc3eae45094b75bb0cf066ed72ace338178a623fa66b06870f99cd38b001",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T12:28:15.099420+00:00"
+}
