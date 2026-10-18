@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T195218281977-the-admit-service-runs-current-code/gate-repair-head-arm.log",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T195218281977-the-admit-service-runs-current-code/gate-base-arm.log",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2607"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-18T19:53:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "512",
+      "severity": "blocking",
+      "text": "blocking: _checkout_code_is_trusted computes root as Path(__file__).resolve().parent.parent, which is the reckon package directory, but moved_checkout_is_trustworthy expects the sys.path root that contains it; on a scratch repo with a tracked file modified and a module that fails to import, the package-dir call returned trusted=True while the repo-root call returned trusted=False, so the guard is always true and the loop will re-exec onto a dirty or unimportable checkout."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "525",
+      "severity": "follow-on",
+      "text": "follow-on: _reexec_into_current_code inserts the same package directory onto sys.path while its own docstring says it leads with the sys.path root that supplied this import, so the replacement resolves import reckon only through whatever the ambient sys.path already carries rather than from the intended root."
+    },
+    {
+      "file": "tests/test_the_admit_service_runs_current_code.py",
+      "line": "143",
+      "severity": "follow-on",
+      "text": "follow-on: the trust case substitutes _checkout_code_is_trusted with a lambda, so the added suite cannot fail on the broken trust function it is meant to guard."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read both commits against base 61dd0cd9; 0eb04cb53 adds the stamp guard after admit_once plus the helpers and two tests, and 58628a90f moves the comparison to the head of the pass before admit_once; three files changed, all inside the declared scope.",
+    "done_when": "the gate names tests/test_the_admit_service_runs_current_code.py; the manifest records the focused gate 2 passed EXIT=0 (gate-repair.log), the head arm 65 passed EXIT=0 (gate-repair-head-arm.log) and the base arm 63 passed EXIT=0 (gate-base-arm.log), and the negative control 1 failed 1 passed EXIT=1 (negative-control-repair.log).",
+    "goal": "the node goal is to make the admission loop re-execute on a trusted code-stamp change and fingerprint that stamp in its failure guard; reckon/crew/queue_admission.py:1047-1048 performs the comparison and the in-place re-execution at the head of every pass, but the \"trusted\" qualifier is not enforced (see the finding on line 512).",
+    "manifest": "read; manifest.md:5 reports complete, commits 0eb04cb53 and 58628a90f, and records the focused gate, the two suite arms with zero added failures, and the negative control, naming each log path.",
+    "write_paths": "the prompt scope grants reckon/crew/queue_admission.py, tests/test_the_admit_service_runs_current_code.py, docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/the-admit-service-runs-current-code.html and the sibling figures dir; git diff 61dd0cd9..58628a90f changes exactly the queue_admission module, the test and the fragment."
+  },
+  "justifications": {
+    "durability": "the ordering assertion at tests/test_the_admit_service_runs_current_code.py:196 genuinely reddens under the recorded negative control, but the real trust guard and the real _reexec_into_current_code are stubbed at :143-144, so the landed defect has no test that fails on it.",
+    "evidence": "the gate and negative control are recorded with EXIT= lines, but tests/test_the_admit_service_runs_current_code.py:143 stubs _checkout_code_is_trusted, so no recorded result exercises the trust guard the goal names.",
+    "fit": "the new helpers at reckon/crew/queue_admission.py:491-533 follow the module's leading-underscore helper idiom and add no plan label.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:1047 gates the re-execution on _checkout_code_is_trusted, but that helper at :512 always returns trusted so the goal's \"trusted code-stamp change\" is not implemented.",
+    "reuse": "the change delegates the stamp to reckon/crew/follower_registration.py:28 and the trust answer to reckon/checkout_trust.py:550, but re-writes the launcher/execve idiom already held at reckon/crew_follow_commands.py:553-600 rather than sharing it.",
+    "scope_discipline": "git diff 61dd0cd9..58628a90f touches only reckon/crew/queue_admission.py, tests/test_the_admit_service_runs_current_code.py and the declared evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the admission loop re-execute on a trusted code-stamp change and fingerprint that stamp in its failure guard; reckon/crew/queue_admission.py:1047-1048 performs the comparison and the in-place re-execution at the head of every pass, but the \"trusted\" qualifier is not enforced (see the finding on line 512).\nVERDICT done_when: the gate names tests/test_the_admit_service_runs_current_code.py; the manifest records the focused gate 2 passed EXIT=0 (gate-repair.log), the head arm 65 passed EXIT=0 (gate-repair-head-arm.log) and the base arm 63 passed EXIT=0 (gate-base-arm.log), and the negative control 1 failed 1 passed EXIT=1 (negative-control-repair.log).\nVERDICT write_paths: the prompt scope grants reckon/crew/queue_admission.py, tests/test_the_admit_service_runs_current_code.py, docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/the-admit-service-runs-current-code.html and the sibling figures dir; git diff 61dd0cd9..58628a90f changes exactly the queue_admission module, the test and the fragment.\nVERDICT manifest: read; manifest.md:5 reports complete, commits 0eb04cb53 and 58628a90f, and records the focused gate, the two suite arms with zero added failures, and the negative control, naming each log path.\nVERDICT diff: read both commits against base 61dd0cd9; 0eb04cb53 adds the stamp guard after admit_once plus the helpers and two tests, and 58628a90f moves the comparison to the head of the pass before admit_once; three files changed, all inside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:2607\nSCORE goal_fidelity: 9\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1047 gates the re-execution on _checkout_code_is_trusted, but that helper at :512 always returns trusted so the goal's \"trusted code-stamp change\" is not implemented.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate and negative control are recorded with EXIT= lines, but tests/test_the_admit_service_runs_current_code.py:143 stubs _checkout_code_is_trusted, so no recorded result exercises the trust guard the goal names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 61dd0cd9..58628a90f touches only reckon/crew/queue_admission.py, tests/test_the_admit_service_runs_current_code.py and the declared evidence fragment.\nSCORE durability: 11\nJUSTIFICATION durability: the ordering assertion at tests/test_the_admit_service_runs_current_code.py:196 genuinely reddens under the recorded negative control, but the real trust guard and the real _reexec_into_current_code are stubbed at :143-144, so the landed defect has no test that fails on it.\nSCORE fit: 17\nJUSTIFICATION fit: the new helpers at reckon/crew/queue_admission.py:491-533 follow the module's leading-underscore helper idiom and add no plan label.\nSCORE reuse: 16\nJUSTIFICATION reuse: the change delegates the stamp to reckon/crew/follower_registration.py:28 and the trust answer to reckon/checkout_trust.py:550, but re-writes the launcher/execve idiom already held at reckon/crew_follow_commands.py:553-600 rather than sharing it.\nFINDING reckon/crew/queue_admission.py:512 blocking: _checkout_code_is_trusted computes root as Path(__file__).resolve().parent.parent, which is the reckon package directory, but moved_checkout_is_trustworthy expects the sys.path root that contains it; on a scratch repo with a tracked file modified and a module that fails to import, the package-dir call returned trusted=True while the repo-root call returned trusted=False, so the guard is always true and the loop will re-exec onto a dirty or unimportable checkout.\nFINDING reckon/crew/queue_admission.py:525 follow-on: _reexec_into_current_code inserts the same package directory onto sys.path while its own docstring says it leads with the sys.path root that supplied this import, so the replacement resolves import reckon only through whatever the ambient sys.path already carries rather than from the intended root.\nFINDING tests/test_the_admit_service_runs_current_code.py:143 follow-on: the trust case substitutes _checkout_code_is_trusted with a lambda, so the added suite cannot fail on the broken trust function it is meant to guard.\n",
+  "review_run_id": "r-20261018T210728914821-review-of-the-admit-service-runs-current-code",
+  "reviewed_base_sha": "61dd0cd9fd451a9d74e1ac4c167d3944964d4540",
+  "reviewed_head_sha": "58628a90f604103aaa4c1892fee56fa75d619a60",
+  "reviewed_run_id": "r-20261018T195218281977-the-admit-service-runs-current-code",
+  "reviewer_run_id": "r-20261018T210728914821-review-of-the-admit-service-runs-current-code",
+  "scores": {
+    "durability": 11,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 9,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T195218281977-the-admit-service-runs-current-code/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/530468fb-d739-474c-9fa1-7f1ef4af1afa/the-admit-service-runs-current-code",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T21:20:21.393146+00:00",
+  "total": 86
+}
