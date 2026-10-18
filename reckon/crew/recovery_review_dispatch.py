@@ -1262,13 +1262,21 @@ def _ordered_review_lanes(
     ]
     local = str(config.get("local_backend") or "").strip()
     owning = str(owning_backend or "").strip()
+
+    def excluded_for_review(name: str) -> bool:
+        # A lift in force opens the lane: the fleet means to spend it, so the
+        # lane is admitted here whatever an exclusion says, and however the
+        # exclusion spells it. Without a lift, every candidate is judged through
+        # the pair resolver rather than by literal membership.
+        if name in lifted:
+            return False
+        return name in excluded or _review_backend_excluded(name, config)
+
     ordered: list[str] = []
     for preferred in (owning, local):
         if (
             preferred
-            and preferred not in excluded
-            and preferred not in lifted
-            and not _review_backend_excluded(preferred, config)
+            and not excluded_for_review(preferred)
             and preferred not in in_harness
             and preferred not in ordered
         ):
