@@ -25,7 +25,7 @@
   <title>The Site Answers Fast and Agrees With Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -312,6 +312,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-18T15:15:00Z">
     <div class="r-comment-body"><p>§10 landed: the import cycle is broken and every reckon module imports first in a fresh interpreter (run <code>r-20261018T133321491070</code>, head <code>8b52bf37c</code>; review 110, no added failures). <a href="/reckon/evidence/archive/the-site-answers-fast-and-agrees-landed.html#s10">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261018T133321491070-every-module-imports-alone" data-who="reckon-build" data-when="2026-10-18T14:13:20.135Z">
+    <div class="r-comment-body"><p>every-module-imports-alone: broke the project_state/fleet_supervisor import cycle by re-exporting the shared _sha256_path through a module __getattr__ plus a lazy call-site import in fleet_supervisor.py, so every reckon module imports first in a fresh interpreter; measure: head arm 176 passed EXIT=0 against base arm 4 failed 172 passed EXIT=1 (reckon.mcp_edit_plan, project_state, project_state_parity, sprint_liveness), negative control 4 failed EXIT=1</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261018T144344127097-review-of-velocity-answers-for-every-scope-34a04e5036d3" data-who="reckon-build" data-when="2026-10-18T15:01:16.028Z">
     <div class="r-comment-body"><p>review-of-velocity-answers-for-every-scope: reviewed r-20261018T133004739776-velocity-answers-for-every-scope at base 82f9dd65/head 34a04e503 — scores 19/18/19/19/18/20, no added failure, one follow-on finding; record stored under that run's review-records/.</p></div>
