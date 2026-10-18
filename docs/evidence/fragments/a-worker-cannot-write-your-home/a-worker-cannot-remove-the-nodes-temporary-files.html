@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="A worker cannot remove the node's temporary files outside its own scratch">
+  <meta name="plan-summary" content="The fence overlays the node's own /tmp read-only, re-binding writable only the run's own scratch and a single enumerated list of runtime paths its launch must write, so a worker's rm of a file elsewhere in /tmp is refused and the refusal names the path.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s15">
+  <meta name="plan-recorded-at" content="2026-10-18">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,fence,dispatch,tmp">
+  <title>A worker cannot remove the node's temporary files — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-worker-cannot-remove-the-nodes-temporary-files" data-reckon="landed" data-when="2026-10-18">
+  <h2>A worker cannot remove the node's temporary files — evidence</h2>
+  <p>The fence dev-binds <code>/</code> writable and overlays the declared protected paths read-only. It sealed the crew scratch root (§9) and the reports and review stores (§10), but nothing sealed the rest of the node's <code>/tmp</code>, so every fenced worker held the whole of it writable under one uid. <code>reckon/_worker_fence.py</code> now resolves the node's <code>/tmp</code> through <code>node_tmp_seal_root()</code> and adds it to the protected set before the writable grants are emitted, so the grants land after the overlay and are the last word on their own paths.</p>
+  <p>The paths a launch must still write there are enumerated once, in <code>node_tmp_runtime_paths()</code>, placed beside <code>worker_scratch_seal_root</code>. Each entry carries the reason it is there: the fleet's runtime directory (<code>runtime_directory()</code> in <code>reckon/crew/fleet_supervisor.py</code>, <code>/tmp/&lt;uid&gt;-fleet</code>), which holds srun's fleet sockets, and <code>/tmp/.codex</code>, codex's sandbox synthetic-mount registry. The run's own scratch directory is re-bound writable by the ordinary grant loop, so it is not in the list — a state the test asserts as an ordering property rather than trusting the enumeration.</p>
+  <figure>
+    <img src="/reckon/figures/a-worker-cannot-write-your-home/a-worker-cannot-remove-the-nodes-temporary-files.svg" alt="The fence's four mount steps in argv order: the filesystem dev-bound writable, the node /tmp overlaid read-only, then the run's own scratch and each enumerated runtime path re-bound writable after it.">
+    <figcaption>The fence composes its mounts once, in argv order. bubblewrap applies them in that order, so each writable grant lands after the read-only overlay of the node's <code>/tmp</code> and is the last word on its own path. The overlay is what this section adds; the two grants after it are what keeps a launch able to write its own scratch, srun's fleet sockets and codex's sandbox registry.</figcaption>
+  </figure>
+  <p><strong>Proved by executing the composed argv.</strong> <code>tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py</code> builds a synthetic node <code>/tmp</code> holding the owner scratch, the runtime paths, and an outside file, composes the fence through <code>fence_argv</code>, and runs it around a shell that creates and removes a file in its own scratch, does the same in each enumerated runtime path, and then removes the outside file. The results file records the scratch and runtime writes as done, the outside <code>rm</code> exits non-zero with <code>Read-only file system</code> naming the outside path, and the outside file survives. The argv shape is asserted separately, because a shape assertion cannot tell a fence that holds from one spelled correctly and doing nothing, and an executed refusal cannot tell which overlay produced it.</p>
+  <p><strong>Negative control.</strong> <code>node_tmp_seal_root</code> is the seam that decides the seal; the fixture patches it to return <code>None</code>, so no read-only overlay of the node tmp is composed. The executed case then goes red — <code>EXIT=1</code>, one failed — and the outside file is removed. The first patch of the control was made in the wrong place (the test body re-set the root through monkeypatch, undoing it), which left the executed case green under the mutation; the seam exists because of that, and the control was confirmed red only against it.</p>
+  <p><strong>Gate state at delivery.</strong> The importer population — every test file importing <code>reckon/_worker_fence.py</code> or <code>reckon/crew/dispatch_launch.py</code>, 25 files, 422 tests — was started in two arms at the declared base <code>ff9b7f230</code> and at head, four workers each. The wall-clock deadline fell before either arm reported, so no added-failure delta is claimed here; the unfinished measure is recorded on the manifest rather than reported as a pass. The per-lane fenced launch was likewise not run within the window.</p>
+</article>
+</body>
+</html>
