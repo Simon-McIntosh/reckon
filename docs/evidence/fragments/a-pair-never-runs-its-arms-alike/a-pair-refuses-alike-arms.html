@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-pair-never-runs-its-arms-alike">
+  <meta name="plan-title" content="A Pair Never Runs Its Arms Alike">
+  <meta name="plan-summary" content="A paired dispatch whose two arms resolve to one backend and one model is refused before either launches.">
+  <meta name="plan-evidence-for" content="reckon:a-pair-never-runs-its-arms-alike">
+  <meta name="plan-verifies" content="reckon:a-pair-never-runs-its-arms-alike#s1">
+  <meta name="plan-recorded-at" content="2026-10-18">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,dispatch,pair">
+  <meta name="plan-node" content="a-pair-refuses-alike-arms">
+  <title>A pair whose arms resolve alike is refused before launch — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-pair-refuses-alike-arms-landed" data-node="a-pair-refuses-alike-arms" data-reckon="landed" data-when="2026-10-18">
+  <h2 id="a-pair-refuses-alike-arms-heading">A pair whose arms resolve alike is refused before launch</h2>
+  <p id="a-pair-refuses-alike-arms-summary"><code>dispatch_pair</code> reads the <code>comparison</code> that <code>_shadow_dispatch_config</code> already returns and refuses with D21 when its <code>substituted</code> backend entry carries equal <code>primary</code> and <code>shadow</code> values and <code>model</code> is not among its <code>substituted</code> entries. The refusal runs before the dry-run return and before any run directory or worktree exists, so a paired dispatch whose primary the picker routed to the pair backend spends nothing. A pair whose arms share a backend but run different models still compares the two models and pairs.</p>
+  <p id="a-pair-refuses-alike-arms-evidence">Gate: <code>tests/test_a_pair_never_runs_its_arms_alike.py</code>, <code>tests/test_a_paired_dispatch_hides_each_arm.py</code>, <code>tests/test_a_paired_shadow_runs_on_its_named_backend.py</code>, <code>tests/test_a_picked_model_is_the_model_launched.py</code>, <code>tests/test_crew_peers.py</code>, <code>tests/test_dispatch_names_a_model.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code> &mdash; 41 passed, 1 failed, EXIT=1. The one failure, <code>test_every_module_fits_a_worker_window</code> on <code>reckon/ledger.py</code> at 50505 estimated tokens, is pre-existing: an exact <code>HEAD</code> extraction of the same six files fails the same test with 38 passed, 1 failed. No failure was added.</p>
+  <p id="a-pair-refuses-alike-arms-controls">Negative controls, each applied alone: with the check removed the first case fails (<code>DID NOT RAISE CrewError</code>, EXIT=1); with the check comparing backends only the third case fails on a pair whose arms run different models (EXIT=1). With <code>_candidate_config</code> still routing the implement role to <code>candidate</code>, the new check fails 7 of the 9 tests in <code>tests/test_a_paired_dispatch_hides_each_arm.py</code>; the helper change is what leaves them green.</p>
+</article>
+</body>
+</html>

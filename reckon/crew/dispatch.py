@@ -555,6 +555,37 @@ def _shadow_dispatch_config(
     }
 
 
+def _refuse_arms_that_resolve_alike(comparison: Mapping[str, Any]) -> None:
+    """Refuse a pair whose two arms resolve to one backend and one model.
+
+    A pair exists to compare two arms, so two arms that resolve to one backend
+    and one model compare nothing and spend that lane twice. The comparison
+    ``_shadow_dispatch_config`` already built carries both arms' values: the
+    backend is always substituted, and the model is substituted only when the
+    arms differ. Equal backends with the model left in ``inherited`` is
+    therefore the alike case. A pair whose arms share a backend but run
+    different models still compares the two models and is not refused.
+    """
+    substituted = comparison.get("substituted") or {}
+    alike_backend = substituted.get("backend") or {}
+    if (
+        alike_backend.get("primary") is not None
+        and alike_backend.get("primary") == alike_backend.get("shadow")
+        and "model" not in substituted
+    ):
+        shared_backend = alike_backend.get("primary")
+        shared_model = (comparison.get("inherited") or {}).get("model")
+        raise CrewError(
+            format_refusal(
+                "D21",
+                f"both arms of the pair resolve to backend {shared_backend!r} "
+                f"with model {shared_model!r}, so the pair would compare "
+                "nothing; the pair backend must differ from the lane the "
+                "primary runs on",
+            )
+        )
+
+
 def shadow(
     run_id: str,
     *,
@@ -780,6 +811,9 @@ def dispatch_pair(
         candidate_backend=candidate_backend,
         configuration_overrides=(),
     )
+    # A pair refused here spends nothing: the check is before the dry-run
+    # return and before any run directory or worktree exists.
+    _refuse_arms_that_resolve_alike(comparison)
     shadow_backend_name, _shadow_backend = resolve_role(
         shadow_config, node.role, node.spec_level
     )
