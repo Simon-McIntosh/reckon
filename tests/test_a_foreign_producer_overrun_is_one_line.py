@@ -111,8 +111,8 @@ def test_foreign_overrun_draws_one_host_line_and_keeps_both_events(
         json.loads(line) for line in _render(monkeypatch, events, json_output=True)
     ]
     stream_kinds = [event.get("event") for event in stream]
-    assert cli_module.FOLLOWER_PRODUCER_RELOADING_EVENT in stream_kinds
-    assert cli_module.FOLLOWER_STALE_PRODUCER_EVENT in stream_kinds
+    assert stream_kinds.count(cli_module.FOLLOWER_PRODUCER_RELOADING_EVENT) == 2
+    assert stream_kinds.count(cli_module.FOLLOWER_STALE_PRODUCER_EVENT) == 1
 
 
 def test_local_overrun_keeps_reloading_and_cycle_lines(
