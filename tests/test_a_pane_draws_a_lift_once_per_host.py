@@ -9,10 +9,13 @@ session's counters and once with another's.
 
 These drive the follower's own row path — the same object the follower feeds —
 once per session a host follows, and count the rows the pane prints. A follower
-is hosted exactly when ``RECKON_FOLLOWER_OWNER`` is present in its environment,
-so that variable's presence is what selects the host key; a follower without it
-keeps the per-session key. The pane's shared claim lives under a temporary crew
-home, and the fixture asserts afterwards that the real crew home is untouched.
+is hosted exactly when ``RECKON_SESSION_HOST_SETTLE`` — the variable a real
+session host stamps and a reload carries through — is present in its
+environment, so that variable's presence is what selects the host key; a
+follower without it keeps the per-session key, and a follower's own
+``RECKON_FOLLOWER_OWNER`` stamp does not make it hosted. The pane's shared claim
+lives under a temporary crew home, and the fixture asserts afterwards that the
+real crew home is untouched.
 """
 
 from __future__ import annotations
@@ -22,7 +25,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import lift_watch, runs
+from reckon.crew import lift_watch, runs, session_host
 from reckon.crew_follow_commands import follower_row_path, lift_claim_dir
 
 HOST_SESSION = "s-power"
@@ -49,8 +52,11 @@ def _isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[
     before = _listing(real_claims)
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
     # A follower is unhosted unless a test says otherwise, so the per-session
-    # cases below key on the session regardless of the ambient environment.
+    # cases below key on the session regardless of the ambient environment. The
+    # settle variable is the hosted signal, so it is cleared here alongside the
+    # owner stamp a reload would leave behind.
     monkeypatch.delenv(runs._FOLLOWER_OWNER_ENV, raising=False)
+    monkeypatch.delenv(session_host.SETTLE_ENV, raising=False)
     yield tmp_path
     assert _listing(real_claims) == before, "a test wrote the real crew home"
 
@@ -83,6 +89,7 @@ def test_a_host_following_two_sessions_draws_one_grant_and_one_end(
 ):
     """The defect: a host following two sessions drew each transition twice."""
     monkeypatch.setenv(runs._FOLLOWER_OWNER_ENV, HOST_OWNER)
+    monkeypatch.setenv(session_host.SETTLE_ENV, "1")
     mine = _follower(HOST_SESSION)
     theirs = _follower(OTHER_SESSION)
     grant = _lift_row()
@@ -106,6 +113,7 @@ def test_the_claim_is_keyed_on_the_host_when_one_is_present(
     monkeypatch: pytest.MonkeyPatch,
 ):
     monkeypatch.setenv(runs._FOLLOWER_OWNER_ENV, HOST_OWNER)
+    monkeypatch.setenv(session_host.SETTLE_ENV, "1")
     shared = lift_claim_dir(HOST_SESSION)
     assert shared.is_relative_to(runs.crew_home())
     assert shared == lift_claim_dir(OTHER_SESSION), (
