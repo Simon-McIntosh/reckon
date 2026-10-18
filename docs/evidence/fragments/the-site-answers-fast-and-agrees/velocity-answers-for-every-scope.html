@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-site-answers-fast-and-agrees">
+  <title>Velocity answers for every scope | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>Velocity answers for every scope</h1>
+      <p class="lead"><code>capture_project</code> took <code>selected[0]</code> without checking that the window selected any commit, so one repository quiet in the window raised <code>IndexError</code> and failed the all-project view. The same line took <code>first[-1]</code> when the window opened at a repository's first commit, which Python reads as the last commit rather than as no base, so that commit's changes were measured from the wrong revision and counted as zero. The base is now resolved explicitly for both cases.</p>
+    </header>
+
+    <section id="velocity-answers-for-every-scope-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>capture_project</code> resolves the window base from the selection instead of indexing it blind. A window that selected no commit takes the head as its base &mdash; an empty range, so every metric reads zero. A window whose first commit is the repository's first takes <code>None</code> as its base, which names the empty tree, so that commit's additions count from nothing.</li>
+        <li><code>_rev_range</code> is the one place that renders a range: the empty tree object stands in for a <code>None</code> base, used by the commit capture, the record-file addition scan and both ledger-recovery logs.</li>
+        <li>The patch of a parentless root commit is taken against the empty tree, since <code>parents[0]</code> does not exist for it; every line it carries reads as an addition.</li>
+        <li>The ancestry assertion, the seen-set of already-reachable commits and the ledger read at the base all treat a <code>None</code> base as the empty tree: the whole first-parent line is expected, nothing is pre-existing, and no earlier revision carries a ledger.</li>
+        <li><code>reckon/velocity.py</code> only; no report field changes shape.</li>
+      </ul>
+    </section>
+
+    <section id="velocity-answers-for-every-scope-the-gate">
+      <h2>The gate</h2>
+      <p><code>tests/test_velocity_quiet_repository.py</code> builds three temporary repositories under <code>tmp_path</code> and drives <code>velocity.report</code> &mdash; the composition the <code>*</code> view reads. A quiet repository is measured at zero for every metric, a repository whose first commit is inside the window counts that commit's lines from the empty tree, and an ordinary repository counts only its windowed commit while the six lines added before the window opens stay outside it.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>The node's own test, at head</td><td>4 passed, <code>EXIT=0</code></td><td><code>gate-quiet-newtest.log</code></td></tr>
+          <tr><td>Every test importing <code>reckon.velocity</code>, at head</td><td>135 passed, <code>EXIT=0</code></td><td><code>gate-head-importers.log</code></td></tr>
+          <tr><td>The same importers at base <code>82f9dd65</code>, in a scratch extraction</td><td>129 passed, 2 failed, <code>EXIT=1</code></td><td><code>gate-base-importers.log</code></td></tr>
+          <tr><td>Declared negative control</td><td>4 errors, <code>IndexError</code>, <code>EXIT=1</code></td><td><code>negative-control-quiet-index.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The two base failures are scaffolding, not code: the scratch extraction carries no <code>.git</code>, so <code>test_this_repository_reads_the_same_modules_as_the_reckon_listing</code> and <code>test_reckon_cohort_reading_at_the_pinned_commit</code> cannot resolve a revision. Neither appears in the head arm, so the head arm carries no failure against base.</p>
+      <p>Logs live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T133004739776-velocity-answers-for-every-scope/</code>. Both arms ran under the fleet allocation, job 1281970, not the login node.</p>
+    </section>
+
+    <section id="velocity-answers-for-every-scope-negative-control">
+      <h2>Declared negative control</h2>
+      <p>Restore the unguarded <code>selected[0]</code> index in <code>capture_project</code>, so the quiet-repository case raises <code>IndexError</code>. Applied alone, all four cases error at <code>reckon/velocity.py:877</code> with <code>IndexError: list index out of range</code>. The tree was restored afterwards and the arm re-ran green.</p>
+    </section>
+
+    <section id="velocity-answers-for-every-scope-lint">
+      <h2>Lint</h2>
+      <p><code>ruff check</code> is clean on both changed Python files. <code>ruff format --check</code> adds no finding: the three reformat suggestions in <code>reckon/velocity.py</code> (<code>_velocity_cache_path</code>'s docstring, one <code>if any(...)</code> and one <code>sum(...)</code>) are present at base and unchanged, and the new test file is clean.</p>
+    </section>
+  </main>
+</body>
+</html>
