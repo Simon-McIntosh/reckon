@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest records baseline_suite: none and after_suite: none (its classification.json agrees), so no baseline/after gate-log arm exists to difference; the reviewed node is test-only and its own arm (gate-head.log, 5 passed) is green.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:809",
+    "reckon/crew/runs.py:615"
+  ],
+  "completed_at": "2026-10-18T03:42:18.727Z",
+  "dispatched_at": "2026-10-18T03:32:50Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T104759434567-the-order-test-fails-when-a-queued-run-holds-a-slot/gate-head.log",
+      "line": "1",
+      "text": "follow-on: the head gate log's header names rev=8d9fe6aff but its body reports '5 passed', while tests/test_queue_order.py at 8d9fe6aff has only 4 test functions; the 5-test content is 85151e05d, so the recorded gate result cannot be reproduced from the revision the log names (both negative-control logs share the same stale header)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/queue_admission.py:809 and reckon/crew/runs.py:615 both import and call queue_order.admission_order, the ordering the added case exercises.",
+    "diff": "read commit 85151e05d against its parent 8d9fe6aff: one file, tests/test_queue_order.py, +19 lines adding test_other_backend_and_terminal_runs_hold_no_local_slot and nothing else.",
+    "done_when": "\u00a77's measure names tests/test_queue_order.py and a control that counts queued pointers as in flight; the file passes (5 passed EXIT=0) and negative-control-queued.log reddens the queued case under exactly that mutation.",
+    "goal": "the node goal is to make the queue order test able to fail when a queued run is counted as holding a lane slot; the gained commit 85151e05d extends tests/test_queue_order.py so the file also proves a session's other-backend and terminal runs hold no local slot (tests/test_queue_order.py:100-115).",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T104759434567-the-order-test-fails-when-a-queued-run-holds-a-slot/manifest.md; status complete, commits 8d9fe6aff and 85151e05d, tests '5 passed EXIT=0', baseline_suite and after_suite both none.",
+    "write_paths": "read the manifest's declared paths (tests/test_queue_order.py plus two docs/evidence paths); git show --stat 85151e05d changes only tests/test_queue_order.py, inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_queue_order.py:115 fails exactly when the ordering counts a live pointer the local lane does not own: negative-control-all-live-pointers.log reddens both this case (B-0=='A-0') and the queued case under a backend-and-phase-agnostic occupancy, so the added assertion guards the property it names.",
+    "evidence": "the reviewed manifest's tests line records '5 passed EXIT=0' and names gate-head.log, but that log's header names rev=8d9fe6aff while tests/test_queue_order.py at 8d9fe6aff holds only 4 tests, so the recorded result cannot be reproduced from the revision it names (I re-ran the 85151e05d content and got 5 passed EXIT=0).",
+    "fit": "tests/test_queue_order.py:100 follows the file's idiom (typed no-arg test, shared _queued helper, UTC now, one-line ordering assertion) and introduces no new import; the names describe the behaviour with no plan, issue or version label.",
+    "goal_fidelity": "tests/test_queue_order.py:101 builds a session (B) whose only live pointers are one run on another backend and one terminal local run and asserts it ranks first (order[0]=='B-0'), restoring the other-backend/terminal coverage the node's goal ('make the queue order test able to fail on lane-slot use') implies by not losing it.",
+    "reuse": "the added case extends the existing tests/test_queue_order.py coverage of reckon/crew/queue_order.py:16 admission_order and reuses its _queued helper; it adds no production definition, so a search over reckon/crew for a second ordering owner found none to fork.",
+    "scope_discipline": "git show --stat 85151e05d lists one file, tests/test_queue_order.py (+19), a declared write path; no product source and no concurrent node's path is touched."
+  },
+  "node": "review-of-the-order-test-fails-when-a-queued-run-holds-a-slot-85151e05d0a5",
+  "node:reviewed": "the-order-test-fails-when-a-queued-run-holds-a-slot",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the queue order test able to fail when a queued run is counted as holding a lane slot; the gained commit 85151e05d extends tests/test_queue_order.py so the file also proves a session's other-backend and terminal runs hold no local slot (tests/test_queue_order.py:100-115).\nVERDICT done_when: \u00a77's measure names tests/test_queue_order.py and a control that counts queued pointers as in flight; the file passes (5 passed EXIT=0) and negative-control-queued.log reddens the queued case under exactly that mutation.\nVERDICT write_paths: read the manifest's declared paths (tests/test_queue_order.py plus two docs/evidence paths); git show --stat 85151e05d changes only tests/test_queue_order.py, inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T104759434567-the-order-test-fails-when-a-queued-run-holds-a-slot/manifest.md; status complete, commits 8d9fe6aff and 85151e05d, tests '5 passed EXIT=0', baseline_suite and after_suite both none.\nVERDICT diff: read commit 85151e05d against its parent 8d9fe6aff: one file, tests/test_queue_order.py, +19 lines adding test_other_backend_and_terminal_runs_hold_no_local_slot and nothing else.\nCALL_SITES: reckon/crew/queue_admission.py:809, reckon/crew/runs.py:615\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_queue_order.py:101 builds a session (B) whose only live pointers are one run on another backend and one terminal local run and asserts it ranks first (order[0]=='B-0'), restoring the other-backend/terminal coverage the node's goal ('make the queue order test able to fail on lane-slot use') implies by not losing it.\nSCORE evidence: 15\nJUSTIFICATION evidence: the reviewed manifest's tests line records '5 passed EXIT=0' and names gate-head.log, but that log's header names rev=8d9fe6aff while tests/test_queue_order.py at 8d9fe6aff holds only 4 tests, so the recorded result cannot be reproduced from the revision it names (I re-ran the 85151e05d content and got 5 passed EXIT=0).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 85151e05d lists one file, tests/test_queue_order.py (+19), a declared write path; no product source and no concurrent node's path is touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_queue_order.py:115 fails exactly when the ordering counts a live pointer the local lane does not own: negative-control-all-live-pointers.log reddens both this case (B-0=='A-0') and the queued case under a backend-and-phase-agnostic occupancy, so the added assertion guards the property it names.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_queue_order.py:100 follows the file's idiom (typed no-arg test, shared _queued helper, UTC now, one-line ordering assertion) and introduces no new import; the names describe the behaviour with no plan, issue or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the added case extends the existing tests/test_queue_order.py coverage of reckon/crew/queue_order.py:16 admission_order and reuses its _queued helper; it adds no production definition, so a search over reckon/crew for a second ordering owner found none to fork.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T104759434567-the-order-test-fails-when-a-queued-run-holds-a-slot/gate-head.log:1 follow-on: the head gate log's header names rev=8d9fe6aff but its body reports '5 passed', while tests/test_queue_order.py at 8d9fe6aff has only 4 test functions; the 5-test content is 85151e05d, so the recorded gate result cannot be reproduced from the revision the log names (both negative-control logs share the same stale header).",
+  "review_run_id": "r-20261018T033119457753-review-of-the-order-test-fails-when-a-queued-run-holds-a-slot-85151e05d0a5",
+  "reviewed_base_sha": "8d9fe6affcf8bf1482407b835fba371e97d7de76",
+  "reviewed_head_sha": "85151e05d0a573c891c9dd70fa340e3a728799bd",
+  "reviewed_run_id": "r-20261008T104759434567-the-order-test-fails-when-a-queued-run-holds-a-slot",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T03:41:00+00:00",
+  "total": 113
+}
