@@ -12,7 +12,7 @@ from pathlib import Path
 from statistics import median
 from typing import Any
 
-from reckon import budget, capabilities, capability, ledger
+from reckon import budget, capabilities, capability, flight, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew import (
     budget_lift,
@@ -992,6 +992,77 @@ def budget_view(
         return compose()
 
 
+def _reserved_lane_floor_met(
+    declared: Mapping[str, Any], floor: Mapping[str, tuple[str, ...]]
+) -> bool:
+    """Whether declared requirement values meet every term of a reserved floor.
+
+    Each term names the accepted values for one requirement key, and a value
+    meets it when it ranks at or above the weakest accepted value, so a floor
+    naming ``elevated`` is met by ``critical``. A key the node declares nothing
+    for is not met: an undeclared requirement is an undeclared one, never the
+    strength the node was not asked to state.
+    """
+    from reckon.capability import REQUIREMENT_LEVELS
+
+    if not floor:
+        return True
+    for key, accepted in floor.items():
+        levels = REQUIREMENT_LEVELS.get(key)
+        if not levels:
+            return False
+        value = declared.get(key)
+        if not isinstance(value, str) or value not in levels:
+            return False
+        bar = min(levels.index(item) for item in accepted if item in levels)
+        if levels.index(value) < bar:
+            return False
+    return True
+
+
+def _reserved_lane_exclusion(
+    lane: str,
+    policy: Mapping[str, Any],
+    *,
+    declared: Mapping[str, Any],
+    attempts: int,
+    utilisation: float | None,
+) -> str | None:
+    """The reason a lane's policy withholds it from this node, or None.
+
+    The lane is withheld unless the node is at the tier the policy names -- its
+    declared requirements meet every floor term, or it has already been
+    attempted at or above the policy's count -- and its account window is below
+    the policy's ceiling. Headroom is read as the lane's own window percentage,
+    which is null when the reading is absent or past its shelf life, and an
+    unmeasured or stale window is not an empty one: the lane is withheld, so the
+    orchestrators' capacity is never spent on a guess. The reason names the lane,
+    which term withheld it and the figures it was judged on, so a reader sees
+    the policy that removed the candidate rather than a bare absence.
+    """
+    floor = policy.get(flight.PICKER_RESERVED_LANE_FLOOR_KEY) or {}
+    threshold = policy.get(flight.PICKER_RESERVED_LANE_ATTEMPTS_KEY)
+    ceiling = float(policy.get(flight.PICKER_RESERVED_LANE_CEILING_KEY) or 0)
+    attempts_met = isinstance(threshold, int) and attempts >= threshold
+    if not _reserved_lane_floor_met(declared, floor) and not attempts_met:
+        return (
+            f"reserved-lane: {lane} is offered at its hardest tier "
+            f"{sorted(floor)} or after {threshold} attempts; this node declares "
+            f"neither (attempts {attempts})"
+        )
+    if utilisation is None:
+        return (
+            f"reserved-lane: {lane} is reserved while the orchestrators it "
+            f"shares with it need it; its window reading is unknown or stale"
+        )
+    if utilisation >= ceiling * 100:
+        return (
+            f"reserved-lane: {lane} window is {utilisation:g}% used, at or above "
+            f"the {ceiling * 100:g}% reserved-lane ceiling"
+        )
+    return None
+
+
 def candidates(
     request: PickRequest,
     config: dict[str, Any],
@@ -1082,6 +1153,25 @@ def candidates(
         review_excluded = recovery._review_excluded_backends(
             config, session=request.session
         )
+    # The lanes a policy reserves for the orchestrators that share them, and the
+    # two readings the policy judges a node by: the requirement it declares --
+    # the plan's, or the coordinator's own assessment where it states one -- and
+    # how many attempts it has already been given. Both are read once for the
+    # whole scan, and the attempts figure is the one the state renders beside the
+    # node, so the policy and the guidance never disagree about it.
+    reserved = flight.reserved_lane_policies(config)
+    attempts = (
+        request.attempts
+        if request.attempts is not None
+        else sum(
+            row.get("node") == request.node.id and row.get("plan") == request.node.plan
+            for row in rows
+        )
+    )
+    declared_requirements = {
+        **(request.capability.get("requirements") or {}),
+        **(request.orchestrator_assessment or {}),
+    }
     variants = []
     lanes = config.get("lanes") or {}
     for name, declared in config.get("backends", {}).items():
@@ -1171,6 +1261,25 @@ def candidates(
         )
         if lane_lift:
             congestion = {**(congestion or {}), "lift": lane_lift}
+        family = dispatch_picker.lane_family(config, name, backend)
+        # A lane a policy reserves is offered to a non-review node only at the
+        # tier the policy names and only while the lane's own window has
+        # headroom, and it is removed here rather than left for Jev to weigh:
+        # the policy is a rule about when the orchestrators' lane may be spent,
+        # not a pressure signal, and a candidate carrying it is never offered as
+        # a fallback either. The reading is the window percentage this candidate
+        # already carries, so a reserved lane and the lane's own block are
+        # judged on one figure.
+        if family in reserved and request.node.role != "review":
+            withheld = _reserved_lane_exclusion(
+                family,
+                reserved[family],
+                declared=declared_requirements,
+                attempts=attempts,
+                utilisation=utilisation,
+            )
+            if withheld:
+                reasons.append(withheld)
         # Already-excluded candidates need no repository census or serving probe.
         context_block = None
         if not reasons:
@@ -1222,7 +1331,6 @@ def candidates(
             availability = str(observation.get("status") or "unknown")
             if availability in {"refused", "unavailable", "logged-out"}:
                 reasons.append("availability: " + availability)
-        family = dispatch_picker.lane_family(config, name, backend)
         reset = parse_utc(str(budget_facts.get("resets_at") or ""))
         days_to_reset = (
             max(0.0, (reset - now).total_seconds() / 86400) if reset else None
