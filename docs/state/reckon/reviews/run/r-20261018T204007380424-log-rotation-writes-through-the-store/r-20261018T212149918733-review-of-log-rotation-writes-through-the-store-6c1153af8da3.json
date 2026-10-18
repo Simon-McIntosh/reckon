@@ -1,0 +1,39 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/serve.py:3132",
+    "reckon/serve.py:4708"
+  ],
+  "completed_at": "2026-10-18T21:35:28.020Z",
+  "dispatched_at": "2026-10-18T21:24:28Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T204007380424-log-rotation-writes-through-the-store/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest quotes ruff at 19 findings on the two changed files; an independent run with the repository config reports 17 on both base and head, so the absolute figure is not reproducible though the no-added-findings claim holds."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to route the served log rotation's predecessor copy through reckon._store.write_atomically instead of a hand-rolled staging file and os.replace so tests/test_staged_write_inventory.py passes again; reckon/serve.py:748 now calls write_atomically(predecessor, stage_live, binary=True) and _bound_server_log retains neither a .tmp staging path nor an os.replace.\nVERDICT done_when: the done_when names tests/test_staged_write_inventory.py and tests/test_request_duration_and_log_bound.py; the manifest records the gate `pytest -q tests/test_staged_write_inventory.py tests/test_request_duration_and_log_bound.py` -> 54 passed, EXIT=0, and an independent re-run of tests/test_staged_write_inventory.py at head 6c1153af8 gives 51 passed.\nVERDICT write_paths: the source run's declared write paths are reckon/serve.py, tests/test_request_duration_and_log_bound.py, docs/evidence/fragments/the-site-answers-fast-and-agrees/log-rotation-writes-through-the-store.html and the figures dir; every path in the diff is inside them (the figures dir is unused, as the done-when names no artifact).\nVERDICT manifest: read; it names commits 3d1ce97c6 and 6c1153af8, the declared negative control, and the four gate logs, reporting the named gate at 54 passed EXIT=0 and the negative control red at EXIT=1.\nVERDICT diff: read commit by commit against 4e6f24abb; 3d1ce97c6 rewrites _bound_server_log in reckon/serve.py and moves the interleaving test's pause seam to serve.shutil.copyfileobj in tests/test_request_duration_and_log_bound.py, and 6c1153af8 adds the evidence fragment; all inside the declared scope.\nCALL_SITES: reckon/serve.py:3132 (Handler.handle_one_request), reckon/serve.py:4708 (server start)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/serve.py:748 publishes the predecessor through write_atomically(predecessor, stage_live, binary=True) and the hand-rolled staging file plus os.replace are gone from _bound_server_log.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's gate log test_staged_write_inventory.py tests/test_request_duration_and_log_bound.py reports 54 passed EXIT=0 in the reviewed run directory and an independent head re-run of tests/test_staged_write_inventory.py reports 51 passed; the manifest's quoted ruff figure of 19 is not reproducible (an independent run with the repo config gives 17 on both arms), though the no-added-findings claim holds.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path the diff touches (reckon/serve.py, tests/test_request_duration_and_log_bound.py, the new docs/evidence/fragments/the-site-answers-fast-and-agrees/log-rotation-writes-through-the-store.html) is inside the source run's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner reddens on the declared mutation (negative-control-inventory.log, 1 failed) and tests/test_request_duration_and_log_bound.py::test_a_line_written_during_rotation_survives fails at its copy seam if the copy primitive reverts, so a regression to the hand-rolled staging is caught.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/serve.py:742-748 keeps the surrounding idiom (a lock-held, callback-rendered atomic publish) with the docstring updated to name the shared writer and no forbidden plan or version name introduced.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner reckon/_store.py:480 write_atomically rather than forking it, and the capability search over reckon/ for a staged-write publish finds write_atomically as the sole owner (its census, reckon/interface_counts.py:209, is the checker).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T204007380424-log-rotation-writes-through-the-store/manifest.md:15 follow-on: the manifest's `artifacts`/`evidence_inputs` quote ruff at 19 findings on the two changed files, but an independent run with the repository config reports 17 on both base and head, so a later reader reconciling the record against ruff output sees a figure that does not match, though the load-bearing no-new-findings claim is confirmed.",
+  "review_run_id": "r-20261018T212149918733-review-of-log-rotation-writes-through-the-store-6c1153af8da3",
+  "reviewed_base_sha": "4e6f24abbfde86d535a098fd19d3e35c8f98ffb7",
+  "reviewed_commits": [
+    "3d1ce97c6663bcc8426463923ffcf560abe6cfe4",
+    "6c1153af8da377731fa704d37937baabdcd9f106"
+  ],
+  "reviewed_head_sha": "6c1153af8da377731fa704d37937baabdcd9f106",
+  "reviewed_run_id": "r-20261018T204007380424-log-rotation-writes-through-the-store",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T21:36:39.401260+00:00"
+}
