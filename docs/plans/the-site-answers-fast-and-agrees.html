@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="spa,reckon-tooling">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-site-answers-fast-and-agrees#s2&quot;, &quot;the-site-answers-fast-and-agrees#s14&quot;], &quot;s4&quot;: [&quot;the-site-answers-fast-and-agrees#s9&quot;], &quot;s5&quot;: [&quot;the-site-answers-fast-and-agrees#s3&quot;], &quot;s6&quot;: [&quot;the-site-answers-fast-and-agrees#s2&quot;, &quot;the-site-answers-fast-and-agrees#s5&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;], &quot;s7&quot;: [&quot;the-site-answers-fast-and-agrees#s6&quot;], &quot;s12&quot;: [&quot;the-site-answers-fast-and-agrees#s4&quot;], &quot;s13&quot;: [&quot;the-site-answers-fast-and-agrees#s12&quot;], &quot;s14&quot;: [&quot;the-site-answers-fast-and-agrees#s13&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;], &quot;s15&quot;: [&quot;the-site-answers-fast-and-agrees#s14&quot;], &quot;s11&quot;: [&quot;the-site-answers-fast-and-agrees#s3&quot;, &quot;the-site-answers-fast-and-agrees#s5&quot;, &quot;the-site-answers-fast-and-agrees#s6&quot;, &quot;the-site-answers-fast-and-agrees#s7&quot;, &quot;the-site-answers-fast-and-agrees#s8&quot;, &quot;the-site-answers-fast-and-agrees#s10&quot;, &quot;the-site-answers-fast-and-agrees#s15&quot;, &quot;a-read-answers-inside-its-deadline#s38&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
   <title>The Site Answers Fast and Agrees With Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -116,7 +116,7 @@
       <code>reckon/serve.py</code>, <code>docs/ui/state-loader.js</code> and the test file.</p>
 
     <h2 id="s4">§4 — A reader on another cache format never evicts the served one</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> §1's first row. Every process that reads a project writes one shared file per project under
       <code>~/.config/reckon/cache/metadata-index/</code>, named by project and docs path only. A process on another format version finds the file
       incompatible, rebuilds and overwrites it, and the next reader on the other version does the same. The served process pays 17 to 26 s each time.</p>
@@ -294,6 +294,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261018T155255846517-cache-paths-carry-their-format" data-who="reckon-build" data-when="2026-10-18T16:38:27Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-site-answers-fast-and-agrees/cache-paths-carry-their-format.html#cache-paths-carry-their-format — Four persisted caches use one format-suffixed path owner; 4/4 alternating-writer cases built once per writer and reused twice, the negative control rebuilt three times per writer, and the affected suite added zero failure IDs.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-18T17:50:00Z">
+    <div class="r-comment-body"><p>§4 landed and verified live: four caches carry their format in their file names (merge <code>b19a0ac46</code>, review 117), and no incompatible-cache line appeared in a 20-minute watch or in a driven pass over six projects. <a href="/reckon/evidence/archive/the-site-answers-fast-and-agrees-landed.html#s4">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-design-recompute-owner" data-who="reckon-build" data-when="2026-10-18T13:30:00Z">
     <div class="r-comment-body"><p>Design review <code>r-20261018T131121570570</code>, findings <code>reuse_search-1</code>, <code>thin_wrapper-1</code>, <code>deep_module-1</code> and <code>interface_budget-1</code>. <code>/_checks/&lt;project&gt;</code> already recomputes outside the request path. <code>_start_check_refresh</code> and <code>_spawn_check_refresh</code> (<code>reckon/serve.py</code> near line 2889) run a niced child per project, single-flight through <code>_CHECK_REFRESHES</code> (near line 1301), and write the store the route reads. Before §5 is dispatched, it is rewritten to extend that mechanism to <code>/_discover</code>, <code>/_projects/index.json</code> and <code>/crew/velocity</code> rather than add a new module. It names the interface: compute, read the last result, and spawn on change. It also states what it retires, and the worker no longer chooses the mechanism.</p></div>
