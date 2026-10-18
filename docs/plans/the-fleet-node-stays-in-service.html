@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -330,22 +330,22 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="worker-step-memory" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="worker-step-memory" data-choice="24G-default-48G-ceiling" data-by="Simon McIntosh" data-when="2026-10-18T13:53:23+00:00">
     <p class="r-dec-q">What default memory bound does a worker step carry, and above what declared size does a node leave the fleet allocation for its own job?</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="16G-default-32G-ceiling">16 GB default, 32 GB ceiling</button>
-      <button class="r-opt" data-value="24G-default-48G-ceiling">24 GB default, 48 GB ceiling</button>
+      <button class="r-opt chosen" data-value="24G-default-48G-ceiling">24 GB default, 48 GB ceiling</button>
       <button class="r-opt" data-value="24G-default-64G-ceiling">24 GB default, 64 GB ceiling</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">The job holds 96 GB and the sessions use about 35 GB. A 24 GB default leaves room for them. The 52–59 GB nova map solves go to their own debug-partition job, where a whole node serves them, instead of taking the fleet to the limit that failed on 17 October.</p>
     </div>
-<div class="r-dec" data-key="move-timing" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="move-timing" data-choice="after-stop-path" data-by="Simon McIntosh" data-when="2026-10-18T13:53:23+00:00">
     <p class="r-dec-q">When does the fleet move off clu-2002?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="after-stop-path">After the stop-path fix and a passing rehearsal</button>
+      <button class="r-opt chosen" data-value="after-stop-path">After the stop-path fix and a passing rehearsal</button>
       <button class="r-opt" data-value="now">Now, by the existing command</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Do not move now. The drain does not end the job, and the processes behind it have exited, so SDCC is asked to resume clu-2002 in place. A move happens only if SDCC asks for the node back, and then only after §3 and a passing §5 rehearsal, so the new node does not inherit the drain mechanism.</p>
     </div>
 </section>
 
