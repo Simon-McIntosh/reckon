@@ -1,0 +1,45 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T07:15:09.226Z",
+  "dispatched_at": "2026-10-18T07:07:12Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:465",
+      "id": "duplicate_owner-1",
+      "reason": "it moves the check onto the existing `comparison` (or behind the shared owner) and removes a second definition of \"the arms differ\" that would otherwise drift from the lineage every run already stores.",
+      "text": "the check duplicates the arm-difference predicate that `_shadow_dispatch_config` already owns: its per-field loop (dispatch.py:497-518) compares `before`/`after` for backend, launch, model, effort and sandbox and returns the result as `comparison[\"substituted\"]`/`[\"inherited\"]`, and `dispatch_pair` already persists that `comparison` into the shadow's lineage (dispatch.py:807). So the plan's premise that \"Neither function compares the two agents\" is false \u2014 the comparison exists and records exactly backend and model equality; only the refusal is missing (`comparison` is in scope as a local at dispatch.py:776, immediately after `primary_agent` at 774, before the dry-run return at 819 and the run-dir creation at 862). Extend the owner \u2014 read `comparison` (refuse when neither \"backend\" nor \"model\" is in `substituted`), or have `_shadow_dispatch_config` return an explicit identical-arms signal \u2014 rather than computing a second equality at the call site. The owner is shared: `_shadow_dispatch_config` is called by both `shadow` (dispatch.py:587) and `dispatch_pair` (dispatch.py:776), so a second predicate in `dispatch_pair` would exist beside the one the shadow path already records.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_plan.py:114",
+      "id": "reuse_search-1",
+      "reason": "the author must name `primary_plan.as_dict()[\"route\"]`/`[\"picker_selection\"]` as the source and add a done-when case for the picker-route path, or delete the untestable clause from the remedy.",
+      "text": "\u00a71's remedy says the refusal detail reports it \"when the primary's backend came from the picker's route\", but the plan names no mechanism for that fact and none of the three done-when cases exercises a picker route (case 3 deliberately builds the primary by monkeypatching `plan_dispatch` precisely to avoid one), so the clause is both unsourced and unverified. The fact is already recorded on the planning resolution \u2014 `DispatchPlan.picker_selection` (dispatch_plan.py:113) and `DispatchPlan.route` (dispatch_plan.py:114), emitted in `as_dict()` at dispatch_plan.py:128-129 \u2014 and `dispatch_pair` holds it as `primary_plan` at dispatch.py:774.",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8d81af440dc9ef12c23ea15cb09a6f40761704fdbc5798f73b29fa733dd4d9dc",
+  "plan_slug": "a-pair-never-runs-its-arms-alike",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T070628641488-plan-review-of-a-pair-never-runs-its-arms-alike",
+  "reviewed_blob_sha": "7049d1b2431025b398ea6d4aedd088ee379240a0",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the change adds one refusal inside an existing function; it introduces no new module and no spread of wrappers.",
+    "duplicate_owner": "a finding \u2014 the arms-alike comparison re-derives a backend/model difference that `_shadow_dispatch_config` already computes and records as `comparison`, persisted in the run's lineage.",
+    "interface_budget": "pass \u2014 public_definitions 1800, cli_options 362, mcp_views 34, refusal_families 23; the section adds to none of the four (it reuses `--pair-backend`, adds no MCP view, and explicitly declines to touch D21's registered remedy), so there is nothing to retire.",
+    "reuse_search": "a finding \u2014 \u00a71's remedy promises a detail clause for a picker-routed primary but names no source for that fact, while the planning resolution already records it as `DispatchPlan.route` / `picker_selection`.",
+    "thin_wrapper": "pass \u2014 no layer is placed over existing machinery; the check is a new refusal condition, not a wrapper that forwards to an existing one."
+  },
+  "section_digests": {
+    "_document": "f69e0ec63ca7c44aed6a2af37349696c5cb319f332df134e6fd7dc890a53dbc5",
+    "s1": "ae774a137690d991ee7a06ea50013a63d016f35b8f2ff0f0541bd25d1a0ca1e9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T07:19:58.227770+00:00"
+}
