@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own manifest: baseline_suite.failure_count 0 and after_suite.failure_count 0, both completed with empty failure_ids, so the added-failure count is 0.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligations.py:590",
+    "reckon/crew/obligations.py:672",
+    "reckon/crew/obligation_snapshot.py:925"
+  ],
+  "completed_at": "2026-10-18T15:26:08.647Z",
+  "dispatched_at": "2026-10-18T15:07:47Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commit by commit against 2d4ebe93e; 4fe1285c9 adds the guard in reckon/file_memo.py and the gate test, bec8362b1 adds the landing fragment, b3b058e04 adds __copy__ and __deepcopy__ and the tuple and set views, 3afdc489b updates the fragment; three files changed and no production caller was edited.",
+    "done_when": "The done_when names tests/test_the_read_only_region_refuses_a_mutation.py with (a) a mutating caller detected and (b) one obligation_snapshot.fleet_state derivation completing under the same guard; :70-:78 and :172-:174 assert the refusals and :256-:260 assert the completion, and the test was re-run here at head and reported 5 passed.",
+    "goal": "The goal is to make a mutation of a document the read-only memo region hands out detected rather than silent; reckon/file_memo.py:236 _handout returns the region's view and reckon/file_memo.py:48 _ReadOnlyDict, :83 _ReadOnlyList, :119 _ReadOnlyTuple and :139 _ReadOnlySet carry the value's own members with every mutator raising at :65, :97 and :148.",
+    "manifest": "Read; it records the head gate at b3b058e04 with 5 passed, the 20-file file_memo-importing set 96 passed at head against 96 passed at base 2d4ebe93e, names logs/gate-head.log and logs/negative-control.log, and every log ends in EXIT=.",
+    "write_paths": "The declared scope is reckon/file_memo.py, tests/test_the_read_only_region_refuses_a_mutation.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/the-read-only-region-refuses-a-mutation.html and a figures directory; the diff touches only the first three and every path is inside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_the_read_only_region_refuses_a_mutation.py:70-:78 reddens when the guard is removed, shown by logs/negative-control.log EXIT=1 with both mutation cases FAILED, and its assertions compare a read of the handed-out document against the independent literal payload rather than a value returned by the code under test.",
+    "evidence": "logs/gate-head.log records 5 passed EXIT=0 for the test the done_when names and its header names the code revision b3b058e04, which the manifest's after_suite.revision also carries, so the measured revision is named even though the docs-only head 3afdc489b is not on the log header.",
+    "fit": "the added symbols, reckon/file_memo.py:48 _ReadOnlyDict through :236 _handout, are named for mechanism and the changed files carry no plan, section or ticket identifier.",
+    "goal_fidelity": "reckon/file_memo.py:236 _handout hands out the region's view and its mutators raise at :65, :97 and :148, so a change to what the region hands out is refused rather than silently reaching the memo.",
+    "reuse": "a search of reckon/ for MappingProxyType, FrozenDict and read-only container wrappers found no owner, so reckon/file_memo.py:48 extends the module that already owns the region rather than forking a capability.",
+    "scope_discipline": "git diff --stat 2d4ebe93e..3afdc489b lists only reckon/file_memo.py, tests/test_the_read_only_region_refuses_a_mutation.py and the landing fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is to make a mutation of a document the read-only memo region hands out detected rather than silent; reckon/file_memo.py:236 _handout returns the region's view and reckon/file_memo.py:48 _ReadOnlyDict, :83 _ReadOnlyList, :119 _ReadOnlyTuple and :139 _ReadOnlySet carry the value's own members with every mutator raising at :65, :97 and :148.\nVERDICT done_when: The done_when names tests/test_the_read_only_region_refuses_a_mutation.py with (a) a mutating caller detected and (b) one obligation_snapshot.fleet_state derivation completing under the same guard; :70-:78 and :172-:174 assert the refusals and :256-:260 assert the completion, and the test was re-run here at head and reported 5 passed.\nVERDICT write_paths: The declared scope is reckon/file_memo.py, tests/test_the_read_only_region_refuses_a_mutation.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/the-read-only-region-refuses-a-mutation.html and a figures directory; the diff touches only the first three and every path is inside the grant.\nVERDICT manifest: Read; it records the head gate at b3b058e04 with 5 passed, the 20-file file_memo-importing set 96 passed at head against 96 passed at base 2d4ebe93e, names logs/gate-head.log and logs/negative-control.log, and every log ends in EXIT=.\nVERDICT diff: Read commit by commit against 2d4ebe93e; 4fe1285c9 adds the guard in reckon/file_memo.py and the gate test, bec8362b1 adds the landing fragment, b3b058e04 adds __copy__ and __deepcopy__ and the tuple and set views, 3afdc489b updates the fragment; three files changed and no production caller was edited.\nCALL_SITES: reckon/crew/obligations.py:590, reckon/crew/obligations.py:672, reckon/crew/obligation_snapshot.py:925\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/file_memo.py:236 _handout hands out the region's view and its mutators raise at :65, :97 and :148, so a change to what the region hands out is refused rather than silently reaching the memo.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/gate-head.log records 5 passed EXIT=0 for the test the done_when names and its header names the code revision b3b058e04, which the manifest's after_suite.revision also carries, so the measured revision is named even though the docs-only head 3afdc489b is not on the log header.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 2d4ebe93e..3afdc489b lists only reckon/file_memo.py, tests/test_the_read_only_region_refuses_a_mutation.py and the landing fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_read_only_region_refuses_a_mutation.py:70-:78 reddens when the guard is removed, shown by logs/negative-control.log EXIT=1 with both mutation cases FAILED, and its assertions compare a read of the handed-out document against the independent literal payload rather than a value returned by the code under test.\nSCORE fit: 19\nJUSTIFICATION fit: the added symbols, reckon/file_memo.py:48 _ReadOnlyDict through :236 _handout, are named for mechanism and the changed files carry no plan, section or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of reckon/ for MappingProxyType, FrozenDict and read-only container wrappers found no owner, so reckon/file_memo.py:48 extends the module that already owns the region rather than forking a capability.",
+  "review_run_id": "r-20261018T150616177008-review-of-the-read-only-region-refuses-a-mutation-3afdc489b01a",
+  "reviewed_base_sha": "2d4ebe93e2918a25be6ef600f036d17772ea79bf",
+  "reviewed_head_sha": "3afdc489b01ab706169f0b1f0c85f0e5e532862e",
+  "reviewed_run_id": "r-20261018T123636631280-the-read-only-region-refuses-a-mutation",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T15:30:54.583092+00:00",
+  "total": 117
+}
