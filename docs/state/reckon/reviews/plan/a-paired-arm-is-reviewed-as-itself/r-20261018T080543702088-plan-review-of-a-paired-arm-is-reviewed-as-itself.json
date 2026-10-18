@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T08:15:04.811Z",
+  "dispatched_at": "2026-10-18T08:06:24Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-paired-arm-is-reviewed-as-itself.html:51",
+      "id": "done_when-1",
+      "reason": "cases 1 and 3 and the two declared mutations already falsify both mechanism changes, so this case documents the refusal contract without weakening the node's measure.",
+      "text": "the fourth done-when case asserts `_review_record_directory_grant` refuses a record path under an arm's review-records/ when given the bare source `pair-node`, but the current code already returns None for that input (run_dir(\"pair-node\") resolves to no existing directory), so the case passes on the unfixed base and measures nothing about the change",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-paired-arm-is-reviewed-as-itself.html:39",
+      "id": "reasoning-1",
+      "reason": "the plan's mechanism is unchanged and the repository's own pattern for this is a function-local import (as promotion_checks already uses for `reckon.crew.recovery`), so an implementer resolves it mechanically rather than by altering the design.",
+      "text": "the remedy directs reading paired-arm status from `_paired_partner_run_id` in reckon/crew/promotion_checks.py, but promotion_checks is already in recovery_review_subject's import graph (importing promotion_checks pulls recovery_review_subject in, and vice versa), so a module-level import of `_paired_partner_run_id` into recovery_review_subject would hit a partially-initialized module at load time",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "a9380c9dbc9a5a75da9a3a2d0dd0c43a9cdd3ab56d3f245c359cdfd13c10d48f",
+  "plan_slug": "a-paired-arm-is-reviewed-as-itself",
+  "plan_version": 7,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T080543702088-plan-review-of-a-paired-arm-is-reviewed-as-itself",
+  "reviewed_blob_sha": "a89a784897ca5862e39872fea384e280bcba8299",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited path:line resolves on the base revision: recovery_review_subject.py:460 and :608, dispatch_admission.py:1866, recovery_review_delivery.py:156 and lines 118/233, recovery_review_dispatch.py:180, promotion_checks.py:606 and :2343, dispatch_sessions.py:457, recovery_repair_dispatch.py:665; the reviewed constructs (round_node_id/round_node_source in repair.py, the resolved-run loop at recovery_review_delivery.py:172-174) all exist as described.",
+    "done_when": "a finding \u2014 the node's done-when is measurable and declares two negative controls (cases 1 and 3), but its fourth case asserts a grant refusal the current code already performs, so that case cannot fail against the unfixed base.",
+    "evidence_paths": "pass \u2014 the done-when names no session scratchpad or node-local temporary path; gate and negative-control logs land on the crew run's own durable record.",
+    "naming": "pass \u2014 the new symbol refuse_ambiguous names the mechanism, the new test file follows the repo's existing vocabulary and carries no plan label, version tag or ticket number, and no comment states a stage or ticket identity.",
+    "reasoning": "a finding \u2014 the root cause, the mechanism-onto-done-when chain and the production caller (dispatch_admission.py:1820 `_sandbox_reachability` \u2192 `_reviewed_run_id_for_node`) all hold, but the plan directs a cross-module reuse without noting the import constraint that makes it load-fragile.",
+    "single_goal": "pass \u2014 \u00a71 carries one deliverable (a paired arm's review names the arm by its run id); the flag is an enabling mechanism for that same goal, not a second deliverable.",
+    "wiring": "pass \u2014 the plan declares plan-standalone (header) with a reason and consumes no plan's evidence; every plan it names (a-shadow-cannot-see-its-primary) exists and is done, so no depends-on/informs/gates relationship is missing."
+  },
+  "section_digests": {
+    "_document": "8040896d3e1fbba1bd73cf164e59e5eb7153bac3fe010485fd15c069ce26a191",
+    "s1": "f7ca705a77f57bb5317c4b1d10e851d2c295f5aef5391abb36dfa4bba6867fe7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T08:18:46.907345+00:00"
+}
