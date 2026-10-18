@@ -4,6 +4,7 @@ import os
 import re
 import shlex
 import signal
+import socket
 import sys
 import threading
 import time
@@ -1170,25 +1171,33 @@ def lift_claim_key(session: str | None) -> str:
     A session host runs every follower of one pane, and it may follow more than
     one crew session — a coordinator dispatching under two session names, say.
     Keying the claim on the session therefore draws each lift once per followed
-    session. A follower is hosted exactly when its spawner stamped
-    ``RECKON_FOLLOWER_OWNER`` into its environment, and one host serves one pane,
-    so the presence of that variable selects the host key. The value is the
-    owner pair the host stamped, so two followers of one host agree on the key
-    while a follower under a different host, or under no host, does not. An
-    unhosted follower — a hand-armed one, or a reader driving the command under
-    test — keeps the per-session key it used before, as does a hosted follower
-    whose stamp cannot be read, so a pane is never left with no claim at all.
+    session. Only ``SessionHost._spawn`` stamps ``RECKON_SESSION_HOST_SETTLE``
+    into a child's environment, and a reload's exec carries it through unchanged,
+    so that variable's presence — never ``RECKON_FOLLOWER_OWNER``, which the
+    follower's own reloader writes into its replacement unconditionally — is the
+    signal that selects the host key. An unhosted follower — a hand-armed one, or
+    one that has reloaded without ever having had a host — therefore keeps the
+    per-session key before and after any number of reloads.
+
+    The host key names the node the host runs on as well as the owner pair the
+    host stamped, so a sweep can tell a host that died here from one alive on
+    another node that shares this home. A follower with no host, or one whose
+    owner stamp cannot be read, keeps the per-session key it used before, so a
+    pane is never left with no claim at all.
     """
     from reckon.crew import runs
 
+    if not os.environ.get(SETTLE_ENV):
+        return str(session or "")
     owner = os.environ.get(runs._FOLLOWER_OWNER_ENV)
     if not owner:
         return str(session or "")
+    node = _lift_claim_token(socket.gethostname())
     parsed = runs._parse_follower_owner(owner)
     if parsed is None:
-        return f"host-{_lift_claim_token(owner)}"
+        return f"host-{node}-{_lift_claim_token(owner)}"
     pid, start_time = parsed
-    return f"host-{pid}-{start_time or 'unknown'}"
+    return f"host-{node}-{pid}-{start_time or 'unknown'}"
 
 
 def lift_claim_dir(session: str | None) -> Path:
