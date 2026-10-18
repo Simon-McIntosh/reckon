@@ -134,10 +134,14 @@ def _snapshot_view(
     backends = []
     for name in CONFIG["backends"]:
         if name == "claude-opus":
-            state = _fresh(claude_pct) if known else {
-                "headroom": "unknown",
-                "detail": "no reading",
-            }
+            state = (
+                _fresh(claude_pct)
+                if known
+                else {
+                    "headroom": "unknown",
+                    "detail": "no reading",
+                }
+            )
         elif codex_pct is not None:
             state = _fresh(codex_pct)
         else:

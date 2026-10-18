@@ -30,9 +30,7 @@ def _milliseconds(started: float) -> float:
     return round((time.perf_counter() - started) * 1000, 3)
 
 
-def attempts_for(
-    request: PickRequest, rows: Sequence[Mapping[str, Any]]
-) -> int:
+def attempts_for(request: PickRequest, rows: Sequence[Mapping[str, Any]]) -> int:
     """The count of prior runs a node carries, from the one owner.
 
     A caller that states the count on the request has it kept; otherwise it is
