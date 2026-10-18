@@ -235,13 +235,44 @@ def committed_reckon_tree(root: Path) -> str | None:
     return tree if result.returncode == 0 and len(tree) == 40 else None
 
 
+def _committed_reload_tree(root: Path) -> str | None:
+    """Write a content tree containing the package and its dispatch scripts."""
+    try:
+        entries = subprocess.run(
+            ["git", "-C", str(root), "ls-tree", "HEAD", "reckon", "skills"],
+            capture_output=True,
+            text=True,
+            timeout=IMPORT_PROBE_TIMEOUT,
+            check=False,
+        )
+        if entries.returncode != 0:
+            return None
+        names = {line.rsplit("\t", 1)[-1] for line in entries.stdout.splitlines()}
+        if "skills" not in names:
+            return committed_reckon_tree(root)
+        if names != {"reckon", "skills"}:
+            return None
+        result = subprocess.run(
+            ["git", "-C", str(root), "mktree"],
+            input=entries.stdout,
+            capture_output=True,
+            text=True,
+            timeout=IMPORT_PROBE_TIMEOUT,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    tree = result.stdout.strip()
+    return tree if result.returncode == 0 and len(tree) == 40 else None
+
+
 def source_code_identity(package_dir: Path, *, source_root: Path | None = None) -> str:
-    """Identify the shared source package content, or hash a package outside Git."""
+    """Identify the package and scripts, or hash a package outside Git."""
     if source_root is None:
         source_root = Path(
             os.environ.get("RECKON_FOLLOWER_SOURCE_ROOT", str(package_dir.parent))
         )
-    tree = committed_reckon_tree(source_root)
+    tree = _committed_reload_tree(source_root)
     if tree is not None:
         return tree
     from reckon.crew.obligation_snapshot import code_stamp
@@ -350,18 +381,39 @@ def _reckon_subtree(root: Path, revision: str) -> str:
     return tree if result.returncode == 0 and len(tree) == 40 else revision
 
 
+def _archive_source(root: Path, revision: str) -> tuple[str, str]:
+    """Select the paired image tree, or adapt a legacy package or commit id."""
+    try:
+        kind = subprocess.run(
+            ["git", "-C", str(root), "cat-file", "-t", revision],
+            capture_output=True,
+            text=True,
+            timeout=IMPORT_PROBE_TIMEOUT,
+            check=False,
+        )
+        if kind.returncode == 0 and kind.stdout.strip() == "tree":
+            package = subprocess.run(
+                ["git", "-C", str(root), "rev-parse", "--verify", f"{revision}:reckon"],
+                capture_output=True,
+                text=True,
+                timeout=IMPORT_PROBE_TIMEOUT,
+                check=False,
+            )
+            if package.returncode == 0:
+                return revision, ""
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return _reckon_subtree(root, revision), "reckon/"
+
+
 def materialize_committed_tree(
     root: Path, revision: str, *, active_root: Path | None = None
 ) -> tuple[Path, list[Path], list[Path], int]:
-    """Publish a package extracted from one code identity and prune older images.
+    """Publish package and dispatch scripts from one identity; prune old images.
 
-    ``revision`` is the identity a follower or producer carries: the ``reckon/``
-    tree object at the source checkout's HEAD, or a commit that still carries
-    one from an image armed before the identity named the package. The archive
-    is written back under the ``reckon/`` prefix, because a tree object holds
-    the package's contents without that directory. The image directory is named
-    by the identity -- a tree id is the 40 hexadecimal digits
-    ``running_code_identity`` reads.
+    A current identity names a tree with ``reckon/`` and ``skills/``. Older
+    package-tree and commit identities still unpack under ``reckon/``. The
+    directory name carries the identity read by ``running_code_identity``.
     """
     source_key = hashlib.sha256(str(root.resolve()).encode()).hexdigest()[:16]
     cache = _committed_tree_cache() / source_key
@@ -370,7 +422,7 @@ def materialize_committed_tree(
     if not (target / ".complete").is_file():
         staging = Path(tempfile.mkdtemp(prefix=f".{revision}-", dir=cache))
         try:
-            tree = _reckon_subtree(root, revision)
+            tree, prefix = _archive_source(root, revision)
             archive = subprocess.run(
                 [
                     "git",
@@ -378,7 +430,7 @@ def materialize_committed_tree(
                     str(root),
                     "archive",
                     "--format=tar",
-                    "--prefix=reckon/",
+                    f"--prefix={prefix}",
                     tree,
                 ],
                 capture_output=True,
@@ -477,7 +529,7 @@ class CheckoutTrust:
 
 
 def tracked_reckon_tree_is_dirty(root: Path) -> tuple[bool, str]:
-    """Whether any tracked file under ``reckon/`` differs from ``HEAD``.
+    """Whether any tracked package or dispatch script differs from ``HEAD``.
 
     A tree a reloader reads mid-edit can import cleanly and still fail at its
     first use: a rename half-applied binds a name the import proof never
@@ -503,6 +555,7 @@ def tracked_reckon_tree_is_dirty(root: Path) -> tuple[bool, str]:
                 "--untracked-files=no",
                 "--",
                 "reckon",
+                "skills",
             ],
             capture_output=True,
             text=True,
