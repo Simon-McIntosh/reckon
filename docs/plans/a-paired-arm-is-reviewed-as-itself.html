@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It repairs review composition for the landed paired dispatch of a-shadow-cannot-see-its-primary; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
   <title>A Paired Arm Is Reviewed As Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -40,7 +40,7 @@
 <li>Give <code>_resolved_reviewed_run_id</code> a keyword-only <code>refuse_ambiguous</code> flag, defaulting to false. With it set, when more than one live pointer carries the source node id, the resolver returns the bare source rather than the first match. A bare source names no run directory, so the grant is refused rather than given to the wrong run. One matching pointer resolves as today. Only <code>_reviewed_run_id_for_node</code> (<code>reckon/crew/dispatch_admission.py:1866</code>) sets the flag, so only the dispatch grant changes. The resolver's other readers keep the first match: <code>reckon/crew/recovery_review_delivery.py</code> lines 118 and 233, <code>reckon/crew/recovery_review_dispatch.py:180</code> and <code>reckon/crew/promotion_checks.py:2343</code>. So does <code>_reviewed_run_id</code> in <code>reckon/crew/dispatch_sessions.py</code>. Once a paired arm's review node is minted from its run id, every one of them resolves that arm directly.</li>
 </ul>
 <p><strong>Out of scope.</strong> <code>_reviewed_run_id</code> in <code>reckon/crew/dispatch_sessions.py</code> (line 457) resolves the same source over ledger and live records to pick a review's session, taking the newest match. Once a paired arm's review is minted from its run id, that reader resolves it directly, so it is not changed here. Repair node ids keep the node id, because <code>source_node</code> is unchanged. Whether a repair of a paired arm's review resolves to the right arm is not measured here.</p>
-<p><strong>Write paths:</strong> <code>reckon/crew/recovery_review_subject.py</code>, <code>reckon/crew/recovery_review_delivery.py</code> and <code>tests/test_a_paired_arm_is_reviewed_as_itself.py</code>, which is new.</p>
+<p><strong>Write paths:</strong> <code>reckon/crew/recovery_review_subject.py</code>, <code>reckon/crew/recovery_review_delivery.py</code>, <code>reckon/crew/dispatch_admission.py</code>, where <code>_reviewed_run_id_for_node</code> sets the flag, and <code>tests/test_a_paired_arm_is_reviewed_as_itself.py</code>, which is new.</p>
 <p><strong>Done when</strong> all three of these hold:</p>
 <ul>
 <li>The new test points the crew home at a temporary directory and writes three live pointers there: a primary carrying node id <code>pair-node</code> and a <code>paired_shadow_run_id</code> naming the second; a shadow carrying node id <code>pair-node</code> and a lineage of kind <code>shadow</code> naming the first as <code>primary_run_id</code>; and an unpaired run carrying node id <code>solo-node</code>. It asserts four cases:
@@ -56,12 +56,45 @@ The test asserts the real crew home is untouched afterwards.</li>
 </ul>
 <p><strong>Negative control</strong>, two mutations, each applied alone. With the pairing test removed from <code>_review_dispatch_fields</code>, the first case must fail. With <code>_reviewed_run_id_for_node</code> no longer setting the flag, the third case must fail. Each control runs under pytest with its default short summary, so its log lists the failing test id.</p>
 
+    <h2 id="s2">§2 — A shadow arm is reviewed on its retained patch</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p>On 2026-10-18 nova's codex shadow arm <code>r-20261018T065749620519-seed-census-departure</code> was reviewed by <code>r-20261018T080020843192-review-of-r-20261018T065749620519-seed-census-departure-efbeb794e60b</code>. The review scored goal_fidelity 0, fit 0 and durability 0, for a total of 48. Its first blocking finding reads: "commits is empty and source HEAD equals the reviewed base; seven changed tracked files remain uncommitted, so neither the repair nor its assertions can land at this revision." The shadow did what its contract asks. Its prompt says to produce the named evidence without committing, and that the durable deliverable is the worktree patch retained at completion. The clive primary on the same node scored 77. nova reports that the shadow alone measured the census on titan and found a departure only on the GPU.</p>
+<p>The cause is that the run-review brief describes every reviewed run as committed work. The rubric, <code>reckon/crew/prompts/review.md</code>, tells the reviewer to read "the diff of its commits against its base" (line 21). <code>_review_brief_text</code> (<code>reckon/crew/recovery_review_subject.py:370</code>) appends only the run's id, its head and its brief to that rubric. A shadow's head is its base, so the diff the reviewer reads is empty, and the patch that is its real deliverable is never named. Promotion already treats that patch as the deliverable. <code>_write_shadow_patch</code> (<code>reckon/crew/promotion_scope.py:905</code>) preserves <code>git diff &lt;base_sha&gt;</code> of the shadow's working tree, plus its untracked files, and <code>_refuse_commits_for_a_shadow</code> (<code>reckon/crew/promotion_checks.py:1730</code>) refuses a shadow presenting commits. The scores matter beyond the run. A shadow's review total, and since §32 of lane-and-model-routing its dimension medians, feed the at-requirement block of the lane that ran the shadow, so every shadow review biases Jev's evidence against that lane.</p>
+<p><strong>Remedy.</strong> In <code>_review_brief_text</code>, when <code>_is_shadow</code> (<code>reckon/crew/promotion_scope.py:899</code>) reads the record as a shadow, append a block after the run's identity lines. Do not write a second shadow test. The block says four things:</p>
+<ul>
+<li>This run is a shadow, and its deliverable is its worktree patch, never commits.</li>
+<li>The diff to review is <code>git -C &lt;worktree&gt; diff &lt;base_sha&gt;</code> plus the files <code>git -C &lt;worktree&gt; ls-files --others --exclude-standard</code> lists, with the worktree and base taken from the record. That is the diff promotion preserves.</li>
+<li>An empty <code>commits</code> list and a head equal to the base are the shadow's contract, not findings.</li>
+<li>Every dimension is scored on that patch as the reviewed change.</li>
+</ul>
+<p>A run that is not a shadow gets the same brief text as today. Change nothing in the rubric file itself, which every other run review reads.</p>
+<p><strong>Out of scope.</strong> Reviews of shadows already stored keep their scores, and nothing here re-scores them.</p>
+<p><strong>Write paths:</strong> <code>reckon/crew/recovery_review_subject.py</code> and <code>tests/test_a_shadow_is_reviewed_on_its_patch.py</code>, which is new. §1 writes the same module, so §2 is dispatched only after §1 is merged.</p>
+<p><strong>Done when</strong> all three of these hold:</p>
+<ul>
+<li>The new test builds a record with a lineage of kind <code>shadow</code>, a <code>worktree</code> and a <code>base_sha</code>, and a second record that is not a shadow. It asserts three cases:
+  <ul>
+  <li>For the shadow, <code>_review_brief_text(record, head)</code> contains the record's <code>base_sha</code> and <code>worktree</code> inside the <code>git -C</code> diff command, the <code>ls-files --others --exclude-standard</code> command, and the sentence that an empty commits list is the contract and not a finding.</li>
+  <li>For the record that is not a shadow, the text equals <code>load_review_prompt()</code> followed by the identity lines, exactly as composed today, and contains no shadow block.</li>
+  <li>A paired primary carrying <code>paired_shadow_run_id</code> but no shadow lineage gets no shadow block.</li>
+  </ul>
+The test writes nothing outside its temporary directory.</li>
+<li>Pytest over the new file, <code>tests/test_a_paired_arm_is_reviewed_as_itself.py</code>, <code>tests/test_review_of_a_brief_run_names_its_brief.py</code>, <code>tests/test_a_run_review_with_run_directory_records_dispatches.py</code>, <code>tests/test_a_re_review_is_scoped_to_what_changed.py</code>, <code>tests/test_review_reflex_sweep.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code> adds no failure against the base. Run it in the foreground.</li>
+<li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths, judged by delta against the base blobs.</li>
+</ul>
+<p><strong>Negative control.</strong> With the shadow block removed from <code>_review_brief_text</code>, the first case must fail. With the block appended for every paired arm rather than for a shadow, the third case must fail. Each control runs under pytest with its default short summary, so its log lists the failing test id.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-apairas-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-paired-arm-is-reviewed-as-itself §1" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Name a paired arm&#x27;s review by the arm&#x27;s run id</h4>
     <div class="r-fu-body"><p>Filed after nova reported that the printed review command for a paired codex arm resolved to its clive primary and was refused as unscoped. §1 carries the remedy and its done-when.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-paired-arm-is-reviewed-as-itself §1</pre>
+    </article>
+<article class="r-fu" data-id="f-apairas-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-paired-arm-is-reviewed-as-itself §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Review a shadow arm on its retained patch</h4>
+    <div class="r-fu-body"><p>Filed after nova reported a codex shadow scored 0 on goal, fit and durability because its reviewer read an empty commit diff. §2 carries the remedy; it is dispatched after §1 merges, since both write the same module.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-paired-arm-is-reviewed-as-itself §2</pre>
     </article>
 </section>
   
