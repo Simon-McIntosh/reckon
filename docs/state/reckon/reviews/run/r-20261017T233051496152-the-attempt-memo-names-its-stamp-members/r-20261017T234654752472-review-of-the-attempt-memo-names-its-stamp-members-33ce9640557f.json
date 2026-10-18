@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/mcp_views.py:_attempt_inputs",
+    "reckon/mcp_views.py:section_attempts_by_plan",
+    "reckon/mcp_views.py:section_attempt_count",
+    "reckon/roadmap.py:2591",
+    "reckon/crew/routing.py:299"
+  ],
+  "completed_at": "2026-10-17T23:57:52.109Z",
+  "dispatched_at": "2026-10-17T23:47:49Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "1144",
+      "severity": "follow-on",
+      "text": "follow-on: index_state_stamp re-lists aggregate, version, aggregate_identity and runs_identity that index_stamp at reckon/ledger.py:1127 already owns, so a member later added to index_stamp will not reach the memo and the memo will silently ignore that state change, which is the failure class this node exists to close; deriving the record from index_stamp and omitting the index member by name would keep one owner of the member set."
+    },
+    {
+      "file": "tests/test_the_attempts_derivation_is_cached.py",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the monkeypatch of ledger.index_stamp is inert after the change because _attempt_inputs now calls ledger.index_state_stamp at reckon/mcp_views.py:1532; measured zero calls to index_stamp during _attempt_inputs at 33ce96405, so the test's ledger-index invalidation coverage is gone while the test still passes on its live-pointer assertions."
+    },
+    {
+      "file": "head-gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded head gate names the base revision 2dc7f5677 in its header while it validated the modified tree, so a reader cannot tie the passing head arm to the landed commit 33ce96405 without re-running it, which I did and which passed."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base 2dc7f5677 \u2014 a single commit 33ce96405 with 4 files, 169 insertions and 5 deletions, every path inside the declared write paths.",
+    "done_when": "the done_when names tests/test_the_attempt_memo_names_its_stamp_members.py with a base-arm negative control; manifest.md records the head arm at 4 passed EXIT=0 and the base arm at 1 failed EXIT=1, and my own re-run of that file at 33ce96405 returned 4 passed EXIT=0.",
+    "goal": "the node's goal is to make the attempts memo compare the ledger index stamp members by name rather than by a positional slice; reckon/ledger.py:1144 adds index_state_stamp, returning the members as a record keyed by name, and reckon/mcp_views.py:1557 builds the memo's comparison from those names.",
+    "manifest": "read; status complete, tests recorded as 4 passed EXIT=0 over the named gate, test_logs names head-gate.log, neg-control-base.log, related-tests.log and ruff.log, and the declared negative control is the base-arm run at neg-control-base.log.",
+    "write_paths": "manifest.md declares reckon/mcp_views.py, reckon/ledger.py, tests/test_the_attempt_memo_names_its_stamp_members.py and the fragment under docs/evidence/fragments/a-read-answers-inside-its-deadline/; the diff touches exactly those four and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_attempt_memo_names_its_stamp_members.py:95 asserts on a real runs-directory identity change and fails on the base tree, but the change left tests/test_the_attempts_derivation_is_cached.py:22 patching a function the memo no longer calls.",
+    "evidence": "the done_when's named gate reproduced at the landed revision (4 passed EXIT=0) and the base arm is recorded failing at neg-control-base.log:EXIT=1, but head-gate.log:1 names base 2dc7f5677 rather than the revision it validated.",
+    "fit": "reckon/ledger.py:1144 and reckon/mcp_views.py:1541 follow the surrounding docstring and private-helper style of the modules they sit in, and no added name carries a plan, ticket or version token.",
+    "goal_fidelity": "reckon/mcp_views.py:1557 compares the members by name out of the record reckon/ledger.py:1144 returns, so the positional slice the goal names is gone.",
+    "reuse": "reckon/ledger.py:1160 re-lists the four members that reckon/ledger.py:1127 index_stamp already builds instead of deriving from that owner.",
+    "scope_discipline": "every path in the diff at 33ce96405 \u2014 reckon/ledger.py, reckon/mcp_views.py, tests/test_the_attempt_memo_names_its_stamp_members.py and the landing fragment \u2014 is inside the manifest's declared write paths."
+  },
+  "node": "review-of-the-attempt-memo-names-its-stamp-members-33ce9640557f",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the attempts memo compare the ledger index stamp members by name rather than by a positional slice; reckon/ledger.py:1144 adds index_state_stamp, returning the members as a record keyed by name, and reckon/mcp_views.py:1557 builds the memo's comparison from those names.\nVERDICT done_when: the done_when names tests/test_the_attempt_memo_names_its_stamp_members.py with a base-arm negative control; manifest.md records the head arm at 4 passed EXIT=0 and the base arm at 1 failed EXIT=1, and my own re-run of that file at 33ce96405 returned 4 passed EXIT=0.\nVERDICT write_paths: manifest.md declares reckon/mcp_views.py, reckon/ledger.py, tests/test_the_attempt_memo_names_its_stamp_members.py and the fragment under docs/evidence/fragments/a-read-answers-inside-its-deadline/; the diff touches exactly those four and nothing else.\nVERDICT manifest: read; status complete, tests recorded as 4 passed EXIT=0 over the named gate, test_logs names head-gate.log, neg-control-base.log, related-tests.log and ruff.log, and the declared negative control is the base-arm run at neg-control-base.log.\nVERDICT diff: read commit by commit against base 2dc7f5677 \u2014 a single commit 33ce96405 with 4 files, 169 insertions and 5 deletions, every path inside the declared write paths.\nCALL_SITES: reckon/mcp_views.py:_attempt_inputs, reckon/mcp_views.py:section_attempts_by_plan, reckon/mcp_views.py:section_attempt_count, reckon/roadmap.py:2591, reckon/crew/routing.py:299\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:1557 compares the members by name out of the record reckon/ledger.py:1144 returns, so the positional slice the goal names is gone.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when's named gate reproduced at the landed revision (4 passed EXIT=0) and the base arm is recorded failing at neg-control-base.log:EXIT=1, but head-gate.log:1 names base 2dc7f5677 rather than the revision it validated.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff at 33ce96405 \u2014 reckon/ledger.py, reckon/mcp_views.py, tests/test_the_attempt_memo_names_its_stamp_members.py and the landing fragment \u2014 is inside the manifest's declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_attempt_memo_names_its_stamp_members.py:95 asserts on a real runs-directory identity change and fails on the base tree, but the change left tests/test_the_attempts_derivation_is_cached.py:22 patching a function the memo no longer calls.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/ledger.py:1144 and reckon/mcp_views.py:1541 follow the surrounding docstring and private-helper style of the modules they sit in, and no added name carries a plan, ticket or version token.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/ledger.py:1160 re-lists the four members that reckon/ledger.py:1127 index_stamp already builds instead of deriving from that owner.\nFINDING reckon/ledger.py:1144 follow-on: index_state_stamp re-lists aggregate, version, aggregate_identity and runs_identity that index_stamp at reckon/ledger.py:1127 already owns, so a member later added to index_stamp will not reach the memo and the memo will silently ignore that state change, which is the failure class this node exists to close; deriving the record from index_stamp and omitting the index member by name would keep one owner of the member set.\nFINDING tests/test_the_attempts_derivation_is_cached.py:22 follow-on: the monkeypatch of ledger.index_stamp is inert after the change because _attempt_inputs now calls ledger.index_state_stamp at reckon/mcp_views.py:1532; measured zero calls to index_stamp during _attempt_inputs at 33ce96405, so the test's ledger-index invalidation coverage is gone while the test still passes on its live-pointer assertions.\nFINDING head-gate.log:1 follow-on: the recorded head gate names the base revision 2dc7f5677 in its header while it validated the modified tree, so a reader cannot tie the passing head arm to the landed commit 33ce96405 without re-running it, which I did and which passed.",
+  "review_run_id": "r-20261017T234654752472-review-of-the-attempt-memo-names-its-stamp-members-33ce9640557f",
+  "reviewed_base_sha": "2dc7f5677f47b3ef3b022f57114f650129680d87",
+  "reviewed_head_sha": "33ce9640557f052f3ed0ab9bb6ee99e3bba29189",
+  "reviewed_run_id": "r-20261017T233051496152-the-attempt-memo-names-its-stamp-members",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-17T23:55:51Z",
+  "total": 98
+}
