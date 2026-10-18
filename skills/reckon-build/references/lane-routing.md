@@ -9,6 +9,14 @@ orchestrators; background work there costs orchestrator capacity, and
 saturating it stops every session rather than one node. The resolved backend's
 `serves_orchestrators` declaration identifies that lane; its name does not.
 
+Declare urgency on a picker-routed dispatch when a real delivery deadline could
+be missed while the local lane waits: pass `--due` as a UTC ISO instant or a
+duration such as `4h`, and `--urgency` as the short reason the deadline matters.
+The picker compares that time with the local expected wait and queue position,
+then may use a serving lane with a lift or headroom. Give the actual deadline,
+not an inflated priority; review exclusions, context fit and worker slots still
+govern which lanes can run the node.
+
 ## Name the lane, then trust no fallback
 
 Add `--backend <lane>` to a live `reckon crew dispatch` invocation. The same

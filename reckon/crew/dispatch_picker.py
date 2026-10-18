@@ -2,10 +2,12 @@
 from __future__ import annotations
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
 import time
+from datetime import UTC, datetime, timedelta
 from pathlib import (
     Path,
 )
@@ -18,6 +20,7 @@ from typing import (
 from reckon import (
     ledger,
 )
+from reckon._timestamps import parse_utc
 from reckon.crew.node import (
     CrewError,
     PlanVisibilityError,
@@ -39,6 +42,26 @@ from reckon.crew.runs import (
 
 
 PICKER_DISPATCH_TIMEOUT_SECONDS = 5.0
+
+
+def parse_dispatch_due(value: str | None) -> str | None:
+    """Resolve a dispatch deadline to one UTC instant."""
+    if not value:
+        return None
+    raw = value.strip()
+    duration = re.fullmatch(r"(\d+)([smhd])", raw, re.IGNORECASE)
+    if duration:
+        seconds = (
+            int(duration.group(1))
+            * {"s": 1, "m": 60, "h": 3600, "d": 86400}[duration.group(2).lower()]
+        )
+        return (datetime.now(UTC) + timedelta(seconds=seconds)).isoformat()
+    if not re.match(r"^\d{4}-\d\d-\d\d[Tt ]\d\d:\d\d", raw):
+        raise ValueError("--due must be an ISO instant or a duration such as 4h")
+    parsed = parse_utc(raw)
+    if parsed is None:
+        raise ValueError("--due must be an ISO instant or a duration such as 4h")
+    return parsed.isoformat()
 
 
 def parse_orchestrator_assessments(statements: Iterable[str]) -> dict[str, str]:
@@ -342,6 +365,8 @@ def dispatch_picker_selection(
     authority: Mapping[str, Any] | None = None,
     authority_error: str | None = None,
     orchestrator_assessment: Mapping[str, Any] | None = None,
+    due: str | None = None,
+    urgency: str | None = None,
     stage_ms: dict[str, float | None] | None = None,
     _allow_reask: bool = True,
 ) -> dict[str, Any]:
@@ -357,6 +382,9 @@ def dispatch_picker_selection(
     pick whose rendered state render, estimate or Jev call outlasts the bound
     is named rather than read as the bare ``timeout``.
     """
+    # The picker receives TaskNode unchanged through its request. This
+    # dispatch-scoped field is read only by the state renderer.
+    node.urgency = {"due": due, "reason": urgency or None}
     if input_errors:
         # An input the dispatcher could not build is not re-read here: the same
         # source that failed once would only fail again, so the picker's own
@@ -528,6 +556,8 @@ def dispatch_picker_selection(
             authority=authority,
             authority_error=authority_error,
             orchestrator_assessment=orchestrator_assessment,
+            due=due,
+            urgency=urgency,
             allow=_allow_reask,
         )
     error = result.get("error") or "picker returned no selection"
@@ -676,6 +706,8 @@ def _ask_excluding_lane(
     authority: Mapping[str, Any] | None = None,
     authority_error: str | None = None,
     orchestrator_assessment: Mapping[str, Any] | None = None,
+    due: str | None = None,
+    urgency: str | None = None,
 ) -> dict[str, Any]:
     """Ask Jev once more with one lane left out of the offering, keeping both asks.
 
@@ -696,6 +728,8 @@ def _ask_excluding_lane(
         authority=authority,
         authority_error=authority_error,
         orchestrator_assessment=orchestrator_assessment,
+        due=due,
+        urgency=urgency,
         _allow_reask=False,
     )
     return {**second, "asks": [dict(first_ask), _ask_summary(second)]}
@@ -713,6 +747,8 @@ def _reask_off_zero_slot_lane(
     authority: Mapping[str, Any] | None,
     authority_error: str | None,
     orchestrator_assessment: Mapping[str, Any] | None,
+    due: str | None,
+    urgency: str | None,
     allow: bool,
 ) -> dict[str, Any]:
     """Re-ask Jev once with a zero-slot lane excluded, for well-defined work.
@@ -749,6 +785,8 @@ def _reask_off_zero_slot_lane(
         authority=authority,
         authority_error=authority_error,
         orchestrator_assessment=orchestrator_assessment,
+        due=due,
+        urgency=urgency,
     )
     return {
         **second,
@@ -822,6 +860,8 @@ def _record_shadow_picker_selection(spec_path: Path) -> None:
                 input_errors=errors,
                 authority=authority,
                 authority_error=authority_error,
+                due=spec.get("due"),
+                urgency=spec.get("urgency"),
             )
         except Exception as exc:  # noqa: BLE001 - an advisory cannot stop a run
             result["selection"] = _picker_fallback(
@@ -851,6 +891,8 @@ def _start_shadow_picker_selection(
     ledger_root: Path,
     session: str,
     comment: str,
+    due: str | None = None,
+    urgency: str | None = None,
 ) -> None:
     """Start a bounded detached reader without extending dispatch's lifetime."""
     directory = run_dir(run_id)
@@ -866,6 +908,8 @@ def _start_shadow_picker_selection(
             "ledger_root": str(ledger_root),
             "session": session,
             "comment": comment,
+            "due": due,
+            "urgency": urgency,
         },
     )
     log = (directory / "shadow-picker.log").open("a", encoding="utf-8")

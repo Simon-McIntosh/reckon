@@ -12,6 +12,7 @@ asked, not inline in code.
 
 import json
 from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -23,6 +24,8 @@ from jinja2 import (
     StrictUndefined,
     Undefined,
 )
+
+from reckon._timestamps import parse_utc
 
 from . import lane_context
 
@@ -73,6 +76,15 @@ _GLOSSARY: dict[str, str] = {
         "drain_by or multiple), who granted it, and when it ends. A lane under a "
         "lift is one whose window is meant to be spent, so its burn and pace do "
         "not press it while the lift stands."
+    ),
+    "urgency": (
+        "The dispatch deadline and reason. due is a UTC instant or null; "
+        "seconds_to_due is its remaining time at the pick, or null when no "
+        "deadline was given. Compare it with local_lane.expected_wait_s and "
+        "local_lane.queue_position (the next estimated position from the "
+        "published waiting count; fair-share admission may reorder it). "
+        "A reason without a deadline is still "
+        "context for the urgency judgment, never permission to bypass fit."
     ),
     "reset_available": (
         "True when one further window is available beyond the current one; null "
@@ -341,6 +353,9 @@ def build_state(
     """
 
     serving_lanes = _serving_lanes(candidates)
+    declared_urgency = getattr(node, "urgency", None) or {}
+    due = declared_urgency.get("due")
+    parsed_due = parse_utc(due) if due else None
     node_state: dict[str, Any] = {
         "role": node.role,
         "spec_level": node.spec_level,
@@ -352,6 +367,15 @@ def build_state(
         ),
         "goal": node.goal,
         "done_when": node.done_when,
+        "urgency": {
+            "due": due,
+            "seconds_to_due": (
+                round((parsed_due - datetime.now(UTC)).total_seconds(), 3)
+                if parsed_due is not None
+                else None
+            ),
+            "reason": declared_urgency.get("reason") or None,
+        },
         "estimated_context": estimated_context,
         "estimated_hours": (
             node.estimated_hours if estimated_hours is None else estimated_hours
