@@ -3,14 +3,17 @@
 The denominator is the sections declared done or implementable; deferred
 sections sit outside it. Each section weighs the effort its record carries, and
 a declared section whose hours no record states takes the mean of the hours
-that are present. When no section carries hours every section weighs the same,
-so the figure is the count over the declarations. A plan with no declarations
-keeps its authored ``plan-impl``.
+that are present. Only the buildable sections' hours enter that mean: a
+deferred section sits outside the denominator, so its recorded hours do not
+weigh a buildable section that states none. When no section carries hours every
+section weighs the same, so the figure is the count over the declarations. A
+plan with no declarations keeps its authored ``plan-impl``.
 
-Five cases are covered: every section recorded with hours, a partial set of
-hours, no hours at all, no declarations, and declarations with no records. The
-last also pins the head-only reader (the discovery rows) to the parse, so a
-plan declared but not yet recorded serves the same figure from both readers.
+Six cases are covered: every section recorded with hours, a partial set of
+hours, a deferred section whose hours stay out of the imputed mean, no hours at
+all, no declarations, and declarations with no records. The last also pins the
+head-only reader (the discovery rows) to the parse, so a plan declared but not
+yet recorded serves the same figure from both readers.
 """
 
 from __future__ import annotations
@@ -103,6 +106,33 @@ def test_a_section_without_hours_takes_the_mean_of_the_ones_present(
         impl="0.1",
     )
     path = _write(tmp_path, "partial-hours", text)
+
+    state = read_state(text)
+    assert state["impl"] == pytest.approx(2 / 9)
+    assert state["impl_source"] == "declarations"
+    assert parse_plan(path)["impl"] == pytest.approx(2 / 9)
+    assert parse_meta(path)["impl"] == pytest.approx(2 / 9)
+
+
+def test_a_deferred_sections_hours_do_not_weigh_the_imputed_mean(
+    tmp_path: Path,
+) -> None:
+    # s4 is deferred at 40 h and sits outside the denominator, so its hours must
+    # stay out of the mean s2 is imputed from. The buildable sections state 2 h
+    # and 4 h, a mean of 3 h, so s2 weighs 3 h and the plan reads 2 / (2+3+4).
+    # Counting s4's 40 h would raise the mean to 46/3 h and move the figure to
+    # 2 / 21.33, weighting a buildable section by a deferred section's effort.
+    text = _plan_text(
+        declarations={
+            "s1": "done",
+            "s2": "implementable",
+            "s3": "implementable",
+            "s4": "deferred",
+        },
+        records=[("s1", 2, "done"), ("s3", 4, "implementable"), ("s4", 40, "deferred")],
+        impl="0.1",
+    )
+    path = _write(tmp_path, "deferred-hours", text)
 
     state = read_state(text)
     assert state["impl"] == pytest.approx(2 / 9)
