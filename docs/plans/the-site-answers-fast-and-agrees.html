@@ -25,7 +25,7 @@
   <title>The Site Answers Fast and Agrees With Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -112,7 +112,7 @@
     <p><strong>Done when</strong> a test serves a temporary project and asserts that every plan's <code>impl</code> in <code>/_index</code> equals its value in
       <code>/_discover</code>. That includes one plan with declarations and no records, and one with partial hours. The negative control drops the field from
       the index row, and the equality assertion fails. The SPA test files show no added failure against base, and the same ruff, log and allocation terms as
-      §2 hold. Build it after §2 and §4 merge, because §4 changes the index file this row is read from. Write paths: <code>reckon/metadata_index.py</code>,
+      §2 hold. Build it after §2 and §14 merge. §2 supplies the figure. §4, which changes the index file this row is read from, lands earlier in the chain of sections that write <code>reckon/serve.py</code>: §4, §12, §13, §14, then this one. Write paths: <code>reckon/metadata_index.py</code>,
       <code>reckon/serve.py</code>, <code>docs/ui/state-loader.js</code> and the test file.</p>
 
     <h2 id="s4">§4 — A reader on another cache format never evicts the served one</h2>
@@ -138,8 +138,7 @@
       and the derived endpoint answers from the prior result with an age header. The negative control computes inline, and the trivial-request bound then
       fails. On srv-1006, after the served process carries the change, ten minutes of ordinary fleet activity are logged with §9's durations, and every
       derived endpoint answers under 1 s at the 95th percentile. Tests importing <code>reckon/serve.py</code> show no added failure against base, and the
-      same ruff, log and allocation terms as §2 hold. Build it after §4 and §9 merge, since §9 supplies the durations this measures. Write paths:
-      <code>reckon/serve.py</code>, a new module beside it for the recompute, and the test file.</p>
+      same ruff, log and allocation terms as §2 hold. Build it after §3 merges, the section before it in the chain that writes <code>reckon/serve.py</code>. §4, and §9, whose durations this measures, land earlier in that chain. Write paths: <code>reckon/serve.py</code>, <code>reckon/compliance.py</code>, whose refresh entry point becomes the first instance of the generic one, and the test file.</p>
 
     <h2 id="s6">§6 — The home view loads a summary, never every inventory</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
