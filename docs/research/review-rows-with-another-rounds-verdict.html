@@ -42,8 +42,9 @@
       <code>_review_record_subject</code>, the predicate the delivery code itself
       uses, so the name is parsed once and not again), and failing that the head
       suffix the review's node id mints — a trailing twelve hexadecimal digits,
-      the spelling <code>round_node_id</code> writes and
-      <code>round_node_source</code> strips. A row whose recorded head
+      the spelling <code>round_node_id</code> writes, read back through its own
+      inverse <code>round_node_source</code> so one grammar is parsed by the pair
+      that enforces it. A row whose recorded head
       <em>does not begin with</em> the dispatched head is <strong>mismatched</strong>.
       A row carrying no dispatched head from any source is
       <strong>unclassifiable</strong>.
@@ -54,11 +55,15 @@
     </p>
     <pre>PYTHONPATH=$PWD .venv/bin/python scripts/review_rows_with_another_rounds_verdict.py</pre>
     <p>
-      The census was read at <strong>2026-10-18T22:10:35Z</strong> in the
-      worktree at revision <code>b731c734bb583babbf0e3c34468075eecb47e4cf</code>.
+      The census was read at <strong>2026-10-18T22:56:34Z</strong> in the
+      worktree at revision <code>da8439c10b905153b12ceaf7c34639619ce6dfed</code>.
       Each project's ledger was read at that project's own <code>HEAD</code> given
       in §2. The ledger is live on several projects, so a later run will move
-      these numbers; the figures below are the ones that run produced.
+      these numbers; the figures below are the ones that run produced. An earlier
+      read at 22:10:35Z found the same eighteen mismatched rows and no others,
+      with 2339 promoted run reviews; the eleven reviews promoted in between
+      include one more mismatched row (§3, <code>r-20261018T224415876954…</code>),
+      so the mismatch count tracks the live ledger rather than the instrument.
     </p>
 
     <h2 id="s2">§2 — Portfolio totals</h2>
@@ -78,21 +83,21 @@
         <tr><td>RabbitPy</td><td><code>f4555c5ee551</code></td><td>32</td><td>0</td><td>0</td></tr>
         <tr><td>hanney</td><td><code>a12570b3d62e</code></td><td>1</td><td>0</td><td>0</td></tr>
         <tr><td>imas-ambix</td><td><code>d2583489554b</code></td><td>147</td><td>1</td><td>0</td></tr>
-        <tr><td>imas-codex</td><td><code>8cf27bb08468</code></td><td>511</td><td>1</td><td>0</td></tr>
-        <tr><td>imas-efit</td><td><code>9607d19f83cd</code></td><td>204</td><td>1</td><td>0</td></tr>
+        <tr><td>imas-codex</td><td><code>28e258690a2a</code></td><td>514</td><td>1</td><td>0</td></tr>
+        <tr><td>imas-efit</td><td><code>37131b826a5b</code></td><td>204</td><td>1</td><td>0</td></tr>
         <tr><td>imas-ink</td><td><code>f06392bc960c</code></td><td>6</td><td>0</td><td>0</td></tr>
         <tr><td>imas-standard-names</td><td><code>579216b3a99b</code></td><td>12</td><td>0</td><td>0</td></tr>
         <tr><td>iter_uda</td><td><code>daf8e69e478c</code></td><td>4</td><td>0</td><td>0</td></tr>
-        <tr><td>nova</td><td><code>3f1bd1d65f36</code></td><td>177</td><td>4</td><td>0</td></tr>
-        <tr><td>power_convertor</td><td><code>36940da3f964</code></td><td>438</td><td>7</td><td>0</td></tr>
-        <tr><td>reckon</td><td><code>732bccf73c2c</code></td><td>807</td><td>4</td><td>0</td></tr>
-        <tr><td><strong>Total</strong></td><td></td><td><strong>2339</strong></td><td><strong>18</strong></td><td><strong>0</strong></td></tr>
+        <tr><td>nova</td><td><code>24f2a837a921</code></td><td>177</td><td>4</td><td>0</td></tr>
+        <tr><td>power_convertor</td><td><code>90ecb7857d5e</code></td><td>441</td><td>8</td><td>0</td></tr>
+        <tr><td>reckon</td><td><code>bb7181ac3e1b</code></td><td>812</td><td>4</td><td>0</td></tr>
+        <tr><td><strong>Total</strong></td><td></td><td><strong>2350</strong></td><td><strong>19</strong></td><td><strong>0</strong></td></tr>
       </tbody>
     </table>
 
     <h2 id="s3">§3 — Mismatched rows</h2>
     <p>
-      Eighteen promoted run reviews carry a recorded head that does not begin with
+      Nineteen promoted run reviews carry a recorded head that does not begin with
       the head they were dispatched to read. The dispatched head and the recorded
       head are the strongest-source head and the row's
       <code>review.reviewed_head_sha</code>; the total is the row's
@@ -207,6 +212,13 @@
           <td>61</td><td></td><td><code>f5e3cf83</code></td>
         </tr>
         <tr>
+          <td>power_convertor</td>
+          <td><code>r-20261018T224415876954-review-of-fast-discharge-tf-f9eef8d2048d</code></td>
+          <td><code>f9eef8d2048dd52db3879a4708bc5225dcb3d4f9</code></td>
+          <td><code>212fd602469ff15ac30508c749a3bbf71ac59b72</code></td>
+          <td>93</td><td></td><td><code>76401005</code></td>
+        </tr>
+        <tr>
           <td>reckon</td>
           <td><code>r-20261006T174733709447-review-of-host-reviews-import-into-the-committed-tree</code></td>
           <td><code>75d67bdde1ab37747cc421ebf7f07e31872a2cbf</code></td>
@@ -239,9 +251,12 @@
 
     <h2 id="s4">§4 — Unclassifiable rows</h2>
     <p>
-      None. Every one of the 2339 promoted run reviews carried a dispatched head
+      None. Every one of the 2350 promoted run reviews carried a dispatched head
       from a declared <code>.at-</code> write path or from the head suffix of its
-      node id, so all 2339 are classified.
+      node id, so all 2350 are classified. That zero rests on a path shown to
+      fire, not on a branch no input ever reached: the third control in §5 drives
+      a row with no dispatched head from either source through the same
+      classifier and shows it landing here.
     </p>
 
     <h2 id="s5">§5 — Controls</h2>
@@ -269,19 +284,44 @@
         which begins with its dispatched head <code>45213bf1cd62…</code>. It is
         counted among nova's 177 promoted run reviews and does not appear in §3.
       </li>
+      <li>
+        <strong>Unclassifiable path — shown to fire.</strong> A synthetic promoted
+        run-review row is written under a temporary runs directory (never a real
+        ledger) with a recorded verdict but no dispatched head from either source:
+        a write-path list holding only a legacy path with no <code>.at-</code>
+        segment, and a node id (<code>review-of-synthetic-row</code>) carrying no
+        head suffix. Pushed through the same classification function the census
+        calls, it lands in the unclassifiable list:
+        <code>reviews=1 mismatched=0 unclassifiable=1</code>, the single
+        unclassifiable row being the synthetic one. Command:
+        <code>… review_rows_with_another_rounds_verdict.py --control</code>, exit
+        0. Log: <code>unclassifiable-control.log</code> in the run directory. The
+        portfolio's zero unclassifiable rows is therefore a reading about the
+        ledger, not an artefact of a branch that never runs.
+      </li>
     </ul>
 
     <h2 id="s6">§6 — Reproduce</h2>
     <p>
-      Both figures above and the two controls come from one read-only run of
+      Both figures above and the first two controls come from one read-only run of
       <code>scripts/review_rows_with_another_rounds_verdict.py</code>. Run it with:
     </p>
     <pre>PYTHONPATH=$PWD .venv/bin/python scripts/review_rows_with_another_rounds_verdict.py --json</pre>
     <p>
-      The script reads the mounts in <code>~/.config/reckon/mounts.json</code>,
-      walks each project's <code>docs/state/&lt;project&gt;/runs/</code> directory,
-      and writes nothing. It defines only private helpers and its entry point, so
-      it adds no public definition to the package.
+      The third control is its own run, which writes a synthetic ledger row under
+      a temporary directory and removes it afterwards:
+    </p>
+    <pre>PYTHONPATH=$PWD .venv/bin/python scripts/review_rows_with_another_rounds_verdict.py --control</pre>
+    <p>
+      The script resolves the mounted projects through
+      <code>reckon.flight.mounted_project_docs</code>, walks each project's
+      <code>docs/state/&lt;project&gt;/runs/</code> directory, and writes nothing.
+      It reads the node-id head suffix through
+      <code>reckon.crew.repair.round_node_source</code> and the record-path head
+      through <code>reckon.crew.recovery_review_dispatch._review_record_subject</code>,
+      the same two owners the product uses, so it adds no second spelling of
+      either grammar. It defines only private helpers and its entry point, so it
+      adds no public definition to the package.
     </p>
   </main>
 </body>
