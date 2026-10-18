@@ -29,7 +29,7 @@ from reckon import _store, file_memo, flight, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew import recovery, review_dispositions, review_lifecycle, runs
 from reckon.crew import review as review_module
-from reckon.crew.node import INTERRUPTED_RUN_PHASE, parse_duration
+from reckon.crew.node import INTERRUPTED_RUN_PHASE, CrewError, parse_duration
 from reckon.crew.routing import (
     WorktreeRecordIndex,
     _registered_worktrees,
@@ -156,6 +156,59 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     node = review_pointer.get("node") or {}
     granted = {Path(str(path)).name for path in node.get("write_paths") or ()}
     return any(Path(str(path)).name in granted for path in head_keyed)
+
+
+def _refused_delivered_review(pointer: Mapping[str, Any]) -> dict[str, str] | None:
+    """Read a live review's refused delivery before asking for another review."""
+    reviewed_run_id = str(pointer.get("run_id") or "")
+    review_run_id = recovery._review_in_flight(pointer)
+    if not review_run_id:
+        return None
+    try:
+        reviewer = runs.read_pointer(review_run_id)
+    except CrewError:
+        return None
+    if not reviewer:
+        return None
+    directory = review_module.run_review_record_directory(runs.run_dir(reviewed_run_id))
+    refused = None
+    for declared in (reviewer.get("node") or {}).get("write_paths") or ():
+        path = Path(str(declared))
+        if path.parent != directory or not path.is_file():
+            continue
+        try:
+            body = json.loads(path.read_text(encoding="utf-8"))
+            reasons = (
+                    review_module.store_review_refusals(body)
+                if isinstance(body, Mapping)
+                else ["record is not an object"]
+            )
+        except (OSError, ValueError) as exc:
+            reasons = [f"unreadable JSON: {exc}"]
+        if not reasons:
+            return None
+        if refused is None:
+            change = (
+                "subject"
+                if any(
+                    "missing project" in reason
+                    or "missing reviewed_run_id" in reason
+                    or "missing review_run_id" in reason
+                    for reason in reasons
+                )
+                else "status=parsed"
+            )
+            command = (
+                f"reckon crew repair-review --run {shlex.quote(reviewed_run_id)} "
+                f"--record {shlex.quote(str(path))} --set {change} "
+                "--reason '<why this repair is correct>'"
+            )
+            refused = {
+                "reason": "; ".join(reasons),
+                "record": str(path),
+                "next_command": command,
+            }
+    return refused
 
 
 def _live_review_runs(project: str, session: str) -> set[str]:
@@ -381,6 +434,13 @@ def _review_duty_item(
     except (OSError, ValueError):
         review, reviewed_head = None, ""
     item = _live_item(row, kind=_classification_kind(), now=now)
+    refused = _refused_delivered_review(pointer)
+    if refused:
+        item["kind"] = "review-refused"
+        item["reason"] = refused["reason"]
+        item["record"] = refused["record"]
+        item["next_command"] = refused["next_command"]
+        return item
     if head:
         item["head"] = head
     if review is not None and recovery._review_is_complete(review):
@@ -891,6 +951,12 @@ def obligations(project: str, session: str) -> dict[str, Any]:
             if (
                 classification == "scoring"
                 and str(row.get("run_id") or "") in reviews_in_flight
+                and not (
+                    pointers.get(str(row.get("run_id") or ""))
+                    and _refused_delivered_review(
+                        pointers[str(row.get("run_id") or "")]
+                    )
+                )
             ):
                 continue
             items.append(

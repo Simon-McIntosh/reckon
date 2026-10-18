@@ -129,6 +129,12 @@ against $12–23 per implement node. It found what an audit of thirty merges had
 not. It would have found nothing on the pure refactor above, which is exactly why
 the trigger matters.
 
+When a completed review run leaves `review-missing` or `review-refused`, inspect
+its delivered record with `reckon crew check-review --record <path>` before
+dispatching another review. Use `reckon crew repair-review --run <reviewed-run>
+--record <path> --set status=parsed|subject --reason <why>` for a supported
+record repair, and confirm the filing receipt.
+
 #### The manifest is a report, not the record — and a reachable commit is not the content
 
 **A manifest field is not evidence.** An empty `commits:` or `changed_paths:`

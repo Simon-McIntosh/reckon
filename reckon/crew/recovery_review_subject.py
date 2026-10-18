@@ -395,6 +395,20 @@ def _review_brief_text(record: Mapping[str, Any], head: str) -> str:
     ]
     if brief_path:
         lines.append(f"Reviewed run's brief: {brief_path}")
+    lines.extend(
+        [
+            "",
+            "Review record contract (run crew check-review --record <path> on each written record before ending):",
+            "Required: project, reviewed_run_id, review_run_id, reviewed_base_sha, reviewed_head_sha,",
+            "scores (" + ", ".join(review_module.REVIEW_DIMENSIONS) + "),",
+            "added_failure_count, added_failure_ids, findings, status.",
+            "Accepted status values: "
+            + ", ".join(sorted(review_module.RECOGNISED_REVIEW_STATUSES))
+            + ".",
+            "Use parsed when the rubric produced a readable review; unparsed when it did not;",
+            "incomplete when the review has not finished and no verdict can be acted on.",
+        ]
+    )
     text = rubric.rstrip("\n") + "\n\n" + "\n".join(lines) + "\n"
     from reckon.crew.promotion_scope import _is_shadow
 
