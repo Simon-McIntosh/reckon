@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-18T23:21:00.888Z",
+  "dispatched_at": "2026-10-18T23:09:24Z",
+  "findings": [
+    {
+      "file": "docs/research/review-rows-with-another-rounds-verdict.html",
+      "line": 147,
+      "severity": "blocking",
+      "text": "the dispatched head transcribed for nova's r-20261011T230223261654-review-of-cfs-read-ten-thousand is c813459c51cf233a0195991b9a04f3414c3dd93c, but the run's own census payload (census-output.log, revision da8439c10, the revision the document cites) and the row's live ledger write path both carry c813459c51cf233a0195991d9a04f3414c3dd93c (1d9a, not 1b9a); the document states every figure is read from the ledgers, so a miscopied ledger head is a wrong figure in the deliverable, though it does not change the row's mismatched classification."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read all three commits against base b731c734 commit by commit (1ec00adbf adds the census and doc, da8439c10 reworks the node-id reader, mounts reader and adds the unclassifiable control, 56f417adf updates the doc and fragment to the re-read figures); +693 lines across exactly the three declared paths, no product module or test touched.",
+    "done_when": "read the done_when and checked each clause against docs/research/review-rows-with-another-rounds-verdict.html at 56f417adf: per-project counts (s2), all 19 mismatched rows listed with both heads, total, promoted_by and landing commit (s3), stated revision and time (s1), the known positive listed and the known negative counted not listed (s5, both verified in nova's ledger), the script and command named (s1, s6), and no file outside the write paths changed; one dispatched head cell is transcribed wrong (see FINDING).",
+    "goal": "read the node goal ('count, across every mounted project's committed ledger, the promoted run reviews whose recorded reviewed head is not the head they were dispatched to read') and scripts/review_rows_with_another_rounds_verdict.py:161-200 _classify does exactly that; the 2026-10-18T22:56:34Z read at da8439c10 counts 2350 promoted run reviews and 19 mismatched across 11 mounted ledgers.",
+    "manifest": "read the reviewed run's manifest.md; it states status complete, commits 1ec00adbf503, da8439c10b90 and 56f417adf, changed_paths equal to the three committed paths, and the gate PYTHONPATH=$PWD .venv/bin/python scripts/review_rows_with_another_rounds_verdict.py --json -> exit 0 with totals reviews=2350 mismatched=19 unclassifiable=0 plus the --control exit-0 unclassifiable run.",
+    "write_paths": "read the node's declared write paths (docs/research/review-rows-with-another-rounds-verdict.html, scripts/review_rows_with_another_rounds_verdict.py, the a-review-promotes-only-its-own-verdict landing fragment, and the docs/figures node directory) and every path in the three commits against base b731c734 is inside them, the figures directory left unused."
+  },
+  "justifications": {
+    "durability": "the rework adds scripts/review_rows_with_another_rounds_verdict.py:278 _unclassifiable_control, which exits non-zero if a no-dispatched-head row stops landing in the unclassifiable list, guarding that branch; no test file was added (out of the node's declared scope) and the mismatched/head-comparison path has nothing reddening on regression.",
+    "evidence": "docs/research/review-rows-with-another-rounds-verdict.html s2 reconciles with the recorded census-output.log payload (2350/19/0 across 11 projects) and the 19 row entries match s3 exactly except one dispatched head, which disagrees with both the log and the live ledger.",
+    "fit": "the script follows the surrounding scripts/ idiom (module docstring, private helpers, one documented entry point) and introduces no name the naming rules forbid.",
+    "goal_fidelity": "scripts/review_rows_with_another_rounds_verdict.py:161-200 walks every mounted project's runs directory and counts role==review rows whose recorded reviewed_head_sha does not begin with the dispatched head, which is the goal verbatim.",
+    "reuse": "scripts/review_rows_with_another_rounds_verdict.py:47-49 now reads the node-id head suffix through reckon/crew/repair.py:310 round_node_source and the mounted projects through reckon/flight.py:484 mounted_project_docs, extending those owners rather than re-deriving them; the remaining runs-directory walk matches the layout the plan names.",
+    "scope_discipline": "the three commits change exactly the paths named in the manifest's changed_paths, all inside the declared write paths, and touch no product source, test or shared plan state."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261018T230819140690-review-of-review-rows-with-another-rounds-verdict-56f417adf405",
+  "reviewed_base_sha": "b731c734bb583babbf0e3c34468075eecb47e4cf",
+  "reviewed_head_sha": "56f417adf405edc526cf79e1f22ada05e35317dc",
+  "reviewed_run_id": "r-20261018T215457968053-review-rows-with-another-rounds-verdict",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T23:30:30.931080+00:00"
+}
