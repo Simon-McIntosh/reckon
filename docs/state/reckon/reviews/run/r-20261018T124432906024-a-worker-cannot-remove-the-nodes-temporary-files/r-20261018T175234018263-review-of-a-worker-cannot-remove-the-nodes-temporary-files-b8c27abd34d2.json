@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_resume_reaps_its_child.py::test_a_shortlived_launcher_leaves_a_worker_that_survives_and_completes"
+  ],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/_backends.py:launch_plan"
+  ],
+  "completed_at": "2026-10-18T18:03:27.810Z",
+  "dispatched_at": "2026-10-18T17:54:17Z",
+  "findings": [
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": "1197",
+      "severity": "follow-on",
+      "text": "follow-on: create_node_tmp_runtime_paths re-implements the module's own create_write_roots (reckon/_worker_fence.py:547) - the same resolved_destination exists-check, mkdir(parents=True, exist_ok=True) and BackendError loop for every directory a fence is about to bind writable - rather than calling it, so that rule now lives in two copies that can drift."
+    },
+    {
+      "file": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py",
+      "line": "309",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion that no \"probe\" file exists in the node-tmp root guards nothing, because the stub writes its probes only into $FENCE_OWN and $FENCE_RUNTIME_PATHS and never into the node-tmp root, so the assertion stays true whatever the fence does."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T124432906024-a-worker-cannot-remove-the-nodes-temporary-files/negative-control.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded negative control's header names rev=a86b0351e, five commits before the reviewed head b8c27abd3 and before the final fence commit e61ed73e4, and the control was never re-run at that final revision, so its red is not demonstrated against the code being promoted."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T124432906024-a-worker-cannot-remove-the-nodes-temporary-files/population3-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm adds tests/test_resume_reaps_its_child.py::test_a_shortlived_launcher_leaves_a_worker_that_survives_and_completes over the base arm (added_failure_count 1) while the manifest's landing and evidence_inputs claim a zero delta; the alone3-*.log arm passes that test at both revisions so the xdist-load attribution is supported, but the measured population delta the done_when names is not zero."
+    },
+    {
+      "file": "docs/figures/a-worker-cannot-write-your-home/a-worker-cannot-remove-the-nodes-temporary-files/fence-seals-the-node-tmp.svg",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the figure landed although prompt.txt:58 states this node writes no figure and no evidence prose, so the delivered scope exceeds the dispatch even though the figure's path is inside the granted figure directory."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read the thirteen commits ff9b7f230..b8c27abd3 commit by commit - the node-tmp seal, the protected-bind ordering fix, the runtime-directory creation, the grant-loop ancestor and existence guards, the mount-parent grant, the dispatch-test marker relocation, and the evidence and figure prose - 591 insertions across the five declared paths.",
+    "done_when": "prompt.txt:92 names the executed refusal, the enumerated runtime list with a per-entry reason, the negative control, the per-lane first turn and the importer-population delta; tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:282-309 executes the composed argv and the manifest records the control red (negative-control.log, 1 failed, 4 passed, EXIT=1) and the three lane smokes reaching first turn (lane-smoke-round4-driver.log), but the head population arm (population3-head.log) carries one added failure over its base arm, not the zero delta the measure names.",
+    "goal": "prompt.txt:30 asks the fence to make a fenced worker see the node's /tmp read-only apart from its own scratch and the runtime paths its launch writes; reckon/_worker_fence.py:1414-1458 emits the node-tmp overlay and re-binds the run's own scratch and the enumerated runtime paths after it, which is the goal.",
+    "manifest": "read; it records status complete at head c13e3633b (docs head b8c27abd3), the thirteen-commit chain, the declared control red at 1 failed/4 passed EXIT=1 (negative-control.log), the population arm at 2 failed/524 passed base versus 2 failed/529 passed head, the alone3-*.log serial arm passing at both revisions, and the three lane smokes reaching first turn at c13e3633b.",
+    "write_paths": "the manifest's orientation_write_paths declare reckon/_worker_fence.py, tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py, tests/test_dispatch_returns_without_worker.py, the evidence fragment and the figure directory; git diff --numstat ff9b7f230..b8c27abd3 lists exactly those paths, the dispatch's FENCE-SCOPE block names four of them and the coordinator added tests/test_dispatch_returns_without_worker.py in resume-4-advice.txt (\"That file is now in your write paths\")."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:298 reddens under the declared control (negative-control.log, 1 failed, 4 passed, EXIT=1) and the creation case at :235 reddens against the filtering composition it replaced, though the control was not re-run at the final fence revision e61ed73e4.",
+    "evidence": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:282-309 executes the composed argv and the control is red, but the head population arm (population3-head.log) adds tests/test_resume_reaps_its_child.py::test_a_shortlived_launcher_leaves_a_worker_that_survives_and_completes over its base arm, so the done_when's no-added-failure figure is not shown by its own gate logs.",
+    "fit": "reckon/_worker_fence.py:1163-1170 follows the module's seam idiom beside worker_scratch_seal_root, with a named list and a per-entry reason comment, and introduces no version, ticket or plan label.",
+    "goal_fidelity": "reckon/_worker_fence.py:1447-1458 overlays the node tmp read-only and re-binds the run's scratch and the enumerated runtime paths after it, which is the goal.",
+    "reuse": "reckon/_worker_fence.py:1197 create_node_tmp_runtime_paths duplicates the create loop of reckon/_worker_fence.py:547 create_write_roots for the same capability, so an owner of the mechanism already exists and is not extended.",
+    "scope_discipline": "git diff --numstat ff9b7f230..b8c27abd3 touches only the five declared paths, though prompt.txt:58 states this node writes no figure and no evidence prose and the figure landed."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: ff9b7f23091922881210e118835876de65a52ce0\nreviewed_head_sha: b8c27abd34d261a79e27248dd4b0f3513f25a3b3\nVERDICT goal: prompt.txt:30 asks the fence to make a fenced worker see the node's /tmp read-only apart from its own scratch and the runtime paths its launch writes; reckon/_worker_fence.py:1414-1458 emits the node-tmp overlay and re-binds the run's own scratch and the enumerated runtime paths after it, which is the goal.\nVERDICT done_when: prompt.txt:92 names the executed refusal, the enumerated runtime list with a per-entry reason, the negative control, the per-lane first turn and the importer-population delta; tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:282-309 executes the composed argv and the manifest records the control red (negative-control.log, 1 failed, 4 passed, EXIT=1) and the three lane smokes reaching first turn (lane-smoke-round4-driver.log), but the head population arm (population3-head.log) carries one added failure over its base arm, not the zero delta the measure names.\nVERDICT write_paths: the manifest's orientation_write_paths declare reckon/_worker_fence.py, tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py, tests/test_dispatch_returns_without_worker.py, the evidence fragment and the figure directory; git diff --numstat ff9b7f230..b8c27abd3 lists exactly those paths, the dispatch's FENCE-SCOPE block names four of them and the coordinator added tests/test_dispatch_returns_without_worker.py in resume-4-advice.txt (\"That file is now in your write paths\").\nVERDICT manifest: read; it records status complete at head c13e3633b (docs head b8c27abd3), the thirteen-commit chain, the declared control red at 1 failed/4 passed EXIT=1 (negative-control.log), the population arm at 2 failed/524 passed base versus 2 failed/529 passed head, the alone3-*.log serial arm passing at both revisions, and the three lane smokes reaching first turn at c13e3633b.\nVERDICT diff: read the thirteen commits ff9b7f230..b8c27abd3 commit by commit - the node-tmp seal, the protected-bind ordering fix, the runtime-directory creation, the grant-loop ancestor and existence guards, the mount-parent grant, the dispatch-test marker relocation, and the evidence and figure prose - 591 insertions across the five declared paths.\nCALL_SITES: reckon/_backends.py:launch_plan\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:1447-1458 overlays the node tmp read-only and re-binds the run's scratch and the enumerated runtime paths after it, which is the goal.\nSCORE evidence: 14\nJUSTIFICATION evidence: tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:282-309 executes the composed argv and the control is red, but the head population arm (population3-head.log) adds tests/test_resume_reaps_its_child.py::test_a_shortlived_launcher_leaves_a_worker_that_survives_and_completes over its base arm, so the done_when's no-added-failure figure is not shown by its own gate logs.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: git diff --numstat ff9b7f230..b8c27abd3 touches only the five declared paths, though prompt.txt:58 states this node writes no figure and no evidence prose and the figure landed.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:298 reddens under the declared control (negative-control.log, 1 failed, 4 passed, EXIT=1) and the creation case at :235 reddens against the filtering composition it replaced, though the control was not re-run at the final fence revision e61ed73e4.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/_worker_fence.py:1163-1170 follows the module's seam idiom beside worker_scratch_seal_root, with a named list and a per-entry reason comment, and introduces no version, ticket or plan label.\nSCORE reuse: 6\nJUSTIFICATION reuse: reckon/_worker_fence.py:1197 create_node_tmp_runtime_paths duplicates the create loop of reckon/_worker_fence.py:547 create_write_roots for the same capability, so an owner of the mechanism already exists and is not extended.\nFINDING reckon/_worker_fence.py:1197 follow-on: create_node_tmp_runtime_paths re-implements the module's own create_write_roots (reckon/_worker_fence.py:547) - the same resolved_destination exists-check, mkdir(parents=True, exist_ok=True) and BackendError loop for every directory a fence is about to bind writable - rather than calling it, so that rule now lives in two copies that can drift.\nFINDING tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:309 follow-on: the assertion that no \"probe\" file exists in the node-tmp root guards nothing, because the stub writes its probes only into $FENCE_OWN and $FENCE_RUNTIME_PATHS and never into the node-tmp root, so the assertion stays true whatever the fence does.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T124432906024-a-worker-cannot-remove-the-nodes-temporary-files/negative-control.log:1 follow-on: the recorded negative control's header names rev=a86b0351e, five commits before the reviewed head b8c27abd3 and before the final fence commit e61ed73e4, and the control was never re-run at that final revision, so its red is not demonstrated against the code being promoted.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T124432906024-a-worker-cannot-remove-the-nodes-temporary-files/population3-head.log:1 follow-on: the head arm adds tests/test_resume_reaps_its_child.py::test_a_shortlived_launcher_leaves_a_worker_that_survives_and_completes over the base arm (added_failure_count 1) while the manifest's landing and evidence_inputs claim a zero delta; the alone3-*.log arm passes that test at both revisions so the xdist-load attribution is supported, but the measured population delta the done_when names is not zero.\nFINDING docs/figures/a-worker-cannot-write-your-home/a-worker-cannot-remove-the-nodes-temporary-files/fence-seals-the-node-tmp.svg:1 follow-on: the figure landed although prompt.txt:58 states this node writes no figure and no evidence prose, so the delivered scope exceeds the dispatch even though the figure's path is inside the granted figure directory.",
+  "review_run_id": "r-20261018T175234018263-review-of-a-worker-cannot-remove-the-nodes-temporary-files-b8c27abd34d2",
+  "reviewed_base_sha": "ff9b7f23091922881210e118835876de65a52ce0",
+  "reviewed_head_sha": "b8c27abd34d261a79e27248dd4b0f3513f25a3b3",
+  "reviewed_run_id": "r-20261018T124432906024-a-worker-cannot-remove-the-nodes-temporary-files",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 6,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T18:01:31+00:00",
+  "total": 88
+}
