@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-node-stays-in-service-landed">
+  <meta name="plan-title" content="The Fleet Node Stays In Service — landed record">
+  <meta name="plan-summary" content="Closure synthesis for The Fleet Node Stays In Service: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="the-fleet-node-stays-in-service">
+  <meta name="plan-verdict" content="qualified">
+  <title>The Fleet Node Stays In Service — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The Fleet Node Stays In Service — landed record</h1>
+  <p>Closure synthesis for The Fleet Node Stays In Service: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s7">
+    <h2>§7 — a watch producer sweeps the whole fleet every second</h2>
+    <p>Each producer cycle lists every project's live pointers, walks run directories, parses streams and calls git on a 1 s beat whether or not anything moved. That costs about 1,880 opens, 1,575 stats and 1.25 git-shim calls per cycle, which is 114 to 115 git executions in 32 s, independent of the live pointer count. Five producers make roughly 9,000 GPFS opens a second and about 35 of the node's 80 process creations a second. The change-driven fix is to gate the sweep on inotify, or on one mtime stat of the crew home, and keep only the liveness probe on the beat. The live 56% versus 8% CPU gap stays unattributed, because ptrace from the worker sandbox was refused. The git figure is the review's recount; the review scored the node 85/120. <a href="/reckon/evidence/fragments/the-fleet-node-stays-in-service/measure-a-watch-producer-poll.html">fragment</a></p>
+  </section>
+
+</main>
+</body>
+</html>

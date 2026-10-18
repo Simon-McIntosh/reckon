@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-moves-to-a-new-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -221,7 +221,7 @@
     </p>
 
     <h2 id="s7">&sect;7 &mdash; Measure what a watch producer's poll reads</h2>
-    <section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       An investigation, read-only against product source. Profile the imas-codex
       producer (<code>reckon crew watch --project imas-codex</code>, 56% of a core
@@ -295,7 +295,10 @@
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261018T115358502565-review-of-measure-a-watch-producer-poll-517c1d32373b" data-who="reckon-build" data-when="2026-10-18T12:13:34.053Z">
-    <div class="r-comment-body"><p>reviewed run r-20261018T111119884715-measure-a-watch-producer-poll at head 517c1d32373b85dee8a98e735815bc4451ef2f83 across all six dimensions (total 85/120): the report&#x27;s per-cycle strace table reconciles exactly against the delivered artefacts, but the imas-codex profile is the idle back-off path rather than the 56%-CPU path the goal names, and one blocking finding holds the git-shim figure at twice the shim executions</p></div>
+    <div class="r-comment-body"><p>reviewed run r-20261018T111119884715-measure-a-watch-producer-poll at head 517c1d32373b85dee8a98e735815bc4451ef2f83 across all six dimensions (total 85/120): the report's per-cycle strace table reconciles exactly against the delivered artefacts, but the imas-codex profile is the idle back-off path rather than the 56%-CPU path the goal names, and one blocking finding holds the git-shim figure at twice the shim executions</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-18T12:25:00Z">
+    <div class="r-comment-body"><p>§7 landed: one producer poll sweeps the whole fleet every second, at about 1,880 opens and 1,575 stats per cycle plus 1.25 git-shim calls, whatever the live pointer count (evidence <code>2bb703ece</code>). The review's blocking finding corrected the git figure from 2.5 to 1.25 calls per cycle, and the evidence carries the recount. The live 56% vs 8% CPU gap is unattributed, because ptrace from the worker was refused. A change-driven poll becomes its own section. <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s7">evidence</a></p></div>
 </div>
 </section>
 </main>
