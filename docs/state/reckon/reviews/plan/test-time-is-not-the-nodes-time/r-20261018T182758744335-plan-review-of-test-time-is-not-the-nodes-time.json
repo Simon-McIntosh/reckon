@@ -1,0 +1,31 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T19:21:10.456Z",
+  "dispatched_at": "2026-10-18T19:12:42Z",
+  "findings": [],
+  "plan_fingerprint": "8378b0f7f63cd5991e03434fc9d1f0c4acc66c787bd1c4c7334d8d78884fb20c",
+  "plan_slug": "test-time-is-not-the-nodes-time",
+  "plan_version": 11,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T182758744335-plan-review-of-test-time-is-not-the-nodes-time",
+  "reviewed_blob_sha": "cb7762cb7a7447421f332fc3585bf6da418cb347",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor in \u00a71 resolves at its cited line: `reckon/crew/node.py:1293` (`ceiling = parse_duration(budget_ceiling)`), `reckon/crew/routing.py:473` (`def resolved_time_ceiling`), `reckon/crew/prompts.py:382` (`def time_fence_statement`), `prompts.py:701 (the \"time budget is spent\" stop line), `reckon/crew/recovery_stream.py:320` (`def _apply_budget_watchdog`), `reckon/crew/dispatch_sessions.py:337` (its caller), `reckon/schema/flight-defaults.yaml:201` (`enforce_budget_watchdog: false`), and the control run `r-20261018T084035535944-a-paired-arm-review-names-its-run` with `gate-after.log` carrying `543.02`.",
+    "done_when": "pass \u2014 \u00a71's four clauses are measurable (file/line per deadline path; a per-lane table with named medians, fallback share and id lists; two scanner controls; named script and an unchanged-tree check), and clause 3 declares the known-positive control the earlier review asked for.",
+    "evidence_paths": "pass \u2014 outputs sit on durable repository paths (`docs/research/how-much-of-a-node-is-its-gate.html`, `scripts/gate_share_of_run_time.py`, `docs/figures/how-much-of-a-node-is-its-gate`), none in a run directory or session scratchpad.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach code; the file paths are named by what they measure.",
+    "reasoning": "pass \u2014 the changed denominator matches `reckon/ledger.py` and `reckon/crew/summary.py` exactly (see below), the stated root cause (soft budget because the watchdog is off) is the one the cited `flight-defaults.yaml` value supports, and \u00a71 changes no product code so no production caller is required.",
+    "single_goal": "pass \u2014 \u00a71 carries one deliverable (a read-only investigation plus the script that computes it, the script being the instrument of the same goal); \u00a72 carries one.",
+    "wiring": "pass \u2014 `plan-section-depends-on` wires `s2` to `test-time-is-not-the-nodes-time#s1`, and the `gate-time-shape` decision carries `data-sections=\"s2\"`, so the open decision scopes only the deferred section and does not hold \u00a71."
+  },
+  "section_digests": {
+    "_document": "2db4f914f773c39fa5c0355f5fee5250c02797289c687519a353ee05268ffa98",
+    "s1": "5443573e7cf722b64bf218a379dec5f696e91939a0447babf3cbfeb8a303075b",
+    "s2": "e1683f33056739230ebe8f8cc40375d3a6cce727983bbbca1379cf0b80c058f6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T19:24:31.991820+00:00"
+}
