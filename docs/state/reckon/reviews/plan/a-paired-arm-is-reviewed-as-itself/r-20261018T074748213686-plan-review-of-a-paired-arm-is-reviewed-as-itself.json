@@ -1,0 +1,37 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T07:52:19.350Z",
+  "dispatched_at": "2026-10-18T07:48:34Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery_review_delivery.py:156",
+      "id": "duplicate_owner-1",
+      "reason": "either the plan scopes the change so only the grant path sees the bare source, or it must state what the other four consumers do with it and why the sibling resolver may keep the old behaviour.",
+      "text": "the remedy changes `_resolved_reviewed_run_id` globally so that an ambiguous source node id returns the bare source, but the plan accounts only for its dispatch consumers; the same resolver is read by reckon/crew/recovery_review_delivery.py:118, reckon/crew/recovery_review_delivery.py:233, reckon/crew/recovery_review_dispatch.py:180 and reckon/crew/promotion_checks.py:2343 (also re-exported at reckon/crew/recovery.py:201), none of which the plan states the behaviour of once handed a bare node id that names no run directory; and a second owner of the same \"review node id \u2192 reviewed run id\" identity, `_reviewed_run_id` at reckon/crew/dispatch_sessions.py:457, is left taking the newest match, so the two owners now disagree on ambiguity",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "de244feaa02a2a6b98c5668102e90d5992e3e7fc5e2b1be5e834acbe6fd69e90",
+  "plan_slug": "a-paired-arm-is-reviewed-as-itself",
+  "plan_version": 4,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T074748213686-plan-review-of-a-paired-arm-is-reviewed-as-itself",
+  "reviewed_blob_sha": "01f881d32c4937b7c90a4801f14e0c45112d9471",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no module; it modifies two existing functions in place and the pairing fact stays behind the review node id, which is already the single interface the producer (`_review_dispatch_fields`) and the consumers share.",
+    "duplicate_owner": "a finding \u2014 the plan changes a shared resolver but enumerates only the dispatch/grant path, and a second owner of the same identity is left divergent.",
+    "interface_budget": "pass \u2014 the section adds no public definition (both edited functions are `_`-prefixed), no CLI option, no MCP view and no new refusal family (it reuses the existing `_review_record_directory_grant` refusal); public_definitions 1801, cli_options 362, mcp_views 34, refusal_families 23 are all unchanged, so there is nothing to retire or merge.",
+    "reuse_search": "pass \u2014 the plan reuses the existing pairing predicate `_paired_partner_run_id` (reckon/crew/promotion_checks.py:606) and instructs \"Do not write a second pairing test\"; it reuses `round_node_id` (reckon/crew/repair.py:293), `_resolved_reviewed_run_id` (reckon/crew/recovery_review_delivery.py:156), `_reviewed_run_id_for_node` (reckon/crew/dispatch_admission.py:1866) and `_review_record_directory_grant` (reckon/crew/dispatch_admission.py:1883) rather than adding machinery, and every cited line was verified to exist.",
+    "thin_wrapper": "pass \u2014 no wrapper is added; the remedy edits `_review_dispatch_fields` (reckon/crew/recovery_review_subject.py:665) and `_resolved_reviewed_run_id` (reckon/crew/recovery_review_delivery.py:156) at their existing bodies."
+  },
+  "section_digests": {
+    "_document": "8040896d3e1fbba1bd73cf164e59e5eb7153bac3fe010485fd15c069ce26a191",
+    "s1": "1edf9c8f705178913255a21022fd939edc202072b35f5f4b880a6f4ca4e3dff6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T08:04:14.691153+00:00"
+}
