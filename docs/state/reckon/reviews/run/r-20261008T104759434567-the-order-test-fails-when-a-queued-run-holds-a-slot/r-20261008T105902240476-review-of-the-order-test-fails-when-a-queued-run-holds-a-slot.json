@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest records baseline_suite: none and after_suite: none (confirmed in its classification.json), so no baseline/after gate-log arm exists to difference; the reviewed node is test-only and its own arm (gate-head.log) is green.",
+  "base_log_revision": "a0f0bdefdeed2160a41dba1e0e2cac7696a17083",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/runs.py:613"
+  ],
+  "completed_at": "2026-10-08T11:18:33.852Z",
+  "dispatched_at": "2026-10-08T10:59:27Z",
+  "findings": [
+    {
+      "file": "tests/test_queue_order.py",
+      "line": "77",
+      "severity": "follow-on",
+      "text": "follow-on: replacing test_wait_breaks_equal_counts_and_queued_runs_hold_no_slot with test_queued_run_holds_no_lane_slot dropped the assertion that wait time breaks an equal-occupancy tie between two sessions; no remaining case asserts cross-session equal-count wait ordering directly. The reviewed run's later commit 85151e05d restores adjacent (other-backend/terminal) coverage but not this tie-break, so the gap stands at the pinned head."
+    }
+  ],
+  "head_log_revision": "8d9fe6affcf8bf1482407b835fba371e97d7de76",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/runs.py:613 imports and calls admission_order to compute a queued dispatch's position; the exercised ordering is the production path.",
+    "diff": "a0f0bdef..8d9fe6aff is one commit over one file: +8/-4 in tests/test_queue_order.py, renaming the case and replacing its two other-session pointers with the queued-only A and one in-flight B.",
+    "done_when": "\u00a77's three clauses hold at the pinned head: the case builds a session whose only live pointer is queued (tests/test_queue_order.py:81-91) and asserts it ranks ahead (order[0]=='A-0'); a control that counts queued pointers as in flight makes it fail; the gate passes (4 passed EXIT=0, review-gate-head.log).",
+    "goal": "\u00a77 is a test-only node: make the queued-holds-no-slot case able to fail. The pinned commit renames the case to test_queued_run_holds_no_lane_slot and rewrites its fixture so a queued-only session (A) ranks ahead of a session holding one in-flight run (B).",
+    "manifest": "read; at the pinned attempt it named commit 8d9fe6aff and the 4-passed gate; it has since been rewritten by the run's completion (attempt 2) to name commits 8d9fe6aff,85151e05d and a 5-passed gate, with baseline_suite and after_suite both none.",
+    "write_paths": "declared write paths for the reviewed node were tests/test_queue_order.py and two docs/evidence paths; the pinned delta changes only tests/test_queue_order.py, inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_queue_order.py:96 fails exactly when a queued pointer is charged a lane slot (mutation drops the phase!=queued exclusion -> 'B-0'=='A-0'), so the case now fails on the property it names; the rewrite did drop the prior case's cross-session equal-count wait assertion, so the tie-break by queued_at between two sessions with equal occupancy is no longer directly asserted.",
+    "evidence": "the reviewed manifest cites gate-head.log and negative-control.log, but those files were rewritten by the run's later attempt (gate-head.log now reads '5 passed' at 85151e05d while the manifest's tests line claims '4 passed'); I independently ran the gate at the pinned head and the mutated control, and both reproduce (4 passed EXIT=0; mutation 1 failed 3 passed EXIT=1).",
+    "fit": "tests/test_queue_order.py:80 follows the file's idiom (typed no-arg test, _queued helper, UTC now) and imports nothing new; queue_order.admission_order is the real production entry point (reckon/crew/runs.py:613).",
+    "goal_fidelity": "the pinned head's tests/test_queue_order.py:80 builds a session (A) whose only live pointer is its own queued entry and asserts it ranks first (order[0]=='A-0'), which is exactly \u00a77's 'a session whose only live pointer is queued ... ranks as holding no slot'; no behaviour beyond that is added.",
+    "reuse": "the change adds no production code and no duplicate case; it reuses the existing admission_order and the file's shared _queued helper, and the new case is distinct from the alternation case.",
+    "scope_discipline": "the delta a0f0bdef..8d9fe6aff touches only tests/test_queue_order.py, a declared write path; queue_order.py is unchanged."
+  },
+  "node": "review-of-the-order-test-fails-when-a-queued-run-holds-a-slot",
+  "node:reviewed": "the-order-test-fails-when-a-queued-run-holds-a-slot",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: make the queued-holds-no-slot case able to fail at the pinned head tests/test_queue_order.py:80 (rename to test_queued_run_holds_no_lane_slot, queued-only session A ranks ahead of a session with one in-flight run).\nVERDICT done_when: the case builds a session whose only live pointer is queued (:81-91) and asserts it ranks as holding no slot (order[0]=='A-0'); a control that counts queued as in flight makes it fail (verified: 'B-0'=='A-0'); the file passes (4 passed, review-gate-head.log).\nVERDICT write_paths: delta touches only tests/test_queue_order.py, a declared write path.\nVERDICT manifest: reviewed manifest read; names 8d9fe6aff and a 4-passed gate at the pinned attempt, since rewritten by completion (85151e05d, 5 passed); baseline_suite and after_suite both none.\nVERDICT diff: a0f0bdef..8d9fe6aff, one commit, one file, +8/-4.\nCALL_SITES: reckon/crew/runs.py:613\nSCORE goal_fidelity: 19\nSCORE evidence: 15\nSCORE scope_discipline: 20\nSCORE durability: 16\nSCORE fit: 18\nSCORE reuse: 19\nJUSTIFICATION goal_fidelity: the pinned head's tests/test_queue_order.py:80 builds a session (A) whose only live pointer is its own queued entry and asserts it ranks first (order[0]=='A-0'), which is exactly \u00a77's 'a session whose only live pointer is queued ... ranks as holding no slot'; no behaviour beyond that is added.\nJUSTIFICATION evidence: the reviewed manifest cites gate-head.log and negative-control.log, but those files were rewritten by the run's later attempt (gate-head.log now reads '5 passed' at 85151e05d while the manifest's tests line claims '4 passed'); I independently ran the gate at the pinned head and the mutated control, and both reproduce (4 passed EXIT=0; mutation 1 failed 3 passed EXIT=1).\nJUSTIFICATION scope_discipline: the delta a0f0bdef..8d9fe6aff touches only tests/test_queue_order.py, a declared write path; queue_order.py is unchanged.\nJUSTIFICATION durability: tests/test_queue_order.py:96 fails exactly when a queued pointer is charged a lane slot (mutation drops the phase!=queued exclusion -> 'B-0'=='A-0'), so the case now fails on the property it names; the rewrite did drop the prior case's cross-session equal-count wait assertion, so the tie-break by queued_at between two sessions with equal occupancy is no longer directly asserted.\nJUSTIFICATION fit: tests/test_queue_order.py:80 follows the file's idiom (typed no-arg test, _queued helper, UTC now) and imports nothing new; queue_order.admission_order is the real production entry point (reckon/crew/runs.py:613).\nJUSTIFICATION reuse: the change adds no production code and no duplicate case; it reuses the existing admission_order and the file's shared _queued helper, and the new case is distinct from the alternation case.\nFINDING tests/test_queue_order.py:77 follow-on: the rewrite dropped the cross-session equal-count wait tie-break assertion.",
+  "review_run_id": "r-20261008T105902240476-review-of-the-order-test-fails-when-a-queued-run-holds-a-slot",
+  "reviewed_base_sha": "a0f0bdefdeed2160a41dba1e0e2cac7696a17083",
+  "reviewed_head_sha": "8d9fe6affcf8bf1482407b835fba371e97d7de76",
+  "reviewed_run_id": "r-20261008T104759434567-the-order-test-fails-when-a-queued-run-holds-a-slot",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T03:35:07.485410+00:00",
+  "total": 107
+}
