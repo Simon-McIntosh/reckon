@@ -28,7 +28,6 @@ from jinja2 import (
 from reckon._timestamps import parse_utc
 
 from . import lane_context
-from .lane_context import option_key
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 
@@ -339,9 +338,8 @@ def build_state(
     """Assemble the whole routing judgment as one mapping.
 
     The mapping is the only source of the rendered state, so the structure holds
-    whatever the values are: every candidate is keyed by its option key -- its
-    lane, model and backend -- so the criteria key a pick chooses by finds exactly
-    one row, and every node fact is one field of ``node``. ``estimated_hours`` overrides the
+    whatever the values are: every candidate is keyed by its backend name and
+    every node fact is one field of ``node``. ``estimated_hours`` overrides the
     node's own figure when a caller resolved the plan's declaration, and
     ``estimated_hours_source`` names where that figure came from -- the node,
     the section, or the plan. The source is rendered unconditionally, null when
@@ -400,13 +398,36 @@ def build_state(
         "node": node_state,
         "orchestrator_comment": comment,
         "candidates": {
-            option_key(candidate): _candidate_state(candidate)
-            for candidate in candidates
+            candidate.backend: _candidate_state(candidate) for candidate in candidates
         },
         "return_times": lane["return_times"],
         "lanes": lane["lanes"],
         "local_lane": lane["local_lane"],
     }
+
+
+def option_key(candidate: Any) -> str:
+    """The key Jev chooses a candidate by: its lane, model and backend.
+
+    A pick has two linked parts, so an option is named ``<lane>:<model>``. The
+    backend is always the last part, because two configured backends can share a
+    lane and a model -- one dialect running the same model on two accounts -- and
+    the pair alone would name neither of them, so a mapping keyed by it would
+    drop the second and Jev could never choose it. The backend is what a dispatch
+    launches and is unique per offering, so it is the part that keeps every key
+    distinct. A candidate that declares no model leaves the model part empty:
+    its second part is the backend itself, named as the backend it is, never
+    offered where a model belongs.
+    """
+
+    lane = getattr(candidate, "family", None) or getattr(candidate, "backend", "")
+    model = getattr(candidate, "model", None)
+    backend = getattr(candidate, "backend", "")
+    if model:
+        return f"{lane}:{model}:{backend}"
+    if lane != backend:
+        return f"{lane}:{backend}"
+    return str(lane)
 
 
 def build_questions(candidates: Sequence[Any]) -> dict[str, Any]:

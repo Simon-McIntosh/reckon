@@ -155,7 +155,7 @@ def test_hostile_input_still_parses_and_keeps_one_lane_entry(isolated_lane):
     assert payload["lanes"]["codex"]["utilisation_pct"] == 42.0
     assert "injected" not in payload["lanes"]
     # The hostile name survives verbatim inside its own string, adding no key.
-    assert payload["candidates"][prompts.option_key(candidates[0])]["model"] == hostile
+    assert payload["candidates"]["codex-astra"]["model"] == hostile
 
 
 # --- the options Jev is offered are lane:model pairs ---------------------------
