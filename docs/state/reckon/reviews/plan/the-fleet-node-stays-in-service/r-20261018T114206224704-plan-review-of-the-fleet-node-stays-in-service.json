@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T11:50:20.083Z",
+  "dispatched_at": "2026-10-18T11:42:56Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/supervisor_main.py:23",
+      "id": "reuse_search-1",
+      "reason": "\u00a73 and \u00a76 should name the supervisor/reaper/placement owner each extends, and \u00a74 should name `fleet_migrate.py`, so implementers extend the existing mechanism instead of adding a fourth parallel one.",
+      "text": "\u00a72's prior-art pass stops at four files, and every mechanism \u00a73 and \u00a76 add has a nearer owner the plan never cites: the per-run supervisor that already holds the worker's parentage and its exit (`reckon/crew/dispatch_launch.py:2078 _start_supervisor`, `reckon/crew/dispatch_launch.py:1853 _supervisor_argv`, entry `reckon/crew/supervisor_main.py:23`, described in `reckon/crew/fleet_supervisor.py:6`); an in-process reaper and subreaper (`reckon/crew/dispatch_launch.py:349 _reap_launched_workers`, `:379 _worker_reaper_loop`, `:399 _ensure_launched_worker_reaper`, `:2984 prctl(PR_SET_CHILD_SUBREAPER)`); a session host that supervises children and settles their status (`reckon/crew/session_host.py:273 SessionHost`, `:530 waitpid`, `:258 _set_parent_death_signal`); a whole-run signaller (`reckon/crew/process_signal.py:396 signal_worker` with `reach_run`); a step-argv owner (`reckon/crew/placement.py:233 step_prefix`); an existing memory default surface (`reckon/crew/fleet_node.py:44 DEFAULT_MEMORY = \"96G\"`, `:124 environ.get(MEMORY_ENV)`, `reckon/crew/placement.py:220 reservation_options(memory_gb=\u2026)`); and the migrate owner (`reckon/crew/fleet_migrate.py:864`), which \u00a74 describes as \"the same file pair\" as status when migrate lives in `fleet_migrate.py` and status in `reckon/crew/fleet_node.py:491`.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_launch.py:2078",
+      "id": "thin_wrapper-1",
+      "reason": "either \u00a73 extends the supervisor with cgroup-drain-and-wait semantics, or it must state why the supervisor cannot run inside the step.",
+      "text": "\u00a73 adds a reaper as \"the worker step's first process\" that on SIGTERM signals the worker's group, waits for every process, and exits carrying the worker's status; that is precisely what the per-run supervisor already does (it \"holds a dispatched worker's parentage so its exit can be collected\", installs SIGTERM/SIGHUP handlers per `reckon/crew/dispatch_launch.py:2188 _worker_default_signals`, and composes an exit record from `os.waitpid`), so the section wraps existing machinery without the \"why can the supervisor not be extended\" sentence the rubric requires.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/placement.py:233",
+      "id": "duplicate_owner-1",
+      "reason": "without naming one owner, the bound is added to one prefix and silently absent from the other, and a fourth supervisor accrues beside three existing ones.",
+      "text": "\u00a76 places every worker step with an explicit `--mem`, but the step-argv prefix already has two owners \u2014 `reckon/crew/placement.py:233 step_prefix` (used at `reckon/crew/dispatch_launch.py:1115`) and `reckon/crew/fleet_node.py:358 placement_argv` (used by `reckon/crew/fleet_migrate.py:238,546,579,997,1097,1184`) \u2014 so the plan must name which one carries the bound and fold the other into it; \u00a73 likewise adds a reaper beside the supervisor owner named above.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html#s6",
+      "id": "interface_budget-1",
+      "reason": "the section should say whether the bound is a new dispatch option or a reuse of the existing memory default surface, which decides whether cli_options grows.",
+      "text": "\u00a76 introduces a per-dispatch memory bound (\"a node whose work needs more declares it at dispatch\") and \u00a74 adds a new migrate branch, and neither section names what it retires or merges, or states why nothing can be; \u00a76 could fold the declaration into the existing run record and the pre-existing memory vocabulary (`reckon/crew/fleet_node.py:44 DEFAULT_MEMORY`, `reckon/crew/placement.py:220 memory_gb`) rather than adding a new dispatch surface to the cli_options family (362).",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c102cc5e5aa788c92b81a0dc267857ca9f3998889e6624597b58f8cc9a152327",
+  "plan_slug": "the-fleet-node-stays-in-service",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T114206224704-plan-review-of-the-fleet-node-stays-in-service",
+  "reviewed_blob_sha": "cc029b30a57678fdda39f2a7b6889d64b9438e1f",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan names no new module, and each section changes behaviour in an existing owner, so there is no new public interface to judge for depth; the reuse failure is scored under reuse_search and duplicate_owner.",
+    "duplicate_owner": "a finding \u2014 \u00a76's per-step memory bound and \u00a73's reaper each land beside an existing owner that must be extended rather than forked, and the step-argv prefix the plan would put `--mem` on already has two owners.",
+    "interface_budget": "a finding \u2014 public_definitions 1802, cli_options 362, mcp_views 34, refusal_families 23; \u00a76 adds a per-dispatch memory declaration and \u00a74 adds a migrate branch, and neither \u00a76 nor \u00a74 names anything it retires or merges, or states why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a72 cites `dispatch_launch.py`, `process_signal.py`, `fleet_node.py` and `placement.py`, but \u00a73's reaper and \u00a76's per-step memory bound are proposed without citing the per-run supervisor, the session host, or the existing reaper/subreaper machinery that already perform those roles.",
+    "thin_wrapper": "a finding \u2014 \u00a73's reaper re-implements the signal-worker, wait-for-exit and record-status role the per-run supervisor (`reckon/crew/dispatch_launch.py:2078`, entry `reckon/crew/supervisor_main.py:23`) already holds, with no statement of why that supervisor cannot be extended instead."
+  },
+  "section_digests": {
+    "_document": "07fe5ca42c21a7fe2a60c13de29e6de6205bb411717b02c0ae96794ff0d9dc6a",
+    "s1": "600cb64faef5767f73d860ed9e70a11bdff957b9eb929ff957aaf20e7aaedef7",
+    "s2": "6155f820ac9515ec6066931aa10a1e66fdcff1b4184ba4014c19c572b1e6dfe6",
+    "s3": "3abcd0bb7ee0c0bafe0b470c4eb6170239718af5a66d8982735e9b1dc70b2d45",
+    "s4": "6f8759bfe3a6449b6304194607eca80bd437294b9bf16f691da32bedde7f98c8",
+    "s5": "d4f488d07892837dc407622ba39c93de73227ef500f14b72a58ef244b3118a2c",
+    "s6": "4e67142da55f67cdc3623e814fde81db9fb8f855d7dbc8a2f840e014a025f805",
+    "s7": "3a45b0d0d40cbd44ec6f8209f8a125004c44cc3cdccfb33e97882ef8331f7d70",
+    "s8": "eb2fb9fcc72be96e074c705a111e8a1693e50277fcbe75ce2468a02731f0d16f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T13:22:01.068057+00:00"
+}
