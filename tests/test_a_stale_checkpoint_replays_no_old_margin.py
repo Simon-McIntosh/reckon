@@ -346,9 +346,7 @@ def test_a_run_that_changed_across_a_stale_margin_draws_one_row(home) -> None:
         live = _live_states(home, stream_path)
 
         # RUN_A moved from a state the pane last showed; RUN_B did not.
-        runs.write_delivered(
-            PROJECT, SESSION, {RUN_A: "working", RUN_B: live[RUN_B]}
-        )
+        runs.write_delivered(PROJECT, SESSION, {RUN_A: "working", RUN_B: live[RUN_B]})
 
         old = _iso(time.time() - 5 * _DAY)
         _stale_margin(
@@ -531,8 +529,12 @@ def test_a_record_without_a_stamp_is_aged_by_its_file_mtime(home) -> None:
 
     path = fc.checkpoint_path(PROJECT, SESSION)
     path.parent.mkdir(parents=True, exist_ok=True)
-    stamped = {"version": fc.CHECKPOINT_VERSION, "project": PROJECT, "session": SESSION,
-               "reported": {}}
+    stamped = {
+        "version": fc.CHECKPOINT_VERSION,
+        "project": PROJECT,
+        "session": SESSION,
+        "reported": {},
+    }
     path.write_text(json.dumps(stamped), encoding="utf-8")
     old = time.time() - 5 * _DAY
     os.utime(path, (old, old))
@@ -542,4 +544,3 @@ def test_a_record_without_a_stamp_is_aged_by_its_file_mtime(home) -> None:
     assert abs(moment - old) < 5.0, (
         f"the record is aged by its file's mtime; got {moment} against {old}"
     )
-
