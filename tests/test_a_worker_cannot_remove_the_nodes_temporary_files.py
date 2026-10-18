@@ -26,6 +26,11 @@ refusal cannot tell which overlay produced it:
   creates and removes a file in its own scratch and reaches each runtime path,
   while a file it created in the node tmp outside those is refused and survives.
 
+* The runtime directories are *created* before the argv is composed, so a node
+  whose harness has never run still gets the grant: composed on a temporary
+  node tmp whose runtime directories do not exist, each one is found created
+  and bound writable.
+
 The declared negative control strips the node-tmp seal from the fence — the
 seam that decides it is patched so no read-only overlay of the node tmp is
 emitted — and the outside file is then removed. It is applied by running with
@@ -83,7 +88,7 @@ rm -f "$FENCE_OUTSIDE"
 class NodeTmp:
     """A synthetic node tmp: the run's owner scratch, runtime paths, an outsider."""
 
-    def __init__(self, root: Path) -> None:
+    def __init__(self, root: Path, *, runtime_paths_exist: bool = True) -> None:
         self.base = root
         self.node_tmp = root / "node-tmp"
         self.scratch_root = self.node_tmp / "reckon-crew-scratch"
@@ -94,9 +99,13 @@ class NodeTmp:
         self.outside = self.node_tmp / "tmp-outside.txt"
         self.outside.write_text("other session's file\n")
         self.fleet = self.node_tmp / "39486-fleet"
-        self.fleet.mkdir()
         self.codex = self.node_tmp / ".codex"
-        self.codex.mkdir()
+        # A node where the harness has never run: codex creates its sandbox
+        # marker directory lazily, so on a fresh node it is not there when the
+        # fence is composed and the launch is expected to create it.
+        if runtime_paths_exist:
+            self.fleet.mkdir()
+            self.codex.mkdir()
         self.home = root / "home"
         self.run = self.home / ".config" / "reckon" / "crew" / "runs" / RUN_ID
         self.run.mkdir(parents=True)
@@ -199,6 +208,57 @@ def test_the_runtime_paths_are_enumerated_beside_the_scratch_seal() -> None:
     paths = _worker_fence.node_tmp_runtime_paths()
     assert len(paths) >= 2, f"expected at least two runtime paths, got {paths}"
     assert all(isinstance(path, Path) for path in paths)
+
+
+def test_a_runtime_directory_the_node_lacks_is_created_and_granted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A runtime directory that is not there is created, and is bound writable.
+
+    A grant is composed from a runtime path only while the path exists, so a
+    directory the launch creates for itself — codex's sandbox marker directory,
+    created lazily on the first sandboxed launch — composes no grant on a node
+    where it has not been created yet, and that lane then writes against the
+    read-only overlay of ``/tmp``. The composition creates each enumerated
+    runtime directory before it builds the argv, so the grant is present on a
+    node the harness has never run on. Filtering the enumerated set on existence
+    without creating would fail both assertions here.
+    """
+    node = NodeTmp(tmp_path, runtime_paths_exist=False)
+    node.point_the_node_tmp(monkeypatch)
+    for runtime in node.runtime_paths():
+        assert not runtime.exists(), f"{runtime} existed before the fence"
+    argv = node.argv()
+    tmp_overlay = _ro_bind_of(argv, node.node_tmp)
+    # Positive control: without the overlay there is nothing to grant beneath,
+    # so the assertions below would be about a fence this test never built.
+    assert tmp_overlay != -1, "the node tmp was not overlaid read-only"
+    for runtime in node.runtime_paths():
+        assert runtime.is_dir(), (
+            f"the runtime directory {runtime} was not created before the argv "
+            "was composed, so its grant is absent"
+        )
+        bind = _bind_of(argv, runtime)
+        assert bind != -1, f"the runtime path {runtime} was not bound writable"
+        assert bind > tmp_overlay, (
+            f"the grant of {runtime} precedes the node-tmp overlay, so the "
+            "read-only bind would shadow it"
+        )
+
+
+def test_a_runtime_path_that_is_not_a_directory_is_left_as_it_is(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A socket or file already at a runtime path is never replaced by a dir."""
+    node = NodeTmp(tmp_path, runtime_paths_exist=False)
+    node.point_the_node_tmp(monkeypatch)
+    # Something other than the launch put a plain file at the fence's runtime
+    # path; the composition leaves it as it stands rather than refusing over it.
+    node.codex.write_text("not a directory\n")
+    argv = node.argv()
+    assert node.codex.is_file(), "the fence replaced an existing path with a dir"
+    assert node.codex.read_text() == "not a directory\n"
+    assert _bind_of(argv, node.codex) != -1, "the composition dropped the path"
 
 
 @pytest.fixture

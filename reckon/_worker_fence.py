@@ -1167,10 +1167,13 @@ def node_tmp_runtime_paths() -> list[Path]:
 
     Only the run's own scratch directory — its ``TMPDIR``, re-bound writable by
     the ordinary grant in :func:`fence_argv` — and the runtime paths named here
-    stay writable beneath the seal. Every entry is a directory beneath the node
-    tmp, and a path this machine does not have composes no grant, exactly as an
-    absent protected default does. The harness home needs no entry here: it sits
-    under the run directory, which is already a write root, not under ``/tmp``.
+    stay writable beneath the seal. Every entry names a place beneath the node
+    tmp that the launch writes, and one that is not there when the fence is
+    composed is created before the argv is, rather than left out: the paths that
+    are absent are precisely the ones the harness creates for itself, so
+    dropping them is what would leave a lane writing against the seal. The
+    harness home needs no entry here: it sits under the run directory, which is
+    already a write root, not under ``/tmp``.
 
     The list is one named set enumerated beside :func:`worker_scratch_seal_root`
     so a reader sees both seals and the runtime carve-outs together.
@@ -1189,6 +1192,50 @@ def node_tmp_runtime_paths() -> list[Path]:
         # writable.
         NODE_TMP_ROOT / CODEX_SANDBOX_MARKER_DIRNAME,
     ]
+
+
+def create_node_tmp_runtime_paths() -> list[Path]:
+    """Create and return the node-/tmp runtime paths the fence must grant writable.
+
+    bubblewrap binds a writable root by *source* path, so a runtime path that
+    does not exist when the argv is composed composes no grant at all rather
+    than a grant that fails the launch. The path that most often does not exist
+    is codex's sandbox marker directory: codex's linux sandbox creates it
+    lazily, on the first launch that reaches the sandbox, so on a node where
+    codex has never run the read-only overlay of ``/tmp`` leaves the lane
+    nowhere to create it and the launch fails against the whole node tmp being
+    read-only. A grant that is present only on the nodes where the harness has
+    already run is a grant the fence cannot rely on, so every enumerated path is
+    created here, before the argv is composed, exactly as the launch would
+    create it.
+
+    A path that is already there is left exactly as it is: the enumerated set
+    also covers a runtime path some other process created, which may be a socket
+    or a file rather than a directory, and the fence neither replaces one with a
+    directory nor refuses over it — it is granted writable as it stands, which
+    is what the launch needs and what the pre-seal composition did.
+
+    A path that cannot be created refuses the launch, rather than being composed
+    as a grant the fence could not honour. The returned paths are what
+    :func:`fence_argv`'s grant loop consumes.
+    """
+    paths = node_tmp_runtime_paths()
+    created: list[Path] = []
+    for path in paths:
+        target = resolved_destination(path)
+        if target.exists():
+            created.append(target)
+            continue
+        try:
+            target.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            raise BackendError(
+                f"cannot create the node tmp runtime path {target}, which the "
+                f"fence must leave writable beneath the read-only {NODE_TMP_ROOT}: "
+                f"{exc}"
+            ) from exc
+        created.append(target)
+    return created
 
 
 def node_tmp_seal_root() -> Path | None:
@@ -1304,7 +1351,10 @@ def fence_argv(
     cannot reach another session's temporary files there. Only the run's own
     scratch (its ``TMPDIR``) and the runtime paths its launch writes — the
     fleet's sockets and codex's sandbox marker directory — are re-opened
-    writable beneath it; see :func:`node_tmp_runtime_paths`.
+    writable beneath it; each of those is created first when it is not there,
+    because a path the launch creates for itself would otherwise compose no
+    grant and leave its lane writing against the seal; see
+    :func:`node_tmp_runtime_paths` and :func:`create_node_tmp_runtime_paths`.
 
     The two shared delivery stores — the reports root and the review store — are
     sealed the same way: overlaid read-only among the protected paths, with only
@@ -1369,7 +1419,11 @@ def fence_argv(
     node_tmp_seal: list[tuple[Path, Path]] = []
     if node_tmp is not None:
         node_tmp_seal = [(node_tmp, node_tmp)]
-        roots.extend(path for path in node_tmp_runtime_paths() if path.exists())
+        # Created, not merely filtered: a runtime path the launch is expected to
+        # create itself composes no grant while it is absent, which leaves the
+        # lane it belongs to writing against the seal; see
+        # :func:`create_node_tmp_runtime_paths`.
+        roots.extend(create_node_tmp_runtime_paths())
 
     binds = protected_read_only_binds(
         protected,
