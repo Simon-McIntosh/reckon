@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T08:55:53.397Z",
+  "dispatched_at": "2026-10-18T08:43:40Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-paired-arm-is-reviewed-as-itself.html:72",
+      "id": "wiring-1",
+      "reason": "adding the section-level edge is a plan-content change that gates \u00a72 until \u00a71 lands, and without it the prose ordering at \u00a72's write-paths line reaches no dispatch decision.",
+      "text": "\u00a72 depends on \u00a71 merging (both write `reckon/crew/recovery_review_subject.py`) but the plan declares no `plan-section-depends-on` edge, and both sections are `data-status=\"implementable\"` with `data-links=\"\"`, so the roadmap would offer \u00a72 as dispatchable while \u00a71 is open and a coordinator could launch two nodes at one module concurrently.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "774ecbff2c0e24ed9916edc37cdec91b35a0591e9e64e9fed4c353c0a840c418",
+  "plan_slug": "a-paired-arm-is-reviewed-as-itself",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T084257522313-plan-review-of-a-paired-arm-is-reviewed-as-itself",
+  "reviewed_blob_sha": "7c911d0fafbb6c6708e3fd9ac5408a293188ba89",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited line resolves: recovery_review_subject.py:370/460/608/666, dispatch_admission.py:1866, recovery_review_delivery.py:118/156/172-174/233, recovery_repair_dispatch.py:665, promotion_checks.py:606/1730/2343, repair.py:492, dispatch_sessions.py:457, promotion_scope.py:899/905, prompts/review.md:21, lane-and-model-routing `#s32`, and plan `a-shadow-cannot-see-its-primary`; all nine named existing test files exist.",
+    "done_when": "pass \u2014 each node's done-when is measurable and names two mutations run alone, each with the case the plan says must fail (removing the pairing test fails case 1; dropping the flag from `_reviewed_run_id_for_node` fails case 3; removing the shadow block fails \u00a72's case 1; appending it for every paired arm fails \u00a72's case 3).",
+    "evidence_paths": "pass \u2014 the plan names source and test paths only; its gates run pytest in the foreground and write to the run's report directory under the standard dispatch contract, with no session scratchpad or node-local path.",
+    "naming": "pass \u2014 the new symbol `refuse_ambiguous` and both new test file names describe the mechanism rather than a plan label, stage name, ticket number or version tag, and no changelog prose is proposed for code.",
+    "reasoning": "pass \u2014 \u00a71's stated cause (one node id shared by two runs, so the resolve-then-grant path picks the wrong arm) matches lines 172-174 and 666; \u00a72's stated cause (the brief describes every run as committed work, and review.md:21 reads the diff of its commits against its base) matches the evidence; each mechanism produces its done-when, and both run on named production callers (`_review_dispatch_fields` from `crew_dispatch_commands.py:2393` and the reflex/obligation paths, `_reviewed_run_id_for_node` from `_sandbox_reachability` at dispatch_admission.py:1820).",
+    "single_goal": "pass \u2014 \u00a71 has one goal (a paired arm's review names the arm by its run id) and \u00a72 has one goal (a shadow arm is reviewed on its retained patch).",
+    "wiring": "a finding \u2014 \u00a72 must be dispatched only after \u00a71 merges because both write `reckon/crew/recovery_review_subject.py`, but the plan declares no `plan-section-depends-on` edge, so the roadmap presents \u00a72 as ready alongside \u00a71."
+  },
+  "section_digests": {
+    "_document": "75f00930d0d50552ae9a615428ca01f58442a7b1b0872e994da72c761ac063a6",
+    "s1": "ec5878e59aedf58377564b41c63c798db6e9b8c5c55e13b86b4059f73e20af5f",
+    "s2": "b7025dcf34f30cb0e8238ea008bddc91a71d73968ce771de908ab95b3040767a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T08:58:02.740845+00:00"
+}
