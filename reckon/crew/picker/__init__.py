@@ -17,7 +17,7 @@ from reckon.resources import resource_scan_scope
 from . import client, prompts, snapshot
 from .types import Candidate, PickRequest, Selection
 
-__all__ = ["Candidate", "PickRequest", "Selection", "pick"]
+__all__ = ["Candidate", "PickRequest", "Selection", "attempts_for", "pick"]
 
 #: One JSON line per pick, appended under the crew home. Every production pick
 #: writes its per-stage times here, so a pick that spent its budget -- and one
