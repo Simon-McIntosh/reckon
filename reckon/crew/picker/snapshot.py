@@ -1433,6 +1433,7 @@ def candidates(
                 family=family,
                 model=model,
                 effort=backend.get("effort"),
+                suits=backend.get("suits"),
                 local=local,
                 availability=availability,
                 utilisation_pct=budget_facts.get("utilisation_pct"),

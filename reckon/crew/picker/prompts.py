@@ -42,6 +42,14 @@ _GLOSSARY: dict[str, str] = {
         "and the implementation is derived from it. open: the node must also "
         "choose the design."
     ),
+    "suits": (
+        "The operator's declared statement of the work this candidate's model "
+        "suits, which may include its cost relative to the lane's other models. "
+        "Read from the model's own declaration or, when it declares none, from a "
+        "lane-level declaration. It is a prior to weigh beside the candidate's "
+        "outcomes and never in place of them. Present only on a candidate whose "
+        "model or lane declares one; an absent key means none is declared."
+    ),
     "burn_multiple": (
         "Metered spend so far divided by the lane's allowance for its window; "
         "above 1 is ahead of the pace that window plans for."
@@ -285,6 +293,13 @@ def _candidate_state(candidate: Any) -> dict[str, Any]:
             if (getattr(candidate, "moved_off", 0) or 0) > 0
             else {}
         ),
+        # The declared statement of what work this model suits is rendered only
+        # when the candidate carries one, from its model or its lane, the way
+        # moved_in is. A candidate with none declared carries no key, so a
+        # state whose candidates all declare none is exactly as large as it was
+        # before this fact existed and the prompt keeps within its size budget.
+        # An absent key means neither the model nor its lane declares one.
+        **({"suits": candidate.suits} if getattr(candidate, "suits", None) else {}),
         "context": getattr(candidate, "context", None),
         "budget_source": getattr(candidate, "budget_source", None),
         "budget_age_s": getattr(candidate, "budget_age_s", None),
