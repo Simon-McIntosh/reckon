@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-landing-never-reverts-the-checkout">
+  <meta name="plan-title" content="The gate landing reports its landing check">
+  <meta name="plan-summary" content="reckon/crew/promotion_gate.py record_gate_rerun_at_integrated_revision now passes its _commit_landing_writes result through _report_landing_check, so a staged reversal or post-commit mismatch found while landing a gate re-run reaches stderr and the receipt; one new test fails at the base revision by id.">
+  <meta name="plan-evidence-for" content="a-landing-never-reverts-the-checkout">
+  <meta name="plan-recorded-at" content="2026-10-19">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>The gate landing reports its landing check | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The gate landing reports its landing check</h1>
+
+    <section id="the-gate-landing-reports-its-check-what-changed">
+      <h2>What changed</h2>
+      <p>The integrated-gate re-run
+        <code>record_gate_rerun_at_integrated_revision</code> in
+        <code>reckon/crew/promotion_gate.py</code> landed its report through
+        <code>_commit_landing_writes</code> but discarded the result, so a
+        staged reversal of an earlier landing or a post-commit path mismatch
+        left the checkout wrong with nothing on stderr and nothing in the
+        receipt — where the promotion landings
+        (<code>reckon/crew/promotion.py:751</code>, <code>:1360</code>) and the
+        release landing (<code>reckon/crew/promotion_release.py:635</code>)
+        both report theirs through <code>_report_landing_check</code>. The
+        gate site now does too: the landing result is passed through
+        <code>_report_landing_check</code> (which prints each reversal and
+        mismatch to stderr and returns the check) and the returned check is
+        carried on the payload as <code>landing_check</code>, which the
+        <code>reckon crew verify-gate</code> command emits as the receipt. The
+        wiring covers both the pre-staging reversal check and the post-commit
+        mismatch, since one helper reads both.</p>
+    </section>
+
+    <section id="the-gate-landing-reports-its-check-gate">
+      <h2>Gate</h2>
+      <p>Command:
+        <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -q -rA
+        tests/test_a_landing_checks_what_it_left.py
+        tests/test_failed_landing_leaves_nothing_behind.py
+        tests/test_rollback_asks_head.py tests/test_promotion_release.py
+        tests/test_a_release_never_folds_run_files_into_the_aggregate.py</code>
+        at the node worktree head: <strong>29 passed, 0 failed, EXIT=0</strong>
+        (<code>gate-head-landing-tests.log</code>). The same files at the base
+        revision <code>386f11d5</code>, in a scratch tree under
+        <code>$TMPDIR</code>, give <strong>28 passed, 0 failed, EXIT=0</strong>
+        (<code>gate-base-landing-tests.log</code>) — zero added failures; the
+        extra pass is the one new case.</p>
+      <p>The new case
+        <code>test_a_reversal_found_while_landing_a_gate_rerun_is_reported</code>
+        applies the declared mutation — the base revision's
+        <code>record_gate_rerun_at_integrated_revision</code>, which discards
+        the landing check.</p>
+      <p>Negative control: the new case run against the base-revision module in
+        a scratch tree under <code>$TMPDIR</code>, whose header names the
+        imported module as that tree's
+        <code>reckon/crew/promotion_gate.py</code> — <strong>1 failed, 7
+        passed</strong>, the failure being
+        <code>test_a_reversal_found_while_landing_a_gate_rerun_is_reported</code>
+        with <code>KeyError: 'landing_check'</code>
+        (<code>negative-control-base-gate-landing-check.log</code>, last line
+        <code>EXIT=1</code>). At the base revision no <code>landing_check</code>
+        is reported, so the case fails by id. <code>ruff check</code> reports
+        no finding on the changed files and <code>ruff format --check</code>
+        leaves <code>tests/test_a_landing_checks_what_it_left.py</code>
+        formatted as at the base.</p>
+    </section>
+  </main>
+</body>
+</html>
