@@ -1,0 +1,15 @@
+<section id="text-responses-are-compressed" class="r-evidence">
+  <h3 id="text-responses-are-compressed-title">Text responses are gzipped once per revision</h3>
+  <p><code>_send_file</code> gzips a text response — SVG, JavaScript, CSS, HTML or JSON — above the existing threshold when the request accepts gzip, and caches the compressed bytes per ETag under the configuration home, so a file is compressed once per revision. A client that does not accept gzip still receives the file as it is, the ETag is unchanged, and a matching <code>If-None-Match</code> still answers 304.</p>
+  <table id="text-responses-are-compressed-measure">
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Node gate: an SVG above the threshold answers gzip, is sent whole without gzip, still answers 304, and a second request does not compress again</td><td>5 passed, EXIT=0</td></tr>
+      <tr><td>Declared negative control: remove the compression branch (the eligibility check answers False)</td><td>2 failed (the content-encoding assertion and the compress-once count), 3 passed, EXIT=1</td></tr>
+      <tr><td>Tests importing <code>reckon/serve.py</code> (122 files at base, 123 at head)</td><td>Head: 1369 passed, 15 failed, 1 skipped. Base: 1357 passed, 16 failed, 6 errors, 1 skipped. Zero added failure IDs: every head failure is a browser test that also fails at base or passes when run alone</td></tr>
+      <tr><td>Ruff on the changed Python files</td><td>17 existing findings in <code>reckon/serve.py</code> at base and head (0 added); new test file adds 0; both files formatted</td></tr>
+    </tbody>
+  </table>
+  <p id="text-responses-are-compressed-https-note">The reader reaches the server through a tunnel, where the compressed bytes are the cost: gzip at level 5 shrinks nova's largest figure from 3.2 MB to 0.32 MB.</p>
+  <p id="text-responses-are-compressed-operations">The served process carries this change after the coordinator deploys code including it.</p>
+</section>

@@ -3027,6 +3027,65 @@ def _thumbnail_bytes(source: Path, identity: str) -> bytes:
     return body
 
 
+_COMPRESSIBLE_TEXT_TYPES = frozenset(
+    {"application/javascript", "application/json", "image/svg+xml"}
+)
+
+
+def _is_compressible_text(ctype: str) -> bool:
+    """Whether a response of this content type is text worth gzipping.
+
+    A figure, stylesheet, script or document is repetitive text that shrinks
+    many times over; a JPEG or a font does not, and compressing one spends CPU
+    to send bytes back. Only the media types ``_send_file`` actually serves are
+    named, so a binary type answers False.
+    """
+
+    base = (ctype or "").split(";", 1)[0].strip().lower()
+    return base.startswith("text/") or base in _COMPRESSIBLE_TEXT_TYPES
+
+
+def _text_compression_cache_path(source: Path, identity: str) -> Path:
+    """Return the gzip cache file for one source revision, under the config home.
+
+    Keyed by the same stat identity that builds the response's ETag, so a
+    rewritten file misses the cache and a restart — or a second process —
+    reuses the compressed bytes that are already there rather than compressing
+    them again.
+    """
+
+    digest = hashlib.sha256(f"{source}\0{identity}".encode()).hexdigest()[:32]
+    return _config_home() / "cache" / "gzip" / f"{digest}.gz"
+
+
+def _cached_gzip_text(source: Path, identity: str, body: bytes) -> bytes:
+    """Return the gzip of one text body, compressing it at most once.
+
+    The first request for a revision compresses the body and writes it to the
+    cache; every later one — another request, another thread, another process —
+    reads that file, so a large figure costs one compression per revision
+    rather than one per view. A cache write that fails still serves the
+    compressed bytes, because an unwritable cache is a cost, not a failure.
+    """
+
+    cached = _text_compression_cache_path(source, identity)
+    try:
+        return cached.read_bytes()
+    except OSError:
+        pass
+    # Level 5 is the balance `_send_json` already uses: a text response shrinks
+    # many times over at a fraction of the CPU level 9 would spend on it.
+    compressed = gzip.compress(body, compresslevel=5)
+    try:
+        cached.parent.mkdir(parents=True, exist_ok=True)
+        write_atomically(
+            cached, lambda handle: handle.write(compressed), fsync=False, binary=True
+        )
+    except OSError as exc:
+        LOGGER.warning("cannot cache compressed text for %s: %s", source, exc)
+    return compressed
+
+
 def _patch_into(target: dict, patch: dict) -> dict:
     """Merge a flat dotted-key patch into nested dict `target`, in place.
 
@@ -3229,10 +3288,17 @@ class Handler(BaseHTTPRequestHandler):
         stylesheet is seen on the next load, while an unchanged one costs a
         304 instead of its bytes — the difference between a refresh that
         re-downloads every image and one that downloads none.
+
+        A text response — a figure, stylesheet, script or document — over the
+        compression threshold is gzipped when the client asks for it. The
+        reader reaches the server through a tunnel, so a 3.2 MB figure sent
+        compressed costs a tenth of the bytes; a client that does not accept
+        gzip still gets the file as it is.
         """
         try:
             stat = target.stat()
-            etag = f'"{stat.st_ino:x}-{stat.st_size:x}-{stat.st_mtime_ns:x}"'
+            identity = f"{stat.st_ino:x}-{stat.st_size:x}-{stat.st_mtime_ns:x}"
+            etag = f'"{identity}"'
             if etag in (self.headers.get("If-None-Match") or ""):
                 self.send_response(HTTPStatus.NOT_MODIFIED)
                 self.send_header("ETag", etag)
@@ -3243,13 +3309,26 @@ class Handler(BaseHTTPRequestHandler):
         except OSError as e:
             self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
             return
+        accepts = self.headers.get("Accept-Encoding", "") if self.headers else ""
+        compressed = None
+        if (
+            len(body) >= _GZIP_MIN_BYTES
+            and "gzip" in accepts
+            and _is_compressible_text(ctype)
+        ):
+            compressed = _cached_gzip_text(target, identity, body)
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", ctype)
-        self.send_header("Content-Length", str(len(body)))
+        if compressed is not None:
+            self.send_header("Content-Encoding", "gzip")
+            self.send_header("Vary", "Accept-Encoding")
+            self.send_header("Content-Length", str(len(compressed)))
+        else:
+            self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-cache")
         self.send_header("ETag", etag)
         self.end_headers()
-        self.wfile.write(body)
+        self.wfile.write(compressed if compressed is not None else body)
 
     def _serve_thumbnail(self, path: str) -> None:
         """Serve a figure's thumbnail: 200 px on its long edge, cached on disk.
