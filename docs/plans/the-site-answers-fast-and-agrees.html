@@ -25,6 +25,8 @@
   <title>The Site Answers Fast and Agrees With Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
   <main class="plan-doc">
@@ -243,25 +245,30 @@
       <code>docs/evidence/archive/the-site-answers-fast-and-agrees-landed.html</code>.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="progress-measure" data-choice="effort-weighted-section-share" data-by="Simon McIntosh" data-when="2026-10-18">
-        <p class="r-dec-q">What does a plan's progress bar mean, everywhere it appears (plan list, graph, crew flow, fleet home)?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="section-share">Section share by count</button>
-          <button class="r-opt chosen" data-value="effort-weighted-section-share">Section share weighted by effort</button>
-          <button class="r-opt" data-value="authored-impl-auto-updated">Keep the authored impl and update it on landing</button>
-        </p>
-        <p class="r-dec-rat">The lead chose the effort-weighted share. Where no section carries hours it falls back to the count. Where some do, the
-          missing hours are imputed with the mean of the present ones. A figure derived from sections cannot drift the way a hand-set <code>impl</code>
-          did (twelve of nova's thirty sectioned plans off by 25 points or more). Weighting by effort reads closer to the work left than a count does. The
-          coordinator's own calls, which the lead can revisit: a plan with no declared sections keeps its authored <code>impl</code>, and every roll-up
-          (graph endpoint, fleet home) applies the same weighting over member plans' hours.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="progress-measure" data-choice="effort-weighted-section-share" data-by="Simon McIntosh" data-when="2026-10-18">
+    <p class="r-dec-q">What does a plan&#x27;s progress bar mean, everywhere it appears (plan list, graph, crew flow, fleet home)?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="section-share">Section share by count</button>
+      <button class="r-opt chosen" data-value="effort-weighted-section-share">Section share weighted by effort</button>
+      <button class="r-opt" data-value="authored-impl-auto-updated">Keep the authored impl and update it on landing</button>
+      </p>
+    <p class="r-dec-rat">The lead chose the effort-weighted share. Where no section carries hours it falls back to the count. Where some do, the
+          missing hours are imputed with the mean of the present ones. A figure derived from sections cannot drift the way a hand-set impl did (twelve of nova&#x27;s thirty sectioned plans off by 25 points or more). Weighting by effort reads closer to the work left than a count does. The
+          coordinator&#x27;s own calls, which the lead can revisit: a plan with no declared sections keeps its authored impl , and every roll-up
+          (graph endpoint, fleet home) applies the same weighting over member plans&#x27; hours.</p>
+    </div>
+</section>
 
-    <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-    </section>
-  </main>
+    
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s6" data-id="c-review-wiring-1" data-who="reckon-build" data-when="2026-10-18T13:12:00Z">
+    <div class="r-comment-body"><p>Content review <code>r-20261018T125413022258</code>, finding <code>wiring-1</code>: §6's fleet roll-up calls §2's progress function, but §6 does not list §2 in its dependencies, and §2 is not reachable through §5. Before §6 is dispatched, add <code>the-site-answers-fast-and-agrees#s2</code> to §6's entry in <code>plan-section-depends-on</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-review-done-when-1" data-who="reckon-build" data-when="2026-10-18T13:12:00Z">
+    <div class="r-comment-body"><p>Content review <code>r-20261018T125413022258</code>, finding <code>done_when-1</code>: §11's hard gate has no negative control. Before §11 is dispatched, its done-when gains one. The same probe runs against a temporary <code>reckon serve</code> on another port, started from a worktree at the plan's base revision, and the gate must fail there. That shows the probe can tell a fast, consistent site from a slow or empty one.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
