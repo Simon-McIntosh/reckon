@@ -1,0 +1,39 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T07:03:33.210Z",
+  "dispatched_at": "2026-10-18T06:52:50Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-pair-never-runs-its-arms-alike.html:37",
+      "id": "reasoning-1",
+      "reason": "the author would scope the added clause to the pair path (or state it in the pair refusal's detail rather than in the shared registry entry), which changes what the node edits in reckon/crew/refusals.py.",
+      "text": "the remedy extends D21's remedy so it says \"the pair backend must differ from the lane the primary runs on\", but D21's remedy is shared with the `crew shadow` path (`shadow` at reckon/crew/dispatch.py:558 calls `_shadow_dispatch_config`, which wraps the resolver's refusal in D21), and the same plan puts that path out of scope because \"a shadow of a finished run on its own lane can be a deliberate repeat\" \u2014 so a `crew shadow --backend` refusal would print a constraint the code on that path does not enforce",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f6ce4322a783c21d86b4fec44cc86bb8ac0ecbfc2f58babb3a5e028b3cd88174",
+  "plan_slug": "a-pair-never-runs-its-arms-alike",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T065210104767-plan-review-of-a-pair-never-runs-its-arms-alike",
+  "reviewed_blob_sha": "b49a15a6db22552df0f74bb5dc107f2df4d73785",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves at the stated line (`dispatch_pair` 690, `_shadow_dispatch_config` 465, `shadow` 558, `_candidate_config` at tests/test_a_paired_dispatch_hides_each_arm.py:85, `_backend_serving_picked_model` at reckon/crew/dispatch_plan.py:207, D21 at reckon/crew/refusals.py:81), all six named test files exist except the new one the plan introduces, and both incident run ids \u2014 `r-20261018T062147901424-census-certified-convergence` and `r-20261018T062147901543-census-certified-convergence` \u2014 resolve as directories under the crew run store.",
+    "done_when": "pass \u2014 the section's done-when is three measurable cases (refusal as dry run and as real dispatch with no run directory left; a pairing whose primary is on the default backend; a same-backend pair with differing models), each falsifiable, and the declared negative control names two mutations applied alone (`must fail` while the check that makes each case meaningful is removed or narrowed).",
+    "evidence_paths": "pass \u2014 the gate is a foreground pytest whose result lands on the node manifest and its log; no step writes evidence to a session scratchpad or a node-local temp path.",
+    "naming": "pass \u2014 the plan's new test file name carries the plan's descriptive slug, exactly as its two sibling files do, with no stage label, ticket number or version tag; the plan names no new symbol by a plan label.",
+    "reasoning": "a finding \u2014 the stated root cause matches its evidence and the mechanism reaches the real path, but the remedy's effect on D21's shared text contradicts the plan's own out-of-scope statement.",
+    "single_goal": "pass \u2014 one deliverable: refuse a pair whose arms resolve to one backend AND one model. The `_candidate_config` change is the test support that deliverable needs, not a second goal.",
+    "wiring": "pass \u2014 the plan declares no depends-on/informs/gates and needs none; it repairs two already-landed plans and its plan-standalone note says so. Its two targets both resolve: `dispatch_pair` (reckon/crew/dispatch.py:690) and `Shadow`/`_shadow_dispatch_config` (reckon/crew/dispatch.py:465,558)."
+  },
+  "section_digests": {
+    "_document": "f69e0ec63ca7c44aed6a2af37349696c5cb319f332df134e6fd7dc890a53dbc5",
+    "s1": "6f9ad1f77f5150c57b3a79221a261d081ba54e78294014216096fccb72b020b4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T07:05:04.713545+00:00"
+}
