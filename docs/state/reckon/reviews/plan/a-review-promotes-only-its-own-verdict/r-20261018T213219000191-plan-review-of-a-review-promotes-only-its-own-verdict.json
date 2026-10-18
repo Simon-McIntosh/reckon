@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T21:41:57.882Z",
+  "dispatched_at": "2026-10-18T21:33:05Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-promotes-only-its-own-verdict.html:42",
+      "id": "anchors_resolve-1",
+      "reason": "the symbols are named and greppable, the drift is roughly 211 lines in a unit unchanged since a prior review read it, and a builder resolving the name reaches the right function, so no deliverable changes.",
+      "text": "\u00a71 cites run_id_dispatch_time at reckon/crew/review.py:2584 and run_record_times at :2541, but those definitions now sit at reckon/crew/review.py:2795 and :2752, so each anchor points at an unrelated line",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "9df5bac3f3fa1a460079241b586a8a4abdc2dcf18fd614054ac1afdf70cd33f2",
+  "plan_slug": "a-review-promotes-only-its-own-verdict",
+  "plan_version": 13,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "both symbols are named and resolve by name; review.py moved under a peer's commit, and an edit would reopen the plan-wide gate to chase line numbers that keep moving",
+      "when": "2026-10-18T21:42:56.858934+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "both symbols are named and resolve by name; review.py moved under a peer's commit, and an edit would reopen the plan-wide gate to chase line numbers that keep moving",
+      "when": "2026-10-18T21:42:56.858934+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-review-promotes-only-its-own-verdict.v13.json",
+  "review_run_id": "r-20261018T213219000191-plan-review-of-a-review-promotes-only-its-own-verdict",
+  "reviewed_blob_sha": "c18187d55b3839a07e8b08ad911568801be7972e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a72's sole code citation (reckon/crew/recovery_review_dispatch.py:133, _review_record_subject) resolves exactly, but \u00a71's two review.py citations do not resolve to the symbols they name.",
+    "done_when": "pass \u2014 \u00a72's done-when is measurable and now names a negative control: I confirmed against nova's committed ledger that r-20261018T172216624608-review-of-vertical-pin-45213bf1cd62 carries no misattribution (its declared .at- head 45213bf1cd6216df72a450af58038e088407d39e equals its review.reviewed_head_sha and its node-id suffix), so it is a row the census must count and not list, which is what item 2 requires.",
+    "evidence_paths": "pass \u2014 \u00a72 writes docs/research/review-rows-with-another-rounds-verdict.html, a durable repository path, and requires that document to name the command that produced every figure; no session-scratchpad or node-local path is named.",
+    "naming": "pass \u2014 the new paths docs/research/review-rows-with-another-rounds-verdict.html and scripts/review_rows_with_another_rounds_verdict.py name the mechanism and carry no plan, stage, ticket or version label.",
+    "reasoning": "pass \u2014 \u00a72's root cause follows \u00a71's cited measurement (the delivery predicate decided every reader's verdict); its census mechanism produces the per-project counts and the listed fields \u00a72 asserts; and it reuses the real reader by importing _review_record_subject rather than re-parsing the path, with the standalone script named as the caller.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable: the census document and the script that computes it.",
+    "wiring": "pass \u2014 \u00a73's depends-on (\u00a72) is declared in plan-section-depends-on and resolves to a section that exists; \u00a72 declares no unmet dependency and is independent of \u00a71."
+  },
+  "section_digests": {
+    "_document": "a89ba6e7de39330fc5176496045373dcff7a6d34147d487dbd5acaa0ec842ddd",
+    "s1": "b5cea03aef396e4aea2b2b9c76f01fd0b684b3da7cce27ab57a3fe3cd364801d",
+    "s2": "7210c28c3600892789bd0cf6bb61f4c9e0443ff586e1b7887eb2255666cb75c1",
+    "s3": "18f479da831c1adb4dd53260c6b8c26ddcb1fc069308b21f243d7216647cd6e8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T21:42:52.588571+00:00"
+}
