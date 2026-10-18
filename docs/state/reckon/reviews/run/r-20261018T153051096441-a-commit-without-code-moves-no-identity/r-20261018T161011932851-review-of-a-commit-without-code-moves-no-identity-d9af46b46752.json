@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:409",
+    "reckon/crew_follow_commands.py:449",
+    "reckon/crew/runs.py:2530",
+    "reckon/crew/obligation_snapshot.py:428",
+    "reckon/mcp.py:292"
+  ],
+  "completed_at": "2026-10-18T16:19:28Z",
+  "dispatched_at": "2026-10-18T16:12:23Z",
+  "findings": [
+    {
+      "file": "tests/test_a_commit_without_code_moves_no_identity.py",
+      "line": "167",
+      "severity": "follow-on",
+      "text": "follow-on: image.name is compared with identity passed directly to materialize_committed_tree at :164, so switching that input back to a commit leaves this assertion true; the independent HEAD:reckon check at :97 is what guards the identity contract."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call sites",
+    "diff": "e33a0ff392514e20d0bbd930b098e2529d854d8a changes three runtime modules and adds tests/test_a_commit_without_code_moves_no_identity.py, while d9af46b46752743d73949bed5ef56578245798d9 adds only the declared evidence fragment.",
+    "done_when": "prompt.txt:100 requires unchanged identity after an outside-package commit, a changed package tree, cross-commit equality and a red control; tests/test_a_commit_without_code_moves_no_identity.py:95-189 asserts these and logs/pop-base.log, logs/pop-head-solo.log and logs/negative-control.log record 58 passed, 64 passed and four control failures.",
+    "goal": "prompt.txt:30 asks for the package content identity; reckon/checkout_trust.py:226 reads HEAD:reckon and reckon/crew_follow_commands.py:449 compares it during reload.",
+    "manifest": "manifest.md records commits e33a0ff39 and d9af46b46, the focused six-test gate, base and head suite logs and the red negative-control log; the cited suite logs each end EXIT=0.",
+    "write_paths": "prompt.txt:69-75 declares four Python paths, one evidence fragment and a figure directory; both commits change only the four Python paths and that fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_commit_without_code_moves_no_identity.py:97 independently compares with git HEAD:reckon and :114 observes no exec on an outside-package commit, both of which redden under the recorded commit-identity control; :167 is coupled to its own input.",
+    "evidence": "tests/test_a_commit_without_code_moves_no_identity.py:95-189 exercises the stated cases and the reviewed run's pop-base.log and pop-head-solo.log show 58 and 64 passes with zero failures, while negative-control.log records four failures.",
+    "fit": "reckon/checkout_trust.py:214 places the Git tree reader beside committed_head and reckon/crew_follow_commands.py:449 retains the existing stamp and materialization flow without a forbidden source name.",
+    "goal_fidelity": "reckon/checkout_trust.py:226 reads the package tree, reckon/checkout_trust.py:381 archives it under reckon/, and reckon/crew_follow_commands.py:449 uses the same identity for reload decisions.",
+    "reuse": "the capability search over reckon/ found the prior commit reader in reckon/checkout_trust.py:198 and fallback content stamp in reckon/crew/obligation_snapshot.py:423; the new package-tree reader extends checkout_trust rather than duplicating an existing tree-identity owner.",
+    "scope_discipline": "the diff from b82313f9a to d9af46b46 changes only the five paths in prompt.txt:70-75 and the fragment records the gate without adding runtime behavior."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks for the package content identity; reckon/checkout_trust.py:226 reads HEAD:reckon and reckon/crew_follow_commands.py:449 compares it during reload.\nVERDICT done_when: prompt.txt:100 requires unchanged identity after an outside-package commit, a changed package tree, cross-commit equality and a red control; tests/test_a_commit_without_code_moves_no_identity.py:95-189 asserts these and logs/pop-base.log, logs/pop-head-solo.log and logs/negative-control.log record 58 passed, 64 passed and four control failures.\nVERDICT write_paths: prompt.txt:69-75 declares four Python paths, one evidence fragment and a figure directory; both commits change only the four Python paths and that fragment.\nVERDICT manifest: manifest.md records commits e33a0ff39 and d9af46b46, the focused six-test gate, base and head suite logs and the red negative-control log; the cited suite logs each end EXIT=0.\nVERDICT diff: e33a0ff392514e20d0bbd930b098e2529d854d8a changes three runtime modules and adds tests/test_a_commit_without_code_moves_no_identity.py, while d9af46b46752743d73949bed5ef56578245798d9 adds only the declared evidence fragment.\nCALL_SITES: reckon/crew_follow_commands.py:409, reckon/crew_follow_commands.py:449, reckon/crew/runs.py:2530, reckon/crew/obligation_snapshot.py:428, reckon/mcp.py:292\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/checkout_trust.py:226 reads the package tree, reckon/checkout_trust.py:381 archives it under reckon/, and reckon/crew_follow_commands.py:449 uses the same identity for reload decisions.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_commit_without_code_moves_no_identity.py:95-189 exercises the stated cases and the reviewed run's pop-base.log and pop-head-solo.log show 58 and 64 passes with zero failures, while negative-control.log records four failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff from b82313f9a to d9af46b46 changes only the five paths in prompt.txt:70-75 and the fragment records the gate without adding runtime behavior.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_commit_without_code_moves_no_identity.py:97 independently compares with git HEAD:reckon and :114 observes no exec on an outside-package commit, both of which redden under the recorded commit-identity control; :167 is coupled to its own input.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/checkout_trust.py:214 places the Git tree reader beside committed_head and reckon/crew_follow_commands.py:449 retains the existing stamp and materialization flow without a forbidden source name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search over reckon/ found the prior commit reader in reckon/checkout_trust.py:198 and fallback content stamp in reckon/crew/obligation_snapshot.py:423; the new package-tree reader extends checkout_trust rather than duplicating an existing tree-identity owner.\nFINDING tests/test_a_commit_without_code_moves_no_identity.py:167 follow-on: image.name is compared with identity passed directly to materialize_committed_tree at :164, so switching that input back to a commit leaves this assertion true; the independent HEAD:reckon check at :97 is what guards the identity contract.\nreviewed_base_sha: b82313f9a23df0bd7dac8160123fda19564ff995\nreviewed_head_sha: d9af46b46752743d73949bed5ef56578245798d9\n",
+  "review_run_id": "r-20261018T161011932851-review-of-a-commit-without-code-moves-no-identity-d9af46b46752",
+  "reviewed_base_sha": "b82313f9a23df0bd7dac8160123fda19564ff995",
+  "reviewed_head_sha": "d9af46b46752743d73949bed5ef56578245798d9",
+  "reviewed_run_id": "r-20261018T153051096441-a-commit-without-code-moves-no-identity",
+  "reviewer": {
+    "backend": "codex",
+    "effort": null,
+    "model": null
+  },
+  "reviewer_run_id": "r-20261018T161011932851-review-of-a-commit-without-code-moves-no-identity-d9af46b46752",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T16:16:39.056602+00:00",
+  "total": 114
+}

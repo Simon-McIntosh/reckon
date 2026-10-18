@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="338">
+<meta name="plan-version" content="339">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1324,6 +1324,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s53" data-id="c-run-r-20261018T123337620491-lift-claim-sweep-population-at-merge" data-who="reckon-build" data-when="2026-10-18T13:14:03.170Z">
     <div class="r-comment-body"><p>Merging 44ed814d406057e14a70e21e414f9269860e577d onto 872067fb8cf6bd1ffc500687a236116fd017bc98 (merge f9d996ae28fce8fec0199aeea13c61950b549645) adds 1 failing id over the 118-file importer population, and that id is load-only: tests/test_dispatch_session_host.py::test_dispatch_asks_the_session_host_and_is_admitted_by_it fails once in the 10-way parallel candidate arm and passes 5/5 alone at the candidate and 5/5 alone at base; the failure is the stub session host's FIFO attach racing the dispatch, the same job's base arm lost a different dispatch-admission id, and an identical rerun of the base arm failed 3 then 4 ids. No id is new at the candidate; the candidate's own 4-test file passes under the same load.</p></div>
+</div>
+<div class="r-comment" data-section="s54" data-id="c-run-r-20261018T161011932851-review-of-a-commit-without-code-moves-no-identity-d9af46b46752" data-who="reckon-build" data-when="2026-10-18T16:19:28Z">
+    <div class="r-comment-body"><p>Parsed independent review stored at the declared at-d9af46b46752743d73949bed5ef56578245798d9.json path; six dimensions scored, one follow-on finding, no blocking finding.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
