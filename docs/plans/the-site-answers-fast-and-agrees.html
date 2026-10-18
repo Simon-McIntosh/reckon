@@ -25,7 +25,7 @@
   <title>The Site Answers Fast and Agrees With Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -368,7 +368,10 @@
     <div class="r-comment-body"><p>Live check after the §12 merge (<code>d204b8de1</code>, served from 2026-10-18 19:44Z). <code>/_thumb/</code> still served <code>overlap-and-drop.svg</code> as an 82 KB SVG, and the server log reads <em>cannot thumbnail … (SVG has an invalid size); serving the source</em> for real figures. matplotlib writes its sizes in points (<code>width="1008pt"</code>), and <code>resvg_py</code> 0.5.0 defaults <code>dpi=0.0</code>, which reduces a <code>pt</code> size to zero. The node's fixtures were sized in pixels. Passing <code>dpi=96</code> renders the same file, and 40 of 40 sampled power_convertor figures. A fix node, <code>thumbnails-rasterise-point-sized-svgs</code>, sets it with a <code>pt</code>-sized fixture. §12 stays open until power_convertor's first figure screen is measured under 2 MB live.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261018T200006871708-review-of-thumbnails-rasterise-point-sized-svgs-6b404d205bcf" data-who="reckon-build" data-when="2026-10-18T20:06:56Z">
-    <div class="r-comment-body"><p>Independent review of eadcb418b7259c3875537a0f31d8852c6281fe9f..6b404d205bcf67201cbe58da7984adc06672e9d2 scored 20/10/20/17/19/20, found one blocking evidence gap and two follow-on issues, and stored the parsed record under the reviewed run&#x27;s review-records directory.</p></div>
+    <div class="r-comment-body"><p>Independent review of eadcb418b7259c3875537a0f31d8852c6281fe9f..6b404d205bcf67201cbe58da7984adc06672e9d2 scored 20/10/20/17/19/20, found one blocking evidence gap and two follow-on issues, and stored the parsed record under the reviewed run's review-records directory.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261018T194631807231-thumbnails-rasterise-point-sized-svgs" data-who="reckon-build" data-when="2026-10-18T20:34:43Z">
+    <div class="r-comment-body"><p>pass dpi=96 to resvg_py.svg_to_bytes in _rasterise_svg (reckon/serve.py) so a point-sized SVG rasterises to a bounded PNG instead of falling back to the whole vector; new fixture 1008pt x 864pt with matching viewBox asserts image/png within THUMB_MAX_EDGE — thumbnail test file 8 passed, figure/serving tests 28 passed, EXIT=0.</p></div>
 </div>
 </section>
 </main>
