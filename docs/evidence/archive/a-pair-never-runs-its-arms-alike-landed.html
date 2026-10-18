@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-pair-never-runs-its-arms-alike-landed">
+  <meta name="plan-title" content="A Pair Never Runs Its Arms Alike — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Pair Never Runs Its Arms Alike: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-pair-never-runs-its-arms-alike">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Pair Never Runs Its Arms Alike — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Pair Never Runs Its Arms Alike — landed record</h1>
+  <p>Closure synthesis for A Pair Never Runs Its Arms Alike: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s1">
+    <h2>§1 — a pair whose arms resolve to one backend and model is refused before either launches</h2>
+    <p>Run <code>r-20261018T074018927209-a-pair-refuses-alike-arms</code>, commits <code>5832ba4dd</code> and <code>10ff6fcf5</code>. <code>dispatch_pair</code> in <code>reckon/crew/dispatch.py</code> now passes the <code>comparison</code> that <code>_shadow_dispatch_config</code> already returns to <code>_refuse_arms_that_resolve_alike</code>. That function refuses with D21 when the substituted backend entry carries equal primary and shadow values and <code>model</code> is not among the substituted entries. The check runs before the dry-run return and before any run directory or worktree exists. The refusal detail names the shared backend and model and says the pair backend must differ from the lane the primary runs on; D21's registered remedy is unchanged. <code>_candidate_config</code> in <code>tests/test_a_paired_dispatch_hides_each_arm.py</code> no longer routes the implement role to <code>candidate</code>.</p><p><strong>Measure.</strong> <code>tests/test_a_pair_never_runs_its_arms_alike.py</code> (3 tests) covers three cases: an alike pair refused as a dry run and as a real dispatch, leaving no run directory; a default-backend primary that pairs; and a shared backend with different models that pairs. The 7-file gate reads 41 passed and 1 failed at <code>5832ba4dd</code>, against 38 passed and 1 failed at base <code>9adf82d4c</code>. The one failure in both arms is <code>test_every_module_fits_a_worker_window</code> on <code>reckon/ledger.py</code>, outside this node's scope. With the helper still routing the role to <code>candidate</code>, the new check fails 7 of the 9 tests in <code>test_a_paired_dispatch_hides_each_arm.py</code>, which is why the helper changed. Removing the check fails the first case; comparing backends only fails the third. Both logs list pytest's FAILED ids. The re-run of the new file at <code>10ff6fcf5</code>, after the docstring fix, passes 3 of 3. Ruff added no findings. Independent review: total 114, no added failures. Its two follow-ons, a docstring citing a past event and an unrecorded ruff check, were folded into the resume that made <code>10ff6fcf5</code>.</p>
+  </section>
+
+</main>
+</body>
+</html>

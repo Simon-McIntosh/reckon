@@ -20,18 +20,18 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It repairs the landed paired dispatch of a-shadow-cannot-see-its-primary and a-paired-shadow-runs-on-its-named-backend; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;}">
   <title>A Pair Never Runs Its Arms Alike | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
 <body>
   <main class="plan-doc">
     <h2 id="s1">§1 — A pair whose arms resolve to one backend and model is refused before either launches</h2>
-<section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p>On 2026-10-18 nova dispatched <code>census-certified-convergence</code> with <code>--pair-backend codex</code>. Jev routed the primary arm to codex as well, at confidence 0.46. So primary <code>r-20261018T062147901424-census-certified-convergence</code> and shadow <code>r-20261018T062147901543-census-certified-convergence</code> both ran codex with <code>gpt-6-sol</code>, as both run directories record. The pair compared nothing and spent codex twice. nova stopped and discarded the shadow, which had made no commits.</p>
 <p>Nothing checks for this. <code>dispatch_pair</code> (<code>reckon/crew/dispatch.py:690</code>) plans the primary first through <code>plan_dispatch</code>, so the primary's agent is known before either arm launches. That includes the backend and model the picker chose (<code>primary_agent</code>). <code>_shadow_dispatch_config</code> (line 465) then builds the shadow's agent for the named backend and compares it with the primary's, field by field, in the <code>comparison</code> it returns. The backend always lands in <code>comparison["substituted"]</code> with both arms' values. The model lands there only when the two arms' models differ, and otherwise in <code>comparison["inherited"]</code>. <code>dispatch_pair</code> stores that comparison in the shadow's lineage, but nothing refuses on it. The paired tests could not see it. <code>_candidate_config</code> in <code>tests/test_a_paired_dispatch_hides_each_arm.py</code> (line 85) routes the implement role itself to the pair backend, so every pair those tests build has both arms on <code>candidate</code>.</p>
 <p><strong>Remedy.</strong> In <code>dispatch_pair</code>, read the <code>comparison</code> that <code>_shadow_dispatch_config</code> already returns, and do not compare the two agents a second time. Refuse when its <code>substituted</code> backend entry carries equal <code>primary</code> and <code>shadow</code> values and <code>model</code> is not among its <code>substituted</code> entries. The check runs before the dry-run return and before any run directory or worktree is created. Refuse with D21, and name in the detail the backend and model both arms resolved to. The detail also says that the pair backend must differ from the lane the primary runs on. That sentence goes in the detail rather than in D21's registered remedy, because <code>crew shadow</code> shares that remedy and does not enforce the rule. A pair whose arms share a backend but run different models still compares something, the two models, and is not refused.</p>
@@ -55,16 +55,20 @@ The test writes nothing outside its temporary directory.</li>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-apnria-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-pair-never-runs-its-arms-alike §1" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-apnria-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-pair-never-runs-its-arms-alike §1" data-resolved-at="2026-10-18T08:20:21+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Refuse a pair whose two arms resolve to one backend and model</h4>
     <div class="r-fu-body"><p>Filed after nova reported a <code>--pair-backend codex</code> dispatch whose primary Jev also routed to codex, so both arms ran <code>gpt-6-sol</code>. §1 carries the remedy and its done-when.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-pair-never-runs-its-arms-alike §1</pre>
+    <p class="r-fu-outcome"><p>§1 landed at review 114: a paired dispatch whose arms resolve to one backend and model is refused before either launches. The post-merge dry run decides the plan's close.</p></p>
     </article>
 </section>
   
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261018T080141495120-review-of-a-pair-refuses-alike-arms-5832ba4dd1ac" data-who="reckon-build" data-when="2026-10-18T08:09:39.912Z">
     <div class="r-comment-body"><p>review of run r-20261018T074018927209-a-pair-refuses-alike-arms at head 5832ba4dd1ac: verdict parsed, 6 dimensions scored (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 17, reuse 20; total 114), no blocking findings, 2 follow-on findings</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-close-s1" data-who="reckon-build" data-when="2026-10-18T08:25:00Z">
+    <div class="r-comment-body"><p>§1 landed: <code>dispatch_pair</code> refuses a pair whose arms resolve to one backend and one model, read from the existing shadow comparison, before anything launches (commits <code>5832ba4dd</code>, <code>10ff6fcf5</code>). Gate: 41 passed at head, 38 at base, with the same pre-existing <code>ledger.py</code> size failure in both. Both negative controls fail their case. Review total 114, no added failures. A post-merge dry run against this host's flight is still owed. <a href="/reckon/evidence/archive/a-pair-never-runs-its-arms-alike-landed.html#s1">evidence</a></p></div>
 </div>
 </section>
 </main>
