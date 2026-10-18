@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-window-paces-the-lane">
+  <meta name="plan-title" content="Reserved lane window refresh">
+  <meta name="plan-evidence-for" content="reckon:a-window-paces-the-lane">
+  <meta name="plan-node" content="reserved-lane-reads-a-fresh-window">
+  <meta name="plan-recorded-at" content="2026-10-18">
+  <title>Reserved lane window refresh | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Reserved lane window refresh</h1>
+    <p class="plan-summary">A hardest-tier pick with no fresh five-hour reading
+    now makes one bounded request, dates its window report, and reuses the
+    published reading for later picks inside its shelf life.</p>
+  </header>
+
+  <section aria-labelledby="diagnosis">
+    <h2 id="diagnosis">Observed path</h2>
+    <p>The host flight sets <code>budget_check: true</code> for Claude.
+    <code>paid_lanes.publish_document</code> invokes the account read for that
+    backend and persists the attempt. Its live document reports
+    <code>five_hour.state=unknown</code>, <code>utilisation=null</code>, and a
+    probe failure of <code>account read failed — HTTP Error 403: Forbidden</code>
+    at <code>2026-10-18T14:58:05.548755+00:00</code>. A direct
+    <code>_backends.probe_budget</code> call with the configured Claude command
+    reproduced that same 403. The account parser in <code>_backends.py</code>
+    also selects its named <code>weekly</code> window, so this route cannot
+    establish the five-hour figure even if access changes.</p>
+    <p><code>snapshot._compose_budget_report</code> reads the published document
+    and previously recorded run windows. With no readable five-hour source,
+    <code>_reserved_lane_exclusion</code> receives <code>None</code> and returns
+    <code>its window reading is unknown or stale</code>. In a direct control using
+    the normalized reserved policy and the declared hardest tier, 42% returned
+    no exclusion and 60% returned <code>window is 60% used, at or above the 60%
+    reserved-lane ceiling</code>. The gate therefore responds correctly to a
+    supplied fresh figure; the missing reading is the defect.</p>
+  </section>
+
+  <section aria-labelledby="landed">
+    <h2 id="landed">What landed</h2>
+    <p><code>snapshot.candidates</code> checks the node's declared reserved tier
+    and the lane's own five-hour clock, aged by the same shelf life as the
+    published paid-lanes document. Only a qualifying non-cached pick with an
+    unknown or stale clock asks for a new reading. It refreshes the budget view
+    held by <code>pick()</code> after a successful probe, so the offered lane and
+    the rendered question read the same figure. A weekly or account-overage
+    figure never substitutes for the five-hour clock.</p>
+    <p><code>paid_lanes.refresh_reserved_window</code> holds the publisher's
+    document lock, writes an attempt stamp before requesting, and reads the
+    typed <code>rate_limit_event.unifiedWindows.five_hour</code> from one
+    tool-free <code>claude -p</code> request. The request has a USD 0.05 ceiling
+    and a 60-second timeout. A served event with a numeric utilisation and a
+    future reset is dated from the request and published where the budget view
+    already reads; the publisher preserves that reading and the attempt stamp.
+    A refused request, absent window, or invalid reset leaves the lane closed.
+    A repeated pick inside the shelf life reuses the stored outcome without
+    another request.</p>
+    <p>Implementation commits <code>51682c9cb</code> and
+    <code>480a24bd1</code> change <code>reckon/crew/paid_lanes.py</code>,
+    <code>reckon/crew/picker/snapshot.py</code>, and
+    <code>tests/test_reserved_lane_window_reading.py</code>.</p>
+  </section>
+
+  <section aria-labelledby="measure">
+    <h2 id="measure">The measure</h2>
+    <p>The focused reserved-lane, publisher, picker, and budget gate completed
+    with <strong>44 passed at merged base <code>500fdc8c3</code></strong> and
+    <strong>58 passed at head <code>480a24bd1</code></strong>, exit 0 on both,
+    zero added failures. Three command-surface cases drive <code>crew pick</code>:
+    a hardest-tier node sees Claude at 42%, sees a 60% ceiling refusal at 60%,
+    and sees an unknown-or-stale refusal when no usable window event arrives.
+    Two qualifying picks inside one shelf life call the probe exactly once.
+    A routine or cached pick calls it zero times.</p>
+    <p>The negative control changed the unknown five-hour clock accessor to
+    return <code>0.0</code>. The unknown-source test then failed at its probe
+    count, <strong>1 failed, exit 1</strong>; at head it passes. The initial
+    base extraction omitted a fixture script and produced setup errors before
+    reaching the tested code. The corrected extraction included that script
+    and completed green. Logs and the landing record reside in this run's
+    directory; the live provider was not asked to serve a request during this
+    worker run.</p>
+  </section>
+</main>
+</body>
+</html>
