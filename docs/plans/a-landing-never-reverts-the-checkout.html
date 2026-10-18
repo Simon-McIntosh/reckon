@@ -25,7 +25,7 @@
   <title>A Landing Never Reverts The Checkout | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -44,7 +44,7 @@
 </ul>
 <p>What the code shows. The reverted state is exactly what <code>_restore_landing_writes</code> (<code>reckon/crew/promotion_scope.py:1672</code>) leaves when it runs while HEAD still resolves to the commit before the landing. Its <code>git restore --source=HEAD --staged --worktree</code> (line 1700) returns a tracked path to that commit's content in both the index and the working tree. For a path the landing created, that restore fails, and <code>_restore_one_landing_write</code> finds no <code>HEAD:&lt;path&gt;</code> (line 1734), drops the index entry (line 1737) and unlinks the file (line 1741). Run after HEAD carries the landing commit, the same calls change nothing. So either a rollback read a HEAD that did not yet carry the commit that then landed, or another actor produced the same state. Three candidates, none confirmed:</p>
 <ul>
-<li>reckon's own rollback running against the pre-landing HEAD. It is reached from a refused stage or commit in <code>_commit_landing_writes</code> (lines 1953 and 1980), from a refused review-record store in <code>reckon/crew/promotion.py:1334</code>, and from a refused release in <code>reckon/crew/promotion_release.py:615</code> and <code>:646</code>. One way to reach it is a second promotion of the same run racing the first.</li>
+<li>reckon's own rollback running against the pre-landing HEAD. It is reached from a refused stage or commit in <code>_commit_landing_writes</code> (lines 1953 and 1980), from a refused review-record store in <code>reckon/crew/promotion.py:1334</code>, and from a refused release in <code>reckon/crew/promotion_release.py:615</code> and <code>:646</code>. One way to reach it is a second promotion of the same run racing the first. The reverted run's ledger row carries <code>promoted_by: review-self</code>, so the review sweep's <code>promote_review_run_itself</code> promoted it (<code>reckon/crew/recovery_review_acceptance.py:416</code>). That sweep confines itself to one session only when its process holds a follower registration (<code>_sweeping_session</code>, <code>reckon/crew/recovery_repair_dispatch.py:1000</code>). Any other sweeping process handles every session's review runs, so two sweepers, for example on two hosts, can promote one review run at once.</li>
 <li>A peer's git command acting on an index it read before the landing. <code>git pull</code> reads the index and HEAD before it fetches, and when HEAD has moved by the time the fetch returns it tries to fast-forward the working tree from the HEAD it started on ("fetch updated the current branch head").</li>
 <li>Another path, in reckon or outside it, that restores files from a snapshot rather than from HEAD.</li>
 </ul>
