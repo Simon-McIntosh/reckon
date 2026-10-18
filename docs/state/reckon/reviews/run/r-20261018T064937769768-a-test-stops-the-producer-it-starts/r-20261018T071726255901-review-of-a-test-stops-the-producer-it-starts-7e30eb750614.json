@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "d674fe8dcb49595b0b99a3a6bcadd8590e3bac5b",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_watch.py:432:_ensure_watch_producer",
+    "reckon/crew/dispatch_watch.py:395:_stop_watch_producer_within",
+    "reckon/crew/dispatch_watch.py:294:_WATCH_PRODUCER_SUPERVISOR restart rule",
+    "reckon/crew_follow_commands.py:3411:stop_on_signal"
+  ],
+  "completed_at": "2026-10-18T07:32:58.976Z",
+  "dispatched_at": "2026-10-18T07:18:54Z",
+  "findings": [
+    {
+      "file": "tests/test_unmanaged_producer_keeps_a_log.py",
+      "line": "327",
+      "severity": "follow-on",
+      "text": "follow-on: the finally stop at tests/test_unmanaged_producer_keeps_a_log.py:327 is not independently guarded \u2014 removing that one line while keeping the SIGTERM/SIGHUP handler the same change adds (driver lines 254-259) leaves the gate green, because the session reaper's own SIGTERM then ends the whole tree through the supervisor's exit-above-127 rule (reckon/crew/dispatch_watch.py:294). No assertion or fixture failure names the removal of the stop the done_when requires, so the guard proves the handler works but cannot tell the explicit stop from the reaper backstop."
+    }
+  ],
+  "head_log_revision": "7e30eb750614d74631eac4a322baed55dac36e57",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatch_watch.py:432 _ensure_watch_producer (the production function the test drives), reckon/crew/dispatch_watch.py:395 _stop_watch_producer_within (the seat stop the finally calls), reckon/crew/dispatch_watch.py:294 the supervisor's restart rule (status 1..127 or negative restarts, above 127 exits), and reckon/crew_follow_commands.py:3411 stop_on_signal (the real crew watch handler the test driver mirrors, SystemExit(128+signum)).",
+    "diff": "read commit by commit against base d674fe8dcb49595b0b99a3a6bcadd8590e3bac5b; 97c3c45e8 adds the finally stop and the driver's SIGTERM/SIGHUP handlers (30 insertions, 9 deletions of the test file) and 7e30eb750 adds only the evidence fragment, both inside the declared scope.",
+    "done_when": "the done_when requires a -n 4 run of tests/test_unmanaged_producer_keeps_a_log.py ending with no crew watch process naming a created home and no reaped_watch_producers session error, the stop through dispatch_watch._stop_watch_producer_within in a finally or fixture finaliser, a negative control whose reaper names the leaked producer by pid and home, logs ending EXIT=, and no added ruff findings; the manifest and its own logs carry all of it.",
+    "goal": "the node goal is to make the dispatch-admission test stop the watch producer it starts; tests/test_unmanaged_producer_keeps_a_log.py:322-327 stops it in a finally through dispatch_watch._stop_watch_producer_within, and the driver it starts now handles SIGTERM so the stop ends the whole producer.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T064937769768-a-test-stops-the-producer-it-starts/manifest.md; it states status complete, records the head arm 7 passed / EXIT=0 (5 of 5 runs) against base 7 passed + 1 error / EXIT=1, and names each gate and negative-control log by path.",
+    "write_paths": "the declared write paths are tests/test_unmanaged_producer_keeps_a_log.py, docs/evidence/fragments/the-suite-is-green-at-head/a-test-stops-the-producer-it-starts.html and docs/figures/the-suite-is-green-at-head/a-test-stops-the-producer-it-starts; the diff touches the first two and nothing else."
+  },
+  "justifications": {
+    "durability": "the only guard is the pre-existing session reaper fixture (tests/conftest.py:669), which the base arm and negative-control logs show reddening when the stop and the handler are both removed, but which cannot redden on removal of the finally alone (tests/test_unmanaged_producer_keeps_a_log.py:327).",
+    "evidence": "the gate is a run of tests/test_unmanaged_producer_keeps_a_log.py under -n 4 whose pass condition is the session reaper not failing; base-leak-n4.log ends 7 passed, 1 error / EXIT=1 by pid and home and head-n4-final.log ends 7 passed / EXIT=0, both recorded in the manifest.",
+    "fit": "the driver's handler mirrors the real crew watch handler at reckon/crew_follow_commands.py:3411 (SystemExit(128+signum) on SIGTERM/SIGHUP) and the finally reuses the seat-stop owner, matching the file's existing synthetic-home idiom.",
+    "goal_fidelity": "tests/test_unmanaged_producer_keeps_a_log.py:327 stops the producer it armed (dispatch_watch._stop_watch_producer_within in a finally) and the driver handler at lines 254-259 makes that stop end the supervisor's whole tree, which is exactly what the goal names.",
+    "reuse": "the change calls the existing seat-stop owner dispatch_watch._stop_watch_producer_within rather than writing its own stop, and the driver's handler reproduces production's stop_on_signal rather than inventing a new mechanism.",
+    "scope_discipline": "every path in the diff (tests/test_unmanaged_producer_keeps_a_log.py and the evidence fragment) is inside the declared write paths and no other file changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the dispatch-admission test stop the watch producer it starts; tests/test_unmanaged_producer_keeps_a_log.py:322-327 stops it in a finally through dispatch_watch._stop_watch_producer_within, and the driver it starts now handles SIGTERM so the stop ends the whole producer.\nVERDICT done_when: the done_when requires a -n 4 run of tests/test_unmanaged_producer_keeps_a_log.py ending with no crew watch process naming a created home and no reaped_watch_producers session error, the stop through dispatch_watch._stop_watch_producer_within in a finally or fixture finaliser, a negative control whose reaper names the leaked producer by pid and home, logs ending EXIT=, and no added ruff findings; the manifest and its own logs carry all of it.\nVERDICT write_paths: the declared write paths are tests/test_unmanaged_producer_keeps_a_log.py, docs/evidence/fragments/the-suite-is-green-at-head/a-test-stops-the-producer-it-starts.html and docs/figures/the-suite-is-green-at-head/a-test-stops-the-producer-it-starts; the diff touches the first two and nothing else.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T064937769768-a-test-stops-the-producer-it-starts/manifest.md; it states status complete, records the head arm 7 passed / EXIT=0 (5 of 5 runs) against base 7 passed + 1 error / EXIT=1, and names each gate and negative-control log by path.\nVERDICT diff: read commit by commit against base d674fe8dcb49595b0b99a3a6bcadd8590e3bac5b; 97c3c45e8 adds the finally stop and the driver's SIGTERM/SIGHUP handlers (30 insertions, 9 deletions of the test file) and 7e30eb750 adds only the evidence fragment, both inside the declared scope.\nCALL_SITES: reckon/crew/dispatch_watch.py:432:_ensure_watch_producer, reckon/crew/dispatch_watch.py:395:_stop_watch_producer_within, reckon/crew/dispatch_watch.py:294:_WATCH_PRODUCER_SUPERVISOR restart rule, reckon/crew_follow_commands.py:3411:stop_on_signal\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_unmanaged_producer_keeps_a_log.py:327 stops the producer it armed (dispatch_watch._stop_watch_producer_within in a finally) and the driver handler at lines 254-259 makes that stop end the supervisor's whole tree, which is exactly what the goal names.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate is a run of tests/test_unmanaged_producer_keeps_a_log.py under -n 4 whose pass condition is the session reaper not failing; base-leak-n4.log ends 7 passed, 1 error / EXIT=1 by pid and home and head-n4-final.log ends 7 passed / EXIT=0, both recorded in the manifest.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (tests/test_unmanaged_producer_keeps_a_log.py and the evidence fragment) is inside the declared write paths and no other file changed.\nSCORE durability: 14\nJUSTIFICATION durability: the only guard is the pre-existing session reaper fixture (tests/conftest.py:669), which the base arm and negative-control logs show reddening when the stop and the handler are both removed, but which cannot redden on removal of the finally alone (tests/test_unmanaged_producer_keeps_a_log.py:327).\nSCORE fit: 19\nJUSTIFICATION fit: the driver's handler mirrors the real crew watch handler at reckon/crew_follow_commands.py:3411 (SystemExit(128+signum) on SIGTERM/SIGHUP) and the finally reuses the seat-stop owner, matching the file's existing synthetic-home idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change calls the existing seat-stop owner dispatch_watch._stop_watch_producer_within rather than writing its own stop, and the driver's handler reproduces production's stop_on_signal rather than inventing a new mechanism.\nFINDING tests/test_unmanaged_producer_keeps_a_log.py:327 follow-on: the finally stop is not independently guarded \u2014 removing that one line while keeping the SIGTERM/SIGHUP handler the same change adds (driver lines 254-259) leaves the gate green, because the session reaper's own SIGTERM then ends the whole tree through the supervisor's exit-above-127 rule (reckon/crew/dispatch_watch.py:294).",
+  "review_run_id": "r-20261018T071726255901-review-of-a-test-stops-the-producer-it-starts-7e30eb750614",
+  "reviewed_base_sha": "d674fe8dcb49595b0b99a3a6bcadd8590e3bac5b",
+  "reviewed_head_sha": "7e30eb750614d74631eac4a322baed55dac36e57",
+  "reviewed_run_id": "r-20261018T064937769768-a-test-stops-the-producer-it-starts",
+  "reviewer": "review-of-a-test-stops-the-producer-it-starts-7e30eb750614",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T07:35:17.971641+00:00",
+  "total": 110
+}
