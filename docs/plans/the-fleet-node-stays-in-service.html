@@ -193,15 +193,29 @@
     <h2 id="s6">&sect;6 &mdash; A worker step carries a memory bound</h2>
     <section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
     <p>
-      Every worker step is placed with an explicit <code>--mem</code>, so a runaway
-      process is killed inside its own step's cgroup. Without one it pushes the whole
-      job cgroup to its limit and every session's pages to swap. The size is the
-      open decision <code>worker-step-memory</code> below. A node may request more
-      through its dispatch, and the request is recorded on the run. Done when a test
-      shows the placed <code>srun</code> argv carrying the bound, and a probe step on
-      the fleet allocation shows its cgroup <code>memory.max</code> equal to the
-      bound. The negative control is a probe allocating past the bound: its OOM
-      event lands in the step's <code>memory.events</code> and not the job's.
+      The four processes killed on 17 October were not runaways. They belonged to two
+      nova solver runs, <code>r-20261017T073925596435-axis-facing-owner</code> (steps
+      5614 and 5621) and <code>r-20261017T102932384946-owner-cell-current</code> (step
+      5700). Each step's stderr records Slurm's <code>oom_kill</code> event, and both
+      runs were doing map solves at the 2,098-point size, which legitimately need
+      52&ndash;59 GB. The defect is placement, not leakage. The fleet allocation is
+      96 GB shared by every session and worker, so one such solve takes more than half
+      of it. A second one, or the sessions' own growth, takes the whole job to its
+      limit, and the OOM killer then picks the largest process anywhere in the job.
+    </p>
+    <p>
+      Every worker step is therefore placed with an explicit <code>--mem</code>, so
+      undeclared work stays inside a share that leaves room for the sessions. A node
+      whose work needs more declares it at dispatch, and the declaration is recorded on
+      the run. A declaration above the fleet's per-node ceiling is placed in its own
+      job on a <code>*_debug</code> partition rather than inside the fleet allocation.
+      The default and the ceiling are the open decision <code>worker-step-memory</code>
+      below. Done when a test shows the placed <code>srun</code> argv carrying the
+      default and a declared bound, and a test shows a declaration above the ceiling
+      routed to its own job. A probe step on the fleet allocation must also show its
+      cgroup <code>memory.max</code> equal to the bound. The negative control is a probe
+      allocating past its bound: its OOM event lands in the step's
+      <code>memory.events</code> and not the job's.
     </p>
 
     <h2 id="s7">&sect;7 &mdash; Measure what a watch producer's poll reads</h2>
@@ -251,11 +265,11 @@
     <section data-reckon="decisions" id="decisions" class="r-decisions">
       <h2><span class="sec">&sect;</span> Decisions</h2>
       <div class="r-dec" data-key="worker-step-memory" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">What memory bound does a worker step carry by default?</p>
+        <p class="r-dec-q">What default memory bound does a worker step carry, and above what declared size does a node leave the fleet allocation for its own job?</p>
         <p class="r-dec-opts">
-          <button class="r-opt" data-value="16G">16 GB</button>
-          <button class="r-opt" data-value="24G">24 GB</button>
-          <button class="r-opt" data-value="32G">32 GB</button>
+          <button class="r-opt" data-value="16G-default-32G-ceiling">16 GB default, 32 GB ceiling</button>
+          <button class="r-opt" data-value="24G-default-48G-ceiling">24 GB default, 48 GB ceiling</button>
+          <button class="r-opt" data-value="24G-default-64G-ceiling">24 GB default, 64 GB ceiling</button>
         </p>
         <p class="r-dec-rat"></p>
       </div>
