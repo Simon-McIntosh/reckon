@@ -40,6 +40,17 @@
     spawn failure, and a traceback the socket server prints on stderr — are not
     covered by the lock, but the per-request access line is.
   </p>
+  <figure>
+    <img src="/reckon/figures/the-site-answers-fast-and-agrees/request-duration-and-bounded-log/rotation_window.svg"
+      alt="Three rows against time. The rotation thread copies the over-bound file and then empties the live file while holding the lock, releasing it after the empty. An access line written with the shared lock waits on that lock and is written after the empty, so it is kept. An access line written without the lock lands between the copy and the empty and is lost to the empty."
+      style="max-width:100%">
+    <figcaption>The window a copy-then-empty rotation opens, and the lock that
+      closes it. The axis is order, not a measured duration. A line written
+      between the copy and the empty is in the predecessor only if the copy
+      already passed its offset, and in the emptied file not at all, so the
+      writer takes the same lock the rotator holds and lands after the
+      empty.</figcaption>
+  </figure>
   <p id="request-duration-and-bounded-log-measure">
     Measure: the focused gate
     <code>pytest -q tests/test_request_duration_and_log_bound.py</code> reports
