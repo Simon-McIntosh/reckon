@@ -19,7 +19,11 @@ Run it with::
     PYTHONPATH=$PWD .venv/bin/python scripts/review_rows_with_another_rounds_verdict.py
 
 It writes nothing. ``--json`` prints the census payload instead of a summary so
-the document's figures can be regenerated from one run.
+the document's figures can be regenerated from one run. ``--control`` runs the
+unclassifiable-path control on its own: it pushes a synthetic row with no
+dispatched head through the same classifier and reports whether the row lands in
+the unclassifiable list, so the document's zero unclassifiable rows rests on a
+path shown to fire rather than on a path never exercised.
 """
 
 from __future__ import annotations
@@ -27,40 +31,53 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 # The script lives under ``scripts/``, outside the package, so the repository
-# root is placed on the path to import the one predicate the census shares with
-# the delivery code rather than parsing a record path a second time.
+# root is placed on the path to import the owners the census shares with the
+# product: the delivery predicate that reads a record path's head, the writer's
+# own node-id reader, and the registry reader — rather than re-reading a mounts
+# file or re-parsing a node id a second time.
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from reckon.crew.recovery_review_dispatch import _review_record_subject  # noqa: E402
-
-MOUNTS_PATH = Path.home() / ".config" / "reckon" / "mounts.json"
+from reckon.crew.recovery_vocabulary import REVIEW_NODE_PREFIX  # noqa: E402
+from reckon.crew.repair import _ROUND_HEAD_DIGITS, round_node_source  # noqa: E402
+from reckon.flight import FlightConfigError, mounted_project_docs  # noqa: E402
 
 _REVIEW_ROLE = "review"
 _RUNS_DIRNAME = "runs"
 _STATE_DIRNAME = "state"
 
-# The head suffix ``round_node_id`` mints onto a review node id. The writer
-# truncates the head to twelve hex digits and ``round_node_source`` strips
-# exactly twelve, so a suffix of any other length is a slug word that happens to
-# end in hexadecimal rather than a head.
-_NODE_HEAD_DIGITS = 12
-_NODE_HEAD_PATTERN = re.compile(rf"-([0-9A-Fa-f]{{{_NODE_HEAD_DIGITS}}})$")
 
+def _node_head_suffix(node_id: str) -> str:
+    """The head a review node id mints, read through the writer's own reader.
 
-def _mounts(path: Path = MOUNTS_PATH) -> dict[str, str]:
-    """The mounted projects as ``{project: docs-directory}``, or empty."""
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    return {str(name): str(mount) for name, mount in data.items()}
+    ``round_node_source`` strips the review prefix and, when present, the
+    ``-<head[:12]>`` suffix ``round_node_id`` writes, and returns the source.
+    The suffix is therefore the tail separating the prefix from that source: it
+    is recovered as ``raw[len(source) + 1:]`` where ``raw`` is the node id
+    without the prefix, and only when ``raw`` is exactly the source, one
+    separator and the writer's digit count. Deriving it this way keeps one
+    grammar — the writer's, read back through its own inverse — rather than a
+    second regex that could drift from ``round_node_id``.
+    """
+    text = str(node_id or "")
+    if not text.startswith(REVIEW_NODE_PREFIX):
+        return ""
+    raw = text[len(REVIEW_NODE_PREFIX) :]
+    source = round_node_source(text, REVIEW_NODE_PREFIX)
+    if len(raw) != len(source) + _ROUND_HEAD_DIGITS + 1 or not raw.startswith(
+        source + "-"
+    ):
+        return ""
+    return raw[len(source) + 1 :]
 
 
 def _dispatched_head(record: object) -> str:
@@ -82,8 +99,7 @@ def _dispatched_head(record: object) -> str:
             return head
     node = record.get("node")
     node_id = node if isinstance(node, str) else str((node or {}).get("id") or "")
-    match = _NODE_HEAD_PATTERN.search(node_id)
-    return match.group(1) if match else ""
+    return _node_head_suffix(node_id)
 
 
 def _recorded_head(record: object) -> str:
@@ -145,7 +161,12 @@ def _review_record_files(runs_dir: Path) -> list[Path]:
 
 
 def _classify(project: str, repo: Path, runs_dir: Path) -> dict[str, object]:
-    """The census for one project: counts, and the rows behind each count."""
+    """The census for one project: counts, and the rows behind each count.
+
+    Shared by the portfolio census and the unclassifiable-path control, so the
+    control proves the same code path the census relies on rather than a parallel
+    copy of it.
+    """
     reviews = 0
     mismatched: list[dict[str, object]] = []
     unclassifiable: list[dict[str, object]] = []
@@ -201,7 +222,7 @@ def _relative(repo: Path, path: Path) -> str:
         return str(path)
 
 
-def _census(mounts: dict[str, str]) -> dict[str, object]:
+def _census(mounts: dict[str, Path]) -> dict[str, object]:
     """The census across every mounted project, in project-name order."""
     projects: list[dict[str, object]] = []
     for project in sorted(mounts):
@@ -254,13 +275,78 @@ def _summary(payload: dict[str, object]) -> str:
     return "\n".join(lines)
 
 
+def _unclassifiable_control() -> int:
+    """Show that a row with no dispatched head lands in the unclassifiable list.
+
+    A synthetic promoted run-review row is written under a temporary runs
+    directory — never a real ledger — and pushed through ``_classify``, the same
+    function the census calls. The row carries a recorded verdict so the row is
+    in the population, but declares only a legacy write path (no ``.at-``) and
+    its node id carries no head suffix, so no dispatched head is resolvable and
+    the row must be listed as unclassifiable. The classification is printed and
+    the exit is non-zero when the row did not land there, so a green run is the
+    control firing.
+    """
+    run_id = "r-20261018T000000000000-review-of-synthetic-row"
+    row = {
+        "run_id": run_id,
+        "role": _REVIEW_ROLE,
+        "node": "review-of-synthetic-row",
+        "node_definition": {
+            "write_paths": [
+                "/nonexistent/synthetic/review-records/r-synthetic-row.json"
+            ]
+        },
+        "review": {
+            "status": "parsed",
+            "reviewed_head_sha": "0123456789abcdef0123456789abcdef01234567",
+            "total": 42,
+        },
+        "promoted_by": None,
+    }
+    base = Path(tempfile.mkdtemp(prefix="review-census-control-"))
+    try:
+        runs_dir = base / _STATE_DIRNAME / "synthetic" / _RUNS_DIRNAME
+        runs_dir.mkdir(parents=True)
+        (runs_dir / f"{run_id}.json").write_text(json.dumps(row), encoding="utf-8")
+        result = _classify("synthetic", base, runs_dir)
+        landed = [item["run_id"] for item in result["unclassifiable"]]
+        print(f"control row: {run_id}")
+        print(f"node id: {row['node']} (no head suffix)")
+        print(f"write paths: {row['node_definition']['write_paths']} (no .at- path)")
+        print(
+            f"reviews={result['reviews']} mismatched={len(result['mismatched'])} "
+            f"unclassifiable={len(result['unclassifiable'])}"
+        )
+        print(f"unclassifiable rows: {landed}")
+    finally:
+        shutil.rmtree(base, ignore_errors=True)
+    if landed == [run_id]:
+        print("CONTROL FIRED: the row landed in the unclassifiable list")
+        return 0
+    print("CONTROL FAILED: the row did not land in the unclassifiable list")
+    return 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--json", action="store_true", help="print the census payload as JSON"
     )
+    parser.add_argument(
+        "--control",
+        action="store_true",
+        help="run the unclassifiable-path control and exit",
+    )
     args = parser.parse_args(argv)
-    payload = _census(_mounts())
+    if args.control:
+        return _unclassifiable_control()
+    try:
+        mounts = mounted_project_docs()
+    except FlightConfigError as exc:
+        print(f"mount registry unreadable: {exc}", file=sys.stderr)
+        return 2
+    payload = _census(mounts)
     if args.json:
         print(json.dumps(payload, indent=2))
     else:
