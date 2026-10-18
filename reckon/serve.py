@@ -642,9 +642,78 @@ CREW_LOG_TAIL_BYTES = 64 * 1024
 # end, so the next line lands at the start of the same, now-short file.
 SERVER_LOG_BOUND_BYTES = 8 * 1024 * 1024
 
-# One rotation at a time: handler threads share the served log, and two
-# rotations racing would truncate the file one of them just filled.
-_LOG_ROTATION_LOCK = threading.Lock()
+# One lock covers both the rotation and every access line. A rotation copies the
+# live file and then empties it; a line written between those two steps would be
+# in neither the predecessor nor the emptied file, and serialising rotations
+# only against each other would leave exactly that window open to the lines the
+# requests themselves write. Holding this lock across the write as well as
+# across the copy-and-empty is what removes the window: a line is written wholly
+# before the copy or wholly after the empty, never in between.
+_ACCESS_LOG_LOCK = threading.Lock()
+
+
+class _AccessLogSink:
+    """The served process's own append handle on its log file.
+
+    Opened ``O_APPEND`` so every write seeks to the current end, which is what
+    keeps one handle valid across a rotation that empties the same inode. A path
+    that cannot be opened leaves the caller to fall back to the inherited
+    stdout, which the unit has on that same file.
+    """
+
+    def __init__(self) -> None:
+        self._fd: int | None = None
+        self._path: str | None = None
+
+    def handle(self, path: Path) -> int | None:
+        """The append handle for ``path``, reopening it when the path changes."""
+
+        if self._fd is not None and self._path == str(path):
+            return self._fd
+        if self._fd is not None:
+            with contextlib.suppress(OSError):
+                os.close(self._fd)
+            self._fd = None
+            self._path = None
+        try:
+            self._fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+        except OSError:
+            return None
+        self._path = str(path)
+        return self._fd
+
+
+_ACCESS_LOG_SINK = _AccessLogSink()
+
+
+def _server_log_path() -> Path:
+    """The file the systemd unit appends the served process's output to."""
+
+    from reckon.service import log_path
+
+    return log_path()
+
+
+def _write_access_line(line: str, path: Path | None = None) -> None:
+    """Append one access line to the served log, exclusive with any rotation.
+
+    The line is written under the lock the rotator holds, so it lands either
+    wholly before the rotator's copy or wholly after its empty, never in the
+    window between them. When the log cannot be opened the line falls back to
+    stdout, which the unit redirects to that same file, so a process run outside
+    the deployment still logs.
+    """
+
+    payload = (line + "\n").encode("utf-8")
+    with _ACCESS_LOG_LOCK:
+        handle = _ACCESS_LOG_SINK.handle(_server_log_path() if path is None else path)
+        if handle is None:
+            print(line, flush=True)
+            return
+        try:
+            os.write(handle, payload)
+        except OSError:
+            print(line, flush=True)
 
 
 def _bound_server_log(path: Path | None = None, *, bound: int | None = None) -> bool:
@@ -652,9 +721,11 @@ def _bound_server_log(path: Path | None = None, *, bound: int | None = None) -> 
 
     Returns True when a rotation happened. The predecessor is written to a
     staging path and moved into place, so a reader never sees a half-copied
-    ``.1``; only then is the live file emptied. The copy-then-empty ordering
-    keeps the content: a crash between the two leaves the predecessor whole and
-    the live file still carrying it.
+    ``.1``; only then is the live file emptied. The copy and the empty both run
+    under the lock every access line takes, so no line can land between them and
+    be lost to the empty. The copy-then-empty ordering also keeps the content: a
+    crash between the two leaves the predecessor whole and the live file still
+    carrying it.
     """
 
     target = _server_log_path() if path is None else path
@@ -665,7 +736,7 @@ def _bound_server_log(path: Path | None = None, *, bound: int | None = None) -> 
     except OSError:
         return False
     predecessor = target.with_name(target.name + ".1")
-    with _LOG_ROTATION_LOCK:
+    with _ACCESS_LOG_LOCK:
         try:
             if target.stat().st_size <= limit:
                 return False
@@ -678,14 +749,6 @@ def _bound_server_log(path: Path | None = None, *, bound: int | None = None) -> 
             LOGGER.warning("Could not bound the served log %s: %s", target, exc)
             return False
     return True
-
-
-def _server_log_path() -> Path:
-    """The file the systemd unit appends the served process's output to."""
-
-    from reckon.service import log_path
-
-    return log_path()
 
 
 # The long edge a served figure thumbnail is downscaled to, in pixels. A list
@@ -3008,7 +3071,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def log_message(self, fmt: str, *args) -> None:
         ts = datetime.now().strftime("%H:%M:%S")
-        print(f"[{ts}] {self.address_string()} {fmt % args}", flush=True)
+        _write_access_line(f"[{ts}] {self.address_string()} {fmt % args}")
 
     # ── Request duration: the access line and the Server-Timing header ────
 

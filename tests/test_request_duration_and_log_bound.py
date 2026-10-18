@@ -5,7 +5,9 @@ because the access log carried no duration; each answered request now logs one
 line with its duration in milliseconds and answers with the same figure in a
 ``Server-Timing`` header. The served log, which the systemd unit opens with
 ``StandardOutput=append:``, is bounded: once it passes its bound its content is
-moved to a single predecessor and the live file is emptied in place.
+moved to a single predecessor and the live file is emptied in place. The empty
+and every access line take one lock, so a line written while the log is being
+rotated is never dropped between the copy and the empty.
 """
 
 from __future__ import annotations
@@ -13,6 +15,7 @@ from __future__ import annotations
 import re
 import socket
 import threading
+import time
 import urllib.request
 from pathlib import Path
 
@@ -33,6 +36,22 @@ def _free_port() -> int:
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
         return int(sock.getsockname()[1])
+
+
+def _wait_for(predicate, *, timeout: float = 5.0) -> bool:
+    """Poll ``predicate`` until it holds or the bound elapses.
+
+    The access line is written by the handler thread, which may reach its
+    finally-block just after the response has already reached the client, so a
+    read taken immediately after the response is a race.
+    """
+
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if predicate():
+            return True
+        time.sleep(0.01)
+    return predicate()
 
 
 class _Served:
@@ -77,9 +96,70 @@ def served(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         harness.stop()
 
 
-def test_one_request_logs_its_duration_and_sends_a_timing_header(
-    served, capsys
-) -> None:
+def _access_lines(path: Path, marker: str) -> list[str]:
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    return [line for line in text.splitlines() if marker in line]
+
+
+def test_a_line_written_during_rotation_survives(served) -> None:
+    """A line written while the log is being rotated survives the rotation.
+
+    The rotator copies the live file and then empties it. A line written between
+    those two steps is in neither the predecessor nor the emptied file, so it is
+    lost; this drives exactly that interleaving deterministically by holding the
+    rotator inside its copy, starting the write there, and letting the rotation
+    finish. The line must then be in the live file — written after the empty,
+    because the writer waits on the same lock the rotator holds.
+    """
+
+    log = log_path()
+    log.parent.mkdir(parents=True, exist_ok=True)
+    log.write_bytes(b"a logged access line\n" * 64)
+
+    copied = threading.Event()
+    release = threading.Event()
+    real_copyfile = serve.shutil.copyfile
+
+    def slow_copyfile(src, dst, **kwargs):
+        result = real_copyfile(src, dst, **kwargs)
+        copied.set()
+        release.wait(5)
+        return result
+
+    serve.shutil.copyfile = slow_copyfile
+    try:
+        rotated: list[bool] = []
+        rotator = threading.Thread(
+            target=lambda: rotated.append(serve._bound_server_log(log, bound=1)),
+            daemon=True,
+        )
+        rotator.start()
+        assert copied.wait(5), "the rotator never reached its copy"
+
+        writer = threading.Thread(
+            target=lambda: serve._write_access_line("SENTINEL rotation probe", log),
+            daemon=True,
+        )
+        writer.start()
+        writer.join(0.3)
+        release.set()
+        rotator.join(5)
+        writer.join(5)
+    finally:
+        serve.shutil.copyfile = real_copyfile
+
+    assert rotated == [True], "the over-bound log was not rotated"
+    live = log.read_text(encoding="utf-8", errors="replace")
+    assert "SENTINEL rotation probe" in live, (
+        "a line written while the log was rotating was dropped by the empty; "
+        f"the live file holds {live!r}"
+    )
+
+
+def test_one_request_logs_its_duration_and_sends_a_timing_header(served) -> None:
     status, headers, _ = served.get(_SERVED_PATH)
     assert status == 200
 
@@ -90,18 +170,18 @@ def test_one_request_logs_its_duration_and_sends_a_timing_header(
     header_ms = float(match.group(1))
     assert header_ms >= 0.0
 
-    out = capsys.readouterr().out
-    lines = [line for line in out.splitlines() if f"GET {_SERVED_PATH}" in line]
-    assert lines, f"no access line was logged for the request:\n{out}"
-    on_line = _DURATION_ON_LINE.search(lines[-1])
-    assert on_line, f"the access line carried no duration: {lines[-1]!r}"
+    log = log_path()
+    assert _wait_for(lambda: _access_lines(log, f"GET {_SERVED_PATH}")), (
+        f"no access line for the request reached the served log {log}"
+    )
+    on_line = _DURATION_ON_LINE.search(_access_lines(log, f"GET {_SERVED_PATH}")[-1])
+    assert on_line, "the access line carried no duration"
     assert float(on_line.group(1)) >= 0.0
 
 
 def test_the_log_is_bounded_and_keeps_one_predecessor(served, monkeypatch) -> None:
     bound = 4096
     monkeypatch.setattr(serve, "SERVER_LOG_BOUND_BYTES", bound)
-
     log = log_path()
     log.parent.mkdir(parents=True, exist_ok=True)
     original = b"a logged access line\n" * ((bound // 20) + 64)
