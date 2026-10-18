@@ -258,7 +258,9 @@ def test_the_rendered_state_carries_both_fields_and_the_glossary_names_them(pick
         lane={"return_times": {}, "lanes": {}, "local_lane": {}},
         attempts=0,
     )
-    lane_a = state["candidates"]["lanea"]["outcomes_at_requirement"]
+    lane_a = state["candidates"][
+        prompts.option_key(next(c for c in candidates if c.backend == "lanea"))
+    ]["outcomes_at_requirement"]
     assert lane_a["attempts_median"] == 3
     assert lane_a["passed_first_attempt"] == 1
 

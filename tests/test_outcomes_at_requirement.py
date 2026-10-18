@@ -230,7 +230,7 @@ def test_the_rendered_state_carries_the_block_and_its_glossary_entry(picker_env)
         lane={"return_times": {}, "lanes": {}, "local_lane": {}},
         attempts=0,
     )
-    lane_b = state["candidates"]["laneb"]
+    lane_b = state["candidates"][prompts.option_key(_by_backend(candidates)["laneb"])]
     assert "outcomes_at_requirement" in lane_b
     assert lane_b["outcomes_at_requirement"]["passed"] == 3
 

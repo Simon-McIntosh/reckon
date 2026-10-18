@@ -236,11 +236,7 @@ def _positive_number(value: object) -> bool:
     to the flight's own shelf life.
     """
 
-    return (
-        isinstance(value, (int, float))
-        and not isinstance(value, bool)
-        and value > 0
-    )
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0
 
 
 def _document_backed_backends(snapshot: Mapping[str, Any] | None) -> frozenset[str]:
@@ -335,6 +331,30 @@ def _budget_block(
     return {"budget_source": source, "budget_age_s": age, "stale": stale}
 
 
+def option_key(candidate: Any) -> str:
+    """The key Jev chooses a candidate by: its lane, model and backend.
+
+    A pick has two linked parts, so an option is named ``<lane>:<model>``. The
+    backend is always the last part, because two configured backends can share a
+    lane and a model -- one dialect running the same model on two accounts -- and
+    the pair alone would name neither of them, so a mapping keyed by it would
+    drop the second and Jev could never choose it. The backend is what a dispatch
+    launches and is unique per offering, so it is the part that keeps every key
+    distinct. A candidate that declares no model leaves the model part empty:
+    its second part is the backend itself, named as the backend it is, never
+    offered where a model belongs.
+    """
+
+    lane = getattr(candidate, "family", None) or getattr(candidate, "backend", "")
+    model = getattr(candidate, "model", None)
+    backend = getattr(candidate, "backend", "")
+    if model:
+        return f"{lane}:{model}:{backend}"
+    if lane != backend:
+        return f"{lane}:{backend}"
+    return str(lane)
+
+
 def return_times(
     profile: Mapping[str, Any],
     node: Any,
@@ -344,7 +364,12 @@ def return_times(
     config: Mapping[str, Any] | None = None,
     now: datetime | None = None,
 ) -> dict[str, dict[str, Any]]:
-    """Build one return-time block per offered candidate backend."""
+    """Build one return-time block per offered candidate, keyed by its option.
+
+    Each block is built from the candidate's own backend and effort, so the key
+    under which a block is found is the option key the questions use, and a lane's
+    several models each keep a block of their own rather than sharing one.
+    """
 
     moment = now if now is not None else datetime.now(UTC)
     if moment.tzinfo is None:
@@ -385,7 +410,7 @@ def return_times(
                     document_shelf_life_seconds=document_shelf_life_seconds,
                 )
             )
-        blocks[str(backend)] = block
+        blocks[option_key(candidate)] = block
     return blocks
 
 

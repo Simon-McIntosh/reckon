@@ -330,7 +330,9 @@ def test_the_rendered_state_carries_the_block_and_its_glossary_entry(picker_env)
         lane={"return_times": {}, "lanes": {}, "local_lane": {}},
         attempts=0,
     )
-    lane_b = state["candidates"]["laneb"]["outcomes_at_requirement"]
+    lane_b = state["candidates"][
+        prompts.option_key(next(c for c in candidates if c.backend == "laneb"))
+    ]["outcomes_at_requirement"]
     assert lane_b["reviewed"] == 2
     assert lane_b["review_dimensions_median"]["goal_fidelity"] == 14.5
 
