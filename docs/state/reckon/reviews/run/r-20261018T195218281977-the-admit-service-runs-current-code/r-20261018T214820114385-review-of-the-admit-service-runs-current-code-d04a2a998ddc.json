@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T195218281977-the-admit-service-runs-current-code/gate-v2-head-arm.log",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T195218281977-the-admit-service-runs-current-code/gate-base-arm.log",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2687"
+  ],
+  "completed_at": "2026-10-18T21:59:41.950Z",
+  "dispatched_at": "2026-10-18T21:49:30Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "537",
+      "severity": "follow-on",
+      "text": "follow-on: _reexec_into_current_code rebuilds the launcher string (\"import sys; sys.path.insert(0, {root!r}); from reckon.cli import main; main()\") and the execve argv [sys.executable, \"-c\", launcher, *sys.argv[1:]] that reckon/crew_follow_commands.py:553-616 already holds for the follower reloader; the two differ only in which root is inserted (the follower materialises a pinned image), so the admission service carries a second copy of an idiom the repository already owns rather than sharing a helper."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T195218281977-the-admit-service-runs-current-code/manifest.md",
+      "line": "19",
+      "severity": "follow-on",
+      "text": "follow-on: negative_control_log names negative-control-v2.log, whose mutation reverts the checkout-root fix, while the node's declared negative-control string is \"remove the stamp comparison, so the re-execution assertion fails\", whose red log is negative-control-repair.log (recorded only in test_logs and negative_control_note); a reader comparing the declared string against the named log finds a different mutation there."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read all four commits against base 61dd0cd9; 0eb04cb53 adds the stamp guard and helpers, 58628a90f moves the comparison to the head of the pass, 246267187 resolves the checkout root through _import_root, d04a2a998 records it in the landing fragment; three files changed, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_the_admit_service_runs_current_code.py; the manifest records 5 passed EXIT=0 (gate-v2.log), the head arm 68 passed EXIT=0 (gate-v2-head-arm.log), the base arm 63 passed EXIT=0 (gate-base-arm.log) and ruff clean EXIT=0 (lint-v2.log), run on the fleet allocation node 98dci4-clu-2002.",
+    "goal": "the node goal is to make the admission loop re-execute on a trusted code-stamp change between passes and fingerprint that stamp in its failure guard; reckon/crew/queue_admission.py:1060 performs the trusted comparison and the in-place re-execution at the head of every pass, before admit_once, and reckon/crew/queue_admission.py:607 adds the code stamp to the failure guard.",
+    "manifest": "read manifest.md; status complete, commits 0eb04cb53 58628a90f 246267187 d04a2a998, recording the focused gate, the two suite arms with zero added failures, and the negative controls with their log paths.",
+    "write_paths": "read from the source prompt; git diff 61dd0cd9..d04a2a998 changes exactly reckon/crew/queue_admission.py, tests/test_the_admit_service_runs_current_code.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/the-admit-service-runs-current-code.html, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the new trust, root and launcher cases fail on the reviewed revision 58628a90f (trust-case-base.log, 4 failed 1 passed EXIT=1) and under the reverted root (negative-control-v2.log), and the ordering assertion at tests/test_the_admit_service_runs_current_code.py:247 reddens when the comparison is moved back after admit_once (negative-control-repair.log).",
+    "evidence": "the gate at tests/test_the_admit_service_runs_current_code.py:234 names the measure and its result is recorded in gate-v2.log (5 passed EXIT=0), with the two suite arms and both negative controls also logged, though the declared negative-control string is evidenced by a log other than the one negative_control_log names.",
+    "fit": "the new helpers at reckon/crew/queue_admission.py:491-547 follow the module's leading-underscore idiom and add no plan label or version token.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:1060 re-executes only when the stamp has moved and _checkout_code_is_trusted at :516 accepts the checkout, and :607 fingerprints that stamp in the failure guard, matching the goal.",
+    "reuse": "the change delegates the stamp to reckon/crew/follower_registration.py:28, the root to reckon/crew_follow_commands.py:162 and the trust answer to reckon/checkout_trust.py:550, but _reexec_into_current_code at :528-544 re-writes the launcher/execve idiom already held at reckon/crew_follow_commands.py:553-616.",
+    "scope_discipline": "git diff 61dd0cd9..d04a2a998 touches only reckon/crew/queue_admission.py, tests/test_the_admit_service_runs_current_code.py and the always-permitted landing fragment; nothing outside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the admission loop re-execute on a trusted code-stamp change between passes and fingerprint that stamp in its failure guard; reckon/crew/queue_admission.py:1060 performs the trusted comparison and the in-place re-execution at the head of every pass, before admit_once, and reckon/crew/queue_admission.py:607 adds the code stamp to the failure guard.\nVERDICT done_when: the done_when names tests/test_the_admit_service_runs_current_code.py; the manifest records 5 passed EXIT=0 (gate-v2.log), the head arm 68 passed EXIT=0 (gate-v2-head-arm.log), the base arm 63 passed EXIT=0 (gate-base-arm.log) and ruff clean EXIT=0 (lint-v2.log), run on the fleet allocation node 98dci4-clu-2002.\nVERDICT write_paths: read from the source prompt; git diff 61dd0cd9..d04a2a998 changes exactly reckon/crew/queue_admission.py, tests/test_the_admit_service_runs_current_code.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/the-admit-service-runs-current-code.html, all inside the declared scope.\nVERDICT manifest: read manifest.md; status complete, commits 0eb04cb53 58628a90f 246267187 d04a2a998, recording the focused gate, the two suite arms with zero added failures, and the negative controls with their log paths.\nVERDICT diff: read all four commits against base 61dd0cd9; 0eb04cb53 adds the stamp guard and helpers, 58628a90f moves the comparison to the head of the pass, 246267187 resolves the checkout root through _import_root, d04a2a998 records it in the landing fragment; three files changed, all inside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:2687\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1060 re-executes only when the stamp has moved and _checkout_code_is_trusted at :516 accepts the checkout, and :607 fingerprints that stamp in the failure guard, matching the goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate at tests/test_the_admit_service_runs_current_code.py:234 names the measure and its result is recorded in gate-v2.log (5 passed EXIT=0), with the two suite arms and both negative controls also logged, though the declared negative-control string is evidenced by a log other than the one negative_control_log names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 61dd0cd9..d04a2a998 touches only reckon/crew/queue_admission.py, tests/test_the_admit_service_runs_current_code.py and the always-permitted landing fragment; nothing outside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the new trust, root and launcher cases fail on the reviewed revision 58628a90f (trust-case-base.log, 4 failed 1 passed EXIT=1) and under the reverted root (negative-control-v2.log), and the ordering assertion at tests/test_the_admit_service_runs_current_code.py:247 reddens when the comparison is moved back after admit_once (negative-control-repair.log).\nSCORE fit: 17\nJUSTIFICATION fit: the new helpers at reckon/crew/queue_admission.py:491-547 follow the module's leading-underscore idiom and add no plan label or version token.\nSCORE reuse: 13\nJUSTIFICATION reuse: the change delegates the stamp to reckon/crew/follower_registration.py:28, the root to reckon/crew_follow_commands.py:162 and the trust answer to reckon/checkout_trust.py:550, but _reexec_into_current_code at :528-544 re-writes the launcher/execve idiom already held at reckon/crew_follow_commands.py:553-616.\nFINDING reckon/crew/queue_admission.py:537 follow-on: _reexec_into_current_code rebuilds the launcher string (\"import sys; sys.path.insert(0, {root!r}); from reckon.cli import main; main()\") and the execve argv [sys.executable, \"-c\", launcher, *sys.argv[1:]] that reckon/crew_follow_commands.py:553-616 already holds for the follower reloader; the two differ only in which root is inserted (the follower materialises a pinned image), so the admission service carries a second copy of an idiom the repository already owns rather than sharing a helper.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T195218281977-the-admit-service-runs-current-code/manifest.md:19 follow-on: negative_control_log names negative-control-v2.log, whose mutation reverts the checkout-root fix, while the node's declared negative-control string is \"remove the stamp comparison, so the re-execution assertion fails\", whose red log is negative-control-repair.log (recorded only in test_logs and negative_control_note).\n",
+  "review_run_id": "r-20261018T214820114385-review-of-the-admit-service-runs-current-code-d04a2a998ddc",
+  "reviewed_base_sha": "61dd0cd9fd451a9d74e1ac4c167d3944964d4540",
+  "reviewed_head_sha": "d04a2a998ddc90f666c38a9dee444021989f8c74",
+  "reviewed_run_id": "r-20261018T195218281977-the-admit-service-runs-current-code",
+  "reviewer_run_id": "r-20261018T214820114385-review-of-the-admit-service-runs-current-code-d04a2a998ddc",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T195218281977-the-admit-service-runs-current-code/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/530468fb-d739-474c-9fa1-7f1ef4af1afa/the-admit-service-runs-current-code",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T21:57:59.235663+00:00",
+  "total": 105
+}
