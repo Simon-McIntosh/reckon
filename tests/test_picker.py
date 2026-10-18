@@ -257,14 +257,19 @@ def test_representative_state_is_bounded_and_comment_verbatim(
         comment=request_node.comment,
         candidates=[c for c in options if not c.reasons],
     )
-    # Each candidate now carries its own context block, so the representative
-    # state is larger; the bound still holds the whole prompt to a few KB. The
-    # option key naming each row is longer than the bare backend name it
-    # supersedes, so the same state carries more bytes and the bound allows for
-    # it; the token ceiling that governs prompt size is unchanged.
-    assert len(rendered) <= 1600 * 5
-    assert json.loads(rendered)["orchestrator_comment"] == request_node.comment
-    assert set(json.loads(rendered)["candidates"][REMOTE_PAIR]) == {
+    payload = json.loads(rendered)
+    # The two tables are keyed by each option's lane, model and backend, so the
+    # state carries one option key per table. A key's length is set by how the
+    # option is named, not by any row's content, so the rows are held to the
+    # bound the state has always kept and the keys the state actually carries
+    # are added on top: a row that bloats still fails here, and a key naming one
+    # more part does not need this bound edited.
+    key_bytes = sum(map(len, payload["candidates"])) + sum(
+        map(len, payload["return_times"])
+    )
+    assert len(rendered) - key_bytes <= 1500 * 5
+    assert payload["orchestrator_comment"] == request_node.comment
+    assert set(payload["candidates"][REMOTE_PAIR]) == {
         "backend",
         "lane",
         "model",
