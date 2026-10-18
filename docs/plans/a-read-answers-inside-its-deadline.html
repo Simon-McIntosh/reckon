@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="245">
+<meta name="plan-version" content="247">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -820,6 +820,12 @@
 </div>
 <div class="r-comment" data-section="s32" data-id="c-run-r-20261017T233051496152-the-attempt-memo-names-its-stamp-members" data-who="reckon-build" data-when="2026-10-18T00:06:24Z">
     <div class="r-comment-body"><p>the ledger index stamp members have one owner (_index_stamp_members) that both index_stamp (ordered list, unchanged for its positional callers) and index_state_stamp (named record, index identity omitted by name) render, and mcp_views._attempt_state compares that record by name, so a member added to the stamp reaches the memo instead of shifting a positional slice; head gate tests/test_the_attempt_memo_names_its_stamp_members.py + tests/test_the_attempts_derivation_is_cached.py 5 passed EXIT=0, base arm 1 failed EXIT=1</p></div>
+</div>
+<div class="r-comment" data-section="s32" data-id="c-run-r-20261018T001636243175-stamp-names-repaired-population-at-merge" data-who="reckon-build" data-when="2026-10-18T00:50:11.293Z">
+    <div class="r-comment-body"><p>Merging the repaired attempt-memo stamp-member commit e3f34aad42c9f99c99161efecffad9a42c6d4ce4 onto main at 36cffd80d605e0cafc7b8eb3c0ee15727cd021d1 adds no failing test id over the 99-file importer population: at base the arm fails 2 pre-existing ids and at merge candidate ec8631cbf8732ac7e276da747fdf1ede05108bba it fails the same 2, so the added-failure reader reports 0 added; a positive control on the same reader reports known-present failures as added, both arms carry pytest's summary line and end in EXIT=, and the added test file tests/test_the_attempt_memo_names_its_stamp_members.py passes inside the candidate arm</p></div>
+</div>
+<div class="r-comment" data-section="s32" data-id="c-run-r-20261018T005545430743-review-of-stamp-names-repaired-population-at-merge-0136325014af" data-who="reckon-build" data-when="2026-10-18T01:06:23.588Z">
+    <div class="r-comment-body"><p>Review of r-20261018T001636243175-stamp-names-repaired-population-at-merge at head 0136325014afacd1dca81d142949e7d809becd41: goal_fidelity 20, evidence 20, scope_discipline 19, durability 16, fit 20, reuse 20 (total 115), added_failure_count 0 with no ids; the measurement is sound and its zero is falsified by the node&#x27;s own positive control; two follow-on findings - the declared reports write path is empty (all deliverables sit in the run directory) and the base named as main (36cffd80) was 19 commits behind main (0136325014af) at dispatch, though the intervening diff touches no path under reckon/ or tests/ so the measured result transfers.</p></div>
 </div>
 </section>
 </main>
