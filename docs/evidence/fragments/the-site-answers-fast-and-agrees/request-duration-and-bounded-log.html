@@ -7,7 +7,7 @@
     duration in milliseconds, and answers with the same figure in a
     <code>Server-Timing</code> header. The handler times the request in
     <code>handle_one_request</code>, sets <code>Server-Timing: app;dur=&lt;ms&gt;</code>
-    in <code>end_headers</code>, and emits the access line through the existing
+    in <code>end_headers</code>, and emits the access line through
     <code>log_message</code>, which the base <code>log_request</code> cannot do
     because it runs inside <code>send_response</code>, before the duration is
     known. The base access line is suppressed in favour of this one.
@@ -21,22 +21,42 @@
     <code>os.replace</code>) and then empties the live file in place; append mode
     re-seeks to the current end on every write, so the next logged line lands at
     offset 0 of the same short file. The bound is checked once per request and
-    once at start-up, under one lock shared by the handler threads.
+    once at start-up.
+  </p>
+  <p>
+    The empty and every logged line share one lock. A copy-then-empty rotation
+    drops any line written between those two steps, because the line then sits
+    in the predecessor only if the copy passed its offset and in the emptied
+    file not at all — so a rotation lock held only against other rotations would
+    still lose access lines under concurrent traffic. Access lines go through
+    <code>_write_access_line</code>, which appends them through the served
+    process's own <code>O_APPEND</code> handle (opened once by
+    <code>_AccessLogSink</code>, so it survives an empty of the same inode) under
+    the same lock the rotator holds; a line is therefore written wholly before
+    the copy or wholly after the empty. Where that handle cannot be opened the
+    line falls back to the inherited stdout, which the unit has on the same
+    file. Residual: the few lines the process writes outside
+    <code>_write_access_line</code> — the start-up banner, a compliance-refresh
+    spawn failure, and a traceback the socket server prints on stderr — are not
+    covered by the lock, but the per-request access line is.
   </p>
   <p id="request-duration-and-bounded-log-measure">
     Measure: the focused gate
     <code>pytest -q tests/test_request_duration_and_log_bound.py</code> reports
-    <strong>2 passed</strong> at the head revision — one request carries its
-    duration on the logged line and in the header, and after the log is driven
-    past its bound one predecessor holds the prior content and the live file is
-    bounded. The test files that import <code>reckon/serve.py</code> or
-    <code>reckon/service.py</code> report <strong>72 passed</strong> at the head;
+    <strong>3 passed</strong> at the head revision — one request carries its
+    duration on the logged line and in the header, after the log is driven past
+    its bound one predecessor holds the prior content and the live file is
+    bounded, and a line written while the log is being rotated survives the
+    rotation. The test files that import <code>reckon/serve.py</code> or
+    <code>reckon/service.py</code> report <strong>73 passed</strong> at the head;
     the same set (minus the new file, which exists only at head) reports
     <strong>70 passed</strong> at the base — no added failures. <code>ruff
     check</code> reports 17 findings on <code>serve.py</code> at both base and
     head and zero on <code>service.py</code>, and <code>ruff format --check</code>
-    is clean on all three changed files. The negative control removes the log
-    size bound (rotation returns <code>False</code>) and the bounded-size case
-    then fails, <code>EXIT=1</code>, on the missing predecessor.
+    is clean on all three changed files. Two negative controls each fail on the
+    case they disarm: removing the log size bound fails the bounded-size case on
+    the missing predecessor, and removing the exclusion between a write and the
+    rotation fails the rotation-survives case on the dropped line; both
+    <code>EXIT=1</code>.
   </p>
 </section>
