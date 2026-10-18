@@ -12,7 +12,7 @@ import pytest
 import yaml
 from click.testing import CliRunner
 
-from reckon import cli, flight, ledger
+from reckon import cli, crew, flight, ledger
 from reckon.crew.node import TaskNode
 from reckon.crew.picker import PickRequest, snapshot
 
@@ -273,19 +273,37 @@ def test_dispatch_and_candidates_agree_for_each_model(
     assert set(candidates) == {"gpt-6-sol", "gpt-6-astra", "gpt-6-luna"}
     assert set(candidate_settings) == set(candidates)
     for model, candidate in candidates.items():
-        code, run = _dispatch(
-            [
-                *_args(lane_repo),
-                "--route",
-                "deterministic",
-                "--backend",
-                "codex",
-                "--model",
-                model,
-            ]
-        )
+        planned_settings = []
+        real_plan = crew.plan_dispatch
+
+        def capture_plan(
+            *, _real_plan=real_plan, _planned_settings=planned_settings, **kwargs
+        ):
+            plan = _real_plan(**kwargs)
+            _planned_settings.append(dict(plan.backend_settings))
+            return plan
+
+        with monkeypatch.context() as dispatch_patches:
+            dispatch_patches.setattr(crew, "plan_dispatch", capture_plan)
+            code, run = _dispatch(
+                [
+                    *_args(lane_repo),
+                    "--route",
+                    "deterministic",
+                    "--backend",
+                    "codex",
+                    "--model",
+                    model,
+                ]
+            )
         assert code == 0, run
         settings = candidate_settings[model]
+        assert len(planned_settings) == 1
+        assert {
+            key: value
+            for key, value in planned_settings[0].items()
+            if key != "model_key"
+        } == {key: value for key, value in settings.items() if key != "model_key"}
         assert (
             run["agent"]["model"],
             run["agent"]["effort"],
