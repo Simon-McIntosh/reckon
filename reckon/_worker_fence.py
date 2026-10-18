@@ -1363,11 +1363,12 @@ def fence_argv(
     # directory (its ``TMPDIR``) and the enumerated runtime paths a launch writes
     # are the only paths re-opened writable beneath it, both by the grant loop
     # below. Composed only for a node tmp that exists, as every protected path
-    # is; a node tmp that is also a declared protected path is deduped by
-    # :func:`protected_read_only_binds`.
+    # is, and held apart from the protected set so its overlay does not dedupe
+    # the protected paths beneath it; see the emission of ``node_tmp_seal``.
     node_tmp = node_tmp_seal_root()
+    node_tmp_seal: list[tuple[Path, Path]] = []
     if node_tmp is not None:
-        protected = [*protected, node_tmp]
+        node_tmp_seal = [(node_tmp, node_tmp)]
         roots.extend(path for path in node_tmp_runtime_paths() if path.exists())
 
     binds = protected_read_only_binds(
@@ -1375,6 +1376,7 @@ def fence_argv(
         required=_declared_paths(config, PROTECTED_PATHS_KEY, home),
     )
     sealed = [destination for _source, destination in binds]
+    sealed += [destination for _source, destination in node_tmp_seal]
     if worktree is not None:
         checkout = _fenced_worktree_refusal(
             Path(worktree), protected_checkouts(home, config)
@@ -1388,6 +1390,14 @@ def fence_argv(
             )
     fenced = [FENCE_BINARY, "--dev-bind", "/", "/"]
     for source, destination in binds:
+        fenced += ["--ro-bind", str(source), str(destination)]
+    # The node tmp is emitted as its own overlay rather than folded into the
+    # protected set, so it never suppresses a protected path's own bind: a
+    # protected path beneath it keeps its explicit --ro-bind even though the
+    # seal already covers it. A redundant read-only bind of a sub-path costs
+    # bwrap nothing, and a protected path's own bind is what several readers of
+    # the composed argv expect to find, the vanished-bind retry among them.
+    for source, destination in node_tmp_seal:
         fenced += ["--ro-bind", str(source), str(destination)]
     # A masked path is hidden, not sealed: the protected overlay above still
     # exposes its content read-only, so a directory gets an empty tmpfs and a
