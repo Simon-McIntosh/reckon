@@ -1,0 +1,103 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_spa_browser_harness.py::test_timeout_reap_takes_the_spawned_child_with_the_driver"
+  ],
+  "added_failures_note": "Derived from the reviewed run's own arms: baseline-serve-tests.log 18 FAILED against after_suite 11 FAILED leaves one id the head arm carries and the base arm does not, tests/test_spa_browser_harness.py::test_timeout_reap_takes_the_spawned_child_with_the_driver; isolate-browser-reap.log and isolate-browser-reap-base.log fail it identically on both revisions (the driver's child survived the reap), so it is the sandbox rather than this change.",
+  "assertion_analysis": [
+    "tests/test_figure_thumbnails_are_small_rasters.py:151-153: the content-type check reddens if the route passes the SVG through again; the byte comparison reddens if the raster is as large as the dense source; the exact 200x150 reddens on a wrong scale; the max-edge check at 152 moves with THUMB_MAX_EDGE.",
+    "tests/test_figure_thumbnails_are_small_rasters.py:162-164: the exact 67x200 reddens on a distorted tall render; the max-edge check at 164 moves with THUMB_MAX_EDGE.",
+    "tests/test_figure_thumbnails_are_small_rasters.py:176-181: one render for two requests reddens if the cache read is skipped; a second cache file reddens if the identity key regresses; the cached-bytes equality reddens if the written file differs from the served body.",
+    "tests/test_figure_thumbnails_are_small_rasters.py:200-209: a second render plus a changed ETag reddens if the stat identity stops tracking the rewrite; the exact 200x200 reddens on a stale raster.",
+    "tests/test_figure_thumbnails_are_small_rasters.py:211-220: the body-equals-source check reddens if the fallback stops serving the source, and the svg+xml type reddens if it is served as a PNG.",
+    "tests/test_figure_thumbnails_are_small_rasters.py:236-239: patching figures._svg_dims to 400x1000 and requiring an 80-pixel raster reddens on any second dimension parser, because the fixture's own 640x480 viewBox yields 200.",
+    "tests/test_graph_thumbnails_declared dependency check at 242-252: reads the repository's own pyproject.toml and uv.lock and imports resvg_py, so it reddens if the declaration is dropped."
+  ],
+  "base_log_revision": "26fd36a9c21e67bfb209df48f1912be17f07480e",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/serve.py:3934 do_GET thumbnail dispatch",
+    "reckon/serve.py:3245 _serve_thumbnail",
+    "reckon/serve.py:3284 _thumbnail_bytes call",
+    "docs/ui/shell-plans.jsx:230 thumbnail source builder"
+  ],
+  "completed_at": "2026-10-18T19:35:36.220Z",
+  "dispatched_at": "2026-10-18T19:17:43Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the exact pixel checks at lines 153, 163 and 204 pin the bound independently of the constant",
+      "recorded_at": "2026-10-18T19:40:01.799902+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the node's own test pins the 200 by 150 output with exact pixel checks; this file's superseded assertion only needed to stop expecting the SVG",
+      "recorded_at": "2026-10-18T19:40:18.048704+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "coordinator-installed-gate.log in the run directory records 16 passed at this head against the installed package and is the promotion's gate log",
+      "recorded_at": "2026-10-18T19:40:36.125388+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_figure_thumbnails_are_small_rasters.py",
+      "line": "152",
+      "severity": "follow-on",
+      "text": "follow-on: the max-edge comparison tests serve.THUMB_MAX_EDGE against a size the same production constant produced, so raising the constant moves the expected side with the server; the exact pixel checks at 153, 163 and 204 are what actually hold the bound, as the prior review already recorded."
+    },
+    {
+      "file": "tests/test_figure_thumbnails.py",
+      "line": "243",
+      "severity": "follow-on",
+      "text": "follow-on: the repaired assertion compares the served size to serve.THUMB_MAX_EDGE, which the route reads, so it moves with the constant rather than pinning the 200 by 150 the fixture should give."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T171904025423-figure-thumbnails-are-small-rasters/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's test_logs names head-thumbnail-node.log, which records 6 passed because it predates the seventh test, so the 7-passed node gate its artifacts line claims is not readable from any log it names; coordinator-installed-gate.log in the same directory records 16 passed at this head and covers the gap."
+    }
+  ],
+  "head_log_revision": "eb096bcc25e7fe35f3cbf6b44c74d7e6f4679ada",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 26fd36a9c21e67bfb209df48f1912be17f07480e; four commits touch six files, 430 insertions and 13 deletions, all inside the declared scope.",
+    "done_when": "the measure at prompt.txt:98 names the served content type, the THUMB_MAX_EDGE bound, the byte count, cache reuse, refresh and fallback; tests/test_figure_thumbnails_are_small_rasters.py asserts each, and the results are recorded in head-serve-tests-repair.log and coordinator-installed-gate.log, though the shared-environment install clause was answered only by the coordinator afterwards.",
+    "goal": "the goal at prompt.txt:30 asks for a cached bounded PNG from an SVG through a declared rasteriser; reckon/serve.py:2944 adds _rasterise_svg and the route at 3245 serves it, and pyproject.toml:34 declares resvg-py, so the goal is met with the wheel present.",
+    "manifest": "read; it records 7 passed at the node gate, the base and head suite arms with their failure ids, three negative controls, and the shared-environment install as its one blocker.",
+    "write_paths": "prompt.txt:70-76 fences six paths; git diff --name-only 26fd36a9..0346bface lists exactly those six, and tests/test_figure_thumbnails.py, absent from the dispatch fence, is granted by the repair round at resume-1-advice.txt."
+  },
+  "justifications": {
+    "durability": "tests/test_figure_thumbnails_are_small_rasters.py:153,163,204,239 and the render count at 167-181 each fail on a reverted rasterisation or a for-itself bound won size, verified by negative-control-reader-reuse.log and negative-control-stale-passthrough-test.log.",
+    "evidence": "tests/test_figure_thumbnails_are_small_rasters.py:141-239 asserts the type, the bound, the byte count, reuse, refresh and fallback, but the 7-passed figure the manifest claims is not in any log test_logs names.",
+    "fit": "the lazy imports at reckon/serve.py:2954 and 2962 match the module's existing PIL import and no name the repository naming rules forbid was added.",
+    "goal_fidelity": "reckon/serve.py:2944 rasterises the SVG and 2985 routes it through the existing cache, so the served body is a PNG bounded at 2966 by THUMB_MAX_EDGE.",
+    "reuse": "reckon/serve.py:2956 sizes from reckon.figures._svg_dims, the inventory's own reader, and a search by capability over reckon/ found no existing server-side rasteriser, only the standalone figure script docs/figures/figure-review-pairs/draw_pairs.py that shells out to rsvg-convert.",
+    "scope_discipline": "every path in the diff is inside the repair round's granted scope at resume-1-advice.txt, including tests/test_figure_thumbnails.py that the original dispatch fence omits."
+  },
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal at prompt.txt:30 asks for a cached bounded PNG from an SVG through a declared rasteriser; reckon/serve.py:2944 adds _rasterise_svg and the route at 3245 serves it, and pyproject.toml:34 declares resvg-py, so the goal is met with the wheel present.\nVERDICT done_when: the measure at prompt.txt:98 names the served content type, the THUMB_MAX_EDGE bound, the byte count, cache reuse, refresh and fallback; tests/test_figure_thumbnails_are_small_rasters.py asserts each, and the results are recorded in head-serve-tests-repair.log and coordinator-installed-gate.log, though the shared-environment install clause was answered only by the coordinator afterwards.\nVERDICT write_paths: prompt.txt:70-76 fences six paths; git diff --name-only 26fd36a9..0346bface lists exactly those six, and tests/test_figure_thumbnails.py, absent from the dispatch fence, is granted by the repair round at resume-1-advice.txt.\nVERDICT manifest: read; it records 7 passed at the node gate, the base and head suite arms with their failure ids, three negative controls, and the shared-environment install as its one blocker.\nVERDICT diff: read commit by commit against 26fd36a9c21e67bfb209df48f1912be17f07480e; four commits touch six files, 430 insertions and 13 deletions, all inside the declared scope.\nCALL_SITES: reckon/serve.py:3934 do_GET thumbnail dispatch, reckon/serve.py:3245 _serve_thumbnail, reckon/serve.py:3284 _thumbnail_bytes call, docs/ui/shell-plans.jsx:230 thumbnail source builder\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/serve.py:2944 rasterises the SVG and 2985 routes it through the existing cache, so the served body is a PNG bounded at 2966 by THUMB_MAX_EDGE.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_figure_thumbnails_are_small_rasters.py:141-239 asserts the type, the bound, the byte count, reuse, refresh and fallback, but the 7-passed figure the manifest claims is not in any log test_logs names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the repair round's granted scope at resume-1-advice.txt, including tests/test_figure_thumbnails.py that the original dispatch fence omits.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_figure_thumbnails_are_small_rasters.py:153,163,204,239 and the render count at 167-181 each fail on a reverted rasterisation or a for-itself bound won size, verified by negative-control-reader-reuse.log and negative-control-stale-passthrough-test.log.\nSCORE fit: 16\nJUSTIFICATION fit: the lazy imports at reckon/serve.py:2954 and 2962 match the module's existing PIL import and no name the repository naming rules forbid was added.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/serve.py:2956 sizes from reckon.figures._svg_dims, the inventory's own reader, and a search by capability over reckon/ found no existing server-side rasteriser, only the standalone figure script docs/figures/figure-review-pairs/draw_pairs.py that shells out to rsvg-convert.\nFINDING tests/test_figure_thumbnails_are_small_rasters.py:152 follow-on: the max-edge comparison tests serve.THUMB_MAX_EDGE against a size the same production constant produced, so raising the constant moves the expected side with the server; the exact pixel checks at 153, 163 and 204 are what actually hold the bound, as the prior review already recorded.\nFINDING tests/test_figure_thumbnails.py:243 follow-on: the repaired assertion compares the served size to serve.THUMB_MAX_EDGE, which the route reads, so it moves with the constant rather than pinning the 200 by 150 the fixture should give.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T171904025423-figure-thumbnails-are-small-rasters/manifest.md:15 follow-on: the manifest's test_logs names head-thumbnail-node.log, which records 6 passed because it predates the seventh test, so the 7-passed node gate its artifacts line claims is not readable from any log it names; coordinator-installed-gate.log in the same directory records 16 passed at this head and covers the gap.",
+  "review_run_id": "r-20261018T191655668558-review-of-figure-thumbnails-are-small-rasters-0346bface859",
+  "reviewed_base_sha": "26fd36a9c21e67bfb209df48f1912be17f07480e",
+  "reviewed_head_sha": "0346bface8598202068d1c37e7c56d77f176f0b4",
+  "reviewed_run_id": "r-20261018T171904025423-figure-thumbnails-are-small-rasters",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "section_id": "s12",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T19:33:05.896976+00:00",
+  "total": 109
+}

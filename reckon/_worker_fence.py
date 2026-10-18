@@ -1140,6 +1140,117 @@ def worker_scratch_seal_root(
     return None
 
 
+# The node's own temp root. Pinned rather than read from ``TMPDIR`` for the
+# same reason the worker scratch root is (``dispatch_launch`` pins
+# ``WORKER_SCRATCH_ROOT_DEFAULT`` to ``/tmp``): the allocator may point
+# ``TMPDIR`` at shared storage, while every run's scratch and every session's
+# temporary files sit on this node-local root shared by one uid.
+NODE_TMP_ROOT = Path("/tmp")  # noqa: S108 - the node's own tmp, never shared
+
+# The marker directory codex's linux sandbox creates beneath its temp root —
+# the node's own ``/tmp`` when ``TMPDIR`` is not set — to hold the synthetic
+# bubblewrap mount targets and their registry lock. Named once so the runtime
+# path the fence keeps writable and the directory codex writes agree on the
+# spelling.
+CODEX_SANDBOX_MARKER_DIRNAME = ".codex"
+
+
+def node_tmp_runtime_paths() -> list[Path]:
+    """Return the node-/tmp paths a fenced worker's launch must still write.
+
+    The fence seals the worker scratch root read-only, but every other path
+    beneath the node's own ``/tmp`` stays writable to every session on the node
+    under one uid: Python's ``tempfile`` default, pytest's
+    ``/tmp/pytest-of-<user>``, and the fleet's runtime sockets. One run's cleanup
+    reached them on 2026-10-18 with ``rm -rf /tmp/tmp*`` and removed files it did
+    not own, so the whole node tmp is now sealed read-only too.
+
+    Only the run's own scratch directory — its ``TMPDIR``, re-bound writable by
+    the ordinary grant in :func:`fence_argv` — and the runtime paths named here
+    stay writable beneath the seal. Every entry names a place beneath the node
+    tmp that the launch writes, and one that is not there when the fence is
+    composed is created before the argv is, rather than left out: the paths that
+    are absent are precisely the ones the harness creates for itself, so
+    dropping them is what would leave a lane writing against the seal. The
+    harness home needs no entry here: it sits under the run directory, which is
+    already a write root, not under ``/tmp``.
+
+    The list is one named set enumerated beside :func:`worker_scratch_seal_root`
+    so a reader sees both seals and the runtime carve-outs together.
+    """
+    from reckon.crew.fleet_supervisor import runtime_directory
+
+    return [
+        # srun's fleet sockets: the host shims that launch a nested worker write
+        # their request/ack FIFOs and zellij sockets beneath the fleet runtime
+        # directory (``/tmp/<uid>-fleet``); a fenced worker that launches nested
+        # work through that shim writes there.
+        runtime_directory(),
+        # codex's sandbox mount registry: codex's linux sandbox creates its
+        # synthetic bubblewrap mount marker directory and lock here, beneath the
+        # harness temp root, so a codex launch that reaches its sandbox keeps it
+        # writable.
+        NODE_TMP_ROOT / CODEX_SANDBOX_MARKER_DIRNAME,
+    ]
+
+
+def create_node_tmp_runtime_paths() -> list[Path]:
+    """Create and return the node-/tmp runtime paths the fence must grant writable.
+
+    bubblewrap binds a writable root by *source* path, so a runtime path that
+    does not exist when the argv is composed composes no grant at all rather
+    than a grant that fails the launch. The path that most often does not exist
+    is codex's sandbox marker directory: codex's linux sandbox creates it
+    lazily, on the first launch that reaches the sandbox, so on a node where
+    codex has never run the read-only overlay of ``/tmp`` leaves the lane
+    nowhere to create it and the launch fails against the whole node tmp being
+    read-only. A grant that is present only on the nodes where the harness has
+    already run is a grant the fence cannot rely on, so every enumerated path is
+    created here, before the argv is composed, exactly as the launch would
+    create it.
+
+    A path that is already there is left exactly as it is: the enumerated set
+    also covers a runtime path some other process created, which may be a socket
+    or a file rather than a directory, and the fence neither replaces one with a
+    directory nor refuses over it — it is granted writable as it stands, which
+    is what the launch needs and what the pre-seal composition did.
+
+    A path that cannot be created refuses the launch, rather than being composed
+    as a grant the fence could not honour. The returned paths are what
+    :func:`fence_argv`'s grant loop consumes.
+    """
+    paths = node_tmp_runtime_paths()
+    created: list[Path] = []
+    for path in paths:
+        target = resolved_destination(path)
+        if target.exists():
+            created.append(target)
+            continue
+        try:
+            target.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            raise BackendError(
+                f"cannot create the node tmp runtime path {target}, which the "
+                f"fence must leave writable beneath the read-only {NODE_TMP_ROOT}: "
+                f"{exc}"
+            ) from exc
+        created.append(target)
+    return created
+
+
+def node_tmp_seal_root() -> Path | None:
+    """Return the node's own ``/tmp`` to seal read-only, or None when it is absent.
+
+    The seam :func:`fence_argv` consults for the node-tmp seal, so the seal's
+    presence is a single decision a caller (or a test's negative control) can
+    inject, exactly as :func:`worker_scratch_seal_root` decides the scratch
+    seal. A node tmp that does not exist has nothing to seal and is not a
+    directory the fence should invent, so it composes no overlay.
+    """
+    root = resolved_destination(NODE_TMP_ROOT)
+    return root if root.is_dir() else None
+
+
 def shared_store_seal_roots() -> list[Path]:
     """Return the shared delivery stores the fence seals read-only.
 
@@ -1234,7 +1345,16 @@ def fence_argv(
     own scratch directory — re-bound writable by the ordinary grant below, which
     comes after the overlay — is the only scratch a worker can write or delete;
     see :func:`worker_scratch_seal_root`. A sibling run's scratch stays readable
-    but read-only, and ``/tmp`` outside the root is untouched.
+    but read-only.
+
+    The node's whole ``/tmp`` is sealed read-only as well, so a run's cleanup
+    cannot reach another session's temporary files there. Only the run's own
+    scratch (its ``TMPDIR``) and the runtime paths its launch writes — the
+    fleet's sockets and codex's sandbox marker directory — are re-opened
+    writable beneath it; each of those is created first when it is not there,
+    because a path the launch creates for itself would otherwise compose no
+    grant and leave its lane writing against the seal; see
+    :func:`node_tmp_runtime_paths` and :func:`create_node_tmp_runtime_paths`.
 
     The two shared delivery stores — the reports root and the review store — are
     sealed the same way: overlaid read-only among the protected paths, with only
@@ -1279,18 +1399,37 @@ def fence_argv(
     # re-bound writable by the grant loop below, so a worker can write and
     # delete only what it declared; see :func:`shared_store_seal_roots`. Handing
     # either root writable would re-open every other project's and run's
-    # reports and reviews through the seal, so each sealed store root is skipped
+    # reports and reviews through the seal, so a sealed store root is skipped
     # by the grant loop. A store root is not created here: one that does not
-    # exist has nothing to seal and is not a directory the fence should invent.
+    # exist has nothing to seal, and is not a directory the fence should invent.
     store_seals = shared_store_seal_roots()
-    store_seal_keys = {str(resolved_destination(path)) for path in store_seals}
     protected = [*protected, *store_seals]
+
+    # The node's own ``/tmp`` is sealed read-only too, so a run's stray cleanup
+    # cannot reach another session's temporary files there — Python's
+    # ``tempfile`` default, pytest's ``/tmp/pytest-of-<user>``, the fleet's
+    # runtime sockets; see :func:`node_tmp_runtime_paths`. The run's own scratch
+    # directory (its ``TMPDIR``) and the enumerated runtime paths a launch writes
+    # are the only paths re-opened writable beneath it, both by the grant loop
+    # below. Composed only for a node tmp that exists, as every protected path
+    # is, and held apart from the protected set so its overlay does not dedupe
+    # the protected paths beneath it; see the emission of ``node_tmp_seal``.
+    node_tmp = node_tmp_seal_root()
+    node_tmp_seal: list[tuple[Path, Path]] = []
+    if node_tmp is not None:
+        node_tmp_seal = [(node_tmp, node_tmp)]
+        # Created, not merely filtered: a runtime path the launch is expected to
+        # create itself composes no grant while it is absent, which leaves the
+        # lane it belongs to writing against the seal; see
+        # :func:`create_node_tmp_runtime_paths`.
+        roots.extend(create_node_tmp_runtime_paths())
 
     binds = protected_read_only_binds(
         protected,
         required=_declared_paths(config, PROTECTED_PATHS_KEY, home),
     )
     sealed = [destination for _source, destination in binds]
+    sealed += [destination for _source, destination in node_tmp_seal]
     if worktree is not None:
         checkout = _fenced_worktree_refusal(
             Path(worktree), protected_checkouts(home, config)
@@ -1305,6 +1444,14 @@ def fence_argv(
     fenced = [FENCE_BINARY, "--dev-bind", "/", "/"]
     for source, destination in binds:
         fenced += ["--ro-bind", str(source), str(destination)]
+    # The node tmp is emitted as its own overlay rather than folded into the
+    # protected set, so it never suppresses a protected path's own bind: a
+    # protected path beneath it keeps its explicit --ro-bind even though the
+    # seal already covers it. A redundant read-only bind of a sub-path costs
+    # bwrap nothing, and a protected path's own bind is what several readers of
+    # the composed argv expect to find, the vanished-bind retry among them.
+    for source, destination in node_tmp_seal:
+        fenced += ["--ro-bind", str(source), str(destination)]
     # A masked path is hidden, not sealed: the protected overlay above still
     # exposes its content read-only, so a directory gets an empty tmpfs and a
     # file gets /dev/null, both of which read as absent. Emitted after the
@@ -1318,11 +1465,42 @@ def fence_argv(
             fenced += ["--tmpfs", str(target)]
         else:
             fenced += ["--ro-bind", os.devnull, str(target)]
+    # A bind whose destination is not there yet is created by bubblewrap at
+    # launch, and creating it needs a writable parent. A subscription lane's
+    # credential is mounted into the run's harness home rather than seeded
+    # there, so the home has to be a grant of its own: without one the mount
+    # aborts the launch before the worker starts, which is what the seal
+    # exposed once the harness home stopped being covered by a grant of the
+    # ambient temp root above it.
+    read_only_binds = list(read_only_binds)
+    read_write_binds = list(read_write_binds)
+    for _source, destination in (*read_only_binds, *read_write_binds):
+        target = resolved_destination(destination)
+        if not target.exists():
+            roots.append(target.parent)
+
+    shared_seals = [*store_seals, *([scratch_seal] if scratch_seal else [])]
     granted: set[str] = set()
     for root in roots:
         target = resolved_destination(root)
         key = str(target)
-        if key in granted or key in store_seal_keys or not _within_any(target, sealed):
+        if key in granted or not _within_any(target, sealed):
+            continue
+        # A grant is the last word on its own path, so a handed root at or
+        # above a shared seal would re-open it whole — the seal is only ever
+        # reached through a root beneath it. The scratch root carries this
+        # before the node tmp is sealed too: dispatch hands the ambient
+        # ``TMPDIR`` (:func:`reckon._backends.delivery_write_roots`) as well as
+        # the run's own scratch directory, and where the crew home itself sits
+        # under that temp root the ambient root is an ancestor of both stores.
+        if any(seal == target or seal.is_relative_to(target) for seal in shared_seals):
+            continue
+        # A root that is not there holds nothing to re-open, and a bind whose
+        # source is absent refuses the launch outright, so it composes no
+        # grant. The caller creates the roots it means to hand before it
+        # composes the fence, and a root it has not created yet is granted on
+        # the composition after it does.
+        if not target.exists():
             continue
         granted.add(key)
         fenced += ["--bind", key, key]

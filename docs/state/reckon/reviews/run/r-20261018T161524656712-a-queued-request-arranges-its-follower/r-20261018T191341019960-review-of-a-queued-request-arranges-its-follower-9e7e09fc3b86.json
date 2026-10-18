@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived by failure-id set subtraction from the completed baseline_suite and after_suite gate logs in the reviewed run manifest",
+  "base_log_revision": "3dc3f89c8dbd7b21825484ac7727d0fea7e52f10",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:172 _launch_queued",
+    "reckon/crew/dispatch.py:722 shadow dispatch",
+    "reckon/crew/dispatch.py:933 paired primary",
+    "reckon/crew/dispatch.py:952 paired shadow",
+    "reckon/crew/plan_review.py:2771 code review dispatch",
+    "reckon/crew/plan_review.py:3379 portfolio review dispatch"
+  ],
+  "completed_at": "2026-10-18T19:22:55Z",
+  "dispatched_at": "2026-10-18T19:14:39Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "resolved by widening the run's write scope to the granted test path after the worker exited; the change itself is the teardown wait the first review asked for",
+      "recorded_at": "2026-10-18T19:26:06.609143+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_the_review_reflex_asks_before_it_requeues.py",
+      "line": "263",
+      "severity": "blocking",
+      "text": "blocking: the cleanup repair changes a test absent from the source run live write scope; check-manifest refuses promotion with changed paths outside the write scope, so the grant must be widened and rechecked before landing."
+    }
+  ],
+  "head_log_revision": "f29819b4cc240bc46ab6deed221679c208b01131",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call sites",
+    "diff": "Read all five commits from 3dc3f89c8 to 9e7e09fc3; they extract shared follower arrangement, add the FIFO regression, change the watcher cleanup test outside the live grant and update the evidence fragment.",
+    "done_when": "The measure in prompt.txt:99 requires queued attachment, first-pass admission, no added importer failures and clean lint; focused-resume.log records 2 passed, negative-resume.log records 2 failed, the suite logs yield zero added failure ids, and ruff-resume.log records no added findings.",
+    "goal": "The goal in prompt.txt:30 requires a queued dispatch to attach its session before waiting; reckon/crew/dispatch.py:1522, :1585 and :1841 call the same follower helper on both held paths and the launching path.",
+    "manifest": "The source manifest.md claims a later grant for the watcher cleanup test and records five commits, the 2-pass focused gate, red control and zero added suite failures; source check-manifest still returns ok=false for that changed path.",
+    "write_paths": "The source prompt.txt:69-74 grants dispatch.py, dispatch_watch.py, the focused test, evidence fragment and figures directory; the diff also changes tests/test_the_review_reflex_asks_before_it_requeues.py, and source check-manifest refuses that path as outside its live write scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_request_arranges_its_follower.py:84-100 fails when the held path omits the helper, as negative-resume.log shows for both tests, and tests/test_the_review_reflex_asks_before_it_requeues.py:311-312 fails when cleanup stops before registration.",
+    "evidence": "tests/test_a_queued_request_arranges_its_follower.py:83-100 asserts queue state, FIFO request, attachment and admission, and baseline-absolute.log against after-repair-stability.log yields zero added failure ids.",
+    "fit": "reckon/crew/dispatch.py:273 keeps the follower composition beside dispatch and calls the existing producer and host operations without introducing a forbidden name.",
+    "goal_fidelity": "reckon/crew/dispatch.py:1522, :1585 and :1841 route the two queued branches and launching branch through _arrange_dispatch_follower at :273.",
+    "reuse": "reckon/crew/dispatch_watch.py:432 and :636 own producer arming and host attachment; the added helper at dispatch.py:273 composes those owners for both held and launched dispatches.",
+    "scope_discipline": "tests/test_the_review_reflex_asks_before_it_requeues.py:263-312 changes a file absent from the grant in prompt.txt:69-74, and source check-manifest reports it outside the write scope."
+  },
+  "method": "Read the live plan section, source prompt, manifest, all five commit diffs from base to reviewed head, production call sites and the producer/host owners; read the focused and red-control logs and independently subtracted failure ids from the two completed suite logs; did not rerun the suite. Ran the source run check-manifest command and read its refusal for the ungranted watcher cleanup test.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal in prompt.txt:30 requires a queued dispatch to attach its session before waiting; reckon/crew/dispatch.py:1522, :1585 and :1841 call the same follower helper on both held paths and the launching path.\nVERDICT done_when: The measure in prompt.txt:99 requires queued attachment, first-pass admission, no added importer failures and clean lint; focused-resume.log records 2 passed, negative-resume.log records 2 failed, the suite logs yield zero added failure ids, and ruff-resume.log records no added findings.\nVERDICT write_paths: The source prompt.txt:69-74 grants dispatch.py, dispatch_watch.py, the focused test, evidence fragment and figures directory; the diff also changes tests/test_the_review_reflex_asks_before_it_requeues.py, and source check-manifest refuses that path as outside its live write scope.\nVERDICT manifest: The source manifest.md claims a later grant for the watcher cleanup test and records five commits, the 2-pass focused gate, red control and zero added suite failures; source check-manifest still returns ok=false for that changed path.\nVERDICT diff: Read all five commits from 3dc3f89c8 to 9e7e09fc3; they extract shared follower arrangement, add the FIFO regression, change the watcher cleanup test outside the live grant and update the evidence fragment.\nCALL_SITES: reckon/crew/queue_admission.py:172 _launch_queued, reckon/crew/dispatch.py:722 shadow dispatch, reckon/crew/dispatch.py:933 paired primary, reckon/crew/dispatch.py:952 paired shadow, reckon/crew/plan_review.py:2771 code review dispatch, reckon/crew/plan_review.py:3379 portfolio review dispatch\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1522, :1585 and :1841 route the two queued branches and launching branch through _arrange_dispatch_follower at :273.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_a_queued_request_arranges_its_follower.py:83-100 asserts queue state, FIFO request, attachment and admission, and baseline-absolute.log against after-repair-stability.log yields zero added failure ids.\nSCORE scope_discipline: 5\nJUSTIFICATION scope_discipline: tests/test_the_review_reflex_asks_before_it_requeues.py:263-312 changes a file absent from the grant in prompt.txt:69-74, and source check-manifest reports it outside the write scope.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_queued_request_arranges_its_follower.py:84-100 fails when the held path omits the helper, as negative-resume.log shows for both tests, and tests/test_the_review_reflex_asks_before_it_requeues.py:311-312 fails when cleanup stops before registration.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch.py:273 keeps the follower composition beside dispatch and calls the existing producer and host operations without introducing a forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/dispatch_watch.py:432 and :636 own producer arming and host attachment; the added helper at dispatch.py:273 composes those owners for both held and launched dispatches.\nFINDING tests/test_the_review_reflex_asks_before_it_requeues.py:263 blocking: the cleanup repair changes a test absent from the source run live write scope; check-manifest refuses promotion with changed paths outside the write scope, so the grant must be widened and rechecked before landing.\n",
+  "review_run_id": "r-20261018T191341019960-review-of-a-queued-request-arranges-its-follower-9e7e09fc3b86",
+  "reviewed_base_sha": "3dc3f89c8dbd7b21825484ac7727d0fea7e52f10",
+  "reviewed_head_sha": "9e7e09fc3b8684ebed72c13a03c291f36108a2a9",
+  "reviewed_run_id": "r-20261018T161524656712-a-queued-request-arranges-its-follower",
+  "rubric": "dimensions",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 5
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T19:24:01.198029+00:00",
+  "total": 101
+}

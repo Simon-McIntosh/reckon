@@ -1,0 +1,101 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T20:05:26.268Z",
+  "dispatched_at": "2026-10-18T19:45:43Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-suite-is-green-at-head/r-20261018T192819388186-plan-review-of-the-suite-is-green-at-head/plan.html:731",
+      "id": "wiring-1",
+      "reason": "a coordinator following the plan's own chain never dispatches \u00a725, so the suite stays red at head while the plan reports impl 0.98.",
+      "text": "\u00a725 is declared `implementable`, but the plan's only open followup (`f-tsigah-repair-wave-at-95ff28824`, the last section before `</section>` at plan.html:874) recommends `/reckon-build the-suite-is-green-at-head \u00a74`, and \u00a74 is declared `done`; the adding commit `7567efba3` declared the section and opened no followup for it, so nothing in the plan invokes \u00a725",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-suite-is-green-at-head/r-20261018T192819388186-plan-review-of-the-suite-is-green-at-head/plan.html:732",
+      "id": "reasoning-1",
+      "reason": "a node adopting the supplied reason writes a whitelist comment that does not cover the flagged operation, instead of establishing the exemption the section asks for and stopping blocked with the change if the owner can serve it.",
+      "text": "\u00a725 asks whether `_bound_server_log`'s publish of the predecessor is an exception \"the owner cannot serve\" and then supplies the reason \"The live file is emptied in place because the server unit holds it open for appending\", but the operation the census flags is the other one: `_staged_writes` reports a locally staged rename source, and I confirmed on a synthetic tree that the `staging = predecessor.with_name(predecessor.name + \".tmp\"); shutil.copyfile(target, staging); os.replace(staging, predecessor)` sequence is reported while a bare `with target.open(\"wb\"): pass` is not; `write_atomically` publishes a single file through exactly a sibling temporary renamed into place, so the append-mode fact explains the in-place truncation (which is not a staged write) and does not establish that the owner cannot serve the flagged predecessor publish",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "06cf1567919282234d4b66dbd2053ddfb3c408e0564d3df19bc11273fabc2635",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 406,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-18T20:07:11.857911+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-18T20:07:19.684759+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T20:07:19.684759+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T20:07:11.857911+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-suite-is-green-at-head.v406.json",
+  "review_run_id": "r-20261018T192819388186-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "2f500e57668a069ba2b2ab6365cf7a9859dabe85",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 all 21 `plan-commits` shas resolve, the section's cited shas (`c79bbca69`, `9fe1e70d7`, `f40964a30`, plus the earlier-section shas) all resolve, and `docs/research/suite-failures-at-head.html` exists.",
+    "done_when": "pass \u2014 \u00a725's measure is a test red at head that its edit turns green, and it names a negative control (drop the new expected-set entry) which I confirmed produces a red naming `_bound_server_log`.",
+    "evidence_paths": "pass \u2014 \u00a725 logs under the run directory, a durable path, and its write path is a tracked test file rather than a scratchpad.",
+    "naming": "pass \u2014 \u00a725 introduces no symbol or filename and no plan label or ticket number, and it requires its whitelist comment be stated in mechanism terms.",
+    "reasoning": "a finding \u2014 the exception reason \u00a725 supplies concerns the live log's in-place truncation, which the census does not flag; the flagged operation is the predecessor's staged publish, which `write_atomically` is capable of serving.",
+    "single_goal": "pass \u2014 \u00a725 carries one deliverable, accounting for the served log's bound in the staged-write inventory, in one test file.",
+    "wiring": "a finding \u2014 \u00a725 is declared `implementable` (plan-section-declarations, version 406; its stub at plan.html:731) but no open followup reaches it, so the plan's own build chain never dispatches it."
+  },
+  "section_digests": {
+    "_document": "ee287f61c9d8acaebe53a94cbb394937c52203860213781e685be86c8a43f278",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "f84dc4d4bef37307ff05d71bd4f7071e9208e789832e7cb00be82c37bcfde97e",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s17": "01fe3ab4eb2f9f616654a729cf8bef4dcf5b530d4d0c1be3bdfa73999d0ad263",
+    "s18": "15b626822483dd850c2006c1d4255b8386f22ef780237614005178a5b3c15d70",
+    "s19": "94946283d6a94fe284a3f00a5c60fbfdf125cd16b7f43e5e0abdb96b6305cf3b",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s20": "1eef46ce597367c7d533df3c2bbd6d180313a446b7ad270289b1ed3f26857a8c",
+    "s21": "1ed74dec466eb1b0eee98d9d29bba0029e9ecfc126fc5ee67c90c833f03724dd",
+    "s22": "c3a55e73e65fd250ba61d6c2e9966ce88a3f63d70531153347e865c64bbb779d",
+    "s23": "58c7c8fb57b77f817bf210d5bb02d2c42f9794894e0e82f24746c06eaae9b603",
+    "s24": "bd305a35e661a1e1921c208e88472c7ccf105925bb86ba5650b5eb9312d9a1bd",
+    "s25": "434b0050a2720a7a66129dee5a891946d3cf4207903d26dc65c1023062d3161d",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "072f7ace5c2d253a6d4972213a2093233d6f768bd4d1394f2b9eaf1471ff4119",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T20:07:06.749280+00:00"
+}

@@ -1,0 +1,105 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_when": "The fixture sends crew writes outside its isolated home.",
+      "lines": "tests/test_review_record_contract.py:26"
+    },
+    {
+      "fails_when": "check-review accepts complete status or a missing reviewed run id, or omits the refused field or accepted statuses from its receipt.",
+      "lines": "tests/test_review_record_contract.py:98-110"
+    },
+    {
+      "fails_when": "check-review rejects a valid delivery, writes to the store during validation, or the filing path fails to persist it.",
+      "lines": "tests/test_review_record_contract.py:111-120"
+    },
+    {
+      "fails_when": "check-manifest accepts either malformed delivered record or fails to name the bad field.",
+      "lines": "tests/test_review_record_contract.py:140-141"
+    },
+    {
+      "fails_when": "The brief omits the checker command, a required key, or a status from the shared accepted set; the expected statuses are coupled to that set because following it is the stated contract.",
+      "lines": "tests/test_review_record_contract.py:147-163"
+    },
+    {
+      "fails_when": "Filing accepts complete status, status repair fails, the as-delivered copy differs, scores or findings change as values or bytes, the repair reason is absent, or nothing is filed.",
+      "lines": "tests/test_review_record_contract.py:177-206"
+    },
+    {
+      "fails_when": "An unsupported set is accepted, subject repair fails to derive the three ids, or scores or findings change as values or bytes.",
+      "lines": "tests/test_review_record_contract.py:227-259"
+    },
+    {
+      "fails_when": "crew complete succeeds for the tested refused status or omits review_filed false and the reason.",
+      "lines": "tests/test_review_record_contract.py:265-269"
+    },
+    {
+      "fails_when": "The direct or rolled-up obligation loses review-refused, the refusal reason, or the repair command, or recommends redispatch.",
+      "lines": "tests/test_review_record_contract.py:291-328"
+    }
+  ],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew_run_commands.py:749",
+    "reckon/crew_run_commands.py:1893",
+    "reckon/crew/reports.py:2376",
+    "reckon/crew/obligations.py:437",
+    "reckon/crew/obligations.py:956",
+    "reckon/crew/recovery_review_delivery.py:151",
+    "reckon/crew/promotion.py:1714"
+  ],
+  "completed_at": "2026-10-18T18:46:43Z",
+  "dispatched_at": "2026-10-18T18:36:42Z",
+  "evidence": {
+    "after_suite": "65 passed and 23 passed; both complete, zero failures",
+    "baseline_suite": "65 passed and 23 passed; both complete, zero failures",
+    "negative_control": "2 failed, 1 passed; EXIT=1",
+    "new_contract": "8 passed"
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "580",
+      "severity": "blocking",
+      "text": "blocking: store_review_refusals duplicates store_review's subject check but treats a whitespace reviewed_run_id as present; crew complete and obligations use this helper, so they can miss a record that store_review actually refuses."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "Six commits from 1daf0e48c661b0c57d245f107d266fc8a2f4c55a through a7a200799ba23f73d81ef491343e7ea2fe06b3a3 change eight granted files, including a validator fork in reckon/crew/review.py:575.",
+    "done_when": "The source brief.md's negative and positive controls are exercised by tests/test_review_record_contract.py:91-328; new-contract-final.log records 8 passed and negative-control-final.log records 2 intended failures.",
+    "goal": "The source run's brief.md requires a visible and repairable refused review; reckon/crew/review.py:575 and reckon/crew_run_commands.py:1868 implement most of that path, with a refusal gap described below.",
+    "manifest": "The source run's manifest.md:11-18 names six commits, all eight changed paths, the 65/65 and 23/23 paired gates, eight new passes, and the negative-control log.",
+    "write_paths": "The source run's resume-1-advice.txt:1 grants reckon/crew/reports.py, its live pointer lists that path, and all eight diff paths are inside the final grant."
+  },
+  "justifications": {
+    "durability": "tests/test_review_record_contract.py:91-328 fails on status, missing-id, audit, completion, obligation, and byte-preservation regressions, but no assertion tests the store/validator disagreement at reckon/crew/review.py:580.",
+    "evidence": "tests/test_review_record_contract.py:91-328 exercises the specified controls, and the recorded base and head gate logs both finish with zero failures while new-contract-final.log records eight passes.",
+    "fit": "reckon/crew_run_commands.py:734 and reckon/crew/review.py:2669 extend the existing crew command and review modules with mechanism-based names.",
+    "goal_fidelity": "reckon/crew/review.py:580 exposes ordinary refusals and repair, but a whitespace reviewed_run_id passes that helper although store_review at line 2461 refuses it.",
+    "reuse": "reckon/crew/review.py:580 duplicates the validation already owned by store_review at line 2461 rather than extending that owner, and the two now disagree on a whitespace reviewed_run_id.",
+    "scope_discipline": "reckon/crew/reports.py:1674 was added after the source run's resume-1-advice.txt:1 widened scope, and the final live write_paths list covers every diff path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source run's brief.md requires a visible and repairable refused review; reckon/crew/review.py:575 and reckon/crew_run_commands.py:1868 implement most of that path, with a refusal gap described below.\nVERDICT done_when: The source brief.md's negative and positive controls are exercised by tests/test_review_record_contract.py:91-328; new-contract-final.log records 8 passed and negative-control-final.log records 2 intended failures.\nVERDICT write_paths: The source run's resume-1-advice.txt:1 grants reckon/crew/reports.py, its live pointer lists that path, and all eight diff paths are inside the final grant.\nVERDICT manifest: The source run's manifest.md:11-18 names six commits, all eight changed paths, the 65/65 and 23/23 paired gates, eight new passes, and the negative-control log.\nVERDICT diff: Six commits from 1daf0e48c661b0c57d245f107d266fc8a2f4c55a through a7a200799ba23f73d81ef491343e7ea2fe06b3a3 change eight granted files, including a validator fork in reckon/crew/review.py:575.\nCALL_SITES: reckon/crew_run_commands.py:749, reckon/crew_run_commands.py:1893, reckon/crew/reports.py:2376, reckon/crew/obligations.py:437, reckon/crew/obligations.py:956, reckon/crew/recovery_review_delivery.py:151, reckon/crew/promotion.py:1714\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:580 exposes ordinary refusals and repair, but a whitespace reviewed_run_id passes that helper although store_review at line 2461 refuses it.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_review_record_contract.py:91-328 exercises the specified controls, and the recorded base and head gate logs both finish with zero failures while new-contract-final.log records eight passes.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: reckon/crew/reports.py:1674 was added after the source run's resume-1-advice.txt:1 widened scope, and the final live write_paths list covers every diff path.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_review_record_contract.py:91-328 fails on status, missing-id, audit, completion, obligation, and byte-preservation regressions, but no assertion tests the store/validator disagreement at reckon/crew/review.py:580.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew_run_commands.py:734 and reckon/crew/review.py:2669 extend the existing crew command and review modules with mechanism-based names.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/review.py:580 duplicates the validation already owned by store_review at line 2461 rather than extending that owner, and the two now disagree on a whitespace reviewed_run_id.\nFINDING reckon/crew/review.py:580 blocking: store_review_refusals duplicates store_review's subject check but treats a whitespace reviewed_run_id as present; crew complete and obligations use this helper, so they can miss a record that store_review actually refuses.\n",
+  "review_run_id": "r-20261018T183536407800-review-of-a-refused-review-says-why-a7a200799ba2",
+  "reviewed_base_sha": "1daf0e48c661b0c57d245f107d266fc8a2f4c55a",
+  "reviewed_head_sha": "a7a200799ba23f73d81ef491343e7ea2fe06b3a3",
+  "reviewed_run_id": "r-20261018T171221724794-a-refused-review-says-why",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T18:50:15.342099+00:00",
+  "total": 90
+}

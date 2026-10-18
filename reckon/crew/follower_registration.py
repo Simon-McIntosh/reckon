@@ -26,12 +26,17 @@ _follower_source_digests = obligation_snapshot._source_digests
 
 
 def follower_code_stamp() -> str:
-    """Read source HEAD for reload and stale-image comparisons."""
+    """Read the source package's content identity for stale-image comparisons.
+
+    The identity is the ``reckon/`` tree at HEAD rather than the commit, so a
+    commit that changes no file under ``reckon/`` does not read as a stale
+    image and moves no follower or producer.
+    """
     return checkout_trust.source_code_identity(Path(__file__).resolve().parent.parent)
 
 
 def running_code_stamp() -> str:
-    """Read the commit this process imported, rather than source HEAD."""
+    """Read the identity this process imported, rather than the source's."""
     return checkout_trust.running_code_identity(Path(__file__).resolve().parent.parent)
 
 

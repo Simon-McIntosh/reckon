@@ -1,0 +1,100 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T19:30:34.701Z",
+  "dispatched_at": "2026-10-18T19:18:45Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-never-reverts-the-checkout.html:67",
+      "id": "reasoning-1",
+      "reason": "\u00a71's own timeline puts the commit at 19:23:52 and the reverted state complete at ~19:23:59, so a check sampled at the instant the commit returns reads ok:true and \u00a72 fails to observe the incident its Why section exists to give reckon, sending a \u00a72 node to build a guard that cannot fire on it.",
+      "text": "\u00a72's check reads HEAD, the index and the working tree once, immediately after \"the commit returns success\", so a reversion landing a few seconds later is never observed",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-never-reverts-the-checkout.html:52",
+      "id": "wiring-1",
+      "reason": "\u00a72's deliverable and done-when are fully specified without any \u00a71 output, so the ambiguity changes scheduling at most and not what a \u00a72 node builds.",
+      "text": "\u00a71 says the record it names \"is an input to \u00a72\", while the f-alnrtc-002 followup (line 100) declares \u00a72 \"Independent of \u00a71, so it can run beside it\" and plan-section-depends-on (line 24) carries no \u00a72 edge",
+      "type": "wiring",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-never-reverts-the-checkout.html:47",
+      "id": "anchors_resolve-1",
+      "reason": "correcting a line number does not change what a node builds; both anchors still land inside the intended function block.",
+      "text": "\u00a71 cites the two refusals inside _commit_landing_writes as \"lines 1953 and 1980\", but the raise _landing_refusal calls are at promotion_scope.py:1956 and :1983, while every other line citation in the plan is exact",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "2c3dcde39f555bd2f22ee794789905dbf826d2708afac5672947ff2a3aff0e38",
+  "plan_slug": "a-landing-never-reverts-the-checkout",
+  "plan_version": 3,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-18T19:34:32.978385+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-18T19:34:40.995948+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "lines 1953 and 1980 are the _restore_landing_writes calls, which is what the sentence says the rollback is reached from; the raises the finding cites follow at 1956 and 1983",
+      "when": "2026-10-18T19:34:50.445851+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "lines 1953 and 1980 are the _restore_landing_writes calls, which is what the sentence says the rollback is reached from; the raises the finding cites follow at 1956 and 1983",
+      "when": "2026-10-18T19:34:50.445851+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T19:34:32.978385+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T19:34:40.995948+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-landing-never-reverts-the-checkout/r-20261018T184329763103-plan-review-of-a-landing-never-reverts-the-checkout.json",
+  "review_run_id": "r-20261018T184329763103-plan-review-of-a-landing-never-reverts-the-checkout",
+  "reviewed_blob_sha": "b0c6468f4d40cec3924456b380c5681b5f38812f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the code citations resolve (promotion_scope.py:1672, :1700, :1737, :1741, :1916; promotion.py:1334; promotion_release.py:615 and :646; the release commit \"near line 632\" is at 631), but the two refusal lines cited in \u00a71 are wrong.",
+    "done_when": "pass \u2014 each buildable section is measurable and declares a negative control: \u00a72 names its base-revision failures and enumerates them, and \u00a71's reproduction carries a no-interleaving control run. \u00a73 carries no done-when but is declared deferred and no followup invokes it.",
+    "evidence_paths": "pass \u2014 \u00a71 writes docs/research/what-turned-a-landing-back.html and docs/figures/what-turned-a-landing-back/, and \u00a72's negative-control log goes under the run directory; no gate writes to a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 new symbols land on mechanism names (landing_check, landing.json, tests/test_a_landing_checks_what_it_left.py, scripts/reproduce_landing_reversion.py); no plan label, stage name, ticket number or version tag reaches code.",
+    "reasoning": "a finding \u2014 \u00a71's root-cause framing is honest (three candidates, each with what it must explain, matching the code at promotion_scope.py:1672-1741), but \u00a72's mechanism samples one instant immediately after the commit returns and so cannot observe the class of event its own Why names.",
+    "single_goal": "pass \u2014 \u00a71 is one investigation (a doc plus the script reproducing its single finding); \u00a72's two mechanisms serve one goal and close on one receipt field and one test file.",
+    "wiring": "a finding \u2014 s3 correctly declares depends-on s1, and the plan-level standalone claim holds (no other plan references this plan; only docs/sprints/S26.html does), but \u00a71's deliverable says its output \"is an input to \u00a72\" while the f-alnrtc-002 followup and the absence of a \u00a71\u2192\u00a72 depends-on edge declare \u00a72 independent."
+  },
+  "section_digests": {
+    "_document": "479ad99e4e7ec690c76f853bbaa2d01eaa1b8f0a44a8f6ce0f762821bdb2dd5c",
+    "s1": "1d6095c0e18770f4beeba157c397cac50dcc71657f9bb44d97ecb6f4f84c8108",
+    "s2": "92b47cedb3e73d570e5254535ca983f3b7fa9748964b9472755dd844a63b7a03",
+    "s3": "5b86c755ce5f9a57c024e57d7a66b2f089c181482d11c34216c6170cb33a2fde"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T19:32:46.005554+00:00"
+}

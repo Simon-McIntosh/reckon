@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="520" viewBox="0 0 1400 520" font-family="DejaVu Sans, Helvetica, Arial, sans-serif">
+  <title>Mount order that seals the node's /tmp around a fenced worker</title>
+  <desc>Four mount steps applied in argv order: the whole filesystem dev-bound writable, the node /tmp overlaid read-only, the run's own scratch re-bound writable, and each enumerated runtime path re-bound writable. bubblewrap applies mounts in order, so the later writable grants are the last word on their own paths.</desc>
+
+  <text x="40" y="52" font-size="16" fill="#929292">mount step, applied in argv order &#8594;</text>
+
+  <!-- step 1 -->
+  <line x1="60" y1="120" x2="60" y2="470" stroke="#b0b0b0" stroke-width="1.2"/>
+  <circle cx="60" cy="130" r="6" fill="#929292"/>
+  <text x="92" y="126" font-size="14" fill="#444">--dev-bind / /</text>
+  <text x="92" y="148" font-size="14" fill="#666">the whole filesystem, writable</text>
+
+  <!-- step 2 -->
+  <line x1="360" y1="120" x2="360" y2="470" stroke="#b0b0b0" stroke-width="1.2"/>
+  <circle cx="360" cy="230" r="6" fill="#929292"/>
+  <text x="392" y="226" font-size="14" fill="#444">--ro-bind /tmp /tmp</text>
+  <text x="392" y="248" font-size="14" fill="#666">the node's /tmp, sealed</text>
+  <text x="392" y="268" font-size="14" fill="#666">&#8592; added by this section</text>
+
+  <!-- step 3 -->
+  <line x1="760" y1="120" x2="760" y2="470" stroke="#b0b0b0" stroke-width="1.2"/>
+  <circle cx="760" cy="330" r="6" fill="#b5651d"/>
+  <text x="792" y="326" font-size="14" fill="#444">--bind $TMPDIR $TMPDIR</text>
+  <text x="792" y="348" font-size="14" fill="#b5651d">the run's own scratch, writable</text>
+
+  <!-- step 4 -->
+  <line x1="1120" y1="120" x2="1120" y2="470" stroke="#b0b0b0" stroke-width="1.2"/>
+  <circle cx="1120" cy="410" r="6" fill="#3b6ea5"/>
+  <text x="1020" y="440" font-size="14" fill="#444">--bind &lt;runtime path&gt; &#8594;</text>
+  <text x="1020" y="462" font-size="14" fill="#3b6ea5">/tmp/&lt;uid&gt;-fleet, /tmp/.codex</text>
+
+  <!-- the seal does not suppress the narrower protected binds -->
+  <text x="392" y="322" font-size="14" fill="#929292">a protected path beneath it keeps its own</text>
+  <text x="392" y="342" font-size="14" fill="#929292">--ro-bind: the seal overlays it, it does</text>
+  <text x="392" y="362" font-size="14" fill="#929292">not stand in for that bind</text>
+
+  <!-- the outcome the section is about -->
+  <line x1="60" y1="80" x2="1340" y2="80" stroke="#b0b0b0" stroke-width="1.2"/>
+  <text x="60" y="70" font-size="14" fill="#929292">every later writable grant lands after the read-only overlay, so it is the last word on its own path</text>
+</svg>

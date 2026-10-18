@@ -1,0 +1,85 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T19:47:11.150Z",
+  "dispatched_at": "2026-10-18T19:37:41Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:194",
+      "id": "reasoning-1",
+      "reason": "\u00a730 exists so \u00a725's question is answerable from the service's own record, and without a verdict for a request the pass never reaches, a builder implements the pass exactly as written and the lane-filter cause remains unreadable, which is one of the two candidates \u00a729 was written to unblock.",
+      "text": "\u00a730 promises a log whose verdict list is \"launched, held for allowance, held by the gate, held on its retry back-off \u2026, held behind an earlier request, or refused\", while its Why names \"never considered\" as one of the states that must become visible; but the pass writes a line only \"for every pass whose lane has a queued pointer\", and `admit_once` selects that set by `str(pointer.get(\"backend\")) == lane` before it does anything else (reckon/crew/queue_admission.py:805-808), so a request whose recorded backend names no service the lane drains \u2014 \u00a725's first candidate, the \u00a724 fault class \u2014 produces a pass with no queued pointer and therefore no line, and is indistinguishable from an idle lane; the same gap swallows a pass that returns at the waiting-gate branch (queue_admission.py:795-797) before any pointer is read, even though \"held by the gate\" is in the enumeration",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1b768a471306c568a9fe3a28426c32714f3ae6d267cdd2041f501db4908ffad2",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 165,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "valid; \u00a730 belongs to another session and builds after \u00a728 by its own dependency; recorded as comment c-s30-never-considered on \u00a730 for its author to revise before \u00a730 is dispatched",
+      "when": "2026-10-18T19:51:56.880885+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "valid; \u00a730 belongs to another session and builds after \u00a728 by its own dependency; recorded as comment c-s30-never-considered on \u00a730 for its author to revise before \u00a730 is dispatched",
+      "when": "2026-10-18T19:51:56.880885+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-held-dispatch-waits-its-fair-turn/r-20261018T192930796515-plan-review-of-a-held-dispatch-waits-its-fair-turn.json",
+  "review_run_id": "r-20261018T192930796515-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "28f5f408cc6be0bc7ee823d42dc2147750d675fd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the discard spool record this section cites exists and carries exactly `run_id`, `discarded_at`, `phase`, `node`, `pointer_path`; the \u00a725 investigation run `r-20261018T172824230380-\u2026` exists; `_write_discard_record`, `_stamp_failure`, `_retry_backoff_hold`, `admit_until_stopped` and `pick-timings.jsonl` all resolve, and \u00a729's pointer-key list (`queued_at`, `session`, `backend`, `reason`, `hold` with nested `held`) matches `_queued_request_record` and the allowance dict at `dispatch_plan.py:1251`.",
+    "done_when": "pass \u2014 \u00a729's gate fails when the record drops the fields (its negative control) and asserts both the spool and the run-directory landing plus `discard_recorded`; \u00a730's gate fails when the append is removed and names the retry-back-off case that the previous review found missing. Both are measurable and both declare a control.",
+    "evidence_paths": "pass \u2014 both sections log under the run directory (`~/.config/reckon/crew/runs/<run>/`), which survives the run, and \u00a730's product log sits under the crew home beside `pick-timings.jsonl` (`reckon/crew/picker/__init__.py:26`); nothing lands in a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 neither section introduces a plan label, stage name, ticket number or version tag into code; \u00a729's page anchor `c-s28-cause-stale-admit` lives in \u00a728, not in these units.",
+    "reasoning": "a finding \u2014 \u00a730's Why names \"never considered\" among the states that leave no trace, and \u00a725's own investigation listed it as a state the log must make distinguishable, but \u00a730's verdict enumeration and its \"writes nothing\" rule cannot record it, so the class the previous review settled (the lane filter) stays unanswerable.",
+    "single_goal": "pass \u2014 \u00a729 carries one deliverable (the discard record keeps the admission fields) and \u00a730 one (a per-pass verdict line), each with the bound/lifetime as a property of the same deliverable.",
+    "wiring": "pass \u2014 \u00a730 declares `s30 \u2192 s28` for the shared `reckon/crew/queue_admission.py` and the plan-section-depends-on meta carries exactly that edge; \u00a729 writes only `reckon/crew/promotion.py`, which no other open section writes, and declares no order, so nothing is missing or mispointed."
+  },
+  "section_digests": {
+    "_document": "054c530588908db374988b2158adfd3be6d5c5471ff41396618feb40aabc960a",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "f67610611bfb819007234cb2d266523cab773379dedf07c8b53feb8f9e78ef59",
+    "s19": "1a735ef01d42913d9085a7d2db7eb238ecd99450b1ee61e3702d9951b4be8b04",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s20": "27cbb7d66474dcc03ee947d28d02bf69241181f95114d64b5dfd64cece9a6d2d",
+    "s21": "9d6a0b0914d4b7c617f66b56c23c29f423e83783cee042a59efd0844e910758e",
+    "s22": "04e32404c6bd6fba4d019c4ac2feb930c097b69019a6b5feeab58d4c16120a94",
+    "s23": "70ceaed3d3c3bdadbebbb977a408f022cd463ddb7697e91a9f3ddb9783544474",
+    "s24": "d7f6c25b7737b87618ce073988379c3a183b8bd0c2da8d647b9b86dd29f1ca6d",
+    "s25": "e88835723a96300f96faca8c273f7eaf945b39dd9df4be7a5c6199ddf55b8422",
+    "s26": "a829b38553b03955174d3dcabf9df353fe7c676b2f8ed7a1de83fe601c7d4b90",
+    "s27": "8f724251bb33d77182950fa280b7a11534308e59b061628a3780ecb8b004a68a",
+    "s28": "0c87a9ac04613153cbe9e2fe1fdcdde59bc64b31d5c992b0f4259ea611185452",
+    "s29": "25685afa8071dda611460a1344fd6e7da0681d3cd2548d0b28a59a7d3496c927",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s30": "c5e0af98c255e50c99d29c7b483d2832229c1bc3ee45b78945fcd5918356eeb9",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T19:50:29.207537+00:00"
+}

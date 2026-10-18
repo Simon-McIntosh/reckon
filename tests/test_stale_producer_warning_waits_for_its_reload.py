@@ -236,7 +236,7 @@ def test_a_producer_on_source_head_is_current_after_a_reload(
     git("config", "user.email", "reload@example.invalid")
     git("add", "reckon/__init__.py")
     git("commit", "-m", "Add package")
-    first = git("rev-parse", "HEAD")
+    first = git("rev-parse", "HEAD:reckon")
     monkeypatch.setenv(follow._FOLLOWER_SOURCE_ROOT_ENV, str(root))
     assert runs.follower_code_stamp() == first
     assert obligation_snapshot.source_code_stamp() == first
@@ -249,7 +249,7 @@ def test_a_producer_on_source_head_is_current_after_a_reload(
     (package / "example.py").write_text("VALUE = 'later'\n")
     git("add", "reckon/example.py")
     git("commit", "-m", "Add later source")
-    second = git("rev-parse", "HEAD")
+    second = git("rev-parse", "HEAD:reckon")
     assert runs.follower_code_stamp() == second
     assert obligation_snapshot.source_code_stamp() == second
     older = runs.watch_producer_identity(PROJECT)
@@ -261,7 +261,7 @@ def test_a_producer_on_source_head_is_current_after_a_reload(
     )
 
 
-def test_registration_keeps_the_running_commit_when_head_moves(
+def test_registration_keeps_the_running_identity_when_head_moves(
     isolated_home, monkeypatch, tmp_path
 ) -> None:
     root = tmp_path / "source"
@@ -288,21 +288,21 @@ def test_registration_keeps_the_running_commit_when_head_moves(
     git("config", "user.email", "reload@example.invalid")
     git("add", "reckon/__init__.py")
     git("commit", "-m", "Add package")
-    running_commit = git("rev-parse", "HEAD")
+    running_identity = git("rev-parse", "HEAD:reckon")
     monkeypatch.setenv(follow._FOLLOWER_SOURCE_ROOT_ENV, str(root))
-    monkeypatch.setenv(follow._FOLLOWER_IMAGE_COMMIT_ENV, running_commit)
+    monkeypatch.setenv(follow._FOLLOWER_IMAGE_COMMIT_ENV, running_identity)
     (package / "example.py").write_text("VALUE = 'newer'\n")
     git("add", "reckon/example.py")
     git("commit", "-m", "Move source head")
-    current_commit = git("rev-parse", "HEAD")
+    current_identity = git("rev-parse", "HEAD:reckon")
 
     with runs._project_watch_claim(PROJECT, "1h") as (claimed, record):
         assert claimed
-        assert record["code_stamp"] == running_commit
-        assert runs.follower_code_stamp() == current_commit
+        assert record["code_stamp"] == running_identity
+        assert runs.follower_code_stamp() == current_identity
         identity = runs.watch_producer_identity(PROJECT)
-        assert identity["code_stamp"] == running_commit
-        assert identity["current_stamp"] == current_commit
+        assert identity["code_stamp"] == running_identity
+        assert identity["current_stamp"] == current_identity
         assert identity["stale"] is True
         assert cli_module.FOLLOWER_STALE_PRODUCER_EVENT in _kinds(
             _events(monkeypatch, reloaded_in_place=False)

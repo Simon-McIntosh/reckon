@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T20:05:56.566Z",
+  "dispatched_at": "2026-10-18T19:52:26Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-review-promotes-only-its-own-verdict/r-20261018T195141961403-plan-review-of-a-review-promotes-only-its-own-verdict/plan.html:38",
+      "id": "reasoning-1",
+      "reason": "with the head already declared, the incident is fully fixed by the delivery-predicate change in the second bullet alone, so a node following the first bullet builds head-recording plumbing on every dispatch path that its own motivating example shows is not what went wrong.",
+      "text": "the plan says \"The bad row's `node_definition.write_paths` names only the legacy path, and the full head `0a451acf\u2026` appears nowhere on the row\", but nova's `docs/state/nova/runs/r-20261018T192200408612-review-of-tcv-liuqe-known-answer-0a451acfdb02.json` at commit `e99d2b385` declares both write paths, the second being `\u2026/review-records/r-20261018T134957600545-tcv-liuqe-known-answer.at-0a451acfdb02d4b05a5d8f77c7a711943f0d4cce.json`, so the full head is on the row and `_review_subject` (which reads a head from a declared `.at-` write path) recovers it without the node-id suffix \u2014 meaning \u00a71's first deliverable bullet, and its done-when item that requires every minting path to record the head, rest on a premise this row refutes",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "758569fcb9dca150a1a8817c69894992be435c9f858a613301424f22a92c0e81",
+  "plan_slug": "a-review-promotes-only-its-own-verdict",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-18T20:07:00.332662+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T20:07:00.332662+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-review-promotes-only-its-own-verdict.v1.json",
+  "review_run_id": "r-20261018T195141961403-plan-review-of-a-review-promotes-only-its-own-verdict",
+  "reviewed_blob_sha": "6648f0a03a59c357c2405d54741e9ffd4d7aa501",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_delivered_review_record` resolves to `reckon/crew/recovery_review_delivery.py:236`, `_read_complete_review` to :222, the fallback to :251-261, `_review_subject` to `recovery_review_dispatch.py:153`, `_record_review_dispatch` to :325, `REVIEW_DISPATCH_FIELD` to :54; `promote_review_run_itself` (defined at `recovery_review_acceptance.py:248`) has its cited `:314` at the exact `_delivered_review_record` call inside it; `promotion_checks.py:1152` and `:2327` both land on `_delivered_review_record` call sites; the new planned files (`tests/test_a_review_promotes_only_its_own_verdict.py`, `docs/research/review-rows-with-another-rounds-verdict.html`, `scripts/review_rows_with_another_rounds_verdict.py`) are declared new and so are absent until built.",
+    "done_when": "pass \u2014 \u00a71 and \u00a72 each carry a measurable done-when, and each declares a negative control (the predecessor-round plus three mismatch cases failing at the base revision; the census listing the known-positive nova row), so both can fail.",
+    "evidence_paths": "pass \u2014 \u00a71's red log sits \"under the run directory\" (a durable crew run dir), \u00a72's census writes under `docs/research/` and `scripts/`; no gate log or artifact is directed to a session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the plan introduces no new production symbols and no plan labels, stage names or ticket numbers reach code; the new test and script names are mechanism-named.",
+    "reasoning": "a finding \u2014 \u00a71's third paragraph asserts the motivating row carries no dispatched head, but the cited row carries the full head in the board's own `node_definition.write_paths`, which `_review_subject` already reads; the root cause it states is not the one the evidence shows.",
+    "single_goal": "pass \u2014 \u00a71 has one goal (a promotion may carry only the verdict the review run itself delivered), \u00a72 one (count the misattributed rows), \u00a73 one (correct such a row by an appended correction).",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s3 \u2192 a-review-promotes-only-its-own-verdict#s2`, which is the real order (\u00a73 is deferred until \u00a72 has counted the rows), and no node declares a dependency it does not need; the two open followups point at \u00a71 and \u00a72 and resolve."
+  },
+  "section_digests": {
+    "_document": "a89ba6e7de39330fc5176496045373dcff7a6d34147d487dbd5acaa0ec842ddd",
+    "s1": "ca4acaaa1287f9d1610d9b234963ede38ff0483f9525d9ab183b15fc60ea346e",
+    "s2": "c5703b69a7923699926466c262ac6ae8fba036e536abb7d5c7cd95c3a99b8e0a",
+    "s3": "18f479da831c1adb4dd53260c6b8c26ddcb1fc069308b21f243d7216647cd6e8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T20:06:56.164813+00:00"
+}

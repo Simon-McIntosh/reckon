@@ -1,0 +1,32 @@
+<section id="a-queued-request-arranges-its-follower" class="evidence-fragment">
+  <h2>A queued request arranges its session's follower</h2>
+  <p>
+    A held dispatch previously stored its queued pointer and returned before
+    ensuring the producer or asking the calling session host for a follower.
+    The new FIFO-backed regression reproduced both effects: the host received
+    no request, and the first admission pass launched no run.
+  </p>
+  <p>
+    The held and launching paths now use one helper to ensure the producer and
+    ask the calling session host. A queued request leaves its session attached
+    before dispatch returns, so the first admission pass can launch it.
+    The held path can also start a producer just before a test cleans up its
+    watcher. That test now waits for the raw producer registration before
+    calling <code>unwatch</code>, with a bounded failure if it never appears.
+  </p>
+  <p id="a-queued-request-arranges-its-follower-measure">
+    Measure: the focused gate reports <strong>2 passed</strong> at the repaired
+    head, and removing the queue branch's helper call makes both cases fail
+    (<strong>2 failed</strong>, <code>EXIT=1</code>). The delayed-registration
+    case and its three neighbouring tests passed in three consecutive
+    eight-worker runs (<strong>4 passed</strong> each); before the teardown
+    change, that case and the queued-review case both failed with an empty
+    locked registration. Across 80 direct importer files, the complete base
+    arm reports 6 failed, 569 passed, 1 skipped. The final repaired-head arm,
+    including the new regressions, reports 4 failed, 574 passed, 1 skipped,
+    with <strong>zero added failure ids</strong>. An earlier repaired-head arm
+    had two different head-only timing failures outside the changed paths;
+    both arms and their failure ids remain in the run record. Ruff adds no
+    findings, and all three changed Python files pass format checking.
+  </p>
+</section>

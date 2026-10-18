@@ -697,13 +697,22 @@ def _reserved_lane_reason(answer: Any) -> str:
 
 
 def _record_reserved_lane_pick(
-    selection: Mapping[str, Any], *, lane: str, reason: str, refused: bool
+    selection: Mapping[str, Any],
+    *,
+    lane: str,
+    reason: str,
+    refused: bool,
+    disposition: str,
 ) -> None:
     """Append one reserved-lane decision to the crew home's log, best effort.
 
     Written through the pick log's own appender, which never fails on its own
     record and writes one atomic append, so a decision recorded here cannot
-    stall or fail a dispatch.
+    stall or fail a dispatch. ``disposition`` names what the decision did with
+    the pick -- ``reasoned`` a lane spent on a stated reason, ``reasked`` a
+    refusal whose lane was excluded and Jev asked again, ``held`` a refusal on a
+    re-ask that could not be asked again -- so a reader tells the refused lane
+    from the lane that was actually routed without opening the run record.
     """
     from reckon.crew.picker import _append_crew_log_line
 
@@ -716,6 +725,7 @@ def _record_reserved_lane_pick(
             "model": selection.get("model"),
             "reason": reason or None,
             "refused_unreasoned": refused,
+            "disposition": disposition,
         },
     )
 
@@ -772,6 +782,13 @@ def _reask_off_unreasoned_reserved_lane(
     answer given with the reserved lane in view is not the only answer this
     dispatch hears. Both asks are recorded, and a re-ask that routes elsewhere
     stands as the pick.
+
+    A refusal reached on a nested re-ask -- the second ask ``allow`` false, made
+    by :func:`_ask_excluding_lane` -- cannot be asked again without recursing, so
+    the lane is not routed while the log records the refusal. The pick is
+    refused as a hold instead: the node waits rather than being spent on a
+    reserved lane the pick never justified, and the log's ``disposition`` names
+    the hold so the recorded refusal and the routed lane agree.
     """
     lane = str(selection.get("reserved_lane") or "")
     if not lane:
@@ -782,13 +799,37 @@ def _reask_off_unreasoned_reserved_lane(
             lane=lane,
             reason=str(selection["reason"]),
             refused=False,
+            disposition="reasoned",
         )
         return dict(selection)
-    _record_reserved_lane_pick(selection=selection, lane=lane, reason="", refused=True)
     if not allow:
-        # No re-ask is allowed here, so the lane stands as chosen; the row just
-        # written is the record that it was spent with no reason given.
-        return dict(selection)
+        _record_reserved_lane_pick(
+            selection=selection,
+            lane=lane,
+            reason="",
+            refused=True,
+            disposition="held",
+        )
+        return {
+            **selection,
+            "action": "hold",
+            "backend": None,
+            "family": None,
+            "model": None,
+            "effort": None,
+            "reserved_lane_unreasoned": lane,
+            "fallback_reason": (
+                f"reserved-lane-unreasoned: {lane} was picked with no reason "
+                "on a nested re-ask"
+            ),
+        }
+    _record_reserved_lane_pick(
+        selection=selection,
+        lane=lane,
+        reason="",
+        refused=True,
+        disposition="reasked",
+    )
     second = _ask_excluding_lane(
         lane,
         _ask_summary(selection),

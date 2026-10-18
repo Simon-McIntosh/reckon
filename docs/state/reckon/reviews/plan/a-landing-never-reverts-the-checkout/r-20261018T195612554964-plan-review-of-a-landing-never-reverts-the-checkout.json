@@ -1,0 +1,77 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T20:06:38.394Z",
+  "dispatched_at": "2026-10-18T19:57:44Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/promotion_scope.py:1482",
+      "id": "reuse_search-1",
+      "reason": "\u00a72 should extend `_path_differs_from_head`/`_path_has_a_staged_change` to return the blob ids it wants, or state why a fresh three-way comparator cannot reuse them, which changes \u00a72's deliverable text.",
+      "text": "\u00a72 says it will read staged paths with `git diff --cached --name-only` and compare each written path's content in HEAD, the index and the working tree, but that file already owns both comparisons: `_path_differs_from_head` (line 1482) is the HEAD\u2194worktree comparison and `_path_has_a_staged_change` (line 1743) is the HEAD\u2194index comparison run as `git diff --cached --name-only` \u2014 the exact form \u00a72 proposes \u2014 while \u00a71 itself cites the sibling `_restore_landing_writes` at the same file, so the plan searched this file and still proposes a parallel detector without citing either helper",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion_release.py:611",
+      "id": "duplicate_owner-1",
+      "reason": "routing the release commit through `_commit_landing_writes` puts \u00a72's pre-stage and post-commit check in one place and collapses the plan's \"two changes\" to one, so the author must decide between extending the owner or forking the check twice, and a check written twice drifts.",
+      "text": "\u00a72 names two commit sites to modify, `_commit_landing_writes` (reckon/crew/promotion_scope.py:1916) and the release-outcome commit at promotion_release.py:~635, but the release path is a second owner of the same landing-commit machinery: `_record_release_on_ledger` (promotion_release.py:569) runs its own `git add` / `git diff --cached --quiet` / `git commit --only -m \"release(<run>): ...\"` / `_restore_landing_writes` sequence (lines 611-650) instead of calling `_commit_landing_writes`, which is the owner exercised by all three other callers (promotion_gate.py:960, promotion.py:751, promotion.py:1350); the census of landing-commit sites is therefore one owner plus exactly this one duplicate",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9b62b7884319d70703403a0bf98a5559bc4ab14ddde529a8069b6e743b0e205d",
+  "plan_slug": "a-landing-never-reverts-the-checkout",
+  "plan_version": 9,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-18T20:11:52.532960+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-18T20:11:59.826534+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T20:11:59.826534+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T20:11:52.532960+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-landing-never-reverts-the-checkout.v9.json",
+  "review_run_id": "r-20261018T195612554964-plan-review-of-a-landing-never-reverts-the-checkout",
+  "reviewed_blob_sha": "7389374791913d1a0694a3b2af6794ac37704d82",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design adds no new module; \u00a72's checks sit inline behind a small `landing_check` field on the landing result, so no substantial behaviour is spread over new wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a72 adds its check to two landing-commit sites, and the second, the release-outcome commit in promotion_release.py, is an inline duplicate of the landing-commit sequence owned by `_commit_landing_writes` (reckon/crew/promotion_scope.py:1916).",
+    "interface_budget": "pass \u2014 public_definitions 1811, cli_options 364, mcp_views 34, refusal_families 23; \u00a72 adds no CLI option, MCP view, public definition or refusal family, so there is nothing to retire or merge.",
+    "reuse_search": "a finding \u2014 \u00a71 does search (it names `_restore_landing_writes` and its four rollback call sites with file:line, all verified present), but \u00a72's planned readers reimplement comparison helpers that already exist in the same file it edits: `_path_differs_from_head` and `_path_has_a_staged_change`.",
+    "thin_wrapper": "pass \u2014 nothing new wraps existing machinery; the release-outcome commit does not forward to the landing-commit owner, it reimplements it, which is a duplicate rather than a wrapper."
+  },
+  "section_digests": {
+    "_document": "479ad99e4e7ec690c76f853bbaa2d01eaa1b8f0a44a8f6ce0f762821bdb2dd5c",
+    "s1": "ee9b8c30fd2d5b2dfb1dc7d01e8045c3f8d91294fd8bfd32b710f64690ad3daf",
+    "s2": "b1c00f06faf44e98b269f12531f0685b9d34ffeddb5284a74c9eb4029274fe86",
+    "s3": "5b86c755ce5f9a57c024e57d7a66b2f089c181482d11c34216c6170cb33a2fde"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T20:11:49.288681+00:00"
+}

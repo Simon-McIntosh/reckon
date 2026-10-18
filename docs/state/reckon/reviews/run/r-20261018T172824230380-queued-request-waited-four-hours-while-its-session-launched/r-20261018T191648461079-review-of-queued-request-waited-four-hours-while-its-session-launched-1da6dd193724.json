@@ -1,0 +1,43 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "claim_summary": {
+    "detail": "differs: the report's summary line is - Eleven rows exist for this run in the whole stream; six of them fall in the window. The table beneath it carries eight rows, of which seven fall inside the stated window 08:54Z-12:38Z (08:54:16, 08:54:19, 08:56:45, 11:36:26, 11:36:27, 11:57:38, 11:57:42) and one (12:41:02, queued -> discarded) is marked outside it, so the summary's six-in-window contradicts its own table's seven. Re-running the search over the same watch stream (/home/ITER/mcintos/.config/reckon/crew/watch/reckon-18dc8a86709b.events) finds eight rows whose run_id is this run, and ten lines mentioning the id, so the summary's eleven-in-the-whole-stream matches neither the table nor the stream; the report's positive control (r-20261018T110651247770, 14 rows) does reproduce. Both numbers the summary quotes differ from the table beneath them.",
+    "verdict": "differs"
+  },
+  "claims": [
+    {
+      "detail": "reproduced: ranked finding 1 is the two-path agreement - that the dispatch path and the admission pass resolve the same backend, the same lane_document and the same allowance/state/held/source on all four lane documents the hold names (report section 7.1). Re-running the cited script (repro.py, the literal command quoted on the cmd: line of repro-base.log) from a scratch copy of the run's own inputs reproduced every figure of the report's 7.1 table, line for line: listed-zero allowance=0 state='held' held=True source=\"the session's own worker slots\"; absent-new-session allowance=4 state='measured' held=False source='the new-session worker slots'; lane-wide-only allowance=4 source='the global worker slots'; headroom-only allowance=5 source='the request headroom'; agree=True on all four, and both paths named the same lane_document in every case. Caveat on the input: the cited driver regenerated its flight.yaml from the live ~/.config/reckon/flight.yaml, which has since gained picker_reserved_lanes, a key the base revision rejects; the re-run therefore used the reviewed run's own captured flight.yaml with only the scratch paths repointed, which is the config that produced its log.",
+      "rank": "1",
+      "verdict": "reproduced"
+    },
+    {
+      "detail": "reproduced: ranked finding 2 is the hold reproduction - that under the zero-session-share document the pass holds the request, attempts no launch and records nothing, while under a positive session share it admits (report section 7.2). Re-running the cited script reproduced both readings exactly. The launching document returned {\"gate\": \"open\", \"launched\": [\"r-repro-admitted\"], \"held\": [], \"failed\": [], \"requeued\": [], \"action\": \"admitted\"} with launches attempted ['r-20261018T085353346020-repro-queued-review']; the listed-zero document returned {\"gate\": \"open\", \"launched\": [], \"held\": [\"r-20261018T085353346020-repro-queued-review\"], \"failed\": [], \"requeued\": [], \"action\": \"idle\"} with launches attempted [] - the report states these same two figures, line for line.",
+      "rank": "2",
+      "verdict": "reproduced"
+    },
+    {
+      "detail": "reproduced: ranked finding 3 is the stale-revision exclusion - that the readings at the node's base (1da6dd193) and at the revision the admit service ran (7bd8bc924) are identical on every line, so the service's stale code did not cause the hold (report section 7.3). Re-running the cited script against a reconstruction of the service revision's reckon package (194 files materialized from git show 7bd8bc924:reckon/*) produced readings identical to the base re-run on every line except the two lines naming the imported checkout (reckon.__file__ and flight.__file__); the report's own two cited logs likewise differ only in their rev/checkout header. The two modules the report says decide this question, reckon/crew/queue_admission.py and reckon/crew/dispatch_plan.py, are byte-identical at the two revisions (git show + diff).",
+      "rank": "3",
+      "verdict": "reproduced"
+    }
+  ],
+  "completed_at": "2026-10-18T19:41:51.511Z",
+  "dispatched_at": "2026-10-18T19:17:43Z",
+  "findings": [],
+  "item_aggregate": null,
+  "item_verdicts": {},
+  "justifications": {},
+  "project": "reckon",
+  "raw_text": "CLAIM 1: reproduced: ranked finding 1 is the two-path agreement - that the dispatch path and the admission pass resolve the same backend, the same lane_document and the same allowance/state/held/source on all four lane documents the hold names (report section 7.1). Re-running the cited script (repro.py, the literal command quoted on the cmd: line of repro-base.log) from a scratch copy of the run's own inputs reproduced every figure of the report's 7.1 table, line for line: listed-zero allowance=0 state='held' held=True source=\"the session's own worker slots\"; absent-new-session allowance=4 state='measured' held=False source='the new-session worker slots'; lane-wide-only allowance=4 source='the global worker slots'; headroom-only allowance=5 source='the request headroom'; agree=True on all four, and both paths named the same lane_document in every case. Caveat on the input: the cited driver regenerated its flight.yaml from the live ~/.config/reckon/flight.yaml, which has since gained picker_reserved_lanes, a key the base revision rejects; the re-run therefore used the reviewed run's own captured flight.yaml with only the scratch paths repointed, which is the config that produced its log.\nCLAIM 2: reproduced: ranked finding 2 is the hold reproduction - that under the zero-session-share document the pass holds the request, attempts no launch and records nothing, while under a positive session share it admits (report section 7.2). Re-running the cited script reproduced both readings exactly. The launching document returned {\"gate\": \"open\", \"launched\": [\"r-repro-admitted\"], \"held\": [], \"failed\": [], \"requeued\": [], \"action\": \"admitted\"} with launches attempted ['r-20261018T085353346020-repro-queued-review']; the listed-zero document returned {\"gate\": \"open\", \"launched\": [], \"held\": [\"r-20261018T085353346020-repro-queued-review\"], \"failed\": [], \"requeued\": [], \"action\": \"idle\"} with launches attempted [] - the report states these same two figures, line for line.\nCLAIM 3: reproduced: ranked finding 3 is the stale-revision exclusion - that the readings at the node's base (1da6dd193) and at the revision the admit service ran (7bd8bc924) are identical on every line, so the service's stale code did not cause the hold (report section 7.3). Re-running the cited script against a reconstruction of the service revision's reckon package (194 files materialized from git show 7bd8bc924:reckon/*) produced readings identical to the base re-run on every line except the two lines naming the imported checkout (reckon.__file__ and flight.__file__); the report's own two cited logs likewise differ only in their rev/checkout header. The two modules the report says decide this question, reckon/crew/queue_admission.py and reckon/crew/dispatch_plan.py, are byte-identical at the two revisions (git show + diff).\nCLAIM_SUMMARY: differs: the report's summary line is - Eleven rows exist for this run in the whole stream; six of them fall in the window. The table beneath it carries eight rows, of which seven fall inside the stated window 08:54Z-12:38Z (08:54:16, 08:54:19, 08:56:45, 11:36:26, 11:36:27, 11:57:38, 11:57:42) and one (12:41:02, queued -> discarded) is marked outside it, so the summary's six-in-window contradicts its own table's seven. Re-running the search over the same watch stream (/home/ITER/mcintos/.config/reckon/crew/watch/reckon-18dc8a86709b.events) finds eight rows whose run_id is this run, and ten lines mentioning the id, so the summary's eleven-in-the-whole-stream matches neither the table nor the stream; the report's positive control (r-20261018T110651247770, 14 rows) does reproduce. Both numbers the summary quotes differ from the table beneath them.\n",
+  "review_run_id": "r-20261018T191648461079-review-of-queued-request-waited-four-hours-while-its-session-launched-1da6dd193724",
+  "reviewed_base_sha": "1da6dd19372464b08e4b8369c4fd445fc6844393",
+  "reviewed_head_sha": "1da6dd19372464b08e4b8369c4fd445fc6844393",
+  "reviewed_run_id": "r-20261018T172824230380-queued-request-waited-four-hours-while-its-session-launched",
+  "rubric": "claims",
+  "scores": {},
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T21:45:00Z",
+  "total": null
+}

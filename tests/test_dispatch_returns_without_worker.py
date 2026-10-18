@@ -82,10 +82,23 @@ REAL_LIVE_DIR = _config_home() / "crew" / "live"
 
 
 @pytest.fixture()
-def writable_marker_dir() -> Path:
+def writable_marker_dir(monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A directory the fence grants a run's worker to write.
+
+    The stub writes its pid file and its marker here. A fenced worker may write
+    only its own scratch directory, its declared write paths and the runtime
+    paths its launch writes; a fresh directory under the node's ``/tmp`` is none
+    of those, because the fence overlays that whole tree read-only, so a marker
+    directory there is refused. The fleet runtime directory is one of the paths
+    the fence grants and creates for every launch, so the directory is handed to
+    the run as that, through the environment the dispatch process reads. The
+    fence exempts nothing for this: the grant is the one every lane's launch
+    already receives.
+    """
     with tempfile.TemporaryDirectory(
         prefix="reckon-worker-marker-", dir=os.environ.get("TMPDIR")
     ) as directory:
+        monkeypatch.setenv("FLEET_RUNTIME_DIR", directory)
         yield Path(directory)
 
 PYTHON = Path(sys.executable)

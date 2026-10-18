@@ -1,0 +1,139 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T19:37:54.281Z",
+  "dispatched_at": "2026-10-18T19:23:55Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:286",
+      "id": "reasoning-1",
+      "reason": "plotting \u00a740 and \u00a741 as the repair sends a 45-minute-per-storage measurement at a bound the plan's own numbers cannot reach; either the section that carries the residual ~7.5 s held-worktree naming cost must land before \u00a742, or \u00a742's Why must state that \u00a740/\u00a741 close only part of the gap.",
+      "text": "\u00a742's Why says \"\u00a740 and \u00a741 repair the git cost \u00a734 attributed the miss to, so this is that re-measurement\", but the report \u00a740's Why cites (`.../the-bounded-pass-is-remeasured-five-passes-per-revision/report.md`) puts the first-bound miss at 24.355 s and says \"about 10 s is waiting on git\", so even a complete removal of every git subprocess leaves roughly 14 s against \u00a734's 10 s bound; \u00a740 and \u00a741 cache git answers only and name no other mechanism, so \u00a742 is measured against a bound the cited evidence says it will miss \u2014 at the cost of two concurrent exclusive all_debug jobs",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:282",
+      "id": "wiring-1",
+      "reason": "the node as written cannot be completed inside its own write scope, so it would block on the routing.py answers it is told to store.",
+      "text": "\u00a741 states \"So does each git answer that \u00a740's census found to depend only on object ids\", yet its write paths are `reckon/crew/recovery_watch.py` and `tests/test_a_fresh_process_asks_git_only_about_moved_heads.py`; the \u00a734 report \u00a740's Why cites records the excess `subprocess.run` call sites as `reckon/crew/routing.py` (`_git`, `record_names_worktree`, and the calls at lines 613, 619, 713, 964, 1362, 1370, 1380, 1422), so a worker following \u00a741 must edit a module it is not granted, and unlike \u00a740 it carries no stop-blocked-and-name-the-file fallback",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:278",
+      "id": "single_goal-1",
+      "reason": "the plan's own convention treats a measurement bound into a code node as two deliverables (the \u00a735 single_goal repair split exactly this shape), and a node carrying two is reviewed and closed on one verdict.",
+      "text": "\u00a740's Deliverable requires \"First, count git subprocesses per call site per derivation at `a768873b4` and `26fd36a9c` over one corpus, to name the call sites that grew\" and then the cache, and its done-when gives the census its own artifact (\"The per-call-site counts at both revisions are logged under the run directory\") beside the cache test, so one node is closed on two measures that fail independently and its gate proves only the cache",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4d77724d222945a3c643ffea3b621af1f956631399178fe72bd638ed9b42a7d9",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 309,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-18T19:47:57.373301+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-18T19:48:07.443268+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "",
+      "when": "2026-10-18T19:48:21.791833+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T19:47:57.373301+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T19:48:21.791833+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T19:48:07.443268+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-read-answers-inside-its-deadline.v309.json",
+  "review_run_id": "r-20261018T192217432679-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "12d6a63d607700225b8698593e8be204c4c3150b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `26fd36a9c`, `78dedec57`, `a768873b4` and `a617367a1` all resolve and are ancestors of HEAD; `reckon/crew/recovery_watch.py`, `reckon/crew/recovery_classification.py`, `reckon/crew/routing.py` exist; the \u00a734 report path in \u00a740's and \u00a742's Why resolves (only the secondary run id `r-20261018T172504184782` has been reaped, while the report path beside it survives).",
+    "done_when": "pass \u2014 \u00a740 declares a failing control at `26fd36a9c` on the second derivation's count, \u00a741 a store-disabled mutation that makes the first call spawn K, and \u00a742 inherits \u00a734's before-revision discrimination clause; each measure is quantitative and able to fail.",
+    "evidence_paths": "pass \u2014 \u00a740 and \u00a741 log under the run directory and \u00a742 writes to the run's report directory, the durable convention \u00a734 used for the same measurement.",
+    "naming": "pass \u2014 `tests/test_a_second_derivation_asks_git_nothing.py` and `tests/test_a_fresh_process_asks_git_only_about_moved_heads.py` name mechanisms; no plan labels, ticket numbers or version tags reach code or prose.",
+    "reasoning": "a finding \u2014 \u00a742's Why treats \u00a740 and \u00a741 as the repair for the miss \u00a742 re-measures, but the \u00a734 report its sibling \u00a740 cites attributes only about 10 s of the 24.4 s first-bound miss to git.",
+    "single_goal": "a finding \u2014 \u00a740's Deliverable carries two deliverables, a two-revision per-call-site census with its own logged artifact and the git-answer cache with its own test.",
+    "wiring": "a finding \u2014 \u00a741's deliverable extends the git-answer store to \"each git answer that \u00a740's census found to depend only on object ids\", but \u00a741 declares only `reckon/crew/recovery_watch.py` and its test, while the census \u00a740 must take is aimed at call sites the cited \u00a734 report places in `reckon/crew/routing.py`."
+  },
+  "section_digests": {
+    "_document": "bb3d464f45411f6d5e9e4e29478df151dec4e47b35d38f0dd593b9162e7341a1",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "f6e2a8c3d1c90f4194ec9891635cef181cf62c62a5dbb39efd4c9832ac5d1e9b",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s20": "81e1ff125ddfc6955aa9bfbaae255b04b8bd03b75e9a4bbaec4a6e2de4790a39",
+    "s21": "12ee0e1852da5baa065bbe019bd803267f1817e4aa5fa5fcd12ec142ffba5f0f",
+    "s22": "6266f82976abf2a572694b2f91bf0143ff9a02ea484166e79b8197bde4e1a5e6",
+    "s23": "0c162cc0de7beec03e05834230443e4e755382e4c7b1cde4be476a6a17d232ec",
+    "s24": "c08bde5fe4a48fc01b81a4cf328439fde17d29607f5771497a07ae74c8f83498",
+    "s25": "218e76e29eb13021f7d92088d935b4d098aa0929c73ec1f5f4ee4fc8967328e1",
+    "s26": "25e5304fe5780aa9410db57be3ff538d9960379c8f31845f209abd225091913f",
+    "s27": "04e4a0f145492c1a1dcbcf8f220b8763fdd72fbbd2c5427deb9710071ac0aef7",
+    "s28": "1fc6c5bf6e9e33762ef98caf30043fbf50b550f14d9cd8ee7ffccfef1f87d788",
+    "s29": "c7daac1687ec68b3aca76f6a759088af2970e8407f09323f1863751a3e3f742c",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s30": "14d7046dd05d2fbc6e10d2973ae13a14f0de51e4f89a0043ba18dc8ea580a78c",
+    "s31": "f024ee9fae5586904388ab26af5c52e149d3fc1f6a2e1fa26deef66da3342a01",
+    "s32": "2ed1e8f3800b7b3cca94facebaee24b564589e1cc39cb70b5d7dd0bc442acfbd",
+    "s33": "dd8616bb906c189bff978509b84e4ff9d9859288d67a5b278f250297610a5e45",
+    "s34": "82ac81d2c333301a0d2b732ee3c2ea47ae1caad1871dc21a4bb4e414e9e2132a",
+    "s35": "e2eddc28bd105b77de69e0a1057d6e9c0e5d327ab9dfa86369a1ddf2748ba822",
+    "s36": "8316aeeca4ed3e2dd546bcdd830c2d56e6341602d206f1dc2dad036571e74ee0",
+    "s37": "3a8ec34741c39fe5a544b73ff1df299235678d20e7a9f5b7f83798b93b8e18a2",
+    "s38": "2897b3cfdcb3efba9e3770053ca56a86f80850af59215cf46087eed8e6c932e7",
+    "s39": "648430c7255e99dcbc17d608a00851a467da38d5f7a507a7cf8d9bc9d3bdb2b5",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s40": "88d0ee49192fe93d53750dac49aa354974fc68283074357d3366dab17e4087cb",
+    "s41": "d77065f54edbefc0187cb3bc3ca3643e13eac2b22ebab31774f5668c30291504",
+    "s42": "8934562d760fbf2c83ca20cd531a7b9f42a78e4ddd83623056e29cf9659a5f01",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T19:47:51.547196+00:00"
+}

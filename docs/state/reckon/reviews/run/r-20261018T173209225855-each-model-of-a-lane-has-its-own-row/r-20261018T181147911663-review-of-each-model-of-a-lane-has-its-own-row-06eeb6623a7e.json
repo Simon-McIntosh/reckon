@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:270",
+    "reckon/crew/picker/__init__.py:488",
+    "reckon/crew/picker/prompts.py:469",
+    "reckon/crew/picker/lane_context.py:994"
+  ],
+  "completed_at": "2026-10-18T18:42:00.443Z",
+  "dispatched_at": "2026-10-18T18:13:07Z",
+  "findings": [
+    {
+      "file": "tests/test_picker.py",
+      "line": "265",
+      "severity": "blocking",
+      "text": "blocking: the plan's write grant says to change only the key an assertion looks a row up by and to change no expected value, yet this line raises the representative-state byte bound from 1500 * 5 to 1600 * 5, weakening a guard outside the granted edit; the worker disclosed it in follow_ons, but the coordinator must decide whether the bound rises or the state is trimmed, since the two done-when clauses (\"adds no failure against the base\" and \"change no expected value\") conflict here."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read against base aac37e7d4, one commit 06eeb6623; it moves option_key into lane_context.py, imports it into prompts.py, rekeys the two tables, and migrates the granted tests' row lookups.",
+    "done_when": "the plan's done-when asks for pytest -rA over the new file and every granted test file adding no failure against the base, the representative_state_tokens figure at base and head within 2200, and ruff clean by delta; the gate the manifest records runs exactly that and its logs (head_gate.log 143 passed/3 failed, base_arm.log 139 passed/3 failed, same 3 ids) are on disk.",
+    "goal": "the node goal is to key the pick state's candidate and return-time tables by each option's lane, model and backend key; prompts.py:403 keys candidates by option_key(candidate) and lane_context.py:413 keys return_times the same way.",
+    "manifest": "read; it states the gate command and result, the base arm, two negative-control runs (logs/neg1.log, logs/neg2.log), the token figures (base 2082 / head 2167, ceiling 2200) and the byte-bound deviation under follow_ons.",
+    "write_paths": "the manifest's declared paths are the plan's twenty granted paths; every path in the diff is inside them, including docs/evidence/fragments/lane-and-model-routing/each-model-of-a-lane-has-its-own-row.html."
+  },
+  "justifications": {
+    "durability": "tests/test_each_model_of_a_lane_has_its_own_row.py:150 asserts len(codex)==3 from the flight config, and negative-control logs/neg1.log shows that assertion reddens to 1 when build_state is keyed by candidate.backend again.",
+    "evidence": "the gate at logs/head_gate.log runs the fifteen granted files plus tests/test_each_model_of_a_lane_has_its_own_row.py, the base arm at logs/base_arm.log runs the same fifteen, and both fail the same 3 ids so the node adds no failure.",
+    "fit": "option_key keeps its existing shape and docstring at lane_context.py:334 and prompts.py:31 re-exports it, so reckon/crew/picker/__init__.py's existing prompts.option_key calls keep working.",
+    "goal_fidelity": "prompts.py:403 and lane_context.py:413 key both tables by option_key(candidate), which is the lane:model:backend key build_questions already names at prompts.py:427.",
+    "reuse": "option_key is now the single definition at lane_context.py:334 (prompts.py:31 imports it, no second copy), and a search of reckon/ for the f\\\"{lane}:{model}:{backend}\\\" composite found no other owner.",
+    "scope_discipline": "every path is a declared write path, but tests/test_picker.py:265 was edited beyond a lookup-key migration into an expected value and weakened assertion the plan forbade."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to key the pick state's candidate and return-time tables by each option's lane, model and backend key; prompts.py:403 keys candidates by option_key(candidate) and lane_context.py:413 keys return_times the same way.\nVERDICT done_when: the plan's done-when asks for pytest -rA over the new file and every granted test file adding no failure against the base, the representative_state_tokens figure at base and head within 2200, and ruff clean by delta; the gate the manifest records runs exactly that and its logs (head_gate.log 143 passed/3 failed, base_arm.log 139 passed/3 failed, same 3 ids) are on disk.\nVERDICT write_paths: the manifest's declared paths are the plan's twenty granted paths; every path in the diff is inside them, including docs/evidence/fragments/lane-and-model-routing/each-model-of-a-lane-has-its-own-row.html.\nVERDICT manifest: read; it states the gate command and result, the base arm, two negative-control runs (logs/neg1.log, logs/neg2.log), the token figures (base 2082 / head 2167, ceiling 2200) and the byte-bound deviation under follow_ons.\nVERDICT diff: read against base aac37e7d4, one commit 06eeb6623; it moves option_key into lane_context.py, imports it into prompts.py, rekeys the two tables, and migrates the granted tests' row lookups.\nCALL_SITES: reckon/crew/picker/__init__.py:270, reckon/crew/picker/__init__.py:488, reckon/crew/picker/prompts.py:469, reckon/crew/picker/lane_context.py:994\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: prompts.py:403 and lane_context.py:413 key both tables by option_key(candidate), which is the lane:model:backend key build_questions already names at prompts.py:427.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate at logs/head_gate.log runs the fifteen granted files plus tests/test_each_model_of_a_lane_has_its_own_row.py, the base arm at logs/base_arm.log runs the same fifteen, and both fail the same 3 ids so the node adds no failure.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: every path is a declared write path, but tests/test_picker.py:265 was edited beyond a lookup-key migration into an expected value and weakened assertion the plan forbade.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_each_model_of_a_lane_has_its_own_row.py:150 asserts len(codex)==3 from the flight config, and negative-control logs/neg1.log shows that assertion reddens to 1 when build_state is keyed by candidate.backend again.\nSCORE fit: 18\nJUSTIFICATION fit: option_key keeps its existing shape and docstring at lane_context.py:334 and prompts.py:31 re-exports it, so reckon/crew/picker/__init__.py's existing prompts.option_key calls keep working.\nSCORE reuse: 20\nJUSTIFICATION reuse: option_key is now the single definition at lane_context.py:334 (prompts.py:31 imports it, no second copy), and a search of reckon/ for the f\\\"{lane}:{model}:{backend}\\\" composite found no other owner.\nFINDING tests/test_picker.py:265 blocking: the plan's write grant says to change only the key an assertion looks a row up by and to change no expected value, yet this line raises the representative-state byte bound from 1500 * 5 to 1600 * 5, weakening a guard outside the granted edit; the worker disclosed it in follow_ons, but the coordinator must decide whether the bound rises or the state is trimmed, since the two done-when clauses (\"adds no failure against the base\" and \"change no expected value\") conflict here.",
+  "review_run_id": "r-20261018T181147911663-review-of-each-model-of-a-lane-has-its-own-row-06eeb6623a7e",
+  "reviewed_base_sha": "aac37e7d407567916dcd49565b1738e0220bb97a",
+  "reviewed_head_sha": "06eeb6623a7e4fac1421db01faa844c7a9ee1062",
+  "reviewed_run_id": "r-20261018T173209225855-each-model-of-a-lane-has-its-own-row",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T18:45:03.576772+00:00",
+  "total": 108
+}

@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1148",
+    "reckon/crew_dispatch_commands.py:1431",
+    "reckon/crew/picker/__init__.py:336",
+    "reckon/crew/picker/snapshot.py:1047"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-18T17:56:59Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/__init__.py",
+      "line": "33",
+      "severity": "blocking",
+      "text": "the node wrote reckon/crew/picker/__init__.py (the new attempts_for owner) which is not in its declared write paths [dispatch_picker.py, picker/snapshot.py, tests/test_picker_reserved_lanes.py]; a promotion audits the declared scope against the diff, so the scope must be extended or the file reverted before the node lands."
+    },
+    {
+      "file": "tests/test_picker_helpers_have_one_owner.py",
+      "line": "215",
+      "severity": "follow-on",
+      "text": "test_rendered_state_matches_the_base_revision_bytes fails at head with the base revision's golden bytes; it is outside this node's declared scope and its render path (lane_context/prompts, state.jinja) is untouched by the diff, so the failure is pre-existing and not caused by this node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 2a422e111; d680c1117 and 11f71123d touch four files -- dispatch_picker.py, picker/__init__.py, picker/snapshot.py, tests/test_picker_reserved_lanes.py -- three in the declared scope.",
+    "done_when": "the done_when's negative control is tests/test_picker_reserved_lanes.py:438; negative-control-base.log shows it red on the merged code ('route' != 'hold', 1 failed/16 passed, EXIT=1) and gate-head.log shows the file green at head (17 passed, EXIT=0).",
+    "goal": "the node's goal is to refuse a reserved lane reached on a nested picker re-ask without a reason; reckon/crew/dispatch_picker.py:805-825 returns action=hold with the backend cleared on the allow=False path and records disposition=held.",
+    "manifest": "read; it reports the head suite (tests/test_picker_reserved_lanes.py, 17 passed, EXIT=0), the base negative control (1 failed/16 passed, EXIT=1) and self-flags the out-of-scope picker/__init__.py edit as a scope flag for the coordinator.",
+    "write_paths": "the declared scope is reckon/crew/dispatch_picker.py, reckon/crew/picker/snapshot.py and tests/test_picker_reserved_lanes.py; the diff also modifies reckon/crew/picker/__init__.py, outside that scope."
+  },
+  "justifications": {
+    "durability": "the added tests/test_picker_reserved_lanes.py:479 assertion action=='hold' fails if the nested-path branch at reckon/crew/dispatch_picker.py:805 is reverted to return dict(selection).",
+    "evidence": "the done_when's negative control tests/test_picker_reserved_lanes.py::test_a_nested_reask_onto_an_unreasoned_reserved_lane_is_held reddens on the merged code in negative-control-base.log and is green at head in gate-head.log.",
+    "fit": "the change follows the surrounding idiom of reckon/crew/dispatch_picker.py:848-853, returning a selection dict with action/fallback_reason and adding disposition to the same log row.",
+    "goal_fidelity": "reckon/crew/dispatch_picker.py:805-825 returns action=hold with the backend cleared on the allow=False nested path, so the reserved lane reached on a nested re-ask is refused not routed.",
+    "reuse": "the attempt count is taken from one owner newly added at reckon/crew/picker/__init__.py:33 and levels rank through the existing reckon/capability.py:208 _rank, so no capability is forked.",
+    "scope_discipline": "the diff modifies reckon/crew/picker/__init__.py:33 beyond the declared scope of dispatch_picker.py, picker/snapshot.py and tests/test_picker_reserved_lanes.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to refuse a reserved lane reached on a nested picker re-ask without a reason; reckon/crew/dispatch_picker.py:805-825 returns action=hold with the backend cleared on the allow=False path and records disposition=held.\nVERDICT done_when: the done_when's negative control is tests/test_picker_reserved_lanes.py:438; negative-control-base.log shows it red on the merged code ('route' != 'hold', 1 failed/16 passed, EXIT=1) and gate-head.log shows the file green at head (17 passed, EXIT=0).\nVERDICT write_paths: the declared scope is reckon/crew/dispatch_picker.py, reckon/crew/picker/snapshot.py and tests/test_picker_reserved_lanes.py; the diff also modifies reckon/crew/picker/__init__.py, outside that scope.\nVERDICT manifest: read; it reports the head suite (tests/test_picker_reserved_lanes.py, 17 passed, EXIT=0), the base negative control (1 failed/16 passed, EXIT=1) and self-flags the out-of-scope picker/__init__.py edit as a scope flag for the coordinator.\nVERDICT diff: read commit by commit against base 2a422e111; d680c1117 and 11f71123d touch four files -- dispatch_picker.py, picker/__init__.py, picker/snapshot.py, tests/test_picker_reserved_lanes.py -- three in the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:1148, reckon/crew_dispatch_commands.py:1431, reckon/crew/picker/__init__.py:336, reckon/crew/picker/snapshot.py:1047\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_picker.py:805-825 returns action=hold with the backend cleared on the allow=False nested path, so the reserved lane reached on a nested re-ask is refused not routed.\nSCORE evidence: 17\nJUSTIFICATION evidence: the done_when's negative control tests/test_picker_reserved_lanes.py::test_a_nested_reask_onto_an_unreasoned_reserved_lane_is_held reddens on the merged code in negative-control-base.log and is green at head in gate-head.log.\nSCORE scope_discipline: 8\nJUSTIFICATION scope_discipline: the diff modifies reckon/crew/picker/__init__.py:33 beyond the declared scope of dispatch_picker.py, picker/snapshot.py and tests/test_picker_reserved_lanes.py.\nSCORE durability: 17\nJUSTIFICATION durability: the added tests/test_picker_reserved_lanes.py:479 assertion action=='hold' fails if the nested-path branch at reckon/crew/dispatch_picker.py:805 is reverted to return dict(selection).\nSCORE fit: 17\nJUSTIFICATION fit: the change follows the surrounding idiom of reckon/crew/dispatch_picker.py:848-853, returning a selection dict with action/fallback_reason and adding disposition to the same log row.\nSCORE reuse: 20\nJUSTIFICATION reuse: the attempt count is taken from one owner newly added at reckon/crew/picker/__init__.py:33 and levels rank through the existing reckon/capability.py:208 _rank, so no capability is forked.\nFINDING reckon/crew/picker/__init__.py:33 blocking: the node wrote a file outside its declared write paths (the new attempts_for owner at picker/__init__.py:33); a promotion audits declared scope against the diff, so the scope must be extended or the file reverted before the node lands.\nFINDING tests/test_picker_helpers_have_one_owner.py:215 follow-on: test_rendered_state_matches_the_base_revision_bytes fails at head with the base revision's golden bytes; it is outside this node's scope and its render path (state.jinja over lane_context/prompts) is untouched by the diff, so the failure is pre-existing and not caused by this node.",
+  "review_run_id": "legacy-df95f5b47f4d",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "2a422e111c82d113553b47de37ab4468249f6796",
+  "reviewed_head_sha": "11f71123d3f8e52680f2fd0891bd4085fe5b692e",
+  "reviewed_run_id": "r-20261018T175607185844-reserved-lane-nested-reask",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 8
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T19:21:00Z",
+  "total": 98
+}
