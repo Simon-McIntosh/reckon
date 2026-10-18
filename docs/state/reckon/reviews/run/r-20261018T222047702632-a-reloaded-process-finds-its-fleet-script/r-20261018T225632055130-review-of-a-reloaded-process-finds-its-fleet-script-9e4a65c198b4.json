@@ -1,0 +1,118 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite": {
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T222047702632-a-reloaded-process-finds-its-fleet-script/after-suite.log",
+    "revision": "2f752a0b52ff9433e067380ecbf2a24613f2d965"
+  },
+  "assertion_analysis": [
+    {
+      "line": 88,
+      "would_fail_if": "the new identity remained the Git reckon-only tree instead of the paired reckon+skills tree"
+    },
+    {
+      "line": 92,
+      "would_fail_if": "a legacy package-only identity no longer extracted the package"
+    },
+    {
+      "line": 93,
+      "would_fail_if": "a legacy package-only image unexpectedly carried skills"
+    },
+    {
+      "line": 95,
+      "would_fail_if": "an armed legacy image did not keep its old identity"
+    },
+    {
+      "line": 100,
+      "would_fail_if": "the image resolver refused, or the child process failed to import the image"
+    },
+    {
+      "line": 102,
+      "would_fail_if": "the child imported checkout_trust outside the materialised image"
+    },
+    {
+      "line": 104,
+      "would_fail_if": "the fleet-script resolver returned a path outside the materialised image"
+    },
+    {
+      "line": 111,
+      "would_fail_if": "a commit touching only skills/ left the code identity unchanged"
+    },
+    {
+      "line": 113,
+      "would_fail_if": "a commit outside reckon/ and skills/ moved the code identity"
+    },
+    {
+      "line": 138,
+      "would_fail_if": "a package-only image resolved the fleet script successfully"
+    },
+    {
+      "line": 139,
+      "would_fail_if": "the package-only refusal was raised for a cause other than the missing script"
+    }
+  ],
+  "assertion_independence": "No added assertion compares a value against the same variable the test supplied to the code under test: the git tree ids come from `git rev-parse HEAD:reckon`, the module and script paths come from a child process imported with PYTHONPATH set to the materialised image, and the refusal text comes from the raised CrewError, all independent of the function under test.",
+  "baseline_suite": {
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T222047702632-a-reloaded-process-finds-its-fleet-script/baseline-suite.log",
+    "revision": "1e44e252f4a6010a871dc74ffeced36aef23500d"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:409",
+    "reckon/crew/follower_registration.py:35",
+    "reckon/crew/routing.py:2172"
+  ],
+  "completed_at": "2026-10-18T23:09:18.701Z",
+  "dispatched_at": "2026-10-18T22:58:13Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites",
+    "diff": "commits 2f752a0b, 0d447232 and 9e4a65c19 carry the paired-tree loader, then the evidence fragment, then the fragment's cause paragraph rewritten to cite trigger-comparison.log and to separate the first recorded refusal from the causal code change.",
+    "done_when": "prompt.txt:100 requires a temporary repository whose image resolves the script, identity movement on a skills-only change and none on an unrelated change, a package-only refusal, no added importer failures and clean ruff; focused-final.log (2 passed), negative-control.log (1 failed, EXIT=1), baseline-suite.log and after-suite.log (83 passed each, EXIT=0) and lint.log (EXIT=0) record each.",
+    "goal": "prompt.txt:30 asks a reloaded process to find the fleet script at its own version; reckon/checkout_trust.py:238-263 builds the paired reckon+skills tree and :427-433 archives it, so the resolver at reckon/crew/routing.py:2049 finds image/skills beside the package.",
+    "manifest": "manifest.md reads complete with three commits, a clear checkpoint, focused/suite/mutation/lint logs, and states 7628878d7 introduced the package-only archive with the 21:22Z refusal as the first recorded failure rather than a same-minute cause.",
+    "write_paths": "prompt.txt:69-75 grants reckon/checkout_trust.py, reckon/crew/follower_registration.py, the named test, the evidence fragment and a figures directory; git diff 1e44e252..9e4a65c19 changes only the first four."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reloaded_process_finds_its_fleet_script.py:111 reddens if a commit touching only skills/ leaves the code identity fixed, :113 reddens if an unrelated commit moves it, and negative-control.log shows the positive test failing when the package-only extraction is reinstated.",
+    "evidence": "the fragment at docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reloaded-process-finds-its-fleet-script.html:3 cites trigger-comparison.log, whose five revision blocks each carry verdict=resolver-reached with the missing-script refusal, and repair-negative-control.log shows the pre-repair fragment failing the same checker.",
+    "fit": "reckon/checkout_trust.py:238-266 follows the surrounding subprocess(check=False) idiom of :214-232 and the docstrings name the mechanism, but the test file carries an environment-selected mutation switch at tests/test_a_reloaded_process_finds_its_fleet_script.py:79-86.",
+    "goal_fidelity": "reckon/checkout_trust.py:256-263 mktrees the HEAD reckon and skills trees and :427-433 archives them under an empty prefix, and tests/test_a_reloaded_process_finds_its_fleet_script.py:101-106 confirms the resolver returns a script inside the materialised image.",
+    "reuse": "the capability search over reckon/ found committed_reckon_tree and _reckon_subtree in reckon/checkout_trust.py:214 and :384; _committed_reload_tree falls back to the former and _archive_source delegates to the latter, so no second reload mechanism is added.",
+    "scope_discipline": "git diff 1e44e252..9e4a65c19 changes only the four granted paths named at prompt.txt:69-75, and the fragment writes no evidence prose or figure beyond the node's own landing record."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks a reloaded process to find the fleet script at its own version; reckon/checkout_trust.py:238-263 builds the paired reckon+skills tree and :427-433 archives it, so the image resolver at reckon/crew/routing.py:2049 finds image/skills beside the package.\nVERDICT done_when: prompt.txt:100 requires a temporary repository whose image resolves the script, identity movement on a skills-only change and none on an unrelated change, a package-only refusal, no added importer failures and clean ruff; focused-final.log (2 passed), negative-control.log (1 failed, EXIT=1), baseline-suite.log and after-suite.log (83 passed each, EXIT=0) and lint.log (EXIT=0) record each.\nVERDICT write_paths: prompt.txt:69-75 grants reckon/checkout_trust.py, reckon/crew/follower_registration.py, the named test, the evidence fragment and a figures directory; git diff 1e44e252..9e4a65c19 changes only the first four.\nVERDICT manifest: manifest.md reads complete with three commits, a clear checkpoint, focused/suite/mutation/lint logs, and states 7628878d7 introduced the package-only archive with the 21:22Z refusal as the first recorded failure rather than a same-minute cause.\nVERDICT diff: read all three commits; 2f752a0b carries the paired-tree loader and its tests, 0d447232 adds the fragment, and 9e4a65c19 rewrites the fragment's cause paragraph to cite trigger-comparison.log and to separate the first recorded refusal from the causal code change.\nCALL_SITES: reckon/crew_follow_commands.py:409, reckon/crew/follower_registration.py:35, reckon/crew/routing.py:2172\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/checkout_trust.py:256-263 mktrees the HEAD reckon and skills trees and :427-433 archives them under an empty prefix, and tests/test_a_reloaded_process_finds_its_fleet_script.py:101-106 confirms the resolver returns a script inside the materialised image.\nSCORE evidence: 17\nJUSTIFICATION evidence: the fragment at docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reloaded-process-finds-its-fleet-script.html:3 cites trigger-comparison.log, whose five revision blocks each carry verdict=resolver-reached with the missing-script refusal, and repair-negative-control.log shows the pre-repair fragment failing the same checker.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 1e44e252..9e4a65c19 changes only the four granted paths named at prompt.txt:69-75, and the fragment writes no evidence prose or figure beyond the node's own landing record.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_reloaded_process_finds_its_fleet_script.py:111 reddens if a commit touching only skills/ leaves the code identity fixed, :113 reddens if an unrelated commit moves it, and negative-control.log shows the positive test failing when the package-only extraction is reinstated.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/checkout_trust.py:238-266 follows the surrounding subprocess(check=False) idiom of :214-232 with mechanism-named docstrings, but the test file carries an environment-selected mutation switch at tests/test_a_reloaded_process_finds_its_fleet_script.py:79-86.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search over reckon/ found committed_reckon_tree and _reckon_subtree at reckon/checkout_trust.py:214 and :384; _committed_reload_tree falls back to the former and _archive_source delegates to the latter, so no second reload mechanism is added.",
+  "review_run_id": "r-20261018T225632055130-review-of-a-reloaded-process-finds-its-fleet-script-9e4a65c198b4",
+  "reviewed_base_sha": "1e44e252f4a6010a871dc74ffeced36aef23500d",
+  "reviewed_commits": [
+    "2f752a0b52ff9433e067380ecbf2a24613f2d965",
+    "0d4472323bf9896056e7fb7ba8ed4e0b75c0ebfe",
+    "9e4a65c198b49cbb83b75b3807999b3c95a3f073"
+  ],
+  "reviewed_head_sha": "9e4a65c198b49cbb83b75b3807999b3c95a3f073",
+  "reviewed_run_id": "r-20261018T222047702632-a-reloaded-process-finds-its-fleet-script",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T23:13:15.509869+00:00",
+  "total": 110
+}
