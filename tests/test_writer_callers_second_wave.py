@@ -71,11 +71,14 @@ CANONICAL_INDENT_INSERTION = (
 )
 
 # Recorded compact checkpoint document: json.dumps(record, sort_keys=True) with
-# no trailing newline.
+# no trailing newline. The checkpoint records the moment its place was written,
+# so the driver fixes that moment and the recorded document carries it.
+FC_WRITE_MOMENT = 1_800_000_000.0
 FC_WRITE_BASE = (
     b'{"offset": 5, "project": "proj", "reported": {"run": "s1"}, '
     b'"session": "sess", "stream_identity": {"dev": 1, "ino": 2}, '
-    b'"stream_path": "/nonexistent/stream", "version": 1}'
+    b'"stream_path": "/nonexistent/stream", "version": 1, '
+    b'"written_at": 1800000000.0}'
 )
 
 SUPERSEDED_NOTE = (
@@ -137,6 +140,7 @@ def _drive_checkpoint_write(monkeypatch, target: Path) -> None:
         offset=5,
         reported={"run": "s1"},
         identity={"dev": 1, "ino": 2},
+        written_at=FC_WRITE_MOMENT,
     )
 
 
