@@ -40,27 +40,39 @@
   <code>_ordered_review_lanes</code> now judges every candidate, the preferred pair
   included, through <code>_review_backend_excluded</code>, which resolves the pair. A
   preferred lane named by an older spelling of an excluded pair is removed exactly as its
-  current spelling is. The lift guard is preserved: a lane under a lift in force stays
-  available, since the fleet has opened it, so the pair call is consulted only for a name
-  that is not in the lift set. The test is not loosened; a new case is added beside it.</p>
+  current spelling is. A lift in force is honoured rather than overridden: a lane under a
+  lift is admitted first, because the fleet has opened it, and only a lane without a lift
+  is judged through the pair resolver. The test is not loosened; two cases are added
+  beside it. An independent review of an earlier attempt at this repair found that the
+  guard as first written rejected a lifted lane outright — including one no exclusion
+  named — which dropped the owning lane's lead and could remove a preferred lane that is
+  not a configured backend from the ordering entirely; that is the behaviour this repair
+  now holds against, and the case below covers it.</p>
   <p id="a-review-exclusion-names-a-pair-under-any-name-newcase"><strong>New case.</strong>
   <code>tests/test_old_names_resolve.py::test_local_backend_exclusion_matches_pair_across_names</code>
   sets <code>local_backend</code> to <code>claude-opus</code>, leaves the owning backend
   empty, excludes <code>opus 5.5</code>, declares one other backend and expects
   <code>['other-model']</code>. It exercises the local preference path the owning lane
-  cannot, so both preferred candidates are covered.</p>
+  cannot, so both preferred candidates are covered.
+  <code>test_a_lifted_preferred_lane_keeps_that_lead</code> grants a real lift on a
+  declared group and asserts the whole ordering <code>['claude', 'alpha-model']</code>,
+  with the lifted owning lane leading. The ordering is asserted whole because a lane
+  dropped from the head still appears in the alphabetical tail, so a first-element check
+  would miss it; and the case first asserts the lift is in force, so it cannot pass by
+  quietly exercising no lift at all.</p>
   <p id="a-review-exclusion-names-a-pair-under-any-name-measure"><strong>Measure.</strong>
   Logs are under the run directory. Head arm (repair present) on
-  <code>tests/test_old_names_resolve.py</code>: 36 passed, EXIT=0. Negative control, the
+  <code>tests/test_old_names_resolve.py</code>: 37 passed, EXIT=0. Negative control, the
   repair reverted, run against a tree extracted at the parent revision with this node's test
   file present: the two parameters and the local-backend case fail, 3 failed 33 passed,
-  EXIT=1. The revision since which the two parameters failed is <code>a04480487</code>,
+  EXIT=1. A second negative control reverts the lift guard, keeping the new lift case: that
+  case alone fails, 1 failed 36 passed, EXIT=1. The revision since which the two parameters failed is <code>a04480487</code>,
   confirmed by running the three parameters against the base tree extracted at
   <code>a04480487^</code>, where all three pass. Population of the sixteen further test
   files naming <code>review_excluded_backends</code> or the historical-name resolver,
   together with this node's file: at base <code>2 failed, 207 passed</code>,
   <code>EXIT=1</code>, the two failures being the historical-spelling parameters; at
-  head <code>210 passed</code>, <code>EXIT=0</code>. The repair removes both failures and
+  head <code>211 passed</code>, <code>EXIT=0</code>. The repair removes both failures and
   adds none. <code>ruff check</code> and <code>ruff format --check</code> add no finding
   on the two changed files.</p>
 </article>
