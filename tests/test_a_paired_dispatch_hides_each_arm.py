@@ -83,7 +83,13 @@ fi
 
 
 def _candidate_config() -> dict:
-    """Route implement nodes to a distinct configured candidate backend."""
+    """Configure a distinct candidate backend the shadow arm can name.
+
+    The implement role is left unset, so the primary arm resolves to the
+    flight's default backend and the shadow arm lands on the candidate. A role
+    routed to the candidate as well would put both arms on one backend and one
+    model, which a pair now refuses.
+    """
     import json
 
     config = json.loads(json.dumps(CONFIG))
@@ -91,7 +97,6 @@ def _candidate_config() -> dict:
         **config["backends"]["alpha"],
         "model": "candidate-model",
     }
-    config["roles"]["implement"] = {"backend": "candidate"}
     return config
 
 
