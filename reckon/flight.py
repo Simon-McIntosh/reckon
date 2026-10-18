@@ -1615,7 +1615,7 @@ def _lane_model_keys() -> tuple[str, ...]:
 LANE_MODEL_KEYS = _lane_model_keys()
 
 
-def _lane_entry(
+def lane_model_entry(
     lane_level: Mapping[str, Any],
     model: Mapping[str, Any] | None,
     lane_name: str,
@@ -1645,6 +1645,29 @@ def _lane_entry(
     if derived_from is not None:
         entry["derived_from"] = derived_from
     return entry
+
+
+def select_lane_model(
+    config: Mapping[str, Any], backend_name: str, lane_name: str, model_key: str
+) -> Mapping[str, Any]:
+    """Select a declared non-default model on its lane backend for dispatch.
+
+    Legacy pair backends already contain their model's settings. The lane's
+    default entry also stays exactly as resolved, including any backend-level
+    values inherited from older configuration layers.
+    """
+    lane = (config.get("lanes") or {}).get(lane_name) or {}
+    if backend_name != lane_name or model_key == lane.get("default_model"):
+        return config
+    lane_level = {
+        key: value
+        for key, value in lane.items()
+        if key not in ("models", "default_model", "name")
+    }
+    selected = lane_model_entry(
+        lane_level, lane["models"][model_key], lane_name, model_key
+    )
+    return {**config, "backends": {**config["backends"], backend_name: selected}}
 
 
 def _lane_provenance(
@@ -1749,7 +1772,7 @@ def expand_lanes(
                 )
             )
         for name, model, model_key, derived_from in entries:
-            entry = _lane_entry(
+            entry = lane_model_entry(
                 lane_level, model, lane_name, model_key, derived_from=derived_from
             )
             existing = backends.get(name)

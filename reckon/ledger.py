@@ -325,8 +325,9 @@ def backend_serving_model(
     The pair comes from :func:`resolve_name` over the model catalogue, so a
     model key, a model id and an alias all reach the same ``(lane, model_key)``
     and the configured backend whose entry carries that pair is returned with
-    it. A name no lane declares, a lane that does not declare the name and a
-    pair no configured backend serves are each refused with one message, so
+    it. A lane's own backend serves its other declared models when no separate
+    entry carries the pair. A name no lane declares, a lane that does not
+    declare the name and a pair no configured backend serves are refused, so
     ``--model`` and a picker route refuse an undeclared pair identically rather
     than each spelling its own. Returns ``(backend_name, lane, model_key)``.
     """
@@ -341,6 +342,15 @@ def backend_serving_model(
             and str(entry.get("model_key")) == key
         ):
             return str(name), resolved_lane, key
+    declared_lane = (config.get("lanes") or {}).get(resolved_lane) or {}
+    lane_backend = (config.get("backends") or {}).get(resolved_lane)
+    if (
+        isinstance(declared_lane, Mapping)
+        and key in (declared_lane.get("models") or {})
+        and isinstance(lane_backend, Mapping)
+        and lane_backend.get("lane") == resolved_lane
+    ):
+        return resolved_lane, resolved_lane, key
     raise ValueError(
         f"model {model!r} resolves to lane {resolved_lane!r} model key {key!r}, "
         "which no configured backend serves"
