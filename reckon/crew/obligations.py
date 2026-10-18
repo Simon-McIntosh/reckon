@@ -471,64 +471,31 @@ def _run_namings(
     return namings, rows
 
 
-def _aggregate_rows(project: str, repository: Path) -> list[Mapping[str, Any]]:
-    """The rows the aggregate itself holds, or none when it cannot be read.
-
-    An unreadable or malformed aggregate contributes no rows rather than
-    refusing the fallback: the per-run documents are what it is there to read,
-    and a damaged copy of the other source must not cost the derivation them.
-    """
-
-    try:
-        data, _version = ledger._load_aggregate(project, repository)
-    except Exception:  # noqa: BLE001 — a damaged aggregate is not a lost read
-        return []
-    return [row for row in data.get("runs", []) if isinstance(row, Mapping)]
-
-
 def _run_file_rows(project: str, repository: Path) -> list[Mapping[str, Any]]:
     """Every row the run documents carry, read without the merged reader.
 
     This is the path taken when the reader that supplies the namings refuses or
     fails. The records it would have merged are each still on disk, in the
-    document a run's own writer put there, so the derivation reads those
-    documents for itself rather than answering with nothing: the merged reader
-    is how the answer is reached early, not what the answer is.
+    document a run's own writer put there, so the derivation asks the ledger's
+    own document reader for them rather than answering with nothing: the merged
+    reader is how the answer is reached early, not what the answer is.
 
-    Both sources are read — the aggregate's own rows, which carry the runs the
-    split has written no file for, and the per-run documents. A document that
-    cannot stand for a run, being absent, unreadable, or not the run it is named
-    for, is skipped, so its tree falls to a reader that refuses a damaged record
-    exactly where the merged reader always has.
-
-    The rows are ordered by the merged reader's own key, so a tree two of them
-    name goes to the one that reader would have put last, rather than to
-    whichever document happened to be read last.
+    The union, its order and the check that a document holds the run it is
+    named for all belong to ``reckon.ledger``; this asks for them in the mode
+    that skips a document it cannot use instead of refusing the read, so a
+    damaged copy costs one row rather than the derivation's answer.
     """
 
-    rows: list[Mapping[str, Any]] = _aggregate_rows(project, repository)
-    for source in ledger._run_files(project, repository):
-        try:
-            record = ledger.read_document(source)
-        except (OSError, ValueError):
-            continue
-        if (
-            not isinstance(record, Mapping)
-            or str(record.get("run_id") or "") != source.stem
-        ):
-            continue
-        rows.append(record)
-    rows.sort(key=_ledger_order_key)
-    return rows
+    return ledger.run_rows_from_documents(project, repository)
 
 
 def _may_name_a_tree(
-    source: Path,
+    run_id: str,
     names: set[str],
     trees: set[Path],
     namings: Mapping[str, tuple[str, Path | None]],
 ) -> bool:
-    """Whether a per-run document could name one of the inspected trees.
+    """Whether the run ``run_id`` could name one of the inspected trees.
 
     The routes are exactly the ones :func:`record_names_worktree` applies, so
     the screen never narrows the rule it screens for: a run whose node id
@@ -541,7 +508,7 @@ def _may_name_a_tree(
 
     if not names:
         return True
-    naming = namings.get(source.stem)
+    naming = namings.get(run_id)
     if naming is None:
         return True
     node_id, retained = naming
@@ -556,30 +523,12 @@ def _row_may_name_a_tree(
 ) -> bool:
     """:func:`_may_name_a_tree` for a row, keyed by the run id it carries."""
     run_id = str(row.get("run_id") or "")
-    return bool(run_id) and _may_name_a_tree(
-        Path(f"{run_id}.json"), names, trees, namings
-    )
-
-
-def _ledger_order_key(record: Mapping[str, Any]) -> tuple[str, str]:
-    """The position one row takes in the reader that merges both sources.
-
-    That reader orders the runs it merges by completion and breaks a tie on the
-    run id, so the last row naming a tree carries the greatest key — which is
-    not the per-run file with the greatest name, that name being the dispatch
-    stamp rather than the completion.
-    """
-    return (
-        str(record.get("completed_at") or record.get("run_id") or ""),
-        str(record.get("run_id") or ""),
-    )
+    return bool(run_id) and _may_name_a_tree(run_id, names, trees, namings)
 
 
 def _holding_record(
     worktree: Path,
     index: WorktreeRecordIndex,
-    *,
-    merged_order: bool,
 ) -> Mapping[str, Any] | None:
     """The run the whole-ledger reader attributes a tree to, or None.
 
@@ -587,16 +536,13 @@ def _holding_record(
     so each record is filed once and the work is proportional to records plus
     trees rather than to their product. Which records name a tree is decided by
     the record's own two namings, exactly as the whole-ledger reader decides it.
-    The order the merged reader gives the candidates is kept: a tree two records
-    name goes to the one that reader puts last.
+    The rows arrive in the merged reader's own order, so the candidate filed
+    last is the one that reader puts last: a tree two records name goes to that
+    one, not to whichever document happened to be read last.
     """
     candidates = index.records_naming(worktree)
     if not candidates:
         return None
-    if merged_order:
-        # Stable: rows of one completion keep the merged reader's own order,
-        # which reaches an aggregate row before a file-only one.
-        candidates.sort(key=_ledger_order_key)
     return candidates[-1]
 
 
@@ -684,7 +630,7 @@ def _held_worktree_records_read(
     matched: dict[Path, Mapping[str, Any]] = {}
     unresolved: list[Path] = []
     for worktree in inspected:
-        record = _holding_record(worktree, index, merged_order=False)
+        record = _holding_record(worktree, index)
         if record is None:
             unresolved.append(worktree)
         else:

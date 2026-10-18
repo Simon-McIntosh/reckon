@@ -1305,12 +1305,7 @@ def _index_payload(
     ]
     if extra:
         data["runs"].extend(extra)
-        data["runs"].sort(
-            key=lambda row: (
-                str(row.get("completed_at") or row.get("run_id") or ""),
-                str(row.get("run_id") or ""),
-            )
-        )
+        data["runs"].sort(key=promotion_order_key)
     return data, version
 
 
@@ -1612,6 +1607,42 @@ def load(
                 data["index_age_seconds"] = round(age, 3)
                 return data, version
     data, version = _load_aggregate(project, root)
+    _merge_run_documents(project, root, data, refuse=True)
+    return data, version
+
+
+def promotion_order_key(record: Mapping[str, Any]) -> tuple[str, str]:
+    """The position one row takes in the union :func:`load` returns.
+
+    Completion order survives splitting records across either source, and run
+    ids break ties so rows without a completion stamp still have one order.
+    """
+    return (
+        str(record.get("completed_at") or record.get("run_id") or ""),
+        str(record.get("run_id") or ""),
+    )
+
+
+def _merge_run_documents(
+    project: str,
+    root: str | Path | None,
+    data: dict[str, Any],
+    *,
+    refuse: bool,
+) -> bool:
+    """Fold the per-run documents into ``data['runs']``, in promotion order.
+
+    A run that owns a file is held twice, once as an aggregate row and once as
+    its own document. The union counts it once, so two copies must serialise
+    alike; ``refuse`` is the only difference between the modes. A refusing
+    caller — the reader every ordinary read goes through — loses the whole read
+    to a document that does not stand for its run or that disagrees with the
+    aggregate, so no caller counts an incomplete history. A non-refusing
+    caller loses only the document it cannot use and keeps the rest.
+
+    Returns whether the union gained a row, so a caller whose documents changed
+    nothing leaves the stored order alone.
+    """
     path = ledger_path(project, root)
     by_id = {
         str(record["run_id"]): record
@@ -1619,30 +1650,57 @@ def load(
         if isinstance(record, Mapping) and record.get("run_id")
     }
     added = False
-    records = [_read_run(source) for source in _run_files(project, root)]
-    for record in records:
-        source = path.parent / "runs" / f"{record['run_id']}.json"
+    for source in _run_files(project, root):
+        try:
+            record = _read_run(source)
+        except LedgerError:
+            if refuse:
+                raise
+            continue
         run_id = record["run_id"]
         if run_id in by_id:
-            if serialize_run(by_id[run_id]) != serialize_run(record):
+            if refuse and serialize_run(by_id[run_id]) != serialize_run(record):
                 raise LedgerError(
                     f"run {run_id!r} differs between {path} and {source}; "
                     "refusing to read conflicting history"
                 )
+            # A non-refusing caller keeps the aggregate's own row: a document
+            # that disagrees with it is the copy a later write failed to keep
+            # identical, and the aggregate holds the revision it read.
             continue
         data["runs"].append(record)
         by_id[run_id] = record
         added = True
     if added:
-        # Completion order survives splitting records across either source.
-        # Run ids break ties and order historical rows without a completion stamp.
-        data["runs"].sort(
-            key=lambda record: (
-                str(record.get("completed_at") or record.get("run_id") or ""),
-                str(record.get("run_id") or ""),
-            )
-        )
-    return data, version
+        data["runs"].sort(key=promotion_order_key)
+    return added
+
+
+def run_rows_from_documents(
+    project: str, root: str | Path | None = None
+) -> list[dict[str, Any]]:
+    """The rows the aggregate and the per-run documents hold, merged unrefused.
+
+    This is :func:`load`'s union, ordering and run-id-against-file check with
+    its refusals replaced by skips, for a caller that must answer from whatever
+    is readable rather than fail outright — a screen that would otherwise drop
+    a duty it cannot name. A per-run document that is absent, unreadable, or
+    not the run it is named for contributes no row, and a document that
+    disagrees with the aggregate's row leaves the aggregate's row standing. An
+    aggregate that cannot be read at all contributes its rows to no one, and
+    the documents are still read: they are what a run's own writer put there,
+    and they are present whatever happened to the aggregate that copies them.
+    """
+    try:
+        data, _version = _load_aggregate(project, root)
+    except Exception:  # noqa: BLE001 — a damaged aggregate is not a lost read
+        # Every way the aggregate can fail to read lands here, not just the
+        # malformed-collection refusal: an envelope a conflict marker or a
+        # truncated write has damaged raises the store's own error, which is no
+        # more a reason to lose the documents than a malformed list is.
+        data = {"members": [], "runs": [], "holds": []}
+    _merge_run_documents(project, root, data, refuse=False)
+    return list(data["runs"])
 
 
 def history_version(data: Mapping[str, Any], aggregate_version: int) -> str:
