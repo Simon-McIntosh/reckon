@@ -1874,10 +1874,18 @@ def _reviewed_run_id_for_node(node_id: str) -> str:
     holds no project, and a node id is the run's own; a node id that resolves no
     run returns the bare source, which names no run directory and so grants
     nothing.
+
+    The ambiguous case is refused here rather than resolved to a first match: a
+    paired dispatch's two arms share one node id, so a bare node id matched
+    against the live fleet would grant the record directory of whichever arm
+    the listing returned first. Returning the bare source grants nothing, so the
+    fence refuses instead of pointing at the wrong arm.
     """
     from reckon.crew.recovery_review_delivery import _resolved_reviewed_run_id
 
-    return _resolved_reviewed_run_id({"node": {"id": node_id}}, None)
+    return _resolved_reviewed_run_id(
+        {"node": {"id": node_id}}, None, refuse_ambiguous=True
+    )
 
 
 def _review_record_directory_grant(
