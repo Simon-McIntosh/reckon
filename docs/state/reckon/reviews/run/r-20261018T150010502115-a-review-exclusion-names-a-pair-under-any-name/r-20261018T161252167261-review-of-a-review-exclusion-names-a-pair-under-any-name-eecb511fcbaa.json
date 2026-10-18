@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_review_subject.py:870",
+    "reckon/crew/recovery_review_subject.py:884",
+    "reckon/crew/recovery_repair_dispatch.py:807",
+    "reckon/crew/recovery_review_dispatch.py:1530",
+    "reckon/crew/recovery_review_dispatch.py:1993",
+    "reckon/crew/recovery.py:232 (re-export of _ordered_review_lanes)"
+  ],
+  "completed_at": "2026-10-18T16:24:45.734Z",
+  "dispatched_at": "2026-10-18T16:13:49Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against base da08bcc92926990be59ac44bf885fe6f1fff86f0; ecc42a9eb408 routes the preferred candidate through _review_backend_excluded and adds tests/test_old_names_resolve.py::test_local_backend_exclusion_matches_pair_across_names, 801d32d8d486 adds only the evidence fragment, b2640d1d9b71 replaces the \"preferred not in lifted\" clause with the lift-aware excluded_for_review helper and adds test_a_lifted_preferred_lane_keeps_that_lead, and eecb511fcbaa updates the fragment; all four commits stay inside the declared scope.",
+    "done_when": "the measure asks that the three parameters of test_review_exclusions_match_pair_across_names pass at head, that a new local_backend case (claude-opus, exclusion \"opus 5.5\") expects ['other-model'] and passes, that _ordered_review_lanes judge preferred candidates through _review_backend_excluded, that the negative control reverts the repair and reddens, that the population show no added failure and that ruff add no finding; the manifest records tests/test_old_names_resolve.py 37 passed EXIT=0, the two negative controls (3 failed/33 passed and 1 failed/36 passed, both EXIT=1), the population at base 2 failed/207 passed and head 211 passed, and names a04480487, and the named gate re-ran here at 37 passed EXIT=0.",
+    "goal": "the node goal is to make _ordered_review_lanes exclude a preferred lane the exclusion names under any historical spelling; reckon/crew/recovery_review_dispatch.py:1267-1273 routes every preferred candidate through _review_backend_excluded, so a preferred alias of the claude/opus pair (claude-opus for opus 5.5) is now dropped as its current spelling is, and the goal is met.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T150010502115-a-review-exclusion-names-a-pair-under-any-name/manifest.md; status complete, and it records the gate 37 passed EXIT=0, both negative-control log paths, the population logs with their figures and the acted review finding f1adcbebb08, though the manifest itself states no ruff result.",
+    "write_paths": "the declared paths are reckon/crew/recovery_review_dispatch.py, tests/test_old_names_resolve.py, docs/evidence/fragments/the-suite-is-green-at-head/a-review-exclusion-names-a-pair-under-any-name.html and the docs/figures/the-suite-is-green-at-head/a-review-exclusion-names-a-pair-under-any-name directory; the diff touches exactly the first three and nothing else, and the unused figures directory was not written."
+  },
+  "justifications": {
+    "durability": "tests/test_old_names_resolve.py:238 test_a_lifted_preferred_lane_keeps_that_lead asserts the whole ordering against a literal list and reddens (1 failed/36 passed EXIT=1) when the lift guard is reverted, and the three pair parameters redden (3 failed/33 passed EXIT=1) when the repair is reverted.",
+    "evidence": "the manifest records the gate at 37 passed EXIT=0 and both red negative controls, and the evidence fragment records ruff clean on the changed files; the measure names a ruff result and the manifest line states none, which is the only gap.",
+    "fit": "the nested excluded_for_review helper at reckon/crew/recovery_review_dispatch.py:1266 carries a comment stating the mechanism, follows the module's docstring idiom, and introduces no name the repository naming rules forbid.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:1273 judges every preferred candidate through _review_backend_excluded, so the owning or local lane that an exclusion names under any historical spelling is removed.",
+    "reuse": "the helper composes the existing owners reckon/crew/recovery_review_dispatch.py:1118 (_review_backend_excluded) and :1138 (_lifted_backends) rather than reimplementing them, with only a small overlap with :1181 (_review_excluded_backends) in how the lift is subtracted.",
+    "scope_discipline": "the four commits touch only reckon/crew/recovery_review_dispatch.py, tests/test_old_names_resolve.py and the declared evidence fragment, all inside the declared write paths."
+  },
+  "method": "Read the source node's goal, done_when, declared write paths and manifest under its run directory, then read the four commits ecc42a9eb408, 801d32d8d486, b2640d1d9b71 and eecb511fcbaa against base da08bcc92926990be59ac44bf885fe6f1fff86f0 in the reviewed worktree. Read the changed function _ordered_review_lanes and its helpers (_review_backend_excluded, _review_excluded_backends, _lifted_backends), the production callers (_review_lane_plan and _review_lane_candidates and their callers in recovery_review_subject.py and recovery_repair_dispatch.py), and the assertions the diff adds in tests/test_old_names_resolve.py, judged against the two negative-control logs and the population logs.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make _ordered_review_lanes exclude a preferred lane the exclusion names under any historical spelling; reckon/crew/recovery_review_dispatch.py:1267-1273 routes every preferred candidate through _review_backend_excluded, so a preferred alias of the claude/opus pair (claude-opus for opus 5.5) is now dropped as its current spelling is, and the goal is met.\nVERDICT done_when: the measure asks that the three parameters of test_review_exclusions_match_pair_across_names pass at head, that a new local_backend case (claude-opus, exclusion \"opus 5.5\") expects ['other-model'] and passes, that _ordered_review_lanes judge preferred candidates through _review_backend_excluded, that the negative control reverts the repair and reddens, that the population show no added failure and that ruff add no finding; the manifest records tests/test_old_names_resolve.py 37 passed EXIT=0, the two negative controls (3 failed/33 passed and 1 failed/36 passed, both EXIT=1), the population at base 2 failed/207 passed and head 211 passed, and names a04480487, and the named gate re-ran here at 37 passed EXIT=0.\nVERDICT write_paths: the declared paths are reckon/crew/recovery_review_dispatch.py, tests/test_old_names_resolve.py, docs/evidence/fragments/the-suite-is-green-at-head/a-review-exclusion-names-a-pair-under-any-name.html and the docs/figures/the-suite-is-green-at-head/a-review-exclusion-names-a-pair-under-any-name directory; the diff touches exactly the first three and nothing else, and the unused figures directory was not written.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T150010502115-a-review-exclusion-names-a-pair-under-any-name/manifest.md; status complete, and it records the gate 37 passed EXIT=0, both negative-control log paths, the population logs with their figures and the acted review finding f1adcbebb08, though the manifest itself states no ruff result.\nVERDICT diff: read commit by commit against base da08bcc92926990be59ac44bf885fe6f1fff86f0; ecc42a9eb408 routes the preferred candidate through _review_backend_excluded and adds tests/test_old_names_resolve.py::test_local_backend_exclusion_matches_pair_across_names, 801d32d8d486 adds only the evidence fragment, b2640d1d9b71 replaces the \"preferred not in lifted\" clause with the lift-aware excluded_for_review helper and adds test_a_lifted_preferred_lane_keeps_that_lead, and eecb511fcbaa updates the fragment; all four commits stay inside the declared scope.\nCALL_SITES: reckon/crew/recovery_review_subject.py:870, reckon/crew/recovery_review_subject.py:884, reckon/crew/recovery_repair_dispatch.py:807, reckon/crew/recovery_review_dispatch.py:1530, reckon/crew/recovery_review_dispatch.py:1993, reckon/crew/recovery.py:232 (re-export of _ordered_review_lanes)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:1273 judges every preferred candidate through _review_backend_excluded, so the owning or local lane that an exclusion names under any historical spelling is removed.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records the gate at 37 passed EXIT=0 and both red negative controls, and the evidence fragment records ruff clean on the changed files; the measure names a ruff result and the manifest line states none, which is the only gap.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four commits touch only reckon/crew/recovery_review_dispatch.py, tests/test_old_names_resolve.py and the declared evidence fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_old_names_resolve.py:238 test_a_lifted_preferred_lane_keeps_that_lead asserts the whole ordering against a literal list and reddens (1 failed/36 passed EXIT=1) when the lift guard is reverted, and the three pair parameters redden (3 failed/33 passed EXIT=1) when the repair is reverted.\nSCORE fit: 18\nJUSTIFICATION fit: the nested excluded_for_review helper at reckon/crew/recovery_review_dispatch.py:1266 carries a comment stating the mechanism, follows the module's docstring idiom, and introduces no name the repository naming rules forbid.\nSCORE reuse: 18\nJUSTIFICATION reuse: the helper composes the existing owners reckon/crew/recovery_review_dispatch.py:1118 (_review_backend_excluded) and :1138 (_lifted_backends) rather than reimplementing them, with only a small overlap with :1181 (_review_excluded_backends) in how the lift is subtracted.\nreviewed_base_sha: da08bcc92926990be59ac44bf885fe6f1fff86f0\nreviewed_head_sha: eecb511fcbaa91137d1f36bfd1a37948c72d802a",
+  "review_run_id": "r-20261018T161252167261-review-of-a-review-exclusion-names-a-pair-under-any-name-eecb511fcbaa",
+  "reviewed_base_sha": "da08bcc92926990be59ac44bf885fe6f1fff86f0",
+  "reviewed_head_sha": "eecb511fcbaa91137d1f36bfd1a37948c72d802a",
+  "reviewed_run_id": "r-20261018T150010502115-a-review-exclusion-names-a-pair-under-any-name",
+  "reviewer": "review-of-a-review-exclusion-names-a-pair-under-any-name-eecb511fcbaa",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T16:22:00Z",
+  "total": 112
+}
