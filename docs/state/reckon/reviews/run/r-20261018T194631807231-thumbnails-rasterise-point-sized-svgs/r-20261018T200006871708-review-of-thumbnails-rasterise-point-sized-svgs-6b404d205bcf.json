@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed run's 28-test head_serve.log reports 28 passed, so its named subset has no added failing ids regardless of the baseline; the reviewed run has no baseline_suite or after_suite fields or full importer-wide gate logs, so the full-set delta cannot be established and is a blocking evidence finding.",
+  "assertion_analysis": [
+    "tests/test_figure_thumbnails_are_small_rasters.py:197 status==200 fails if the route errors or refuses the request.",
+    "tests/test_figure_thumbnails_are_small_rasters.py:198 content type image/png fails when removal of dpi restores SVG fallback; negative_control.log records that exact failure.",
+    "tests/test_figure_thumbnails_are_small_rasters.py:199 body!=source_bytes fails if the route returns the original source unchanged; source_bytes is read independently from the fixture file.",
+    "tests/test_figure_thumbnails_are_small_rasters.py:200 Image.open fails if the response body is not decodable as an image.",
+    "tests/test_figure_thumbnails_are_small_rasters.py:201 max edge <= serve.THUMB_MAX_EDGE fails if raster output exceeds the current production bound, but does not fail when that same bound is increased in production."
+  ],
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/serve.py:3940 do_GET thumbnail dispatch",
+    "reckon/serve.py:3251 _serve_thumbnail",
+    "reckon/serve.py:3290 _thumbnail_bytes",
+    "reckon/serve.py:2990 _render_thumbnail",
+    "docs/ui/shell-plans.jsx:228 artifactImageSrc"
+  ],
+  "completed_at": "2026-10-18T20:06:56Z",
+  "dispatched_at": "2026-10-18T20:01:26Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T194631807231-thumbnails-rasterise-point-sized-svgs/manifest.md",
+      "line": "11",
+      "severity": "blocking",
+      "text": "blocking: the declared importer-wide no-added-failure and ruff gates have no readable baseline_suite/after_suite pair or ruff log, so the node's full done_when cannot be checked before landing."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T194631807231-thumbnails-rasterise-point-sized-svgs/logs/head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the passing log labels its revision eadcb418, the parent of the reviewed commit, despite running the new point-sized test; its header does not identify the code state that produced the result."
+    },
+    {
+      "file": "tests/test_figure_thumbnails_are_small_rasters.py",
+      "line": "201",
+      "severity": "follow-on",
+      "text": "follow-on: the added max-edge assertion compares against serve.THUMB_MAX_EDGE, which the renderer also reads, so raising the constant leaves this assertion green; an independent expected pixel size would pin the bound."
+    }
+  ],
+  "head_log_revision": "eadcb418b7259c3875537a0f31d8852c6281fe9f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified five production sites",
+    "diff": "git show 6b404d205 against parent eadcb418b shows one commit, 59 insertions and one deletion across three declared paths, adding dpi=96, a point-sized fixture and evidence prose.",
+    "done_when": "prompt.txt:95 requires a point-sized fixture, PNG and edge assertions, existing cases, full serve-importer failure comparison and ruff; tests/test_figure_thumbnails_are_small_rasters.py:50-63,185-201 and the 8/28-pass logs cover the first parts, while the full comparison and readable ruff gate are absent.",
+    "goal": "prompt.txt:30 asks for dpi=96 in _rasterise_svg so point-sized SVGs rasterise; reckon/serve.py:2969-2971 passes it and the thumbnail route reaches that call.",
+    "manifest": "manifest.md:7-17 reports one commit and 8/28 passing tests with a negative control; it names no baseline_suite or after_suite arms for the declared importer-wide comparison.",
+    "write_paths": "prompt.txt:69-73 grants reckon/serve.py, the thumbnail test, the evidence fragment and a figures directory; git diff eadcb418..6b404d205 lists only the first three."
+  },
+  "justifications": {
+    "durability": "tests/test_figure_thumbnails_are_small_rasters.py:198 fails when the old SVG fallback returns svg+xml, while its edge bound at line 201 moves with the same THUMB_MAX_EDGE constant used by reckon/serve.py:2960-2963.",
+    "evidence": "tests/test_figure_thumbnails_are_small_rasters.py:198 reddens in negative_control.log when dpi is removed, but manifest.md:11-12 supplies no base and after importer-wide suite pair or readable ruff result.",
+    "fit": "reckon/serve.py:2965-2971 changes the existing resvg call in place with a mechanism comment and adds no forbidden source name.",
+    "goal_fidelity": "reckon/serve.py:2969-2971 passes the exact dpi=96 parameter that resolves point units for the existing SVG rasterisation route.",
+    "reuse": "the capability search for SVG rasterisation found its owner at reckon/serve.py:2944 and the new dpi argument extends that owner; the point-sized fixture extends the adjacent SVG fixtures in tests/test_figure_thumbnails_are_small_rasters.py:36-47.",
+    "scope_discipline": "the sole commit changes reckon/serve.py, tests/test_figure_thumbnails_are_small_rasters.py and the granted evidence fragment only."
+  },
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks for dpi=96 in _rasterise_svg so point-sized SVGs rasterise; reckon/serve.py:2969-2971 passes it and the thumbnail route reaches that call.\nVERDICT done_when: prompt.txt:95 requires a point-sized fixture, PNG and edge assertions, existing cases, full serve-importer failure comparison and ruff; tests/test_figure_thumbnails_are_small_rasters.py:50-63,185-201 and the 8/28-pass logs cover the first parts, while the full comparison and readable ruff gate are absent.\nVERDICT write_paths: prompt.txt:69-73 grants reckon/serve.py, the thumbnail test, the evidence fragment and a figures directory; git diff eadcb418..6b404d205 lists only the first three.\nVERDICT manifest: manifest.md:7-17 reports one commit and 8/28 passing tests with a negative control; it names no baseline_suite or after_suite arms for the declared importer-wide comparison.\nVERDICT diff: git show 6b404d205 against parent eadcb418b shows one commit, 59 insertions and one deletion across three declared paths, adding dpi=96, a point-sized fixture and evidence prose.\nCALL_SITES: reckon/serve.py:3940 do_GET thumbnail dispatch, reckon/serve.py:3251 _serve_thumbnail, reckon/serve.py:3290 _thumbnail_bytes, reckon/serve.py:2990 _render_thumbnail, docs/ui/shell-plans.jsx:228 artifactImageSrc\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/serve.py:2969-2971 passes the exact dpi=96 parameter that resolves point units for the existing SVG rasterisation route.\nSCORE evidence: 10\nJUSTIFICATION evidence: tests/test_figure_thumbnails_are_small_rasters.py:198 reddens in negative_control.log when dpi is removed, but manifest.md:11-12 supplies no base and after importer-wide suite pair or readable ruff result.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the sole commit changes reckon/serve.py, tests/test_figure_thumbnails_are_small_rasters.py and the granted evidence fragment only.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_figure_thumbnails_are_small_rasters.py:198 fails when the old SVG fallback returns svg+xml, while its edge bound at line 201 moves with the same THUMB_MAX_EDGE constant used by reckon/serve.py:2960-2963.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/serve.py:2965-2971 changes the existing resvg call in place with a mechanism comment and adds no forbidden source name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search for SVG rasterisation found its owner at reckon/serve.py:2944 and the new dpi argument extends that owner; the point-sized fixture extends the adjacent SVG fixtures in tests/test_figure_thumbnails_are_small_rasters.py:36-47.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T194631807231-thumbnails-rasterise-point-sized-svgs/manifest.md:11 blocking: the declared importer-wide no-added-failure and ruff gates have no readable baseline_suite/after_suite pair or ruff log, so the node's full done_when cannot be checked before landing.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T194631807231-thumbnails-rasterise-point-sized-svgs/logs/head.log:1 follow-on: the passing log labels its revision eadcb418, the parent of the reviewed commit, despite running the new point-sized test; its header does not identify the code state that produced the result.\nFINDING tests/test_figure_thumbnails_are_small_rasters.py:201 follow-on: the added max-edge assertion compares against serve.THUMB_MAX_EDGE, which the renderer also reads, so raising the constant leaves this assertion green; an independent expected pixel size would pin the bound.",
+  "review_run_id": "r-20261018T200006871708-review-of-thumbnails-rasterise-point-sized-svgs-6b404d205bcf",
+  "reviewed_base_sha": "eadcb418b7259c3875537a0f31d8852c6281fe9f",
+  "reviewed_head_sha": "6b404d205bcf67201cbe58da7984adc06672e9d2",
+  "reviewed_run_id": "r-20261018T194631807231-thumbnails-rasterise-point-sized-svgs",
+  "scores": {
+    "durability": 17,
+    "evidence": 10,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "section_id": "s12",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T20:05:00Z",
+  "total": 106
+}
