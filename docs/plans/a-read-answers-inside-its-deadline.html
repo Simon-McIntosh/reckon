@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="304">
+<meta name="plan-version" content="305">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -988,7 +988,10 @@
     <div class="r-comment-body"><p>§36 landed. The read-only memo region hands out views that refuse mutation and copy to plain values, with no copy on the read-only path (merge <code>803a61edf</code>). Zero added failures over 175 files. §34, the closing measure, is next. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s36">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261018T123636631280-the-read-only-region-refuses-a-mutation" data-who="reckon-build" data-when="2026-10-18T14:54:48Z">
-    <div class="r-comment-body"><p>A read-only region now hands out a read-only view (_ReadOnlyDict/_ReadOnlyList/_ReadOnlyTuple/_ReadOnlySet, wrapped recursively) of the memo&#x27;s parsed value that raises on any mutation, built once per document per region with no copy on the read-only path; the follow-on repairs add __copy__/__deepcopy__ on every view returning plain mutable containers, and wrap tuples and sets so no container reachable from a plan read&#x27;s (mapping, text) tuple leaks mutable. Gate test 5 passed, held-worktree bound 6 passed with copy.deepcopy 0, importer set 96 vs 96 at base, negative control EXIT=1.</p></div>
+    <div class="r-comment-body"><p>A read-only region now hands out a read-only view (_ReadOnlyDict/_ReadOnlyList/_ReadOnlyTuple/_ReadOnlySet, wrapped recursively) of the memo's parsed value that raises on any mutation, built once per document per region with no copy on the read-only path; the follow-on repairs add __copy__/__deepcopy__ on every view returning plain mutable containers, and wrap tuples and sets so no container reachable from a plan read's (mapping, text) tuple leaks mutable. Gate test 5 passed, held-worktree bound 6 passed with copy.deepcopy 0, importer set 96 vs 96 at base, negative control EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s36" data-id="c-run-r-20261018T153711999593-read-only-region-repaired-population-at-merge" data-who="reckon-build" data-when="2026-10-18T16:15:01.781Z">
+    <div class="r-comment-body"><p>Merging the read-only-region mutation guard (delivered head 3afdc489b01ab706169f0b1f0c85f0e5e532862e, candidate merge 42d8496b9cb76f8c8f37abaf0cee6ab19764a29e) onto main 00f47b0bd8c20a380124da6e74d5c18787069aa6 adds no failing test id attributable to the candidate over the 175-file importer population: base arm (174 files) 5 failed / 1759 passed / 4 skipped and candidate arm (175 files) 6 failed / 1763 passed / 4 skipped; the derivation returned 1 added id (tests/test_metadata_index_survives_restart.py::test_the_change_watch_invalidates_the_tree) and five alone runs at each revision fail it 3/5 at both, so its verdict is also-at-base and it is a flaky test, not a regression; the candidate&#x27;s extra passes are the delivered file&#x27;s five tests, which ran and passed.</p></div>
 </div>
 <div class="r-comment" data-section="s39" data-id="c-run-r-20261018T145651749169-review-of-a-poll-waits-for-its-previous-answer-aa11b8800bc5" data-who="reckon-build" data-when="2026-10-18T15:22:36.953Z">
     <div class="r-comment-body"><p>review of a-poll-waits-for-its-previous-answer at head aa11b8800 against base 4a53860 — six dimensions scored (goal_fidelity 18, evidence 13, scope_discipline 19, durability 18, fit 18, reuse 19; total 105) with two blocking findings: the change deletes the window.setInterval poller from docs/ui/crew.jsx and so leaves tests/test_spa_crew_cards.py:413 and tests/test_spa_state_boundary.py:253 red at head, which the run's own after_suite records as exactly two added failures over its baseline_suite.</p></div>
