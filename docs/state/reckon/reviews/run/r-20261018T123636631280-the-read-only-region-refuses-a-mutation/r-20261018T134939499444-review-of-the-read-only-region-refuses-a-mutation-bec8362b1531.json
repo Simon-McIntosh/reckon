@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own manifest: baseline_suite.failure_count 0 and after_suite.failure_count 0, both completed with empty failure_ids, so the added-failure count is 0.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligations.py:590",
+    "reckon/crew/obligations.py:672",
+    "reckon/crew/obligation_snapshot.py:874"
+  ],
+  "completed_at": "2026-10-18T14:13:08.759Z",
+  "dispatched_at": "2026-10-18T13:51:41Z",
+  "findings": [
+    {
+      "file": "reckon/file_memo.py",
+      "line": "98",
+      "severity": "follow-on",
+      "text": "follow-on: _read_only wraps only dict and list and returns every other value unchanged, so a memoised container of another type leaks its mutables -- reckon/_plan_html.py:1439 memoises a (dict, str) tuple whose dict a region caller can mutate without a refusal, and _read_only(({1},\"t\"))[0][key]=9 succeeds when run directly."
+    },
+    {
+      "file": "reckon/file_memo.py",
+      "line": "115",
+      "severity": "follow-on",
+      "text": "follow-on: copy.deepcopy of a value handed out inside the region now raises TypeError rather than returning a copy, a new hard failure for any region caller that copies what it is handed and for any consumer of the held_worktree_records result that escapes the region at reckon/crew/obligations.py:590."
+    },
+    {
+      "file": "tests/test_the_read_only_region_refuses_a_mutation.py",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: the module docstring cites plan-section labels, which the repository naming rule bans from comments and docstrings because the code must stand alone once the plan is deleted."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T123636631280-the-read-only-region-refuses-a-mutation/logs/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate log's first line names rev 2d4ebe93e (the base) although the mutation test it ran exists only at head, so the log does not name the revision it exercised; the manifest's after_suite.revision carries the correct revision."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 2d4ebe93e; 4fe1285c9 adds the guard in reckon/file_memo.py and the test, bec8362b1 adds the landing fragment; three files, no production caller edited.",
+    "done_when": "the done_when names tests/test_the_read_only_region_refuses_a_mutation.py with (a) a mutating caller detected and (b) one obligation_snapshot.fleet_state derivation completing under the same guard; tests/test_the_read_only_region_refuses_a_mutation.py:47 and :157 assert exactly those two.",
+    "goal": "the goal is to make a mutation of a document handed out inside the read-only memo region detected rather than silent; reckon/file_memo.py:98 _read_only and :115 _handout hand out _ReadOnlyDict (:45) and _ReadOnlyList (:73) views whose mutators raise.",
+    "manifest": "read; it records the head gate at 4fe1285c9 with the 20-file file_memo-importing set 96 passed against 96 passed at base 2d4ebe93e, names logs/gate-head.log and logs/negative-control.log, and every log ends EXIT=.",
+    "write_paths": "the declared scope is reckon/file_memo.py, tests/test_the_read_only_region_refuses_a_mutation.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/the-read-only-region-refuses-a-mutation.html and a figures directory; the diff touches only the first three and every path is inside the node's grant."
+  },
+  "justifications": {
+    "durability": "tests/test_the_read_only_region_refuses_a_mutation.py:47 reddens when the guard is removed, shown by logs/negative-control.log END EXIT=1, and :88 asserts the memo outside the region is unpoisoned against an independent literal rather than a value the test passed in.",
+    "evidence": "logs/gate-head.log ran the test the done_when names and records 3 passed EXIT=0, but its header line names rev 2d4ebe93e (the base) while it exercised uncommitted head code, so the log alone does not name the revision it measured, though the manifest's after_suite.revision 4fe1285c9 does.",
+    "fit": "tests/test_the_read_only_region_refuses_a_mutation.py:3 and :7 carry plan-section labels in a module docstring, which the repository naming rule forbids in comments and docstrings, though reckon/file_memo.py itself is clean.",
+    "goal_fidelity": "reckon/file_memo.py:115 _handout returns the region's view and its mutators raise at :63 and :88, so a change to what the region hands out is refused rather than silently reaching the memo.",
+    "reuse": "a search of reckon/ for MappingProxyType, FrozenDict and any read-only-mapping wrapper found no owner, so reckon/file_memo.py:45 extends the module that already owns the region rather than forking a capability.",
+    "scope_discipline": "git diff --stat 2d4ebe93e..bec8362b1 lists only reckon/file_memo.py, tests/test_the_read_only_region_refuses_a_mutation.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-read-only-region-refuses-a-mutation.html, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make a mutation of a document handed out inside the read-only memo region detected rather than silent; reckon/file_memo.py:98 _read_only and :115 _handout hand out _ReadOnlyDict (:45) and _ReadOnlyList (:73) views whose mutators raise.\nVERDICT done_when: the done_when names tests/test_the_read_only_region_refuses_a_mutation.py with (a) a mutating caller detected and (b) one obligation_snapshot.fleet_state derivation completing under the same guard; tests/test_the_read_only_region_refuses_a_mutation.py:47 and :157 assert exactly those two.\nVERDICT write_paths: the declared scope is reckon/file_memo.py, tests/test_the_read_only_region_refuses_a_mutation.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/the-read-only-region-refuses-a-mutation.html and a figures directory; the diff touches only the first three and every path is inside the node's grant.\nVERDICT manifest: read; it records the head gate at 4fe1285c9 with the 20-file file_memo-importing set 96 passed against 96 passed at base 2d4ebe93e, names logs/gate-head.log and logs/negative-control.log, and every log ends EXIT=.\nVERDICT diff: read commit by commit against 2d4ebe93e; 4fe1285c9 adds the guard in reckon/file_memo.py and the test, bec8362b1 adds the landing fragment; three files, no production caller edited.\nCALL_SITES: reckon/crew/obligations.py:590, reckon/crew/obligations.py:672, reckon/crew/obligation_snapshot.py:874\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/file_memo.py:115 _handout returns the region's view and its mutators raise at :63 and :88, so a change to what the region hands out is refused rather than silently reaching the memo.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-head.log ran the test the done_when names and records 3 passed EXIT=0, but its header line names rev 2d4ebe93e (the base) while it exercised uncommitted head code, so the log alone does not name the revision it measured, though the manifest's after_suite.revision 4fe1285c9 does.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 2d4ebe93e..bec8362b1 lists only reckon/file_memo.py, tests/test_the_read_only_region_refuses_a_mutation.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-read-only-region-refuses-a-mutation.html, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_read_only_region_refuses_a_mutation.py:47 reddens when the guard is removed, shown by logs/negative-control.log END EXIT=1, and :88 asserts the memo outside the region is unpoisoned against an independent literal rather than a value the test passed in.\nSCORE fit: 15\nJUSTIFICATION fit: tests/test_the_read_only_region_refuses_a_mutation.py:3 and :7 carry plan-section labels in a module docstring, which the repository naming rule forbids in comments and docstrings, though reckon/file_memo.py itself is clean.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of reckon/ for MappingProxyType, FrozenDict and any read-only-mapping wrapper found no owner, so reckon/file_memo.py:45 extends the module that already owns the region rather than forking a capability.\nFINDING reckon/file_memo.py:98 follow-on: _read_only wraps only dict and list and returns every other value unchanged, so a memoised container of another type leaks its mutables -- reckon/_plan_html.py:1439 memoises a (dict, str) tuple whose dict a region caller can mutate without a refusal, and _read_only(({1},\"t\"))[0][key]=9 succeeds when run directly.\nFINDING reckon/file_memo.py:115 follow-on: copy.deepcopy of a value handed out inside the region now raises TypeError rather than returning a copy, a new hard failure for any region caller that copies what it is handed and for any consumer of the held_worktree_records result that escapes the region at reckon/crew/obligations.py:590.\nFINDING tests/test_the_read_only_region_refuses_a_mutation.py:3 follow-on: the module docstring cites plan-section labels, which the repository naming rule bans from comments and docstrings because the code must stand alone once the plan is deleted.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T123636631280-the-read-only-region-refuses-a-mutation/logs/gate-head.log:1 follow-on: the gate log's first line names rev 2d4ebe93e (the base) although the mutation test it ran exists only at head, so the log does not name the revision it exercised; the manifest's after_suite.revision carries the correct revision.\n",
+  "review_run_id": "r-20261018T134939499444-review-of-the-read-only-region-refuses-a-mutation-bec8362b1531",
+  "reviewed_base_sha": "2d4ebe93e2918a25be6ef600f036d17772ea79bf",
+  "reviewed_head_sha": "bec8362b15311c5ff238ccbf4735f8c56b57bcfb",
+  "reviewed_run_id": "r-20261018T123636631280-the-read-only-region-refuses-a-mutation",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T14:09:16.993046+00:00",
+  "total": 109
+}
