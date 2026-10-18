@@ -919,7 +919,7 @@ def local_lane(
         "expected_wait_profile_age_s": expected_wait_profile_age_s,
         "running": load.get("running"),
         "waiting": load.get("waiting"),
-        "queue_position": queue_position,
+        **({"queue_position": queue_position} if queue_position is not None else {}),
         "headroom": load.get("headroom"),
         "worker_slots": load.get("worker_slots"),
         "tokens_per_second": load.get("mean_tokens_per_second"),
