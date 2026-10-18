@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="329">
+<meta name="plan-version" content="330">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1292,6 +1292,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s52" data-id="c-close-s52" data-who="reckon-build" data-when="2026-10-18T11:30:00Z">
     <div class="r-comment-body"><p>§52 landed. A follower is hosted when the session host's settle variable is set, and a hosted lift-claim key names its node (merge <code>0f9f23722</code>). Zero added failures over 56 importer files; the worker's three head-arm failures were load-only. §53 is next. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s52">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s52" data-id="c-run-r-20261018T094640247315-a-lift-claim-key-names-a-real-host" data-who="reckon-build" data-when="2026-10-18T10:42:33.568Z">
+    <div class="r-comment-body"><p>reckon:the-monitor-shows-the-work-it-watches §52 — lift_claim_key in reckon/crew_follow_commands.py now decides a follower is hosted from RECKON_SESSION_HOST_SETTLE (not RECKON_FOLLOWER_OWNER, which a reloader stamps unconditionally) and keys a hosted pane as host-&lt;node&gt;-&lt;pid&gt;-&lt;start&gt;; section 51&#x27;s fixture stamps the settle variable; tests/test_a_lift_claim_key_names_a_real_host.py (3 cases), 7 passed with section 51&#x27;s file, negative control red at EXIT=1.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
