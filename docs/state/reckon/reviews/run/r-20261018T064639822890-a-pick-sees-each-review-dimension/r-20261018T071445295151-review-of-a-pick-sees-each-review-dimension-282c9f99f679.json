@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "1eff1f93503acdd1a927795c5fec22b6e3c92265",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py",
+    "reckon/crew/picker/prompts.py:_render_state",
+    "reckon/crew/picker/replay.py"
+  ],
+  "completed_at": "2026-10-18T07:26:17.199Z",
+  "dispatched_at": "2026-10-18T07:16:11Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "398",
+      "severity": "follow-on",
+      "text": "follow-on: _fully_scored re-derives \"every dimension present\" from review.scores, a fact the ledger block already carries as review.absent (reckon/crew/review.py:774-786, surfaced at ledger_block); the two are equivalent, so the addition duplicates a derivable fact rather than extending an owner, though the plan's deliverable mandates the scores-based predicate."
+    },
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "449",
+      "severity": "follow-on",
+      "text": "follow-on: review_dimensions_median is built with median(dimensions.get(name) or []), which would raise StatisticsError on an empty list; unreachable today because reviewed>0 implies every list is non-empty, but the guard the negative control exercises is an implicit invariant rather than an assertion."
+    }
+  ],
+  "head_log_revision": "0ac715b513d65c641dc5cc2fb0b032a8d0335e59",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 1eff1f93503acdd1a927795c5fec22b6e3c92265; 0ac715b51 adds the per-dimension collection in _candidates_scan and the two block fields in _requirement_block plus the glossary prose and the new test, and 282c9f99f adds only the evidence fragment, all inside the declared scope.",
+    "done_when": "the done_when names the picker_env fixture pattern, five ledger rows and the exact asserted figures (reviewed 2, review_total_median 88, dimension medians keyed in REVIEW_DIMENSIONS order), all of which tests/test_a_pick_sees_each_review_dimension.py asserts, and the manifest records the gate run and both arms' logs.",
+    "goal": "the node goal is to add each review dimension's median and the fully scored review count to a pick's at-requirement block and its glossary entry; reckon/crew/picker/snapshot.py:_requirement_block adds reviewed and review_dimensions_median and reckon/crew/picker/prompts.py:110 defines both in the outcomes_at_requirement glossary, so the goal is met.",
+    "manifest": "read at .../runs/r-20261018T064639822890-a-pick-sees-each-review-dimension/manifest.md; it states status complete, records the head arm 96 passed / 1 failed / EXIT=1 with 0 added failures against the base 92 passed / 1 failed / EXIT=1, and names the three negative-control logs.",
+    "write_paths": "the declared write paths are reckon/crew/picker/snapshot.py, reckon/crew/picker/prompts.py, tests/test_a_pick_sees_each_review_dimension.py and docs/evidence/fragments/lane-and-model-routing/a-pick-sees-each-review-dimension.html; the diff touches exactly those four and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_pick_sees_each_review_dimension.py:214-221 compares the block against independent literals (14.5, 10.0, 15.0), and the three negative-control logs show it reddens when the collection, the count or the fully-scored filter is reverted.",
+    "evidence": "the gate at tests/test_a_pick_sees_each_review_dimension.py asserts the done_when's figures and its result (96 passed / 1 failed, 0 added against the base) is recorded in the manifest with both arm logs on disk.",
+    "fit": "the collection sits in _candidates_scan's existing single pass beside reviews/walls/attempts and _fully_scored carries a docstring explaining the bool exclusion, matching the module's idiom.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:438 returns reviewed and review_dimensions_median in the at-requirement block and reckon/crew/picker/prompts.py:110 defines both, exactly what the goal names.",
+    "reuse": "REVIEW_DIMENSIONS is imported from reckon/crew/review.py rather than copied, but _fully_scored re-derives the absent list the store already surfaces on the ledger block (reckon/crew/review.py:786), a minor overlap.",
+    "scope_discipline": "every path in the diff (reckon/crew/picker/snapshot.py, reckon/crew/picker/prompts.py, the new test, the evidence fragment) is inside the declared write paths and no other file changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to add each review dimension's median and the fully scored review count to a pick's at-requirement block and its glossary entry; reckon/crew/picker/snapshot.py:_requirement_block adds reviewed and review_dimensions_median and reckon/crew/picker/prompts.py:110 defines both in the outcomes_at_requirement glossary, so the goal is met.\nVERDICT done_when: the done_when names the picker_env fixture pattern, five ledger rows and the exact asserted figures (reviewed 2, review_total_median 88, dimension medians keyed in REVIEW_DIMENSIONS order), all of which tests/test_a_pick_sees_each_review_dimension.py asserts, and the manifest records the gate run and both arms' logs.\nVERDICT write_paths: the declared write paths are reckon/crew/picker/snapshot.py, reckon/crew/picker/prompts.py, tests/test_a_pick_sees_each_review_dimension.py and docs/evidence/fragments/lane-and-model-routing/a-pick-sees-each-review-dimension.html; the diff touches exactly those four and nothing else.\nVERDICT manifest: read at .../runs/r-20261018T064639822890-a-pick-sees-each-review-dimension/manifest.md; it states status complete, records the head arm 96 passed / 1 failed / EXIT=1 with 0 added failures against the base 92 passed / 1 failed / EXIT=1, and names the three negative-control logs.\nVERDICT diff: read commit by commit against base 1eff1f93503acdd1a927795c5fec22b6e3c92265; 0ac715b51 adds the per-dimension collection in _candidates_scan and the two block fields in _requirement_block plus the glossary prose and the new test, and 282c9f99f adds only the evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/picker/__init__.py, reckon/crew/picker/prompts.py:_render_state, reckon/crew/picker/replay.py\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:438 returns reviewed and review_dimensions_median in the at-requirement block and reckon/crew/picker/prompts.py:110 defines both, exactly what the goal names.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate at tests/test_a_pick_sees_each_review_dimension.py asserts the done_when's figures and its result (96 passed / 1 failed, 0 added against the base) is recorded in the manifest with both arm logs on disk.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/picker/snapshot.py, reckon/crew/picker/prompts.py, the new test, the evidence fragment) is inside the declared write paths and no other file changed.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_pick_sees_each_review_dimension.py:214-221 compares the block against independent literals (14.5, 10.0, 15.0), and the three negative-control logs show it reddens when the collection, the count or the fully-scored filter is reverted.\nSCORE fit: 16\nJUSTIFICATION fit: the collection sits in _candidates_scan's existing single pass beside reviews/walls/attempts and _fully_scored carries a docstring explaining the bool exclusion, matching the module's idiom.\nSCORE reuse: 16\nJUSTIFICATION reuse: REVIEW_DIMENSIONS is imported from reckon/crew/review.py rather than copied, but _fully_scored re-derives the absent list the store already surfaces on the ledger block (reckon/crew/review.py:786), a minor overlap.\nFINDING reckon/crew/picker/snapshot.py:398 follow-on: _fully_scored re-derives \"every dimension present\" from review.scores, a fact the ledger block already carries as review.absent (reckon/crew/review.py:774-786, surfaced at ledger_block); the two are equivalent, so the addition duplicates a derivable fact rather than extending an owner, though the plan's deliverable mandates the scores-based predicate.\nFINDING reckon/crew/picker/snapshot.py:449 follow-on: review_dimensions_median is built with median(dimensions.get(name) or []), which would raise StatisticsError on an empty list; unreachable today because reviewed>0 implies every list is non-empty, but the guard the negative control exercises is an implicit invariant rather than an assertion.",
+  "review_run_id": "r-20261018T071445295151-review-of-a-pick-sees-each-review-dimension-282c9f99f679",
+  "reviewed_base_sha": "1eff1f93503acdd1a927795c5fec22b6e3c92265",
+  "reviewed_head_sha": "282c9f99f679a28ff1cc37433d752cc6a92f6a6b",
+  "reviewed_run_id": "r-20261018T064639822890-a-pick-sees-each-review-dimension",
+  "reviewer": "review-of-a-pick-sees-each-review-dimension-282c9f99f679",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T07:29:12.637023+00:00",
+  "total": 109
+}
