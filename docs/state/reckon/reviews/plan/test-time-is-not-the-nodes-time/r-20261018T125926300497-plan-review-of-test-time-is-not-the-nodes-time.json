@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T13:12:21.493Z",
+  "dispatched_at": "2026-10-18T13:00:15Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:55",
+      "id": "reasoning-1",
+      "reason": "",
+      "text": "\u2014 done-when clause 2 requires both \"the same median over all runs\" and \"runs whose gate ran in the background, each listed by id\", but a run whose gate ran in the background and cites no log reports no runner duration, and the tool-call fallback at line 48 cannot supply one (a backgrounded call returns from its tool call long before the gate finishes), so that run has no computable share and sits in neither median's population \u2014 the \"all runs\" figure is undefined for exactly the runs the same clause asks to be listed. WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: without naming the all-runs denominator and how a no-duration run is treated, the node must guess, and the headline share can silently drop the long backgrounded gates this plan exists to measure.",
+      "type": "reasoning",
+      "would_change": null
+    }
+  ],
+  "plan_fingerprint": "ef563ceff7bdd93908951126153daced7cacb7c398f026a7c6fcc9cd9269334c",
+  "plan_slug": "test-time-is-not-the-nodes-time",
+  "plan_version": 6,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T125926300497-plan-review-of-test-time-is-not-the-nodes-time",
+  "reviewed_blob_sha": "aedebfe926236630c31b76692259031d8bc1f0ca",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: `reckon/crew/node.py:1293`, `reckon/crew/routing.py:473` (`resolved_time_ceiling`, called at `reckon/crew/dispatch_plan.py:470`), `reckon/crew/prompts.py:382` and `:701`, `reckon/crew/recovery_stream.py:320`, `reckon/crew/dispatch_sessions.py:337`, `reckon/schema/flight-defaults.yaml:201` (`enforce_budget_watchdog: false`), the plan `crew-observability-truth.html`, and the control run `r-20261018T084035535944-a-paired-arm-review-names-its-run` with `gate-after.log` reading \"1 failed, 63 passed in 543.02s\".",
+    "done_when": "pass \u2014 done-when clause 3 declares the control that clause 1/2 needed: the deadline scan must report `_apply_budget_watchdog` and the timing scan must read the control run's 543.02 s from `gate-after.log`, both falsifiable.",
+    "evidence_paths": "pass \u2014 the doc, script and figures sit on durable paths (`docs/research/`, `scripts/`, `docs/figures/`) inside the repository, and the 14-day measurement window is well inside the 30-day run-directory retention (`reckon/crew/gc.py:267,555`).",
+    "naming": "pass \u2014 the new write paths (`how-much-of-a-node-is-its-gate`, `gate_share_of_run_time.py`) are named by what they measure, with no plan label, stage name, ticket number or version tag.",
+    "reasoning": "a finding \u2014 the \"all runs\" median has no defined denominator for a backgrounded gate that cites no log.",
+    "single_goal": "pass \u2014 \u00a71 carries one deliverable: the read-only gate-share investigation (one doc, its script, its figures).",
+    "wiring": "pass \u2014 s2 depends-on s1 and the `gate-time-shape` decision carries `data-sections=\"s2\"`, so the open decision scopes to the section it gates rather than holding the whole plan."
+  },
+  "section_digests": {
+    "_document": "2db4f914f773c39fa5c0355f5fee5250c02797289c687519a353ee05268ffa98",
+    "s1": "c3a7c5bd775850e4e1d3420b24f75a001d9af7fa3817889a874a700638e07663",
+    "s2": "e1683f33056739230ebe8f8cc40375d3a6cce727983bbbca1379cf0b80c058f6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T13:14:45.160501+00:00"
+}
