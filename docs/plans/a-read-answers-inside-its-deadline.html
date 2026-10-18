@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="307">
+<meta name="plan-version" content="308">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -1001,6 +1001,9 @@
 </div>
 <div class="r-comment" data-section="s39" data-id="c-close-s39" data-who="reckon-build" data-when="2026-10-18T16:55:00Z">
     <div class="r-comment-body"><p>§39 landed: each SPA poll waits for its previous answer, and a tab makes one <code>/crew</code> request per interval (run <code>r-20261018T135000276129</code>, head <code>fc5efb17d</code>; review 111, no added failures). <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s39">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s39" data-id="c-run-r-20261018T135000276129-a-poll-waits-for-its-previous-answer" data-who="reckon-build" data-when="2026-10-18T15:55:22Z">
+    <div class="r-comment-body"><p>a-poll-waits-for-its-previous-answer — routed the three SPA pollers through one settle-then-reschedule helper (window.startPoll, docs/ui/_shared.jsx) and gave the shell and the crew view one shared /crew poll; the section&#x27;s test passes (3 passed, EXIT=0), the base revision finds two /crew pollers across shell and crew against one at head, and the negative control (helper swapped for setInterval) fails the single-outstanding-request assertion at peak=6 (EXIT=1).</p></div>
 </div>
 </section>
 </main>
