@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T13:06:09.800Z",
+  "dispatched_at": "2026-10-18T12:54:56Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html#s6",
+      "id": "wiring-1",
+      "reason": "a dispatcher reading the graph could release \u00a76 before \u00a72 lands, leaving the fleet roll-up with no \u00a72 function to call, exactly the miss \u00a77 already guards against by declaring depends-on s2.",
+      "text": "\u00a76's deliverable computes \"the effort-weighted mean of its live plans' \u00a72 figures, imputing missing plan hours by the mean as \u00a72 does\", but its declared depends-on is only [s5, a-read-answers-inside-its-deadline#s39], and \u00a75 reaches only \u00a74 and \u00a79, so \u00a72 is absent from \u00a76's transitive closure",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html#s11",
+      "id": "done_when-1",
+      "reason": "a capstone measurement node with no control can pass vacuously (the page never loaded, the selector matched nothing) and close the whole plan on a green that measured nothing; every other node in this plan declares a negative control and \u00a711 should too, e.g. running the probe against the pre-fix build and recording the gate failing there.",
+      "text": "\u00a711's done-when is a hard gate (bars within 2 s, views within 3 s warm / 10 s cold, no console error, home under 500 KB, thirty plans agreeing) but declares no negative control, so nothing shows the probe distinguishes a fast site from a broken or unloaded one",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "944fa67831a99d4d4ce68e3f44e0edb57491281d9cdf5cd4c92929f5f1bb741a",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T125413022258-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "f9fa27629f093824137994dcd36a985d948c3834",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 all ten cited modules resolve (reckon/_plan_html.py, metadata_index.py, serve.py, velocity.py, roadmap.py, fleet_index.py, service.py, crew/fleet_supervisor.py, project_state.py, mcp_edit_plan.py) and all five SPA files, tests/test_impl_derives_from_declarations.py, commit d5ba4da74, plan the-portfolio-reads-true #s2, the-page-paints-from-an-index and a-read-answers-inside-its-deadline #s38/#s39 all resolve, with extensionless hrefs resolved as `<path>.html`.",
+    "done_when": "a finding \u2014 \u00a711's done-when states a hard gate but names no negative control, where every other node declares one.",
+    "evidence_paths": "pass \u2014 every gate log sits under the run directory (\u00a72 \"Every log sits under the run directory and ends in EXIT=\", repeated by \u00a73\u2013\u00a710) and \u00a711's report lands in docs/evidence/archive/the-site-answers-fast-and-agrees-landed.html; both are durable paths, not a scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches any symbol, file or comment the plan names; the impl_source vocabulary (computed, declarations, authored) already exists in the code.",
+    "reasoning": "pass \u2014 each stated root cause matches the code it cites: _index_path keys the persisted metadata file on project and docs path only while _load_persisted rejects a mismatched `version` (_VERSION=5, metadata_index.py:73,1075\u20131100); capture_project takes selected[0] unguarded and index \u22121 at velocity.py:851; _parse_meta_uncached derives only inside `if _document_carries_records(text)` (_plan_html.py:2266) and _plan_record carries no `impl` (metadata_index.py:752), so /_index rows paint 0; the circular import reproduces exactly as \u00a710 states.",
+    "single_goal": "pass \u2014 each node names one deliverable (a single progress function for \u00a72, one index row field for \u00a73, one file-identity change for \u00a74, one serving model for \u00a75, one home-view load for \u00a76, one parity of surfaces for \u00a77, one velocity guard for \u00a78, one access-log change for \u00a79, one import cycle for \u00a710, one reader-side measurement for \u00a711).",
+    "wiring": "a finding \u2014 \u00a76's depends-on lists only \u00a75 (which reaches \u00a74 and \u00a79), so \u00a72, whose progress function \u00a76's fleet roll-up is built from, is not in \u00a76's transitive closure."
+  },
+  "section_digests": {
+    "_document": "98ff8537bb6c3786866eea07d01934139a774f3684eaa52a975771e85831db7a",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "a66ec6de576c1bc47ccf5c2ab0c267f9035f0617631f4416e554d16a79a17e97",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s3": "c6539d8e0c74d62c4f2696dc1bbe95ba7f63e8d000c7c43da04725f99cdedad4",
+    "s4": "7fd731e37265de03481b6ba6801fb3ddbd5ca9520a432d62f275cdd1558ed94b",
+    "s5": "4a3de9023c983bc5cefd4d0120f784d91513600fd919731a0495992df2c04987",
+    "s6": "21d7eb4ff8074ea5b0a9182820a9828eba3e83b1c80152667c33f9e80665ba2e",
+    "s7": "4d9c7a7512889092fe001db8d0e42ed6c7d41889423889f385d15e27e6d5b2ce",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T13:08:58.867566+00:00"
+}
