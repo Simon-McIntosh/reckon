@@ -531,6 +531,11 @@ def _reexec_into_current_code() -> None:
     )
 
 
+def _pause(seconds: float) -> None:
+    """Wait out the interval between two admission passes."""
+    time.sleep(seconds)
+
+
 def _file_stamp(path: str) -> str:
     """A change detector for one dependency: its stat, or that it is absent."""
     if not path:
@@ -1022,14 +1027,16 @@ def admit_until_stopped(
     loop otherwise catches ``KeyboardInterrupt`` so a stopped service returns
     the count of passes it ran rather than a traceback.
 
-    Between passes the loop compares the code stamp it started with against the
-    checkout's. A pass must never validate or launch a queued request with code
-    older than the checkout it launches from: a stamp the checkout has moved
-    past, on a checkout the trusted test accepts, finishes the pass and
-    re-executes this process in place, so the next pass runs the new code and
-    the failure guard's code fingerprint retries whatever the old code held.
-    A stamp on a checkout the trusted test refuses leaves the service on its
-    current code, so a tree mid-merge never replaces a running service.
+    The code stamp is compared at the head of every pass, before the pass runs.
+    A pass must never validate or launch a queued request with code older than
+    the checkout it launches from, and the checkout can move during the wait
+    between passes: checking afterwards would let one more pass run on the old
+    code before the move was noticed. So a stamp the checkout has moved past, on
+    a checkout the trusted test accepts, re-executes this process in place before
+    the next pass begins, and the failure guard's code fingerprint retries
+    whatever the old code held. A stamp on a checkout the trusted test refuses
+    leaves the service on its current code, so a tree mid-merge never replaces a
+    running service.
     """
     if once:
         return admit_once(lane=lane)
@@ -1037,11 +1044,10 @@ def admit_until_stopped(
     code_stamp = _admit_code_stamp()
     try:
         while True:
+            if _admit_code_stamp() != code_stamp and _checkout_code_is_trusted():
+                _reexec_into_current_code()
             admit_once(lane=lane)
             passes += 1
-            current_stamp = _admit_code_stamp()
-            if current_stamp != code_stamp and _checkout_code_is_trusted():
-                _reexec_into_current_code()
-            time.sleep(interval)
+            _pause(interval)
     except KeyboardInterrupt:
         return {"passes": passes}

@@ -116,13 +116,13 @@ def _drive_loop(
     config: dict[str, Any],
     repository: Path,
 ) -> dict[str, Any]:
-    """Run the loop for two passes, moving the code stamp between them.
+    """Run the loop for two passes, moving the code stamp during the wait.
 
-    ``admit_once`` is wrapped so the thread:
-      * moves the checkout's code stamp from "old" to "new" as the first pass
-        ends -- the boundary the loop must notice, and
-      * stops the loop after the second pass, since a stub re-execution returns
-        where the real one would have replaced the process.
+    The checkout commits as the loop waits between passes -- the window a
+    running service spends asleep -- so the move is only visible to a stamp
+    comparison taken at the head of the next pass. ``admit_once`` is wrapped to
+    stop the loop after the second pass, since a stub re-execution returns
+    where the real one would have replaced the process.
     """
     holder = {"stamp": "old"}
     events: list[str] = []
@@ -134,9 +134,15 @@ def _drive_loop(
     def reexec() -> None:
         events.append("reexec")
 
+    def pause(_seconds: float) -> None:
+        # The checkout moves while the service waits, after any comparison the
+        # previous pass made and before the next pass begins.
+        holder["stamp"] = "new"
+
     monkeypatch.setattr(queue_admission, "_admit_code_stamp", read_stamp)
     monkeypatch.setattr(queue_admission, "_checkout_code_is_trusted", lambda: trusted)
     monkeypatch.setattr(queue_admission, "_reexec_into_current_code", reexec)
+    monkeypatch.setattr(queue_admission, "_pause", pause)
     monkeypatch.setattr(
         importlib.import_module("reckon.crew.dispatch"), "dispatch", dispatch
     )
@@ -156,7 +162,6 @@ def _drive_loop(
         guards.append(
             dict(runs.read_pointer("r-current-code").get("failure_guard") or {})
         )
-        holder["stamp"] = "new"
         passes.append(number)
         return result
 
@@ -185,9 +190,9 @@ def test_the_loop_reexecutes_and_retries_when_the_code_stamp_moves(
     )
 
     assert driven["passes"] == [1, 2]
-    # The re-execution lands between the two passes: the first pass ran against
-    # the old code, the boundary noticed the stamp had moved, and only then did
-    # the second pass run.
+    # The checkout moves during the wait after the first pass, and the
+    # re-execution lands before the second pass runs -- never one pass later,
+    # on stale code.
     assert driven["events"][:3] == ["pass-1", "reexec", "pass-2"]
     # The request refused in the first pass is attempted again in the second,
     # rather than waiting out the back-off the first failure recorded.
