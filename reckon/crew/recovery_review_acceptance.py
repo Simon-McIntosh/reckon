@@ -16,7 +16,6 @@ from reckon.crew.runs import (
 )
 
 
-
 # The score a complete review must reach for its acceptance to promote
 # the reviewed run without a coordinator. The total a review can score is the
 # schema dimensions at ``REVIEW_MAX_SCORE`` each, and the floor is nine tenths of
@@ -311,14 +310,32 @@ def promote_review_run_itself(
                 "has not ended"
             ),
         }
-    stored = _delivered_review_record(pointer, project)
-    if stored is None:
+    # A run review's delivery is identified by the head it was dispatched to
+    # read, which its dispatch spells as the head-keyed record path it grants.
+    # One declaring no such path cannot be told apart from a round that read an
+    # earlier revision, so it is refused here naming the unnamed head rather
+    # than promoted on whichever record happens to sit where it was told to
+    # write.
+    declares = _declared_head_keyed_record(pointer, project)
+    if _is_run_review_node(pointer) and declares is None:
         return {
             "run_id": run_id,
             "promoted": False,
             "reason": (
-                "the review run stored no readable record for the run it read, "
-                "so it has nothing a coordinator would not add"
+                "the review run declares no head-keyed record path, so the "
+                "head it was dispatched to read is unnamed; its record cannot "
+                "be told from an earlier round's"
+            ),
+        }
+    stored = _delivered_review_record(pointer, project)
+    if stored is None:
+        named = f" for head {declares[1]}" if declares is not None else ""
+        return {
+            "run_id": run_id,
+            "promoted": False,
+            "reason": (
+                f"the review run stored no readable record{named} for the run "
+                "it read, so it has nothing a coordinator would not add"
             ),
         }
     _, record_path = stored
@@ -541,8 +558,10 @@ from .recovery_liveness import (  # noqa: E402
 )
 from .recovery_review_delivery import (  # noqa: E402
     _complete_manifest_write_time,
+    _declared_head_keyed_record,
     _delivered_review_record,
     _is_review_run,
+    _is_run_review_node,
 )
 from .recovery_repair_dispatch import (  # noqa: E402
     _sweep_review_tier,

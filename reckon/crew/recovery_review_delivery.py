@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
@@ -24,7 +25,6 @@ from reckon.crew.runs import (
     run_dir,
     runs_dir,
 )
-
 
 
 # ── A delivered review ends its turn ────────────────────────────────────────
@@ -76,6 +76,63 @@ def _review_store_record_paths(record: Mapping[str, Any], project: str) -> list[
         if candidate.parent == directory:
             paths.append(candidate)
     return paths
+
+
+def _is_run_review_node(record: Mapping[str, Any]) -> bool:
+    """Whether a review run reads a run, rather than a plan.
+
+    A run review's node id is minted from the run it reads, so it carries
+    ``review-of-``; a plan review's carries ``plan-review-of-`` and keys its
+    record on the plan's blob instead of a head. The two are separated here
+    because only a run review is dispatched to read a revision, and only its
+    delivery is measured against one.
+    """
+    node = record.get("node") or {}
+    node_id = node.get("id") if isinstance(node, Mapping) else node
+    return str(node_id or "").startswith(REVIEW_NODE_PREFIX)
+
+
+def _declared_head_keyed_record(
+    record: Mapping[str, Any], project: str
+) -> tuple[Path, str] | None:
+    """The head-keyed record path a review declares, and the head it spells.
+
+    The head a review was dispatched to read is the head of the ``.at-`` write
+    path its dispatch composed, read with the same parser the dispatch's own
+    subject reader uses so the composer's spelling and this reader's are one.
+    A review declaring only the legacy path names no head, which is exactly the
+    ambiguity a delivered record cannot be told apart under.
+    """
+    for path in _review_store_record_paths(record, project):
+        _, head = _review_record_subject(path)
+        if head:
+            return path, head
+    return None
+
+
+def _review_dispatch_instant(record: Mapping[str, Any], project: str) -> float | None:
+    """When this review run was dispatched, as a POSIX instant, or None.
+
+    Read from the run's own record where one exists — the committed row or the
+    live pointer — and from the stamp the run id encodes otherwise, so a
+    delivery is dated against the dispatch the fleet recorded rather than
+    against a definition of dispatch invented here.
+    """
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return None
+    dispatched, _completed = review_module.run_record_times(project, run_id)
+    if not dispatched:
+        dispatched = review_module.run_id_dispatch_time(run_id)
+    if not dispatched:
+        return None
+    try:
+        moment = datetime.fromisoformat(dispatched)
+    except ValueError:
+        return None
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    return moment.timestamp()
 
 
 def _delivered_record_location(
@@ -219,8 +276,10 @@ def _complete_manifest_write_time(path: Path) -> float | None:
         return None
 
 
-def _read_complete_review(path: Path) -> tuple[float, Path] | None:
-    """A stored review at ``path`` and when it landed, when it parses complete."""
+def _read_complete_review(
+    path: Path,
+) -> tuple[Mapping[str, Any], float, Path] | None:
+    """A stored review at ``path``, when it landed, and the record it holds."""
     try:
         stored = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -228,7 +287,7 @@ def _read_complete_review(path: Path) -> tuple[float, Path] | None:
     if not isinstance(stored, Mapping) or not _review_is_complete(stored):
         return None
     try:
-        return path.stat().st_mtime, path
+        return stored, path.stat().st_mtime, path
     except OSError:
         return None
 
@@ -238,28 +297,39 @@ def _delivered_review_record(
 ) -> tuple[float, Path] | None:
     """The stored review record a reviewer wrote and when it landed, or None.
 
-    The record the dispatch told this run to write is read first; the store
-    lookup by the reviewed run is the fallback for a pointer that carried no
-    write paths. Both judge a parse with the predicate promotion uses, so a
-    watcher and a coordinator cannot disagree about whether a review counts as
-    delivered.
+    A run review is dispatched to read one revision, and the record that
+    delivers it is the one filed at the head-keyed path that dispatch names. The
+    record is this run's delivery only when all four hold: it sits at that path;
+    the head it describes is the head the path names, compared with the owners
+    the promotion gate and the classifier already share; its ``review_run_id``,
+    when it carries one, names this review run; and it was written after this
+    run was dispatched. A record failing any of the four is another round's
+    verdict standing where this run's would be — the defect measured on
+    2026-10-18, when a run that never wrote its record was promoted on the
+    unsuffixed path an earlier round had left complete. The legacy path and the
+    any-head ``.at-`` glob are therefore no delivery at all, and every reader of
+    review delivery inherits the predicate here rather than gaining a check of
+    its own.
     """
-    for path in _review_store_record_paths(record, project):
-        stored = _read_complete_review(path)
-        if stored is not None:
-            return stored
-    reviewed = _resolved_reviewed_run_id(record, project)
-    if not reviewed:
+    declared = _declared_head_keyed_record(record, project)
+    if declared is None:
         return None
-    candidates = [review_module.review_path(project, reviewed)]
-    directory = review_module.review_store_root() / project
-    if directory.is_dir():
-        candidates.extend(sorted(directory.glob(f"{reviewed}.at-*.json")))
-    for path in candidates:
-        stored = _read_complete_review(path)
-        if stored is not None:
-            return stored
-    return None
+    path, head = declared
+    stored = _read_complete_review(path)
+    if stored is None:
+        return None
+    body, mtime, located = stored
+    described = review_described_head(body, tree=None)
+    if not same_revision(described, head):
+        return None
+    named = str(body.get("review_run_id") or "").strip()
+    run_id = str(record.get("run_id") or "").strip()
+    if named and named != run_id:
+        return None
+    dispatched = _review_dispatch_instant(record, project)
+    if dispatched is None or mtime <= dispatched:
+        return None
+    return mtime, located
 
 
 def review_delivered(record: Mapping[str, Any]) -> dict[str, Any] | None:
@@ -380,9 +450,14 @@ def _stop_delivered_reviews(
 from .recovery_liveness import (  # noqa: E402
     _run_stream_mtime,
 )
+from .recovery_review_dispatch import (  # noqa: E402
+    _review_record_subject,
+)
 from .recovery_review_subject import (  # noqa: E402
     _is_review_node,
     _review_is_complete,
+    review_described_head,
+    same_revision,
 )
 from .recovery_vocabulary import (  # noqa: E402
     REVIEW_NODE_PREFIX,
