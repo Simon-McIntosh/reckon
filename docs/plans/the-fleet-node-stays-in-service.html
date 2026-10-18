@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-fleet-node-stays-in-service">
+  <meta name="plan-title" content="The Fleet Node Stays In Service">
+  <meta name="plan-summary" content="Our own step cancels drained three nodes; end a stopped worker inside its step, let migrate start a second move, bound step memory, then move">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="7.5">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="the-fleet-moves-to-a-new-node">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <title>The Fleet Node Stays In Service | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">reckon &middot; fleet node operation</p>
+      <h1>The fleet node stays in service</h1>
+      <p class="lede">
+        The fleet allocation, job 1281970, has run on 98dci4-clu-2002 since 8 October.
+        Slurm drained that node at 08:11:39 CEST the same morning, six hours after the
+        move onto it, with the reason <code>Kill task failed</code>. The node the
+        fleet left, clu-2018, was drained the same way on 3 October, and the GPU
+        serving node gpu-0003 was drained the same way on 17 October. Each time, the
+        step or job that failed to die had been cancelled by this account. The
+        previous plan moved the fleet and fixed what loaded the node; it left the
+        mechanism that drains a node untouched. This plan removes that mechanism,
+        repairs the migrate command so it can carry a second move, bounds each
+        worker step's memory, measures what the watch producers cost, and then moves
+        the fleet on a schedule of our choosing.
+      </p>
+    </header>
+
+    <h2 id="s1">&sect;1 &mdash; What drained three nodes, and what loads this one</h2>
+    <p>
+      A drain does not end a running job. It stops the scheduler placing new jobs on
+      the node, and an administrator must resume the node after the last job leaves.
+      The fleet job has no wall clock, so the drain itself costs nothing today. Two
+      things make it matter. First, if the job ends or is requeued, it cannot return
+      to this node. Second, an administrator servicing the node may end the job. The
+      move is therefore not urgent. But it should not be needed every week, and at
+      present it is.
+    </p>
+    <table>
+      <thead><tr><th>Node</th><th>Drained at</th><th>Step that would not die</th><th>How it ended</th></tr></thead>
+      <tbody>
+        <tr><td>clu-2018</td><td>3 Oct 15:54:13 UTC</td><td>1277272.1549, a sandboxed crew worker</td><td>cancelled by this user, ended 15:54:15</td></tr>
+        <tr><td>clu-2002</td><td>8 Oct 08:11:39 CEST</td><td>1281970.251, <code>bwrap</code>, started 07:40:56</td><td>cancelled by this user, ended 08:11:41</td></tr>
+        <tr><td>gpu-0003</td><td>17 Oct 09:40:32 CEST</td><td>batch step of job 1287897 (<code>nova-lane</code>)</td><td>job cancelled 09:39:31; batch step ended 61 s later</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The configuration explains the timing. <code>KillWait</code> is 30 s and
+      <code>UnkillableStepTimeout</code> is 60 s. When a step is cancelled,
+      <code>slurmstepd</code> signals every process in the step's cgroup, then
+      SIGKILLs them. If any process survives the timeout, slurmd drains the node. The
+      only process SIGKILL cannot end is one in uninterruptible sleep, which on this
+      cluster almost always means a GPFS call or a GPU driver teardown. The job
+      records 482 steps <code>CANCELLED by 39486</code> against 5,606 completed.
+      Each cancellation is one draw against that timeout. Every step that ends by
+      cancellation rather than by its task exiting carries a chance of draining the
+      node. The empty cgroups <code>step_251</code>, <code>step_1080</code> and
+      <code>step_5531</code> are still present under the job.
+    </p>
+    <p>
+      The stop path in <code>reckon/crew/dispatch_launch.py</code> sends SIGTERM to
+      the worker pid and, after the stop grace or the terminal-manifest grace, sends
+      SIGKILL. Two cases are possible. If that pid is the <code>srun</code> client,
+      the SIGKILL ends the client and the step is cancelled from outside. If it is the
+      worker inside the step, the SIGKILL leaves the step's other processes to
+      <code>slurmstepd</code>'s kill. Either way, ending the step is the scheduler's
+      kill rather than the task's own exit, and that is the event that drains. Which
+      of the two it is, and which run step 251 belonged to, is §2's question.
+    </p>
+    <p>Load on clu-2002, measured 18 October 12:55&ndash;13:00 CEST:</p>
+    <ul>
+      <li>Load average is about 20 on 28 cores. CPU is about 50% idle and iowait about 0. Load is not CPU here.</li>
+      <li><code>mmfsd</code>, the GPFS daemon, holds about 157% CPU. Processes are created at about 80 a second, with <code>reckon.worker_git_shim</code>'s Python start-up the most frequent among them.</li>
+      <li>The <code>reckon crew watch</code> producers hold CPU continuously. Lifetime average is 56% of a core for imas-codex over two days, 33% for imas-efit, 25% for imas-ambix over 4.6 days, 12% for imas-standard-names and 8% for power_convertor. §7 measures what a poll reads.</li>
+      <li><code>slurmstepd [1281970.batch]</code> has used 98 CPU-hours over the job's life and sat at 100% during the sample. <code>JobAcctGatherType</code> is <code>jobacct_gather/linux</code> at 30 s. Diagnosing it needs root, so it belongs in an SDCC ticket, not a node here.</li>
+      <li>The job memory cgroup records 650,299 <code>max</code> events and 23 OOM kills. On 17 October, four Python processes with 52&ndash;59 GB resident, each in its own worker step, were killed at the job-level limit (<code>oom_memcg=job_1281970</code>). No step carried a limit of its own. Swap has sat full at 4 GB since then, with no paging today. §6 bounds each step.</li>
+    </ul>
+    <p>
+      The reckon SPA slowness the same morning has a separate cause on srv-1006 (a
+      <code>/crew</code> walk over committed ledger files on every three-second
+      poll). Another session owns it, and this plan does not touch
+      <code>reckon serve</code>, <code>fleet_index.py</code> or
+      <code>ledger.py</code>. Two causes belong to imas-ambix: the
+      <code>publish-watch</code> service, whose compute has grown from about 200 s
+      to about 600 s per cycle in three days, and the serving-lane cancel that drained
+      gpu-0003. They are recorded there, not built here.
+    </p>
+
+    <h2 id="s2">&sect;2 &mdash; Name how a stopped worker's step ends</h2>
+    <section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      An investigation, read-only against product source. The investigation has four parts:
+    </p>
+    <ol>
+      <li>Determine, from <code>dispatch_launch.py</code>, <code>process_signal.py</code> and the fleet placement path (<code>fleet_node.py</code>, <code>placement.py</code>), which process <code>signal_worker</code> targets for a CLI worker launched as a step under <code>srun --overlap</code> and <code>bwrap</code>. Is it the <code>srun</code> client, <code>bwrap</code>, or the worker inside the sandbox?</li>
+      <li>State what each signal does to the step: whether the step then ends by its task exiting (<code>COMPLETED</code>) or by cancellation (<code>CANCELLED</code>).</li>
+      <li>Attribute steps 1281970.251 and 1277272.1549 to their run ids by matching <code>sacct</code> step start and end times against run directory names and each run's <code>senders.jsonl</code>.</li>
+      <li>Tabulate the 482 cancelled steps of job 1281970 by the sender reason recorded for the run each belongs to, as far as records allow.</li>
+    </ol>
+    <p>
+      Done when the evidence fragment
+      <code>docs/evidence/fragments/the-fleet-node-stays-in-service/name-how-a-stopped-worker-step-ends.html</code>
+      names the signalled process with a code citation. It must also give the
+      attribution of both drain steps, or state that the records cannot make it,
+      and the reason table. The negative control is one run whose step is recorded
+      <code>COMPLETED</code>: the fragment shows that its sender record carries no
+      SIGKILL. Reads run against the fleet allocation, so placement is in-place.
+    </p>
+
+    <h2 id="s3">&sect;3 &mdash; A stopped worker ends inside its step</h2>
+    <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      The step must end by its own task exiting, never by the scheduler's kill. The
+      task that a worker step runs gains a reaper as its first process. On SIGTERM
+      the reaper signals the worker's process group, then waits for every process in
+      the step's cgroup to exit, and only then exits itself, carrying the worker's
+      status. The wait has no deadline shorter than a GPFS stall: a process in
+      uninterruptible sleep is waited for, not escalated, because escalation is
+      exactly what drains the node. The stop path signals the reaper and never sends
+      SIGKILL to the <code>srun</code> client while the step is live. If a worker
+      still runs past a long ceiling (named in the brief, at least ten minutes), the
+      reaper records the processes and their wait channels to the run directory and
+      keeps waiting. It does not escalate.
+    </p>
+    <p>
+      §2's evidence sets where the reaper sits and which pid the stop path signals,
+      so the gate below holds this section until §2 lands. Done when two things hold.
+      A unit test proves that the stop path signals the reaper's pid and records no
+      SIGKILL to an <code>srun</code> client. And a probe on the fleet allocation
+      stops a worker step whose child ignores SIGTERM for 40 s: <code>sacct</code>
+      then reports the step <code>COMPLETED</code>, the reaper's record names the
+      child, and the node's state is unchanged. The negative control runs the same
+      probe through the old path, by direct <code>scancel</code> of the step, and
+      shows <code>CANCELLED</code>.
+    </p>
+
+    <h2 id="s4">&sect;4 &mdash; The migrate command starts a second move</h2>
+    <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      <code>reckon fleet-node migrate</code> reads the newest
+      <code>move-*/ledger.json</code>, and once that ledger's next step is
+      <code>done</code> it prints <code>migration complete</code> forever. Its census
+      step is reachable only when no ledger exists, so the command can carry exactly
+      one move. Measured 18 October: <code>--dry-run</code> printed
+      <code>migration complete</code> while the fleet ran on a drained node. The fix:
+      when the newest ledger is done, and the fleet record names a job other than the
+      one that ledger's stand-up promoted or a later node, the next invocation begins
+      a new move at census with a new <code>move-&lt;stamp&gt;</code> ledger, and
+      <code>--dry-run</code> says so. The earlier ledger is kept untouched. In the
+      same file pair, <code>reckon fleet-node status</code> replaces its warning that
+      "the allocation ends when the drain completes". The replacement states that the
+      scheduler places no new job on the node, that the allocation continues until it
+      ends, and that the node returns only when an administrator resumes it.
+    </p>
+    <p>
+      Done when tests in <code>tests/</code> cover a completed ledger followed by a
+      fresh census and the dry-run text in both states, and the status wording. The
+      negative control is a ledger mid-move, at <code>cutover</code>, which must
+      still resume that move rather than start a new one.
+    </p>
+
+    <h2 id="s5">&sect;5 &mdash; A rehearsal at the current head</h2>
+    <section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      The previous move needed a hand-written <code>cutover-one.py</code> because the
+      cutover relay was broken on the night. Since then, §16 of the previous plan
+      fixed the relay, and the code has moved for ten days. Run
+      <code>reckon fleet-node migrate --rehearse</code> on a probe session in the
+      fleet allocation at the head that §4 lands on. Done when the rehearsal ledger
+      reaches its pass state, with the probe's tab list and conversation id the same
+      before and after, recorded in the evidence fragment. The negative control is a
+      probe whose recorded tab is removed before the check, which must be refused.
+    </p>
+
+    <h2 id="s6">&sect;6 &mdash; A worker step carries a memory bound</h2>
+    <section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      Every worker step is placed with an explicit <code>--mem</code>, so a runaway
+      process is killed inside its own step's cgroup. Without one it pushes the whole
+      job cgroup to its limit and every session's pages to swap. The size is the
+      open decision <code>worker-step-memory</code> below. A node may request more
+      through its dispatch, and the request is recorded on the run. Done when a test
+      shows the placed <code>srun</code> argv carrying the bound, and a probe step on
+      the fleet allocation shows its cgroup <code>memory.max</code> equal to the
+      bound. The negative control is a probe allocating past the bound: its OOM
+      event lands in the step's <code>memory.events</code> and not the job's.
+    </p>
+
+    <h2 id="s7">&sect;7 &mdash; Measure what a watch producer's poll reads</h2>
+    <section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      An investigation, read-only against product source. Profile the imas-codex
+      producer (<code>reckon crew watch --project imas-codex</code>, 56% of a core
+      averaged over two days) with <code>py-spy</code> on the fleet node. Report what
+      one poll reads: files stat-ed, git calls and directory walks per cycle, the
+      cycle period, and how the cost scales with the project's live and recorded
+      runs. Done when the evidence fragment carries the profile summary, the per-cycle
+      counts, and one sentence naming the change that would make the poll
+      change-driven. The control is the power_convertor producer, at 8%, measured the
+      same way, so the difference has a cause rather than a guess. The fix is a later
+      section, cut from this evidence.
+    </p>
+
+    <h2 id="s8">&sect;8 &mdash; Move the fleet off the drained node</h2>
+    <section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      Once §3 and §5 have landed, move the fleet with <code>reckon fleet-node
+      migrate</code>, from census to retire, in the same tabs, with coordinators
+      resumed. The move is live in the sense the previous plan built: sessions keep
+      their conversations and tabs, and in-flight workers finish or are resumed by
+      run on the new node. A process cannot cross nodes, so a short quiesce window is
+      unavoidable, and it is taken as late as possible. The retire step cancels job
+      1281970, which is irreversible and needs the lead's <code>--confirm</code>.
+      Moving before §3 lands would carry the drain mechanism to the new node, which
+      is what happened on 8 October. Done when the move ledger records every census
+      session cut over and verified, and the new node's state is
+      <code>ALLOCATED</code> without <code>DRAIN</code> after the first wave of
+      worker stops.
+    </p>
+
+    <section data-reckon="gates" id="gates" class="r-gates">
+      <h2><span class="sec">&sect;</span> Evidence gates</h2>
+      <div class="r-gate" data-id="g-tfnsis-stop-path" data-section="s2" data-gated-sections="s3" data-status="open" data-verdict="">
+        <h4 class="r-gate-measure">The signalled process and the step's ending are named with a code citation, and both drain steps are attributed or declared unattributable</h4>
+        <p class="r-gate-required-evidence">The §2 evidence fragment under docs/evidence/fragments/the-fleet-node-stays-in-service/.</p>
+      </div>
+      <div class="r-gate" data-id="g-tfnsis-move-ready" data-section="s5" data-gated-sections="s8" data-status="open" data-verdict="">
+        <h4 class="r-gate-measure">A stopped worker's step ends COMPLETED on the fleet allocation, and a migrate rehearsal passes at the head carrying the second-move fix</h4>
+        <p class="r-gate-required-evidence">The §3 probe's sacct state and reaper record, and the §5 rehearsal ledger at its pass state.</p>
+      </div>
+    </section>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">&sect;</span> Decisions</h2>
+      <div class="r-dec" data-key="worker-step-memory" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">What memory bound does a worker step carry by default?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="16G">16 GB</button>
+          <button class="r-opt" data-value="24G">24 GB</button>
+          <button class="r-opt" data-value="32G">32 GB</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+      <div class="r-dec" data-key="move-timing" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">When does the fleet move off clu-2002?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="after-stop-path">After the stop-path fix and a passing rehearsal</button>
+          <button class="r-opt" data-value="now">Now, by the existing command</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">&sect;</span> Followups</h2>
+      <article class="r-fu" data-id="f-tfnsis-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build the-fleet-node-stays-in-service">
+        <h4 class="r-fu-title">Investigate the stop path and producer cost, fix the migrate command, then gate the move</h4>
+        <div class="r-fu-body"><p>§2, §4, §6 and §7 have disjoint write scopes and run as one wave. §3 waits on the §2 gate, and §5 on §4. §8 waits on the move-ready gate and on the lead's decision on timing.</p></div>
+        <pre class="r-fu-prompt">/reckon-build the-fleet-node-stays-in-service</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
