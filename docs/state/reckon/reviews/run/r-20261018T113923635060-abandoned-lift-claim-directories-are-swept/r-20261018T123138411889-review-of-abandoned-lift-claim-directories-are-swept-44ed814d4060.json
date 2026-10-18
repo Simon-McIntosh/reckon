@@ -1,0 +1,96 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline-suite.log (revision 9a056358f, 2 failed / 659 passed) and after-suite.log (revision 44ed814d4, 1 failed / 664 passed); the head reports no failing id the base does not, and the base's test_a_pane_settles_when_no_work_is_live failure is absent at head, so added_failure_ids is empty.",
+  "after_suite": {
+    "command": "PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -n 8 -p no:cacheprovider -q -rf $(cat /tmp/pop.txt)",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 1,
+    "failure_ids": [
+      "tests/test_removed_flag_migration.py::test_the_deprecation_announcement_reaches_stderr_and_not_the_stream"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T113923635060-abandoned-lift-claim-directories-are-swept/after-suite.log",
+    "revision": "44ed814d406057e14a70e21e414f9269860e577d"
+  },
+  "assertion_analysis": [
+    "tests/test_abandoned_lift_claim_directories_are_swept.py:104 assert set(removed) == {dead_local, stale_nodeless} compares the code's return value against independently constructed fixture paths, so it fails if the sweep removes a kept directory (shown in negative-control.log, where the other-node directory is added to removed) or if it fails to remove a targeted host directory; it is not self-referential.",
+    "tests/test_abandoned_lift_claim_directories_are_swept.py:118 test_a_lift_end_sweeps_an_abandoned_host_directory asserts the directory is gone after _prune_lift_claims, which would fail if the wiring at reckon/crew_follow_commands.py:1249 were dropped.",
+    "tests/test_abandoned_lift_claim_directories_are_swept.py:131 assert LIFT_CLAIM_DIR_MAX_AGE_SECONDS == 7 * DAY_SECONDS asserts the constant equals a literal the test also supplies, so it cannot fail on any behavioural regression; it is coverage only for the named constant, not for the sweep."
+  ],
+  "baseline_suite": {
+    "command": "PYTHONPATH=/tmp/reckon-crew-scratch/r-20261018T113923635060-abandoned-lift-claim-directories-are-swept/base-tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -n 8 -p no:cacheprovider -q -rf $(cat /tmp/pop-base.txt)",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 2,
+    "failure_ids": [
+      "tests/test_a_pane_settles_when_no_work_is_live.py::test_the_real_follower_settles_when_the_host_advertises_it",
+      "tests/test_removed_flag_migration.py::test_the_deprecation_announcement_reaches_stderr_and_not_the_stream"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T113923635060-abandoned-lift-claim-directories-are-swept/baseline-suite.log",
+    "revision": "9a056358f639072871e0080f4bbe2cd878ad00ef"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:_prune_lift_claims",
+    "reckon/crew_follow_commands.py:take_lift_claim",
+    "reckon/crew_follow_commands.py:follower_row_path"
+  ],
+  "completed_at": "2026-10-18T12:45:58.956Z",
+  "dispatched_at": "2026-10-18T12:33:06Z",
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": 1313,
+      "severity": "follow-on",
+      "text": "host-keyed directories whose start tick was not recorded match neither _HOST_CLAIM_DIR (line 1266) nor _HOST_CLAIM_DIR_NODELESS (line 1267), so this continue leaves them unswept forever; lift_claim_key writes exactly such a key at line 1201 (host-<node>-<pid>-unknown when the owner payload carries no start tick) and at line 1199 (host-<node>-<token> when the owner cannot be parsed), so the abandoned-directory class this node exists to remove survives for those host lifetimes."
+    },
+    {
+      "file": "head-gate.log",
+      "line": 1,
+      "severity": "follow-on",
+      "text": "the focused head gate log's header carries the command and the worktree path but no revision line, so a reader cannot tie its 4 passed (EXIT=0) to the landed head 44ed814d4 from the log's own header; after-suite.log:1 does name the head revision, so the suite arm is traceable even though the focused gate is not."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read 44ed814d4 against base 9a056358f; it adds the sweep function and its imports to reckon/crew_follow_commands.py, rekeys the two ticker.py comments from session to pane/host, adds the new test file and a five-line landing fragment, and changes no other path.",
+    "done_when": "The done_when names a five-directory test (two removed, three kept, liveness by pid+start tick), the ticker.py comment stating the host keying, a negative control dropping the node check, no added failure against base, EXIT= logs and a zero ruff delta; tests/test_abandoned_lift_claim_directories_are_swept.py:88-105 runs exactly that population and head-gate.log records 4 passed EXIT=0, negative-control.log records the other node's directory removed at EXIT=1, the ticker.py comments state the pane/host keying, baseline-suite.log (2 failed, 659 passed) and after-suite.log (1 failed, 664 passed) show no added failing id, and the manifest records the ruff delta 0.",
+    "goal": "The node's goal is to make a follower's prune pass remove the lift-claim directories of hosts that ended on this node; reckon/crew_follow_commands.py:1270-1334 implements _prune_abandoned_lift_claim_dirs and line 1249 calls it from _prune_lift_claims, so a lift end (take_lift_claim, line 1391) now sweeps a host's abandoned directory, which the goal states.",
+    "manifest": "The source manifest.md records status complete, commit 44ed814d4, four changed paths, the four gate logs, the two suite arms with their failure ids, the negative-control note and the ruff delta, so its claims are checkable against the logs it names.",
+    "write_paths": "The source brief fences reckon/crew_follow_commands.py, reckon/crew/ticker.py, tests/test_abandoned_lift_claim_directories_are_swept.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/abandoned-lift-claim-directories-are-swept.html and a figures dir in the same plan; git diff 9a056358f..44ed814d4 changes the first three plus the evidence fragment, all inside that fence, and touches nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_abandoned_lift_claim_directories_are_swept.py:104 asserts set(removed) against independently built fixture paths and reddens when the node check is dropped (negative-control.log, EXIT=1), and line 118 reddens if the wiring at reckon/crew_follow_commands.py:1249 is removed, with no assertion comparing a value against the variable the test passed in.",
+    "evidence": "tests/test_abandoned_lift_claim_directories_are_swept.py:88-105 lays down the five-directory population the done_when names and asserts one pass removes exactly the dead local host's and the eight-day node-less directory (4 passed, head-gate.log EXIT=0), and negative-control.log shows the node-check mutation reddens the same test at EXIT=1; the head gate log's own header (head-gate.log:1) carries the command and worktree path but no revision line, so its result is not tied to 44ed814d4 from that header, though after-suite.log:1 does name the head revision 44ed814d406057e14a70e21e414f9269860e577d.",
+    "fit": "reckon/crew_follow_commands.py:1270 follows the suppress(OSError)/Path idiom of the sibling _prune_lift_claims just above at line 1237, its names state the mechanism and carry no plan, ticket or version label, and it uses only the re/shutil/pathlib imports the module already carries.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:1270 _prune_abandoned_lift_claim_dirs removes a host-keyed claim directory under crew_home/watch/lifts when its key names this node and owner_alive reports its pid+start tick dead, and it is wired into the follower's prune pass at reckon/crew_follow_commands.py:1249 (_prune_lift_claims), so the goal's removal of the lift-claim directories of hosts that ended on this node is delivered.",
+    "reuse": "the change forks nothing; reckon/crew_follow_commands.py:20-21 imports owner_alive from reckon/crew/session_host.py:212 and rests the liveness decision on it, reuses _lift_claim_token and crew_home, and no existing sweeper of the lifts root was found in a search over reckon/crew.",
+    "scope_discipline": "git diff 9a056358f..44ed814d4 changes only reckon/crew_follow_commands.py, reckon/crew/ticker.py, tests/test_abandoned_lift_claim_directories_are_swept.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/abandoned-lift-claim-directories-are-swept.html, every one inside the source brief's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is to make a follower's prune pass remove the lift-claim directories of hosts that ended on this node; reckon/crew_follow_commands.py:1270-1334 implements _prune_abandoned_lift_claim_dirs and line 1249 calls it from _prune_lift_claims, so a lift end (take_lift_claim, line 1391) now sweeps a host's abandoned directory, which the goal states.\nVERDICT done_when: The done_when names a five-directory test (two removed, three kept, liveness by pid+start tick), the ticker.py comment stating the host keying, a negative control dropping the node check, no added failure against base, EXIT= logs and a zero ruff delta; tests/test_abandoned_lift_claim_directories_are_swept.py:88-105 runs exactly that population and head-gate.log records 4 passed EXIT=0, negative-control.log records the other node's directory removed at EXIT=1, the ticker.py comments state the pane/host keying, baseline-suite.log (2 failed, 659 passed) and after-suite.log (1 failed, 664 passed) show no added failing id, and the manifest records the ruff delta 0.\nVERDICT write_paths: The source brief fences reckon/crew_follow_commands.py, reckon/crew/ticker.py, tests/test_abandoned_lift_claim_directories_are_swept.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/abandoned-lift-claim-directories-are-swept.html and a figures dir in the same plan; git diff 9a056358f..44ed814d4 changes the first three plus the evidence fragment, all inside that fence, and touches nothing else.\nVERDICT manifest: The source manifest.md records status complete, commit 44ed814d4, four changed paths, the four gate logs, the two suite arms with their failure ids, the negative-control note and the ruff delta, so its claims are checkable against the logs it names.\nVERDICT diff: Read 44ed814d4 against base 9a056358f; it adds the sweep function and its imports to reckon/crew_follow_commands.py, rekeys the two ticker.py comments from session to pane/host, adds the new test file and a five-line landing fragment, and changes no other path.\nCALL_SITES: reckon/crew_follow_commands.py:_prune_lift_claims, reckon/crew_follow_commands.py:take_lift_claim, reckon/crew_follow_commands.py:follower_row_path\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:1270 _prune_abandoned_lift_claim_dirs removes a host-keyed claim directory under crew_home/watch/lifts when its key names this node and owner_alive reports its pid+start tick dead, and it is wired into the follower's prune pass at reckon/crew_follow_commands.py:1249 (_prune_lift_claims), so the goal's removal of the lift-claim directories of hosts that ended on this node is delivered.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_abandoned_lift_claim_directories_are_swept.py:88-105 lays down the five-directory population the done_when names and asserts one pass removes exactly the dead local host's and the eight-day node-less directory (4 passed, head-gate.log EXIT=0), and negative-control.log shows the node-check mutation reddens the same test at EXIT=1, but head-gate.log:1 carries no revision line so its result is not tied to 44ed814d4 from its own header while after-suite.log:1 does name the head revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 9a056358f..44ed814d4 changes only reckon/crew_follow_commands.py, reckon/crew/ticker.py, tests/test_abandoned_lift_claim_directories_are_swept.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/abandoned-lift-claim-directories-are-swept.html, every one inside the source brief's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_abandoned_lift_claim_directories_are_swept.py:104 asserts set(removed) against independently built fixture paths and reddens when the node check is dropped (negative-control.log, EXIT=1), and line 118 reddens if the wiring at reckon/crew_follow_commands.py:1249 is removed, with no assertion comparing a value against the variable the test passed in.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew_follow_commands.py:1270 follows the suppress(OSError)/Path idiom of the sibling _prune_lift_claims just above at line 1237, its names state the mechanism and carry no plan, ticket or version label, and it uses only the re/shutil/pathlib imports the module already carries.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change forks nothing; reckon/crew_follow_commands.py:20-21 imports owner_alive from reckon/crew/session_host.py:212 and rests the liveness decision on it, reuses _lift_claim_token and crew_home, and no existing sweeper of the lifts root was found in a search over reckon/crew.\nFINDING reckon/crew_follow_commands.py:1313 follow-on: host-keyed directories whose start tick was not recorded match neither _HOST_CLAIM_DIR (line 1266) nor _HOST_CLAIM_DIR_NODELESS (line 1267), so this continue leaves them unswept forever; lift_claim_key writes exactly such a key at line 1201 (host-<node>-<pid>-unknown when the owner payload carries no start tick) and at line 1199 (host-<node>-<token> when the owner cannot be parsed), so the abandoned-directory class this node exists to remove survives for those host lifetimes.\nFINDING head-gate.log:1 follow-on: the focused head gate log's header carries the command and the worktree path but no revision line, so a reader cannot tie its 4 passed (EXIT=0) to the landed head 44ed814d4 from the log's own header; after-suite.log:1 does name the head revision, so the suite arm is traceable even though the focused gate is not.\n",
+  "review_run_id": "r-20261018T123138411889-review-of-abandoned-lift-claim-directories-are-swept-44ed814d4060",
+  "reviewed_base_sha": "9a056358f639072871e0080f4bbe2cd878ad00ef",
+  "reviewed_commits": [
+    "44ed814d406057e14a70e21e414f9269860e577d"
+  ],
+  "reviewed_head_sha": "44ed814d406057e14a70e21e414f9269860e577d",
+  "reviewed_run_id": "r-20261018T113923635060-abandoned-lift-claim-directories-are-swept",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T12:49:57.730485+00:00",
+  "total": 114
+}
