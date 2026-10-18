@@ -29,7 +29,7 @@ from reckon import _store, file_memo, flight, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew import recovery, review_dispositions, review_lifecycle, runs
 from reckon.crew import review as review_module
-from reckon.crew.node import INTERRUPTED_RUN_PHASE, parse_duration
+from reckon.crew.node import INTERRUPTED_RUN_PHASE, CrewError, parse_duration
 from reckon.crew.routing import (
     WorktreeRecordIndex,
     _registered_worktrees,
@@ -164,7 +164,10 @@ def _refused_delivered_review(pointer: Mapping[str, Any]) -> dict[str, str] | No
     review_run_id = recovery._review_in_flight(pointer)
     if not review_run_id:
         return None
-    reviewer = runs.read_pointer(review_run_id)
+    try:
+        reviewer = runs.read_pointer(review_run_id)
+    except CrewError:
+        return None
     if not reviewer:
         return None
     directory = review_module.run_review_record_directory(runs.run_dir(reviewed_run_id))
