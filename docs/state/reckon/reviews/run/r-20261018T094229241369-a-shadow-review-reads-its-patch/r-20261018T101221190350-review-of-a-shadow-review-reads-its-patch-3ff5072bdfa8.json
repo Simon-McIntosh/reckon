@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T094229241369-a-shadow-review-reads-its-patch/gate-head.log",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Removing the shadow block from _review_brief_text makes the git -C diff command, the ls-files command and the contract sentence all absent, so the assertion fails; confirmed by negative-control-remove-block.log.",
+      "lines": "77-81"
+    },
+    {
+      "failure_condition": "A block that hardcoded a fixed worktree or base, or read them from the wrong record, would leave the second record's tree absent or the first tree present; the assertion fails.",
+      "lines": "93-99"
+    },
+    {
+      "failure_condition": "Appending any block for a non-shadow changes the composed text from load_review_prompt() plus the identity lines and injects the contract sentence; the assertion fails.",
+      "lines": "104-116"
+    },
+    {
+      "failure_condition": "Appending the block for every paired arm rather than for a shadow injects \"shadow\" into the paired primary's brief; the assertion fails, confirmed by negative-control-paired-arm.log.",
+      "lines": "119-122"
+    }
+  ],
+  "base_log_revision": "5439244388a2a7ae620a338eafa9ee1feba4fe03",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T094229241369-a-shadow-review-reads-its-patch/gate-base.log",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_review_subject.py:_review_dispatch_fields",
+    "reckon/crew/recovery_review_dispatch.py:295",
+    "reckon/crew/recovery_repair_dispatch.py:604",
+    "reckon/crew/obligations.py:152"
+  ],
+  "completed_at": "2026-10-18T10:25:10.909Z",
+  "dispatched_at": "2026-10-18T10:13:18Z",
+  "findings": [
+    {
+      "file": "tests/test_a_shadow_is_reviewed_on_its_patch.py",
+      "line": "79",
+      "severity": "follow-on",
+      "text": "follow-on: the first case asserts the block echoes the worktree and base the test itself supplied, and HEAD is set equal to BASE_SHA (lines 28-29), so the assertion cannot tell a block reading base_sha from one reading head; the second case (lines 96-99) supplies the independent check that the block reads from the record, which limits the gap to the base-versus-head indistinguishability."
+    }
+  ],
+  "head_log_revision": "f030e70cbc7d27b9774544d5db92d0b46e096438",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against the base; f030e70cb adds _shadow_review_block and its call plus tests/test_a_shadow_is_reviewed_on_its_patch.py (4 cases), and 3ff5072bd adds the landing fragment; 244 insertions, 1 deletion, all inside the declared scope.",
+    "done_when": "the done_when requires tests/test_a_shadow_is_reviewed_on_its_patch.py to assert the three named cases and a pytest over the seven named files to add no failure against the base; the manifest records a base arm at 1 failed/33 passed and a head arm at 1 failed/37 passed with the same single pre-existing reckon/ledger.py failure. The gate the worker ran asserts that measure.",
+    "goal": "the goal is to make the run-review brief for a shadow name its retained worktree patch as the reviewed change; reckon/crew/recovery_review_subject.py:406-431 defines _shadow_review_block and :401 appends it when promotion_scope._is_shadow reads the record as a shadow, naming git -C <worktree> diff <base_sha> and git -C <worktree> ls-files --others --exclude-standard from the record's own worktree and base and stating the empty-commits contract.",
+    "manifest": "read; it reports the shadow block in _review_brief_text, four new cases, base/head gate figures with zero added failure ids, both negative-control logs, and status complete.",
+    "write_paths": "the declared paths are reckon/crew/recovery_review_subject.py, tests/test_a_shadow_is_reviewed_on_its_patch.py and the node's landing fragment under docs/evidence/fragments/; the 54392443..3ff5072bd diff changes exactly those three files and adds no figure."
+  },
+  "justifications": {
+    "durability": "negative-control-remove-block.log (EXIT=1, FAILED test_a_shadow_brief_names_the_retained_patch) and negative-control-paired-arm.log (EXIT=1, FAILED test_a_paired_primary_gets_no_shadow_block) show the added assertions redden on the two declared regressions; tests/test_a_shadow_is_reviewed_on_its_patch.py:79 builds its expectation from the same worktree/base it hands the record and shares the HEAD==BASE_SHA constant (lines 28-29), so it cannot distinguish a block reading base_sha from one reading head, a gap the second case (lines 96-99) narrows by asserting a second record's values appear and the first's do not.",
+    "evidence": "gate-base.log (revision 54392443, 1 failed/33 passed) and gate-head.log (revision f030e70cbc, 1 failed/37 passed) record the done_when's pytest over the seven named files, both with the same pre-existing reckon/ledger.py:50505 module-size failure and zero added failure ids.",
+    "fit": "the lazy `from reckon.crew.promotion_scope import _is_shadow` at recovery_review_subject.py:399 breaks the recovery.py->promotion_scope<->recovery_review_subject import cycle and matches the module's existing late-import idiom at lines 1041+; every added name is mechanism-descriptive with no plan or sprint label.",
+    "goal_fidelity": "reckon/crew/recovery_review_subject.py:401 appends _shadow_review_block only when _is_shadow(record) is true and :419-431 name the two patch commands from the record's own worktree and base, matching the plan's remedy for a shadow brief.",
+    "reuse": "the block keys on promotion_scope._is_shadow (promotion_scope.py:899) rather than writing a second shadow test, and a capability search over reckon/crew found no existing brief-block composer; promotion_scope._write_shadow_patch (promotion_scope.py:905) produces the patch (a different capability) rather than naming it, and promotion_evidence.py:575 reads ls-files --others --exclude-standard for the same artifact, so the addition names an owner's output rather than duplicating a mechanism.",
+    "scope_discipline": "the 5439244388..3ff5072bd diff changes only recovery_review_subject.py, tests/test_a_shadow_is_reviewed_on_its_patch.py and the node's own landing fragment, with no figure written though the fragment path was granted."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make the run-review brief for a shadow name its retained worktree patch as the reviewed change; reckon/crew/recovery_review_subject.py:406-431 defines _shadow_review_block and :401 appends it when promotion_scope._is_shadow reads the record as a shadow, naming git -C <worktree> diff <base_sha> and git -C <worktree> ls-files --others --exclude-standard from the record's own worktree and base and stating the empty-commits contract.\nVERDICT done_when: the done_when requires tests/test_a_shadow_is_reviewed_on_its_patch.py to assert the three named cases and a pytest over the seven named files to add no failure against the base; the manifest records a base arm at 1 failed/33 passed and a head arm at 1 failed/37 passed with the same single pre-existing reckon/ledger.py failure. The gate the worker ran asserts that measure.\nVERDICT write_paths: the declared paths are reckon/crew/recovery_review_subject.py, tests/test_a_shadow_is_reviewed_on_its_patch.py and the node's landing fragment under docs/evidence/fragments/; the 54392443..3ff5072bd diff changes exactly those three files and adds no figure.\nVERDICT manifest: read; it reports the shadow block in _review_brief_text, four new cases, base/head gate figures with zero added failure ids, both negative-control logs, and status complete.\nVERDICT diff: read commit by commit against the base; f030e70cb adds _shadow_review_block and its call plus tests/test_a_shadow_is_reviewed_on_its_patch.py (4 cases), and 3ff5072bd adds the landing fragment; 244 insertions, 1 deletion, all inside the declared scope.\nCALL_SITES: reckon/crew/recovery_review_subject.py:_review_dispatch_fields, reckon/crew/recovery_review_dispatch.py:295, reckon/crew/recovery_repair_dispatch.py:604, reckon/crew/obligations.py:152\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_subject.py:401 appends _shadow_review_block only when _is_shadow(record) is true and :419-431 name the two patch commands from the record's own worktree and base, matching the plan's remedy for a shadow brief.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-base.log (revision 54392443, 1 failed/33 passed) and gate-head.log (revision f030e70cbc, 1 failed/37 passed) record the done_when's pytest over the seven named files, both with the same pre-existing reckon/ledger.py:50505 module-size failure and zero added failure ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the 5439244388..3ff5072bd diff changes only recovery_review_subject.py, tests/test_a_shadow_is_reviewed_on_its_patch.py and the node's own landing fragment, with no figure written though the fragment path was granted.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control-remove-block.log (EXIT=1, FAILED test_a_shadow_brief_names_the_retained_patch) and negative-control-paired-arm.log (EXIT=1, FAILED test_a_paired_primary_gets_no_shadow_block) show the added assertions redden on the two declared regressions; tests/test_a_shadow_is_reviewed_on_its_patch.py:79 builds its expectation from the same worktree/base it hands the record and shares the HEAD==BASE_SHA constant (lines 28-29), so it cannot distinguish a block reading base_sha from one reading head, a gap the second case (lines 96-99) narrows by asserting a second record's values appear and the first's do not.\nSCORE fit: 18\nJUSTIFICATION fit: the lazy `from reckon.crew.promotion_scope import _is_shadow` at recovery_review_subject.py:399 breaks the recovery.py->promotion_scope<->recovery_review_subject import cycle and matches the module's existing late-import idiom at lines 1041+; every added name is mechanism-descriptive with no plan or sprint label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the block keys on promotion_scope._is_shadow (promotion_scope.py:899) rather than writing a second shadow test, and a capability search over reckon/crew found no existing brief-block composer; promotion_scope._write_shadow_patch (promotion_scope.py:905) produces the patch (a different capability) rather than naming it, and promotion_evidence.py:575 reads ls-files --others --exclude-standard for the same artifact, so the addition names an owner's output rather than duplicating a mechanism.\nFINDING tests/test_a_shadow_is_reviewed_on_its_patch.py:79 follow-on: the first case asserts the block echoes the worktree and base the test itself supplied, and HEAD is set equal to BASE_SHA (lines 28-29), so the assertion cannot tell a block reading base_sha from one reading head; the second case (lines 96-99) supplies the independent check that the block reads from the record, which limits the gap to the base-versus-head indistinguishability.\n",
+  "review_run_id": "r-20261018T101221190350-review-of-a-shadow-review-reads-its-patch-3ff5072bdfa8",
+  "reviewed_base_sha": "5439244388a2a7ae620a338eafa9ee1feba4fe03",
+  "reviewed_commits": [
+    "f030e70cbc7d27b9774544d5db92d0b46e096438",
+    "3ff5072bdfa831bebf23a16f233fc6d26d96edaa"
+  ],
+  "reviewed_head_sha": "3ff5072bdfa831bebf23a16f233fc6d26d96edaa",
+  "reviewed_run_id": "r-20261018T094229241369-a-shadow-review-reads-its-patch",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T10:27:45.721380+00:00",
+  "total": 113
+}
