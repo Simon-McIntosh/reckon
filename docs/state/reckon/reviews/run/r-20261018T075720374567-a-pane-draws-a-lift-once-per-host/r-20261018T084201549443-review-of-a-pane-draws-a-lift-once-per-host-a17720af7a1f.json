@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:follower_row_path",
+    "reckon/crew_follow_commands.py:take_lift_claim",
+    "reckon/crew_follow_commands.py:_lift_claim_path",
+    "reckon/crew_follow_commands.py:_lift_claimed",
+    "reckon/crew_follow_commands.py:_prune_lift_claims"
+  ],
+  "completed_at": "2026-10-18T08:57:02.348Z",
+  "dispatched_at": "2026-10-18T08:42:53Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "1226",
+      "severity": "follow-on",
+      "text": "the comment still reads 'the shared, on-disk claim (per session, lift id and transition)'; the landed change re-keys the claim on the spawning host, so the comment now describes a keying that no longer runs. Outside this node's declared write scope, so it is recorded rather than repaired here."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "1179",
+      "severity": "follow-on",
+      "text": "the claim directory is now keyed on the host identity (host-<pid>-<start_time>), so every session-host lifetime creates a fresh directory under crew_home/watch/lifts and nothing sweeps the abandoned ones: _prune_lift_claims (:1198) removes only claim files within the current pane's directory and runs only on a lift end. The per-session keying this replaces was bounded by the set of session names; host keying grows one directory per host restart."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base 1a4589cc4; the single landed commit a17720af7 changes three files, all inside the declared scope.",
+    "done_when": "the done_when names a two-session one-host test drawing one grant and one end row plus a session-keyed negative control; tests/test_a_pane_draws_a_lift_once_per_host.py asserts exactly that and the manifest records 4 passed.",
+    "goal": "the node's goal is to make every follower a session host runs share one lift claim per pane; reckon/crew_follow_commands.py:1165 lift_claim_key implements it by keying on the host owner.",
+    "manifest": "read; it states tests/test_a_pane_draws_a_lift_once_per_host.py 4 passed and names its negative control and importer-arm logs with EXIT=.",
+    "write_paths": "read the manifest's declared write paths; every path in the diff is inside them (the landing fragment is always permitted at its scope path)."
+  },
+  "justifications": {
+    "durability": "the declared negative control (reckon/crew_follow_commands.py lift_claim_key re-keyed on the session) reddens two tests with EXIT=1 (negative-control.log: 'the grant drew 2 times on one pane'), and the counting assertions compare against the literal 1 rather than against a value the test fed in.",
+    "evidence": "the done_when's gate is tests/test_a_pane_draws_a_lift_once_per_host.py, recorded as 4 passed in the manifest, with base and head importer arms both 380 passed and 0 failed (EXIT=0) in importer-arm-base.log and importer-arm-head.log.",
+    "fit": "the module's existing lazy-import idiom (runs, crew_home) and module-private helper style are followed and no name violates the repository naming rules; docked because the host key is formatted inline rather than through a named helper.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:1165 lift_claim_key keys the pane's claim on the host owner from RECKON_FOLLOWER_OWNER when present and on the session otherwise, which is exactly the section 51 deliverable.",
+    "reuse": "reckon/crew_follow_commands.py:1180 reuses runs._parse_follower_owner and runs._FOLLOWER_OWNER_ENV; a capability search over reckon/crew for an existing host-to-pane-key mapping found none, so allocating the pane key is new rather than a fork.",
+    "scope_discipline": "the three landed files (reckon/crew_follow_commands.py, tests/test_a_pane_draws_a_lift_once_per_host.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-pane-draws-a-lift-once-per-host.html) are all inside the declared write paths, the fragment being the always-permitted landing artifact."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "Review of run r-20261018T075720374567-a-pane-draws-a-lift-once-per-host at its landed head a17720af7, plan reckon:the-monitor-shows-the-work-it-watches section 51.\n\nVERDICT goal: the node's goal is to make every follower a session host runs share one lift claim per pane; reckon/crew_follow_commands.py:1165 lift_claim_key implements it by keying on the host owner.\nVERDICT done_when: the done_when names a two-session one-host test drawing one grant and one end row plus a session-keyed negative control; tests/test_a_pane_draws_a_lift_once_per_host.py asserts exactly that and the manifest records 4 passed.\nVERDICT write_paths: read the manifest's declared write paths; every path in the diff is inside them (the landing fragment is always permitted at its scope path).\nVERDICT manifest: read; it states tests/test_a_pane_draws_a_lift_once_per_host.py 4 passed and names its negative control and importer-arm logs with EXIT=.\nVERDICT diff: read commit by commit against base 1a4589cc4; the single landed commit a17720af7 changes three files, all inside the declared scope.\nCALL_SITES: reckon/crew_follow_commands.py:follower_row_path, reckon/crew_follow_commands.py:take_lift_claim, reckon/crew_follow_commands.py:_lift_claim_path, reckon/crew_follow_commands.py:_lift_claimed, reckon/crew_follow_commands.py:_prune_lift_claims\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:1165 lift_claim_key keys the pane's claim on the host owner from RECKON_FOLLOWER_OWNER when present and on the session otherwise, which is exactly the section 51 deliverable.\nSCORE evidence: 19\nJUSTIFICATION evidence: the done_when's gate is tests/test_a_pane_draws_a_lift_once_per_host.py, recorded as 4 passed in the manifest, with base and head importer arms both 380 passed / 0 failed (EXIT=0) in importer-arm-base.log and importer-arm-head.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three landed files (reckon/crew_follow_commands.py, tests/test_a_pane_draws_a_lift_once_per_host.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-pane-draws-a-lift-once-per-host.html) are all inside the declared write paths, the fragment being the always-permitted landing artifact.\nSCORE durability: 19\nJUSTIFICATION durability: the declared negative control (reckon/crew_follow_commands.py lift_claim_key re-keyed on the session) reddens two tests with EXIT=1, and the counting assertions compare against the literal 1 rather than against a value the test fed in.\nSCORE fit: 18\nJUSTIFICATION fit: the module's existing lazy-import idiom (runs, crew_home) and module-private helper style are followed and no name violates the repository naming rules; docked because the host key is formatted inline rather than through a named helper.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew_follow_commands.py:1180 reuses runs._parse_follower_owner and runs._FOLLOWER_OWNER_ENV; a capability search over reckon/crew for an existing host-to-pane-key mapping found none.\nFINDING reckon/crew/ticker.py:1226 follow-on: the comment still reads 'the shared, on-disk claim (per session, lift id and transition)', a keying the landed change replaces; outside this node's scope.\nFINDING reckon/crew_follow_commands.py:1179 follow-on: the host-keyed claim directory accumulates one abandoned directory per host lifetime under crew_home/watch/lifts with no sweep.\n",
+  "review_run_id": "r-20261018T084201549443-review-of-a-pane-draws-a-lift-once-per-host-a17720af7a1f",
+  "reviewed_base_sha": "1a4589cc48999ca255ee5ffd148b95b06d3dbd57",
+  "reviewed_head_sha": "a17720af7a1fbe4e6deb3eed5e959e0c1cc9b1e1",
+  "reviewed_run_id": "r-20261018T075720374567-a-pane-draws-a-lift-once-per-host",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T08:55:00.000000+00:00",
+  "total": 114
+}
