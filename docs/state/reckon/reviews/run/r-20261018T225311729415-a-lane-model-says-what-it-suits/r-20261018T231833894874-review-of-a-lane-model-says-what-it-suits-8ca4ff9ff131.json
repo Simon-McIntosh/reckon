@@ -1,0 +1,43 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-18T23:25:36.726Z",
+  "dispatched_at": "2026-10-18T23:19:15Z",
+  "findings": [],
+  "project": "reckon",
+  "review_run_id": "r-20261018T231833894874-review-of-a-lane-model-says-what-it-suits-8ca4ff9ff131",
+  "reviewed_base_sha": "f2e4797d7eff35aad14f197aa9db610f45022d64",
+  "reviewed_head_sha": "8ca4ff9ff1319b0530b5d1744eb3da3ae7346435",
+  "reviewed_run_id": "r-20261018T225311729415-a-lane-model-says-what-it-suits",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T23:25:39.728037+00:00",
+  "verdicts": [
+    "VERDICT goal: the node's goal is to render each lane model's declared suits statement on its row; reckon/crew/picker/snapshot.py:1436 sets suits from the merged per-model mapping and reckon/crew/picker/prompts.py:302 renders it sparsely.",
+    "VERDICT done_when: the done_when names the ten-file pytest gate and the six new-test cases; manifest.md records the head run 2 failed/172 passed against base 2 failed/166 passed with the same two failure ids, and representative_state_tokens 2170/2200 head vs 2165/2200 base.",
+    "VERDICT write_paths: read the manifest's declared paths; every path in the single commit 8ca4ff9ff is inside them, the new test and the landing fragment included.",
+    "VERDICT manifest: read; status complete, commits 8ca4ff9ff, tests, baseline_suite and after_suite JSON, and both negative-control logs named.",
+    "VERDICT diff: read commit by commit against base f2e4797d7e; one commit, nine files, adding the suits slot to flight.yaml, the regenerated _flight_schema.py and flight.schema.json, the picker read/render, the glossary and instruction sentence, and the new test.",
+    "CALL_SITES: reckon/crew/picker/__init__.py:390,272, reckon/crew/picker/replay.py:57, reckon/crew/picker/prompts.py:302",
+    "SCORE goal_fidelity: 20",
+    "JUSTIFICATION goal_fidelity: reckon/crew/picker/prompts.py:302 renders suits on a row whose candidate carries one and omits the key otherwise, matching the goal.",
+    "SCORE evidence: 19",
+    "JUSTIFICATION evidence: the gate at gate-head.log ran the ten named files, 2 failed/172 passed, delta zero against gate-base.log's 2 failed/166 passed, and both failure ids are the pre-existing urgency mismatch.",
+    "SCORE scope_discipline: 20",
+    "JUSTIFICATION scope_discipline: every changed path in 8ca4ff9ff lies within the declared write paths and no figure was written though docs/figures was granted.",
+    "SCORE durability: 20",
+    "JUSTIFICATION durability: negative-control-1.log and negative-control-2.log each redden tests/test_a_lane_model_says_what_it_suits.py on the declared mutation, so the assertions discriminate the regression they guard.",
+    "SCORE fit: 20",
+    "JUSTIFICATION fit: prompts.py:302 reuses the sparse-render idiom of moved_in at prompts.py:283-292 and names no forbidden symbol.",
+    "SCORE reuse: 20",
+    "JUSTIFICATION reuse: the read extends the existing merged per-model mapping at snapshot.py:1273-1276 rather than forking a new one, and no prior owner renders a declared per-model string on a pick row."
+  ]
+}
