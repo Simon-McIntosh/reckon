@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/project_maintenance_commands.py:48-61 (fleet-node migrate command)",
+    "reckon/project_setup_commands.py:230 (fleet-node status output)"
+  ],
+  "completed_at": "2026-10-18T15:16:09Z",
+  "dispatched_at": "2026-10-18T15:06:49Z",
+  "findings": [
+    {
+      "file": "tests/test_fleet_migrate_cutover.py",
+      "line": "385",
+      "severity": "blocking",
+      "text": "blocking: The committed test edit is outside prompt.txt:69-74's exclusive write paths, so the run needs a scope extension before promotion."
+    },
+    {
+      "file": "tests/test_migrate_starts_a_second_move.py",
+      "line": "23",
+      "severity": "follow-on",
+      "text": "follow-on: The new _source helper duplicates tests/test_fleet_migrate.py:100-118, giving the same fixture construction two owners that can drift."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T135110566087-migrate-starts-a-second-move/manifest.md",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "follow-on: The reviewed manifest records no baseline_suite or after_suite log pair, so added failures must remain unmeasured rather than being reported as zero."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "commits 2716438e03d452988ae274576c3894dfcfd58b15 and 8df89b94cbcf76cc759efb0b6af040b9724812a5 were read against 4a53860316f27ff60204a2bbf359559093cd92cd; the latter makes the rule unconditional at reckon/crew/fleet_migrate.py:867 and changes five paths including the ungranted test.",
+    "done_when": "prompt.txt:96 requires a fresh ledger, dry-run text, cutover resume, and status wording; gate.log records 4 passed and gate-related.log records 91 passed for tests/test_migrate_starts_a_second_move.py:71-188 and the related tests.",
+    "goal": "prompt.txt:30 asks for a new census after a done ledger and corrected drain wording, both present at reckon/crew/fleet_migrate.py:867 and reckon/crew/fleet_node.py:490.",
+    "manifest": "manifest.md:5-15 reports both commits, the 4 and 91 passing gates, and a failing cutover negative control, while manifest.md:16-17 acknowledges the ungranted test edit and supplies no baseline_suite or after_suite arm.",
+    "write_paths": "prompt.txt:69-74 grants four files and one figure directory, while the diff also changes tests/test_fleet_migrate_cutover.py:385 outside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_migrate_starts_a_second_move.py:89 and :127 fail if the old done-ledger return is reinstated, :107-108 and :145-148 fail if no fresh census ledger is written, :162-170 fail if cutover starts another census, and :185-188 fail if the warning reverts.",
+    "evidence": "tests/test_migrate_starts_a_second_move.py:71-188 asserts the required branches, gate.log records 4 passed, gate-related.log records 91 passed, and negative-control.log records the cutover failure, although manifest.md has no paired suite arms for an added-failure delta.",
+    "fit": "reckon/crew/fleet_migrate.py:867-877 extends the existing ledger step dispatch and reckon/crew/fleet_node.py:488-494 retains its warning idiom, with no added forbidden source name.",
+    "goal_fidelity": "reckon/crew/fleet_migrate.py:867-877 sends every done ledger to census, and reckon/crew/fleet_node.py:490-493 carries all three requested drain statements.",
+    "reuse": "tests/test_migrate_starts_a_second_move.py:23-41 duplicates the existing fixture source builder owned by tests/test_fleet_migrate.py:100-118 instead of extending that owner.",
+    "scope_discipline": "tests/test_fleet_migrate_cutover.py:385 is outside prompt.txt:69-74 despite being a focused adjustment to the retired behaviour."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks for a new census after a done ledger and corrected drain wording, both present at reckon/crew/fleet_migrate.py:867 and reckon/crew/fleet_node.py:490.\nVERDICT done_when: prompt.txt:96 requires a fresh ledger, dry-run text, cutover resume, and status wording; gate.log records 4 passed and gate-related.log records 91 passed for tests/test_migrate_starts_a_second_move.py:71-188 and the related tests.\nVERDICT write_paths: prompt.txt:69-74 grants four files and one figure directory, while the diff also changes tests/test_fleet_migrate_cutover.py:385 outside that scope.\nVERDICT manifest: manifest.md:5-15 reports both commits, the 4 and 91 passing gates, and a failing cutover negative control, while manifest.md:16-17 acknowledges the ungranted test edit and supplies no baseline_suite or after_suite arm.\nVERDICT diff: commits 2716438e03d452988ae274576c3894dfcfd58b15 and 8df89b94cbcf76cc759efb0b6af040b9724812a5 were read against 4a53860316f27ff60204a2bbf359559093cd92cd; the latter makes the rule unconditional at reckon/crew/fleet_migrate.py:867 and changes five paths including the ungranted test.\nCALL_SITES: reckon/project_maintenance_commands.py:48-61 (fleet-node migrate command), reckon/project_setup_commands.py:230 (fleet-node status output)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_migrate.py:867-877 sends every done ledger to census, and reckon/crew/fleet_node.py:490-493 carries all three requested drain statements.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_migrate_starts_a_second_move.py:71-188 asserts the required branches, gate.log records 4 passed, gate-related.log records 91 passed, and negative-control.log records the cutover failure, although manifest.md has no paired suite arms for an added-failure delta.\nSCORE scope_discipline: 2\nJUSTIFICATION scope_discipline: tests/test_fleet_migrate_cutover.py:385 is outside prompt.txt:69-74 despite being a focused adjustment to the retired behaviour.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_migrate_starts_a_second_move.py:89 and :127 fail if the old done-ledger return is reinstated, :107-108 and :145-148 fail if no fresh census ledger is written, :162-170 fail if cutover starts another census, and :185-188 fail if the warning reverts.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/fleet_migrate.py:867-877 extends the existing ledger step dispatch and reckon/crew/fleet_node.py:488-494 retains its warning idiom, with no added forbidden source name.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_migrate_starts_a_second_move.py:23-41 duplicates the existing fixture source builder owned by tests/test_fleet_migrate.py:100-118 instead of extending that owner.\nFINDING tests/test_fleet_migrate_cutover.py:385 blocking: The committed test edit is outside prompt.txt:69-74's exclusive write paths, so the run needs a scope extension before promotion.\nFINDING tests/test_migrate_starts_a_second_move.py:23 follow-on: The new _source helper duplicates tests/test_fleet_migrate.py:100-118, giving the same fixture construction two owners that can drift.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T135110566087-migrate-starts-a-second-move/manifest.md:12 follow-on: The reviewed manifest records no baseline_suite or after_suite log pair, so added failures must remain unmeasured rather than being reported as zero.\n",
+  "review_run_id": "r-20261018T150410639227-review-of-migrate-starts-a-second-move-8df89b94cbcf",
+  "reviewed_base_sha": "4a53860316f27ff60204a2bbf359559093cd92cd",
+  "reviewed_head_sha": "8df89b94cbcf76cc759efb0b6af040b9724812a5",
+  "reviewed_run_id": "r-20261018T135110566087-migrate-starts-a-second-move",
+  "reviewer_run_id": "r-20261018T150410639227-review-of-migrate-starts-a-second-move-8df89b94cbcf",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 2
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T15:12:12.886812+00:00",
+  "total": 82
+}

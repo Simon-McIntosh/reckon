@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -389,6 +389,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-18T13:25:00Z">
     <div class="r-comment-body"><p>§2 landed: the stop path signals the <code>srun</code> client, so Slurm cancels the step at the first SIGTERM, and a process stuck past 60 s then drains the node. Both drains were routine end-of-run stops of a worker that lingered after its manifest (evidence <code>66610d127</code>; claims review 3 of 3 reproduced). Gate <code>g-tfnsis-stop-path</code> passed, so §3 can dispatch: the stop signal goes to the task inside the step, and the <code>srun</code> client stays alive until the task exits. <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s2">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T150410639227-review-of-migrate-starts-a-second-move-8df89b94cbcf" data-who="reckon-build" data-when="2026-10-18T15:16:09Z">
+    <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T135110566087-migrate-starts-a-second-move/review-records/r-20261018T135110566087-migrate-starts-a-second-move.at-8df89b94cbcf76cc759efb0b6af040b9724812a5.json — parsed review of base 4a53860316f27ff60204a2bbf359559093cd92cd through head 8df89b94cbcf76cc759efb0b6af040b9724812a5, 6 dimensions and 6 checklist items, 2 production call sites, 3 findings including 1 blocking scope violation; added-failure delta unmeasured because the reviewed manifest names no paired suite arms.</p></div>
 </div>
 </section>
 </main>
