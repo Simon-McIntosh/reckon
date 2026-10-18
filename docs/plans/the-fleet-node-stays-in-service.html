@@ -23,6 +23,8 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
   <main class="plan-doc">
@@ -251,46 +253,51 @@
     </p>
 
     <section data-reckon="gates" id="gates" class="r-gates">
-      <h2><span class="sec">&sect;</span> Evidence gates</h2>
-      <div class="r-gate" data-id="g-tfnsis-stop-path" data-section="s2" data-gated-sections="s3" data-status="open" data-verdict="">
-        <h4 class="r-gate-measure">The signalled process and the step's ending are named with a code citation, and both drain steps are attributed or declared unattributable</h4>
-        <p class="r-gate-required-evidence">The §2 evidence fragment under docs/evidence/fragments/the-fleet-node-stays-in-service/.</p>
-      </div>
-      <div class="r-gate" data-id="g-tfnsis-move-ready" data-section="s5" data-gated-sections="s8" data-status="open" data-verdict="">
-        <h4 class="r-gate-measure">A stopped worker's step ends COMPLETED on the fleet allocation, and a migrate rehearsal passes at the head carrying the second-move fix</h4>
-        <p class="r-gate-required-evidence">The §3 probe's sacct state and reaper record, and the §5 rehearsal ledger at its pass state.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-tfnsis-stop-path" data-section="s2" data-gated-sections="s3" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">The signalled process and the step&#x27;s ending are named with a code citation, and both drain steps are attributed or declared unattributable</h4>
+    <p class="r-gate-required-evidence">The §2 evidence fragment under docs/evidence/fragments/the-fleet-node-stays-in-service/.</p>
+    </div>
+<div class="r-gate" data-id="g-tfnsis-move-ready" data-section="s5" data-gated-sections="s8" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">A stopped worker&#x27;s step ends COMPLETED on the fleet allocation, and a migrate rehearsal passes at the head carrying the second-move fix</h4>
+    <p class="r-gate-required-evidence">The §3 probe's sacct state and reaper record, and the §5 rehearsal ledger at its pass state.</p>
+    </div>
+</section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">&sect;</span> Decisions</h2>
-      <div class="r-dec" data-key="worker-step-memory" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">What default memory bound does a worker step carry, and above what declared size does a node leave the fleet allocation for its own job?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="16G-default-32G-ceiling">16 GB default, 32 GB ceiling</button>
-          <button class="r-opt" data-value="24G-default-48G-ceiling">24 GB default, 48 GB ceiling</button>
-          <button class="r-opt" data-value="24G-default-64G-ceiling">24 GB default, 64 GB ceiling</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-      <div class="r-dec" data-key="move-timing" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">When does the fleet move off clu-2002?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="after-stop-path">After the stop-path fix and a passing rehearsal</button>
-          <button class="r-opt" data-value="now">Now, by the existing command</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="worker-step-memory" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What default memory bound does a worker step carry, and above what declared size does a node leave the fleet allocation for its own job?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="16G-default-32G-ceiling">16 GB default, 32 GB ceiling</button>
+      <button class="r-opt" data-value="24G-default-48G-ceiling">24 GB default, 48 GB ceiling</button>
+      <button class="r-opt" data-value="24G-default-64G-ceiling">24 GB default, 64 GB ceiling</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="move-timing" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">When does the fleet move off clu-2002?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="after-stop-path">After the stop-path fix and a passing rehearsal</button>
+      <button class="r-opt" data-value="now">Now, by the existing command</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">&sect;</span> Followups</h2>
-      <article class="r-fu" data-id="f-tfnsis-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build the-fleet-node-stays-in-service">
-        <h4 class="r-fu-title">Investigate the stop path and producer cost, fix the migrate command, then gate the move</h4>
-        <div class="r-fu-body"><p>§2, §4, §6 and §7 have disjoint write scopes and run as one wave. §3 waits on the §2 gate, and §5 on §4. §8 waits on the move-ready gate and on the lead's decision on timing.</p></div>
-        <pre class="r-fu-prompt">/reckon-build the-fleet-node-stays-in-service</pre>
-      </article>
-    </section>
-  </main>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tfnsis-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build the-fleet-node-stays-in-service" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Investigate the stop path and producer cost, fix the migrate command, then gate the move</h4>
+    <div class="r-fu-body"><p>§2, §4, §6 and §7 have disjoint write scopes and run as one wave. §3 waits on the §2 gate, and §5 on §4. §8 waits on the move-ready gate and on the lead's decision on timing.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-fleet-node-stays-in-service</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261018T115358502565-review-of-measure-a-watch-producer-poll-517c1d32373b" data-who="reckon-build" data-when="2026-10-18T12:13:34.053Z">
+    <div class="r-comment-body"><p>reviewed run r-20261018T111119884715-measure-a-watch-producer-poll at head 517c1d32373b85dee8a98e735815bc4451ef2f83 across all six dimensions (total 85/120): the report&#x27;s per-cycle strace table reconciles exactly against the delivered artefacts, but the imas-codex profile is the idle back-off path rather than the 56%-CPU path the goal names, and one blocking finding holds the git-shim figure at twice the shim executions</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>

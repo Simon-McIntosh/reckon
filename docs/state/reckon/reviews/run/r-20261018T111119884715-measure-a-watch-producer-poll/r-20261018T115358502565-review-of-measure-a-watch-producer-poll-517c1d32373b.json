@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run is a read-only measurement node that changed no code and armed no test suite, so its manifest carries no baseline_suite and no after_suite gate log; the only gate logs it names (p2-cont.gate.log, p2-codex.gate.log) are strace and py-spy measurement logs in neither pytest nor ctest format, so a count of added failing tests was never taken and is not stored as a measured zero.",
+  "assertion_analysis": [],
+  "assertions_note": "the reviewed node changed no test file and added no assertion, so there is no added assertion to read against a defect.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-18T12:13:34.053Z",
+  "dispatched_at": "2026-10-18T11:54:55Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-fleet-node-stays-in-service/measure-a-watch-producer-poll/report.md",
+      "line": "78",
+      "severity": "blocking",
+      "text": "blocking: the per-cycle git figure is double the shim executions \u2014 the 82 and 80 git-shim spawns count the 40 (power_convertor) and 41 (imas-codex) shim execve lines plus the same number of dirname execve lines whose argv names the shim path, so the true shim spawns are 40 and 41 and the 2.5 git invocations per cycle at report.md:82 is twice the true 1.25; the report's own sentence that a git call costs three spawns (shim, dirname, python) also contradicts calling 80 shim spawns 2.5 invocations, and the inflated number is the input the later section is to cut its fix from."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-fleet-node-stays-in-service/measure-a-watch-producer-poll/report.md",
+      "line": "34",
+      "severity": "follow-on",
+      "text": "follow-on: the cycle period is said to be read straight from the producer's own registration document and the reader is pointed at two registration files cited below, but no registration file is cited below and none is delivered in the report directory, so the 1.0 s and 4.0 s figures rest on a source a reader cannot open."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-fleet-node-stays-in-service/measure-a-watch-producer-poll/report.md",
+      "line": "63",
+      "severity": "follow-on",
+      "text": "follow-on: the CPU comparison puts the py-spy sample fractions (731 of 2000 = 37%, 126 of 2000 = 6%) beside the live process CPU averages (56.1%, 7.9%) at report.md:49 as one quantity, and the reproduced-populated arm reads 37% against its own live control's 7.9%, a 4.7x gap the report does not flag although it flags the equivalent gap on the imas-codex side."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-fleet-node-stays-in-service/measure-a-watch-producer-poll/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: changed_paths lists 13 artefacts while the delivered scope holds 21, omitting once-cont.stdout.txt, once-once.stdout.txt, p2-cont.ps.stdout.txt, p2-codex.ps.stdout.txt, record-cont.stdout.txt, record-codex.stdout.txt and the two record pyspy stderr files, so a reader taking changed_paths as the delivered set undercounts what the node wrote."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no diff to read \u2014 the source worktree for this node sits at 517c1d323 with an empty git status, so the deliverable is the exact report and its raw artefacts under the crew reports tree, not a code change.",
+    "done_when": "the done_when asks the report to carry a py-spy summary for both producers, per-cycle counts of files stat-ed, git calls and directory walks, the cycle period, the run-count scaling, and one sentence naming the change that would make the poll change-driven; report.md carries all five (lines 59-67, 69-85, 31-32, 87-101, 103-110) and each was checked against the delivered raw artefacts.",
+    "goal": "the node's goal is to measure what one crew watch poll reads by profiling the imas-codex producer against the power_convertor control; report.md:52-57 records that the running producers could not be profiled (ptrace EPERM) and that the imas-codex instance in fact ran the idle back-off path, so neither arm profiles the 56%-CPU path the goal names.",
+    "manifest": "read; it records status complete, commits none (read-only measurement node), 13 changed_paths, the two gate logs with EXIT=0 and the sample counts (731 and 126 of 2000), and its retry_failures with scaffolding attributions for the three instrument failures.",
+    "write_paths": "the source brief fences exactly /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-fleet-node-stays-in-service/measure-a-watch-producer-poll; every file the node delivered (report.md plus the strace, py-spy and gate-log artefacts) sits in that one directory, and the source worktree at 517c1d323 carries no commit and no modification, so nothing was written outside scope."
+  },
+  "justifications": {
+    "durability": "the node is read-only and changed no code, so it added no assertion and no test guards the measurement; its durability rests on the raw strace and py-spy artefacts preserved under the report directory.",
+    "evidence": "every count in report.md:69-79 reconciles exactly against the delivered strace artefacts (openat 60 991/60 137, stat 49 685/50 402, newfstatat 46 636/44 674, lstat 13 623/19 796, getdents64 6 899/4 680, execve 239/235), but the git-shim figure at report.md:78 does not (see FINDING) and report.md:34 cites registration files that are neither delivered nor cited.",
+    "fit": "report.md follows the sibling report layout under the crew reports tree beside name-how-a-stopped-worker-step-ends, and its filenames carry no plan label, though the terse p2- and once- prefixes at report.md:114-122 are opaque without the report's own caveat.",
+    "goal_fidelity": "report.md:52-57 states the imas-codex profile is the four-pointer back-off path and not the 56% path (its 126 samples against power_convertor's 731), so the goal's promised comparison of the plan's premise is not delivered.",
+    "reuse": "the node added no function, class or module, so nothing forks an existing capability; a search over reckon/crew for an existing producer-cost measurement found only the plan-hygiene audit commands, which measure plan state and not poll cost, so no owner exists.",
+    "scope_discipline": "all 21 files under the fenced report directory belong to the declared write path, the node's own source worktree shows no modification at revision 517c1d323, and its scratch tree was confined to TMPDIR."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure what one crew watch poll reads by profiling the imas-codex producer against the power_convertor control; report.md:52-57 records that the running producers could not be profiled (ptrace EPERM) and that the imas-codex instance in fact ran the idle back-off path, so neither arm profiles the 56%-CPU path the goal names.\nVERDICT done_when: the done_when asks the report to carry a py-spy summary for both producers, per-cycle counts of files stat-ed, git calls and directory walks, the cycle period, the run-count scaling, and one sentence naming the change that would make the poll change-driven; report.md carries all five (lines 59-67, 69-85, 31-32, 87-101, 103-110) and each was checked against the delivered raw artefacts.\nVERDICT write_paths: the source brief fences exactly /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-fleet-node-stays-in-service/measure-a-watch-producer-poll; every file the node delivered (report.md plus the strace, py-spy and gate-log artefacts) sits in that one directory, and the source worktree at 517c1d323 carries no commit and no modification, so nothing was written outside scope.\nVERDICT manifest: read; it records status complete, commits none (read-only measurement node), 13 changed_paths, the two gate logs with EXIT=0 and the sample counts (731 and 126 of 2000), and its retry_failures with scaffolding attributions for the three instrument failures.\nVERDICT diff: there is no diff to read \u2014 the source worktree for this node sits at 517c1d323 with an empty git status, so the deliverable is the exact report and its raw artefacts under the crew reports tree, not a code change.\nCALL_SITES: none\nSCORE goal_fidelity: 11\nJUSTIFICATION goal_fidelity: report.md:52-57 states the imas-codex profile is the four-pointer back-off path and not the 56% path (its 126 samples against power_convertor's 731), so the goal's promised comparison of the plan's premise is not delivered.\nSCORE evidence: 14\nJUSTIFICATION evidence: every count in report.md:69-79 reconciles exactly against the delivered strace artefacts (openat 60 991/60 137, stat 49 685/50 402, newfstatat 46 636/44 674, lstat 13 623/19 796, getdents64 6 899/4 680, execve 239/235), but the git-shim figure at report.md:78 does not (see FINDING) and report.md:34 cites registration files that are neither delivered nor cited.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: all 21 files under the fenced report directory belong to the declared write path, the node's own source worktree shows no modification at revision 517c1d323, and its scratch tree was confined to TMPDIR.\nSCORE durability: 6\nJUSTIFICATION durability: the node is read-only and changed no code, so it added no assertion and no test guards the measurement; its durability rests on the raw strace and py-spy artefacts preserved under the report directory.\nSCORE fit: 16\nJUSTIFICATION fit: report.md follows the sibling report layout under the crew reports tree beside name-how-a-stopped-worker-step-ends, and its filenames carry no plan label, though the terse p2- and once- prefixes at report.md:114-122 are opaque without the report's own caveat.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node added no function, class or module, so nothing forks an existing capability; a search over reckon/crew for an existing producer-cost measurement found only the plan-hygiene audit commands, which measure plan state and not poll cost, so no owner exists.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-fleet-node-stays-in-service/measure-a-watch-producer-poll/report.md:78 blocking: the per-cycle git figure is double the shim executions \u2014 the 82 and 80 git-shim spawns count the 40 (power_convertor) and 41 (imas-codex) shim execve lines plus the same number of dirname execve lines whose argv names the shim path, so the true shim spawns are 40 and 41 and the 2.5 git invocations per cycle at report.md:82 is twice the true 1.25; the report's own sentence that a git call costs three spawns (shim, dirname, python) also contradicts calling 80 shim spawns 2.5 invocations, and the inflated number is the input the later section is to cut its fix from.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-fleet-node-stays-in-service/measure-a-watch-producer-poll/report.md:34 follow-on: the cycle period is said to be read straight from the producer's own registration document and the reader is pointed at two registration files cited below, but no registration file is cited below and none is delivered in the report directory, so the 1.0 s and 4.0 s figures rest on a source a reader cannot open.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-fleet-node-stays-in-service/measure-a-watch-producer-poll/report.md:63 follow-on: the CPU comparison puts the py-spy sample fractions (731 of 2000 = 37%, 126 of 2000 = 6%) beside the live process CPU averages (56.1%, 7.9%) at report.md:49 as one quantity, and the reproduced-populated arm reads 37% against its own live control's 7.9%, a 4.7x gap the report does not flag although it flags the equivalent gap on the imas-codex side.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-fleet-node-stays-in-service/measure-a-watch-producer-poll/manifest.md:11 follow-on: changed_paths lists 13 artefacts while the delivered scope holds 21, omitting once-cont.stdout.txt, once-once.stdout.txt, p2-cont.ps.stdout.txt, p2-codex.ps.stdout.txt, record-cont.stdout.txt, record-codex.stdout.txt and the two record pyspy stderr files, so a reader taking changed_paths as the delivered set undercounts what the node wrote.",
+  "review_run_id": "r-20261018T115358502565-review-of-measure-a-watch-producer-poll-517c1d32373b",
+  "reviewed_base_sha": "517c1d32373b85dee8a98e735815bc4451ef2f83",
+  "reviewed_commits": [],
+  "reviewed_head_sha": "517c1d32373b85dee8a98e735815bc4451ef2f83",
+  "reviewed_run_id": "r-20261018T111119884715-measure-a-watch-producer-poll",
+  "scores": {
+    "durability": 6,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 11,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T12:10:27Z",
+  "total": 85
+}
