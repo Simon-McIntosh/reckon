@@ -57,6 +57,13 @@ class Candidate:
     # window.
     moved_in: dict[str, int] | None = None
     moved_off: int | None = None
+    # The operator's declared statement of the work this candidate's model
+    # suits, read from the same merged per-model mapping as ``effort``: a
+    # model's own declaration overrides one on its lane block, and a lane-level
+    # declaration reaches a model declaring none. Declared, never measured, so
+    # it is a prior to weigh beside the outcomes rather than in place of them.
+    # Null when neither the model nor its lane declares one.
+    suits: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
