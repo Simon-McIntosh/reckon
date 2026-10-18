@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "e57353abd83a426d5259cc942b24b3b22ec1e69e",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/_store.py:2550 (the impl write guard calling _plan_html.derive_impl_with_source)"
+  ],
+  "completed_at": "2026-10-18T16:25:03.075Z",
+  "dispatched_at": "2026-10-18T16:13:51Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T154711672975-progress-imputes-over-buildable-sections/manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the baseline_suite command field names one file, tests/test_profiles_from_section_effort.py, which does not exist and does not match the twenty-file command its own cited base.log header records, so the recorded command does not reconcile with the log it points at."
+    },
+    {
+      "file": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html",
+      "line": "101",
+      "severity": "follow-on",
+      "text": "follow-on: plan section 2 names tests/test_impl_derives_from_declarations.py as edited to the new rule, but that file is outside this node's write scope and the diff leaves it unedited; the file's covered partial-records case carries no deferred section so it still passes, and the worker recorded the gap under follow_ons."
+    }
+  ],
+  "head_log_revision": "396a7e53088b5df02603d043e65967e2e5a44794",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit 396a7e530 against base e57353abd; it changes the hours map in derive_impl_imputing_effort to skip records outside the scoped ids, updates the docstring, and adds one regression case, with no other change.",
+    "done_when": "the done_when requires a test parsing s1 done 2 h, s2 implementable with no hours, s3 implementable at 4 h and s4 deferred at 40 h to assert 2/9; tests/test_progress_from_section_effort.py:117 does exactly that, and the manifest records the focused gate's result.",
+    "goal": "the node's goal is to take the imputed mean of section hours over the sections declared done or implementable only; reckon/_plan_html.py:825 builds the hours map only from records whose id is in the scoped set, so a deferred record's hours cannot weigh a buildable section.",
+    "manifest": "read; it records commit 396a7e53088b5df02603d043e65967e2e5a44794, after.log 182 passed EXIT=0, base.log 181 passed EXIT=0 and the negative control at logs/negative_control.log, though its baseline_suite/after_suite command fields name a single file that does not match the cited logs.",
+    "write_paths": "read the manifest's declared write paths; the commit touches reckon/_plan_html.py, tests/test_progress_from_section_effort.py and the landing fragment, all inside them, and writes nothing outside."
+  },
+  "justifications": {
+    "durability": "tests/test_progress_from_section_effort.py:143 compares the parsed figure to the independent literal 2/9, and logs/negative_control.log shows that assertion reddens when the deferred hours re-enter the mean.",
+    "evidence": "tests/test_progress_from_section_effort.py:143 pins 2/9 against a literal and logs/after.log records 182 passed EXIT=0, but manifest.md:20 names a baseline command its cited log does not carry.",
+    "fit": "reckon/_plan_html.py:822 reuses the surrounding _record_field and scoped-set idiom, and the new local scoped_ids carries no plan label, version or ticket id.",
+    "goal_fidelity": "reckon/_plan_html.py:843 restricts the imputed mean to the declared buildable sections' hours, which is exactly the goal's deliverable.",
+    "reuse": "the change extends derive_impl_imputing_effort in place at reckon/_plan_html.py:800, the sole owner of hour imputation found by searching reckon/ for imputation of section effort, and adds no definition.",
+    "scope_discipline": "git show --stat 396a7e530 lists only the three declared paths, and the fragment write is inside its own scope path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to take the imputed mean of section hours over the sections declared done or implementable only; reckon/_plan_html.py:825 builds the hours map only from records whose id is in the scoped set, so a deferred record's hours cannot weigh a buildable section.\nVERDICT done_when: the done_when requires a test parsing s1 done 2 h, s2 implementable with no hours, s3 implementable at 4 h and s4 deferred at 40 h to assert 2/9; tests/test_progress_from_section_effort.py:117 does exactly that, and the manifest records the focused gate's result.\nVERDICT write_paths: read the manifest's declared write paths; the commit touches reckon/_plan_html.py, tests/test_progress_from_section_effort.py and the landing fragment, all inside them, and writes nothing outside.\nVERDICT manifest: read; it records commit 396a7e53088b5df02603d043e65967e2e5a44794, after.log 182 passed EXIT=0, base.log 181 passed EXIT=0 and the negative control at logs/negative_control.log, though its baseline_suite/after_suite command fields name a single file that does not match the cited logs.\nVERDICT diff: read commit 396a7e530 against base e57353abd; it changes the hours map in derive_impl_imputing_effort to skip records outside the scoped ids, updates the docstring, and adds one regression case, with no other change.\nCALL_SITES: reckon/_store.py:2550 (the impl write guard calling _plan_html.derive_impl_with_source)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:843 restricts the imputed mean to the declared buildable sections' hours, which is exactly the goal's deliverable.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_progress_from_section_effort.py:143 pins 2/9 against a literal and logs/after.log records 182 passed EXIT=0, but manifest.md:20 names a baseline command its cited log does not carry.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 396a7e530 lists only the three declared paths, and the fragment write is inside its own scope path.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_progress_from_section_effort.py:143 compares the parsed figure to the independent literal 2/9, and logs/negative_control.log shows that assertion reddens when the deferred hours re-enter the mean.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/_plan_html.py:822 reuses the surrounding _record_field and scoped-set idiom, and the new local scoped_ids carries no plan label, version or ticket id.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends derive_impl_imputing_effort in place at reckon/_plan_html.py:800, the sole owner of hour imputation found by searching reckon/ for imputation of section effort, and adds no definition.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T154711672975-progress-imputes-over-buildable-sections/manifest.md:20 follow-on: the baseline_suite command field names one file, tests/test_profiles_from_section_effort.py, which does not exist and does not match the twenty-file command its own cited base.log header records, so the recorded command does not reconcile with the log it points at.\nFINDING /home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html:101 follow-on: plan section 2 names tests/test_impl_derives_from_declarations.py as edited to the new rule, but that file is outside this node's write scope and the diff leaves it unedited; the file's covered partial-records case carries no deferred section so it still passes, and the worker recorded the gap under follow_ons.",
+  "review_run_id": "r-20261018T161239738396-review-of-progress-imputes-over-buildable-sections-396a7e53088b",
+  "reviewed_base_sha": "e57353abd83a426d5259cc942b24b3b22ec1e69e",
+  "reviewed_head_sha": "396a7e53088b5df02603d043e65967e2e5a44794",
+  "reviewed_run_id": "r-20261018T154711672975-progress-imputes-over-buildable-sections",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T16:22:11Z",
+  "total": 117
+}
