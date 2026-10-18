@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/gc.py:559",
+    "reckon/crew/dispatch.py:75",
+    "reckon/crew/fleet_migrate.py:19"
+  ],
+  "completed_at": "2026-10-18T14:42:22.799Z",
+  "dispatched_at": "2026-10-18T14:22:37Z",
+  "findings": [
+    {
+      "file": "r-20261018T133321491070-every-module-imports-alone/manifest.md",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when's \"test files importing the changed modules add no failure against base\" clause is only partly measured \u2014 logs/head-importers.log shows 3 tests/test_project_state.py SPA failures at head with no base arm run, so their pre-existing status is unconfirmed; and no ruff log is recorded for the changed files, though this review read ruff check and ruff format --check clean on both independently."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/gc.py:559 (imports bound_run_files, called at gc.py:573) reaching reckon/crew/fleet_supervisor.py:766; reckon/crew/dispatch.py:75 and reckon/crew/fleet_migrate.py:19 import names from the module.",
+    "diff": "read commit by commit against base e295fe18a; ed52bfa25 makes the fix (fleet_supervisor.py:83 edge removed, lazy re-export added, the test added) and 8b52bf37c lands the evidence fragment, all inside the declared scope.",
+    "done_when": "the done_when names a per-module fresh-subprocess import test that succeeds at head and fails on reckon.mcp_edit_plan at base; tests/test_modules_import_alone.py does exactly that and logs/head-modules-import-alone.log records 176 passed EXIT=0 against the base arm's 4 failed EXIT=1, though the no-added-failure against base and the ruff clauses are not fully evidenced.",
+    "goal": "the node's goal is to break the import cycle between reckon.project_state and reckon.crew.fleet_supervisor so every reckon module imports first in a fresh interpreter; the diff removes that edge at reckon/crew/fleet_supervisor.py:83 and the head gate imports every module alone.",
+    "manifest": "read; it records the head gate 176 passed EXIT=0, the base arm 4 failed EXIT=1 on reckon.mcp_edit_plan, a negative control 4 failed EXIT=1, and names all four logs under the run directory.",
+    "write_paths": "declared paths were reckon/crew/fleet_supervisor.py, reckon/project_state.py, tests/test_modules_import_alone.py, the evidence fragment and a figures directory; all three diff paths sit inside them (reckon/project_state.py and the figures directory are unused)."
+  },
+  "justifications": {
+    "durability": "logs/negative-control-modules-import-alone.log reinstates the module-level import in reckon/crew/fleet_supervisor.py:83 and tests/test_modules_import_alone.py:96 reddens on the same four modules, so the test is a real regression guard.",
+    "evidence": "logs/head-modules-import-alone.log records 176 passed EXIT=0 and the base arm 4 failed EXIT=1 on reckon.mcp_edit_plan, but the done_when's no-added-failure-against-base clause and its ruff clause carry no completed base arm or ruff log in the manifest.",
+    "fit": "reckon/crew/fleet_supervisor.py:232 adds a PEP 562 module __getattr__ whose one call site uses the in-function import idiom already present at reckon/serve.py:2405, with no forbidden name.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:83 removes the module-level `from reckon.project_state import _sha256_path`, the only module-scope edge that closed the cycle the goal names.",
+    "reuse": "reckon/project_state.py:344 remains the single owner of _sha256_path, which the change re-exports lazily rather than duplicating; no module-level __getattr__ re-export owner exists in reckon/ (reckon/_flight_schema.py:57 is class-scoped).",
+    "scope_discipline": "every path in the diff (reckon/crew/fleet_supervisor.py, tests/test_modules_import_alone.py, docs/evidence/fragments/the-site-answers-fast-and-agrees/every-module-imports-alone.html) is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to break the import cycle between reckon.project_state and reckon.crew.fleet_supervisor so every reckon module imports first in a fresh interpreter; the diff removes that edge at reckon/crew/fleet_supervisor.py:83 and the head gate imports every module alone.\nVERDICT done_when: the done_when names a per-module fresh-subprocess import test that succeeds at head and fails on reckon.mcp_edit_plan at base; tests/test_modules_import_alone.py does exactly that and logs/head-modules-import-alone.log records 176 passed EXIT=0 against the base arm's 4 failed EXIT=1, though the no-added-failure against base and the ruff clauses are not fully evidenced.\nVERDICT write_paths: declared paths were reckon/crew/fleet_supervisor.py, reckon/project_state.py, tests/test_modules_import_alone.py, the evidence fragment and a figures directory; all three diff paths sit inside them (reckon/project_state.py and the figures directory are unused).\nVERDICT manifest: read; it records the head gate 176 passed EXIT=0, the base arm 4 failed EXIT=1 on reckon.mcp_edit_plan, a negative control 4 failed EXIT=1, and names all four logs under the run directory.\nVERDICT diff: read commit by commit against base e295fe18a; ed52bfa25 makes the fix (fleet_supervisor.py:83 edge removed, lazy re-export added, the test added) and 8b52bf37c lands the evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/gc.py:559, reckon/crew/dispatch.py:75, reckon/crew/fleet_migrate.py:19\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:83 removes the module-level `from reckon.project_state import _sha256_path`, the only module-scope edge that closed the cycle the goal names.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-modules-import-alone.log records 176 passed EXIT=0 and the base arm 4 failed EXIT=1 on reckon.mcp_edit_plan, but the done_when's no-added-failure-against-base clause and its ruff clause carry no completed base arm or ruff log in the manifest.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/fleet_supervisor.py, tests/test_modules_import_alone.py, docs/evidence/fragments/the-site-answers-fast-and-agrees/every-module-imports-alone.html) is inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: logs/negative-control-modules-import-alone.log reinstates the module-level import in reckon/crew/fleet_supervisor.py:83 and tests/test_modules_import_alone.py:96 reddens on the same four modules, so the test is a real regression guard.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:232 adds a PEP 562 module __getattr__ whose one call site uses the in-function import idiom already present at reckon/serve.py:2405, with no forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/project_state.py:344 remains the single owner of _sha256_path, which the change re-exports lazily rather than duplicating; no module-level __getattr__ re-export owner exists in reckon/ (reckon/_flight_schema.py:57 is class-scoped).\nFINDING r-20261018T133321491070-every-module-imports-alone/manifest.md:22 follow-on: the done_when's \"test files importing the changed modules add no failure against base\" clause is only partly measured \u2014 logs/head-importers.log shows 3 tests/test_project_state.py SPA failures at head with no base arm run, so their pre-existing status is unconfirmed; and no ruff log is recorded for the changed files, though this review read ruff check and ruff format --check clean on both independently.\n",
+  "review_run_id": "r-20261018T142118404059-review-of-every-module-imports-alone-8b52bf37c99e",
+  "reviewed_base_sha": "e295fe18a3d46fbd8036c188b7a9f8e4d73ba6af",
+  "reviewed_head_sha": "8b52bf37c99eed0188d6637fd3eed4cbdff56143",
+  "reviewed_run_id": "r-20261018T133321491070-every-module-imports-alone",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T14:36:41.415185+00:00",
+  "total": 110
+}
