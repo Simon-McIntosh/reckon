@@ -6,10 +6,11 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
+from click.testing import CliRunner
 
-from reckon import budget
+from reckon import budget, cli, crew_dispatch_commands
 from reckon.crew import paid_lanes, window_reading
-from reckon.crew.picker import snapshot
+from reckon.crew.picker import client, snapshot
 from tests.test_picker_reserved_lanes import (
     CONFIG,
     HARDEST,
@@ -95,6 +96,89 @@ def test_hardest_pick_reads_a_persisted_five_hour_event(
     assert datetime.fromisoformat(five["observed_at"]).tzinfo is not None
     if not offered:
         assert "60% used" in _reserved_reason(first, "claude-opus")
+
+
+def test_a_supplied_live_view_is_refreshed_with_its_candidate(
+    live_facts, repo, monkeypatch, tmp_path
+):
+    config, _path = _arrange(monkeypatch, tmp_path)
+    calls = []
+
+    def probe(_backend, _root):
+        calls.append(1)
+        return _stream(0.42)
+
+    monkeypatch.setattr(paid_lanes, "_run_reserved_probe", probe)
+    view = snapshot.budget_view("example", config, repo, [])
+    options = snapshot.candidates(
+        _request(capability=HARDEST),
+        config,
+        repo,
+        records=[],
+        verdict_inputs={},
+        budget_snapshot=view,
+    )
+
+    assert calls == [1]
+    assert "claude-opus" in _offered(options)
+    group = next(g for g in view["groups"] if g["group"] == "claude")
+    assert group["clocks"]["five_hour"]["utilisation"] == pytest.approx(0.42)
+
+
+@pytest.mark.parametrize("used,offered", [(0.42, True), (0.60, False), (None, False)])
+def test_crew_pick_offers_the_reserved_lane_only_on_a_fresh_open_window(
+    live_facts, repo, monkeypatch, tmp_path, used, offered
+):
+    config, _path = _arrange(monkeypatch, tmp_path)
+    monkeypatch.setattr(paid_lanes, "_run_reserved_probe", lambda *_: _stream(used))
+    monkeypatch.setattr(
+        crew_dispatch_commands, "_dispatch_resolved_flight", lambda *_a, **_k: config
+    )
+    offered_keys = []
+
+    def ask(_state, questions, *, env_path=None):
+        criteria = questions["route"]["criteria"]
+        offered_keys.extend(criteria)
+        choice = next(key for key in criteria if key.endswith(":codex-astra"))
+        return {
+            "answers": {
+                "route": {
+                    "choice": choice,
+                    "confidence": 0.9,
+                    "probabilities": {key: float(key == choice) for key in criteria},
+                }
+            }
+        }
+
+    monkeypatch.setattr(client, "ask", ask)
+    result = CliRunner().invoke(
+        cli.main,
+        [
+            "crew",
+            "pick",
+            "--project",
+            "example",
+            "--checkout-path",
+            str(repo),
+            "--role",
+            "implement",
+            "--spec-level",
+            "guided",
+            "--goal",
+            "inspect reserved routing",
+            "--done-when",
+            "the lane is offered on a fresh window",
+            "--capability",
+            json.dumps(HARDEST),
+            "--estimated-context",
+            "8000",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert (
+        bool([key for key in offered_keys if key.endswith(":claude-opus")]) is offered
+    )
 
 
 def test_no_window_event_stays_excluded_and_does_not_probe_twice(

@@ -1149,7 +1149,13 @@ def candidates(
             session=request.session,
         )
     )
-    if budget_snapshot is None and not cached_only and request.node.role != "review":
+    # pick() supplies a live view it built just before this scan. Keep its
+    # reference current so the rendered state and candidate gate agree after a
+    # probe; fixture snapshots without a check time remain read-only inputs.
+    live_snapshot = budget_snapshot is None or isinstance(
+        budget_snapshot.get("checked_at"), str
+    )
+    if live_snapshot and not cached_only and request.node.role != "review":
         for family, policy in reserved.items():
             floor = policy.get(flight.PICKER_RESERVED_LANE_FLOOR_KEY) or {}
             if not _reserved_lane_floor_met(declared_requirements, floor):
@@ -1169,7 +1175,7 @@ def candidates(
                 ) is None and paid_lanes.refresh_reserved_window(
                     config, name, backend, root=repo, moment=now
                 ):
-                    view = budget_view(
+                    refreshed = budget_view(
                         request.project,
                         config,
                         repo,
@@ -1177,6 +1183,12 @@ def candidates(
                         cached_only=cached_only,
                         session=request.session,
                     )
+                    if budget_snapshot is not None:
+                        budget_snapshot.clear()
+                        budget_snapshot.update(refreshed)
+                        view = budget_snapshot
+                    else:
+                        view = refreshed
                 break
     # The node's estimate is independent of the candidate. Parsing its plan
     # once keeps a backend census from multiplying identical repository reads.
@@ -1341,7 +1353,7 @@ def candidates(
                 attempts=attempts,
                 utilisation=(
                     utilisation
-                    if budget_snapshot is not None
+                    if not live_snapshot
                     else _reserved_five_hour_utilisation(group, view, config, now=now)
                 ),
             )
