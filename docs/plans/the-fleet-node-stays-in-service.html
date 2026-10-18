@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -301,7 +301,10 @@
     <div class="r-comment-body"><p>§7 landed: one producer poll sweeps the whole fleet every second, at about 1,880 opens and 1,575 stats per cycle plus 1.25 git-shim calls, whatever the live pointer count (evidence <code>2bb703ece</code>). The review's blocking finding corrected the git figure from 2.5 to 1.25 calls per cycle, and the evidence carries the recount. The live 56% vs 8% CPU gap is unattributed, because ptrace from the worker was refused. A change-driven poll becomes its own section. <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s7">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261018T111119884715-measure-a-watch-producer-poll" data-who="reckon-build" data-when="2026-10-18T11:38:20.563Z">
-    <div class="r-comment-body"><p>§7 measured on the fleet node: py-spy profile summaries for the imas-codex and power_convertor producers, per-cycle strace counts, the measured adaptive cycle period (1.0 s base, 30 s cap), and the change that would make the poll change-driven — watch the crew home&#x27;s live/, runs/ and watch directories with inotify (or gate a cycle on one mtime stat) and keep only the per-live-run liveness probe on the fixed beat.</p></div>
+    <div class="r-comment-body"><p>§7 measured on the fleet node: py-spy profile summaries for the imas-codex and power_convertor producers, per-cycle strace counts, the measured adaptive cycle period (1.0 s base, 30 s cap), and the change that would make the poll change-driven — watch the crew home's live/, runs/ and watch directories with inotify (or gate a cycle on one mtime stat) and keep only the per-live-run liveness probe on the fixed beat.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261018T130559054133-review-of-name-how-a-stopped-worker-step-ends-517c1d32373b" data-who="reckon-build" data-when="2026-10-18T13:12:39.321Z">
+    <div class="r-comment-body"><p>Claims review of r-20261018T110920238168-name-how-a-stopped-worker-step-ends stored at review-records/r-20261018T110920238168-name-how-a-stopped-worker-step-ends.json (and the .at-517c1d32373b85dee8a98e735815bc4451ef2f83 sibling): three CLAIM verdicts all reproduced, CLAIM_SUMMARY agrees, no suite-delta fields.</p></div>
 </div>
 </section>
 </main>

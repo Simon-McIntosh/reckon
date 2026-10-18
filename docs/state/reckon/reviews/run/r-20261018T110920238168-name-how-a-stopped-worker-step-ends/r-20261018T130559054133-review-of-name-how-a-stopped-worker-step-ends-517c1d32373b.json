@@ -1,0 +1,81 @@
+{
+  "artifacts": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T110920238168-name-how-a-stopped-worker-step-ends/final.txt (reviewed report, read-only)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-fleet-node-stays-in-service/name-how-a-stopped-worker-step-ends/verify.py (cited script, re-run from /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-fleet-node-stays-in-service/name-how-a-stopped-worker-step-ends)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-fleet-node-stays-in-service/name-how-a-stopped-worker-step-ends/analyze.py (cited script, re-run in a scratch copy to avoid rewriting step_attribution.csv)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-fleet-node-stays-in-service/name-how-a-stopped-worker-step-ends/step_attribution.csv (482 rows; read-only cross-check)",
+    "/home/ITER/mcintos/.cache/reckon-fleet-drain/sacct-1281970.psv, sacct-1277272.psv (raw scheduler input, read-only)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T130559054133-review-of-name-how-a-stopped-worker-step-ends-517c1d32373b/claims-rerun.log (this review's re-run log; EXIT=0)"
+  ],
+  "claim_lines": [
+    "CLAIM 1: reproduced: re-ran `python3 verify.py` from the report directory; it exited 0 printing PASS with both drain steps identified, and the raw sacct rows read 1281970.251 CANCELLED by 39486 (0:9) and 1277272.1549 CANCELLED by 39486 (0:9), matching the report's drain-step table",
+    "CLAIM 2: reproduced: re-ran `python3 analyze.py` (in a scratch copy, so the reviewed CSV is not rewritten); it printed cancelled=482 with classifications sender matched 270 / multiple sender reasons 62 / step marker without matching sender 1 / no step marker 149, and reasons 108/102/40/18/2, matching the report's 482-row reason table",
+    "CLAIM 3: reproduced: the completed control 1281970.73 reads COMPLETED with exit 0:0 (2026-10-08T03:58:18 to 04:09:31) in sacct-1281970.psv, and verify.py's assertions on attempt 2 of r-20261008T015730285964-plan-review-of-a-follower-row-is-worth-a-wake passed (exit code zero, no SIGKILL sender record)"
+  ],
+  "claim_summary": {
+    "detail": "The report's summary line (final.txt paragraph 3) reads: 'The saved job 1281970 table contains 482 steps marked CANCELLED by 39486. Exact stderr step IDs tie 333 to a run: 270 have one sender reason at cancellation, 62 have two simultaneous reasons, and one has no matching sender receipt. The remaining 149 have no preserved exact step marker...' The reason table beneath it carries rows summing to 270 one-reason (108+102+40+18+2), 62 paired (54+7+1), 1 marker without sender, 149 no marker, Total 482; 270+62+1 = 333. Every figure the summary quotes is the table's own figure, and the control sentence (1281970.73 COMPLETED 0:0) matches the saved sacct row.",
+    "verdict": "agrees"
+  },
+  "claim_summary_line": "CLAIM_SUMMARY: agrees: the report's summary line quotes 482 CANCELLED steps, 333 exact markers, 270 one sender reason, 62 two simultaneous reasons, 1 marker without a matching sender, and 149 with no marker; the reason table's rows sum to 270 (108+102+40+18+2), 62 (54+7+1), 1, 149 = 482 total, i.e. 333 with markers, so every figure the summary quotes is the table's own figure",
+  "claim_verdicts": {
+    "CLAIM 1": {
+      "cites": "verify.py; /home/ITER/mcintos/.cache/reckon-fleet-drain/sacct-1281970.psv; sacct-1277272.psv",
+      "detail": "re-ran `python3 verify.py` from the report directory; it exited 0 printing PASS with both drain steps identified, and the raw sacct rows read 1281970.251 CANCELLED by 39486 (0:9) and 1277272.1549 CANCELLED by 39486 (0:9), matching the report's drain-step table Log: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T130559054133-review-of-name-how-a-stopped-worker-step-ends-517c1d32373b/claims-rerun.log.",
+      "finding": "the two drain steps are attributed by exact stderr step markers and end CANCELLED -> CANCELLED by 39486 (exit 0:9), not COMPLETED",
+      "verdict": "reproduced"
+    },
+    "CLAIM 2": {
+      "cites": "analyze.py; step_attribution.csv; attempts.jsonl; step_markers.txt",
+      "detail": "re-ran `python3 analyze.py` (in a scratch copy, so the reviewed CSV is not rewritten); it printed cancelled=482 with classifications sender matched 270 / multiple sender reasons 62 / step marker without matching sender 1 / no step marker 149, and reasons 108/102/40/18/2, matching the report's 482-row reason table Log: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T130559054133-review-of-name-how-a-stopped-worker-step-ends-517c1d32373b/claims-rerun.log.",
+      "finding": "job 1281970's 482 CANCELLED steps decompose as 270 one sender reason, 62 paired reasons, 1 marker without sender, 149 without marker (333 exact markers)",
+      "verdict": "reproduced"
+    },
+    "CLAIM 3": {
+      "cites": "verify.py; sacct-1281970.psv; r-20261008T015730285964 attempt-2 worker/exit/senders",
+      "detail": "the completed control 1281970.73 reads COMPLETED with exit 0:0 (2026-10-08T03:58:18 to 04:09:31) in sacct-1281970.psv, and verify.py's assertions on attempt 2 of r-20261008T015730285964-plan-review-of-a-follower-row-is-worth-a-wake passed (exit code zero, no SIGKILL sender record) Log: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T130559054133-review-of-name-how-a-stopped-worker-step-ends-517c1d32373b/claims-rerun.log.",
+      "finding": "step 1281970.73 is COMPLETED with exit 0:0 and its matched run carries no SIGKILL sender record",
+      "verdict": "reproduced"
+    }
+  },
+  "claims": [
+    {
+      "cites": "verify.py; /home/ITER/mcintos/.cache/reckon-fleet-drain/sacct-1281970.psv; sacct-1277272.psv",
+      "finding": "the two drain steps are attributed by exact stderr step markers and end CANCELLED -> CANCELLED by 39486 (exit 0:9), not COMPLETED",
+      "rank": 1,
+      "report_figure": "1281970.251 and 1277272.1549 each CANCELLED by 39486, exit 0:9",
+      "rerun_figure": "identical: verify.py EXIT=0 (PASS, both drain steps identified); sacct rows 1281970.251 CANCELLED by 39486 0:9 and 1277272.1549 CANCELLED by 39486 0:9",
+      "verdict": "reproduced"
+    },
+    {
+      "cites": "analyze.py; step_attribution.csv; attempts.jsonl; step_markers.txt",
+      "finding": "job 1281970's 482 CANCELLED steps decompose as 270 one sender reason, 62 paired reasons, 1 marker without sender, 149 without marker (333 exact markers)",
+      "rank": 2,
+      "report_figure": "482 total; 270/62/1/149; 333 markers",
+      "rerun_figure": "identical: cancelled=482; Counter sender matched 270, multiple sender reasons 62, step marker without matching sender 1, no step marker 149; independent grep of sacct-1281970.psv counts 482 rows carrying 'CANCELLED by 39486'",
+      "verdict": "reproduced"
+    },
+    {
+      "cites": "verify.py; sacct-1281970.psv; r-20261008T015730285964 attempt-2 worker/exit/senders",
+      "finding": "step 1281970.73 is COMPLETED with exit 0:0 and its matched run carries no SIGKILL sender record",
+      "rank": 3,
+      "report_figure": "1281970.73 COMPLETED 0:0, no SIGKILL sender",
+      "rerun_figure": "identical: sacct-1281970.psv row 1281970.73 COMPLETED 0:0; verify.py's control assertions passed",
+      "verdict": "reproduced"
+    }
+  ],
+  "completed_at": "2026-10-18T13:12:39.321Z",
+  "dimensions": null,
+  "dispatched_at": "2026-10-18T13:06:42Z",
+  "method": "The reviewed run is read-only: its manifest records commits: [] and changed_paths confined to its report directory, with no gate suite, so reviewed_base_sha == reviewed_head_sha == 517c1d32373b85dee8a98e735815bc4451ef2f83 and there is no diff to read. Its report is final.txt under the run directory; its evidence inputs and cited scripts live under /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-fleet-node-stays-in-service/name-how-a-stopped-worker-step-ends and its raw scheduler input under /home/ITER/mcintos/.cache/reckon-fleet-drain/. The three findings re-run are the three the report ranks highest: the two drain-step attributions, the 482-row reason table, and the completed-step control. Each cited script was re-run from the report's own directory (verify.py in place; analyze.py in a scratch copy because it rewrites its own step_attribution.csv, which this review must not mutate), and each count was cross-checked against the raw sacct rows and the checked-in CSV.",
+  "project": "reckon",
+  "report_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T110920238168-name-how-a-stopped-worker-step-ends/final.txt",
+  "review_run_id": "r-20261018T130559054133-review-of-name-how-a-stopped-worker-step-ends-517c1d32373b",
+  "reviewed_base_sha": "517c1d32373b85dee8a98e735815bc4451ef2f83",
+  "reviewed_head_sha": "517c1d32373b85dee8a98e735815bc4451ef2f83",
+  "reviewed_run_id": "r-20261018T110920238168-name-how-a-stopped-worker-step-ends",
+  "rubric": "claims",
+  "status": "parsed",
+  "suite_delta_fields_omitted": "added_failure_count and added_failure_ids are intentionally absent: the reviewed run ran no gate suite (this review adds none).",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T13:12:00Z"
+}
