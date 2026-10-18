@@ -38,7 +38,7 @@
           <tr><td>The five named cases, <code>tests/test_progress_from_section_effort.py</code></td><td>5 passed, <code>EXIT=0</code></td><td><code>r-20261018T132829727897-.../newfile-2.log</code></td></tr>
           <tr><td>The four impl-rule test files plus the new one</td><td>27 passed, <code>EXIT=0</code></td><td><code>r-20261018T132829727897-.../impl-after-3.log</code></td></tr>
           <tr><td>Readers consuming progress (doccheck, audit, mcp, project_state, roadmap, serve, discovery)</td><td>see <code>readers-after.log</code></td><td><code>r-20261018T132829727897-.../readers-after.log</code></td></tr>
-          <tr><td>Declared negative control, head reader gated on records as at base</td><td>1 failed, 4 passed, <code>EXIT=1</code></td><td><code>r-20261018T132829727897-.../negative-control.log</code></td></tr>
+          <tr><td>Declared negative control, head reader gated on records as at base</td><td>2 failed, 3 passed, <code>EXIT=1</code></td><td><code>r-20261018T132829727897-.../negative-control.log</code></td></tr>
         </tbody>
       </table>
       <p>Logs live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T132829727897-progress-from-effort-weighted-sections/</code>. Every arm ran on the fleet allocation (job <code>1281970</code>, node <code>98dci4-clu-2002</code>) in the assigned worktree, importing <code>reckon._plan_html</code> from <code>.../progress-from-effort-weighted-sections/reckon/_plan_html.py</code>.</p>
@@ -46,7 +46,7 @@
 
     <section id="progress-from-effort-weighted-sections-negative-control">
       <h2>Declared negative control</h2>
-      <p>Declared mutation: <em>make the head-metadata reader derive only when the document carries section records, as at base, so the declarations-without-records case fails</em>. Applied by removing the <code>_head_declarations</code> branch from <code>_parse_meta_uncached</code> so the fast path derives only inside the <code>_document_carries_records</code> guard. <code>test_declarations_with_no_records_read_alike_in_both_readers</code> then fails at the agreement assertion, <code>EXIT=1</code>. Reverted and the tree left clean.</p>
+      <p>Declared mutation: <em>make the head-metadata reader derive only when the document carries section records, as at base, so the declarations-without-records case fails</em>. Applied by removing the <code>_head_declarations</code> branch from <code>_parse_meta_uncached</code> so the fast path derives only inside the <code>_document_carries_records</code> guard. Two cases then fail and the rest pass, <code>EXIT=1</code>: <code>test_declarations_with_no_records_read_alike_in_both_readers</code> at its agreement assertion (<code>light["impl"]</code> reads the stale authored 0.08 against the parse's 2/3), and <code>test_no_hours_falls_back_to_the_count</code>, whose head arm likewise serves the authored figure. Reverted and the tree left clean.</p>
     </section>
 
     <section id="progress-from-effort-weighted-sections-commits">
