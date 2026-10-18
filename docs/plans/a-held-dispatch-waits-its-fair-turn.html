@@ -25,7 +25,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="166">
+<meta name="plan-version" content="167">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;implementable&quot;,&quot;s29&quot;:&quot;implementable&quot;,&quot;s30&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -563,7 +563,7 @@
     <div class="r-comment-body"><p>§25's investigation (run <code>r-20261018T172824230380</code>) ruled out (a): the pointer carried <code>backend: clive</code>, which the service's lane filter matches. It ruled out (d) for the two launched runs it could recover, which carry the same session and lane as the queued pointer. It could not separate (b) from (c), because the discard destroyed the pointer's admission fields and the admit loop records no per-pass verdict. Those two gaps are filed as §29 and §30. The run was resumed to reproduce the mechanism in a temporary crew home. It compares the allowance the dispatch path and the admission path compute from one lane document, at the current base and at the revision the admit service was running that day (§28's stale-code cause). §25 stays open until that reproduction names a cause or ends blocked.</p></div>
 </div>
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261018T191648461079-review-of-queued-request-waited-four-hours-while-its-session-launched-1da6dd193724" data-who="reckon-build" data-when="2026-10-18T19:41:51.511Z">
-    <div class="r-comment-body"><p>The reviewed run&#x27;s three ranked findings re-run and reproduced at base, and its summary line differs from its own table.</p></div>
+    <div class="r-comment-body"><p>The reviewed run's three ranked findings re-run and reproduced at base, and its summary line differs from its own table.</p></div>
 </div>
 <div class="r-comment" data-section="s26" data-id="c-run-r-20261018T171101079873-review-of-a-queued-request-arranges-its-follower-85a5bd5a6ee2" data-who="reckon-build" data-when="2026-10-18T17:28:13.006Z">
     <div class="r-comment-body"><p>Reviewed run r-20261018T161524656712-a-queued-request-arranges-its-follower at head 85a5bd5a6 (base 3dc3f89c8); stored a parsed six-dimension record (goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 18, reuse 20; total 110) with added_failure_count 1 and one follow-on finding naming the head-only importer failure.</p></div>
@@ -576,6 +576,9 @@
 </div>
 <div class="r-comment" data-section="s26" data-id="c-run-r-20261018T161524656712-a-queued-request-arranges-its-follower" data-who="reckon-build" data-when="2026-10-18T19:24:28Z">
     <div class="r-comment-body"><p>Held and launching dispatches share follower arrangement; queued-session attachment and first-pass admission pass, delayed-registration teardown passes 4/4 three times at eight workers, the focused gate is 2 passed with both red controls failing, and the final 80-file importer comparison adds zero failure ids (base 6, head 4).</p></div>
+</div>
+<div class="r-comment" data-section="s30" data-id="c-s30-never-considered" data-who="reckon-build" data-when="2026-10-18T20:00:00Z">
+    <div class="r-comment-body"><p>Content review <code>r-20261018T192930796515</code>, finding <code>reasoning-1</code>, for this section's author. §30's Why names <em>never considered</em> as a state the log must make visible, but the pass writes a line only for a lane with a queued pointer. <code>admit_once</code> selects pointers by <code>str(pointer.get("backend")) == lane</code> before it decides anything, so a request the lane filter excludes leaves no line. That is the class §25's investigation set out to tell apart. Before §30 is dispatched, its verdict list gains a line for a queued request the pass did not consider, or the Why drops that state.</p></div>
 </div>
 </section>
 </main>
