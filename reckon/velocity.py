@@ -117,6 +117,20 @@ PLAN_DIRECTORY = "docs/plans/"
 PLAN_SUFFIX = ".html"
 _PLAN_STATUS = re.compile(rb'name="plan-status" content="([^"]*)"')
 _PLAN_ARCHIVED = re.compile(rb'name="plan-archived" content="([^"]*)"')
+# The empty tree object git names for every repository. It is the base a window
+# that starts at a repository's first commit is measured from, so that commit's
+# additions count from nothing rather than from an unspecified parent.
+EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+
+
+def _rev_range(base, head):
+    """A ``base..head`` range, the empty tree standing in for a ``None`` base.
+
+    ``None`` names the empty tree: a window that opens at the repository's first
+    commit has no earlier commit to measure from, so its whole history is in
+    range and that first commit's additions are counted from nothing.
+    """
+    return (base or EMPTY_TREE) + ".." + head
 
 
 def stamp(value):
@@ -765,7 +779,12 @@ def _read_run_rows(repo, head, project, cache):
 
 
 def _capture_commits(repo, base, head):
-    """Capture the primary-branch commits in ``base..head`` and their patches."""
+    """Capture the primary-branch commits in ``base..head`` and their patches.
+
+    A ``None`` base names the empty tree, for a window whose first commit is the
+    repository's first, so the range is the whole history rather than a range
+    from an unspecified parent.
+    """
     history = parse_stats(
         git(
             repo,
@@ -777,7 +796,7 @@ def _capture_commits(repo, base, head):
             "--numstat",
             "-z",
             "--format=%x1e%H%x09%ct%x09%P%x09%s%x00",
-            base + ".." + head,
+            _rev_range(base, head),
         )
     )
     product = [
@@ -799,7 +818,9 @@ def _capture_commits(repo, base, head):
             "--no-ext-diff",
             "--find-renames",
             "--unified=3",
-            c["parents"][0],
+            # A root commit has no parent, so its patch is against the empty
+            # tree: every line it carries reads as an addition.
+            c["parents"][0] if c["parents"] else EMPTY_TREE,
             c["sha"],
             "--",
             *paths,
@@ -848,7 +869,16 @@ def capture_project(
     selected = [
         sha for sha in first if stamp(start) <= graph[sha]["epoch"] <= stamp(end)
     ]
-    base = first[first.index(selected[0]) - 1]
+    # The base is the commit before the window's first commit. A window that
+    # selected no commit has an empty range, so base is the head itself. A
+    # window that starts at the repository's first commit has no earlier commit,
+    # so base is None — the empty tree — and that commit's changes are measured
+    # from nothing rather than from the last commit, which index -1 would name.
+    if not selected:
+        base = head
+    else:
+        index = first.index(selected[0])
+        base = first[index - 1] if index else None
     # A prior capture of the same window extends: its commits up to its own
     # head are reused and only the commits after that head are captured, so a
     # repeated read over the same window does not replay the whole range. The
@@ -866,7 +896,9 @@ def capture_project(
     if history is None:
         history = _capture_commits(repo, base, head)
     # Keep ancestry order, including any skewed commit clocks between endpoints.
-    assert [c["sha"] for c in history] == first[first.index(base) + 1 :]
+    # A None base is the empty tree, so the whole first-parent line is expected.
+    expected = first if base is None else first[first.index(base) + 1 :]
+    assert [c["sha"] for c in history] == expected
     # The ledger and every committed run record are read through their blob
     # identity, so an unchanged blob answers from the cache and the object read
     # is skipped.
@@ -874,7 +906,7 @@ def capture_project(
     run_rows, per_run_files = _read_run_rows(repo, head, project, run_cache)
     records.update(run_rows)
     # Map every newly reachable commit to its first primary-branch appearance.
-    seen = set(git(repo, "rev-list", base).decode().splitlines())
+    seen = set(git(repo, "rev-list", base).decode().splitlines()) if base else set()
     introduction = {}
     for c in history:
         pending = [c["sha"]]
@@ -1191,7 +1223,7 @@ def _record_file_additions(repo, base, head, runs_path, candidates, found):
         "--format=%x1e%H%x09%ct",
         "--diff-filter=A",
         "--name-only",
-        base + ".." + head,
+        _rev_range(base, head),
         "--",
         runs_path,
     )
@@ -1255,7 +1287,13 @@ def recover_ledger_clocks(
             recovered = dict(entry["recoveries"])
             walked = entry.get("head")
         else:
-            before, _digest = _read_ledger(repo, base, project["project"], None)
+            # A None base is the empty tree: no earlier revision carries a
+            # ledger, so nothing is present before the window opens.
+            before, _digest = (
+                _read_ledger(repo, base, project["project"], None)
+                if base
+                else ({}, None)
+            )
             present = set(before)
             recovered, walked = {}, None
         candidates = {rid: row for rid, row in candidates.items() if rid not in present}
@@ -1295,7 +1333,7 @@ def recover_ledger_clocks(
                     "--first-parent",
                     "--reverse",
                     "--format=%H",
-                    boundary + ".." + head,
+                    _rev_range(boundary, head),
                     "--",
                     path,
                     runs_path,
@@ -1333,7 +1371,7 @@ def recover_ledger_clocks(
                         "-p",
                         "-G",
                         expression,
-                        boundary + ".." + slice_end,
+                        _rev_range(boundary, slice_end),
                         "--",
                         path,
                         runs_path,
