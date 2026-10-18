@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="341">
+<meta name="plan-version" content="342">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -1089,6 +1089,9 @@
 </div>
 <div class="r-comment" data-section="s41" data-id="c-close-s41" data-who="reckon-build" data-when="2026-10-18T22:50:00Z">
     <div class="r-comment-body"><p>§41 landed: a review row reads its run's head from git's files and spawns <code>git rev-parse HEAD</code> only when they cannot resolve it (merge <code>812e009bd</code>). The 45-file merge population adds no failing id. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s41">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s41" data-id="c-run-r-20261018T212541319109-a-review-row-reads-its-head-from-files" data-who="reckon-build" data-when="2026-10-18T21:44:06.764Z">
+    <div class="r-comment-body"><p>A review row&#x27;s head is read from git&#x27;s files (new `_worktree_head_revision` in recovery_memo, sharing `_named_ref`/`_ref_roots` with `_worktree_head_identity`, whose answers are unchanged), falling back to `git rev-parse HEAD` only when the files cannot resolve one; gate tests/test_a_review_row_reads_its_head_from_files.py 4 passed EXIT=0 with a fleet_state over 6 detached rows spawning 0 rev-parse HEAD calls, negative control restoring the subprocess counting 6 calls over 6 rows (EXIT=1).</p></div>
 </div>
 </section>
 </main>
