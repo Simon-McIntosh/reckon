@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T21:14:28.863Z",
+  "dispatched_at": "2026-10-18T21:05:51Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-never-reverts-the-checkout.html:72",
+      "id": "anchors_resolve-1",
+      "reason": "the same sentence names the symbol and states the property being cited (it carries neither the run nor the step, which is true of `def _landing_refusal(message, rollback)`), so the intended target resolves by name and no node is sent down a wrong path; the correction moves one integer.",
+      "text": "\u00a72's write-paths sentence cites `_landing_refusal` at promotion_scope.py:1843, but the function is defined at promotion_scope.py:1844 and line 1843 is blank, so a reader resolving the anchor by line opens nothing",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "28c5b8af53591888c95387f6eb81d6d6d208a8458ebd61016d75c2595fbfe562",
+  "plan_slug": "a-landing-never-reverts-the-checkout",
+  "plan_version": 16,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "the same sentence names _landing_refusal, which resolves by name one line below the cited number; an edit would reopen the plan-wide review gate to move one integer",
+      "when": "2026-10-18T21:15:46.949045+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the same sentence names _landing_refusal, which resolves by name one line below the cited number; an edit would reopen the plan-wide review gate to move one integer",
+      "when": "2026-10-18T21:15:46.949045+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-landing-never-reverts-the-checkout.v16.json",
+  "review_run_id": "r-20261018T210425118866-plan-review-of-a-landing-never-reverts-the-checkout",
+  "reviewed_blob_sha": "7ee5b22ffa1279a3d91c871c39bccdcccf83b90d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a72's new write-paths sentence cites `_landing_refusal` at promotion_scope.py:1843, but that def is at :1844 (1843 is a blank line); every other citation in the changed units resolves exactly.",
+    "done_when": "pass \u2014 \u00a72's six done-when items each name a measurable outcome and a control: item 4 runs the new test at the base revision and requires the reversal, mismatch and record cases to fail by id, item 2 pairs the mismatch assertion with a clean landing reporting ok true, and item 3 pairs the commit-step refusal with a second append that leaves the first entry intact.",
+    "evidence_paths": "pass \u2014 \u00a72's gate log is the new test file run under the run directory, and \u00a72's landing.json is appended under run_dir(run_id); both are durable paths a later reader can open, and neither is a session scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 the s2 change introduces only `landing_check`, `landing_check.reversals` and `landing.json`, all mechanism-named, with no plan label, stage name, or ticket or version tag.",
+    "reasoning": "pass \u2014 \u00a72's three checks are reachable on the named production callers (promotion.py:751 and :1350, promotion_gate.py:960 for the three callers of _commit_landing_writes, and promotion.py:1339 for the review-record-store refusal), the mechanism each check states produces its own done-when, and the new sentence's acknowledgement of a third comparison (staged blob against the landing commit's parent blob) matches what `_path_differs_from_head` and `_path_has_a_staged_change` actually compute \u2014 both are `git diff` boolean probes and neither yields a parent blob, so the claim that one comparison is added rather than reusing an existing one holds.",
+    "single_goal": "pass \u2014 \u00a72 carries one goal (check a landing's paths and record every refusal and rollback); the one-owner routing through _commit_landing_writes and the three checks are facets of that one measure, and the s2 change introduces no second deliverable.",
+    "wiring": "pass \u2014 every declared relationship resolves and \u00a72's independence from \u00a71 is consistent with its own text and with the f-alnrtc-002 followup; the s2 unit that changed adds promotion.py to \u00a72's write paths without introducing a depends-on that its section does not declare."
+  },
+  "section_digests": {
+    "_document": "479ad99e4e7ec690c76f853bbaa2d01eaa1b8f0a44a8f6ce0f762821bdb2dd5c",
+    "s1": "ee9b8c30fd2d5b2dfb1dc7d01e8045c3f8d91294fd8bfd32b710f64690ad3daf",
+    "s2": "23098dde0aefcf0425da2867612f3318289f1d02963bc3243cc25d95d0ac066b",
+    "s3": "5b86c755ce5f9a57c024e57d7a66b2f089c181482d11c34216c6170cb33a2fde"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T21:15:38.271089+00:00"
+}
