@@ -1,0 +1,16 @@
+<section id="cache-paths-carry-their-format" class="r-evidence">
+  <h3 id="cache-paths-carry-their-format-title">Persisted caches keep their writer's format</h3>
+  <p>The metadata index, Git creation map, Git last-modified map, and compliance store now derive their paths from one function. It includes the format version in each filename while retaining the existing cache directories. Existing payload validation still rejects damaged content within a format.</p>
+  <table id="cache-paths-carry-their-format-measure">
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Alternating writers, three reads per format per cache</td><td>4/4 cases passed; each format built once and reused twice</td></tr>
+      <tr><td>Base reproduction</td><td>4/4 cases failed because both formats chose one path</td></tr>
+      <tr><td>Declared negative control: remove format from path</td><td>4/4 cases failed; each writer rebuilt three times instead of once, EXIT=1</td></tr>
+      <tr><td>Selected import tests (71 files at head)</td><td>Final head: 670 passed, 4 failed, 1 skipped. Base: 660 passed, 6 failed, 4 errors, 1 skipped. All four head failure IDs also fail at base; zero added.</td></tr>
+      <tr><td>Additional persistence and compliance tests</td><td>53 passed, EXIT=0</td></tr>
+      <tr><td>Ruff on changed Python files</td><td>17 existing findings at base and head; 0 added; 4/4 files formatted</td></tr>
+    </tbody>
+  </table>
+  <p id="cache-paths-carry-their-format-operations">The served-process cache and log watch begins after the coordinator deploys code carrying this change.</p>
+</section>

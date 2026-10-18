@@ -21,7 +21,6 @@ from __future__ import annotations
 import argparse
 import contextlib
 import fcntl
-import hashlib
 import json
 import logging
 import sys
@@ -30,8 +29,8 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
-from reckon import doccheck, resources
-from reckon._store import _config_home, write_json_atomically
+from reckon import doccheck, metadata_index, resources
+from reckon._store import write_json_atomically
 from reckon.file_memo import file_signature
 
 LOGGER = logging.getLogger("reckon.compliance")
@@ -137,9 +136,9 @@ def _is_current(path: Path, identity: object) -> bool:
 
 
 def _store_path(docs_dir: Path, project: str) -> Path:
-    identity = f"{project}\0{Path(docs_dir).resolve()}".encode()
-    digest = hashlib.sha256(identity).hexdigest()
-    return _config_home() / "cache" / "compliance" / f"{digest}.json"
+    return metadata_index._persisted_cache_path(
+        "compliance", _VERSION, project, str(Path(docs_dir).resolve())
+    )
 
 
 @contextlib.contextmanager
