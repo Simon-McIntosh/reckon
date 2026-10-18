@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-paired-arm-is-reviewed-as-itself">
+  <meta name="plan-title" content="A Paired Arm Is Reviewed As Itself">
+  <meta name="plan-summary" content="Both arms of a pair share a node id, so the composed review of one arm resolves to its partner; a paired arm's review must name the arm by its run id.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="1.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-standalone" content="It repairs review composition for the landed paired dispatch of a-shadow-cannot-see-its-primary; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;}">
+  <title>A Paired Arm Is Reviewed As Itself | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-18">
+<meta name="plan-north-star" content="unattended-execution">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — The review of a paired arm names the arm by its run id</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p>On 2026-10-18 nova ran a paired dispatch of <code>efit-field-swap</code>: primary <code>r-20261018T063236394668-efit-field-swap</code> on clive, and shadow <code>r-20261018T063236394831-efit-field-swap</code> on codex. Both live pointers carry the node id <code>efit-field-swap</code>. The obligation for the codex arm printed a review command with <code>--node review-of-efit-field-swap-eba500937412</code> and write paths under the codex arm's <code>review-records/</code>. Dispatch refused it as not-dispatchable on the <code>scoped</code> property. nova re-dispatched it by hand as <code>review-of-r-20261018T063236394831-efit-field-swap-eba500937412</code>, which ran.</p>
+<p>The cause is that the review node id names the node, and a pair has two runs with one node id. <code>_review_dispatch_fields</code> (<code>reckon/crew/recovery_review_subject.py:460</code>) takes <code>source_node</code> from the reviewed record's node id, falling back to its run id only when there is none (line 608). It mints the node id from that through <code>round_node_id</code>. Dispatch recovers the reviewed run through <code>_reviewed_run_id_for_node</code> (<code>reckon/crew/dispatch_admission.py:1866</code>), which calls <code>_resolved_reviewed_run_id</code> (<code>reckon/crew/recovery_review_delivery.py:156</code>). That resolver returns a run id source as it is. Any other source it matches against the live fleet's node ids, returning the first pointer that matches (lines 172 to 174). For this pair the first match was the clive primary. So the record-directory grant named the primary's directory, and the codex arm's declared record path fell outside it. The same ambiguity hits the primary's own review, whichever pointer the listing returns first.</p>
+<p><strong>Remedy</strong>, two parts:</p>
+<ul>
+<li>In <code>_review_dispatch_fields</code>, take the run id as <code>source_node</code> when the reviewed record is one arm of a pair. Read that from <code>_paired_partner_run_id</code> (<code>reckon/crew/promotion_checks.py:606</code>), which already resolves a partner from either side: the primary's <code>paired_shadow_run_id</code>, or a shadow lineage's <code>primary_run_id</code>. Do not write a second pairing test. An unpaired run keeps its node id as the source, so its review node ids and every reader of them are unchanged.</li>
+<li>In <code>_resolved_reviewed_run_id</code>, when more than one live pointer carries the source node id, return the bare source rather than the first match. A bare source names no run directory, so the grant is refused rather than given to the wrong run. One matching pointer resolves as today.</li>
+</ul>
+<p><strong>Out of scope.</strong> <code>_reviewed_run_id</code> in <code>reckon/crew/dispatch_sessions.py</code> (line 457) resolves the same source over ledger and live records to pick a review's session, taking the newest match. Once a paired arm's review is minted from its run id, that reader resolves it directly, so it is not changed here.</p>
+<p><strong>Write paths:</strong> <code>reckon/crew/recovery_review_subject.py</code>, <code>reckon/crew/recovery_review_delivery.py</code> and <code>tests/test_a_paired_arm_is_reviewed_as_itself.py</code>, which is new.</p>
+<p><strong>Done when</strong> all three of these hold:</p>
+<ul>
+<li>The new test points the crew home at a temporary directory and writes three live pointers there: a primary carrying node id <code>pair-node</code> and a <code>paired_shadow_run_id</code> naming the second; a shadow carrying node id <code>pair-node</code> and a lineage of kind <code>shadow</code> naming the first as <code>primary_run_id</code>; and an unpaired run carrying node id <code>solo-node</code>. It asserts four cases:
+  <ul>
+  <li>For each arm, the node id in <code>_review_dispatch_fields</code>'s result starts with <code>review-of-</code> followed by that arm's own run id. <code>_reviewed_run_id_for_node</code> on that node id returns that arm's run id.</li>
+  <li>For the unpaired run, the node id starts with <code>review-of-solo-node</code>, as it does today, and <code>_reviewed_run_id_for_node</code> on it returns the unpaired run's id.</li>
+  <li><code>_resolved_reviewed_run_id</code> for node id <code>review-of-pair-node</code> returns <code>pair-node</code>, the bare source, and neither arm's run id.</li>
+  <li><code>_review_record_directory_grant</code> refuses a record path under either arm's <code>review-records/</code> when given that bare source as the reviewed run.</li>
+  </ul>
+The test asserts the real crew home is untouched afterwards.</li>
+<li>Pytest over the new file, <code>tests/test_a_resumed_head_is_reviewed.py</code>, <code>tests/test_a_run_review_with_run_directory_records_dispatches.py</code>, <code>tests/test_a_paired_arm_waits_for_its_partner.py</code>, <code>tests/test_a_re_review_is_scoped_to_what_changed.py</code>, <code>tests/test_review_reflex_sweep.py</code>, <code>tests/test_rereview_keeps_its_lane.py</code>, <code>tests/test_a_run_review_cannot_remove_a_siblings_record.py</code>, <code>tests/test_review_of_a_brief_run_names_its_brief.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code> adds no failure against the base. Run it in the foreground.</li>
+<li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths, judged by delta against the base blobs.</li>
+</ul>
+<p><strong>Negative control</strong>, two mutations, each applied alone. With the pairing test removed from <code>_review_dispatch_fields</code>, the first case must fail. With <code>_resolved_reviewed_run_id</code> returning the first match again, the third case must fail.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-apairas-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-paired-arm-is-reviewed-as-itself §1">
+    <h4 class="r-fu-title">Name a paired arm's review by the arm's run id</h4>
+    <div class="r-fu-body"><p>Filed after nova reported that the printed review command for a paired codex arm resolved to its clive primary and was refused as unscoped. §1 carries the remedy and its done-when.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-paired-arm-is-reviewed-as-itself §1</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+</section>
+</main>
+</body>
+</html>
