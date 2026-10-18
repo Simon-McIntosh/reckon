@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run is a measurement node that authored no commit and ran no test suite: its baseline_suite and after_suite are null, its gate is the single sbatch census job 1289493 whose eight runs each end EXIT=0, so the added-failure delta is zero by absence of a suite rather than by a green run",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-18T21:22:34.803Z",
+  "dispatched_at": "2026-10-18T21:01:32Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/where-the-first-derivations-time-goes/report.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: item 1 states the after revision's runs 2 and 3 as 26/20/20 each, but the after arm's run 3 is 25/19/19 (reconcile-j1289493.txt and the report's own Runs table at report.md:48), so the headline's own summary contradicts its table."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/where-the-first-derivations-time-goes/report.md",
+      "line": "157",
+      "severity": "follow-on",
+      "text": "follow-on: the _resolve_commit row says \"4 + 4 of the 12 pooled calls per derivation are the same two shas\", but the raw calls JSON shows the 12 split 6 + 6, each of the two candidate shas appearing twice per run per derivation."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the reviewed run gained no commits against its base 4276661d2 \u2014 its worktree HEAD is 4276661d2 with a clean status \u2014 so there is no code diff to read; its delivery is the report directory named in the manifest and the artefacts inside it.",
+    "done_when": "\u00a740's done-when asks for the per-call-site table at both revisions with calls per derivation and seconds and the call sites that grew, the first call's remaining time by function, the cached-git projection against 10 s, the classification of each site, and logs naming revision/corpus/host/command, showing reckon.__file__ under the arm's tree and ending in EXIT=; all are present, the growth verdict \"none\" is at report.md:86.",
+    "goal": "the node's goal is to count git subprocesses per call site and profile the first fleet_state's remaining time at the two measured revisions; report.md gives the per-call-site tables at both revisions with calls per derivation and child-wait seconds (report.md:68 and report.md:79), the first derivation's time by function with child waits removed (report.md:111), the cached-git projection against 10 s (report.md:41), and each site's object-ids/mutable classification with its module (report.md:151).",
+    "manifest": "read the reviewed run's manifest.md; status complete, commits none (measurement node, repository read-only), tests names job 1289493 (all_debug, exclusive, 689 s; all eight census runs EXIT=0 and both controls as expected) with each log path, and baseline_suite/after_suite are null because the gate is a per-run census rather than a test suite.",
+    "write_paths": "the manifest declares one write path, the run's report directory; every delivered artefact (report.md, the four scripts, logs/, calls/, profiles/, the two analyser outputs) lies under it, and the reviewed worktree at 4276661d2 is clean with no commit authored."
+  },
+  "justifications": {
+    "durability": "no assertion in the delivery fails if a reported figure regresses \u2014 the census scripts and report carry no such test \u2014 though logs/instrument-self-test.log would fail if the recorder stopped attributing calls.",
+    "evidence": "the per-site per-derivation counts and child waits recompute cell for cell from calls/calls-after-*-j1289493.json and match report.md:79-84, the profile leaves at report.md:135-140 match the raw pstats exactly including posix.stat, and the gate is a real sbatch job with a live instrument self-test (logs/instrument-self-test.log verdict=PASS) and code-tree guard (logs/control-code-tree-guard.log rc=3).",
+    "fit": "run_census.sh:11-52 follows the harness idiom of \u00a734's run_measurement.sh (cleanup(), the signal traps and the gate constants carry over) and each delivered filename names its mechanism with no plan, version or ticket label.",
+    "goal_fidelity": "report.md:157 gives each git call site its module and whether its answer depends only on object ids, and report.md:41-52 gives the cached-git projection set against the 10 s bound, which is the deliverable \u00a740 names.",
+    "reuse": "a search over reckon/ for a subprocess call census found reckon/mcp_census.py, reckon/velocity.py:plan_census and reckon/clones.py, none of which attributes subprocess calls to frames, so no owner exists and the delivery forks nothing.",
+    "scope_discipline": "every delivered path lies under the declared report directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/where-the-first-derivations-time-goes, and the reviewed worktree HEAD 4276661d2 is unchanged with no commit authored."
+  },
+  "node": "review-of-where-the-first-derivations-time-goes-4276661d25f9",
+  "node:reviewed": "where-the-first-derivations-time-goes",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to count git subprocesses per call site and profile the first fleet_state's remaining time at the two measured revisions; report.md gives the per-call-site tables at both revisions with calls per derivation and child-wait seconds (report.md:68 and report.md:79), the first derivation's time by function with child waits removed (report.md:111), the cached-git projection against 10 s (report.md:41), and each site's object-ids/mutable classification with its module (report.md:151).\nVERDICT done_when: \u00a740's done-when asks for the per-call-site table at both revisions with calls per derivation and seconds and the call sites that grew, the first call's remaining time by function, the cached-git projection against 10 s, the classification of each site, and logs naming revision/corpus/host/command, showing reckon.__file__ under the arm's tree and ending in EXIT=; all are present, the growth verdict \"none\" is at report.md:86.\nVERDICT write_paths: the manifest declares one write path, the run's report directory; every delivered artefact (report.md, the four scripts, logs/, calls/, profiles/, the two analyser outputs) lies under it, and the reviewed worktree at 4276661d2 is clean with no commit authored.\nVERDICT manifest: read the reviewed run's manifest.md; status complete, commits none (measurement node, repository read-only), tests names job 1289493 (all_debug, exclusive, 689 s; all eight census runs EXIT=0 and both controls as expected) with each log path, and baseline_suite/after_suite are null because the gate is a per-run census rather than a test suite.\nVERDICT diff: the reviewed run gained no commits against its base 4276661d2 \u2014 its worktree HEAD is 4276661d2 with a clean status \u2014 so there is no code diff to read; its delivery is the report directory named in the manifest and the artefacts inside it.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md:157 gives each git call site its module and whether its answer depends only on object ids, and report.md:41-52 gives the cached-git projection set against the 10 s bound, which is the deliverable \u00a740 names.\nSCORE evidence: 18\nJUSTIFICATION evidence: the per-site per-derivation counts and child waits recompute cell for cell from calls/calls-after-*-j1289493.json and match report.md:79-84, the profile leaves at report.md:135-140 match the raw pstats exactly including posix.stat, and the gate is a real sbatch job with a live instrument self-test (logs/instrument-self-test.log verdict=PASS) and code-tree guard (logs/control-code-tree-guard.log rc=3).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every delivered path lies under the declared report directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/where-the-first-derivations-time-goes, and the reviewed worktree HEAD 4276661d2 is unchanged with no commit authored.\nSCORE durability: 14\nJUSTIFICATION durability: no assertion in the delivery fails if a reported figure regresses \u2014 the census scripts and report carry no such test \u2014 though logs/instrument-self-test.log would fail if the recorder stopped attributing calls.\nSCORE fit: 19\nJUSTIFICATION fit: run_census.sh:11-52 follows the harness idiom of \u00a734's run_measurement.sh (cleanup(), the signal traps and the gate constants carry over) and each delivered filename names its mechanism with no plan, version or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search over reckon/ for a subprocess call census found reckon/mcp_census.py, reckon/velocity.py:plan_census and reckon/clones.py, none of which attributes subprocess calls to frames, so no owner exists and the delivery forks nothing.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/where-the-first-derivations-time-goes/report.md:20 follow-on: item 1 states the after revision's runs 2 and 3 as 26/20/20 each, but the after arm's run 3 is 25/19/19 (reconcile-j1289493.txt and the report's own Runs table at report.md:48), so the headline's own summary contradicts its table.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-read-answers-inside-its-deadline/where-the-first-derivations-time-goes/report.md:157 follow-on: the _resolve_commit row says \"4 + 4 of the 12 pooled calls per derivation are the same two shas\", but the raw calls JSON shows the 12 split 6 + 6, each of the two candidate shas appearing twice per run per derivation.\nreviewed_base_sha: 4276661d25f9748fe9ebe770ab665c8f03851c8d\nreviewed_head_sha: 4276661d25f9748fe9ebe770ab665c8f03851c8d\n",
+  "review_run_id": "r-20261018T210016336268-review-of-where-the-first-derivations-time-goes-4276661d25f9",
+  "reviewed_base_sha": "4276661d25f9748fe9ebe770ab665c8f03851c8d",
+  "reviewed_head_sha": "4276661d25f9748fe9ebe770ab665c8f03851c8d",
+  "reviewed_run_id": "r-20261018T201144142528-where-the-first-derivations-time-goes",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T21:12:51.081405+00:00",
+  "total": 109
+}
