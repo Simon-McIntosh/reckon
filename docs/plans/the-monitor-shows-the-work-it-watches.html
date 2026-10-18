@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="317">
+<meta name="plan-version" content="318">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1248,6 +1248,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s50" data-id="c-close-s50" data-who="reckon-build" data-when="2026-10-18T07:50:00Z">
     <div class="r-comment-body"><p>§50 landed. A follower re-armed on a checkpoint older than the pane's history window resumes in baseline mode instead of replaying the days since (merge <code>ff387b114</code>). Zero added failures over 42 importer files. §51 is next. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s50">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s50" data-id="c-run-r-20261018T063856147181-a-stale-checkpoint-replays-no-old-margin" data-who="reckon-build" data-when="2026-10-18T07:18:26.841Z">
+    <div class="r-comment-body"><p>A follower re-armed on a checkpoint older than the pane&#x27;s history window now resumes in baseline mode instead of replaying the margin: the checkpoint record gained a `written_at` stamp with `written_moment()` falling back to the file&#x27;s mtime, `_follow_resume_plan` compares that age against the window resolved through `_follow_history_caps` and returns baseline when stale, so suppression goes through `runs.read_delivered` compared by `_follow_gap_rows`; measured at tests/test_a_stale_checkpoint_replays_no_old_margin.py 7 passed EXIT=0, with the declared removal of the age check reddening case (a) on the way to 4 failed EXIT=1.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
