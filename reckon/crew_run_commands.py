@@ -731,6 +731,51 @@ def crew_check_manifest(run_id, pretty):
         raise click.exceptions.Exit(1)
 
 
+@crew.command(name="check-review")
+@click.option("--record", "record_path", required=True, type=click.Path(path_type=Path))
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_check_review(record_path, pretty):
+    """Check whether a delivered run review can be filed, without writing it."""
+    import json
+
+    from reckon.crew import review as review_module
+
+    try:
+        body = json.loads(record_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        findings = [f"record could not be read as JSON: {exc}"]
+    else:
+        findings = (
+            review_module.review_record_refusals(body)
+            if isinstance(body, dict)
+            else ["record is not an object"]
+        )
+    _emit(
+        {"ok": not findings, "record": str(record_path), "findings": findings}, pretty
+    )
+    if findings:
+        raise click.exceptions.Exit(1)
+
+
+@crew.command(name="repair-review")
+@click.option("--run", "reviewed_run_id", required=True)
+@click.option("--record", "record_path", required=True, type=click.Path(path_type=Path))
+@click.option("--set", "change", required=True)
+@click.option("--reason", required=True)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_repair_review(reviewed_run_id, record_path, change, reason, pretty):
+    """Repair only a review's status or missing subject identity, preserving it."""
+    from reckon.crew import review as review_module
+    from reckon.crew.node import CrewError
+
+    try:
+        result = review_module.repair_run_review(
+            reviewed_run_id, record_path, change, reason
+        )
+    except (OSError, ValueError, TypeError, CrewError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit_crew_result(result, pretty)
+
 
 WIDENABLE_PHASE = "blocked"
 
@@ -1820,6 +1865,41 @@ def crew_complete(
     """
     crew_module, _ = _crew_modules()
     ledger_module = _ledger_module()
+    from reckon.crew import review as review_module
+    from reckon.crew import runs as runs_module
+
+    try:
+        pointer = runs_module.read_pointer(run_id)
+    except crew_module.CrewError:
+        pointer = {}
+    if (
+        pointer
+        and str(pointer.get("role") or (pointer.get("node") or {}).get("role") or "")
+        == "review"
+    ):
+        delivered = []
+        for declared in (pointer.get("node") or {}).get("write_paths") or ():
+            source = Path(str(declared))
+            if (
+                source.parent.name != review_module.RUN_REVIEW_RECORD_DIRNAME
+                or not source.is_file()
+            ):
+                continue
+            try:
+                import json
+
+                body = json.loads(source.read_text(encoding="utf-8"))
+                reasons = (
+                    review_module.store_review_refusals(body)
+                    if isinstance(body, dict)
+                    else ["record is not an object"]
+                )
+            except (OSError, ValueError) as exc:
+                reasons = [f"unreadable JSON: {exc}"]
+            delivered.append({"record": str(source), "reasons": reasons})
+        if delivered and all(entry["reasons"] for entry in delivered):
+            _emit({"ok": False, "review_filed": False, "refused": delivered}, pretty)
+            raise click.exceptions.Exit(1)
     gate_check = {
         "command": gate_command,
         "exit_status": gate_exit_status,
@@ -2617,4 +2697,3 @@ def crew_admit(lane, once, pretty):
         },
         pretty,
     )
-

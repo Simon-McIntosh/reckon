@@ -572,6 +572,60 @@ RECOGNISED_REVIEW_STATUSES: frozenset[str] = frozenset(
 )
 
 
+def store_review_refusals(record: Mapping[str, Any]) -> list[str]:
+    """Return the store's read-only refusals for a run review."""
+    refusals = []
+    if not record.get("project"):
+        refusals.append("missing project")
+    if not record.get("reviewed_run_id"):
+        refusals.append("missing reviewed_run_id")
+    if not carries_review_material(record):
+        refusals.append("missing review material")
+    status_refusal = review_status_refusal(record)
+    if status_refusal:
+        refusals.append(status_refusal)
+    if not refusals:
+        revision_refusal = unresolved_reviewed_revision(record)
+        if revision_refusal:
+            refusals.append(revision_refusal)
+    return refusals
+
+
+def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
+    """Check the current review delivery contract and the store's refusals."""
+    required = (
+        "project",
+        "reviewed_run_id",
+        "review_run_id",
+        "reviewed_base_sha",
+        "reviewed_head_sha",
+    )
+    refusals = [
+        f"missing {key}" for key in required if not str(record.get(key) or "").strip()
+    ]
+    scores = record.get("scores")
+    if not isinstance(scores, Mapping):
+        refusals.append("missing scores")
+    elif record.get("status") == "parsed":
+        refusals.extend(
+            f"missing scores.{key}" for key in REVIEW_DIMENSIONS if key not in scores
+        )
+    count = record.get("added_failure_count")
+    if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+        refusals.append("missing or invalid added_failure_count")
+    ids = record.get("added_failure_ids")
+    if not isinstance(ids, list) or not all(isinstance(item, str) for item in ids):
+        refusals.append("missing or invalid added_failure_ids")
+    elif isinstance(count, int) and count != len(ids):
+        refusals.append("added_failure_count differs from added_failure_ids")
+    if not isinstance(record.get("findings"), list):
+        refusals.append("missing findings")
+    for refusal in store_review_refusals(record):
+        if refusal not in refusals:
+            refusals.append(refusal)
+    return refusals
+
+
 def review_status_refusal(record: Mapping[str, Any]) -> str | None:
     """Refuse a record with an unreadable status or a finding with no claim.
 
@@ -2510,9 +2564,17 @@ def delivered_run_review_paths(
     return [path for path in located if path is not None]
 
 
+class FiledRunReviews(list[Path]):
+    """List-compatible filing receipt with the refused deliveries beside it."""
+
+    def __init__(self, filed: list[Path], refused: list[dict[str, str]]) -> None:
+        super().__init__(filed)
+        self.refused = refused
+
+
 def file_delivered_run_reviews(
     record: Mapping[str, Any], *, run_directory: str | Path
-) -> list[Path]:
+) -> FiledRunReviews:
     """File a review's delivered records into the store, return their paths.
 
     The supervisor calls this when its worker exits, and ``crew complete``
@@ -2523,19 +2585,101 @@ def file_delivered_run_reviews(
     the review as undelivered, which is what a half-written record is, and
     forcing it in would file a review every consumer reads as absent.
     """
+    report = file_delivered_run_review_report(record, run_directory=run_directory)
+    return FiledRunReviews(report["filed"], report["refused"])
+
+
+def file_delivered_run_review_report(
+    record: Mapping[str, Any], *, run_directory: str | Path
+) -> dict[str, Any]:
+    """Return filed paths and each delivered record the store refused."""
     filed: list[Path] = []
+    refused: list[dict[str, str]] = []
     for source in delivered_run_review_paths(record, run_directory):
         try:
             body = json.loads(source.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+        except (OSError, ValueError) as exc:
+            refused.append({"record": str(source), "reason": f"unreadable JSON: {exc}"})
             continue
         if not isinstance(body, dict):
+            refused.append({"record": str(source), "reason": "record is not an object"})
             continue
         try:
             filed.append(store_review(body))
-        except (ValueError, OSError):
+        except (ValueError, OSError) as exc:
+            refused.append({"record": str(source), "reason": str(exc)})
             continue
-    return filed
+    return {"filed": filed, "refused": refused}
+
+
+def repair_run_review(
+    reviewed_run_id: str, record_path: str | Path, change: str, reason: str
+) -> dict[str, str]:
+    """Repair a delivered review's status or missing subject ids with provenance."""
+    from reckon.crew import runs
+
+    source = Path(record_path).expanduser().resolve()
+    allowed = run_review_record_directory(runs.run_dir(reviewed_run_id)).resolve()
+    if source.parent != allowed or not source.name.startswith(reviewed_run_id):
+        raise ValueError(
+            "record is outside the reviewed run's review-records directory"
+        )
+    explanation = reason.strip()
+    if not explanation:
+        raise ValueError("a review repair requires a non-empty --reason")
+    if change.startswith("status="):
+        value = change.partition("=")[2]
+        if value not in RECOGNISED_REVIEW_STATUSES:
+            raise ValueError(
+                "status must be one of " + ", ".join(sorted(RECOGNISED_REVIEW_STATUSES))
+            )
+    elif change != "subject":
+        raise ValueError("--set may only name status=<accepted value> or subject")
+    original = source.read_bytes()
+    body = json.loads(original)
+    if not isinstance(body, dict):
+        raise TypeError("review record is not an object")
+    if body.get("reviewed_run_id") and body["reviewed_run_id"] != reviewed_run_id:
+        raise ValueError("review record names a different reviewed run")
+    if change == "subject":
+        reviewed = runs.read_pointer(reviewed_run_id)
+        project = str(reviewed.get("project") or "")
+        if not project:
+            raise ValueError("reviewed run records no project")
+        reviewers = [
+            pointer
+            for pointer in runs.list_live(project=project)
+            if str(source) in (pointer.get("node") or {}).get("write_paths", ())
+        ]
+        if len(reviewers) != 1:
+            raise ValueError("cannot identify exactly one review run for this record")
+        for key, value in (
+            ("project", project),
+            ("reviewed_run_id", reviewed_run_id),
+            ("review_run_id", reviewers[0]["run_id"]),
+        ):
+            if not body.get(key):
+                body[key] = value
+    else:
+        body["status"] = value
+    body["repair_reason"] = explanation
+    refusals = review_record_refusals(body)
+    if refusals:
+        raise ValueError("repaired review remains unfileable: " + "; ".join(refusals))
+    revision_refusal = unresolved_reviewed_revision(body)
+    if revision_refusal:
+        raise ValueError(revision_refusal)
+    preserved = source.with_name(source.stem + ".asdelivered.json")
+    if not preserved.exists():
+        preserved.write_bytes(original)
+    filed = store_review(body)
+    _write_record(source, body)
+    return {
+        "record": str(source),
+        "as_delivered": str(preserved),
+        "filed": str(filed),
+        "reason": explanation,
+    }
 
 
 def run_record_times(
