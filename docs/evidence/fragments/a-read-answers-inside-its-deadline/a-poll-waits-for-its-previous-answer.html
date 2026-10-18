@@ -7,5 +7,8 @@
 <tr><td>Head</td><td>3 passed (helper single-outstanding under fake timers; no fetching <code>setInterval</code> in shell/plan/crew; one <code>/crew</code> poller across shell and crew)</td><td>EXIT=0</td></tr>
 <tr><td>Base detection</td><td>shell+crew find <strong>2</strong> <code>/crew</code> pollers and all three files start a fetching <code>setInterval</code></td><td>EXIT=0</td></tr>
 <tr><td>Negative control</td><td>helper swapped for <code>setInterval</code>; single-outstanding assertion fails at <code>peak=6</code></td><td>EXIT=1</td></tr>
+<tr><td>Crew card cadence</td><td>the card contract reads the cadence the crew heading renders instead of the removed <code>window.setInterval</code> call</td><td>EXIT=0</td></tr>
+<tr><td>Open-page boundary</td><td>the boundary check holds that the crew surface starts no poll and the shell carries the single <code>/crew</code> poll</td><td>EXIT=0</td></tr>
 </tbody></table>
+<p id="a-poll-waits-for-its-previous-answer-review">Two SPA tests asserted the mechanism this change removes: one captured <code>window.setInterval</code> to read the crew cadence, the other required the literal <code>window.setInterval(poll, CREW_POLL_INTERVAL_MS)</code> in the crew source. Both now assert the behaviour that replaced it — the cadence the crew heading reports, and the crew surface starting no poll of its own while the shell carries the single <code>/crew</code> poll. Reverting either repair makes the check that finding named fail again.</p>
 </article>
