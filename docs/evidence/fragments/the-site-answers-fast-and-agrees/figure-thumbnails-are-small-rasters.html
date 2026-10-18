@@ -16,22 +16,51 @@
     server and its tests get a rasteriser wherever they run. <code>rsvg-convert</code> was the measured reference
     (11 to 32 KB PNGs in 18 to 141 ms each against six sampled figures) but it exists on the login node only, and
     <code>cairosvg</code> would need a system <code>libcairo</code> present at import time.</p>
+  <p id="figure-thumbnails-are-small-rasters-sizing"><strong>One dimension reader.</strong> The thumbnail sizes
+    itself from <code>reckon.figures._svg_dims</code>, the reader the figure inventory already uses to list a row's
+    dimensions. An earlier revision carried its own viewBox, width and height regex here, so the module that lists a
+    figure and the module that draws its icon parsed the same document by two different rules and could disagree.
+    There is now one parse, and the node gate patches it to prove the served raster follows it: with the reader
+    answering 400&times;1000, the fixture's own 640&times;480 viewBox would give a 200-pixel thumbnail and the served
+    one is 80.</p>
   <p id="figure-thumbnails-are-small-rasters-environment"><strong>Environment.</strong> The wheel is named in the
     project's lockfile so every checkout and CI install it with <code>uv sync</code>. It could not be installed
-    into the operator's shared environment from this run: <code>/home/ITER/mcintos/Code/reckon</code> is mounted
-    read-only inside the worker fence, so
+    into the operator's shared environment from this run, and the block is the worker fence rather than the
+    declaration: <code>/home/ITER/mcintos/Code/reckon</code> is mounted <code>ro,nosuid,nodev,relatime</code>, so
     <code>UV_PROJECT_ENVIRONMENT=/home/ITER/mcintos/Code/reckon/.venv uv sync --no-install-project --inexact</code>
-    reports <code>WARN Failed to acquire environment lock</code> and installs nothing. The gate was run against the
-    same interpreter with the locked wheel unpacked on <code>PYTHONPATH</code>. Until the shared environment is
-    synced, <code>import resvg_py</code> fails and the route falls back to the SVG — the pre-change behaviour.</p>
+    resolves the package, downloads it and prepares it, then fails at the write:
+    <code>Failed to create directory …/site-packages/resvg_py-0.5.0.dist-info: Read-only file system (os error 30)</code>.
+    Every stage but the install is proven by that output. Until an unfenced
+    <code>uv sync --no-install-project --inexact</code> runs against the merged tree — the checkout must carry this
+    change first, because a sync pointed at the pre-merge <code>pyproject.toml</code> does not see the dependency and
+    exits 0 having installed nothing — <code>import resvg_py</code> fails and the route falls back to the SVG, which
+    is the pre-change behaviour.</p>
   <table id="figure-thumbnails-are-small-rasters-measure">
     <thead><tr><th>Check</th><th>Result</th></tr></thead>
     <tbody>
-      <tr><td><code>tests/test_figure_thumbnails_are_small_rasters.py</code></td><td>6 passed, EXIT=0</td></tr>
+      <tr><td><code>tests/test_figure_thumbnails_are_small_rasters.py</code></td><td>7 passed, EXIT=0</td></tr>
       <tr><td>An SVG figure becomes a PNG bounded by <code>THUMB_MAX_EDGE</code></td><td>640&times;480 viewBox answers <code>image/png</code> at 200&times;150, in fewer bytes than the source</td></tr>
+      <tr><td>A tall SVG is bounded by its long edge</td><td>300&times;900 viewBox answers 67&times;200</td></tr>
       <tr><td>Second request reuses the cache</td><td>one render for two requests; the cached file equals the body</td></tr>
       <tr><td>Rewritten SVG renders afresh</td><td>second render, new ETag, a second cache entry</td></tr>
       <tr><td>An SVG that cannot be rasterised</td><td>the source is served as <code>image/svg+xml</code></td></tr>
+      <tr><td>The thumbnail is sized by the inventory's reader</td><td>with <code>figures._svg_dims</code> patched to 400&times;1000 the served raster is 80 px, not the 200 the retired local parse gave</td></tr>
+      <tr><td>The rasteriser is a declared dependency</td><td><code>resvg-py</code> in <code>pyproject.toml</code>, <code>name = "resvg-py"</code> in <code>uv.lock</code>, and <code>import resvg_py</code> resolves</td></tr>
+      <tr><td>Retired: the SVG passthrough assertion</td><td><code>tests/test_figure_thumbnails.py</code> asserted an SVG was passed through; it now asserts <code>image/png</code> at 200&times;150, which is the one failure the first revision added and this one removed</td></tr>
     </tbody>
   </table>
+  <p id="figure-thumbnails-are-small-rasters-verification"><strong>Verification.</strong> Suite over the 101 files
+    that import <code>reckon.serve</code>: baseline <code>18 failed, 896 passed, 1 skipped, 2 errors</code> against
+    the pre-change revision and <code>11 failed, 910 passed, 1 skipped, 1 error</code> against this one. The 11 are
+    the browser-driven SPA tests that fail on the base arm too, because headless Chrome does not run in this
+    sandbox, plus the pre-existing <code>conftest.py::test_temp_config_home</code> error. One reaping test appears
+    in one arm and not the other; it was re-run in isolation on both trees and fails identically on each
+    (<code>the driver's child survived the reap</code>), so it is the sandbox and not the change. No failure is
+    added, and <code>test_svg_sources_pass_through_unchanged</code> is gone. Ruff: 17 findings on
+    <code>reckon/serve.py</code> at both revisions, none on either test file, all three formatted.</p>
+  <p id="figure-thumbnails-are-small-rasters-controls"><strong>Negative controls.</strong> The declared mutation —
+    restore the SVG passthrough on the thumbnail route — fails the content-type assertion, <code>EXIT=1</code>. Each
+    repair was then reverted in turn against the repaired tree: restoring the local dimension regex fails
+    <code>test_the_thumbnail_is_sized_by_the_figure_inventory_reader</code> and nothing else, and restoring the
+    pre-repair test file fails <code>test_svg_sources_pass_through_unchanged</code> and nothing else.</p>
 </section>
