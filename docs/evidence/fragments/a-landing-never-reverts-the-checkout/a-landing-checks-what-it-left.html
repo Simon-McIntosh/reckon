@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-landing-never-reverts-the-checkout">
   <meta name="plan-title" content="A landing checks what it left at its paths and records every rollback">
-  <meta name="plan-summary" content="reckon/crew/promotion_scope.py _commit_landing_writes reports a staged reversal of an earlier landing's paths before it stages and a post-commit path mismatch with its three blob ids, appends every refusal and rollback to landing.json in the run directory, and the release outcome now lands through the same owner; six new tests, five of which fail at the base revision.">
+  <meta name="plan-summary" content="reckon/crew/promotion_scope.py _commit_landing_writes reports a staged reversal of an earlier landing's paths before it stages and a post-commit path mismatch with its three blob ids, appends every refusal and rollback to landing.json in the run directory, and the release outcome lands through the same owner with its result reported on stderr and its receipt; seven new tests, six of which fail at the base revision.">
   <meta name="plan-evidence-for" content="a-landing-never-reverts-the-checkout">
   <meta name="plan-recorded-at" content="2026-10-18">
   <meta name="plan-verdict" content="passed">
@@ -39,7 +39,14 @@
         <code>_record_release_on_ledger</code> now lands through the same
         <code>_commit_landing_writes</code> instead of repeating the stage/commit/
         rollback sequence inline, so the file runs no <code>git add</code> or
-        <code>git commit</code> of its own.</p>
+        <code>git commit</code> of its own, and it reports that landing's result
+        the way a promotion's is reported: <code>_report_landing_check</code>
+        (defined in <code>reckon/crew/promotion_scope.py</code> beside the check
+        it reads, imported by both callers) prints each reversal and mismatch to
+        stderr and returns the check, which is attached to the release the
+        function returns, so it rides into the promotion's receipt as well as
+        <code>landing.json</code>. A release whose landing finds nothing adds no
+        key.</p>
       <p>Every refusal and success appends one entry to
         <code>landing.json</code> in the run's directory
         (<code>run_dir(run_id)</code>), appended rather than overwritten. A refusal
@@ -58,29 +65,39 @@
         tests/test_failed_landing_leaves_nothing_behind.py
         tests/test_rollback_asks_head.py tests/test_promotion_release.py
         tests/test_a_release_never_folds_run_files_into_the_aggregate.py</code>
-        at the node worktree head: <strong>27 passed, 0 failed, EXIT=0</strong>
-        (<code>after-suite.log</code>). The same four pre-existing files at the base
+        at the node worktree head: <strong>28 passed, 0 failed, EXIT=0</strong>
+        (<code>repair-suite.log</code>). The same four pre-existing files at the base
         revision <code>88d10cb5</code>, in a scratch tree under <code>$TMPDIR</code>,
         give <strong>21 passed, 0 failed, EXIT=0</strong>
-        (<code>baseline-suite.log</code>) — zero added failures. The six new cases
+        (<code>baseline-suite.log</code>) — zero added failures. The seven new cases
         cover the staged reversal (naming the earlier commit), a staged path that is
         not a reversal (not reported), the post-commit mismatch (three blob ids) with a
         clean landing reporting <code>ok</code>, the refused commit's record appended
-        twice, the held-index-lock stage refusal, and a release that changes nothing
-        landing no commit.</p>
-      <p>Negative control: the new test file at the base revision
+        twice, the held-index-lock stage refusal, a release that changes nothing
+        landing no commit, and a reversal found while a release lands reaching
+        stderr and the returned receipt.</p>
+      <p>Negative control: the seven-case test file at the base revision
         <code>88d10cb5</code> in a scratch tree under <code>$TMPDIR</code>, whose
         header records the imported module as that tree's
-        <code>reckon/crew/promotion_scope.py</code> — <strong>5 failed, 1 passed,
-        EXIT=1</strong> (<code>negative-control-base.log</code>), the five being
+        <code>reckon/crew/promotion_scope.py</code> — <strong>6 failed, 1 passed,
+        EXIT=1</strong> (<code>negative-control-base.log</code>), the six being
         <code>test_a_staged_reversal_of_an_earlier_landing_is_reported</code>,
         <code>test_a_staged_path_that_is_not_a_reversal_is_not_reported</code>,
         <code>test_a_path_changed_after_the_commit_is_reported</code>,
-        <code>test_a_refused_commit_records_the_step_and_appends</code> and
-        <code>test_a_held_index_lock_records_the_stage_step</code>. At the base
-        revision no <code>landing_check</code> is reported and no
+        <code>test_a_refused_commit_records_the_step_and_appends</code>,
+        <code>test_a_held_index_lock_records_the_stage_step</code> and
+        <code>test_a_reversal_found_while_landing_a_release_is_reported</code>. At
+        the base revision no <code>landing_check</code> is reported and no
         <code>landing.json</code> is written, so those cases fail by id; the
-        no-change release case passes at both revisions. <code>ruff check</code> and
+        no-change release case passes at both revisions.</p>
+      <p>Repair negative control: each answering change reverted in turn
+        (<code>negative-control-repair.log</code>). With the release site
+        discarding its landing's result again, the reversal-reporting case fails
+        with <code>KeyError: 'landing_check'</code>; with the ledger write
+        dropped, the repaired record assertion fails with <code>KeyError:
+        'release'</code> while the assertion as first reviewed — comparing the
+        return value against the dict handed in — still passes, which is the
+        defect that finding named. <code>ruff check</code> and
         <code>ruff format --check</code> add no finding on the changed files (the
         three pre-existing <code>check</code> findings and the two pre-existing
         unformatted files are unchanged by delta).</p>
