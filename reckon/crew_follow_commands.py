@@ -2209,8 +2209,8 @@ def _follow_watch_lines(
         is still open the producer may catch up on its own at any poll, and a
         follower reloading onto the same new code many times an hour must not
         put a line on the pane for each -- the event still reaches the JSON
-        stream, but only an overrun, which is the case that needs a reader, is
-        echoed to the pane.
+        stream. An overrun reaches the pane when the seat is local; a foreign
+        seat's host-specific advice carries the same news in one line.
         """
         return {
             "event": FOLLOWER_PRODUCER_RELOADING_EVENT,
@@ -3397,7 +3397,8 @@ def crew_follow(
                 # object with the stamps (and the remedy when there is one), and
                 # text mode prints the one dim line. A reloading note marks its
                 # own pane reach on ``pane_line``: while the window is still
-                # open it is kept off the pane, and only an overrun is echoed.
+                # open it stays off the pane, and a foreign seat's overrun
+                # leaves the pane to the host-specific advice.
                 pane_line = bool(event.pop("pane_line", True))
                 if json_output:
                     _emit_crew_result(event, pretty, observation=True)
