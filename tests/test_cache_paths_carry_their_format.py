@@ -99,6 +99,6 @@ def test_alternating_writers_reuse_their_own_format(
             paths[version] = path()
             assert paths[version].is_file()
 
-    assert paths[1] != paths[2]
     assert rebuilds == {1: 1, 2: 1}
+    assert paths[1] != paths[2]
     assert "Ignoring incompatible" not in caplog.text
