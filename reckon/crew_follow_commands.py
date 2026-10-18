@@ -2205,8 +2205,8 @@ def _follow_watch_lines(
     ) -> dict[str, Any]:
         """Name a producer still catching up.
 
-        ``pane_line`` is the reload having overrun its window: while the window
-        is still open the producer may catch up on its own at any poll, and a
+        ``pane_line`` says whether this note reaches the pane. While the window
+        is open the producer may catch up on its own at any poll, and a
         follower reloading onto the same new code many times an hour must not
         put a line on the pane for each -- the event still reaches the JSON
         stream. An overrun reaches the pane when the seat is local; a foreign
