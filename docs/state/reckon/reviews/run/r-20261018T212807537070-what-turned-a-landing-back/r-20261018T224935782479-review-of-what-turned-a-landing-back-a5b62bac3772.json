@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Now keyed to product code: the interleaving arm calls the production _restore_landing_writes (scripts/reproduce_landing_reversion.py:101), so if that function stopped restoring, the plan path would read 'equal' rather than 'in-HEAD, reverted' and the run would exit 1.",
+      "lines": "204-215"
+    },
+    {
+      "failure_condition": "The control arm at lines 219-228 reddens only if the no-rollback landing failed to leave the four paths equal, i.e. if the script's own landing sequence broke; it exercises no product code.",
+      "lines": "219-228"
+    }
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-18T23:08:09.940Z",
+  "dispatched_at": "2026-10-18T22:50:42Z",
+  "findings": [
+    {
+      "file": "docs/research/what-turned-a-landing-back.html",
+      "line": "76",
+      "severity": "follow-on",
+      "text": "follow-on: the timeline states 'the reversal happened while HEAD already carried the landing', but the document's own second experiment (and scripts/reproduce_landing_reversion.py) establishes that _restore_landing_writes changes nothing when HEAD already carries the landing and only acts on a pre-landing HEAD; read literally the sentence implies a rollback resolved the landed HEAD, which the document elsewhere rules out. The observable fact is that the reversed index/worktree persisted while HEAD carried the landing, not that the rollback read that HEAD."
+    },
+    {
+      "file": "reproduce-production-rollback.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate log's first line reads 'revision: 7020130f0...' (the pre-fix commit) while its content ('production rollback:' and 'reckon rollback report:') is emitted only by the a5b62bac3 script, so the log does not name the revision of the code it ran, and a reader cannot reconcile the log's stated revision with its content. The command re-run at the reviewed head reproduces EXIT=0, so the substance is sound and only the stamped revision is off by one commit."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "none \u2014 the landed change is a research document, a standalone scripts/ reproduction and a figure; no runtime code reaches them, though the script exercises the production owner reckoned.crew.promotion_scope._restore_landing_writes.",
+    "diff": "Read commit by commit against base 6b88e9b7: 7020130f0 adds the research doc, the HTML fragment and the reproduction script; a5b62bac3 changes the doc, the script and adds docs/figures/what-turned-a-landing-back/timeline.svg (2185 lines). Four paths, all inside the grant, no product code.",
+    "done_when": "The measure is the sourced timeline plus the two-arm reproduction; the manifest records the gate command at EXIT=0 and I re-ran it from the reviewed head and got EXIT=0 with both arms matching the document's quoted output.",
+    "goal": "The node goal names the process and call that turned nova's checkout back and reproduces it; docs/research/what-turned-a-landing-back.html:92-119 names _restore_landing_writes (reckon/crew/promotion_scope.py:1672) as the mechanism and the second promotion via promote_review_run_itself (reckon/crew/recovery_review_acceptance.py:416) as the leading candidate, and the script reproduces it.",
+    "manifest": "The source manifest.md reads complete, names commits 7020130f0 and a5b62bac3, the four changed paths, the gate command and EXIT=0, and records no baseline_suite or after_suite (null), consistent with a non-test-role node.",
+    "write_paths": "The brief grants docs/research/what-turned-a-landing-back.html, scripts/reproduce_landing_reversion.py, docs/figures/what-turned-a-landing-back, docs/evidence/fragments/a-landing-never-reverts-the-checkout/what-turned-a-landing-back.html and docs/figures/a-landing-never-reverts-the-checkout/what-turned-a-landing-back; the diff changes four of them, all inside the grant."
+  },
+  "justifications": {
+    "durability": "The interleaving arm's assertion (scripts/reproduce_landing_reversion.py:204-215) now depends on the production _restore_landing_writes it calls, so reverting that function to a no-op would redden it; but it is a standalone script, not a test wired into the suite, and the node changed no test file.",
+    "evidence": "scripts/reproduce_landing_reversion.py exits 0 with the interleaving leaving the plan path reverted and the three created paths staged-deleted and the control leaving all four equal, re-run by me from the reviewed head; the source gate log stamps revision 7020130f0 rather than the a5b62bac3 it exercised.",
+    "fit": "docs/research/what-turned-a-landing-back.html follows the repository's research-doc shape, scripts/reproduce_landing_reversion.py sits with the standalone scripts/ checks, and the timeline figure follows the data-ink style (no gridlines, despined, one figure-level legend); no path, symbol or comment carries a plan label, version number or ticket id.",
+    "goal_fidelity": "docs/research/what-turned-a-landing-back.html:92-119 names _restore_landing_writes (reckon/crew/promotion_scope.py:1672) as the mechanism, the second promotion via promote_review_run_itself (reckon/crew/recovery_review_acceptance.py:416) as the leading candidate, and rules out the pull candidate by the absent reflog entry.",
+    "reuse": "The capability search over reckon/ found the rollback owner _restore_landing_writes at reckon/crew/promotion_scope.py:1672 and no shared scratch-git-repo owner (tests roll per-file helpers, none in conftest); scripts/reproduce_landing_reversion.py:101 calls that owner rather than re-implementing it.",
+    "scope_discipline": "The four paths in the 6b88e9b7..a5b62bac3 diff are all inside the brief's write paths and no product code changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal names the process and call that turned nova's checkout back and reproduces it; docs/research/what-turned-a-landing-back.html:92-119 names _restore_landing_writes (reckon/crew/promotion_scope.py:1672) as the mechanism and the second promotion via promote_review_run_itself (reckon/crew/recovery_review_acceptance.py:416) as the leading candidate, and the script reproduces it.\nVERDICT done_when: The measure is the sourced timeline plus the two-arm reproduction; the manifest records the gate command at EXIT=0 and I re-ran it from the reviewed head and got EXIT=0 with both arms matching the document's quoted output.\nVERDICT write_paths: The brief grants docs/research/what-turned-a-landing-back.html, scripts/reproduce_landing_reversion.py, docs/figures/what-turned-a-landing-back, docs/evidence/fragments/a-landing-never-reverts-the-checkout/what-turned-a-landing-back.html and docs/figures/a-landing-never-reverts-the-checkout/what-turned-a-landing-back; the diff changes four of them, all inside the grant.\nVERDICT manifest: The source manifest.md reads complete, names commits 7020130f0 and a5b62bac3, the four changed paths, the gate command and EXIT=0, and records no baseline_suite or after_suite (null), consistent with a non-test-role node.\nVERDICT diff: Read commit by commit against base 6b88e9b7: 7020130f0 adds the research doc, the HTML fragment and the reproduction script; a5b62bac3 changes the doc, the script and adds docs/figures/what-turned-a-landing-back/timeline.svg; four paths, all inside the grant, no product code.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/research/what-turned-a-landing-back.html:92-119 names _restore_landing_writes (reckon/crew/promotion_scope.py:1672) as the mechanism and the second promotion via promote_review_run_itself (reckon/crew/recovery_review_acceptance.py:416) as the leading candidate, and rules out the pull candidate by the absent reflog entry.\nSCORE evidence: 17\nJUSTIFICATION evidence: scripts/reproduce_landing_reversion.py exits 0 with the interleaving leaving the plan path reverted and the three created paths staged-deleted and the control leaving all four equal, re-run by me from the reviewed head; the source gate log stamps revision 7020130f0 rather than the a5b62bac3 it exercised.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: The four paths in the 6b88e9b7..a5b62bac3 diff are all inside the brief's write paths and no product code changed.\nSCORE durability: 14\nJUSTIFICATION durability: The interleaving arm's assertion (scripts/reproduce_landing_reversion.py:204-215) now depends on the production _restore_landing_writes it calls, so reverting that function to a no-op would redden it; but it is a standalone script, not a test wired into the suite, and the node changed no test file.\nSCORE fit: 18\nJUSTIFICATION fit: docs/research/what-turned-a-landing-back.html follows the repository's research-doc shape, scripts/reproduce_landing_reversion.py sits with the standalone scripts/ checks, and the timeline figure follows the data-ink style (no gridlines, despined, one figure-level legend); no path, symbol or comment carries a plan label, version number or ticket id.\nSCORE reuse: 18\nJUSTIFICATION reuse: The capability search over reckon/ found the rollback owner _restore_landing_writes at reckon/crew/promotion_scope.py:1672 and no shared scratch-git-repo owner (tests roll per-file helpers, none in conftest); scripts/reproduce_landing_reversion.py:101 calls that owner rather than re-implementing it.\nFINDING docs/research/what-turned-a-landing-back.html:76 follow-on: the timeline states 'the reversal happened while HEAD already carried the landing', but the document's own second experiment (and scripts/reproduce_landing_reversion.py) establishes that _restore_landing_writes changes nothing when HEAD already carries the landing and only acts on a pre-landing HEAD; read literally the sentence implies a rollback resolved the landed HEAD, which the document elsewhere rules out. The observable fact is that the reversed index/worktree persisted while HEAD carried the landing, not that the rollback read that HEAD.\nFINDING reproduce-production-rollback.log:1 follow-on: the gate log's first line reads 'revision: 7020130f0...' (the pre-fix commit) while its content ('production rollback:' and 'reckon rollback report:') is emitted only by the a5b62bac3 script, so the log does not name the revision of the code it ran, and a reader cannot reconcile the log's stated revision with its content. The command re-run at the reviewed head reproduces EXIT=0, so the substance is sound and only the stamped revision is off by one commit.\n",
+  "review_run_id": "r-20261018T224935782479-review-of-what-turned-a-landing-back-a5b62bac3772",
+  "reviewed_base_sha": "6b88e9b757edefd9f37f430c18d057dc2f07811c",
+  "reviewed_commits": [
+    "7020130f052ecf252ba7cac8d0c0e0e7e848765c",
+    "a5b62bac377251a460f4217c4001470a83fc49fc"
+  ],
+  "reviewed_head_sha": "a5b62bac377251a460f4217c4001470a83fc49fc",
+  "reviewed_run_id": "r-20261018T212807537070-what-turned-a-landing-back",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T23:11:26.837917+00:00"
+}
