@@ -181,10 +181,14 @@
       step is reachable only when no ledger exists, so the command can carry exactly
       one move. Measured 18 October: <code>--dry-run</code> printed
       <code>migration complete</code> while the fleet ran on a drained node. The fix:
-      when the newest ledger is done, and the fleet record names a job other than the
-      one that ledger's stand-up promoted or a later node, the next invocation begins
-      a new move at census with a new <code>move-&lt;stamp&gt;</code> ledger, and
-      <code>--dry-run</code> says so. The earlier ledger is kept untouched. In the
+      when the newest ledger is done, the next invocation begins a new move at census
+      with a new <code>move-&lt;stamp&gt;</code> ledger, and <code>--dry-run</code>
+      says so. This holds even when the fleet still runs on the job that move
+      promoted, which is the case on 18 October: job 1281970 is both the promoted
+      job and the drained one. Census and layout only read state and write records;
+      stand-up is the first step that requests anything and needs its own
+      invocation, so starting a census after a finished move costs nothing. The
+      earlier ledger is kept untouched. In the
       same file pair, <code>reckon fleet-node status</code> replaces its warning that
       "the allocation ends when the drain completes". The replacement states that the
       scheduler places no new job on the node, that the allocation continues until it
