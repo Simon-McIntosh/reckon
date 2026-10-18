@@ -25,7 +25,7 @@
   <title>Test Time Is Not The Node's Time | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -52,7 +52,7 @@
 <p><strong>Done when</strong> all four of these hold:</p>
 <ul>
 <li>The document answers the first question with a file and line for every path that acts on a deadline, and with the resolved <code>fences.enforce_budget_watchdog</code> of every mounted project.</li>
-<li>It answers the second with a table per lane: runs, median gate share of wall time, and runs with a truncated gate, each truncated run listed by id. Every figure is read at a stated time, from streams it names by count and date range.</li>
+<li>It answers the second with a table per lane: runs; median gate share of wall time over the runs whose every gate duration came from a log; the same median over all runs, with the share of runs that used the tool-call fallback; runs with a truncated gate, each listed by id; and runs whose gate ran in the background, each listed by id. Every figure is read at a stated time, from streams and logs it names by count and date range.</li>
 <li>Both scanners are shown to see a known positive. The deadline scan reports <code>_apply_budget_watchdog</code> as a path that can act. The timing scan, run on <code>r-20261018T084035535944-a-paired-arm-review-names-its-run</code>, measures that run's after-arm gate within 5% of the 543 s its own log records (<code>gate-after.log</code>, "in 543.02s").</li>
 <li>The document names the script and the command that produced every figure, and no file outside the write paths changes.</li>
 </ul>
