@@ -4,8 +4,9 @@ The figure list drew every row from the figure itself, so opening the figures
 of a capture-heavy project transferred each image at the size it was stored.
 The server now serves a downscaled copy at ``/_thumb/<project>/<figure path>``,
 rendered once and kept under the configuration home keyed by the source file's
-stat identity, so a second view pays a stat rather than a decode. An SVG scales
-without cost and is passed through unchanged.
+stat identity, so a second view pays a stat rather than a decode. An SVG is
+rasterised to a PNG at the same bound, so a row carries an icon rather than the
+whole drawing.
 
 The negative control, armed with ``RECKON_TEST_THUMBNAIL_SOURCE=1``, makes the
 thumbnail route serve the source file: the size assertion below fails.
@@ -231,14 +232,15 @@ def test_a_rewritten_source_is_thumbnailed_again(project, render_counter):
     assert len(project.thumb_pngs()) == 2
 
 
-def test_svg_sources_pass_through_unchanged(project):
-    source_bytes = project.plot_svg.read_bytes()
+def test_an_svg_source_is_thumbnailed_like_any_other(project):
     with _served() as port:
         status, headers, body = _get(port, f"/_thumb/{_PROJECT}/figures/demo/plot.svg")
 
     assert status == 200
-    assert body == source_bytes
-    assert headers["Content-Type"] == "image/svg+xml"
+    assert headers["Content-Type"] == "image/png"
+    with Image.open(io.BytesIO(body)) as thumbnail:
+        assert thumbnail.size == (200, 150)
+        assert max(thumbnail.size) == serve.THUMB_MAX_EDGE
 
 
 def test_a_figure_that_cannot_be_thumbnailed_serves_its_source(project):

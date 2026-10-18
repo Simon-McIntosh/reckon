@@ -2941,8 +2941,48 @@ def _thumbnail_cache_path(source: Path, identity: str) -> Path:
     return _config_home() / "cache" / "thumbs" / f"{digest}.png"
 
 
+def _rasterise_svg(source: Path) -> bytes:
+    """Rasterise an SVG to a PNG bounded by THUMB_MAX_EDGE on its long edge.
+
+    The vector is drawn straight to the thumbnail's pixel size rather than at
+    its authored size and then downscaled, so a figure with thousands of paths
+    costs the icon it is drawn as rather than the whole drawing. The authored
+    size comes from the figure inventory's own reader, so the size a row is
+    listed at and the size its icon is drawn at cannot disagree.
+    """
+
+    import resvg_py
+
+    from reckon.figures import _svg_dims
+
+    size = _svg_dims(source)
+    if size and min(size) > 0:
+        width = max(1, round(size[0] / max(size) * THUMB_MAX_EDGE))
+        height = max(1, round(size[1] / max(size) * THUMB_MAX_EDGE))
+    else:
+        width = height = THUMB_MAX_EDGE
+    svg_text = source.read_text(encoding="utf-8", errors="replace")
+    drawn = resvg_py.svg_to_bytes(svg_string=svg_text, width=width, height=height)
+
+    from PIL import Image
+
+    with Image.open(io.BytesIO(drawn)) as image:
+        image.thumbnail((THUMB_MAX_EDGE, THUMB_MAX_EDGE))
+        buffer = io.BytesIO()
+        image.save(buffer, format="PNG")
+        return buffer.getvalue()
+
+
 def _render_thumbnail(source: Path) -> bytes:
-    """Downscale one figure to a thumbnail and return its PNG bytes."""
+    """Downscale one figure to a thumbnail and return its PNG bytes.
+
+    A raster source is decoded by Pillow. An SVG is rasterised, because a
+    vector handed to the browser whole is drawn at its authored size whatever
+    the icon beside it needs.
+    """
+
+    if source.suffix.lower() == ".svg":
+        return _rasterise_svg(source)
 
     from PIL import Image
 
@@ -3208,9 +3248,10 @@ class Handler(BaseHTTPRequestHandler):
         The response is revalidated by an ETag derived from the source's stat
         identity, which is also what keys the on-disk cache, so a browser that
         already holds a thumbnail pays a stat rather than a regeneration. An
-        SVG scales without cost and is passed through unchanged; a source
-        Pillow cannot open is served as it is rather than reported as a
-        server failure.
+        SVG is rasterised to PNG like any other figure, so the row carries an
+        icon rather than the whole drawing; a source that cannot be rendered,
+        an SVG included, is served as it is rather than reported as a server
+        failure.
         """
 
         rel = path[len("/_thumb/") :]
@@ -3225,9 +3266,6 @@ class Handler(BaseHTTPRequestHandler):
         target = safe_join(Path(mounts[project]), figure)
         if target is None or not target.is_file():
             self._send(HTTPStatus.NOT_FOUND, b"not found")
-            return
-        if target.suffix.lower() == ".svg":
-            self._send_file(target, "image/svg+xml")
             return
         try:
             stat = target.stat()
