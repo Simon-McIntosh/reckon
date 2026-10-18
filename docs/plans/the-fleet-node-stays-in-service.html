@@ -19,7 +19,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-moves-to-a-new-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -93,7 +93,7 @@
       <li><code>mmfsd</code>, the GPFS daemon, holds about 157% CPU. Processes are created at about 80 a second, with <code>reckon.worker_git_shim</code>'s Python start-up the most frequent among them.</li>
       <li>The <code>reckon crew watch</code> producers hold CPU continuously. Lifetime average is 56% of a core for imas-codex over two days, 33% for imas-efit, 25% for imas-ambix over 4.6 days, 12% for imas-standard-names and 8% for power_convertor. §7 measures what a poll reads.</li>
       <li><code>slurmstepd [1281970.batch]</code> has used 98 CPU-hours over the job's life and sat at 100% during the sample. <code>JobAcctGatherType</code> is <code>jobacct_gather/linux</code> at 30 s. Diagnosing it needs root, so it belongs in an SDCC ticket, not a node here.</li>
-      <li>The job memory cgroup records 650,299 <code>max</code> events and 23 OOM kills. On 17 October, four Python processes with 52&ndash;59 GB resident, each in its own worker step, were killed at the job-level limit (<code>oom_memcg=job_1281970</code>). No step carried a limit of its own. Swap has sat full at 4 GB since then, with no paging today. §6 bounds each step.</li>
+      <li>The job memory cgroup records 650,299 <code>max</code> events and 23 OOM kills. On 17 October the kernel killed four Python processes at the job-level limit (<code>oom_memcg=job_1281970</code>), one at a time between 10:00 and 12:49. They ran in three worker steps: 5614, 5621 (killed twice) and 5700. Their anonymous memory was 52,550,356 to 58,873,852 kB, and <code>sacct</code> records the steps' peaks as 51,742,948 K to 58,808,596 K. No step carried a limit of its own. Swap has sat full at 4 GB since then, with no paging today. §6 bounds each step.</li>
     </ul>
     <p>
       The reckon SPA slowness the same morning has a separate cause on srv-1006 (a
@@ -244,8 +244,8 @@
       <code>DEFAULT_MEMORY</code> with its environment override in
       <code>fleet_node.py</code>. A declaration above the fleet's per-node ceiling
       is placed in its own job on a <code>*_debug</code> partition rather than inside
-      the fleet allocation. The default and the ceiling are the open decision
-      <code>worker-step-memory</code> below. Done when a test shows the placed
+      the fleet allocation. The decision <code>worker-step-memory</code> below locks a
+      24 GB default and a 48 GB ceiling. Done when a test shows the placed
       <code>srun</code> argv carrying the
       default and a declared bound, and a test shows a declaration above the ceiling
       routed to its own job. A probe step on the fleet allocation must also show its
@@ -270,9 +270,11 @@
     </p>
 
     <h2 id="s8">&sect;8 &mdash; Move the fleet off the drained node</h2>
-    <section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="deferred" data-links=""></section>
     <p>
-      Once §3 and §5 have landed, move the fleet with <code>reckon fleet-node
+      Deferred under the locked decision <code>move-timing</code>: the fleet does not
+      move unless SDCC asks for clu-2002 back instead of resuming it in place. If it
+      does, once §3 and §5 have landed, move the fleet with <code>reckon fleet-node
       migrate</code>, from census to retire, in the same tabs, with coordinators
       resumed. The move is live in the sense the previous plan built: sessions keep
       their conversations and tabs, and in-flight workers finish or are resumed by
@@ -283,7 +285,10 @@
       is what happened on 8 October. Done when the move ledger records every census
       session cut over and verified, and the new node's state is
       <code>ALLOCATED</code> without <code>DRAIN</code> after the first wave of
-      worker stops.
+      worker stops. The negative control points the same state reading at a node
+      already recorded as draining, such as gpu-0003 or the old clu-2002, and must
+      report <code>DRAIN</code>. That shows the reading can see a drain without
+      draining a node to prove it.
     </p>
 
     <h2 id="s9">&sect;9 &mdash; A watch producer sweeps only when the crew home changes</h2>
@@ -357,7 +362,7 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-tfnsis-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build the-fleet-node-stays-in-service" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Investigate the stop path and producer cost, fix the migrate command, then gate the move</h4>
-    <div class="r-fu-body"><p>§2, §4, §6 and §7 have disjoint write scopes and run as one wave. §3 waits on the §2 gate, and §5 on §4. §8 waits on the move-ready gate and on the lead's decision on timing.</p></div>
+    <div class="r-fu-body"><p>§2, §4 and §7 ran as the first wave. §3 waited on the §2 gate, and §9 follows §7's measurement; §3 and §9 have disjoint write scopes and run together. §6 shares <code>fleet_node.py</code> with §4 and runs after it lands. §5 follows §4. §8 is deferred: it runs only if SDCC asks for the node back, and then waits on the move-ready gate.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-node-stays-in-service</pre>
     </article>
 </section>
