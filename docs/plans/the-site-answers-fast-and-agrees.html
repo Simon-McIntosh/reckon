@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="spa,reckon-tooling">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-site-answers-fast-and-agrees#s2&quot;, &quot;the-site-answers-fast-and-agrees#s14&quot;], &quot;s4&quot;: [&quot;the-site-answers-fast-and-agrees#s9&quot;], &quot;s5&quot;: [&quot;the-site-answers-fast-and-agrees#s3&quot;], &quot;s6&quot;: [&quot;the-site-answers-fast-and-agrees#s2&quot;, &quot;the-site-answers-fast-and-agrees#s5&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;], &quot;s7&quot;: [&quot;the-site-answers-fast-and-agrees#s6&quot;], &quot;s12&quot;: [&quot;the-site-answers-fast-and-agrees#s4&quot;], &quot;s13&quot;: [&quot;the-site-answers-fast-and-agrees#s12&quot;], &quot;s14&quot;: [&quot;the-site-answers-fast-and-agrees#s13&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;], &quot;s15&quot;: [&quot;the-site-answers-fast-and-agrees#s14&quot;], &quot;s11&quot;: [&quot;the-site-answers-fast-and-agrees#s3&quot;, &quot;the-site-answers-fast-and-agrees#s5&quot;, &quot;the-site-answers-fast-and-agrees#s6&quot;, &quot;the-site-answers-fast-and-agrees#s7&quot;, &quot;the-site-answers-fast-and-agrees#s8&quot;, &quot;the-site-answers-fast-and-agrees#s10&quot;, &quot;the-site-answers-fast-and-agrees#s15&quot;, &quot;a-read-answers-inside-its-deadline#s38&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
   <title>The Site Answers Fast and Agrees With Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -73,7 +73,7 @@
       (<code>/mcp</code> → reckon → reconnect, in each session). §4 makes the shared cache safe whether or not they are reconnected.</p>
 
     <h2 id="s2">§2 — A plan's progress is its sections' done share, weighted by effort</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> §1's third row. Two readers of one plan report different figures, and the lead locked one measure for every surface (decision
       <code>progress-measure</code> below). The current rule in <code>derive_impl_with_source</code> (<code>reckon/_plan_html.py</code>), shipped by
       <a href="/reckon/plans/the-portfolio-reads-true#s2">the-portfolio-reads-true §2</a>, weights by effort only when every declared section has a record
@@ -333,6 +333,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261018T154711672975-progress-imputes-over-buildable-sections" data-who="reckon-build" data-when="2026-10-18T16:08:38.270Z">
     <div class="r-comment-body"><p>The imputed mean a buildable section's absent hours fall back to now takes only the sections declared done or implementable, excluding a deferred section's recorded hours; a plan with s1 done at 2 h, s2 implementable with no hours, s3 implementable at 4 h and s4 deferred at 40 h reads 2/9 (was 0.09375), s2 imputed 3 h from s1 and s3 alone.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-18T17:30:00Z">
+    <div class="r-comment-body"><p>§2 landed and verified live: nova's plans now serve the section-derived progress (1.0, 0.4, 1.0, 0.67 for the four plans in §1, against 0.08, 0.985, 0.5, 0.96), from merges <code>f665592bf</code> and <code>07e2c865e</code> with §4's cache rebuild. <a href="/reckon/evidence/archive/the-site-answers-fast-and-agrees-landed.html#s2">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261018T142118404059-review-of-every-module-imports-alone-8b52bf37c99e" data-who="reckon-build" data-when="2026-10-18T14:42:22.799Z">
     <div class="r-comment-body"><p>review-of-every-module-imports-alone: read the landed diff e295fe18a..8b52bf37c (3 files), the source manifest and its four gate logs, and the production call sites; stored a parsed record scoring all six dimensions (goal_fidelity 19, evidence 15, scope_discipline 20, durability 19, fit 17, reuse 20, total 110), reviewed_base_sha e295fe18a3d46fbd8036c188b7a9f8e4d73ba6af and reviewed_head_sha 8b52bf37c99eed0188d6637fd3eed4cbdff56143, added_failure_count 0, added_failure_ids [], with one follow-on finding.</p></div>
