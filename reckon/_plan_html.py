@@ -797,18 +797,66 @@ OPEN_SECTION_DECLARATIONS = (
 SECTION_CLOSE_COMMENT_PREFIX = "c-close-"
 
 
-def derive_impl_from_sections(sections, declarations=None) -> float | None:
-    """impl from section effort: done over done plus remaining implementable.
+def derive_impl_imputing_effort(sections, declarations=None) -> float | None:
+    """Weighted done share over the declared sections, imputing missing hours.
 
-    Deferred sections sit outside the denominator, and a plan carrying no
-    record in scope derives nothing — the caller keeps the authored figure
-    rather than reporting a fabricated zero.
+    The denominator is every section declared done or implementable; a deferred
+    section sits outside it. Each such section weighs the effort its record
+    carries, and a section whose record carries no hours — a declared section
+    with no record at all is the same case — takes the mean of the hours that
+    are present. When no section carries hours every section weighs the same,
+    so the figure is the count and this returns ``None`` to let the count's own
+    reader answer. A classification other than done counts as open.
+
+    A plan with no done or implementable declaration has no denominator and
+    derives nothing.
+    """
+    scoped = [
+        (str(section), str(classification or "").strip())
+        for section, classification in (declarations or {}).items()
+        if str(classification or "").strip()
+        in (SECTION_DECLARATION_DONE, SECTION_DECLARATION_IMPLEMENTABLE)
+    ]
+    if not scoped:
+        return None
+    hours: dict[str, float] = {}
+    for record in sections or []:
+        effort = _record_field(record, "effort_hours")
+        try:
+            value = float(effort)
+        except (TypeError, ValueError):
+            continue
+        if value > 0:
+            hours[str(_record_field(record, "id") or "")] = value
+    if not hours:
+        return None
+    mean = sum(hours.values()) / len(hours)
+    done = 0.0
+    total = 0.0
+    for section, classification in scoped:
+        weight = hours.get(section, mean)
+        total += weight
+        if classification == SECTION_DECLARATION_DONE:
+            done += weight
+    if total <= 0:
+        return None
+    return done / total
+
+
+def derive_impl_from_sections(sections, declarations=None) -> float | None:
+    """impl weight by the records themselves, over the declared sections.
+
+    The path a plan's own records answer: each recorded section weighs the
+    effort it carries, done over done plus remaining implementable, with a
+    deferred record outside the denominator. A record carrying no usable hours
+    derives nothing — the caller keeps the authored figure rather than
+    reporting a fabricated zero.
 
     The records must cover the declarations for the same reason. A section
-    declared done or implementable that carries no record is effort the
-    denominator cannot see, so a figure derived over the remaining records
-    reports the absent records as a zero rather than as unknown, and the
-    authored figure stands instead.
+    declared done or implementable that carries no record is effort no record
+    states, so a figure weighted over the present records alone would report
+    the absent section's share as a zero rather than as unknown; the caller
+    imputes the absent hours instead, or falls back to the declaration count.
     """
     if not sections:
         return None
@@ -869,15 +917,21 @@ def derive_impl_from_declarations(declarations) -> float | None:
 def derive_impl_with_source(sections, declarations=None) -> tuple:
     """The impl figure and the source it came from, in one read.
 
-    Records that cover every declaration answer with the effort-weighted figure
-    (``computed``). Records that do not fall back to the declaration count
-    (``declarations``), so a plan with an implementable declaration never reads
-    1.0 while its records are partial. A plan with no derivable figure returns
-    ``(None, None)`` and the caller keeps the authored meta (``authored``).
+    The one function every reader of a plan calls. Records covering every
+    declared done or implementable section answer with the effort-weighted
+    figure (``computed``). A plan whose records fall short of its declarations
+    is weighted over the declared sections with the hours a record omits
+    imputed by the mean of the ones present (``declarations``); when no hours
+    are present at all the declaration count answers the same way. A plan with
+    no declaration derives nothing, so the caller keeps the authored meta
+    (``authored``).
     """
     weighted = derive_impl_from_sections(sections, declarations)
     if weighted is not None:
         return weighted, "computed"
+    imputed = derive_impl_imputing_effort(sections, declarations)
+    if imputed is not None:
+        return imputed, "declarations"
     by_count = derive_impl_from_declarations(declarations)
     if by_count is not None:
         return by_count, "declarations"
@@ -2257,6 +2311,28 @@ def _parse_meta_head_uncached(path: Path, slug: str | None) -> dict:
     return rec
 
 
+def _head_declarations(metas: dict) -> dict | None:
+    """The section declarations a document's head carries, if any.
+
+    The head-only reader's own view of ``plan-section-declarations``: the same
+    map the parser reads from the body, so a document whose records this fast
+    path never sees still derives the figure the parse derives.
+    """
+    raw = metas.get("plan-section-declarations")
+    if raw is None:
+        return None
+    try:
+        declarations = json.loads(_htmlmod.unescape(raw))
+    except (TypeError, ValueError):
+        return None
+    if isinstance(declarations, dict) and all(
+        isinstance(section, str) and isinstance(classification, str)
+        for section, classification in declarations.items()
+    ):
+        return declarations
+    return None
+
+
 def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
     text = _read_plan_text(path)
     rec, metas = _meta_head_fields(path, text, slug)
@@ -2271,18 +2347,23 @@ def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
             parsed_state = read_state_file(path)
         except ValueError:
             parsed_state = None
-        derived, source = (
-            (None, None)
-            if parsed_state is None
-            else derive_impl_with_source(
-                parsed_state.get("sections"), parsed_state.get("section_declarations")
-            )
-        )
-        if source is not None:
-            rec["impl"] = derived
-            rec["impl_source"] = source
-        elif "plan-impl" in metas:
-            rec["impl_source"] = "authored"
+        if parsed_state is None:
+            sections, declarations = None, None
+        else:
+            sections = parsed_state.get("sections")
+            declarations = parsed_state.get("section_declarations")
+    else:
+        # No records, but the head still declares the sections. Deriving from
+        # those declarations alone is what makes the row this reader builds
+        # agree with the parse for a plan declared but not yet recorded.
+        sections = []
+        declarations = _head_declarations(metas)
+    derived, source = derive_impl_with_source(sections, declarations)
+    if source is not None:
+        rec["impl"] = derived
+        rec["impl_source"] = source
+    elif "plan-impl" in metas:
+        rec["impl_source"] = "authored"
     return rec
 
 
