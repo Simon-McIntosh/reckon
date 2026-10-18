@@ -1,0 +1,82 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T15:05:48.327Z",
+  "dispatched_at": "2026-10-18T14:47:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:185",
+      "id": "reasoning-1",
+      "reason": "the node must invent the release the section does not name (add the code stamp to the request's dependency guard, or clear its back-off on re-execution), and that choice changes behaviour for every queued request, so the plan should settle it rather than leave it to the builder.",
+      "text": "\u00a728 requires that \"A request it refused while stale is retried on the new code at its next pass, not after its backoff\", but the mechanism it names (finish the pass and re-execute in place on a code-stamp change) cannot produce that: the stale attempt left `retry_at` and `failure_guard` on the queued pointer (`reckon/crew/queue_admission.py:620-638`), `_retry_backoff_hold` leaves such a request exactly where it is until `retry_at` (`reckon/crew/queue_admission.py:580-618`, cap 600 s at `queue_admission.py:45-46`), and `_dependency_guard` fingerprints only the brief, plan, host-config and project-config stamps (`reckon/crew/queue_admission.py:500-533`) \u2014 not the code \u2014 so re-execution changes neither the guard nor the wait. The done-when's second assertion (\"a request refused in the first is attempted in the second [pass]\") therefore fails on an implementation that does exactly what the Deliverable describes",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:166",
+      "id": "anchors_resolve-1",
+      "reason": "the session and the hold reason do survive in that watch row (session `f653840f-3ca8-4792-819c-9ee9708bdbac`, detail naming the router's 0-extra-worker grant), so the investigation can still reach the measure; the defect costs the node search time, not a wrong build.",
+      "text": "\u00a725's done-when requires the queued request's session and lane key \"beside the queued pointer's\", but that pointer is gone: `~/.config/reckon/crew/discards/r-20261018T085353346020-review-of-the-inventory-lists-the-reload-tree-publish-9abe3b66c30c.json` (discarded 2026-10-18T12:40:57Z) retains only `discarded_at`, `node`, `phase`, `pointer_path` and `run_id` \u2014 no session, backend, failure or attempt count \u2014 and the run's surviving watch row (`~/.config/reckon/crew/watch/*.events`) carries `\"backend\": \"\"` and `\"lane\": \"\"` beside the hold detail",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:184",
+      "id": "reasoning-2",
+      "reason": "the Deliverable points the node at the comment that carries the evidence, so the stale sentence adds a wasted read rather than a wrong mechanism; it changes wording, not work.",
+      "text": "\u00a728's Why still ends \"Which input differs between the two paths has not been shown\", while its Deliverable two lines later asserts that input is the code version (\"The cause is the code version, recorded in comment `c-s28-cause-stale-admit`\")",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "74a63a28713c72308abcd3263c34bcf5dc0be602d63450ff140cd7ff7338b91c",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 153,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T143051840608-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "1a33eb2f49a72035bbb201b61ee75a3d1d0da1ec",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a725's done-when asks for the queued pointer's session and lane key, but that pointer was discarded and neither the discard record nor the surviving watch event carries the lane key.",
+    "done_when": "pass \u2014 \u00a725's measure now carries an instrument control (\"the search is first shown to find a known-present decision\") and \u00a728's carries a stated negative control (\"removes the stamp comparison, and the re-execution assertion fails\"); both are observable and both can fail.",
+    "evidence_paths": "pass \u2014 \u00a725 writes to the run's report directory and \u00a728 logs under the run directory, both under the crew home; no session scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 no plan label, ticket number or version tag reaches the names the two units cite, and each cited symbol resolves on this checkout (`_dispatch_lane_allowance` at `reckon/crew/dispatch_plan.py:1268`, `follower_code_stamp` at `reckon/crew/follower_registration.py:28`, `_reviewed_run_id_for_node` at `reckon/crew/dispatch_admission.py:1866`, commit `f912c7ec5`, comment `c-s28-cause-stale-admit`).",
+    "reasoning": "a finding \u2014 \u00a728's stated mechanism cannot produce the done-when it asserts beside it.",
+    "single_goal": "pass \u2014 \u00a725 is one investigation and \u00a728 one change to how the admission loop treats a request it validated under older code.",
+    "wiring": "pass \u2014 `plan-section-depends-on` records `s28` \u2192 `a-held-dispatch-waits-its-fair-turn#s26`, which matches \u00a728's own \"Build it after \u00a726 merges\", and no other relationship in the two units names a node that does not exist or points at the wrong one."
+  },
+  "section_digests": {
+    "_document": "c85dfd824407d3ffc5fb698a74e1ef8d4ea730ce2b414c8323a01b9618fb0d09",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "f67610611bfb819007234cb2d266523cab773379dedf07c8b53feb8f9e78ef59",
+    "s19": "1a735ef01d42913d9085a7d2db7eb238ecd99450b1ee61e3702d9951b4be8b04",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s20": "27cbb7d66474dcc03ee947d28d02bf69241181f95114d64b5dfd64cece9a6d2d",
+    "s21": "9d6a0b0914d4b7c617f66b56c23c29f423e83783cee042a59efd0844e910758e",
+    "s22": "04e32404c6bd6fba4d019c4ac2feb930c097b69019a6b5feeab58d4c16120a94",
+    "s23": "70ceaed3d3c3bdadbebbb977a408f022cd463ddb7697e91a9f3ddb9783544474",
+    "s24": "d7f6c25b7737b87618ce073988379c3a183b8bd0c2da8d647b9b86dd29f1ca6d",
+    "s25": "e88835723a96300f96faca8c273f7eaf945b39dd9df4be7a5c6199ddf55b8422",
+    "s26": "a829b38553b03955174d3dcabf9df353fe7c676b2f8ed7a1de83fe601c7d4b90",
+    "s27": "8f724251bb33d77182950fa280b7a11534308e59b061628a3780ecb8b004a68a",
+    "s28": "30afe3a4ad9f844fdf3c83cd198b3d9fe1274a2f59a968f2a46bed10b0681a96",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T15:43:33.771764+00:00"
+}
