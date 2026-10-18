@@ -981,6 +981,10 @@ def crew_preflight(
 )
 @click.option("--comment", default="", help="Context passed verbatim to the picker.")
 @click.option(
+    "--due", default="", help="UTC ISO instant or duration until due, such as 4h."
+)
+@click.option("--urgency", default="", help="Reason this dispatch is time-sensitive.")
+@click.option(
     "--assess",
     "assessments",
     multiple=True,
@@ -1194,6 +1198,8 @@ def crew_dispatch(
     model_name,
     route,
     comment,
+    due,
+    urgency,
     assessments,
     spec_level,
     negative_control,
@@ -1251,10 +1257,14 @@ def crew_dispatch(
 
     base_config = None
     try:
-        from reckon.crew.dispatch_picker import parse_orchestrator_assessments
+        from reckon.crew.dispatch_picker import (
+            parse_dispatch_due,
+            parse_orchestrator_assessments,
+        )
 
         try:
             orchestrator_assessment = parse_orchestrator_assessments(assessments)
+            due = parse_dispatch_due(due)
         except ValueError as exc:
             raise click.ClickException(str(exc)) from exc
         if overrides:
@@ -1432,6 +1442,8 @@ def crew_dispatch(
             authority=picker_authority,
             authority_error=picker_authority_error,
             orchestrator_assessment=orchestrator_assessment,
+            due=due,
+            urgency=urgency,
         )
 
     availability_refusal = _model_availability_refusal(
@@ -1474,6 +1486,8 @@ def crew_dispatch(
         pair_options = {
             **json.loads(json.dumps(click.get_current_context().params, default=str)),
             "orchestrator_assessment": dict(orchestrator_assessment),
+            "due": due,
+            "urgency": urgency or None,
         }
         pair_kwargs = {
             "node": node,
@@ -1800,6 +1814,8 @@ def crew_dispatch(
                     json.dumps(click.get_current_context().params, default=str)
                 ),
                 "orchestrator_assessment": dict(orchestrator_assessment),
+                "due": due,
+                "urgency": urgency or None,
             },
         )
     except crew_module.PlanVisibilityError as exc:

@@ -252,6 +252,8 @@ def _queued_request_record(
         "repo": str(repo_root),
         "session": session,
         "node": node.as_dict(),
+        "due": (dispatch_options or {}).get("due"),
+        "urgency": (dispatch_options or {}).get("urgency"),
         "backend": backend_name,
         "launch": launch_kind,
         "local": True,
@@ -1110,6 +1112,8 @@ def dispatch(
     orchestrator_assessment = dict(
         (dispatch_options or {}).get("orchestrator_assessment") or {}
     )
+    due = (dispatch_options or {}).get("due") or None
+    urgency = (dispatch_options or {}).get("urgency") or None
     # A plan review composes under one node id for every revision of the plan,
     # so an earlier review of the same plan is a different piece of work rather
     # than a previous attempt of this one. The compose marks
@@ -1154,6 +1158,8 @@ def dispatch(
             budget_snapshot=picker_budget,
             input_errors=picker_input_errors,
             orchestrator_assessment=orchestrator_assessment,
+            due=due,
+            urgency=urgency,
         )
     # A hold whose offered candidates include the local lane is a wait for that
     # lane, not a refusal: the request is validated and continued there, and the
@@ -1167,7 +1173,15 @@ def dispatch(
         and picker_selection.get("action") == "hold"
     ):
         held_local_backend = _offered_local_backend(picker_selection, config)
-        if held_local_backend:
+        lifted_serving_lane = any(
+            isinstance(candidate, Mapping)
+            and not candidate.get("local")
+            and not candidate.get("reasons")
+            and candidate.get("worker_slots") != 0
+            and (candidate.get("congestion") or {}).get("lift")
+            for candidate in picker_selection.get("offered") or ()
+        )
+        if held_local_backend and not ((due or urgency) and lifted_serving_lane):
             held_selection = picker_selection
             picker_selection = {
                 **picker_selection,
@@ -1969,6 +1983,8 @@ def dispatch(
             "wave": wave_id,
             "coordinator": coordinator,
             "node": node_definition,
+            "due": due,
+            "urgency": urgency,
             "brief": brief,
             "role": node.role,
             "backend": backend_name,
@@ -2536,6 +2552,8 @@ def dispatch(
                 ledger_root=ledger_root,
                 session=session,
                 comment=comment,
+                due=due,
+                urgency=urgency,
             )
         except (OSError, TypeError, ValueError) as exc:
             selection = _picker_fallback(

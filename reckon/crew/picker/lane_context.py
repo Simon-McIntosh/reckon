@@ -907,12 +907,19 @@ def local_lane(
         local_backend=local_backend,
         now=moment,
     )
+    waiting = load.get("waiting")
+    queue_position = (
+        waiting + 1
+        if isinstance(waiting, int) and not isinstance(waiting, bool) and waiting >= 0
+        else None
+    )
     return {
         "admission": admission,
         "expected_wait_s": expected_wait_s,
         "expected_wait_profile_age_s": expected_wait_profile_age_s,
         "running": load.get("running"),
         "waiting": load.get("waiting"),
+        "queue_position": queue_position,
         "headroom": load.get("headroom"),
         "worker_slots": load.get("worker_slots"),
         "tokens_per_second": load.get("mean_tokens_per_second"),
