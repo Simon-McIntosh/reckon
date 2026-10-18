@@ -27,8 +27,7 @@ Object.defineProperty(globalThis, "navigator", {
   value: { clipboard: { writeText(value) { globalThis.__copiedText = value; } } },
 });
 globalThis.fetch = async () => ({ ok: true, json: async () => ({ runs: [] }) });
-globalThis.__pollMs = null;
-window.setInterval = (_callback, milliseconds) => { globalThis.__pollMs = milliseconds; return 1; };
+window.setInterval = () => 1;
 window.clearInterval = noop;
 window.flashSaved = noop;
 
@@ -393,16 +392,17 @@ def test_cards_keep_poll_timing_and_use_structured_budget_and_gate_marks() -> No
             run,
             state={},
             probe="""
-window.__crewTest.CrewView({ visibleProjects: [], mountedProjectCount: 0 });
+const view = window.__crewTest.CrewView({ visibleProjects: [], mountedProjectCount: 0 });
 const projected = window.__crewTest.crewCardProjection(run, window.STATE);
 const rendered = window.__crewTest.CrewRunCard({ run });
+const heading = findAll(view, node => hasClass(node, "r-crew-heading"))[0];
 const meter = findAll(rendered, node => hasClass(node, "r-crew-meter"))[0];
 const marks = findAll(rendered, node => hasClass(node, "r-crew-gate-marks"))[0];
 const markNodes = findAll(marks, node => node.type === "i");
 const currentGate = findAll(rendered, node => hasClass(node, "r-crew-current-gate"))[0];
 return {
   projected,
-  pollMs: globalThis.__pollMs,
+  pollCadence: (textContent(heading).match(/polling every ([0-9]+)s/) || [])[1],
   meterWidth: findAll(meter, node => node.type === "i")[0].props.style.width,
   markCount: markNodes.length,
   measuredMarkCount: markNodes.filter(node => hasClass(node, "measured")).length,
@@ -410,7 +410,9 @@ return {
 };
 """,
         )
-        assert result["pollMs"] == 3_000
+        # The shell owns the run poll and this view reports its cadence, so the
+        # heading must keep naming the same 3 s interval the poll runs on.
+        assert result["pollCadence"] == "3"
         assert result["projected"]["budget"] == "30m 00s"
         assert result["projected"]["budgetPercent"] == 50
         assert result["projected"]["gates"] == {

@@ -612,23 +612,17 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
 
   useEffect(() => {
     if (!project || !isPlan) { setLiveRuns([]); return; }
-    let active = true;
-    const poll = async () => {
-      try {
-        const response = await fetch(`/crew/${encodeURIComponent(project)}`, { cache: "no-store" });
-        if (!response.ok) return;
-        const payload = await response.json();
-        if (active && Array.isArray(payload.runs)) {
+    // One request at a time: the next poll is scheduled only once this one
+    // settles, so a slow answer stretches the cadence instead of stacking.
+    return window.startPoll(
+      `/crew/${encodeURIComponent(project)}`,
+      payload => {
+        if (Array.isArray(payload.runs)) {
           setLiveRuns(payload.runs.filter(run => run.plan === slug));
         }
-      } catch (_) { /* The plan remains readable when live state is unavailable. */ }
-    };
-    poll();
-    const timer = window.setInterval(poll, 3000);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
+      },
+      3000,
+    );
   }, [project, slug, isPlan]);
 
   const stored = window.reckon.planLoad(slug) || {};

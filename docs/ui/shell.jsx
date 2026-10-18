@@ -197,6 +197,8 @@ function App() {
   const [fleetDiscoveries, setFleetDiscoveries] = useState({});
   const requestedDiscoveries = useRef(new Set());
   const [fleetRuns, setFleetRuns] = useState([]);
+  const [fleetRunsLoaded, setFleetRunsLoaded] = useState(false);
+  const [fleetRunsError, setFleetRunsError] = useState("");
   const [hiddenProjects, setHiddenProjects] = useState(() => {
     try {
       const raw = localStorage.getItem(PROJECT_VISIBILITY_STORAGE);
@@ -214,10 +216,6 @@ function App() {
       .then(mounts => {
         if (!cancelled && mounts && typeof mounts === "object") setMountNames(Object.keys(mounts).sort());
       })
-      .catch(() => {});
-    fetch("/crew")
-      .then(response => response.ok ? response.json() : null)
-      .then(crew => { if (!cancelled) setFleetRuns(Array.isArray(crew?.runs) ? crew.runs : []); })
       .catch(() => {});
     fetch("/_projects/index.json")
       .then(response => response.ok ? response.json() : null)
@@ -274,12 +272,23 @@ function App() {
   }, [mountNames, fleetIndex, fleetDiscoveries, fleetRuns]);
 
   useEffect(() => {
-    const refreshRuns = () => fetch("/crew")
-      .then(response => response.ok ? response.json() : null)
-      .then(crew => { if (Array.isArray(crew?.runs)) setFleetRuns(crew.runs); })
-      .catch(() => {});
-    const timer = window.setInterval(refreshRuns, 3000);
-    return () => window.clearInterval(timer);
+    // The single /crew poll: the shell owns it and hands the live run list to
+    // every surface that needs it, so the crew view does not poll it again.
+    return window.startPoll(
+      "/crew",
+      payload => {
+        if (Array.isArray(payload?.runs)) {
+          setFleetRuns(payload.runs);
+          setFleetRunsError("");
+        }
+        setFleetRunsLoaded(true);
+      },
+      3000,
+      cause => {
+        setFleetRunsError(cause instanceof Error ? cause.message : "crew route unavailable");
+        setFleetRunsLoaded(true);
+      },
+    );
   }, []);
 
   const [theme, setTheme] = useState(() => {
@@ -470,7 +479,7 @@ function App() {
                 {canvasView === "home" && <window.ReckonShell.home.FleetHome projects={shownProjects} fleetRuns={window.ReckonShell.home.homeVisibleRuns(fleetRuns, shownProjects)} mountedProjectCount={projects.length} onConfigureVisibility={() => document.querySelector(".r-project-configure")?.click()} />}
                 {canvasView === "sprint" && <window.Sprint sprintId={route.sprint} onNav={nav} />}
                 {canvasView === "graph" && <window.GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
-                {canvasView === "crew" && <window.CrewView visibleProjects={shownProjectNames} mountedProjectCount={projects.length} selectedProject={M?.project || null} />}
+                {canvasView === "crew" && <window.CrewView visibleProjects={shownProjectNames} mountedProjectCount={projects.length} selectedProject={M?.project || null} runs={fleetRuns} loaded={fleetRunsLoaded} error={fleetRunsError} />}
                 {canvasView === "velocity" && <window.VelocityView visibleProjects={shownProjectNames} mountedProjectCount={projects.length} selectedProject={M?.project || null} />}
               </div>
             </div>

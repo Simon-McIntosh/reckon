@@ -1,8 +1,35 @@
 // Shared UI primitives — project picker, sparkline, chips, project card.
 // Depends on window.GLYPHS and window.ACCENTS from glyphs.jsx.
-// Exposes: window.ProjectPicker, window.ProjectVisibilitySheet, window.Sparkline, window.Chip, window.ProjectCard, window.SettingsMenu
+// Exposes: window.startPoll, window.ProjectPicker, window.ProjectVisibilitySheet, window.Sparkline, window.Chip, window.ProjectCard, window.SettingsMenu
 
 const {useState, useEffect, useRef, useMemo} = React;
+
+// Poll `url` on a fixed cadence, starting the next request only after the
+// previous one has settled, so the loop never has more than one request in
+// flight. A slow answer stretches the cadence rather than stacking requests.
+// Returns a stop function suitable for a React effect cleanup.
+function startPoll(url, handle, intervalMs, onError) {
+  let stopped = false;
+  let timer = null;
+  const tick = async () => {
+    if (stopped) return;
+    try {
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) throw new Error(`poll of ${url} returned ${response.status}`);
+      const payload = await response.json();
+      if (!stopped) await handle(payload);
+    } catch (error) {
+      if (!stopped && onError) onError(error);
+    }
+    if (stopped) return;
+    timer = window.setTimeout(tick, intervalMs);
+  };
+  tick();
+  return () => {
+    stopped = true;
+    if (timer !== null) window.clearTimeout(timer);
+  };
+}
 
 function ProjectPicker({current, projects, onNav}) {
   const [open, setOpen] = useState(false);
@@ -216,6 +243,7 @@ function ProjectCard({p, onOpen}) {
   );
 }
 
+window.startPoll = startPoll;
 window.ProjectPicker = ProjectPicker;
 window.ProjectVisibilitySheet = ProjectVisibilitySheet;
 window.SettingsMenu = SettingsMenu;

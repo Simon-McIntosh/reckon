@@ -250,7 +250,12 @@ window.STATE_READY.then(() => {{
     assert "watchProjectStateChanges?.(refreshProjectState)" in shell_source
     assert "const [invRev, setInvRev] = useState(0)" in shell_source
     assert "const CREW_POLL_INTERVAL_MS = 3000" in crew_source
-    assert "window.setInterval(poll, CREW_POLL_INTERVAL_MS)" in crew_source
+    # Freshness on an open page comes from the state-change event, never from a
+    # poll loop inside a view: the crew surface starts no poll of its own and
+    # renders the run list the shell's one /crew poll hands down.
+    assert "setInterval(" not in crew_source
+    assert "window.startPoll(" not in crew_source
+    assert 'window.startPoll(\n      "/crew",' in shell_source
 
 
 def test_plan_effort_hours_survives_discovery_and_central_fallback() -> None:
