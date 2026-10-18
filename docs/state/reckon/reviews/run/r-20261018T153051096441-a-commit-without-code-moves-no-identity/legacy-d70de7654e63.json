@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "e211207b11e7c6fe6f6417a49018d020bb46bdac",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:409",
+    "reckon/crew_follow_commands.py:449",
+    "reckon/crew/follower_registration.py:35",
+    "reckon/crew/follower_registration.py:40",
+    "reckon/crew/obligation_snapshot.py:428",
+    "reckon/crew/runs.py:2530",
+    "reckon/crew/runs.py:3082"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-18T15:32:25Z",
+  "findings": [
+    {
+      "file": "tests/test_a_commit_without_code_moves_no_identity.py",
+      "line": "137",
+      "severity": "follow-on",
+      "text": "follow-on: the exec environment's identity is asserted equal to after = _identity(root) and both sides call source_code_identity, so reverting the identity to the commit leaves the case-(b) assertion true, as the recorded control shows test (b) staying green."
+    },
+    {
+      "file": "tests/test_a_commit_without_code_moves_no_identity.py",
+      "line": "167",
+      "severity": "follow-on",
+      "text": "follow-on: image.name == identity compares materialize_committed_tree's output against the identity passed to it at :164, so re-keying that input on the recorded mutation leaves the assertion true."
+    },
+    {
+      "file": "reckon/checkout_trust.py",
+      "line": "198",
+      "severity": "follow-on",
+      "text": "follow-on: committed_head is left with no caller once source_code_identity moved to committed_reckon_tree, so it is dead in production and tests."
+    }
+  ],
+  "head_log_revision": "e211207b11e7c6fe6f6417a49018d020bb46bdac",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit from b82313f9a to 91bb3e608; e33a0ff39 changes the three runtime modules and adds the gate test, 722c559ef re-reads the tree id in two superseded assertions, d9af46b46 and 91bb3e608 add the evidence fragment.",
+    "done_when": "the done-when (prompt.txt FENCE-EVIDENCE) names tests/test_a_commit_without_code_moves_no_identity.py with cases (a)/(b)/(c) plus the importing-file population; the file at :101, :120, :140 asserts those cases and the manifest records 6 passed with logs pop2-base.log (3 failed/614 passed) and pop3-head.log (2 failed/after with 0 added failures).",
+    "goal": "the node goal is a code identity naming the reckon package content at HEAD; reckon/checkout_trust.py:214 introduces committed_reckon_tree reading HEAD:reckon and :244 makes source_code_identity return it.",
+    "manifest": "read; it records commits e33a0ff39, d9af46b46, 722c559ef and 91bb3e608, the gate at 6 passed and the superseded file at 9 passed, the two-arm population with 0 added failures, and the red negative control.",
+    "write_paths": "the manifest declares reckon/checkout_trust.py, reckon/crew/follower_registration.py, reckon/crew_follow_commands.py, tests/test_a_commit_without_code_moves_no_identity.py, tests/test_stale_producer_warning_waits_for_its_reload.py and the evidence fragment; every path in the diff b82313f9a..91bb3e608 is inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_a_commit_without_code_moves_no_identity.py:97 and :114 redden under the recorded commit-identity control, but :137 and :167 compare against the identity the test itself supplies and stay green.",
+    "evidence": "tests/test_a_commit_without_code_moves_no_identity.py:95-189 exercises cases (a)-(c) and the manifest's pop2-base.log and pop3-head.log record the population with 0 added failures.",
+    "fit": "reckon/checkout_trust.py:214 places the tree reader beside committed_head:198 in the same module idiom and no symbol or comment carries a forbidden plan or ticket label.",
+    "goal_fidelity": "reckon/checkout_trust.py:244 returns the HEAD:reckon tree id and :381 archives the package under --prefix=reckon/, exactly the section 54 deliverable.",
+    "reuse": "the capability search over reckon/ found no existing package-tree reader; committed_reckon_tree extends checkout_trust's identity owner and materialize_committed_tree stays the sole extractor.",
+    "scope_discipline": "every path in the diff b82313f9a..91bb3e608 is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a code identity naming the reckon package content at HEAD; reckon/checkout_trust.py:214 introduces committed_reckon_tree reading HEAD:reckon and :244 makes source_code_identity return it.\nVERDICT done_when: the done-when (prompt.txt FENCE-EVIDENCE) names tests/test_a_commit_without_code_moves_no_identity.py with cases (a)/(b)/(c) plus the importing-file population; the file at :101, :120, :140 asserts those cases and the manifest records 6 passed with logs pop2-base.log (3 failed/614 passed) and pop3-head.log (2 failed/after with 0 added failures).\nVERDICT write_paths: the manifest declares reckon/checkout_trust.py, reckon/crew/follower_registration.py, reckon/crew_follow_commands.py, tests/test_a_commit_without_code_moves_no_identity.py, tests/test_stale_producer_warning_waits_for_its_reload.py and the evidence fragment; every path in the diff b82313f9a..91bb3e608 is inside that set.\nVERDICT manifest: read; it records commits e33a0ff39, d9af46b46, 722c559ef and 91bb3e608, the gate at 6 passed and the superseded file at 9 passed, the two-arm population with 0 added failures, and the red negative control.\nVERDICT diff: read commit by commit from b82313f9a to 91bb3e608; e33a0ff39 changes the three runtime modules and adds the gate test, 722c559ef re-reads the tree id in two superseded assertions, d9af46b46 and 91bb3e608 add the evidence fragment.\nCALL_SITES: reckon/crew_follow_commands.py:409, reckon/crew_follow_commands.py:449, reckon/crew/follower_registration.py:35, reckon/crew/follower_registration.py:40, reckon/crew/obligation_snapshot.py:428, reckon/crew/runs.py:2530, reckon/crew/runs.py:3082\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/checkout_trust.py:244 returns the HEAD:reckon tree id and :381 archives the package under --prefix=reckon/, exactly the section 54 deliverable.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_commit_without_code_moves_no_identity.py:95-189 exercises cases (a)-(c) and the manifest's pop2-base.log and pop3-head.log record the population with 0 added failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff b82313f9a..91bb3e608 is inside the manifest's declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_commit_without_code_moves_no_identity.py:97 and :114 redden under the recorded commit-identity control, but :137 and :167 compare against the identity the test itself supplies and stay green.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/checkout_trust.py:214 places the tree reader beside committed_head:198 in the same module idiom and no symbol or comment carries a forbidden plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search over reckon/ found no existing package-tree reader; committed_reckon_tree extends checkout_trust's identity owner and materialize_committed_tree stays the sole extractor.\nFINDING tests/test_a_commit_without_code_moves_no_identity.py:137 follow-on: the exec environment's identity is asserted equal to after = _identity(root) and both sides call source_code_identity, so reverting the identity to the commit leaves the case-(b) assertion true, as the recorded control shows test (b) staying green.\nFINDING tests/test_a_commit_without_code_moves_no_identity.py:167 follow-on: image.name == identity compares materialize_committed_tree's output against the identity passed to it at :164, so re-keying that input on the recorded mutation leaves the assertion true.\nFINDING reckon/checkout_trust.py:198 follow-on: committed_head is left with no caller once source_code_identity moved to committed_reckon_tree, so it is dead in production and tests.\nreviewed_base_sha: b82313f9a23df0bd7dac8160123fda19564ff995\nreviewed_head_sha: 91bb3e6082fecad66ec10999660a39aae967fbd8",
+  "review_run_id": "legacy-d70de7654e63",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "b82313f9a23df0bd7dac8160123fda19564ff995",
+  "reviewed_head_sha": "91bb3e6082fecad66ec10999660a39aae967fbd8",
+  "reviewed_run_id": "r-20261018T153051096441-a-commit-without-code-moves-no-identity",
+  "reviewer": {
+    "backend": "deepseek-v4.1-flash",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261018T180844713723-review-of-a-commit-without-code-moves-no-identity-91bb3e6082fe",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T18:37:16.838824+00:00",
+  "total": 113
+}
