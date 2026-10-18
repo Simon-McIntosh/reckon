@@ -8,7 +8,8 @@ decoded, how often a memoised value is copied, and how many stats the read
 costs, and shows the held-worktree answer equals the whole-ledger answer.
 
 Against a base tree that decodes every per-run document, the decode count grows
-with the corpus, so the same test fails.
+with the corpus and every document is stat'ed a second time, so the same test
+fails on both the copy and the stat bound.
 """
 
 from __future__ import annotations
@@ -219,13 +220,21 @@ def test_one_derivation_reads_only_the_documents_that_can_change_it(
     }
     assert duties == set(expected.values())
     assert len(expected) == TREE_COUNT
+    # The read-only path shares the memo's value rather than copying it, so no
+    # document on it is deep-copied however many readers the derivation has.
+    # Collect every bound's failure before asserting, so a run that misses both
+    # names both rather than stopping at the first.
+    problems: list[str] = []
+    if counts.deepcopy != 0:
+        problems.append(f"deepcopy on the read-only path is {counts.deepcopy}, not 0")
+    # At most one stat per per-run document plus one per held tree.
+    stat_bound = RECORD_COUNT + TREE_COUNT
+    if counts.stat > stat_bound:
+        problems.append(f"stat is {counts.stat}, above the {stat_bound} bound")
+    assert not problems, (problems, counts.__dict__)
     # The only documents that can change the answer are the TREE_COUNT that
     # name a tree; the rest name no tree and must not be decoded.
     assert counts.record <= TREE_COUNT, counts.__dict__
-    assert counts.deepcopy <= TREE_COUNT, counts.__dict__
-    # At most one stat per document over the home, plus a small constant for
-    # the trees and the project's own files.
-    assert counts.stat <= RECORD_COUNT + TREE_COUNT * 3, counts.__dict__
 
 
 def test_a_run_retaining_another_nodes_tree_stays_a_candidate() -> None:

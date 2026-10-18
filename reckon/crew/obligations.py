@@ -496,7 +496,14 @@ def _run_namings(project: str, repository: Path) -> dict[str, tuple[str, Path | 
 
     namings: dict[str, tuple[str, Path | None]] = {}
     try:
-        rows = ledger.runs(project, root=repository)
+        snapshot = ledger._last_good_index_data(
+            project, repository, headers_only=False, picker_only=False
+        )
+        rows = (
+            snapshot[0].get("runs", [])
+            if snapshot is not None
+            else ledger.runs(project, root=repository)
+        )
     except Exception:  # noqa: BLE001 — a screen must never fail the derivation
         return {}
     for row in rows:
