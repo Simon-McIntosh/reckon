@@ -1072,10 +1072,17 @@ def _make_stamp(
     return stamp
 
 
+def _persisted_cache_path(kind: str, version: int, *identity: str) -> Path:
+    """Keep each persisted cache format in its own directory."""
+
+    digest = hashlib.sha256("\0".join(identity).encode("utf-8")).hexdigest()
+    return _config_home() / "cache" / kind / f"v{version}" / f"{digest}.json"
+
+
 def _index_path(docs_dir: Path, project: str) -> Path:
-    identity = f"{project}\0{Path(docs_dir).resolve()}".encode()
-    digest = hashlib.sha256(identity).hexdigest()
-    return _config_home() / "cache" / "metadata-index" / f"{digest}.json"
+    return _persisted_cache_path(
+        "metadata-index", _VERSION, project, str(Path(docs_dir).resolve())
+    )
 
 
 def _load_persisted(docs_dir: Path, project: str) -> dict[str, dict]:

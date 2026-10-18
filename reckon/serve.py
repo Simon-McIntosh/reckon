@@ -1553,9 +1553,9 @@ _GIT_CREATION_SCHEMA_VERSION = 1
 def _git_creation_cache_path(cache_key: tuple[str, str]) -> Path:
     """Return the disposable persisted-map path for one repository docs root."""
 
-    identity = "\0".join(cache_key).encode("utf-8")
-    digest = hashlib.sha256(identity).hexdigest()
-    return _config_home() / "cache" / "git-creation" / f"{digest}.json"
+    return metadata_index._persisted_cache_path(
+        "git-creation", _GIT_CREATION_SCHEMA_VERSION, *cache_key
+    )
 
 
 def _git_creation_payload(cache_key: tuple[str, str], entry: _GitCreationEntry) -> dict:
@@ -1932,9 +1932,9 @@ _GIT_LAST_MODIFIED_SCHEMA_VERSION = 1
 
 
 def _git_last_modified_cache_path(cache_key: tuple[str, str]) -> Path:
-    identity = "\0".join(cache_key).encode("utf-8")
-    digest = hashlib.sha256(identity).hexdigest()
-    return _config_home() / "cache" / "git-last-modified" / f"{digest}.json"
+    return metadata_index._persisted_cache_path(
+        "git-last-modified", _GIT_LAST_MODIFIED_SCHEMA_VERSION, *cache_key
+    )
 
 
 def _git_last_modified_payload(
