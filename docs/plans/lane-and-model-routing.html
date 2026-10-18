@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="214">
+<meta name="plan-version" content="217">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -245,19 +245,21 @@ It asserts that the candidate's <code>outcomes_at_requirement</code> reads <code
 <section data-reckon="section" data-id="s33" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> On 2026-10-18 nova's lead reported that Jev's outcome evidence is not conditioned on how large a node is, so whichever lane receives the largest nodes looks worse. nova's implement rows show both lanes falling together when the work moved onto the deep nodes of its <code>converged-forward-solve</code> plan. From 10-04 to 10-08, clive passed 24 of 26 with a median review of 112, and codex 8 of 10 with 104. From 10-09 to 10-14, clive passed 8 of 11 with 102, and codex 8 of 14 with 103.5. On that plan since 10-15, clive passed 9 of 21 and codex 0 of 13.</p>
 <p>Two readings must be separated before anything is conditioned. First, the block already conditions on difficulty as assessed: <code>_candidates_scan</code> (<code>reckon/crew/picker/snapshot.py:256</code>) matches a row's role, spec level and recorded (reasoning, risk). What it lacks is a size inside that requirement. The size the picker already has, <code>_size_class</code> (<code>reckon/crew/run_time_profile.py:179</code>), buckets by declared time budget. It cannot separate nova's nodes, because every implement row on that plan declares <code>60m</code>. Second, codex's "0 of 13" on that plan is mostly not codex's own picks. As read from nova's ledger on 2026-10-18, 9 of the 13 rows carry a <code>lane-change</code> lineage, meaning a coordinator moved them onto codex, and all 9 were promoted with gate <code>not-run</code>. Under §4 of jev-learns-from-its-routes those rows count in <code>moved_in</code>, not in codex's own outcomes. Codex's own rows there are 3 failed and 1 not-run.</p>
-<p><strong>Deliverable.</strong> A read-only measurement of which size signal, available at dispatch, separates outcomes within a requirement. It writes a new research document, <code>docs/research/what-sizes-a-node.html</code>, and reads the committed ledgers of every mounted project: implement rows over the 30 days to the run, matched as <code>_candidates_scan</code> matches them, moved rows left out. For each recorded requirement it reports gate pass rate, median attempts and median review total, bucketed by each candidate signal in turn:</p>
+<p><strong>Deliverable.</strong> A read-only measurement of which size signal, available at dispatch, separates outcomes within a requirement. It writes a new research document, <code>docs/research/what-sizes-a-node.html</code>, and reads the committed ledgers of every mounted project. Its population is the one a pick reads: implement rows over the 14 days to the run, which is <code>_candidates_scan</code>'s own cutoff. Rows are matched by calling <code>_recorded_requirement</code> and <code>_picked_backend_away</code> from <code>reckon/crew/picker/snapshot.py</code>, so moved rows are left out, and no second matching rule is written. For each recorded requirement it reports gate pass rate, median attempts and median review total, bucketed by each candidate signal in turn. The bucket edges are fixed here, before any outcome is read:</p>
 <ul>
-<li>the number of clauses in <code>node_definition.done_when</code>, counted as sentences ending in a full stop;</li>
-<li>the length of <code>node_definition.write_paths</code>;</li>
-<li>whether <code>node_definition.negative_control</code> is declared;</li>
-<li><code>node_definition.estimated_hours</code>, where present;</li>
-<li>the <code>estimated_context</code> the pick rendered, read from <code>picker_selection.rendered_state</code>.</li>
+<li>the number of clauses in <code>node_definition.done_when</code>, counted as sentences ending in a full stop: 1 to 2, 3 to 4, 5 or more;</li>
+<li>the length of <code>node_definition.write_paths</code>: 1, 2 to 3, 4 or more;</li>
+<li>whether <code>node_definition.negative_control</code> is declared: yes or no;</li>
+<li><code>node_definition.estimated_hours</code>: under 1, 1 to 2, over 2, or absent;</li>
+<li>the <code>estimated_context</code> the pick rendered, read from <code>picker_selection.rendered_state</code>: under 20,000 tokens, 20,000 to 60,000, over 60,000, or absent;</li>
+<li>a control signal that carries no size information: the parity of the run id's timestamp seconds, even or odd.</li>
 </ul>
-<p>It names the signal that best separates pass rate within a requirement, with its bucket counts, or says that none does. It changes no code.</p>
+<p>A signal separates a requirement only when its lowest and highest buckets each hold at least 5 rows and their pass rates differ by at least 20 percentage points and by more than the control signal's difference at that requirement. The document names every signal that clears that bar, with its bucket counts, or says that none does. It changes no code.</p>
 <p><strong>Write paths.</strong> <code>docs/research/what-sizes-a-node.html</code>, which is new, and its figures under <code>docs/figures/what-sizes-a-node</code>.</p>
-<p><strong>Done when</strong> all three of these hold:</p>
+<p><strong>Done when</strong> all four of these hold:</p>
 <ul>
-<li>The document carries one table per signal: requirement, bucket, rows, passed, median attempts, median review total. It also names the separating signal, or none, with the rows behind that verdict, and every count is read from the ledgers at a stated revision and time.</li>
+<li>The document carries one table per signal, the control included: requirement, bucket, rows, passed, median attempts, median review total. It names every signal that clears the stated bar, or none, with the rows behind that verdict, and every count is read from the ledgers at a stated revision and time.</li>
+<li>The control signal's own result is reported. Where the control itself clears the bar at a requirement, the document says that requirement's sample cannot rank signals and names no separating signal there.</li>
 <li>The script that computed it sits in the run directory, and the document names its path and the command that ran it.</li>
 <li>No file outside the write paths changes.</li>
 </ul>
