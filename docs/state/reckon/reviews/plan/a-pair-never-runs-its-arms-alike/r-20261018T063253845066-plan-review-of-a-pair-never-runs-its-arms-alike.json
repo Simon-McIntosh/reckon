@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T06:44:28.441Z",
+  "dispatched_at": "2026-10-18T06:33:31Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-pair-never-runs-its-arms-alike.html#s1",
+      "id": "done_when-1",
+      "reason": "the node's second negative control is a done-when item, so the test config for case 3 must be respecced to keep the picked model on the same backend name (or the control dropped) before dispatch, or the node measures a guard branch it never exercises.",
+      "text": "the third done-when case assumes a picker route can leave the primary on backend \"candidate\" with a different model, but _backend_serving_picked_model (reckon/crew/dispatch_plan.py:207) rewrites the requested backend to the entry that serves the picked model via ledger.backend_serving_model (reckon/ledger.py:336-343), which returns whichever configured entry carries that (lane, model_key) name \u2014 under lane expansion that is a different backend name than the named lane, so a backends-only comparison would see two different backends and never refuse, and the declared negative control \"with the check comparing backends only, the third case must fail\" would not fire",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-pair-never-runs-its-arms-alike.html#s1",
+      "id": "anchors_resolve-1",
+      "reason": "the shortened form is unambiguous by prefix within the crew run store and the claim it supports (both arms codex/gpt-6-sol) checks out against those directories either way.",
+      "text": "the incident run ids are cited as \"r-20261018T062147901424\" and \"r-20261018T062147901543\" while the run directories are named with the node suffix (\"\u2026-census-certified-convergence\"), so the literal strings resolve to nothing a reader can open without globbing the run store",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "1c75f7b8aea4f1b5c5aada6f4bfdd4f2c77b5ee9364d8014137dc72448ac9c7b",
+  "plan_slug": "a-pair-never-runs-its-arms-alike",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T063253845066-plan-review-of-a-pair-never-runs-its-arms-alike",
+  "reviewed_blob_sha": "96072514cb504b2dd392b47a0b00585088b6dd1c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 reckon/crew/dispatch.py:690 is dispatch_pair, :465 is _shadow_dispatch_config and :558 is shadow; tests/test_a_paired_dispatch_hides_each_arm.py:85 is _candidate_config; both cited plans and all six named test files exist. The two incident run ids are cited without their \"-census-certified-convergence\" suffix, which resolves by prefix in the run store.",
+    "done_when": "a finding \u2014 the second declared negative control (\"with the check comparing backends only, the third case must fail\") is the one case whose primary is routed by a picker selection, and that path resolves a non-default model to a different backend entry, so the backends-only mutation may not refuse it.",
+    "evidence_paths": "pass \u2014 the plan names no scratchpad or node-local path for its gate; it fixes the foreground pytest run and its delta against the base, and requires the new test to write nothing outside its temporary directory.",
+    "naming": "pass \u2014 the new file tests/test_a_pair_never_runs_its_arms_alike.py is named for the behaviour it proves, matching its siblings (tests/test_a_paired_shadow_runs_on_its_named_backend.py), and no symbol, comment or filename carries a plan label, ticket or version tag.",
+    "reasoning": "pass \u2014 the stated root cause matches its own evidence and the mechanism reaches the real code path. Both arms' attempt-1-worker.json record backend \"codex\" and argv \"-m gpt-6-sol\" (r-20261018T062147901424 and r-20261018T062147901543), the primary's live pointer records picker_selection backend \"codex\", model \"gpt-6-sol\", confidence 0.46, and _candidate_config does route roles.implement to \"candidate\" so the paired tests build both arms on that backend; the check lives in dispatch_pair, which the user-facing `crew dispatch --pair-backend` reaches at reckon/crew_dispatch_commands.py:1521.",
+    "single_goal": "pass \u2014 \u00a71 carries one deliverable, refuse a pair whose arms resolve to one backend and model, together with the tests that prove it.",
+    "wiring": "pass \u2014 the section declares no depends-on/informs/gates and needs none, because both plans it cites as the landed work it repairs (docs/plans/a-shadow-cannot-see-its-primary.html, docs/plans/a-paired-shadow-runs-on-its-named-backend.html) carry plan-status \"done\", and plan-standalone states this repair waits on nothing."
+  },
+  "section_digests": {
+    "_document": "f69e0ec63ca7c44aed6a2af37349696c5cb319f332df134e6fd7dc890a53dbc5",
+    "s1": "9db85404b7c51e7c07af190582dd300539da88ca3ab9938da54038e38b281474"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T06:50:06.667928+00:00"
+}
