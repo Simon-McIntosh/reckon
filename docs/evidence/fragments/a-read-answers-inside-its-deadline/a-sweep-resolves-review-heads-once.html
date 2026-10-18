@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s23">
+  <title>A sweep resolves review heads once | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-sweep-resolves-review-heads-once-landing" data-node="a-sweep-resolves-review-heads-once" data-reckon="landed" data-when="2026-10-18">
+  <h2>A sweep resolves review heads and the ledger index once</h2>
+  <p>Two regions now bound the repeated work. <code>review_heads_resolve_once</code>
+  in <code>reckon/crew/recovery_review_dispatch.py</code> resolves each live run's
+  reviewed head and tree once and serves the later readers of that run from the
+  result; <code>ledger.index_reuse</code> in <code>reckon/ledger.py</code> builds
+  the run index once for every ledger read inside it. A nested region joins the
+  cache already open, so <code>obligation_snapshot.fleet_state</code> and the
+  per-session slices <code>obligation_snapshot.sweep</code> builds share both:
+  the slices read the heads the derivation resolved. Outside a region every call
+  resolves as it did before.</p>
+  <p>Over a fixture of six live runs each owing a review of its head, one
+  <code>fleet_state</code> resolved 36 reviewed heads before the change and 6
+  after — at most one per live run — and one <code>sweep</code> resolved 42
+  before and 6 after. The ledger index is built once per derivation; a registered
+  worktree no record names drives the whole-ledger fallback so the count is
+  taken over a read the fixture really makes. The snapshot's obligations equal
+  the derivation's over the same state. Running the same test against a copy of
+  the base tree fails both head counts (36 and 42 against a bound of 6), which
+  is the negative control.</p>
+</article>
+</body>
+</html>

@@ -9,6 +9,9 @@ import shutil
 import subprocess
 import tempfile
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
@@ -498,6 +501,37 @@ def _worktree_reclaimed(record: Mapping[str, Any]) -> bool:
     return bool(worktree_raw) and not Path(worktree_raw).is_dir()
 
 
+# One sweep asks each live run for its reviewed head and tree from several
+# readers — the classifier's in-flight check, the derivation and every session's
+# slice — and every one of them asks the same question of the same run. The
+# first reader in a region resolves it and the rest are answered from the
+# result, so a sweep reads each run's tree once rather than once per reader.
+# Outside a region each call resolves on its own, as it always has.
+_REVIEW_HEAD_REGION: ContextVar[dict[str, tuple[str, Path | None]] | None] = ContextVar(
+    "review_head_region", default=None
+)
+
+
+@contextmanager
+def review_heads_resolve_once() -> Iterator[dict[str, tuple[str, Path | None]]]:
+    """Share one resolution of each run's reviewed head and tree for a region.
+
+    A nested region joins the cache already open rather than starting a fresh
+    one, so a session's slice built inside a derivation reads the heads the
+    derivation resolved and the whole sweep pays one resolution per live run.
+    """
+    active = _REVIEW_HEAD_REGION.get()
+    if active is not None:
+        yield active
+        return
+    cache: dict[str, tuple[str, Path | None]] = {}
+    token = _REVIEW_HEAD_REGION.set(cache)
+    try:
+        yield cache
+    finally:
+        _REVIEW_HEAD_REGION.reset(token)
+
+
 def _review_head_and_tree(
     record: Mapping[str, Any],
 ) -> tuple[str, Path | None]:
@@ -516,7 +550,25 @@ def _review_head_and_tree(
     exactly the revision this run's review is not about. A record naming no
     worktree at all still resolves through its repository, the only reading
     left for it.
+
+    Inside a :func:`review_heads_resolve_once` region the answer for a run is
+    resolved once and the later readers of that same run are served it, so a
+    sweep pays one resolution per live run rather than one per reader.
     """
+    cache = _REVIEW_HEAD_REGION.get()
+    run_id = str(record.get("run_id") or "")
+    if cache is not None and run_id and run_id in cache:
+        return cache[run_id]
+    resolved = _resolve_review_head_and_tree(record)
+    if cache is not None and run_id:
+        cache[run_id] = resolved
+    return resolved
+
+
+def _resolve_review_head_and_tree(
+    record: Mapping[str, Any],
+) -> tuple[str, Path | None]:
+    """Resolve one run's reviewed head and tree, reading its worktree."""
     if _worktree_reclaimed(record):
         return _record_carried_head(record), None
     return _reviewed_run_head(record), _review_tree(record)
