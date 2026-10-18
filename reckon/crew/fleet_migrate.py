@@ -864,6 +864,17 @@ def migrate(
     path = _latest_ledger(state)
     ledger = json.loads(path.read_text()) if path else None
     step = "census" if ledger is None else ledger["next_step"]
+    if step == "done":
+        # A completed move is not the end of the command's work: because the
+        # census step is reachable only when no ledger exists, reporting the
+        # move complete would let the command carry exactly one move forever.
+        # The newest ledger is done, so this invocation begins a new move at
+        # census instead. The earlier ledger is left untouched; the census
+        # branch writes the new move-<stamp> ledger. Census and layout only
+        # read state, so this starts nothing costly.
+        ledger = None
+        path = None
+        step = "census"
     if session and step != "cutover":
         raise MigrationError("--session applies only to a cutover step")
     if step == "census":
@@ -910,15 +921,11 @@ def migrate(
             f"scancel {ledger['stand_up']['old_record']['job_id']}"
             + (" after --confirm" if confirm else " (requires --confirm)")
         )
-    elif step == "done":
-        description = "migration complete"
     else:
         description = f"{step}: awaits the next migration implementation"
     if dry_run:
         return description
     if step == "cutover" and session is None:
-        return description
-    if step == "done":
         return description
     if step == "census":
         census = build_census(observation())

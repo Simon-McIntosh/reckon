@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="migrate-starts-a-second-move">
+  <meta name="plan-title" content="The migrate command starts a second move">
+  <meta name="plan-summary" content="A done ledger always begins a new move at census; the drain warning now states the allocation continues until it ends">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-node-stays-in-service">
+  <meta name="plan-verifies" content="reckon:the-fleet-node-stays-in-service#s4">
+  <meta name="plan-recorded-at" content="2026-10-18">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,fleet">
+  <title>The migrate command starts a second move — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<section id="migrate-starts-a-second-move">
+  <h2>The migrate command starts a second move</h2>
+  <p><strong>Finding.</strong> <code>reckon fleet-node migrate</code> read the
+  newest <code>move-*/ledger.json</code> and, once its <code>next_step</code> was
+  <code>done</code>, returned <code>migration complete</code> on every later
+  invocation. Because the <code>census</code> step was reachable only when no
+  ledger existed, the command could carry exactly one move, so a fleet that had
+  since been replaced left the command reporting a stale completion.</p>
+
+  <p><strong>Change.</strong> In <code>fleet_migrate.migrate</code>, a ledger
+  whose <code>next_step</code> is <code>done</code> always makes the next
+  invocation begin a new move at census, writing a fresh
+  <code>move-&lt;stamp&gt;/ledger.json</code> and leaving the earlier ledger
+  untouched; <code>--dry-run</code> reports the census step. The rule is
+  unconditional — it does not consult the fleet record — because census and
+  layout only read state, so a new move starts nothing costly, and the measured
+  case has the fleet record still naming the same drained job the last move
+  promoted, which any fleet-record comparison would read as "no move due".</p>
+
+  <p><strong>Status wording.</strong> <code>fleet_node.describe_allocation</code>
+  no longer says "the allocation ends when the drain completes" (the reverse
+  holds — the drain completes when the allocation ends). The warning now states
+  that the scheduler places no new job on the node, that the allocation
+  continues until it ends, and that the node returns only when an administrator
+  resumes it.</p>
+
+  <p><strong>Evidence.</strong> Focused tests pass in
+  <code>tests/test_migrate_starts_a_second_move.py</code> (4 selected): a
+  completed ledger whose fleet record still names the job the move promoted
+  announces the census in <code>--dry-run</code> and writes a new move ledger
+  while leaving the old bytes untouched; a completed ledger whose fleet record
+  names a different job does the same; a ledger at <code>cutover</code> still
+  resumes its move rather than starting a census; and the drain warning carries
+  the three replacement statements and not the old one.</p>
+
+  <p>One assertion in <code>tests/test_fleet_migrate_cutover.py</code> was
+  updated in the same commit from <code>== "migration complete"</code> to a
+  census <code>--dry-run</code>: it encoded the retired behaviour and is a
+  direct consequence of the corrected rule. That file is outside this node's
+  declared write scope; the change is one line and is called out in the commit
+  body and manifest.</p>
+
+  <p>The related suites (<code>test_fleet_migrate*</code>,
+  <code>test_fleet_node</code>) pass 91 tests.</p>
+
+  <p><strong>Negative control.</strong> Declared string: "a ledger at cutover
+  must resume its move, not start a new census". Applying the mutation —
+  starting a new census for every ledger, not only a <code>done</code> one —
+  makes the cutover ledger start a census, and the cutover test fails with
+  <code>assert 'census: read…' == 'cutover: sessions still to move: one-fleet'</code>
+  (<code>1 failed, 3 passed</code>). See
+  <code>negative-control.log</code> in the run record.</p>
+
+  <p><strong>Commits and paths.</strong>
+  <code>reckon/crew/fleet_migrate.py</code> (done ledger advances to census),
+  <code>reckon/crew/fleet_node.py</code> (drain-warning wording and the comments
+  that described the old behaviour),
+  <code>tests/test_migrate_starts_a_second_move.py</code> (new),
+  <code>tests/test_fleet_migrate_cutover.py</code> (one retired assertion
+  updated).</p>
+</section>
+</body>
+</html>
