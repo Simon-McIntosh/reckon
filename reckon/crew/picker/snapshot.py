@@ -1063,6 +1063,45 @@ def _reserved_lane_exclusion(
     return None
 
 
+def _reserved_five_hour_utilisation(
+    group: Mapping[str, Any] | None,
+    view: Mapping[str, Any],
+    config: Mapping[str, Any],
+    *,
+    now: datetime,
+) -> float | None:
+    """The group's own fresh five-hour percentage, never its account overage."""
+    clocks = group.get("clocks") if isinstance(group, Mapping) else None
+    clock = clocks.get("five_hour") if isinstance(clocks, Mapping) else None
+    if not isinstance(clock, Mapping) or clock.get("state") != budget.OBSERVED:
+        return None
+    used = clock.get("utilisation")
+    observed = parse_utc(str(clock.get("observed_at") or ""))
+    reset = parse_utc(str(clock.get("resets_at") or ""))
+    if (
+        isinstance(used, bool)
+        or not isinstance(used, (int, float))
+        or not math.isfinite(used)
+        or used < 0
+        or observed is None
+        or reset is None
+        or reset <= now
+    ):
+        return None
+    shelf = budget.policy(config)["evidence_shelf_life_minutes"] * 60
+    if group.get("source") == budget.WINDOW_SOURCE_DOCUMENT:
+        published = view.get("suggested_shelf_life_seconds")
+        if (
+            isinstance(published, (int, float))
+            and not isinstance(published, bool)
+            and published > 0
+        ):
+            shelf = float(published)
+    if (now - observed).total_seconds() > shelf:
+        return None
+    return float(used) * 100.0
+
+
 def candidates(
     request: PickRequest,
     config: dict[str, Any],
@@ -1076,9 +1115,23 @@ def candidates(
     authority: Mapping[str, Any] | None = None,
     estimate_out: MutableMapping[str, Any] | None = None,
 ) -> list[Candidate]:
-    """Read a fresh snapshot; never dispatch or change routing configuration."""
+    """Read candidate measurements, refreshing a qualifying reserved window."""
     now = datetime.now(UTC)
     rows = ledger.runs(request.project, root=repo) if records is None else records
+    # The same declared tier and attempt count govern the probe and the gate.
+    reserved = flight.reserved_lane_policies(config)
+    attempts = (
+        request.attempts
+        if request.attempts is not None
+        else sum(
+            row.get("node") == request.node.id and row.get("plan") == request.node.plan
+            for row in rows
+        )
+    )
+    declared_requirements = {
+        **(request.capability.get("requirements") or {}),
+        **(request.orchestrator_assessment or {}),
+    }
     shared = (
         verdict_inputs
         if verdict_inputs is not None
@@ -1096,6 +1149,35 @@ def candidates(
             session=request.session,
         )
     )
+    if budget_snapshot is None and not cached_only and request.node.role != "review":
+        for family, policy in reserved.items():
+            floor = policy.get(flight.PICKER_RESERVED_LANE_FLOOR_KEY) or {}
+            if not _reserved_lane_floor_met(declared_requirements, floor):
+                continue
+            for name, backend in (config.get("backends") or {}).items():
+                if (
+                    backend.get("derived_from")
+                    or dispatch_picker.lane_family(config, name, backend) != family
+                ):
+                    continue
+                group = next(
+                    (item for item in view["groups"] if name in item["members"]),
+                    None,
+                )
+                if _reserved_five_hour_utilisation(
+                    group, view, config, now=now
+                ) is None and paid_lanes.refresh_reserved_window(
+                    config, name, backend, root=repo, moment=now
+                ):
+                    view = budget_view(
+                        request.project,
+                        config,
+                        repo,
+                        rows,
+                        cached_only=cached_only,
+                        session=request.session,
+                    )
+                break
     # The node's estimate is independent of the candidate. Parsing its plan
     # once keeps a backend census from multiplying identical repository reads.
     shared = {
@@ -1153,25 +1235,6 @@ def candidates(
         review_excluded = recovery._review_excluded_backends(
             config, session=request.session
         )
-    # The lanes a policy reserves for the orchestrators that share them, and the
-    # two readings the policy judges a node by: the requirement it declares --
-    # the plan's, or the coordinator's own assessment where it states one -- and
-    # how many attempts it has already been given. Both are read once for the
-    # whole scan, and the attempts figure is the one the state renders beside the
-    # node, so the policy and the guidance never disagree about it.
-    reserved = flight.reserved_lane_policies(config)
-    attempts = (
-        request.attempts
-        if request.attempts is not None
-        else sum(
-            row.get("node") == request.node.id and row.get("plan") == request.node.plan
-            for row in rows
-        )
-    )
-    declared_requirements = {
-        **(request.capability.get("requirements") or {}),
-        **(request.orchestrator_assessment or {}),
-    }
     variants = []
     lanes = config.get("lanes") or {}
     for name, declared in config.get("backends", {}).items():
@@ -1276,7 +1339,11 @@ def candidates(
                 reserved[family],
                 declared=declared_requirements,
                 attempts=attempts,
-                utilisation=utilisation,
+                utilisation=(
+                    utilisation
+                    if budget_snapshot is not None
+                    else _reserved_five_hour_utilisation(group, view, config, now=now)
+                ),
             )
             if withheld:
                 reasons.append(withheld)

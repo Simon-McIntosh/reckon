@@ -38,6 +38,7 @@ import fcntl
 import json
 import os
 import shlex
+import subprocess
 import sys
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -577,17 +578,179 @@ def _previous_probe_candidates(
     for account, reading in readings.items():
         entry = accounts.get(account, {})
         blocks = entry.get("windows", {}) if isinstance(entry, Mapping) else {}
-        figures = tuple(
-            figure
-            for figure in reading.figures
-            if isinstance(blocks.get(figure.period), Mapping)
-            and blocks[figure.period].get("source") == "probe"
-        )
-        if figures:
-            retained[account] = [
-                Candidate("probe", window_reading.WindowReading(figures=figures))
-            ]
+        for source in ("probe", "reserved-probe"):
+            figures = tuple(
+                figure
+                for figure in reading.figures
+                if isinstance(blocks.get(figure.period), Mapping)
+                and blocks[figure.period].get("source") == source
+            )
+            if figures:
+                retained.setdefault(account, []).append(
+                    Candidate(source, window_reading.WindowReading(figures=figures))
+                )
     return retained
+
+
+def _run_reserved_probe(backend: Mapping[str, Any], root: Path) -> str:
+    """Make one tool-free, short subscription request and return its stream."""
+    if backend.get("launch") != "cli" or not backend.get("command"):
+        return ""
+    argv = [
+        str(backend["command"]),
+        "-p",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--no-session-persistence",
+        "--max-budget-usd",
+        "0.05",
+    ]
+    if backend.get("model"):
+        argv.extend(("--model", str(backend["model"])))
+    argv.extend(("--tools", ""))
+    completed = subprocess.run(
+        argv,
+        input="Reply with OK.",
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=60,
+        cwd=root,
+    )
+    if completed.returncode != 0:
+        raise OSError(f"reserved window probe exited {completed.returncode}")
+    return completed.stdout
+
+
+def refresh_reserved_window(
+    config: Mapping[str, Any],
+    account: str,
+    backend: Mapping[str, Any],
+    *,
+    root: Path,
+    path: str | Path | None = None,
+    moment: datetime | None = None,
+    runner: Callable[[Mapping[str, Any], Path], str] | None = None,
+) -> bool:
+    """Probe a missing five-hour window once per account per document shelf life.
+
+    The lock and the attempted-at claim precede the request. A failed or
+    interrupted request therefore cannot make concurrent picks send another.
+    A successful event is published in the document the budget view already
+    reads; a missing event leaves the lane's window unknown.
+    """
+    from reckon import _backends
+
+    now = moment or datetime.now(tz=UTC)
+    target = document_path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.with_name(target.name + ".lock").open("a+") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        document = read_document(target)
+        if not isinstance(document, dict) or not isinstance(
+            document.get("accounts"), Mapping
+        ):
+            document = compose_document(
+                config.get("backends") or (),
+                moment=now,
+                local_lane={"state": UNKNOWN},
+            )
+        accounts = document["accounts"]
+        previous_entry = accounts.get(account)
+        entry = dict(
+            previous_entry
+            if isinstance(previous_entry, Mapping)
+            else account_entry(account, (), moment=now)
+        )
+        windows = entry.get("windows")
+        windows = windows if isinstance(windows, Mapping) else {}
+        shelf = document.get("suggested_shelf_life_seconds")
+        if isinstance(shelf, bool) or not isinstance(shelf, (int, float)) or shelf <= 0:
+            shelf = suggested_shelf_life_seconds()
+        five = windows.get("five_hour") or {}
+        observed = _parse_stamp(five.get("observed_at"))
+        reset = _parse_stamp(five.get("resets_at"))
+        utilisation = five.get("utilisation")
+        if (
+            five.get("state") == OBSERVED
+            and observed is not None
+            and reset is not None
+            and reset > now
+            and isinstance(utilisation, (int, float))
+            and not isinstance(utilisation, bool)
+            and 0 <= utilisation <= 1
+            and (now - observed).total_seconds() <= shelf
+        ):
+            return False
+        prior = entry.get("reserved_probe")
+        prior = prior if isinstance(prior, Mapping) else {}
+        attempted = _parse_stamp(prior.get("attempted_at"))
+        if attempted is not None and (now - attempted).total_seconds() < shelf:
+            return False
+        entry["reserved_probe"] = {
+            "attempted_at": now.isoformat(),
+            "failure": "probe interrupted before its window was published",
+        }
+        accounts[account] = entry
+        write_document_atomically(document, target)
+        try:
+            stream = (runner or _run_reserved_probe)(backend, root)
+            if not isinstance(stream, str):
+                entry["reserved_probe"]["failure"] = (
+                    "reserved probe did not return a stream"
+                )
+                accounts[account] = entry
+                write_document_atomically(document, target)
+                return False
+            events, _malformed = _backends.parse_events(stream.splitlines())
+            # A direct request is observed no earlier than its start. Supply
+            # that conservative stamp when the event has no timestamp of its own.
+            for event in events:
+                if event.get("type") == "rate_limit_event":
+                    event.setdefault("timestamp", now.isoformat())
+            reading = window_reading.read_windows(events, now=now)
+            figure = reading.figure("five_hour")
+            reset = _parse_stamp(figure.resets_at) if figure is not None else None
+            statuses = [
+                event.get("rate_limit_info", {}).get("status")
+                for event in events
+                if event.get("type") == "rate_limit_event"
+                and isinstance(event.get("rate_limit_info"), Mapping)
+            ]
+            if (
+                figure is None
+                or not 0.0 <= figure.utilisation <= 1.0
+                or reset is None
+                or reset <= now
+                or not statuses
+                or statuses[-1] not in {"allowed", "allowed_warning"}
+            ):
+                entry["reserved_probe"]["failure"] = (
+                    reading.reason or "probe did not serve a usable five-hour window"
+                )
+            else:
+                updated = account_entry(
+                    account, (Candidate("reserved-probe", reading),), moment=now
+                )
+                for period, block in windows.items():
+                    if (
+                        period not in updated["windows"]
+                        or updated["windows"][period]["state"] != OBSERVED
+                    ):
+                        updated["windows"][period] = block
+                updated["reserved_probe"] = {
+                    "attempted_at": now.isoformat(),
+                    "failure": None,
+                }
+                accounts[account] = updated
+                write_document_atomically(document, target)
+                return True
+        except (OSError, TypeError, ValueError, subprocess.SubprocessError) as exc:
+            entry["reserved_probe"]["failure"] = f"{type(exc).__name__}: {exc}"
+        accounts[account] = entry
+        write_document_atomically(document, target)
+        return False
 
 
 def _probe_reading(
@@ -668,6 +831,12 @@ def publish_document(
         old_entries = (
             previous.get("accounts", {}) if isinstance(previous, Mapping) else {}
         )
+        for name, entry in document["accounts"].items():
+            old = old_entries.get(name)
+            if isinstance(old, Mapping) and isinstance(
+                old.get("reserved_probe"), Mapping
+            ):
+                entry["reserved_probe"] = dict(old["reserved_probe"])
         groups: dict[str, list[str]] = {}
         for name, settings in backends.items():
             if isinstance(settings, Mapping) and settings.get("budget_check"):
