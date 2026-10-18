@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T12:18:39.801Z",
+  "dispatched_at": "2026-10-18T11:59:09Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:48",
+      "id": "reasoning-1",
+      "reason": "clause 2's headline \"median gate share\" is inflated for the overlapping runs unless the plan states a deduplication rule or a precedence (use `test_logs`, else the armed-suite paths, deduped by path).",
+      "text": "the new mechanism takes \"each gate's duration from the gate logs the run cites (test_logs, baseline_suite.log_path, after_suite.log_path)\", but these sources name the same files: for the cited control run, `test_logs` is `gate-after.log, gate-base.log` while `baseline_suite.log_path` is `gate-base.log` and `after_suite.log_path` is `gate-after.log`, so a scanner enumerating all three reads each arm twice and roughly doubles that run's gate share \u2014 and the overlap is systematic, 32 of the 112 most recent runs citing gate logs (29%) name a log under both `test_logs` and `baseline_suite/after_suite.log_path`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:48",
+      "id": "reasoning-2",
+      "reason": "the plan should require the fraction of gate-share figures taken from the fallback to be reported beside the median (or the fallback-sourced runs separated), because the instruction \"say for each figure which source it came from\" is per-figure and leaves a mixed-source median uninterpretable.",
+      "text": "the changed mechanism falls back to foreground tool-call wall time whenever no cited log reports a duration, but that fallback is exactly the source the same bullet discredits (\"tool-call time alone would miss exactly the long gates this plan is about\"), and it is not a rare edge: in a sample of the 80 most recent runs, 24 of the 58 citing any gate log cited a log with no \"in N s\"-style duration (non-pytest gates, and truncated gates that print no pytest summary), so a substantial share of the per-lane median rests on the rejected source",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "20aee8fec6512dee6a774025fa5ba5999a5d2a783fd6a6aff4a559063c40ea43",
+  "plan_slug": "test-time-is-not-the-nodes-time",
+  "plan_version": 4,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T115721863571-plan-review-of-test-time-is-not-the-nodes-time",
+  "reviewed_blob_sha": "4ad4649551ceec859d567e30beadaf5b0149bc4a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every code anchor resolves: `validate_node` budget refusal at `reckon/crew/node.py:1293`, `resolved_time_ceiling` at `reckon/crew/routing.py:473`, `time_fence_statement` at `reckon/crew/prompts.py:382` with the stop-when-spent text at line 701, `_apply_budget_watchdog` at `reckon/crew/recovery_stream.py:320` called from `reckon/crew/dispatch_sessions.py:337`, and `enforce_budget_watchdog: false` at `reckon/schema/flight-defaults.yaml:201`; the cited run `r-20261018T084035535944-\u2026` exists and its `gate-after.log` reads \"63 passed in 543.02s\". No `<a href>` in the section needs extension resolution.",
+    "done_when": "pass \u2014 the four \u00a71 clauses are measurable, and clause 3 declares a known-positive control for both scanners (the deadline scan must report `_apply_budget_watchdog`, the timing scan must land within 5% of the 543 s its cited log records), so a bare zero cannot pass.",
+    "evidence_paths": "pass \u2014 outputs land under `docs/research/`, `scripts/` and `docs/figures/` (durable repo paths), and the gate logs it reads sit in run directories the gc retains for 30 days (`reckon/crew/gc.py:267` default), which covers the 14-day window.",
+    "naming": "pass \u2014 the write paths `how-much-of-a-node-is-its-gate.html` and `scripts/gate_share_of_run_time.py` are named by what they measure; the run ids are evidence data, not plan labels.",
+    "reasoning": "a finding \u2014 the changed mechanism enumerates three cited-log sources that overlap, so a scanner reading them as written double-counts a run's base and after arms.",
+    "single_goal": "pass \u2014 \u00a71 is one read-only investigation landing one document plus the one script that computes it.",
+    "wiring": "pass \u2014 `plan-section-depends-on` wires s2 to `test-time-is-not-the-nodes-time#s1`, the `gate-time-shape` decision carries `data-sections=\"s2\"`, and the driving followup f-ttintt-001 dispatches \u00a71; each relationship resolves to a section that exists."
+  },
+  "section_digests": {
+    "_document": "2db4f914f773c39fa5c0355f5fee5250c02797289c687519a353ee05268ffa98",
+    "s1": "a9bde7ef5820c1e4959ebc70fe5232d17af738c55119117154d3accc6ef8d24f",
+    "s2": "e1683f33056739230ebe8f8cc40375d3a6cce727983bbbca1379cf0b80c058f6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T12:30:17.031218+00:00"
+}
