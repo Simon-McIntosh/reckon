@@ -1,0 +1,91 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_figure_thumbnails.py::test_svg_sources_pass_through_unchanged"
+  ],
+  "added_failures_note": "total capped at 5: the reviewed run added 1 failing test(s) not retired by name (tests/test_figure_thumbnails.py::test_svg_sources_pass_through_unchanged)",
+  "assertion_analysis": [
+    "tests/test_figure_thumbnails_are_small_rasters.py:146-153: status fails on a failed request; Content-Type fails on SVG passthrough; byte count fails if PNG is as large as the dense source; exact 200x150 pixels fail on wrong scaling. The max-edge check at 152 moves with THUMB_MAX_EDGE.",
+    "tests/test_figure_thumbnails_are_small_rasters.py:160-164: status and Content-Type fail on a failed or SVG response; exact 67x200 fails on distorted tall output. The max-edge check at 164 moves with THUMB_MAX_EDGE.",
+    "tests/test_figure_thumbnails_are_small_rasters.py:174-180: request status fails on server error; body equality fails on inconsistent cache result; one-render count, one cache file and cached bytes fail if reuse or cache persistence regresses; config-home equality fails if the route points elsewhere.",
+    "tests/test_figure_thumbnails_are_small_rasters.py:188,201-208: status fails on request error; changed body, exact 200x200 size, two renders, changed ETag and two cache entries fail if a rewritten source reuses stale output. The max-edge check at 205 moves with THUMB_MAX_EDGE.",
+    "tests/test_figure_thumbnails_are_small_rasters.py:218-220: status, body and Content-Type fail if an unreadable SVG is not served as its original bytes and media type.",
+    "tests/test_figure_thumbnails_are_small_rasters.py:229-234: dependency text checks fail if resvg-py is removed from pyproject.toml or uv.lock; import succeeds from the test's injected PYTHONPATH, so its __file__ truthiness does not prove a shared-environment install."
+  ],
+  "base_log_revision": "26fd36a9c21e67bfb209df48f1912be17f07480e",
+  "call_site_count": 4,
+  "call_sites": [
+    "docs/ui/shell-plans.jsx:230 artifactImageSrc",
+    "docs/ui/shell-plans.jsx:429 figure-row image",
+    "reckon/serve.py:3959 route dispatch",
+    "reckon/serve.py:3309 thumbnail cache call"
+  ],
+  "completed_at": "2026-10-18T18:04:37Z",
+  "dispatched_at": "2026-10-18T17:58:31Z",
+  "findings": [
+    {
+      "file": "tests/test_figure_thumbnails.py",
+      "line": "240",
+      "severity": "blocking",
+      "text": "blocking: The committed SVG PNG response makes the existing passthrough assertion fail; head-serve-tests.log:1190 records this one added failure, so the suite has regressed until the old expectation is updated."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "2982",
+      "severity": "blocking",
+      "text": "blocking: resvg_py is absent from the shared project environment, so import fails and :3316 serves the full SVG; the six passing node tests loaded an unpacked wheel through PYTHONPATH and do not prove the runtime install required by done_when."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "2947",
+      "severity": "blocking",
+      "text": "blocking: _svg_intrinsic_size duplicates SVG dimension parsing already owned by reckon/figures.py:68 without extending or wrapping it, giving the two readers separate parsing rules."
+    },
+    {
+      "file": "tests/test_figure_thumbnails_are_small_rasters.py",
+      "line": "152",
+      "severity": "follow-on",
+      "text": "follow-on: The max-edge checks at lines 152, 164 and 205 use serve.THUMB_MAX_EDGE on the expected side, so changing that constant moves the checks with the implementation; the fixed pixel-size checks at lines 153, 163 and 204 still guard these fixtures."
+    }
+  ],
+  "head_log_revision": "26fd36a9c21e67bfb209df48f1912be17f07480e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Commit 8a579be29a7cfff3d4a6e7d5d197a42fb11b4e58 changes five paths against 26fd36a9c21e67bfb209df48f1912be17f07480e; reckon/serve.py:2947 adds SVG dimension parsing and :3309 sends SVGs through the cached renderer.",
+    "done_when": "The source prompt's measure at prompt.txt:98 requires a bounded PNG, cache reuse, refresh, fallback, and no added serve-suite failures; head-thumbnail-node.log:6 reports six passing tests, while head-serve-tests.log:1190 reports one added failure and the shared rasteriser install is absent.",
+    "goal": "The source prompt's goal at prompt.txt:30 is a cached bounded PNG from SVG; reckon/serve.py:3009 adds SVG rasterisation and pyproject.toml:34 declares resvg-py, but the shared runtime cannot import it yet.",
+    "manifest": "The source manifest.md records one commit, six passing node tests, a four-failure negative control, one added serve-suite failure, and the failed shared-environment install.",
+    "write_paths": "The source prompt at prompt.txt:70-76 declares reckon/serve.py, pyproject.toml, uv.lock, the new test and evidence paths; git diff --name-status shows all five changed paths are within that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_figure_thumbnails_are_small_rasters.py:147,153,176,206,207,219 independently catch passthrough, dimensions, cache reuse, rerender and fallback, while :152 compares the bound to the same production constant it exercises.",
+    "evidence": "head-thumbnail-node.log:6 and negative-control.log:247-252 exercise the route, but head-serve-tests.log:1190 adds a failure and the run did not satisfy the shared-environment install in prompt.txt:98.",
+    "fit": "reckon/serve.py:3001 extends the existing thumbnail renderer and :3309 preserves its route and cache idiom, with conventional names throughout the added code.",
+    "goal_fidelity": "reckon/serve.py:3009 reaches the requested PNG renderer, but :2982 raises on the current shared environment and :3316 then serves the SVG.",
+    "reuse": "reckon/serve.py:2947 adds an SVG dimension reader that duplicates the capability already owned by reckon/figures.py:68 instead of extending or wrapping that owner.",
+    "scope_discipline": "The five paths in git diff --name-status are all declared at prompt.txt:70-76 and each supports the thumbnail change or its evidence."
+  },
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt's goal at prompt.txt:30 is a cached bounded PNG from SVG; reckon/serve.py:3009 adds SVG rasterisation and pyproject.toml:34 declares resvg-py, but the shared runtime cannot import it yet.\nVERDICT done_when: The source prompt's measure at prompt.txt:98 requires a bounded PNG, cache reuse, refresh, fallback, and no added serve-suite failures; head-thumbnail-node.log:6 reports six passing tests, while head-serve-tests.log:1190 reports one added failure and the shared rasteriser install is absent.\nVERDICT write_paths: The source prompt at prompt.txt:70-76 declares reckon/serve.py, pyproject.toml, uv.lock, the new test and evidence paths; git diff --name-status shows all five changed paths are within that scope.\nVERDICT manifest: The source manifest.md records one commit, six passing node tests, a four-failure negative control, one added serve-suite failure, and the failed shared-environment install.\nVERDICT diff: Commit 8a579be29a7cfff3d4a6e7d5d197a42fb11b4e58 changes five paths against 26fd36a9c21e67bfb209df48f1912be17f07480e; reckon/serve.py:2947 adds SVG dimension parsing and :3309 sends SVGs through the cached renderer.\nCALL_SITES: docs/ui/shell-plans.jsx:230 artifactImageSrc, docs/ui/shell-plans.jsx:429 figure-row image, reckon/serve.py:3959 route dispatch, reckon/serve.py:3309 thumbnail cache call\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/serve.py:3009 reaches the requested PNG renderer, but :2982 raises on the current shared environment and :3316 then serves the SVG.\nSCORE evidence: 10\nJUSTIFICATION evidence: head-thumbnail-node.log:6 and negative-control.log:247-252 exercise the route, but head-serve-tests.log:1190 adds a failure and the run did not satisfy the shared-environment install in prompt.txt:98.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The five paths in git diff --name-status are all declared at prompt.txt:70-76 and each supports the thumbnail change or its evidence.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_figure_thumbnails_are_small_rasters.py:147,153,176,206,207,219 independently catch passthrough, dimensions, cache reuse, rerender and fallback, while :152 compares the bound to the same production constant it exercises.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/serve.py:3001 extends the existing thumbnail renderer and :3309 preserves its route and cache idiom, with conventional names throughout the added code.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/serve.py:2947 adds an SVG dimension reader that duplicates the capability already owned by reckon/figures.py:68 instead of extending or wrapping that owner.\nFINDING tests/test_figure_thumbnails.py:240 blocking: The committed SVG PNG response makes the existing passthrough assertion fail; head-serve-tests.log:1190 records this one added failure, so the suite has regressed until the old expectation is updated.\nFINDING reckon/serve.py:2982 blocking: resvg_py is absent from the shared project environment, so import fails and :3316 serves the full SVG; the six passing node tests loaded an unpacked wheel through PYTHONPATH and do not prove the runtime install required by done_when.\nFINDING reckon/serve.py:2947 blocking: _svg_intrinsic_size duplicates SVG dimension parsing already owned by reckon/figures.py:68 without extending or wrapping it, giving the two readers separate parsing rules.\nFINDING tests/test_figure_thumbnails_are_small_rasters.py:152 follow-on: The max-edge checks at lines 152, 164 and 205 use serve.THUMB_MAX_EDGE on the expected side, so changing that constant moves the checks with the implementation; the fixed pixel-size checks at lines 153, 163 and 204 still guard these fixtures.\n",
+  "review_run_id": "r-20261018T175709836375-review-of-figure-thumbnails-are-small-rasters-8a579be29a7c",
+  "reviewed_base_sha": "26fd36a9c21e67bfb209df48f1912be17f07480e",
+  "reviewed_head_sha": "8a579be29a7cfff3d4a6e7d5d197a42fb11b4e58",
+  "reviewed_run_id": "r-20261018T171904025423-figure-thumbnails-are-small-rasters",
+  "scores": {
+    "durability": 17,
+    "evidence": 10,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "section_id": "s12",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T18:02:18.842348+00:00",
+  "total": 5
+}
