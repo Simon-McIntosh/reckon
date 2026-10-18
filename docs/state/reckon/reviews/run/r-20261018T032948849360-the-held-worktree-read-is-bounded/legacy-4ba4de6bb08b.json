@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligations.py:_held_worktrees_by_session",
+    "reckon/crew/obligations.py:_held_worktrees",
+    "reckon/crew/obligation_snapshot.py:_derive_fleet_state",
+    "reckon/ledger.py:read_document"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-18T03:31:39Z",
+  "findings": [
+    {
+      "file": "tests/test_the_held_worktree_read_is_bounded.py",
+      "line": "223",
+      "severity": "follow-on",
+      "text": "follow-on: assert counts.deepcopy <= TREE_COUNT allows one copy per tree while the done_when bounds the derivation at one copy per mutating hand-over (zero here, as this derivation hands nothing to a mutating caller), so reverting the read-only sharing while keeping the screen still passes and the copy bound is not guarded."
+    },
+    {
+      "file": "tests/test_the_held_worktree_read_is_bounded.py",
+      "line": "226",
+      "severity": "follow-on",
+      "text": "follow-on: assert counts.stat <= RECORD_COUNT + TREE_COUNT * 3 (545) is looser than the done_when's at most once per document (500), and the base tree's recorded 519 stats satisfy it, so this assertion does not discriminate the stat bound at all."
+    },
+    {
+      "file": "reckon/file_memo.py",
+      "line": "113",
+      "severity": "follow-on",
+      "text": "follow-on: inside a read-only region the freshly computed value is stored in the process-wide cache itself and returned uncopied, so a caller that mutates a document returned in a region corrupts the shared entry for every later reader, and no guard or test enforces the read-only contract the docstring states."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "511",
+      "severity": "follow-on",
+      "text": "follow-on: the screen keys only on the run's node id, but record_names_worktree also names a tree by the retained path it carries, so a run whose retained path names an inspected tree while its node id names another can be screened out and its tree then resolves through the whole-ledger fallback at reckon/crew/obligations.py:639, or is attributed to an earlier admitted record; only test_the_head_derivation_equals_the_whole_ledger covers the matching-node-id case."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against a617367a1; 8bc75d3c2 adds the node-id screen, the read-only region and the mutable hand-over, and 09c342947 adds the screen test and the fixture; no path outside the fence.",
+    "done_when": "the done_when names tests/test_the_held_worktree_read_is_bounded.py over a 500-document home with 15 trees, counting _run_file_record, copy.deepcopy and posix.stat under a profile hook and requiring the answer equal the base tree's; the test asserts the read bound and the answer equality tightly, but its copy and stat bounds are looser than the done_when states.",
+    "goal": "the node's goal is to make one derivation read and decode only the per-run crew documents that can change the held-worktree answer, each at most once, copying only at hand-over to a mutating caller; reckon/crew/obligations.py:511 screens by the run's node id and reckon/file_memo.py:42 shares the decoded document within the derivation.",
+    "manifest": "read; status complete, commits 8bc75d3c2 and 09c342947, tests recorded as 3 passed at 09c342947 with gate-head.log named and the base arm in negative-control.log showing record 500, deepcopy 500 and 2 failed.",
+    "write_paths": "the dispatch fenced reckon/crew/obligations.py, reckon/file_memo.py, tests/test_the_held_worktree_read_is_bounded.py, the landing fragment and a figures directory; the base..head diff touches the three Python files and the fragment, all inside that fence."
+  },
+  "justifications": {
+    "durability": "tests/test_the_held_worktree_read_is_bounded.py:222 fails at the base revision (500 decodes), but :223 is satisfied even if the read-only region sharing is reverted, so the copy bound the goal names is unguarded.",
+    "evidence": "the manifest records 3 passed at 09c342947 in gate-head.log with the numbers 15/0/537, but tests/test_the_held_worktree_read_is_bounded.py:223 and :226 assert bounds looser than the done_when states.",
+    "fit": "the screen and the region follow the module's own docstring idiom at reckon/crew/obligations.py:483 and never drop a duty for an index that lags, though read_only_region at reckon/file_memo.py:42 does not join a nested region as ledger.index_reuse does.",
+    "goal_fidelity": "reckon/crew/obligations.py:634 admits a document exactly when its run's node id names an inspected tree and reckon/file_memo.py:117 hands the decoded document on uncopied, so the derivation decodes 15 documents and copies 0.",
+    "reuse": "reckon/file_memo.py is the memo's owner and the region extends it rather than forking; a search of reckon for a document-sharing region found only ledger.index_reuse and recovery_review_dispatch.review_heads_resolve_once, which cache a run index and a head resolution, not memoised documents.",
+    "scope_discipline": "the base..head diff lists only reckon/crew/obligations.py, reckon/file_memo.py, tests/test_the_held_worktree_read_is_bounded.py and the landing fragment, all inside the declared write paths."
+  },
+  "node": "review-of-the-held-worktree-read-is-bounded-09c342947c75",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make one derivation read and decode only the per-run crew documents that can change the held-worktree answer, each at most once, copying only at hand-over to a mutating caller; reckon/crew/obligations.py:511 screens by the run's node id and reckon/file_memo.py:42 shares the decoded document within the derivation.\nVERDICT done_when: the done_when names tests/test_the_held_worktree_read_is_bounded.py over a 500-document home with 15 trees, counting _run_file_record, copy.deepcopy and posix.stat under a profile hook and requiring the answer equal the base tree's; the test asserts the read bound and the answer equality tightly, but its copy and stat bounds are looser than the done_when states.\nVERDICT write_paths: the dispatch fenced reckon/crew/obligations.py, reckon/file_memo.py, tests/test_the_held_worktree_read_is_bounded.py, the landing fragment and a figures directory; the base..head diff touches the three Python files and the fragment, all inside that fence.\nVERDICT manifest: read; status complete, commits 8bc75d3c2 and 09c342947, tests recorded as 3 passed at 09c342947 with gate-head.log named and the base arm in negative-control.log showing record 500, deepcopy 500 and 2 failed.\nVERDICT diff: read commit by commit against a617367a1; 8bc75d3c2 adds the node-id screen, the read-only region and the mutable hand-over, and 09c342947 adds the screen test and the fixture; no path outside the fence.\nCALL_SITES: reckon/crew/obligations.py:_held_worktrees_by_session, reckon/crew/obligations.py:_held_worktrees, reckon/crew/obligation_snapshot.py:_derive_fleet_state, reckon/ledger.py:read_document\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:634 admits a document exactly when its run's node id names an inspected tree and reckon/file_memo.py:117 hands the decoded document on uncopied, so the derivation decodes 15 documents and copies 0.\nSCORE evidence: 15\nJUSTIFICATION evidence: the manifest records 3 passed at 09c342947 in gate-head.log with the numbers 15/0/537, but tests/test_the_held_worktree_read_is_bounded.py:223 and :226 assert bounds looser than the done_when states.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the base..head diff lists only reckon/crew/obligations.py, reckon/file_memo.py, tests/test_the_held_worktree_read_is_bounded.py and the landing fragment, all inside the declared write paths.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_the_held_worktree_read_is_bounded.py:222 fails at the base revision (500 decodes), but :223 is satisfied even if the read-only region sharing is reverted, so the copy bound the goal names is unguarded.\nSCORE fit: 16\nJUSTIFICATION fit: the screen and the region follow the module's own docstring idiom at reckon/crew/obligations.py:483 and never drop a duty for an index that lags, though read_only_region at reckon/file_memo.py:42 does not join a nested region as ledger.index_reuse does.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/file_memo.py is the memo's owner and the region extends it rather than forking; a search of reckon for a document-sharing region found only ledger.index_reuse and recovery_review_dispatch.review_heads_resolve_once, which cache a run index and a head resolution, not memoised documents.\nFINDING tests/test_the_held_worktree_read_is_bounded.py:223 follow-on: assert counts.deepcopy <= TREE_COUNT allows one copy per tree while the done_when bounds the derivation at one copy per mutating hand-over (zero here, as this derivation hands nothing to a mutating caller), so reverting the read-only sharing while keeping the screen still passes and the copy bound is not guarded.\nFINDING tests/test_the_held_worktree_read_is_bounded.py:226 follow-on: assert counts.stat <= RECORD_COUNT + TREE_COUNT * 3 (545) is looser than the done_when's at most once per document (500), and the base tree's recorded 519 stats satisfy it, so this assertion does not discriminate the stat bound at all.\nFINDING reckon/file_memo.py:113 follow-on: inside a read-only region the freshly computed value is stored in the process-wide cache itself and returned uncopied, so a caller that mutates a document returned in a region corrupts the shared entry for every later reader, and no guard or test enforces the read-only contract the docstring states.\nFINDING reckon/crew/obligations.py:511 follow-on: the screen keys only on the run's node id, but record_names_worktree also names a tree by the retained path it carries, so a run whose retained path names an inspected tree while its node id names another can be screened out and its tree then resolves through the whole-ledger fallback at reckon/crew/obligations.py:639, or is attributed to an earlier admitted record; only test_the_head_derivation_equals_the_whole_ledger covers the matching-node-id case.\nreviewed_base: a617367a1f3d03f40fbb1b78e76c5ca0ea17bb6d\nreviewed_head_sha: 09c342947c75607bb537619449ae5bfc55af5fc5\n",
+  "review_run_id": "legacy-4ba4de6bb08b",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "a617367a1f3d03f40fbb1b78e76c5ca0ea17bb6d",
+  "reviewed_head_sha": "09c342947c75607bb537619449ae5bfc55af5fc5",
+  "reviewed_run_id": "r-20261018T032948849360-the-held-worktree-read-is-bounded",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T04:46:16.663653+00:00",
+  "total": 104
+}
