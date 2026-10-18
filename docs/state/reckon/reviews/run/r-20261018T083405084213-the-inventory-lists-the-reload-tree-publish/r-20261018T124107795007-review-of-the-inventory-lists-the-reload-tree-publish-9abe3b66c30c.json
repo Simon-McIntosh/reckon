@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T083405084213-the-inventory-lists-the-reload-tree-publish/logs/head_full_file.log",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Removing the tuple ('reckon/checkout_trust.py','materialize_committed_tree') from the expected set leaves the census-derived observed set holding that entry while the literal set does not, so the equality fails; logs/negative_control.log shows 1 failed EXIT=1.",
+      "lines": "60 (assertion at 42)"
+    }
+  ],
+  "base_log_revision": "3a6538e0ba40a324c19553b02853abcf801dda2b",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T083405084213-the-inventory-lists-the-reload-tree-publish/logs/base_repro.log",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:407"
+  ],
+  "completed_at": "2026-10-18T12:54:13.286Z",
+  "dispatched_at": "2026-10-18T12:42:02Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T083405084213-the-inventory-lists-the-reload-tree-publish/manifest.md",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the after_suite entry names revision 3a6538e0b, the reviewed base, for an arm run on the working tree that already carried the fix (its own log header reads 'rev 3a6538e0b ... (working tree)'), so a reader comparing the pair can misread the passing arm as a base-arm run."
+    }
+  ],
+  "head_log_revision": "3a6538e0ba40a324c19553b02853abcf801dda2b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified one production call site, reckon/crew_follow_commands.py:407, which invokes checkout_trust.materialize_committed_tree; the landed change itself is a test-file literal no production code reaches.",
+    "diff": "Commit 9abe3b66c against base 3a6538e0b adds the tuple at tests/test_staged_write_inventory.py:60, a four-line comment at :55-59, and a 69-line evidence fragment; no product source is changed.",
+    "done_when": "The source brief's measure requires the inventory test green at head, the new entry listed beside its reason, a negative control red naming materialize_committed_tree, no added failure among interface_counts importers, EXIT= endings and clean ruff; logs/base_repro.log (1 failed, EXIT=1), logs/head_full_file.log (51 passed, EXIT=0), logs/negative_control.log (1 failed, EXIT=1), logs/importers_head.log (1 failed, 68 passed) against logs/citation_base.log (1 failed, 1 passed) and logs/ruff.log satisfy each.",
+    "goal": "The source brief's goal is 'Make the staged-write inventory account for the reload tree's directory publish'; tests/test_staged_write_inventory.py:60 adds ('reckon/checkout_trust.py','materialize_committed_tree') to the expected set with a comment at lines 55-59 stating the publish is a whole-directory rename the shared file writer does not cover.",
+    "manifest": "The reviewed manifest.md:11 names commit 9abe3b66c, :12 its two changed paths, :21-:22 readable baseline_suite and after_suite entries, :19 the negative_control_log path and :13 a landing line.",
+    "write_paths": "The source brief grants tests/test_staged_write_inventory.py, docs/evidence/fragments/the-suite-is-green-at-head/the-inventory-lists-the-reload-tree-publish.html and a figures directory; the diff changes only the first two."
+  },
+  "justifications": {
+    "durability": "Removing the tuple at tests/test_staged_write_inventory.py:60 leaves observed holding the entry while the literal set does not, so the equality at line 42 fails, as logs/negative_control.log records with 1 failed EXIT=1.",
+    "evidence": "logs/negative_control.log records 1 failed EXIT=1 naming the dropped entry at tests/test_staged_write_inventory.py:42, and logs/head_full_file.log records 51 passed EXIT=0, so the measure's result is recorded, not claimed.",
+    "fit": "The tuple and its comment at tests/test_staged_write_inventory.py:55-60 follow the existing _release_worktree_whole entry at lines 51-54 and name no plan, ticket, version or author.",
+    "goal_fidelity": "tests/test_staged_write_inventory.py:60 lists the census-reported ('reckon/checkout_trust.py','materialize_committed_tree') in the expected set, which is what the goal asks the inventory to account for.",
+    "reuse": "The diff adds no definition; a capability search over reckon/interface_counts.py and the other interface_counts importers found the census owner _staged_writes at reckon/interface_counts.py:209 already carrying the expected-set idiom this change extends.",
+    "scope_discipline": "The single commit changes only tests/test_staged_write_inventory.py and docs/evidence/fragments/the-suite-is-green-at-head/the-inventory-lists-the-reload-tree-publish.html, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to make the staged-write inventory account for the reload tree's directory publish; tests/test_staged_write_inventory.py:60 now lists ('reckon/checkout_trust.py','materialize_committed_tree') in the expected set beside a comment stating why the shared file writer does not apply.\nVERDICT done_when: the source brief requires the inventory file green at head with the new entry listed and its reason stated, a negative control that drops the entry and fails naming materialize_committed_tree, no added failure among the files importing reckon/interface_counts.py, EXIT= log endings and clean ruff, and the run's own logs satisfy each; logs/base_repro.log records 1 failed EXIT=1 naming test_every_staged_write_reaches_the_owner, logs/head_full_file.log records 51 passed EXIT=0, logs/negative_control.log records 1 failed EXIT=1, logs/importers_head.log records 1 failed 68 passed against logs/citation_base.log 1 failed 1 passed, and logs/ruff.log is clean.\nVERDICT write_paths: the source brief grants tests/test_staged_write_inventory.py, docs/evidence/fragments/the-suite-is-green-at-head/the-inventory-lists-the-reload-tree-publish.html and a figures directory; the 3a6538e0b..9abe3b66c diff changes only the first two, and the figures directory is untouched.\nVERDICT manifest: read; it names commit 9abe3b66c, the two changed paths, a readable baseline_suite and after_suite pair derived from logs/base_repro.log and logs/head_full_file.log, the negative_control_log path, and a landing line stating the change.\nVERDICT diff: read commit by commit against base 3a6538e0b; the single commit 9abe3b66c adds six lines to tests/test_staged_write_inventory.py:55-60 (a four-line comment and the tuple at line 60) and the 69-line evidence fragment, all inside the declared scope, with no product source changed.\nCALL_SITES: reckon/crew_follow_commands.py:407\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_staged_write_inventory.py:60 lists the census-reported ('reckon/checkout_trust.py','materialize_committed_tree') in the expected set, which is what the goal asks the inventory to account for.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/negative_control.log records 1 failed EXIT=1 naming the dropped entry and logs/head_full_file.log records 51 passed EXIT=0, but the manifest's after_suite records the base revision for a head-tree arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_staged_write_inventory.py and docs/evidence/fragments/the-suite-is-green-at-head/the-inventory-lists-the-reload-tree-publish.html, both inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: dropping the tuple at tests/test_staged_write_inventory.py:60 leaves observed holding the entry while the literal set does not, so the equality at line 42 fails, as logs/negative_control.log records with 1 failed EXIT=1.\nSCORE fit: 19\nJUSTIFICATION fit: the tuple and its comment at tests/test_staged_write_inventory.py:55-60 follow the existing _release_worktree_whole entry at lines 51-54 and name no plan, ticket, version or author.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; a capability search over reckon/interface_counts.py and the other interface_counts importers found the census owner _staged_writes at reckon/interface_counts.py:209 already carrying the expected-set idiom this change extends.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T083405084213-the-inventory-lists-the-reload-tree-publish/manifest.md:22 follow-on: the after_suite entry names revision 3a6538e0b, the reviewed base, for an arm run on the working tree that already carried the fix (its own log header reads 'rev 3a6538e0b ... (working tree)'), so a reader comparing the pair can misread the passing arm as a base-arm run.\n",
+  "review_run_id": "r-20261018T124107795007-review-of-the-inventory-lists-the-reload-tree-publish-9abe3b66c30c",
+  "reviewed_base_sha": "3a6538e0ba40a324c19553b02853abcf801dda2b",
+  "reviewed_commits": [
+    "9abe3b66c30ce962203c0a0968d20bf76bd0b484"
+  ],
+  "reviewed_head_sha": "9abe3b66c30ce962203c0a0968d20bf76bd0b484",
+  "reviewed_run_id": "r-20261018T083405084213-the-inventory-lists-the-reload-tree-publish",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T12:56:30.627736+00:00",
+  "total": 114
+}
