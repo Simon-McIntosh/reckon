@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/metadata_index.py:_index_path",
+    "reckon/serve.py:_git_creation_cache_path",
+    "reckon/serve.py:_git_last_modified_cache_path",
+    "reckon/compliance.py:_store_path"
+  ],
+  "completed_at": "2026-10-18T16:56:50.679Z",
+  "dispatched_at": "2026-10-18T16:41:17Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "1556",
+      "severity": "follow-on",
+      "text": "follow-on: a generic cache-path helper is reached from serve.py and compliance.py through an underscore-private symbol owned by the metadata-index module, so the capability's owner is not discoverable from the call site and a future third cache would have to know to import metadata_index."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against e57353abd83a426d5259cc942b24b3b22ec1e69e; four commits, three source files plus one new test and one fragment, all inside the declared scope.",
+    "done_when": "the done_when names one alternating-writer test per cache; tests/test_cache_paths_carry_their_format.py runs it for each of the four, and the manifest records 4 passed at head, 4 failed at the extracted base and 4 failed under the declared negative control.",
+    "goal": "the node goal is one path owner for the four config-home caches that includes the writer's format; reckon/metadata_index.py:1075 _persisted_cache_path appends -v{version} and reckon/serve.py:1556, reckon/serve.py:1935 and reckon/compliance.py:139 route all four caches through it.",
+    "manifest": "read; it records the focused gate 5 passed EXIT=0, the import-suite delta of zero added failure ids against the extracted base, the negative control 4 failed EXIT=1, and every log under the run directory.",
+    "write_paths": "read the six declared paths; every path the diff touches is inside them (reckon/metadata_index.py, reckon/serve.py, reckon/compliance.py, tests/test_cache_paths_carry_their_format.py, and the plan fragment)."
+  },
+  "justifications": {
+    "durability": "tests/test_cache_paths_carry_their_format.py:102 asserts rebuilds == {1: 1, 2: 1} and reddens under the negative control, and :72 asserts paths[1] != paths[2] and reddens at the extracted base, so two independent assertions each fail if the format leaves the path.",
+    "evidence": "tests/test_cache_paths_carry_their_format.py runs the alternating-writer case for each of the four caches, and its head, base and negative-control results are recorded in the manifest and the head-cache-formats and base-cache-formats logs.",
+    "fit": "the helper is named by mechanism at reckon/metadata_index.py:1075 and follows the private cross-module import already used at reckon/serve.py:327.",
+    "goal_fidelity": "reckon/metadata_index.py:1075-1085 is called by reckon/serve.py:1556, reckon/serve.py:1935 and reckon/compliance.py:139, so all four named caches take their path from the one format-suffixed owner.",
+    "reuse": "no prior owner of a format-suffixed persisted cache path exists; the four inline digest computations are replaced by one owner, the nearest relative being the directory-only reckon/_store.py:158 cache_root.",
+    "scope_discipline": "every path in the diff (reckon/metadata_index.py, reckon/serve.py, reckon/compliance.py, tests/test_cache_paths_carry_their_format.py, docs/evidence/fragments/the-site-answers-fast-and-agrees/cache-paths-carry-their-format.html) is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is one path owner for the four config-home caches that includes the writer's format; reckon/metadata_index.py:1075 _persisted_cache_path appends -v{version} and reckon/serve.py:1556, reckon/serve.py:1935 and reckon/compliance.py:139 route all four caches through it.\nVERDICT done_when: the done_when names one alternating-writer test per cache; tests/test_cache_paths_carry_their_format.py runs it for each of the four, and the manifest records 4 passed at head, 4 failed at the extracted base and 4 failed under the declared negative control.\nVERDICT write_paths: read the six declared paths; every path the diff touches is inside them (reckon/metadata_index.py, reckon/serve.py, reckon/compliance.py, tests/test_cache_paths_carry_their_format.py, and the plan fragment).\nVERDICT manifest: read; it records the focused gate 5 passed EXIT=0, the import-suite delta of zero added failure ids against the extracted base, the negative control 4 failed EXIT=1, and every log under the run directory.\nVERDICT diff: read commit by commit against e57353abd83a426d5259cc942b24b3b22ec1e69e; four commits, three source files plus one new test and one fragment, all inside the declared scope.\nCALL_SITES: reckon/metadata_index.py:_index_path, reckon/serve.py:_git_creation_cache_path, reckon/serve.py:_git_last_modified_cache_path, reckon/compliance.py:_store_path\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/metadata_index.py:1075-1085 is called by reckon/serve.py:1556, reckon/serve.py:1935 and reckon/compliance.py:139, so all four named caches take their path from the one format-suffixed owner.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_cache_paths_carry_their_format.py runs the alternating-writer case for each of the four caches, and its head, base and negative-control results are recorded in the manifest and the head-cache-formats and base-cache-formats logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/metadata_index.py, reckon/serve.py, reckon/compliance.py, tests/test_cache_paths_carry_their_format.py, docs/evidence/fragments/the-site-answers-fast-and-agrees/cache-paths-carry-their-format.html) is inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_cache_paths_carry_their_format.py:102 asserts rebuilds == {1: 1, 2: 1} and reddens under the negative control, and :72 asserts paths[1] != paths[2] and reddens at the extracted base, so two independent assertions each fail if the format leaves the path.\nSCORE fit: 18\nJUSTIFICATION fit: the helper is named by mechanism at reckon/metadata_index.py:1075 and follows the private cross-module import already used at reckon/serve.py:327.\nSCORE reuse: 20\nJUSTIFICATION reuse: no prior owner of a format-suffixed persisted cache path exists; the four inline digest computations are replaced by one owner, the nearest relative being the directory-only reckon/_store.py:158 cache_root.\nFINDING reckon/serve.py:1556 follow-on: a generic cache-path helper is reached from serve.py and compliance.py through an underscore-private symbol owned by the metadata-index module, so the capability's owner is not discoverable from the call site and a future third cache would have to know to import metadata_index.",
+  "review_run_id": "r-20261018T164004215387-review-of-cache-paths-carry-their-format-4f985db48818",
+  "reviewed_base_sha": "e57353abd83a426d5259cc942b24b3b22ec1e69e",
+  "reviewed_head_sha": "4f985db48818be391a846612d25bc7ac8db04fe5",
+  "reviewed_run_id": "r-20261018T155255846517-cache-paths-carry-their-format",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T16:53:41.495373+00:00",
+  "total": 117
+}
