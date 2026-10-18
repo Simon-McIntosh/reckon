@@ -1,0 +1,31 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T09:22:01.072Z",
+  "dispatched_at": "2026-10-18T09:02:48Z",
+  "findings": [],
+  "plan_fingerprint": "774ecbff2c0e24ed9916edc37cdec91b35a0591e9e64e9fed4c353c0a840c418",
+  "plan_slug": "a-paired-arm-is-reviewed-as-itself",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T090212384127-plan-review-of-a-paired-arm-is-reviewed-as-itself",
+  "reviewed_blob_sha": "1cfa5b108d770713c248343c8569c257119aa1d6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves at the line the plan names: _review_dispatch_fields (recovery_review_subject.py:460) with source_node at :608 and node_id minted via round_node_id at :666; _review_brief_text (:370); _reviewed_run_id_for_node (dispatch_admission.py:1866) and its grant caller at :1820; _resolved_reviewed_run_id (recovery_review_delivery.py:156) with the first-match loop at 172\u2013174 and its other readers at :118, :233; recovery_review_dispatch.py:180; promotion_checks.py:2343, _paired_partner_run_id (:606) and _refuse_commits_for_a_shadow (:1730); promotion_scope.py:899 _is_shadow and :905 _write_shadow_patch; recovery_repair_dispatch.py:665 compose_repair_for_run reading source_node; dispatch_sessions.py:457 _reviewed_run_id; prompts/review.md line 21; and the cross-plan reference \u00a732 of lane-and-model-routing (docs/plans/lane-and-model-routing.html carries id=\"s32\"). The nine named existing test files exist; the two new ones are declared new.",
+    "done_when": "pass \u2014 each section names two mutations as negative controls, each pinned to a specific case, and both were checked to actually fire: removing the pairing test makes \u00a71 case 1 mint review-of-pair-node (not review-of-<run id>) and fail; not setting the flag makes \u00a71 case 3 resolve to a run id rather than the bare source and fail; removing the shadow block makes \u00a72 case 1 fail; appending the block for every paired arm makes \u00a72 case 3 fail.",
+    "evidence_paths": "pass \u2014 every gate is a foreground pytest run whose log lands in the run directory under the crew-home contract; no done-when sends evidence to a session scratchpad, a node-local temporary directory, or a path that does not survive the run.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag is introduced into code or symbols; the two new test filenames are behavioral sentences (the new-test names match no plan-document slug beyond the plan's own title sentence), and the sole plan reference (\u00a732 of lane-and-model-routing) sits in plan prose, not code.",
+    "reasoning": "pass \u2014 all three checks hold. Root causes match the cited evidence: \u00a71's node-id-based mint plus the resolver's first-match loop (172\u2013174) explains the printed review-of-efit-field-swap command resolving to the clive primary, and \u00a72's rubric line 21 (\"the diff of its commits against its base\") explains an empty diff for a head-equal-to-base shadow. Each mechanism produces its done-when: minting from the run id makes the resolver's startswith(\"r-\") branch return that arm directly (round_node_source strips the head suffix to the run id for both the empty- and suffixed-head spellings), and the appended shadow block is the text \u00a72 case 1 asserts. Each mechanism runs on a real caller: _review_brief_text is reached only from _review_dispatch_fields (:647), which is itself called by both the reflex dispatch and materialize_run_review_brief, and _reviewed_run_id_for_node is called only from the dispatch grant (:1820), so setting the flag changes only that grant; the plan's inventory of _resolved_reviewed_run_id readers is exhaustive (dispatch_admission.py:1880, recovery_review_delivery.py:118/233, recovery_review_dispatch.py:180, promotion_checks.py:2343).",
+    "single_goal": "pass \u2014 \u00a71 is one deliverable (\"a paired arm's review names its arm by its run id\") even though it carries two mechanism parts, since one test file and one verdict cover both; \u00a72 is one deliverable (\"a shadow arm is reviewed on its patch\").",
+    "wiring": "pass \u2014 plan-section-depends-on declares s2 \u2192 s1, and that edge is the one the plan needs: both sections write reckon/crew/recovery_review_subject.py, and \u00a72 says it is dispatched only after \u00a71 merges; the plan is standalone and declares no informs/gates to a live plan."
+  },
+  "section_digests": {
+    "_document": "75f00930d0d50552ae9a615428ca01f58442a7b1b0872e994da72c761ac063a6",
+    "s1": "ec5878e59aedf58377564b41c63c798db6e9b8c5c55e13b86b4059f73e20af5f",
+    "s2": "b7025dcf34f30cb0e8238ea008bddc91a71d73968ce771de908ab95b3040767a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T09:24:10.602649+00:00"
+}
