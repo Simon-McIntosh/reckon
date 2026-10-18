@@ -1,0 +1,87 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T13:18:46.135Z",
+  "dispatched_at": "2026-10-18T13:12:15Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-site-answers-fast-and-agrees/r-20261018T131121570570-plan-review-of-the-site-answers-fast-and-agrees/plan.html:149",
+      "id": "reuse_search-1",
+      "reason": "the plan would either extend the existing recompute owner or record why it is insufficient to carry `/_discover`, `/_projects/index.json` and `/crew/velocity`, and either answer changes \u00a75's deliverable.",
+      "text": "\u00a75 lists `/_checks/<project>` among the derived endpoints it will recompute \"outside the serving process's interpreter\", and proposes \"a new module beside it for the recompute\", but the codebase already does precisely this: `_start_check_refresh` spawns `reckon.compliance refresh` as a lower-priority child (serve.py:2893-2920), tracked per project in `_CHECK_REFRESHES` (serve.py:1301) with one run at a time, writing the store the routes read. The writer of \u00a71's second-row symptom should extend this precedent (generalise it from `/_checks` to the other three endpoints), not re-derive it; \u00a75 names no search of it.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/serve.py:2889",
+      "id": "thin_wrapper-1",
+      "reason": "a justified extension of `_start_check_refresh` deletes \u00a75's new module and shrinks the node; the honest change is the extension.",
+      "text": "\u00a75's \"new module beside it for the recompute\" is a second layer over the same child-process mechanism `_start_check_refresh`/`_spawn_check_refresh` already implements, and \u00a75 does not say why `_start_check_refresh` cannot be extended to the other three endpoints (its per-project single-flight lock, its `nice -n 10` child and its store-written-then-read contract are the general shape, not a compliance-specific one).",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-site-answers-fast-and-agrees/r-20261018T131121570570-plan-review-of-the-site-answers-fast-and-agrees/plan.html:142",
+      "id": "deep_module-1",
+      "reason": "naming the one module and its two or three functions (compute, read-last, spawn-on-change) is what the item asks for and would let the node be sized against a stated interface.",
+      "text": "\u00a75 fixes the *behaviour* (answer from last result, recompute out of process, push on change) but leaves the *interface* unfixed: \"The worker owns the choice of mechanism and states it in its manifest.\" A plan that defers its module boundary to the implementer cannot show depth, and the surface it does name spreads across four endpoints each growing an age header plus a push plus a new module.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/metadata_index.py:1075",
+      "id": "duplicate_owner-1",
+      "reason": "applying the identity rule once (a shared \"cache path including the writer's format\" owner, or fixing all four sites) is the same cost as fixing one and closes the defect type; the plan as written leaves three instances to be found later.",
+      "text": "\u00a74 fixes the cross-version eviction for the metadata index by putting the format in its file identity, but the same defect is present in three sibling caches under the same `_config_home()/cache/` root, each keyed by project/docs only and each validated on read against a version it does not encode in the path: `reckon/serve.py:1434` git-creation (`_git_creation_cache_path` identity = repo+rel_docs; validation serve.py:1486-1494), `reckon/serve.py:1815` git-last-modified (validation serve.py:1871-1875), and `reckon/compliance.py:139` compliance store (`_store_path` identity = project+resolved docs; validation compliance.py:173-178). Each rejects on a version mismatch and then rebuilds and overwrites the same path, so every process loads one of these on the request path shares \u00a71's first-row churn, not just the metadata index. \u00a74's deliverable is written for the metadata index alone.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:105",
+      "id": "duplicate_owner-2",
+      "reason": "one roll-up function beside \u00a72's progress function, consumed by both \u00a76 and \u00a77, prevents the two implementations drifting and matches the plan's own \"every roll-up applies the same weighting\" decision text.",
+      "text": "the recurrent roll-up has two would-be owners. \u00a76 puts the fleet roll-up \"effort-weighted mean of its live plans' \u00a72 figures, imputing missing plan hours by the mean\" in `reckon/fleet_index.py`, and \u00a77 puts \"the effort-weighted mean of its member plans' \u00a72 figures, imputing missing plan hours by the mean\" in `reckon/roadmap.py`. roadmap.py already owns a per-plan progress reader (`_progress`, roadmap.py:105) and per-endpoint member impl rows (roadmap.py:2230, roadmap.py:3542) plus a `completion` block (roadmap.py:2235, 2424, 3678); neither section names a single owner for the roll-up the two share.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-site-answers-fast-and-agrees/r-20261018T131121570570-plan-review-of-the-site-answers-fast-and-agrees/plan.html:149",
+      "id": "interface_budget-1",
+      "reason": "the section must say what it retires or merges \u2014 e.g. whether \u00a75's module subsumes `_CHECK_REFRESHES` or adds a fifth surface \u2014 or state why nothing can be, which is the accounting the item demands.",
+      "text": "public_definitions 1804, cli_options 362, mcp_views 34, refusal_families 23; \u00a75 adds a new module (new public definitions) and a per-endpoint age response header, and \u00a73 adds `impl` to every `/_index/<project>` row, yet neither section names anything it retires or merges, nor states why nothing can be. \u00a79 does account for its own surface (the bounded log supersedes the unbounded 344 MB file) and is fine; \u00a75 and \u00a73 are not.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "944fa67831a99d4d4ce68e3f44e0edb57491281d9cdf5cd4c92929f5f1bb741a",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T131121570570-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "853aa18f04771917c7d14ac5e4b49dfd90d818cf",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a75 names \"a new module beside it for the recompute\" but specifies no interface and hands the mechanism choice to the worker, so the plan cannot show what the module hides.",
+    "duplicate_owner": "a finding \u2014 the \u00a74 identity fix repairs one of four shared caches that omit the format from their path identity, and the recurrent \u00a72 roll-up has two would-be owners (roadmap.py and fleet_index.py).",
+    "interface_budget": "a finding \u2014 public_definitions 1804, cli_options 362, mcp_views 34, refusal_families 23; \u00a75 adds a new module (public definitions) and \u00a73 adds fields to the index row without either naming what they retire or merge or stating why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a75 re-derives an out-of-process recompute for `/_checks/<project>` and its siblings without citing the mechanism serve.py:2889 already provides for exactly that route.",
+    "thin_wrapper": "a finding \u2014 \u00a75 adds a parallel recompute layer over the existing `_start_check_refresh`/`_CHECK_REFRESHES` machinery without stating why that machinery cannot be extended."
+  },
+  "section_digests": {
+    "_document": "98ff8537bb6c3786866eea07d01934139a774f3684eaa52a975771e85831db7a",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "a66ec6de576c1bc47ccf5c2ab0c267f9035f0617631f4416e554d16a79a17e97",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s3": "c6539d8e0c74d62c4f2696dc1bbe95ba7f63e8d000c7c43da04725f99cdedad4",
+    "s4": "7fd731e37265de03481b6ba6801fb3ddbd5ca9520a432d62f275cdd1558ed94b",
+    "s5": "4a3de9023c983bc5cefd4d0120f784d91513600fd919731a0495992df2c04987",
+    "s6": "21d7eb4ff8074ea5b0a9182820a9828eba3e83b1c80152667c33f9e80665ba2e",
+    "s7": "4d9c7a7512889092fe001db8d0e42ed6c7d41889423889f385d15e27e6d5b2ce",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T13:23:05.114735+00:00"
+}
