@@ -7,8 +7,10 @@ one :func:`reckon.crew.obligation_snapshot.fleet_state`, how many documents are
 decoded, how often a memoised value is copied, and how many stats the read
 costs, and shows the held-worktree answer equals the whole-ledger answer.
 
-Against a base tree that decodes every per-run document, the same call copies
-every value it is handed, so the same test fails on the copy assertion. The
+Against a base tree that decodes every per-run document, the same call decodes
+the whole corpus, so the same test fails on the decode assertion. The deep-copy
+bound is asserted with it: the read-only path shares the value it is handed, so
+a partial revert of that sharing fails there too. The
 stat count is recorded rather than bounded: a screen that never acts on a
 record older than its run file must stat every per-run document once and every
 held tree once, and the reader that supplies the namings charges a few more, so
@@ -224,6 +226,7 @@ def test_one_derivation_reads_only_the_documents_that_can_change_it(
 
     counts = _Counts(monkeypatch)
     state = obligation_snapshot.fleet_state(PROJECT)
+    decoded = counts.record
 
     expected = _whole_ledger_held(root)
     duties = {
@@ -231,8 +234,14 @@ def test_one_derivation_reads_only_the_documents_that_can_change_it(
     }
     assert duties == set(expected.values())
     assert len(expected) == TREE_COUNT
-    # The read-only path shares the memo's value rather than copying it, so no
-    # document on it is deep-copied however many readers the derivation has.
+    # The decode bound: one derivation decodes at most the per-run documents
+    # that can name an inspected tree, and this corpus holds every other one
+    # under a node id no tree is named for. Both routes a document can be read
+    # through decode by ``ledger.read_document``, so a decode the namings
+    # reader makes is counted here beside one the namings fallback makes.
+    assert decoded <= TREE_COUNT, counts.__dict__
+    # The read-only path shares the derivation's value rather than copying it,
+    # so no document on it is deep-copied however many readers it has.
     assert counts.deepcopy == 0, counts.__dict__
     # The stat count is reported, not bounded. A screen that never acts on a
     # record older than its run file must stat every per-run document once and
@@ -241,7 +250,7 @@ def test_one_derivation_reads_only_the_documents_that_can_change_it(
     # base's own cost. The recorded count travels in this run's gate log.
     print(
         f"held-worktree derivation: posix.stat {counts.stat}, "
-        f"decoded {counts.record}, copy.deepcopy {counts.deepcopy} "
+        f"decoded {decoded}, copy.deepcopy 0 "
         f"over {RECORD_COUNT} documents and {TREE_COUNT} held trees"
     )
 
@@ -260,25 +269,25 @@ def test_a_run_retaining_another_nodes_tree_stays_a_candidate() -> None:
     names = {tree.name}
     trees = {tree}
     assert obligations_module._may_name_a_tree(
-        Path("r-20261016T100003-node-03.json"),
+        "r-20261016T100003-node-03",
         names,
         trees,
         {"r-20261016T100003-node-03": ("node-03", None)},
     )
     assert obligations_module._may_name_a_tree(
-        Path("r-20261016T100005-other-node.json"),
+        "r-20261016T100005-other-node",
         names,
         trees,
         {"r-20261016T100005-other-node": ("other-node", tree)},
     )
     assert obligations_module._may_name_a_tree(
-        Path("r-20261016T100099-unlisted.json"),
+        "r-20261016T100099-unlisted",
         names,
         trees,
         {"r-20261016T100003-node-03": ("node-03", None)},
     )
     assert not obligations_module._may_name_a_tree(
-        Path("r-20261016T100004-other.json"),
+        "r-20261016T100004-other",
         names,
         trees,
         {"r-20261016T100004-other": ("other-node", None)},
