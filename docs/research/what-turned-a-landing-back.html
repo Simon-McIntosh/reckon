@@ -76,20 +76,36 @@
   interval between them, so the reversal happened while HEAD already carried the
   landing.</p>
 
+  <figure>
+    <img src="/reckon/figures/what-turned-a-landing-back/timeline.svg" alt="HEAD, index and working-tree state of the four paths from 19:23:40 to 19:37:06, over the whole interval and zoomed onto the nine seconds in which the reversal happened.">
+    <figcaption>The top row is the whole interval to the next promotion; the
+    bottom row zooms onto the nine seconds that carry the incident. The three
+    tracks are offset slightly from their tick so a track stays visible where it
+    sits on another. HEAD (blue) takes the landing at 19:23:52 and keeps it:
+    <code>2321fba57</code> is reachable for the remaining thirteen minutes. The
+    index (brown) and the working tree (green) follow the landing for nine
+    seconds and are then set back to the pre-landing state — the plan file
+    returns to version 395 without the landing comment, and the three created
+    paths return to absent — leaving the checkout holding a staged reversal of
+    the commit that HEAD carries. At 19:23:57.9, between the landing and the
+    reversal, the session's <code>git pull</code> writes
+    <code>FETCH_HEAD</code>; no reflog entry follows it, so it moves no ref.</figcaption>
+  </figure>
+
   <h2>What the code and two experiments fix</h2>
   <ul>
     <li><strong>The state is exactly the rollback.</strong> The reverted state is
     what <code>_restore_landing_writes</code> (<code>reckon/crew/promotion_scope.py:1672</code>)
     leaves when it runs while HEAD still resolves to the commit before the
     landing: its <code>git restore --source=HEAD --staged --worktree</code>
-    (line 1695-1703) returns a tracked path to that commit's content in index and
-    working tree, and a path the landing created is dropped from the index and
-    unlinked (<code>_restore_one_landing_write</code>, lines 1734-1741).</li>
+    (lines 1697-1706) returns a tracked path to that commit's content in index
+    and working tree, and a path the landing created is dropped from the index
+    and unlinked (<code>_restore_one_landing_write</code>, lines 1737, 1741).</li>
     <li><strong>The landing commit reads the working tree and holds the shared
     index lock.</strong> Measured in a scratch repository:
     <code>git commit --only -- &lt;paths&gt;</code> — what
     <code>_commit_landing_writes</code> (<code>promotion_scope.py:1916</code>) and
-    <code>ledger._commit_state_write</code> (<code>reckon/ledger.py:2312</code>)
+    <code>ledger._commit_state_write</code> (<code>reckon/ledger.py:2321</code>)
     run — records the <em>working-tree</em> content of the named paths, and holds
     <code>.git/index.lock</code> from before the pre-commit hook until after HEAD
     moves. A concurrent <code>git restore --staged</code> fails on that lock.</li>
@@ -133,7 +149,7 @@
     HEAD, and the reversal was already complete when those commands ran.</li>
     <li><strong>Another path, in reckon or outside it, that restores files from
     a snapshot</strong> rather than from HEAD (an editor or tool reverting to a
-    saved copy). Not separator from (1) by any record I can read.</li>
+    saved copy). Not separable from (1) by any record I can read.</li>
   </ol>
   <p><strong>The record that would separate (1) from (2)/(3)</strong> is a log of
   a <em>second</em> promotion of this run in the interval, or a receipt of the
@@ -147,8 +163,20 @@
 
   <h2>The reproduction</h2>
   <p><code>scripts/reproduce_landing_reversion.py</code> builds a four-path
-  stand-in for the checkout and runs two arms. Command and both outputs:</p>
-  <pre>$ python3 scripts/reproduce_landing_reversion.py
+  stand-in for the checkout and runs two arms. The reverted arm does not model
+  the rollback, it <em>calls</em> it: it imports
+  <code>_restore_landing_writes</code> from
+  <code>reckon.crew.promotion_scope</code> with the worktree on
+  <code>PYTHONPATH</code>, so the run exercises the production function, and it
+  prints the module and the copy of it that was imported. Command and output:</p>
+  <pre>$ PYTHONPATH=&lt;worktree&gt; python3 scripts/reproduce_landing_reversion.py
+
+production rollback: reckon.crew.promotion_scope (reckon/crew/promotion_scope.py)
+  reckon rollback report:
+    True  docs/plans/converged-forward-solve.html
+    True  docs/state/nova/reviews/run/r-20261018T145203666018-census-proposal-coverage/legacy-5ef79bad605b.json
+    True  docs/state/nova/reviews/run/r-20261018T145203666018-census-proposal-coverage/r-20261018T171142922335-review-of-census-proposal-coverage-f7ed7e9d8ef6.json
+    True  docs/state/nova/runs/r-20261018T171142922335-review-of-census-proposal-coverage-f7ed7e9d8ef6.json
 
 === interleaving: landing committed, rollback resolved pre-landing HEAD ===
   in-HEAD, reverted            docs/plans/converged-forward-solve.html

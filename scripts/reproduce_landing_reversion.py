@@ -11,27 +11,33 @@ commit created.
 
 This script builds a four-path stand-in for that checkout and runs two arms:
 
-* **interleaving** — a landing commit taken through a private index (the
-  "committing process used another index file" clause the plan names) racing a
+* **interleaving** — a landing commit taken through a private index (the case
+  where the committing process used another index file) racing a
   rollback that resolves HEAD to the commit *before* the landing. It ends with
   HEAD carrying the landing and the shared index and working tree staged back
   to the pre-landing content, the created paths absent from disk.
 * **control** — the same landing with no rollback. It ends with all four paths
   equal in HEAD, the index and the working tree.
 
-The rollback arm issues the two calls ``reckon.crew.promotion_scope`` makes:
+The rollback arm calls reckon's own rollback, imported from
+``reckon.crew.promotion_scope._restore_landing_writes`` (line 1672) and invoked
+directly, so the script exercises the production function rather than a copy of
+it. That function issues, per path:
 
-  ``git restore --source=HEAD --staged --worktree -- <path>``   (line 1695-1703)
+  ``git restore --source=HEAD --staged --worktree -- <path>``   (lines 1697-1706)
   ``git rm --cached --force -- <path>`` then unlink the file    (lines 1737, 1741)
 
-When ``_restore_landing_writes`` runs while HEAD still resolves to the commit
-before the landing, ``--source=HEAD`` is the pre-landing commit, which is what
-this script models with an explicit ``--source=<pre-landing sha>`` so the two
-phases can be ordered deterministically. Run after HEAD carries the landing,
+When it runs while HEAD still resolves to the commit before the landing,
+``--source=HEAD`` is the pre-landing commit; run after HEAD carries the landing
 the same calls change nothing, because the landing's own paths are then in HEAD.
+The private index in the interleaving arm lets the rollback's shared-index calls
+succeed while the landing commit is still in flight, which is what a committing
+process using another index file permits.
 
-Usage:  python3 scripts/reproduce_landing_reversion.py
-Exit status is 0 only when both arms produce their expected end state.
+Usage:  PYTHONPATH=<worktree> python3 scripts/reproduce_landing_reversion.py
+Exit status is 0 only when both arms produce their expected end state; the log
+prints the resolved path of the production function so the reader can see which
+module was exercised.
 """
 
 from __future__ import annotations
@@ -42,6 +48,8 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+from reckon.crew.promotion_scope import _restore_landing_writes
 
 PLAN = "docs/plans/converged-forward-solve.html"
 CREATED = [
@@ -84,27 +92,19 @@ def write_landing_writes(repo: Path) -> None:
         p.write_text('{"review": "landed"}\n')
 
 
-def restore_landing_writes(repo: Path, source: str) -> None:
-    """Mirror promotion_scope._restore_landing_writes with an explicit source.
+def reckon_rollback(repo: Path) -> dict[str, bool]:
+    """Run reckon's own rollback against the repository's current HEAD.
 
-    ``_restore_landing_writes`` passes ``--source=HEAD``; when HEAD is the
-    pre-landing commit this is identical to passing that commit explicitly.
+    Calls the production ``_restore_landing_writes`` imported from
+    ``reckon.crew.promotion_scope`` (line 1672), with absolute paths, exactly as
+    ``_commit_landing_writes`` (lines 1953, 1980) and the review-record refusal
+    (``reckon/crew/promotion.py:1334``) call it.
     """
-    for rel in PATHS:
-        r = git(
-            repo, "restore", f"--source={source}", "--staged", "--worktree", "--", rel
-        )
-        if r.returncode == 0:
-            continue
-        # _restore_one_landing_write: cat-file -e HEAD:<rel>; rm --cached --force; unlink
-        committed = git(repo, "cat-file", "-e", f"{source}:{rel}")
-        if committed.returncode == 0:
-            continue
-        git(repo, "rm", "--cached", "--force", "--", rel)
-        staged = git(repo, "diff", "--cached", "--name-only", "--", rel)
-        if staged.stdout.strip():
-            continue
-        (repo / rel).unlink(missing_ok=True)
+    return _restore_landing_writes(repo, [resolve(repo, rel) for rel in PATHS])
+
+
+def resolve(repo: Path, rel: str) -> Path:
+    return (repo / rel).resolve()
 
 
 def fresh_repo(root: Path) -> tuple[Path, str]:
@@ -152,7 +152,10 @@ def run_arm(root: Path, interleaving: bool) -> tuple[dict[str, str], str]:
         must(repo, "read-tree", "HEAD", env=env)  # private index = pre-landing tree
         must(repo, "add", "--", *PATHS, env=env)  # private index = landing content
         # The rollback runs now, while --source=HEAD is still the pre-landing commit.
-        restore_landing_writes(repo, pre)
+        report = reckon_rollback(repo)
+        print("  reckon rollback report:")
+        for absolute, reverted in report.items():
+            print(f"    {reverted!s:<5} {Path(absolute).relative_to(repo)}")
         # The landing commit lands from the private index, carrying the landing.
         must(repo, "commit", "-qm", "promote(...): not-run", env=env)
     else:
@@ -172,10 +175,21 @@ def report(title: str, state: dict[str, str]) -> None:
     print(f"  HEAD moved: {state['arm:head-moved']}")
 
 
+def production_rollback_module() -> str:
+    """Name the production rollback module and which copy of it was imported."""
+    path = Path(sys.modules[_restore_landing_writes.__module__].__file__).resolve()
+    try:
+        shown = path.relative_to(Path(__file__).resolve().parents[1]).as_posix()
+    except ValueError:
+        shown = str(path)
+    return f"{_restore_landing_writes.__module__} ({shown})"
+
+
 def main() -> int:
     root = Path(tempfile.mkdtemp(prefix="landing-reversion-"))
     try:
         ok = True
+        print(f"production rollback: {production_rollback_module()}")
 
         replay, _ = run_arm(root / "interleaving", interleaving=True)
         report(
