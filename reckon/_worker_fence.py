@@ -1140,6 +1140,70 @@ def worker_scratch_seal_root(
     return None
 
 
+# The node's own temp root. Pinned rather than read from ``TMPDIR`` for the
+# same reason the worker scratch root is (``dispatch_launch`` pins
+# ``WORKER_SCRATCH_ROOT_DEFAULT`` to ``/tmp``): the allocator may point
+# ``TMPDIR`` at shared storage, while every run's scratch and every session's
+# temporary files sit on this node-local root shared by one uid.
+NODE_TMP_ROOT = Path("/tmp")  # noqa: S108 - the node's own tmp, never shared
+
+# The marker directory codex's linux sandbox creates beneath its temp root —
+# the node's own ``/tmp`` when ``TMPDIR`` is not set — to hold the synthetic
+# bubblewrap mount targets and their registry lock. Named once so the runtime
+# path the fence keeps writable and the directory codex writes agree on the
+# spelling.
+CODEX_SANDBOX_MARKER_DIRNAME = ".codex"
+
+
+def node_tmp_runtime_paths() -> list[Path]:
+    """Return the node-/tmp paths a fenced worker's launch must still write.
+
+    The fence seals the worker scratch root read-only, but every other path
+    beneath the node's own ``/tmp`` stays writable to every session on the node
+    under one uid: Python's ``tempfile`` default, pytest's
+    ``/tmp/pytest-of-<user>``, and the fleet's runtime sockets. One run's cleanup
+    reached them on 2026-10-18 with ``rm -rf /tmp/tmp*`` and removed files it did
+    not own, so the whole node tmp is now sealed read-only too.
+
+    Only the run's own scratch directory — its ``TMPDIR``, re-bound writable by
+    the ordinary grant in :func:`fence_argv` — and the runtime paths named here
+    stay writable beneath the seal. Every entry is a directory beneath the node
+    tmp, and a path this machine does not have composes no grant, exactly as an
+    absent protected default does. The harness home needs no entry here: it sits
+    under the run directory, which is already a write root, not under ``/tmp``.
+
+    The list is one named set enumerated beside :func:`worker_scratch_seal_root`
+    so a reader sees both seals and the runtime carve-outs together.
+    """
+    from reckon.crew.fleet_supervisor import runtime_directory
+
+    return [
+        # srun's fleet sockets: the host shims that launch a nested worker write
+        # their request/ack FIFOs and zellij sockets beneath the fleet runtime
+        # directory (``/tmp/<uid>-fleet``); a fenced worker that launches nested
+        # work through that shim writes there.
+        runtime_directory(),
+        # codex's sandbox mount registry: codex's linux sandbox creates its
+        # synthetic bubblewrap mount marker directory and lock here, beneath the
+        # harness temp root, so a codex launch that reaches its sandbox keeps it
+        # writable.
+        NODE_TMP_ROOT / CODEX_SANDBOX_MARKER_DIRNAME,
+    ]
+
+
+def node_tmp_seal_root() -> Path | None:
+    """Return the node's own ``/tmp`` to seal read-only, or None when it is absent.
+
+    The seam :func:`fence_argv` consults for the node-tmp seal, so the seal's
+    presence is a single decision a caller (or a test's negative control) can
+    inject, exactly as :func:`worker_scratch_seal_root` decides the scratch
+    seal. A node tmp that does not exist has nothing to seal and is not a
+    directory the fence should invent, so it composes no overlay.
+    """
+    root = resolved_destination(NODE_TMP_ROOT)
+    return root if root.is_dir() else None
+
+
 def shared_store_seal_roots() -> list[Path]:
     """Return the shared delivery stores the fence seals read-only.
 
@@ -1234,7 +1298,13 @@ def fence_argv(
     own scratch directory — re-bound writable by the ordinary grant below, which
     comes after the overlay — is the only scratch a worker can write or delete;
     see :func:`worker_scratch_seal_root`. A sibling run's scratch stays readable
-    but read-only, and ``/tmp`` outside the root is untouched.
+    but read-only.
+
+    The node's whole ``/tmp`` is sealed read-only as well, so a run's cleanup
+    cannot reach another session's temporary files there. Only the run's own
+    scratch (its ``TMPDIR``) and the runtime paths its launch writes — the
+    fleet's sockets and codex's sandbox marker directory — are re-opened
+    writable beneath it; see :func:`node_tmp_runtime_paths`.
 
     The two shared delivery stores — the reports root and the review store — are
     sealed the same way: overlaid read-only among the protected paths, with only
@@ -1285,6 +1355,20 @@ def fence_argv(
     store_seals = shared_store_seal_roots()
     store_seal_keys = {str(resolved_destination(path)) for path in store_seals}
     protected = [*protected, *store_seals]
+
+    # The node's own ``/tmp`` is sealed read-only too, so a run's stray cleanup
+    # cannot reach another session's temporary files there — Python's
+    # ``tempfile`` default, pytest's ``/tmp/pytest-of-<user>``, the fleet's
+    # runtime sockets; see :func:`node_tmp_runtime_paths`. The run's own scratch
+    # directory (its ``TMPDIR``) and the enumerated runtime paths a launch writes
+    # are the only paths re-opened writable beneath it, both by the grant loop
+    # below. Composed only for a node tmp that exists, as every protected path
+    # is; a node tmp that is also a declared protected path is deduped by
+    # :func:`protected_read_only_binds`.
+    node_tmp = node_tmp_seal_root()
+    if node_tmp is not None:
+        protected = [*protected, node_tmp]
+        roots.extend(path for path in node_tmp_runtime_paths() if path.exists())
 
     binds = protected_read_only_binds(
         protected,
