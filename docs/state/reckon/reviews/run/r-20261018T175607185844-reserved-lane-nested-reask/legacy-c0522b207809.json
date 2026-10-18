@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1148",
+    "reckon/crew_dispatch_commands.py:1431",
+    "reckon/crew/picker/snapshot.py:1047"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-18T17:56:59Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "1163",
+      "severity": "follow-on",
+      "text": "follow-on: the prior-attempt enumeration still duplicates reckon/crew/picker/__init__.py:422, so the brief's Do item 2 and the done_when clause 'attempts come from the picker owner' are unmet; the shared owner would live in reckon/crew/picker/__init__.py, outside this node's declared write scope, so a node carrying that path in its scope must land it."
+    },
+    {
+      "file": "tests/test_picker_helpers_have_one_owner.py",
+      "line": "215",
+      "severity": "follow-on",
+      "text": "follow-on: test_rendered_state_matches_the_base_revision_bytes fails at head over the base revision's golden bytes, but its render path is untouched by the diff and the node reproduced it identically at base 2a422e111, so it is pre-existing and does not block this node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 2a422e111; d680c1117 lands the refusal, drops the debug print and adds the negative control, 11f71123d reformats, a1cafddce touched reckon/crew/picker/__init__.py out of scope, and 36910d57a reverts that file so the net diff is the three declared paths.",
+    "done_when": "the node done_when (prompt.txt:125) has its negative-control clause met -- tests/test_picker_reserved_lanes.py::test_a_nested_reask_onto_an_unreasoned_reserved_lane_is_held reddens at base 2a422e111 in negative-control-base.log ('route' != 'hold', 1 failed/16 passed, EXIT=1) and greens at head in gate-head.log (17 passed, EXIT=0) -- but the clause 'attempts come from the picker owner' is neither landed nor gated, and the picker and dispatch head set carries one pre-existing failure.",
+    "goal": "the node goal is to refuse a reserved lane reached on a nested picker re-ask without a reason; reckon/crew/dispatch_picker.py:805-825 is the allow=False branch of _reask_off_unreasoned_reserved_lane, which now returns action=hold with backend cleared and records disposition=held, so the nested re-ask is refused rather than routed.",
+    "manifest": "read; it reports status complete, the head gate tests/test_picker_reserved_lanes.py 17 passed/EXIT=0, the base negative control 1 failed/16 passed/EXIT=1, and self-flags that the brief's Do item 2 was not landed under follow_ons and evidence_inputs.",
+    "write_paths": "the declared scope is reckon/crew/dispatch_picker.py, reckon/crew/picker/snapshot.py and tests/test_picker_reserved_lanes.py (prompt.txt:58-60); git diff 2a422e111..36910d57a touches exactly those three files and reckon/crew/picker/__init__.py is byte-identical to base (blob 204513acee95236c8d3f7432b87f99e286a23ca5 at both revisions)."
+  },
+  "justifications": {
+    "durability": "tests/test_picker_reserved_lanes.py:479 reddens at base in negative-control-base.log ('route' != 'hold') and greens at head, so reverting the allow=False branch at reckon/crew/dispatch_picker.py:805 to return dict(selection) fails it.",
+    "evidence": "tests/test_picker_reserved_lanes.py:479 asserts the hold and the two disposition rows and the base arm is recorded in negative-control-base.log, but the done_when clause 'attempts come from the picker owner' is neither landed nor gated by the gate.",
+    "fit": "reckon/crew/dispatch_picker.py:805-825 follows the surrounding selection-dict idiom (action/fallback_reason) and adds disposition to the same log row in _record_reserved_lane_pick, with no banned name introduced.",
+    "goal_fidelity": "reckon/crew/dispatch_picker.py:805-825 returns action=hold with backend=None on the nested (allow=False) re-ask, so a reserved lane reached there is refused, which is exactly the goal.",
+    "reuse": "reckon/crew/picker/snapshot.py:1006 now ranks levels through the capability owner _rank, but the attempts-from-ledger enumeration the brief named still has two copies at reckon/crew/picker/snapshot.py:1163 and reckon/crew/picker/__init__.py:422.",
+    "scope_discipline": "the net diff 2a422e111..36910d57a touches only reckon/crew/dispatch_picker.py, reckon/crew/picker/snapshot.py and tests/test_picker_reserved_lanes.py, and reckon/crew/picker/__init__.py:1 is byte-identical to base."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to refuse a reserved lane reached on a nested picker re-ask without a reason; reckon/crew/dispatch_picker.py:805-825 is the allow=False branch of _reask_off_unreasoned_reserved_lane, which now returns action=hold with backend cleared and records disposition=held, so the nested re-ask is refused rather than routed.\nVERDICT done_when: the node done_when (prompt.txt:125) has its negative-control clause met -- tests/test_picker_reserved_lanes.py::test_a_nested_reask_onto_an_unreasoned_reserved_lane_is_held reddens at base 2a422e111 in negative-control-base.log ('route' != 'hold', 1 failed/16 passed, EXIT=1) and greens at head in gate-head.log (17 passed, EXIT=0) -- but the clause 'attempts come from the picker owner' is neither landed nor gated, and the picker and dispatch head set carries one pre-existing failure.\nVERDICT write_paths: the declared scope is reckon/crew/dispatch_picker.py, reckon/crew/picker/snapshot.py and tests/test_picker_reserved_lanes.py (prompt.txt:58-60); git diff 2a422e111..36910d57a touches exactly those three files and reckon/crew/picker/__init__.py is byte-identical to base (blob 204513acee95236c8d3f7432b87f99e286a23ca5 at both revisions).\nVERDICT manifest: read; it reports status complete, the head gate tests/test_picker_reserved_lanes.py 17 passed/EXIT=0, the base negative control 1 failed/16 passed/EXIT=1, and self-flags that the brief's Do item 2 was not landed under follow_ons and evidence_inputs.\nVERDICT diff: read commit by commit against base 2a422e111; d680c1117 lands the refusal, drops the debug print and adds the negative control, 11f71123d reformats, a1cafddce touched reckon/crew/picker/__init__.py out of scope, and 36910d57a reverts that file so the net diff is the three declared paths.\nCALL_SITES: reckon/crew/dispatch.py:1148, reckon/crew_dispatch_commands.py:1431, reckon/crew/picker/snapshot.py:1047\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_picker.py:805-825 returns action=hold with backend=None on the nested (allow=False) re-ask, so a reserved lane reached there is refused, which is exactly the goal.\nSCORE evidence: 13\nJUSTIFICATION evidence: tests/test_picker_reserved_lanes.py:479 asserts the hold and the two disposition rows and the base arm is recorded in negative-control-base.log, but the done_when clause 'attempts come from the picker owner' is neither landed nor gated by the gate.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the net diff 2a422e111..36910d57a touches only reckon/crew/dispatch_picker.py, reckon/crew/picker/snapshot.py and tests/test_picker_reserved_lanes.py, and reckon/crew/picker/__init__.py:1 is byte-identical to base.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_picker_reserved_lanes.py:479 reddens at base in negative-control-base.log ('route' != 'hold') and greens at head, so reverting the allow=False branch at reckon/crew/dispatch_picker.py:805 to return dict(selection) fails it.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/dispatch_picker.py:805-825 follows the surrounding selection-dict idiom (action/fallback_reason) and adds disposition to the same log row in _record_reserved_lane_pick, with no banned name introduced.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/picker/snapshot.py:1006 now ranks levels through the capability owner _rank, but the attempts-from-ledger enumeration the brief named still has two copies at reckon/crew/picker/snapshot.py:1163 and reckon/crew/picker/__init__.py:422.\nFINDING reckon/crew/picker/snapshot.py:1163 follow-on: the prior-attempt enumeration still duplicates reckon/crew/picker/__init__.py:422, so the brief's Do item 2 and the done_when clause 'attempts come from the picker owner' are unmet; the shared owner would live in reckon/crew/picker/__init__.py, outside this node's declared write scope, so a node carrying that path in its scope must land it.\nFINDING tests/test_picker_helpers_have_one_owner.py:215 follow-on: test_rendered_state_matches_the_base_revision_bytes fails at head over the base revision's golden bytes, but its render path is untouched by the diff and the node reproduced it identically at base 2a422e111, so it is pre-existing and does not block this node.",
+  "review_run_id": "legacy-c0522b207809",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "2a422e111c82d113553b47de37ab4468249f6796",
+  "reviewed_head_sha": "36910d57a92ae099d64a7860c7d0bc709a139abf",
+  "reviewed_run_id": "r-20261018T175607185844-reserved-lane-nested-reask",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T20:08:20.902002+00:00",
+  "total": 100
+}
