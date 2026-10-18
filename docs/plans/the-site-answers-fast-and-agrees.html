@@ -25,7 +25,7 @@
   <title>The Site Answers Fast and Agrees With Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -290,7 +290,10 @@
     <div class="r-comment-body"><p>Design review <code>r-20261018T131121570570</code>, finding <code>duplicate_owner-1</code>: three sibling caches under <code>_config_home()/cache/</code> have the same defect. Each keys its path without the writer's format and rejects a version mismatch on read: the git-creation cache (<code>_git_creation_cache_path</code>, <code>reckon/serve.py</code> near line 1434), the git last-modified cache (near line 1815) and the compliance store (<code>_store_path</code>, <code>reckon/compliance.py</code> near line 139). Before §4 is dispatched, its deliverable becomes one owner for a cache path that includes the writer's format, applied at all four sites, with a test case for each.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261018T164004215387-review-of-cache-paths-carry-their-format-4f985db48818" data-who="reckon-build" data-when="2026-10-18T16:56:50.679Z">
-    <div class="r-comment-body"><p>review of r-20261018T155255846517-cache-paths-carry-their-format at head 4f985db48818be391a846612d25bc7ac8db04fe5 — six dimensions scored (goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 18, reuse 20; total 117), one follow-on finding (private cross-module import at reckon/serve.py:1556); record stored at the reviewed run&#x27;s review-records path.</p></div>
+    <div class="r-comment-body"><p>review of r-20261018T155255846517-cache-paths-carry-their-format at head 4f985db48818be391a846612d25bc7ac8db04fe5 — six dimensions scored (goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 18, reuse 20; total 117), one follow-on finding (private cross-module import at reckon/serve.py:1556); record stored at the reviewed run's review-records path.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T155255846517-cache-paths-carry-their-format" data-who="reckon-build" data-when="2026-10-18T16:38:27Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/the-site-answers-fast-and-agrees/cache-paths-carry-their-format.html#cache-paths-carry-their-format — Four persisted caches use one format-suffixed path owner; 4/4 alternating-writer cases built once per writer and reused twice, the negative control rebuilt three times per writer, and the affected suite added zero failure IDs.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-design-recompute-owner" data-who="reckon-build" data-when="2026-10-18T13:30:00Z">
     <div class="r-comment-body"><p>Design review <code>r-20261018T131121570570</code>, findings <code>reuse_search-1</code>, <code>thin_wrapper-1</code>, <code>deep_module-1</code> and <code>interface_budget-1</code>. <code>/_checks/&lt;project&gt;</code> already recomputes outside the request path. <code>_start_check_refresh</code> and <code>_spawn_check_refresh</code> (<code>reckon/serve.py</code> near line 2889) run a niced child per project, single-flight through <code>_CHECK_REFRESHES</code> (near line 1301), and write the store the route reads. Before §5 is dispatched, it is rewritten to extend that mechanism to <code>/_discover</code>, <code>/_projects/index.json</code> and <code>/crew/velocity</code> rather than add a new module. It names the interface: compute, read the last result, and spawn on change. It also states what it retires, and the worker no longer chooses the mechanism.</p></div>
