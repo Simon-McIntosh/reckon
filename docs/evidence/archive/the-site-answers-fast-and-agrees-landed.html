@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-site-answers-fast-and-agrees-landed">
+  <meta name="plan-title" content="The Site Answers Fast and Agrees With Itself — landed record">
+  <meta name="plan-summary" content="Closure synthesis for The Site Answers Fast and Agrees With Itself: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="the-site-answers-fast-and-agrees">
+  <meta name="plan-verdict" content="qualified">
+  <title>The Site Answers Fast and Agrees With Itself — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The Site Answers Fast and Agrees With Itself — landed record</h1>
+  <p>Closure synthesis for The Site Answers Fast and Agrees With Itself: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s10">
+    <h2>§10 — Every reckon module imports on its own</h2>
+    <p>Run <code>r-20261018T133321491070-every-module-imports-alone</code> (head <code>8b52bf37c</code>). It broke the import cycle between <code>reckon.project_state</code> and <code>reckon.crew.fleet_supervisor</code> by importing <code>_sha256_path</code> where it is used, with a module <code>__getattr__</code> keeping the old attribute; no caller uses that attribute. <code>tests/test_modules_import_alone.py</code> imports every module under <code>reckon/</code> first in a fresh subprocess. 176 tests pass at head; at base the test fails on <code>reckon.mcp_edit_plan</code>. The negative control, restoring the module-level import, fails it. Independent review: 110, no added failures. Its one follow-on concerned three <code>tests/test_project_state.py</code> SPA tests the worker saw fail at head; the coordinator ran them at main <code>da08bcc92</code> and at the run's head, and all three pass in both, so they were environmental. <code>ruff check</code> and <code>ruff format --check</code> are clean on the two changed Python files.</p>
+  </section>
+
+</main>
+</body>
+</html>

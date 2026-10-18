@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="spa,reckon-tooling">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-site-answers-fast-and-agrees#s2&quot;, &quot;the-site-answers-fast-and-agrees#s14&quot;], &quot;s4&quot;: [&quot;the-site-answers-fast-and-agrees#s9&quot;], &quot;s5&quot;: [&quot;the-site-answers-fast-and-agrees#s3&quot;], &quot;s6&quot;: [&quot;the-site-answers-fast-and-agrees#s2&quot;, &quot;the-site-answers-fast-and-agrees#s5&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;], &quot;s7&quot;: [&quot;the-site-answers-fast-and-agrees#s6&quot;], &quot;s12&quot;: [&quot;the-site-answers-fast-and-agrees#s4&quot;], &quot;s13&quot;: [&quot;the-site-answers-fast-and-agrees#s12&quot;], &quot;s14&quot;: [&quot;the-site-answers-fast-and-agrees#s13&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;], &quot;s15&quot;: [&quot;the-site-answers-fast-and-agrees#s14&quot;], &quot;s11&quot;: [&quot;the-site-answers-fast-and-agrees#s3&quot;, &quot;the-site-answers-fast-and-agrees#s5&quot;, &quot;the-site-answers-fast-and-agrees#s6&quot;, &quot;the-site-answers-fast-and-agrees#s7&quot;, &quot;the-site-answers-fast-and-agrees#s8&quot;, &quot;the-site-answers-fast-and-agrees#s10&quot;, &quot;the-site-answers-fast-and-agrees#s15&quot;, &quot;a-read-answers-inside-its-deadline#s38&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
   <title>The Site Answers Fast and Agrees With Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -197,7 +197,7 @@
       log and allocation terms as §2 hold. Write paths: <code>reckon/serve.py</code>, <code>reckon/service.py</code> and the test file.</p>
 
     <h2 id="s10">§10 — Every reckon module imports on its own</h2>
-<section data-reckon="section" data-id="s10" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s10" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> §1's last row. A caller that imports the module it needs, rather than the one that happens to load first, fails.</p>
     <p><strong>Deliverable.</strong> The cycle between <code>reckon.project_state</code> and <code>reckon.crew.fleet_supervisor</code> is broken, so
       <code>reckon.mcp_edit_plan</code> imports first in a fresh interpreter.</p>
@@ -310,11 +310,14 @@
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261018T142118404059-review-of-every-module-imports-alone-8b52bf37c99e" data-who="reckon-build" data-when="2026-10-18T14:42:22.799Z">
     <div class="r-comment-body"><p>review-of-every-module-imports-alone: read the landed diff e295fe18a..8b52bf37c (3 files), the source manifest and its four gate logs, and the production call sites; stored a parsed record scoring all six dimensions (goal_fidelity 19, evidence 15, scope_discipline 20, durability 19, fit 17, reuse 20, total 110), reviewed_base_sha e295fe18a3d46fbd8036c188b7a9f8e4d73ba6af and reviewed_head_sha 8b52bf37c99eed0188d6637fd3eed4cbdff56143, added_failure_count 0, added_failure_ids [], with one follow-on finding.</p></div>
 </div>
+<div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-18T15:15:00Z">
+    <div class="r-comment-body"><p>§10 landed: the import cycle is broken and every reckon module imports first in a fresh interpreter (run <code>r-20261018T133321491070</code>, head <code>8b52bf37c</code>; review 110, no added failures). <a href="/reckon/evidence/archive/the-site-answers-fast-and-agrees-landed.html#s10">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261018T144344127097-review-of-velocity-answers-for-every-scope-34a04e5036d3" data-who="reckon-build" data-when="2026-10-18T15:01:16.028Z">
     <div class="r-comment-body"><p>review-of-velocity-answers-for-every-scope: reviewed r-20261018T133004739776-velocity-answers-for-every-scope at base 82f9dd65/head 34a04e503 — scores 19/18/19/19/18/20, no added failure, one follow-on finding; record stored under that run's review-records/.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261018T133004739776-velocity-answers-for-every-scope" data-who="reckon-build" data-when="2026-10-18T14:03:22.082Z">
-    <div class="r-comment-body"><p>§8 — capture_project measures every scope from a defined base: a quiet window reads as an empty range so every metric is zero, and a window opening at a repository&#x27;s first commit measures from the empty tree; head arm 135 passed EXIT=0, base arm 129 passed/2 scaffolding-failed, negative control 4 errors EXIT=1.</p></div>
+    <div class="r-comment-body"><p>§8 — capture_project measures every scope from a defined base: a quiet window reads as an empty range so every metric is zero, and a window opening at a repository's first commit measures from the empty tree; head arm 135 passed EXIT=0, base arm 129 passed/2 scaffolding-failed, negative control 4 errors EXIT=1.</p></div>
 </div>
 </section>
 </main>
