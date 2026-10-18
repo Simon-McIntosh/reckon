@@ -1465,6 +1465,20 @@ def fence_argv(
             fenced += ["--tmpfs", str(target)]
         else:
             fenced += ["--ro-bind", os.devnull, str(target)]
+    # A bind whose destination is not there yet is created by bubblewrap at
+    # launch, and creating it needs a writable parent. A subscription lane's
+    # credential is mounted into the run's harness home rather than seeded
+    # there, so the home has to be a grant of its own: without one the mount
+    # aborts the launch before the worker starts, which is what the seal
+    # exposed once the harness home stopped being covered by a grant of the
+    # ambient temp root above it.
+    read_only_binds = list(read_only_binds)
+    read_write_binds = list(read_write_binds)
+    for _source, destination in (*read_only_binds, *read_write_binds):
+        target = resolved_destination(destination)
+        if not target.exists():
+            roots.append(target.parent)
+
     shared_seals = [*store_seals, *([scratch_seal] if scratch_seal else [])]
     granted: set[str] = set()
     for root in roots:
