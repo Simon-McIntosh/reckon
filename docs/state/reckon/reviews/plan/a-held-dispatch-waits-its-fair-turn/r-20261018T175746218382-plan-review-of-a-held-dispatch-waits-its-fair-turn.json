@@ -1,0 +1,127 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T18:05:27.603Z",
+  "dispatched_at": "2026-10-18T17:58:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:190",
+      "id": "reasoning-1",
+      "reason": "the field list must be corrected to the pointer's real keys or the node's whole gate is unsatisfiable as written.",
+      "text": "\u00a729's Deliverable requires the discard record to keep each of held, hold_detail and failure_detail \"that the pointer carries\", but none of the three is a field of a queued pointer \u2014 they are keys of the dict admit_once returns (reckon/crew/queue_admission.py:791, :831, :906); the pointer instead carries hold (reckon/crew/dispatch.py:264, whose dict has a nested held key) and failure (reckon/crew/queue_admission.py:628-637), and the done-when \"finds each of those fields in the spool record with the pointer's value\" cannot pass for a field the pointer does not carry, so the builder either stops or silently drops the requirement",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:194",
+      "id": "reasoning-2",
+      "reason": "the verdict set must gain the retry-back-off case, or the log is silent for the very wait the section exists to make readable.",
+      "text": "\u00a730 enumerates the per-pass verdict as \"launched, held for allowance, held by the gate, held behind an earlier request, or refused\", but the admission pass also holds a queued request on its retry back-off (_retry_backoff_hold, reckon/crew/queue_admission.py:576-616, reached at :837), and its Why lists \"held for its session's allowance, held by the gate, held behind an earlier request, or never considered\" with the same omission; that back-off wait is exactly the state \u00a728 is about (\"It does not wait out its backoff of up to 600 s\", :185), so a request sitting in back-off \u2014 the case \u00a725 needs explained \u2014 would write no line under the enumerated verdicts, and the done-when exercises only held-for-allowance then launched so it cannot catch the gap",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:190",
+      "id": "anchors_resolve-1",
+      "reason": "the Why's substantive point that the admission fields are absent is correct, so only the field name needs a one-word correction.",
+      "text": "\u00a729's Why says the discard record \"carries only phase, node, pointer_path and discarded_run_id\", but the record _write_discard_record writes (reckon/crew/promotion.py:1536-1557) and the actual spool file it cites (~/.config/reckon/crew/discards/r-20261018T085353346020-review-of-the-inventory-lists-the-reload-tree-publish-9abe3b66c30c.json) carry run_id, discarded_at, phase, node and pointer_path \u2014 there is no discarded_run_id anywhere in the tree, and the omitted discarded_at is the 12:40:57Z time the same sentence relies on",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "cca2abff0338bedc11a28646b28138d51979eb58fe143e688c4802dc03ab3793",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 156,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-18T18:11:43.893300+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-18T18:11:55.826774+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-18T18:12:05.752792+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T18:12:05.752792+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T18:11:43.893300+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T18:11:55.826774+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-held-dispatch-waits-its-fair-turn.v156.json",
+  "review_run_id": "r-20261018T175746218382-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "1d8a86e50aae75cba4670186627a3ff319cf0d31",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a729's Why names a discard-record field that does not exist.",
+    "done_when": "pass \u2014 each changed node names a declared negative control: \u00a729 drops the fields from the record and requires the first case to fail, \u00a730 removes the append and requires the first case to fail, and both pass/fail on an assertion the unfixed code cannot satisfy.",
+    "evidence_paths": "pass \u2014 both nodes log under the run directory (durable, under ~/.config/reckon/crew/runs/\u2026), their write paths are repository paths, and the tests run in a temporary crew home rather than the live one.",
+    "naming": "pass \u2014 the new sections name mechanisms (_write_discard_record, admit_until_stopped, discard_recorded) and behaviour, with no version tags, ticket numbers, or changelog prose reaching symbols; the plan comment id c-s28-cause-stale-admit is a plan artifact, not code.",
+    "reasoning": "a finding \u2014 \u00a729 asks the discard record to keep three fields the queued pointer never carries, so its mechanism cannot satisfy its own done-when; and \u00a730's verdict enumeration omits the retry-backoff hold, the one wait its own \u00a728 is about.",
+    "single_goal": "pass \u2014 \u00a729 has one deliverable (the discard record keeps the queued pointer's admission fields), \u00a730 has one (the admit loop appends one verdict line per pass).",
+    "wiring": "pass \u2014 the _document change adds s30\u2192s28 to plan-section-depends-on, matching \u00a730's \"build it after \u00a728 merges\" (both write reckon/crew/queue_admission.py); \u00a730\u2192\u00a728 and \u00a728\u2192\u00a726 form a valid order with no cycle, and \u00a729 writes reckon/crew/promotion.py, which no other open node claims, so it needs no edge."
+  },
+  "section_digests": {
+    "_document": "054c530588908db374988b2158adfd3be6d5c5471ff41396618feb40aabc960a",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "f67610611bfb819007234cb2d266523cab773379dedf07c8b53feb8f9e78ef59",
+    "s19": "1a735ef01d42913d9085a7d2db7eb238ecd99450b1ee61e3702d9951b4be8b04",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s20": "27cbb7d66474dcc03ee947d28d02bf69241181f95114d64b5dfd64cece9a6d2d",
+    "s21": "9d6a0b0914d4b7c617f66b56c23c29f423e83783cee042a59efd0844e910758e",
+    "s22": "04e32404c6bd6fba4d019c4ac2feb930c097b69019a6b5feeab58d4c16120a94",
+    "s23": "70ceaed3d3c3bdadbebbb977a408f022cd463ddb7697e91a9f3ddb9783544474",
+    "s24": "d7f6c25b7737b87618ce073988379c3a183b8bd0c2da8d647b9b86dd29f1ca6d",
+    "s25": "e88835723a96300f96faca8c273f7eaf945b39dd9df4be7a5c6199ddf55b8422",
+    "s26": "a829b38553b03955174d3dcabf9df353fe7c676b2f8ed7a1de83fe601c7d4b90",
+    "s27": "8f724251bb33d77182950fa280b7a11534308e59b061628a3780ecb8b004a68a",
+    "s28": "0c87a9ac04613153cbe9e2fe1fdcdde59bc64b31d5c992b0f4259ea611185452",
+    "s29": "f1c5850fad190adc3bf73f0f5f88519088d7000c315349967e4f793761329158",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s30": "a6b4298cd9192f5329da2f9171a82a3cfab027d1c797a724aeaa5e1bf2f71d1f",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T18:11:35.683296+00:00"
+}
