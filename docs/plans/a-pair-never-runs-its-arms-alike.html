@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-pair-never-runs-its-arms-alike">
   <meta name="plan-title" content="A Pair Never Runs Its Arms Alike">
   <meta name="plan-summary" content="crew dispatch --pair-backend ran both arms on codex with one model when Jev routed the primary to the pair backend; such a pair must be refused before launch.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="1.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,7 +24,7 @@
   <title>A Pair Never Runs Its Arms Alike | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -61,6 +61,12 @@ The test writes nothing outside its temporary directory.</li>
     <pre class="r-fu-prompt">/reckon-build a-pair-never-runs-its-arms-alike §1</pre>
     <p class="r-fu-outcome"><p>§1 landed at review 114: a paired dispatch whose arms resolve to one backend and model is refused before either launches. The post-merge dry run decides the plan's close.</p></p>
     </article>
+<article class="r-fu" data-id="f-apnria-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-pair-never-runs-its-arms-alike" data-resolved-at="2026-10-18T08:40:00Z" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Plan closed</h4>
+    <div class="r-fu-body"><p>§1 has landed and the post-merge dry runs pass on this host's flight. The residual is recorded on §1: the check relies on <code>dispatch_pair</code> passing no configuration overrides.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-pair-never-runs-its-arms-alike</pre>
+    <p class="r-fu-outcome">done — no followup</p>
+    </article>
 </section>
   
 <section data-reckon="comments" id="comments" class="r-comments">
@@ -75,6 +81,9 @@ The test writes nothing outside its temporary directory.</li>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261018T074018927209-a-pair-refuses-alike-arms" data-who="reckon-build" data-when="2026-10-18T08:15:47Z">
     <div class="r-comment-body"><p>a-pair-refuses-alike-arms — dispatch_pair now reads the comparison _shadow_dispatch_config returns and refuses with D21 when the substituted backend entry carries equal primary/shadow values and model is not among its substituted entries, before the dry-run return and before any run directory or worktree exists; gate 41 passed / 1 failed (pre-existing ledger.py worker-window failure, also red on the base arm), 3 new cases green.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-s1-integration-check" data-who="reckon-build" data-when="2026-10-18T08:40:00Z">
+    <div class="r-comment-body"><p>Post-merge check for §1, run at merge <code>ba4c5ccce</code> against this host's flight, whose default backend is clive. A <code>reckon crew dispatch --dry-run</code> of an implement node with <code>--pair-backend clive</code> exits 1 with D21: both arms resolve to backend <code>clive</code> with model <code>deepseek-v4.1-flash</code>. The same dry run with <code>--pair-backend codex</code> exits 0 with <code>"paired": true</code>, the primary on clive and the shadow on codex <code>gpt-6-sol</code>. One residual from review 117: the check reads "models equal" from <code>model</code> being absent from the substituted entries, which holds because <code>dispatch_pair</code> passes no configuration overrides. A future caller that passes an explicit model override must re-read the check.</p></div>
 </div>
 </section>
 </main>
