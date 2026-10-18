@@ -6,7 +6,10 @@ pure function of the file's bytes, so its result is kept until the file's
 device, inode, size, mtime or ctime moves — any write changes at least one.
 
 Callers receive a deep copy, so mutating a returned value never poisons the
-entry another request will read.
+entry another request will read. A caller that reads many documents once and
+will not change them opens a :func:`read_only_region`, which trades that copy
+for a read-only view of the stored value: the copy is what a reader pays per
+hand-out, and a caller that changes nothing gains nothing from it.
 """
 
 from __future__ import annotations
@@ -19,7 +22,7 @@ from collections import OrderedDict
 from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping
 from contextvars import ContextVar
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 _MAX_ENTRIES = 50_000
 
@@ -49,7 +52,8 @@ class _ReadOnlyDict(dict):
     ``dict(value)``, ``json.dumps`` and equality all see the document — while
     every mutating method refuses, so a caller that would change a shared
     document is detected at the change rather than poisoning the memo for every
-    later reader.
+    later reader. Copying is the way to a mutable value: ``copy.copy`` returns a
+    plain mapping and ``copy.deepcopy`` a plain, fully mutable document.
     """
 
     __slots__ = ()
@@ -69,9 +73,20 @@ class _ReadOnlyDict(dict):
     setdefault = _refuse
     update = _refuse
 
+    def __copy__(self) -> dict[str, Any]:
+        return dict(self)
+
+    def __deepcopy__(self, memo: dict[int, Any] | None = None) -> dict[str, Any]:
+        return _plain_copy(self, memo)
+
 
 class _ReadOnlyList(list):
-    """A parsed document's list, handed out inside a region; a change raises."""
+    """A parsed document's list, handed out inside a region; a change raises.
+
+    Copying yields a mutable value: ``copy.copy`` a plain list, ``mutating`` it
+    leaves the view untouched, and ``copy.deepcopy`` a plain, fully mutable
+    list.
+    """
 
     __slots__ = ()
 
@@ -94,22 +109,128 @@ class _ReadOnlyList(list):
     reverse = _refuse
     sort = _refuse
 
+    def __copy__(self) -> list[Any]:
+        return list(self)
+
+    def __deepcopy__(self, memo: dict[int, Any] | None = None) -> list[Any]:
+        return _plain_copy(self, memo)
+
+
+class _ReadOnlyTuple(tuple):
+    """A document's tuple, handed out inside a region; its containers refuse.
+
+    A tuple is already immutable, so nothing here refuses a change to the tuple
+    itself; it exists so the containers a tuple can hold — the members a tuple
+    is otherwise a window onto — are wrapped. Copying yields a plain tuple.
+    """
+
+    __slots__ = ()
+
+    def __new__(cls, source: Iterable[Any]) -> Self:
+        return super().__new__(cls, (_read_only(value) for value in source))
+
+    def __copy__(self) -> tuple[Any, ...]:
+        return tuple(self)
+
+    def __deepcopy__(self, memo: dict[int, Any] | None = None) -> tuple[Any, ...]:
+        return _plain_copy(self, memo)
+
+
+class _ReadOnlySet(set):
+    """A document's set, handed out inside a region; a change to it raises."""
+
+    __slots__ = ()
+
+    def __init__(self, source: Iterable[Any]) -> None:
+        super().__init__(_read_only(value) for value in source)
+
+    def _refuse(self, *_arguments: Any, **_keywords: Any) -> None:
+        raise TypeError("a document handed out inside a read-only region is read-only")
+
+    __iand__ = _refuse
+    __ior__ = _refuse
+    __isub__ = _refuse
+    __ixor__ = _refuse
+    add = _refuse
+    clear = _refuse
+    difference_update = _refuse
+    discard = _refuse
+    intersection_update = _refuse
+    pop = _refuse
+    remove = _refuse
+    symmetric_difference_update = _refuse
+    update = _refuse
+
+    def __copy__(self) -> set[Any]:
+        return set(self)
+
+    def __deepcopy__(self, memo: dict[int, Any] | None = None) -> set[Any]:
+        return _plain_copy(self, memo)
+
 
 def _read_only(value: Any) -> Any:
     """Return ``value`` as a read-only view, rebuilding each container once.
 
-    A mapping is rebuilt as a :class:`_ReadOnlyDict` and a list as a
-    :class:`_ReadOnlyList`, both carrying the value's own items so every read is
-    unchanged; anything else is returned as it is. The rebuild is the region's
-    one added cost, and :func:`_handout` does it once per document per region
-    rather than once per hand-out.
+    A mapping is rebuilt as a :class:`_ReadOnlyDict`, a list as a
+    :class:`_ReadOnlyList`, a tuple as a :class:`_ReadOnlyTuple` and a set as a
+    :class:`_ReadOnlySet`, each carrying the value's own items so every read is
+    unchanged; a frozenset, which cannot hold a mutable member, is rebuilt as a
+    plain frozenset of read-only members, and anything else is returned as it
+    is. The rebuild is the region's one added cost, and :func:`_handout` does it
+    once per document per region rather than once per hand-out.
     """
 
+    if isinstance(value, (_ReadOnlyDict, _ReadOnlyList, _ReadOnlyTuple, _ReadOnlySet)):
+        return value
     if isinstance(value, dict):
         return _ReadOnlyDict(value)
     if isinstance(value, list):
         return _ReadOnlyList(value)
+    if isinstance(value, tuple):
+        return _ReadOnlyTuple(value)
+    if isinstance(value, set):
+        return _ReadOnlySet(value)
+    if isinstance(value, frozenset):
+        return frozenset(_read_only(member) for member in value)
     return value
+
+
+def _plain_copy(value: Any, memo: dict[int, Any] | None = None) -> Any:
+    """A plain, fully mutable copy of a read-only view.
+
+    Every wrapped container is rebuilt as its plain counterpart and every leaf
+    kept as it is, so a caller that copies a document handed out inside a region
+    gets back an ordinary value it may change; the view it copied from is
+    untouched, and the memo behind it stays unchanged. ``memo`` carries the
+    objects :func:`copy.deepcopy` already copied, so a view that names the same
+    container twice is copied once.
+    """
+
+    seen = {} if memo is None else memo
+    existing = seen.get(id(value))
+    if existing is not None:
+        return existing
+    if isinstance(value, _ReadOnlyDict):
+        copied: Any = {}
+        seen[id(value)] = copied
+        for key, leaf in value.items():
+            copied[key] = _plain_copy(leaf, seen)
+        return copied
+    if isinstance(value, _ReadOnlyList):
+        copied = []
+        seen[id(value)] = copied
+        copied.extend(_plain_copy(leaf, seen) for leaf in value)
+        return copied
+    if isinstance(value, _ReadOnlyTuple):
+        copied = tuple(_plain_copy(leaf, seen) for leaf in value)
+        seen[id(value)] = copied
+        return copied
+    if isinstance(value, _ReadOnlySet):
+        copied = set()
+        seen[id(value)] = copied
+        copied.update(_plain_copy(member, seen) for member in value)
+        return copied
+    return copy.deepcopy(value, seen)
 
 
 def _handout(entry: list[Any], mutable: bool) -> Any:
