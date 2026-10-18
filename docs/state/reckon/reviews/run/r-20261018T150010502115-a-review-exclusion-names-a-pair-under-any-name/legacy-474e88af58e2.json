@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "da08bcc92926990be59ac44bf885fe6f1fff86f0",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:_review_lane_plan",
+    "reckon/crew/recovery_review_dispatch.py:_review_lane_candidates",
+    "reckon/crew/recovery.py (re-export of _ordered_review_lanes at line 232)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-18T15:03:42Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "1270",
+      "severity": "blocking",
+      "text": "blocking: the added clause `and preferred not in lifted` (line 1270, with `and not _review_backend_excluded(preferred, config)` at 1271) rejects a preferred lane that is under a budget lift in force even when no exclusion names it, so the owning or local lane loses its lead and, when it is not a configured backend, disappears from the ordering entirely. At the reviewed base the loop used `preferred not in excluded`, and `_review_excluded_backends` (line 1202) subtracts the lifted set before returning, so a lifted preferred lane was admitted; head drops it. This contradicts the function's own docstring added by this commit (line 1244-1245, \"a lane under a lift in force still survives, because the fleet has opened it\") and the evidence fragment's claim that \"the lift guard is preserved: a lane under a lift in force stays available\". No test exercises a lift with _ordered_review_lanes (grep of tests/ finds none), so the regression ships unguarded."
+    }
+  ],
+  "head_log_revision": "ecc42a9eb408bb4940d5f8b6cee9f030abdeaeee",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base da08bcc92926990be59ac44bf885fe6f1fff86f0; ecc42a9eb408 changes reckon/crew/recovery_review_dispatch.py:_ordered_review_lanes (adds a lifted set and two clauses to the preferred-candidate test) and adds tests/test_old_names_resolve.py::test_local_backend_exclusion_matches_pair_across_names, and 801d32d8d486 adds only the evidence fragment; all three paths are inside the declared scope.",
+    "done_when": "the done_when names the three parameters of test_review_exclusions_match_pair_across_names, the new local_backend case, the _review_backend_excluded route, the revision report, the negative control, the population delta and ruff; the manifest records tests/test_old_names_resolve.py 36 passed EXIT=0, the negative control 3 failed 5 passed EXIT=1, the population base 2 failed/207 passed and head 210 passed, and names a04480487 as the regressing revision, but it records no ruff result.",
+    "goal": "the node goal is to make _ordered_review_lanes exclude a preferred lane the exclusion names under any historical spelling; reckon/crew/recovery_review_dispatch.py:1271 adds `not _review_backend_excluded(preferred, config)` to the preferred test, so a preferred alias of an excluded pair (claude-opus for opus 5.5) is now removed, and the goal is met.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T150010502115-a-review-exclusion-names-a-pair-under-any-name/manifest.md; it states status complete, records the gate run 36 passed EXIT=0, the negative control log path, and the population head/base logs with their figures.",
+    "write_paths": "the declared write paths are reckon/crew/recovery_review_dispatch.py, tests/test_old_names_resolve.py, docs/evidence/fragments/the-suite-is-green-at-head/a-review-exclusion-names-a-pair-under-any-name.html and the docs/figures/the-suite-is-green-at-head/a-review-exclusion-names-a-pair-under-any-name directory; the diff touches the first three and nothing else, and the unused figures directory was not written."
+  },
+  "justifications": {
+    "durability": "tests/test_old_names_resolve.py:206-219 compares _ordered_review_lanes against the independent literal [\"other-model\"] for each historical spelling and the negative control (negative-control.log, 3 failed 33 passed EXIT=1) reddens on the reverted repair, but the lift branch the change alters has no test at all, so the regression it introduces is unguarded.",
+    "evidence": "the gate names tests/test_old_names_resolve.py and its 36 passed EXIT=0 result, the negative control log and the two population logs are on disk, and the regressing revision a04480487 is recorded, but the done_when's ruff check and ruff format --check result is not recorded anywhere in the manifest.",
+    "fit": "the change sits inside _ordered_review_lanes and reuses the module's existing _review_backend_excluded (line 1118) and _lifted_backends (line 1138) helpers, its docstring matches the module's prose style, and no version, plan or ticket identifier appears in the file, symbol or comment.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:1271 now routes the preferred pair through _review_backend_excluded, so the goal is met, though the same edit also drops a lifted non-excluded preferred lane, a behaviour the goal does not imply.",
+    "reuse": "the fix reuses the existing pair resolver _review_backend_excluded (line 1118) and the existing _lifted_backends (line 1138) rather than forking them, but the added `preferred not in lifted` clause re-implements a lift check that _review_excluded_backends (line 1202) already owns, and does so with the opposite polarity, so the lift awareness is duplicated rather than read from one owner.",
+    "scope_discipline": "every path in the diff (reckon/crew/recovery_review_dispatch.py, tests/test_old_names_resolve.py, the evidence fragment) is inside the declared write paths and no other file changed."
+  },
+  "method": "Read the source node's goal, done_when, declared write paths and manifest under its run directory, then read the two commits ecc42a9eb408 and 801d32d8d486 against base da08bcc92926990be59ac44bf885fe6f1fff86f0 in the reviewed worktree. Read the changed function and its helpers (_review_backend_excluded, _lifted_backends, _review_excluded_backends) and the production callers (_review_lane_plan, _review_lane_candidates, recovery.py re-export). Verified the two arm logs and the negative-control log on disk, and that both recorded shas resolve as commits. The lifting regression was established by reading, not by mutating the node.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make _ordered_review_lanes exclude a preferred lane the exclusion names under any historical spelling; reckon/crew/recovery_review_dispatch.py:1271 adds `not _review_backend_excluded(preferred, config)` to the preferred test, so a preferred alias of an excluded pair (claude-opus for opus 5.5) is now removed, and the goal is met.\nVERDICT done_when: the done_when names the three parameters of test_review_exclusions_match_pair_across_names, the new local_backend case, the _review_backend_excluded route, the revision report, the negative control, the population delta and ruff; the manifest records tests/test_old_names_resolve.py 36 passed EXIT=0, the negative control 3 failed 5 passed EXIT=1, the population base 2 failed/207 passed and head 210 passed, and names a04480487 as the regressing revision, but it records no ruff result.\nVERDICT write_paths: the declared write paths are reckon/crew/recovery_review_dispatch.py, tests/test_old_names_resolve.py, docs/evidence/fragments/the-suite-is-green-at-head/a-review-exclusion-names-a-pair-under-any-name.html and the docs/figures/the-suite-is-green-at-head/a-review-exclusion-names-a-pair-under-any-name directory; the diff touches the first three and nothing else, and the unused figures directory was not written.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T150010502115-a-review-exclusion-names-a-pair-under-any-name/manifest.md; it states status complete, records the gate run 36 passed EXIT=0, the negative control log path, and the population head/base logs with their figures.\nVERDICT diff: read commit by commit against base da08bcc92926990be59ac44bf885fe6f1fff86f0; ecc42a9eb408 changes reckon/crew/recovery_review_dispatch.py:_ordered_review_lanes (adds a lifted set and two clauses to the preferred-candidate test) and adds tests/test_old_names_resolve.py::test_local_backend_exclusion_matches_pair_across_names, and 801d32d8d486 adds only the evidence fragment; all three paths are inside the declared scope.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:_review_lane_plan, reckon/crew/recovery_review_dispatch.py:_review_lane_candidates, reckon/crew/recovery.py (re-export of _ordered_review_lanes at line 232)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:1271 now routes the preferred pair through _review_backend_excluded, so the goal is met, though the same edit also drops a lifted non-excluded preferred lane, a behaviour the goal does not imply.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate names tests/test_old_names_resolve.py and its 36 passed EXIT=0 result, the negative control log and the two population logs are on disk, and the regressing revision a04480487 is recorded, but the done_when's ruff check and ruff format --check result is not recorded anywhere in the manifest.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/recovery_review_dispatch.py, tests/test_old_names_resolve.py, the evidence fragment) is inside the declared write paths and no other file changed.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_old_names_resolve.py:206-219 compares _ordered_review_lanes against the independent literal [\"other-model\"] for each historical spelling and the negative control (negative-control.log, 3 failed 33 passed EXIT=1) reddens on the reverted repair, but the lift branch the change alters has no test at all, so the regression it introduces is unguarded.\nSCORE fit: 17\nJUSTIFICATION fit: the change sits inside _ordered_review_lanes and reuses the module's existing _review_backend_excluded (line 1118) and _lifted_backends (line 1138) helpers, its docstring matches the module's prose style, and no version, plan or ticket identifier appears in the file, symbol or comment.\nSCORE reuse: 14\nJUSTIFICATION reuse: the fix reuses the existing pair resolver _review_backend_excluded (line 1118) and the existing _lifted_backends (line 1138) rather than forking them, but the added `preferred not in lifted` clause re-implements a lift check that _review_excluded_backends (line 1202) already owns, and does so with the opposite polarity, so the lift awareness is duplicated rather than read from one owner.\nFINDING reckon/crew/recovery_review_dispatch.py:1270 blocking: the added clause `and preferred not in lifted` (line 1270, with `and not _review_backend_excluded(preferred, config)` at 1271) rejects a preferred lane that is under a budget lift in force even when no exclusion names it, so the owning or local lane loses its lead and, when it is not a configured backend, disappears from the ordering entirely; at the reviewed base the loop used `preferred not in excluded` and _review_excluded_backends (line 1202) subtracts the lifted set before returning, so a lifted preferred lane was admitted, and head drops it, contradicting the function's own docstring added by this commit (line 1244-1245) and the evidence fragment's claim that the lift guard is preserved.",
+  "review_run_id": "legacy-474e88af58e2",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "da08bcc92926990be59ac44bf885fe6f1fff86f0",
+  "reviewed_head_sha": "801d32d8d486675e9cf9bbb679a7e64c7b916550",
+  "reviewed_run_id": "r-20261018T150010502115-a-review-exclusion-names-a-pair-under-any-name",
+  "reviewer": "review-of-a-review-exclusion-names-a-pair-under-any-name-801d32d8d486",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T15:47:00Z",
+  "total": 96
+}
