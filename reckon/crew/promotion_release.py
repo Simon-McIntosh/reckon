@@ -27,7 +27,6 @@ from reckon.crew.reports import (
 from reckon.crew.routing import (
     RECLAIMABLE_CLASSES,
     WITHHELD_REASONS,
-    _git,
     _inspect_workspace,
     _live_pointer_worktrees,
     _release_worktree_whole,
@@ -588,6 +587,7 @@ def _record_release_on_ledger(
     if not per_run:
         path = ledger.ledger_path(project, root)
     last_error: Exception | None = None
+    updated: dict[str, Any] | None = None
     for _attempt in range(12):
         try:
             if per_run:
@@ -609,46 +609,6 @@ def _record_release_on_ledger(
                     _store._write_json_envelope(
                         path, project, ledger.LEDGER_SLUG, data, version
                     )
-            if checkout is not None:
-                staged = _git(checkout, "add", "--", str(path), check=False)
-                if staged.returncode:
-                    rollback = _restore_landing_writes(checkout, [path])
-                    raise _landing_refusal(
-                        f"could not stage the release outcome for run {run_id!r}: "
-                        f"{staged.stderr.strip() or staged.stdout.strip()}",
-                        rollback,
-                    )
-                unchanged = _git(
-                    checkout,
-                    "diff",
-                    "--cached",
-                    "--quiet",
-                    "--",
-                    str(path),
-                    check=False,
-                )
-                if unchanged.returncode == 0:
-                    return dict(release), updated
-                committed = _git(
-                    checkout,
-                    "commit",
-                    "--only",
-                    "-m",
-                    f"release({run_id}): record workspace outcome",
-                    "-m",
-                    "Record the worktree and process release receipt after promotion "
-                    "without rewriting a commit another session may have published.",
-                    "--",
-                    str(path),
-                    check=False,
-                )
-                if committed.returncode:
-                    rollback = _restore_landing_writes(checkout, [path])
-                    raise _landing_refusal(
-                        f"could not commit the release outcome for run {run_id!r}: "
-                        f"{committed.stderr.strip() or committed.stdout.strip()}",
-                        rollback,
-                    )
         except (
             ledger.LedgerError,
             _store.VersionConflict,
@@ -658,13 +618,36 @@ def _record_release_on_ledger(
         ) as exc:
             last_error = exc
             continue
-        return dict(release), updated
+        break
+    else:
+        recorded = dict(release)
+        recorded["ledger_recorded"] = False
+        if last_error is not None:
+            recorded["ledger_error"] = str(last_error)
+        return recorded, None
 
-    recorded = dict(release)
-    recorded["ledger_recorded"] = False
-    if last_error is not None:
-        recorded["ledger_error"] = str(last_error)
-    return recorded, None
+    # The release outcome lands through the landing owner, so it stages,
+    # short-circuits a no-change write, commits and records on the same path a
+    # promotion's own landing does. The ledger write above is the only step
+    # retried: a refused commit has already taken its write back, so repeating
+    # it would append a second record for one refusal.
+    if checkout is not None:
+        landing_check = _report_landing_check(
+            _commit_landing_writes(
+                run_id=run_id,
+                verdict="released",
+                checkout=checkout,
+                paths=[path],
+                subject=f"release({run_id}): record workspace outcome",
+                body=(
+                    "Record the worktree and process release receipt after promotion "
+                    "without rewriting a commit another session may have published."
+                ),
+            )
+        )
+        if landing_check:
+            release = {**release, "landing_check": landing_check}
+    return dict(release), updated
 
 
 def _coordinator_supplied_predecessor(
@@ -1061,8 +1044,8 @@ from reckon.crew.promotion_records import (
     _worktree_audit,
 )
 from reckon.crew.promotion_scope import (
+    _commit_landing_writes,
     _is_shadow,
-    _landing_refusal,
     _promoted_revision,
-    _restore_landing_writes,
+    _report_landing_check,
 )
