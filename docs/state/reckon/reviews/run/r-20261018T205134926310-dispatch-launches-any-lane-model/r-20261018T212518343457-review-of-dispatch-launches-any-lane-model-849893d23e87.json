@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1289",
+    "reckon/crew/dispatch_plan.py:340",
+    "reckon/crew/dispatch.py:701",
+    "reckon/crew/dispatch_sessions.py:1534",
+    "reckon/crew/recovery_review_dispatch.py:2040"
+  ],
+  "completed_at": "2026-10-18T21:35:57.490Z",
+  "dispatched_at": "2026-10-18T21:26:20Z",
+  "findings": [
+    {
+      "file": "reckon/flight.py",
+      "line": 1667,
+      "severity": "follow-on",
+      "text": "select_lane_model indexes lane[\"models\"][model_key] with no guard, so a lane that declares no models block raises KeyError instead of reaching the shared refusal; today's two callers only pass keys the lane declares, so the path is unreachable now but the guard is missing."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to launch any model a lane declares through the lane's own backend; reckon/ledger.py:344-352 adds the lane-owner fallback and reckon/flight.py:1649 select_lane_model applies that model's settings, both landed.\nVERDICT done_when: the done_when names the astra picker route, --backend codex --model luna, the sol default, the shared undeclared-model refusal, and per-model candidate/dispatch parity; tests/test_a_lane_model_is_launched_through_its_lane.py:153-317 asserts each and its result is recorded in coordinator-head-gate.log.\nVERDICT write_paths: the manifest declares reckon/ledger.py, reckon/flight.py, reckon/crew/dispatch_plan.py, reckon/crew_dispatch_commands.py, tests/test_a_lane_model_is_launched_through_its_lane.py and the evidence fragment; every path in the diff is inside them.\nVERDICT manifest: read; it states the six-file gate passed 111 at 849893d2, cites verified-gate.log (111 passed in 243.19s, EXIT=0) and negative-control.log (1 failed, EXIT=1).\nVERDICT diff: read commit by commit against c7ad8433 across five commits (fix, style/lint, evidence fragment, parity test, fragment citation); all changes stay inside the declared scope.\nCALL_SITES: reckon/crew_dispatch_commands.py:1289, reckon/crew/dispatch_plan.py:340, reckon/crew/dispatch.py:701, reckon/crew/dispatch_sessions.py:1534, reckon/crew/recovery_review_dispatch.py:2040\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:344-352 returns the lane's own backend for a declared non-default model, and reckon/crew/dispatch_plan.py:335-342 plus reckon/crew_dispatch_commands.py:1286-1291 both route through flight.select_lane_model, so picker and --model take one path.\nSCORE evidence: 18\nJUSTIFICATION evidence: coordinator-base-arm.log (106 passed, EXIT=0) and coordinator-head-gate.log (111 passed, EXIT=0) record the delta the done_when requires; ruff check/format on the five paths was re-verified clean, though the manifest records no ruff log.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every diff path is inside the declared write paths, but commit fff27c18 reformats ~73 unrelated lines of reckon/ledger.py and reckon/flight.py beyond what the goal implies (its own style(lint) commit, policy-permitted, no behaviour change).\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log shows test_picked_astra_launches_through_codex failing with the shared refusal once the ledger fallback is removed, and the same test's independent effort/time_budget literals (tests/test_a_lane_model_is_launched_through_its_lane.py:161-162) fail if select_lane_model stops applying settings.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/flight.py:1617 lane_model_entry was made public under a name that says what it does and reckon/flight.py:1649 select_lane_model follows the module's existing entry-construction idiom, with no plan or ticket identifier in any name or comment.\nSCORE reuse: 19\nJUSTIFICATION reuse: select_lane_model (reckon/flight.py:1649) wraps the existing entry owner lane_model_entry rather than re-deriving entry construction, and the ledger fallback (reckon/ledger.py:344) extends the existing resolver; snapshot keeps its own merge by the plan's own directive.\nFINDING reckon/flight.py:1667 follow-on: select_lane_model indexes lane[\"models\"][model_key] with no guard, so a lane that declares no models block raises KeyError instead of reaching the shared refusal; today's two callers only pass keys the lane declares, so the path is unreachable now but the guard is missing.\n",
+  "review_run_id": "r-20261018T212518343457-review-of-dispatch-launches-any-lane-model-849893d23e87",
+  "reviewed_base_sha": "c7ad8433f96ad3b51be54740e502ee960d6bc379",
+  "reviewed_head_sha": "849893d23e8799e6e6532e13a4817f7ac4c95072",
+  "reviewed_run_id": "r-20261018T205134926310-dispatch-launches-any-lane-model",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T21:36:03.695793+00:00"
+}
