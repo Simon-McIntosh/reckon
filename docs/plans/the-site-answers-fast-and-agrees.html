@@ -25,7 +25,7 @@
   <title>The Site Answers Fast and Agrees With Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -362,7 +362,10 @@
     <div class="r-comment-body"><p>§12 review of 26fd36a9c21e67bfb209df48f1912be17f07480e..0346bface8598202068d1c37e7c56d77f176f0b4 stored under the reviewed run's review-records; six dimensions scored (goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 16, reuse 20), one added test failure derived from the source suite arms, no blocking findings and three follow-on findings.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261018T171904025423-figure-thumbnails-are-small-rasters" data-who="reckon-build" data-when="2026-10-18T19:01:23Z">
-    <div class="r-comment-body"><p>§12 - the thumbnail route rasterises an SVG figure to a PNG bounded by THUMB_MAX_EDGE through the existing per-revision cache, sized from reckon.figures._svg_dims so the listing and the icon share one parse, with resvg-py declared in pyproject.toml and uv.lock; the node gate runs 7 passed EXIT=0, the declared negative control fails the content-type assertion EXIT=1, each repair reverted in turn fails exactly the check it names, and the 101 serve-importing files move from 18 failed/2 errors at base to 11 failed/1 error at head with nothing added and the first revision&#x27;s regression gone</p></div>
+    <div class="r-comment-body"><p>§12 - the thumbnail route rasterises an SVG figure to a PNG bounded by THUMB_MAX_EDGE through the existing per-revision cache, sized from reckon.figures._svg_dims so the listing and the icon share one parse, with resvg-py declared in pyproject.toml and uv.lock; the node gate runs 7 passed EXIT=0, the declared negative control fails the content-type assertion EXIT=1, each repair reverted in turn fails exactly the check it names, and the 101 serve-importing files move from 18 failed/2 errors at base to 11 failed/1 error at head with nothing added and the first revision's regression gone</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-s12-pt-units" data-who="reckon-build" data-when="2026-10-18T19:55:00Z">
+    <div class="r-comment-body"><p>Live check after the §12 merge (<code>d204b8de1</code>, served from 2026-10-18 19:44Z). <code>/_thumb/</code> still served <code>overlap-and-drop.svg</code> as an 82 KB SVG, and the server log reads <em>cannot thumbnail … (SVG has an invalid size); serving the source</em> for real figures. matplotlib writes its sizes in points (<code>width="1008pt"</code>), and <code>resvg_py</code> 0.5.0 defaults <code>dpi=0.0</code>, which reduces a <code>pt</code> size to zero. The node's fixtures were sized in pixels. Passing <code>dpi=96</code> renders the same file, and 40 of 40 sampled power_convertor figures. A fix node, <code>thumbnails-rasterise-point-sized-svgs</code>, sets it with a <code>pt</code>-sized fixture. §12 stays open until power_convertor's first figure screen is measured under 2 MB live.</p></div>
 </div>
 </section>
 </main>
