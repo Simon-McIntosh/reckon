@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It changes how a promotion&#x27;s landing commit is checked, rolled back and recorded; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-landing-never-reverts-the-checkout#s1&quot;]}">
   <title>A Landing Never Reverts The Checkout | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -82,14 +82,29 @@
 </ul>
 
     <h2 id="s3">§3 — The path §1 names can no longer leave a written path behind HEAD</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> This is the fix at source nova's lead asked for. It is deferred until §1 names the mechanism, because the three candidates call for different fixes.</p>
 <ul>
 <li>If reckon's rollback ran against the pre-landing HEAD, the rollback captures the HEAD the landing started on before it stages anything. It restores only while HEAD still resolves to that commit. When HEAD carries the landing commit, it restores nothing and reports the landing as committed.</li>
 <li>If a peer's git command rewrote the index and working tree, reckon cannot stop that command. Then the fix is what reckon owns: §2's check sees the result, and the shared-checkout guidance names the command and the safe form.</li>
 <li>If another reckon path restores from a snapshot, that path gets the same guard as the first case.</li>
 </ul>
-<p>The done-when, write paths and negative control are written when §1 lands, and the section is then reviewed before it is built.</p>
+<p><strong>What §1 found.</strong> The first case holds, with one refinement. The rollback reverted nova's paths only because a second promotion of the same review run ran beside the first. Run at the landed HEAD, the rollback changes nothing. The cause to remove is therefore two promotions of one run at once, and the rollback itself needs no new condition. A guard that restored only while HEAD still resolved to the landing's starting commit would not have stopped nova's interleaving, because the second promotion's rollback read exactly that commit. It would also block a legitimate rollback after an unrelated peer commit moved HEAD.</p>
+<p><strong>Deliverable.</strong> One promotion of a run at a time. A promotion takes an exclusive claim on its run before it writes anything (the ledger row, the plan comment or a review record) and holds it until its landing, or its rollback, has finished. The claim lives under the shared crew home, as <code>_pointer_lock</code> (<code>reckon/crew/runs.py:316</code>) keys one per run, so it holds across hosts on the shared filesystem. Whether the existing pointer lock already spans the whole promotion, and why it did not stop nova's second promotion, is read from the code first and stated in the manifest.</p>
+<ul>
+<li>A second promotion of a run that is already being promoted refuses at once without writing, naming the holder.</li>
+<li>A promotion of a run already promoted reports that and writes nothing, as today.</li>
+<li><code>promote_review_run_itself</code> (<code>reckon/crew/recovery_review_acceptance.py</code>) goes through the same claim, so two sweepers on two hosts cannot both land one review run. A sweeper that finds the claim held reports it as a refused self-promotion, not as an error.</li>
+</ul>
+<p><strong>Write paths.</strong> <code>reckon/crew/promotion.py</code>, <code>reckon/crew/runs.py</code>, <code>reckon/crew/recovery_review_acceptance.py</code>, and <code>tests/test_one_promotion_of_a_run_at_a_time.py</code>, which is new.</p>
+<p><strong>Negative control.</strong> At the base revision, nothing refuses the second promotion, so the new test's claim cases fail by id.</p>
+<p><strong>Done when</strong> all four of these hold:</p>
+<ul>
+<li>A test promotes one review run twice at once in a repository and crew home it creates under a temporary directory. Both promotions go through <code>promotion.complete</code>, and the second starts while the first holds its claim, ordered with a barrier rather than with a sleep. Exactly one lands a commit. The other refuses without writing, naming the holder. Afterwards every written path reads equal in HEAD, the index and the working tree.</li>
+<li>A test runs two sweeps' <code>promote_review_run_itself</code> on one review run at once. One promotion lands, and the other is reported as refused because the claim is held.</li>
+<li>The negative control is shown: the new test file, run at the base revision with the same command, reports the claim cases as FAILED by id in a log under the run directory.</li>
+<li><code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q -rA</code> over the new test file, <code>tests/test_a_review_run_promotes_itself.py</code>, <code>tests/test_failed_landing_leaves_nothing_behind.py</code>, <code>tests/test_rollback_asks_head.py</code> and <code>tests/test_a_landing_checks_what_it_left.py</code> adds no failure against the base. <code>ruff check</code> and <code>ruff format --check</code> report no new finding on the changed files.</li>
+</ul>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -103,6 +118,11 @@
     <h4 class="r-fu-title">Check every landing&#x27;s paths and record every refusal and rollback</h4>
     <div class="r-fu-body"><p>Independent of §1, so it can run beside it.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-never-reverts-the-checkout §2</pre>
+    </article>
+<article class="r-fu" data-id="f-alnrtc-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-19" data-recommends-skill="/reckon-build a-landing-never-reverts-the-checkout §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">One promotion of a run at a time</h4>
+    <div class="r-fu-body"><p>§1 found that the revert needed a second promotion of the same review run beside the first. §3 removes that by claiming a run for the whole of its promotion.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-landing-never-reverts-the-checkout §3</pre>
     </article>
 </section>
 
