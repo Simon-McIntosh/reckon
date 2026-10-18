@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-site-answers-fast-and-agrees">
+  <meta name="plan-title" content="The Site Answers Fast and Agrees With Itself">
+  <meta name="plan-summary" content="Pages wait on cold derivations and show three progress figures. Serve derived state from memory, keep caches per format, show one effort-weighted progress.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="15.75">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="spa,reckon-tooling">
+  <meta name="plan-north-star" content="legible-to-human-and-agent">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-site-answers-fast-and-agrees#s2&quot;, &quot;the-site-answers-fast-and-agrees#s4&quot;], &quot;s5&quot;: [&quot;the-site-answers-fast-and-agrees#s4&quot;, &quot;the-site-answers-fast-and-agrees#s9&quot;], &quot;s6&quot;: [&quot;the-site-answers-fast-and-agrees#s5&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;], &quot;s7&quot;: [&quot;the-site-answers-fast-and-agrees#s2&quot;, &quot;the-site-answers-fast-and-agrees#s6&quot;], &quot;s11&quot;: [&quot;the-site-answers-fast-and-agrees#s3&quot;, &quot;the-site-answers-fast-and-agrees#s5&quot;, &quot;the-site-answers-fast-and-agrees#s6&quot;, &quot;the-site-answers-fast-and-agrees#s7&quot;, &quot;the-site-answers-fast-and-agrees#s8&quot;, &quot;the-site-answers-fast-and-agrees#s10&quot;, &quot;a-read-answers-inside-its-deadline#s38&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <title>The Site Answers Fast and Agrees With Itself | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: pages wait on cold derivations, and three progress figures disagree</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>On 2026-10-18 the lead reported the SPA unresponsive from the WSL client. Nova's plans took about 7 s to appear. Once they did, the progress
+      bars showed numbers that did not match the crew pane, and the graph and velocity panes did not work. Everything below was measured that day against the
+      served process on srv-1006 (<code>reckon.service</code>, pid 2241026, executing <code>d5ba4da74</code>). Trivial requests answered in 2 ms
+      throughout, so the server was live; the time went into derivations. A headless Chromium load of the nova page, through an SSH tunnel as the WSL client
+      reaches it, found no console error.</p>
+    <table>
+      <thead><tr><th>Symptom</th><th>Measured cause</th><th>Section</th></tr></thead>
+      <tbody>
+        <tr><td>Derived data arrives 17 to 26 s after the page</td><td><code>/_discover/nova</code> 17.7 s and <code>/_discover/reckon</code> 19.8 s when cold,
+          against 0.1 to 0.8 s warm. The served process logged <code>Ignoring incompatible metadata index</code> 88 times, in clusters at the first page loads
+          of the day (12:44, 13:07, 14:33), and each rejection rebuilt a project's metadata from scratch. A watcher on the shared cache caught imas-codex's
+          index rewritten in format 4 at 14:46:21; the served code writes format 5. Eleven session MCP servers started before the format changed on
+          2026-10-16 still run, and an MCP server never reloads its code; the only one serving imas-codex started on 2026-10-12.</td><td>§4, §5</td></tr>
+        <tr><td>Progress bars paint empty, then fill late</td><td><code>/_index/nova</code> rows carry no <code>impl</code>, so every bar paints at 0 and fills
+          only when discovery arrives.</td><td>§3</td></tr>
+        <tr><td>Plan list and crew pane disagree</td><td>Three figures: the list shows <code>impl</code>, graph endpoints show shipped plans over all plans in the
+          closure, and the crew flow shows section records. Worse, discovery serves the authored <code>plan-impl</code> meta for any plan whose sections are
+          declared but not recorded, because the light reader in <code>reckon/_plan_html.py</code> derives only when <code>_document_carries_records</code>.
+          The full parse derives from the declarations. On nova, <code>machine-description-retirement</code> serves 0.08 while its parse reads 1.0 (two of
+          two sections done); <code>forward-solve-api</code> serves 0.985 against 0.4. Twelve of nova's thirty sectioned plans differ by 25 points or
+          more.</td><td>§2, §7</td></tr>
+        <tr><td>Velocity pane fails</td><td><code>/crew/velocity?project=*</code> drops the connection: <code>capture_project</code> in
+          <code>reckon/velocity.py</code> raises <code>IndexError</code> at <code>first.index(selected[0])</code> for a repository with no commits in the
+          window. The nova-only view answers in 10.5 s.</td><td>§8, §5</td></tr>
+        <tr><td>Home view shows zeros, then slowly fills</td><td>It fetches every project's full discovery: 23 MB of JSON, about 5 MB compressed. Until
+          <code>/_projects/index.json</code> arrives 26 s in, it shows ACTIVE 0, SHIPPED 0 and "no edits recorded" for every project, and counts every
+          indexed document as a plan (nova "1628 plans" against 103). Schedule bars embed whole plan rows, and reckon's inventory carries 1.4 MB of followup
+          bodies.</td><td>§6</td></tr>
+        <tr><td>Everything slows together</td><td>One Python process serves every request. Four concurrent <code>/crew</code> polls took 5.2 s each, and
+          <code>/_server</code> took 1.0 s beside them instead of 2 ms. <code>/_checks/reckon</code> takes 2.2 to 2.7 s warm.</td><td>§5; the poll
+          itself is <a href="/reckon/plans/a-read-answers-inside-its-deadline#s38">a-read-answers-inside-its-deadline §38</a> and
+          <a href="/reckon/plans/a-read-answers-inside-its-deadline#s39">§39</a></td></tr>
+        <tr><td>No record of request time</td><td>The server log is 344 MB, never rotated, and holds no duration per request.</td><td>§9</td></tr>
+        <tr><td>Editing a plan through current code fails on import</td><td>Importing <code>reckon.mcp_edit_plan</code> first raises a circular import
+          (<code>_sha256_path</code> from a partially initialised <code>reckon.project_state</code>); importing <code>reckon.mcp</code> first works.</td><td>§10</td></tr>
+      </tbody>
+    </table>
+    <p>The stale MCP servers are also a reader's problem: each serves its own session from code days old. Reconnecting them is the operator's action
+      (<code>/mcp</code> → reckon → reconnect, in each session). §4 makes the shared cache safe whether or not they are reconnected.</p>
+
+    <h2 id="s2">§2 — A plan's progress is its sections' done share, weighted by effort</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> §1's third row. Two readers of one plan report different figures, and the lead locked one measure for every surface (decision
+      <code>progress-measure</code> below). The current rule in <code>derive_impl_with_source</code> (<code>reckon/_plan_html.py</code>), shipped by
+      <a href="/reckon/plans/the-portfolio-reads-true#s2">the-portfolio-reads-true §2</a>, weights by effort only when every declared section has a record
+      with hours, and otherwise counts. The lead's rule imputes instead.</p>
+    <p><strong>Deliverable.</strong> One function computes a plan's progress, and every reader of a plan calls it:</p>
+    <ul>
+      <li>The denominator is the sections declared <code>done</code> or <code>implementable</code>; <code>deferred</code> sections are excluded.</li>
+      <li>Each section weighs its record's <code>effort_hours</code>. A section with no hours takes the mean of the sections that have them. When none has
+        hours, every section weighs the same, which is the count.</li>
+      <li>A plan with no declarations keeps its authored <code>plan-impl</code>.</li>
+      <li><code>impl_source</code> reads <code>computed</code> when any hours were used, <code>declarations</code> for the count, and <code>authored</code>
+        for the fallback.</li>
+      <li>The light reader that builds discovery rows derives from the declarations in its head metadata even when the document carries no section
+        records, so discovery and the parse report the same figure.</li>
+    </ul>
+    <p><strong>Done when</strong> a test under <code>tests/</code> parses temporary plans covering five cases:</p>
+    <ul>
+      <li>All sections have hours: the effort-weighted share.</li>
+      <li>Partial hours: s1 done at 2 h, s2 implementable without hours, s3 implementable at 4 h. s2 is imputed 3 h, so progress is 2/9.</li>
+      <li>No hours: the count.</li>
+      <li>No declarations: the authored figure.</li>
+      <li>Declarations with no records: the light reader and the parse give the same value.</li>
+    </ul>
+    <p>The negative control makes the light reader skip the declarations again, and the last case then fails. The test files importing
+      <code>reckon/_plan_html.py</code> show no added failure against base. That includes <code>tests/test_impl_derives_from_declarations.py</code>, whose
+      covered-case expectation this rule supersedes, so it is edited to the new rule. <code>ruff check</code> and <code>ruff format --check</code> add no
+      findings on the changed Python files. Every log sits under the run directory and ends in EXIT=, and the suite runs on the fleet allocation, not the
+      login node. Write paths: <code>reckon/_plan_html.py</code>, <code>tests/test_impl_derives_from_declarations.py</code> and the new test file.</p>
+
+    <h2 id="s3">§3 — The first paint carries each plan's progress</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> The page paints from <code>/_index/&lt;project&gt;</code> (<a href="/reckon/plans/the-page-paints-from-an-index">the-page-paints-from-an-index</a>),
+      but those rows carry no progress, so every bar paints at 0% and waits for discovery.</p>
+    <p><strong>Deliverable.</strong> Each plan row in <code>/_index/&lt;project&gt;</code> carries the §2 figure as <code>impl</code>, taken from the persisted
+      metadata index. The page renders it on first paint, and a pushed row change updates it.</p>
+    <p><strong>Done when</strong> a test serves a temporary project and asserts that every plan's <code>impl</code> in <code>/_index</code> equals its value in
+      <code>/_discover</code>. That includes one plan with declarations and no records, and one with partial hours. The negative control drops the field from
+      the index row, and the equality assertion fails. The SPA test files show no added failure against base, and the same ruff, log and allocation terms as
+      §2 hold. Build it after §2 and §4 merge, because §4 changes the index file this row is read from. Write paths: <code>reckon/metadata_index.py</code>,
+      <code>reckon/serve.py</code>, <code>docs/ui/state-loader.js</code> and the test file.</p>
+
+    <h2 id="s4">§4 — A reader on another cache format never evicts the served one</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> §1's first row. Every process that reads a project writes one shared file per project under
+      <code>~/.config/reckon/cache/metadata-index/</code>, named by project and docs path only. A process on another format version finds the file
+      incompatible, rebuilds and overwrites it, and the next reader on the other version does the same. The served process pays 17 to 26 s each time.</p>
+    <p><strong>Deliverable.</strong> The persisted index's file identity includes its format, so processes on different formats keep separate files and none
+      evicts another. A same-format reader still reuses the file as today.</p>
+    <p><strong>Done when</strong> a test runs two writers over one temporary project with different format versions, alternating three times. Each
+      writer's second and third reads reuse its own file without a rebuild, and nothing logs <code>Ignoring incompatible metadata index</code>. The
+      negative control removes the format from the file identity, and the rebuild count then rises. Tests importing <code>reckon/metadata_index.py</code>
+      show no added failure against base, and the same ruff, log and allocation terms as §2 hold. After the served process carries the change, a 20-minute
+      watch of the cache directory and the server log records no incompatible-index line. Write paths: <code>reckon/metadata_index.py</code> and the test
+      file.</p>
+
+    <h2 id="s5">§5 — A request is answered from the last computed result, never behind a recompute</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> One Python process derives and serves. A cold discovery, a rollup (7 to 17 s), a compliance pass (2.2 to 2.7 s) or a velocity
+      capture (10.5 s) holds the interpreter while it runs, and every other request, including trivial ones, waits beside it.</p>
+    <p><strong>Deliverable.</strong> The derived endpoints are <code>/_discover/&lt;project&gt;</code>, <code>/_projects/index.json</code>,
+      <code>/_checks/&lt;project&gt;</code> and <code>/crew/velocity</code>.</p>
+    <ul>
+      <li>Each answers from its last computed result, with that result's age in a response header.</li>
+      <li>Each is recomputed outside the serving process's interpreter when its inputs change. A request waits only when no result exists yet.</li>
+      <li>A result that changes is pushed over the existing <code>/_changes/&lt;project&gt;</code> stream, as row changes are today.</li>
+      <li>The worker owns the choice of mechanism and states it in its manifest.</li>
+    </ul>
+    <p><strong>Done when</strong> a test forces a cold recompute of a temporary project's discovery. While it runs, a trivial request answers in under 50 ms
+      and the derived endpoint answers from the prior result with an age header. The negative control computes inline, and the trivial-request bound then
+      fails. On srv-1006, after the served process carries the change, ten minutes of ordinary fleet activity are logged with §9's durations, and every
+      derived endpoint answers under 1 s at the 95th percentile. Tests importing <code>reckon/serve.py</code> show no added failure against base, and the
+      same ruff, log and allocation terms as §2 hold. Build it after §4 and §9 merge, since §9 supplies the durations this measures. Write paths:
+      <code>reckon/serve.py</code>, a new module beside it for the recompute, and the test file.</p>
+
+    <h2 id="s6">§6 — The home view loads a summary, never every inventory</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> §1's fifth row. The home view needs counts, progress, activity and the active sprint per project. It downloads every full
+      inventory to get them, and shows zeros until the rollup arrives.</p>
+    <p><strong>Deliverable.</strong></p>
+    <ul>
+      <li>The home view renders from the fleet summary alone. That summary carries each project's plan counts by status, its progress (the effort-weighted
+        mean of its live plans' §2 figures, imputing missing plan hours by the mean as §2 does), its activity and its active sprint.</li>
+      <li>Until the summary arrives, the view shows a loading state, never a zero or an indexed-document count.</li>
+      <li>Full inventories are fetched only when the command palette first opens.</li>
+      <li>Schedule bars reference plans by slug instead of embedding whole rows.</li>
+    </ul>
+    <p><strong>Done when</strong> a test asserts the summary's fields for a temporary two-project fleet, including the progress roll-up with one plan
+      missing hours. A browser test loads the home view and asserts that no <code>/_discover</code> request is made before the palette opens, and that no
+      zero count is rendered before the summary arrives. The negative control restores the per-project discovery fetch, and the request assertion fails. The
+      schedule payload for reckon shrinks by at least half, measured before and after. SPA and fleet-index test files show no added failure against base, and
+      the same ruff, log and allocation terms as §2 hold. Build it after §5 and after
+      <a href="/reckon/plans/a-read-answers-inside-its-deadline#s39">a-read-answers-inside-its-deadline §39</a>, which writes <code>docs/ui/shell.jsx</code>
+      and <code>docs/ui/crew.jsx</code>. Write paths: <code>reckon/fleet_index.py</code>, <code>reckon/serve.py</code>, <code>reckon/roadmap.py</code> (the
+      schedule), <code>docs/ui/home.jsx</code>, <code>docs/ui/shell.jsx</code>, <code>docs/ui/crew.jsx</code> and the test files.</p>
+
+    <h2 id="s7">§7 — Every surface shows the one progress figure</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> Graph endpoints show shipped plans over all plans in the closure (<code>completion</code> in <code>reckon/roadmap.py</code>), and
+      the crew flow shows section records. Neither is the plan list's figure.</p>
+    <p><strong>Deliverable.</strong> Each graph endpoint carries a progress roll-up computed in Python: the effort-weighted mean of its member plans' §2
+      figures, imputing missing plan hours by the mean. The graph renders it. Crew flow items show their plan's §2 figure. No surface computes a progress
+      figure in JSX.</p>
+    <p><strong>Done when</strong> a parity test reads one temporary project through every served payload: the index row, discovery row, graph endpoint,
+      schedule bar and fleet summary. It asserts that each plan's figure, and each roll-up, equals a reference computed from §2's function. The negative
+      control restores the shipped-over-total endpoint figure, and the parity test fails. Roadmap and SPA test files show no added failure against base, and
+      the same ruff, log and allocation terms as §2 hold. Build it after §2 and §6 merge. Write paths: <code>reckon/roadmap.py</code>,
+      <code>docs/ui/graph.jsx</code>, <code>docs/ui/crew.jsx</code> and the test file.</p>
+
+    <h2 id="s8">§8 — Velocity answers for every scope</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> <code>capture_project</code> in <code>reckon/velocity.py</code> takes <code>selected[0]</code> without checking that the window
+      selected any commit, so one quiet repository fails the all-project view. The same line takes index −1 when the window starts at a repository's first
+      commit, which Python reads as the last commit rather than as no base.</p>
+    <p><strong>Deliverable.</strong> A repository with no commits in the window reports zero for every metric. A window starting at the first commit
+      measures from the empty tree.</p>
+    <p><strong>Done when</strong> a test builds three temporary repositories: one with no commits in the window, one whose first commit is inside it, and
+      one ordinary. It asserts the all-project view returns all three, the first with zeros and the second counting its first commit's changes. The
+      negative control restores the unguarded index, and the first case raises. On srv-1006, <code>/crew/velocity?project=*</code> then answers 200. Tests
+      importing <code>reckon/velocity.py</code> show no added failure against base, and the same ruff, log and allocation terms as §2 hold. Write paths:
+      <code>reckon/velocity.py</code> and the test file.</p>
+
+    <h2 id="s9">§9 — The server records each request's duration, in a bounded log</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> Every latency in §1 was reconstructed by timing requests by hand, because the access log carries no duration, and the log
+      file has grown to 344 MB unrotated.</p>
+    <p><strong>Deliverable.</strong> Each access-log line carries the request's duration in milliseconds, and each response carries it in a
+      <code>Server-Timing</code> header. The server's log is bounded in size and keeps one predecessor. The unit's <code>StandardOutput=append:</code> holds
+      the file open, so the worker chooses how rotation works with it and says why in its manifest.</p>
+    <p><strong>Done when</strong> a test serves a temporary project and asserts a duration on the logged line and in the header for one request. A second
+      test drives the log past its bound and asserts one predecessor and a bounded current file. The negative control removes the bound, and the size
+      assertion fails. Tests importing <code>reckon/serve.py</code> or <code>reckon/service.py</code> show no added failure against base, and the same ruff,
+      log and allocation terms as §2 hold. Write paths: <code>reckon/serve.py</code>, <code>reckon/service.py</code> and the test file.</p>
+
+    <h2 id="s10">§10 — Every reckon module imports on its own</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> §1's last row. A caller that imports the module it needs, rather than the one that happens to load first, fails.</p>
+    <p><strong>Deliverable.</strong> The cycle between <code>reckon.project_state</code> and <code>reckon.crew.fleet_supervisor</code> is broken, so
+      <code>reckon.mcp_edit_plan</code> imports first in a fresh interpreter.</p>
+    <p><strong>Done when</strong> a test imports each module under <code>reckon/</code> first in its own fresh subprocess and asserts that every import
+      succeeds. At the base revision it fails on <code>reckon.mcp_edit_plan</code>. The negative control restores the cyclic import, and the test fails. The
+      test files importing the changed modules show no added failure against base, and the same ruff, log and allocation terms as §2 hold. Write paths:
+      <code>reckon/crew/fleet_supervisor.py</code>, <code>reckon/project_state.py</code> and the test file.</p>
+
+    <h2 id="s11">§11 — The site is measured the way the reader meets it</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> Each section above proves its own change. Whether the lead's page is now fast and consistent is a separate fact, and it
+      can only be measured from the reader's side.</p>
+    <p><strong>Deliverable.</strong> After §2 to §10 and <a href="/reckon/plans/a-read-answers-inside-its-deadline#s38">a-read-answers-inside-its-deadline
+      §38</a> and <a href="/reckon/plans/a-read-answers-inside-its-deadline#s39">§39</a> have merged and the served process carries them, the project page is
+      loaded for nova, reckon and imas-ambix in headless Chromium. The page is reached through an SSH tunnel to srv-1006, as the WSL client reaches it, cold
+      and again warm. Each load measures four things:</p>
+    <ul>
+      <li>the time until the plan list shows non-zero progress bars;</li>
+      <li>the time until the graph, velocity (both the project and all scopes) and crew views are populated;</li>
+      <li>the bytes transferred by the home view;</li>
+      <li>the console errors.</li>
+    </ul>
+    <p>Ten plans per project are drawn at random, and the bar each surface shows is compared with §2's function.</p>
+    <p><strong>Done when</strong> the report is recorded in this plan's landing record with the host, the load average and the UTC window of each pass. The
+      gate is hard:</p>
+    <ul>
+      <li>progress bars show within 2 s on a warm load;</li>
+      <li>every view is populated within 3 s on a warm load and 10 s cold;</li>
+      <li>no console error;</li>
+      <li>the home view transfers under 500 KB;</li>
+      <li>all thirty sampled plans agree on every surface.</li>
+    </ul>
+    <p>A failed gate names the section that owns the miss. The probe script is kept under the run directory, and every log ends in EXIT=. Write paths:
+      <code>docs/evidence/archive/the-site-answers-fast-and-agrees-landed.html</code>.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="progress-measure" data-choice="effort-weighted-section-share" data-by="Simon McIntosh" data-when="2026-10-18">
+        <p class="r-dec-q">What does a plan's progress bar mean, everywhere it appears (plan list, graph, crew flow, fleet home)?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="section-share">Section share by count</button>
+          <button class="r-opt chosen" data-value="effort-weighted-section-share">Section share weighted by effort</button>
+          <button class="r-opt" data-value="authored-impl-auto-updated">Keep the authored impl and update it on landing</button>
+        </p>
+        <p class="r-dec-rat">The lead chose the effort-weighted share. Where no section carries hours it falls back to the count. Where some do, the
+          missing hours are imputed with the mean of the present ones. A figure derived from sections cannot drift the way a hand-set <code>impl</code>
+          did (twelve of nova's thirty sectioned plans off by 25 points or more). Weighting by effort reads closer to the work left than a count does. The
+          coordinator's own calls, which the lead can revisit: a plan with no declared sections keeps its authored <code>impl</code>, and every roll-up
+          (graph endpoint, fleet home) applies the same weighting over member plans' hours.</p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+    </section>
+  </main>
+</body>
+</html>
