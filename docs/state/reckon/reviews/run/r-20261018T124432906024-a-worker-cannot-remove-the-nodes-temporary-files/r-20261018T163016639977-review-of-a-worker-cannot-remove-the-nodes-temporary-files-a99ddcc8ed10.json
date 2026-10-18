@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/_backends.py:launch_plan"
+  ],
+  "completed_at": "2026-10-18T16:52:12.893Z",
+  "dispatched_at": "2026-10-18T16:31:41Z",
+  "findings": [
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": "1197",
+      "severity": "follow-on",
+      "text": "follow-on: create_node_tmp_runtime_paths re-implements the module's own create_write_roots (reckon/_worker_fence.py:547), the same exists-check, mkdir(parents=True, exist_ok=True) and BackendError loop for every directory a fence is about to bind writable, rather than extending it, so the rule now lives in two copies that can drift."
+    },
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": "1425",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm the manifest records (population-head.log) covers the 18 files naming _worker_fence or fence_argv, while the done_when at prompt.txt:92 names the wider importer set of reckon/_worker_fence.py or reckon/crew/dispatch_launch.py (25 files, importer-files.txt); those extra files were measured only at the superseded head 9f51c3c99 (after-suite.log, 3 failed, 419 passed), so the delivery head a86b0351e carries no population arm over them."
+    },
+    {
+      "file": "docs/evidence/fragments/a-worker-cannot-write-your-home/a-worker-cannot-remove-the-nodes-temporary-files.html",
+      "line": "39",
+      "severity": "follow-on",
+      "text": "follow-on: the lane paragraph states claude 11.9s, codex 13.5s and clive 13.0s at the delivery head, but the delivery-head smoke (lane-smoke-summary.json, head a86b0351e) records codex 7.6s, claude 10.0s and clive 13.5s, so the figures are quoted from the superseded 9f51c3c99 run and match neither head for codex."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T124432906024-a-worker-cannot-remove-the-nodes-temporary-files/population-base.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the base-arm gate log's header names the revision, tree and cwd but not the module under test as imported (module.__file__), and the manifest leaves measurement_module and measurement_cwd empty, so a reader cannot confirm the arm imported the base tree's reckon/_worker_fence.py rather than an installed copy."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read the ten commits ff9b7f230..a99ddcc8e commit by commit - the node-tmp seal, the protected-bind ordering fix, the runtime-directory creation, the ancestor and existence guards in the grant loop, and the evidence and figure prose - 560 insertions across the four declared paths.",
+    "done_when": "prompt.txt:92 names the executed refusal, the enumerated runtime list, the negative control, the per-lane launch and the importer-population delta; tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:230-249 executes the composed argv and the manifest records the head population arm at 116 passed EXIT=0 and the declared control red at 1 failed, 4 passed, EXIT=1.",
+    "goal": "prompt.txt:30 asks the fence to make a fenced worker see the node's /tmp read-only apart from its own scratch and the runtime paths its launch writes; reckon/_worker_fence.py:1414-1425 composes the /tmp overlay and re-grants the run's scratch and create_node_tmp_runtime_paths() after it.",
+    "manifest": "read; it records the head population arm (population-head.log, 116 passed, EXIT=0), the base arm (population-base.log, 3 failed, 111 passed at ff9b7f230), the declared control and the three lane smokes, but that arm covers 18 files where the done_when names the wider 25-file importer population.",
+    "write_paths": "the manifest's orientation declares reckon/_worker_fence.py, tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py, the evidence fragment and the figure directory; git diff --numstat ff9b7f230..a99ddcc8e lists exactly those four paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:298 reddens under the declared control (negative-control.log, 1 failed, 4 passed, EXIT=1) and the creation case at :205 reddens against the filtering composition it replaced.",
+    "evidence": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:298 executes the composed argv and the manifest's arm is recorded in population-head.log, but that arm covers 18 files, not the 25-file importer population the done_when names.",
+    "fit": "reckon/_worker_fence.py:1158 follows the module's seam idiom beside worker_scratch_seal_root, with a named list and a per-entry reason comment; no plan or ticket label is introduced.",
+    "goal_fidelity": "reckon/_worker_fence.py:1414-1425 seals the node tmp read-only and re-opens the run scratch and the enumerated runtime paths after it, which is the goal.",
+    "reuse": "reckon/_worker_fence.py:1197 create_node_tmp_runtime_paths duplicates reckon/_worker_fence.py:547 create_write_roots for the same capability, so an owner of the mechanism already exists and is not extended.",
+    "scope_discipline": "git diff ff9b7f230..a99ddcc8e touches only the four declared paths, though the source prompt (prompt.txt:58) says this node writes no figure and no evidence prose."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: ff9b7f23091922881210e118835876de65a52ce0\nreviewed_head_sha: a99ddcc8ed10d2e355873ca83f82255c55544836\nVERDICT goal: prompt.txt:30 asks the fence to make a fenced worker see the node's /tmp read-only apart from its own scratch and the runtime paths its launch writes; reckon/_worker_fence.py:1414-1425 composes the /tmp overlay and re-grants the run's scratch and create_node_tmp_runtime_paths() after it.\nVERDICT done_when: prompt.txt:92 names the executed refusal, the enumerated runtime list, the negative control, the per-lane launch and the importer-population delta; tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:230-249 executes the composed argv and the manifest records the head population arm at 116 passed EXIT=0 and the declared control red at 1 failed, 4 passed, EXIT=1.\nVERDICT write_paths: the manifest's orientation declares reckon/_worker_fence.py, tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py, the evidence fragment and the figure directory; git diff --numstat ff9b7f230..a99ddcc8e lists exactly those four paths.\nVERDICT manifest: read; it records the head population arm (population-head.log, 116 passed, EXIT=0), the base arm (population-base.log, 3 failed, 111 passed at ff9b7f230), the declared control and the three lane smokes, but that arm covers 18 files where the done_when names the wider 25-file importer population.\nVERDICT diff: read the ten commits ff9b7f230..a99ddcc8e commit by commit - the node-tmp seal, the protected-bind ordering fix, the runtime-directory creation, the ancestor and existence guards in the grant loop, and the evidence and figure prose - 560 insertions across the four declared paths.\nCALL_SITES: reckon/_backends.py:launch_plan\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:1414-1425 seals the node tmp read-only and re-opens the run scratch and the enumerated runtime paths after it, which is the goal.\nSCORE evidence: 14\nJUSTIFICATION evidence: tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:298 executes the composed argv and the manifest's arm is recorded in population-head.log, but that arm covers 18 files, not the 25-file importer population the done_when names.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: git diff ff9b7f230..a99ddcc8e touches only the four declared paths, though the source prompt (prompt.txt:58) says this node writes no figure and no evidence prose.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:298 reddens under the declared control (negative-control.log, 1 failed, 4 passed, EXIT=1) and the creation case at :205 reddens against the filtering composition it replaced.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/_worker_fence.py:1158 follows the module's seam idiom beside worker_scratch_seal_root, with a named list and a per-entry reason comment; no plan or ticket label is introduced.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/_worker_fence.py:1197 create_node_tmp_runtime_paths duplicates reckon/_worker_fence.py:547 create_write_roots for the same capability, so an owner of the mechanism already exists and is not extended.\nFINDING reckon/_worker_fence.py:1197 follow-on: create_node_tmp_runtime_paths re-implements the module's own create_write_roots (reckon/_worker_fence.py:547), the same exists-check, mkdir(parents=True, exist_ok=True) and BackendError loop for every directory a fence is about to bind writable, rather than extending it, so the rule now lives in two copies that can drift.\nFINDING reckon/_worker_fence.py:1425 follow-on: the head arm the manifest records (population-head.log) covers the 18 files naming _worker_fence or fence_argv, while the done_when at prompt.txt:92 names the wider importer set of reckon/_worker_fence.py or reckon/crew/dispatch_launch.py (25 files, importer-files.txt); those extra files were measured only at the superseded head 9f51c3c99 (after-suite.log, 3 failed, 419 passed), so the delivery head a86b0351e carries no population arm over them.\nFINDING docs/evidence/fragments/a-worker-cannot-write-your-home/a-worker-cannot-remove-the-nodes-temporary-files.html:39 follow-on: the lane paragraph states claude 11.9s, codex 13.5s and clive 13.0s at the delivery head, but the delivery-head smoke (lane-smoke-summary.json, head a86b0351e) records codex 7.6s, claude 10.0s and clive 13.5s, so the figures are quoted from the superseded 9f51c3c99 run and match neither head for codex.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T124432906024-a-worker-cannot-remove-the-nodes-temporary-files/population-base.log:1 follow-on: the base-arm gate log's header names the revision, tree and cwd but not the module under test as imported (module.__file__), and the manifest leaves measurement_module and measurement_cwd empty, so a reader cannot confirm the arm imported the base tree's reckon/_worker_fence.py rather than an installed copy.\n",
+  "review_run_id": "r-20261018T163016639977-review-of-a-worker-cannot-remove-the-nodes-temporary-files-a99ddcc8ed10",
+  "reviewed_base_sha": "ff9b7f23091922881210e118835876de65a52ce0",
+  "reviewed_head_sha": "a99ddcc8ed10d2e355873ca83f82255c55544836",
+  "reviewed_run_id": "r-20261018T124432906024-a-worker-cannot-remove-the-nodes-temporary-files",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T16:45:00+00:00",
+  "total": 87
+}
