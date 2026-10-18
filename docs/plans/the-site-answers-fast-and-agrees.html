@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="spa,reckon-tooling">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-site-answers-fast-and-agrees#s2&quot;, &quot;the-site-answers-fast-and-agrees#s4&quot;], &quot;s5&quot;: [&quot;the-site-answers-fast-and-agrees#s4&quot;, &quot;the-site-answers-fast-and-agrees#s9&quot;], &quot;s6&quot;: [&quot;the-site-answers-fast-and-agrees#s5&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;], &quot;s7&quot;: [&quot;the-site-answers-fast-and-agrees#s2&quot;, &quot;the-site-answers-fast-and-agrees#s6&quot;], &quot;s11&quot;: [&quot;the-site-answers-fast-and-agrees#s3&quot;, &quot;the-site-answers-fast-and-agrees#s5&quot;, &quot;the-site-answers-fast-and-agrees#s6&quot;, &quot;the-site-answers-fast-and-agrees#s7&quot;, &quot;the-site-answers-fast-and-agrees#s8&quot;, &quot;the-site-answers-fast-and-agrees#s10&quot;, &quot;a-read-answers-inside-its-deadline#s38&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-site-answers-fast-and-agrees#s2&quot;, &quot;the-site-answers-fast-and-agrees#s14&quot;], &quot;s4&quot;: [&quot;the-site-answers-fast-and-agrees#s9&quot;], &quot;s5&quot;: [&quot;the-site-answers-fast-and-agrees#s3&quot;], &quot;s6&quot;: [&quot;the-site-answers-fast-and-agrees#s2&quot;, &quot;the-site-answers-fast-and-agrees#s5&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;], &quot;s7&quot;: [&quot;the-site-answers-fast-and-agrees#s6&quot;], &quot;s12&quot;: [&quot;the-site-answers-fast-and-agrees#s4&quot;], &quot;s13&quot;: [&quot;the-site-answers-fast-and-agrees#s12&quot;], &quot;s14&quot;: [&quot;the-site-answers-fast-and-agrees#s13&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;], &quot;s15&quot;: [&quot;the-site-answers-fast-and-agrees#s14&quot;], &quot;s11&quot;: [&quot;the-site-answers-fast-and-agrees#s3&quot;, &quot;the-site-answers-fast-and-agrees#s5&quot;, &quot;the-site-answers-fast-and-agrees#s6&quot;, &quot;the-site-answers-fast-and-agrees#s7&quot;, &quot;the-site-answers-fast-and-agrees#s8&quot;, &quot;the-site-answers-fast-and-agrees#s10&quot;, &quot;the-site-answers-fast-and-agrees#s15&quot;, &quot;a-read-answers-inside-its-deadline#s38&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
   <title>The Site Answers Fast and Agrees With Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -108,7 +108,7 @@
     <p><strong>Why.</strong> The page paints from <code>/_index/&lt;project&gt;</code> (<a href="/reckon/plans/the-page-paints-from-an-index">the-page-paints-from-an-index</a>),
       but those rows carry no progress, so every bar paints at 0% and waits for discovery.</p>
     <p><strong>Deliverable.</strong> Each plan row in <code>/_index/&lt;project&gt;</code> carries the §2 figure as <code>impl</code>, taken from the persisted
-      metadata index. The page renders it on first paint, and a pushed row change updates it.</p>
+      metadata index. The page renders it on first paint, and a pushed row change updates it. Nothing is retired: discovery keeps <code>impl</code> because agent readers and the roadmap consume it there, and both rows take the figure from §2's one function, so §7's parity test holds them equal.</p>
     <p><strong>Done when</strong> a test serves a temporary project and asserts that every plan's <code>impl</code> in <code>/_index</code> equals its value in
       <code>/_discover</code>. That includes one plan with declarations and no records, and one with partial hours. The negative control drops the field from
       the index row, and the equality assertion fails. The SPA test files show no added failure against base, and the same ruff, log and allocation terms as
@@ -120,27 +120,20 @@
     <p><strong>Why.</strong> §1's first row. Every process that reads a project writes one shared file per project under
       <code>~/.config/reckon/cache/metadata-index/</code>, named by project and docs path only. A process on another format version finds the file
       incompatible, rebuilds and overwrites it, and the next reader on the other version does the same. The served process pays 17 to 26 s each time.</p>
-    <p><strong>Deliverable.</strong> The persisted index's file identity includes its format, so processes on different formats keep separate files and none
-      evicts another. A same-format reader still reuses the file as today.</p>
-    <p><strong>Done when</strong> a test runs two writers over one temporary project with different format versions, alternating three times. Each
-      writer's second and third reads reuse its own file without a rebuild, and nothing logs <code>Ignoring incompatible metadata index</code>. The
-      negative control removes the format from the file identity, and the rebuild count then rises. Tests importing <code>reckon/metadata_index.py</code>
-      show no added failure against base, and the same ruff, log and allocation terms as §2 hold. After the served process carries the change, a 20-minute
-      watch of the cache directory and the server log records no incompatible-index line. Write paths: <code>reckon/metadata_index.py</code> and the test
-      file.</p>
+    <p><strong>Deliverable.</strong> One function owns the path of a persisted cache under <code>_config_home()/cache/</code>, and that path includes the writer's format, so processes on different formats keep separate files and none evicts another. All four caches that share the defect use it: the metadata index (<code>_index_path</code> in <code>reckon/metadata_index.py</code>), the git creation map (<code>_git_creation_cache_path</code>), the git last-modified map (<code>_git_last_modified_cache_path</code>, both in <code>reckon/serve.py</code>) and the compliance store (<code>_store_path</code> in <code>reckon/compliance.py</code>). A same-format reader still reuses its file as today.</p>
+    <p><strong>Done when</strong> a test runs two writers with different format versions over one temporary project, alternating three times, for each of the four caches. Each writer's second and third reads reuse its own file without a rebuild. Nothing logs <code>Ignoring incompatible metadata index</code> or the other caches' equivalent rejection. The negative control removes the format from the shared path function, and the rebuild count then rises for all four. Tests importing the three changed modules show no added failure against base. Every log sits under the run directory and ends in EXIT=, and the suite runs on the fleet allocation, not the login node. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the changed Python files. After the served process carries the change, a 20-minute watch of the cache directory and the server log records no incompatible-cache line. Write paths: <code>reckon/metadata_index.py</code>, <code>reckon/serve.py</code>, <code>reckon/compliance.py</code> and the test file.</p>
 
     <h2 id="s5">§5 — A request is answered from the last computed result, never behind a recompute</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> One Python process derives and serves. A cold discovery, a rollup (7 to 17 s), a compliance pass (2.2 to 2.7 s) or a velocity
       capture (10.5 s) holds the interpreter while it runs, and every other request, including trivial ones, waits beside it.</p>
-    <p><strong>Deliverable.</strong> The derived endpoints are <code>/_discover/&lt;project&gt;</code>, <code>/_projects/index.json</code>,
-      <code>/_checks/&lt;project&gt;</code> and <code>/crew/velocity</code>.</p>
+    <p><strong>Deliverable.</strong> <code>/_checks/&lt;project&gt;</code> already recomputes outside the request path. <code>_start_check_refresh</code> and <code>_spawn_check_refresh</code> in <code>reckon/serve.py</code> start a niced child per project, single-flight through <code>_CHECK_REFRESHES</code>, which writes the store the route reads. That mechanism is generalised from one route to four: <code>/_discover/&lt;project&gt;</code>, <code>/_projects/index.json</code>, <code>/_checks/&lt;project&gt;</code> and <code>/crew/velocity</code>. No new module is added. Its interface is three functions, keyed by route and project:</p>
     <ul>
-      <li>Each answers from its last computed result, with that result's age in a response header.</li>
-      <li>Each is recomputed outside the serving process's interpreter when its inputs change. A request waits only when no result exists yet.</li>
-      <li>A result that changes is pushed over the existing <code>/_changes/&lt;project&gt;</code> stream, as row changes are today.</li>
-      <li>The worker owns the choice of mechanism and states it in its manifest.</li>
+      <li><em>compute</em>, the child's entry point, which writes the route's stored result;</li>
+      <li><em>read the last result</em>, which a request answers from, with the result's age in a response header;</li>
+      <li><em>spawn on change</em>, single-flight per route and project, started when the route's inputs change.</li>
     </ul>
+    <p>A request waits only when no result exists yet. A result that changes is pushed over the existing <code>/_changes/&lt;project&gt;</code> stream. Retired: the inline computation of the three new routes on the request path, and the compliance-only names of the refresh machinery, which becomes the one generic instance.</p>
     <p><strong>Done when</strong> a test forces a cold recompute of a temporary project's discovery. While it runs, a trivial request answers in under 50 ms
       and the derived endpoint answers from the prior result with an age header. The negative control computes inline, and the trivial-request bound then
       fails. On srv-1006, after the served process carries the change, ten minutes of ordinary fleet activity are logged with §9's durations, and every
@@ -154,8 +147,7 @@
       inventory to get them, and shows zeros until the rollup arrives.</p>
     <p><strong>Deliverable.</strong></p>
     <ul>
-      <li>The home view renders from the fleet summary alone. That summary carries each project's plan counts by status, its progress (the effort-weighted
-        mean of its live plans' §2 figures, imputing missing plan hours by the mean as §2 does), its activity and its active sprint.</li>
+      <li>The home view renders from the fleet summary alone. That summary carries each project's plan counts by status, its progress, from one roll-up function this section adds beside §2's progress function in <code>reckon/_plan_html.py</code>: the effort-weighted mean of the member plans' §2 figures, imputing missing plan hours by the mean as §2 does. §7 consumes the same function, its activity and its active sprint.</li>
       <li>Until the summary arrives, the view shows a loading state, never a zero or an indexed-document count.</li>
       <li>Full inventories are fetched only when the command palette first opens.</li>
       <li>Schedule bars reference plans by slug instead of embedding whole rows.</li>
@@ -173,9 +165,7 @@
 <section data-reckon="section" data-id="s7" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> Graph endpoints show shipped plans over all plans in the closure (<code>completion</code> in <code>reckon/roadmap.py</code>), and
       the crew flow shows section records. Neither is the plan list's figure.</p>
-    <p><strong>Deliverable.</strong> Each graph endpoint carries a progress roll-up computed in Python: the effort-weighted mean of its member plans' §2
-      figures, imputing missing plan hours by the mean. The graph renders it. Crew flow items show their plan's §2 figure. No surface computes a progress
-      figure in JSX.</p>
+    <p><strong>Deliverable.</strong> Each graph endpoint carries a progress roll-up from §6's roll-up function, and the graph renders it. <code>reckon/roadmap.py</code> calls that function and implements no weighting of its own. Crew flow items show their plan's §2 figure. No surface computes a progress figure in JSX.</p>
     <p><strong>Done when</strong> a parity test reads one temporary project through every served payload: the index row, discovery row, graph endpoint,
       schedule bar and fleet summary. It asserts that each plan's figure, and each roll-up, equals a reference computed from §2's function. The negative
       control restores the shipped-over-total endpoint figure, and the parity test fails. Roadmap and SPA test files show no added failure against base, and
@@ -229,6 +219,7 @@
       <li>the time until the plan list shows non-zero progress bars;</li>
       <li>the time until the graph, velocity (both the project and all scopes) and crew views are populated;</li>
       <li>the bytes transferred by the home view;</li>
+      <li>the bytes and the time until the first screen of the figure list shows its thumbnails;</li>
       <li>the console errors.</li>
     </ul>
     <p>Ten plans per project are drawn at random, and the bar each surface shows is compared with §2's function.</p>
@@ -239,10 +230,35 @@
       <li>every view is populated within 3 s on a warm load and 10 s cold;</li>
       <li>no console error;</li>
       <li>the home view transfers under 500 KB;</li>
+      <li>the first screen of nova's and power_convertor's figure lists transfers under 2 MB and shows every thumbnail within 2 s on a warm load;</li>
       <li>all thirty sampled plans agree on every surface.</li>
     </ul>
-    <p>A failed gate names the section that owns the miss. The probe script is kept under the run directory, and every log ends in EXIT=. Write paths:
+    <p>A failed gate names the section that owns the miss. The negative control runs the same probe against a temporary <code>reckon serve</code> on another port, started from a worktree at the plan's base revision, and the gate must fail there, which shows the probe tells a fast, consistent site from a slow or empty one. The probe script is kept under the run directory, and every log ends in EXIT=. Write paths:
       <code>docs/evidence/archive/the-site-answers-fast-and-agrees-landed.html</code>.</p>
+
+    <h2 id="s12">§12 — A figure&#x27;s thumbnail is a small raster image</h2>
+<section data-reckon="section" data-id="s12" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> On 2026-10-18 the lead reported that figures take a while to load. A headless load of each project's figure list, through a tunnel to srv-1006, measured the first screen at 60 thumbnail requests. For nova they carried 6.8 MB, with a 1.4 s median request and 1.05 s of main-thread blocking. For power_convertor they carried 9.5 MB, with a 0.9 s median. The server answers each in 2 to 7 ms; the time goes to moving and drawing full figures where icons belong. <code>/_thumb/</code> rasterises PNG figures through <code>_thumbnail_bytes</code>, but for an SVG it sends the whole file (<code>reckon/serve.py</code> near line 3058), so a 50 by 34 pixel list icon costs the full drawing. Nova's SVGs have a 70 KB median, a 343 KB 90th percentile and a 3.2 MB maximum with 10,647 paths. Rendered with <code>rsvg-convert</code> at 200 pixels, six sampled figures gave PNGs of 11 to 32 KB in 18 to 141 ms each. <code>rsvg-convert</code> exists on the login node but not on the compute nodes where the tests run.</p>
+<p><strong>Deliverable.</strong> <code>/_thumb/</code> serves an SVG figure as a PNG no larger than <code>THUMB_MAX_EDGE</code> on its longer edge, through the existing per-revision cache. The rasteriser is declared in <code>pyproject.toml</code> and <code>uv.lock</code>, so it is present wherever the server and its tests run, and the manifest names which one and why. A figure that fails to rasterise falls back to the SVG. Retired: the SVG passthrough on the thumbnail route.</p>
+<p><strong>Done when</strong> a test serves a temporary project with one SVG figure and asserts that <code>/_thumb/</code> answers <code>image/png</code> with neither edge above <code>THUMB_MAX_EDGE</code>, in fewer bytes than the SVG. A second request reuses the cache without rendering again, and a rewritten SVG renders afresh. The negative control restores the SVG passthrough, and the content-type assertion fails. Tests importing <code>reckon/serve.py</code> show no added failure against base. Every log sits under the run directory and ends in EXIT=, and the suite runs on the fleet allocation, not the login node. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the changed Python files. After the served process carries it, the first screen of power_convertor's figure list transfers under 2 MB, measured by a headless load of the list through a tunnel to srv-1006, as in this section's Why. Write paths: <code>reckon/serve.py</code>, <code>pyproject.toml</code>, <code>uv.lock</code> and the test file.</p>
+
+    <h2 id="s13">§13 — Text responses are compressed</h2>
+<section data-reckon="section" data-id="s13" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> JSON responses are gzipped above a size threshold, but files sent by <code>_send_file</code>, which carry the full SVG figures in the reader, the stylesheets and the scripts, go out uncompressed. Gzip at level 5 shrinks power_convertor's 257 SVGs from 28.6 MB to 7.9 MB and nova's 499 from 82.8 MB to 21.1 MB. Nova's largest figure drops from 3.2 MB to 0.32 MB. The reader reaches the server through an SSH tunnel, where bytes are the cost.</p>
+<p><strong>Deliverable.</strong> <code>_send_file</code> gzips a text response (SVG, JavaScript, CSS, HTML, JSON) above the existing threshold when the request accepts gzip. The compressed bytes are cached per ETag, so a file is compressed once per revision. The ETag and the 304 answer behave as they do today.</p>
+<p><strong>Done when</strong> a test serves a temporary project and asserts that an SVG above the threshold answers <code>Content-Encoding: gzip</code> with a body that decompresses to the file. The same file is sent as is when the request does not accept gzip. A matching <code>If-None-Match</code> still answers 304, and a second request does not compress again. The negative control removes the compression branch, and the encoding assertion fails. Tests importing <code>reckon/serve.py</code> show no added failure against base. Every log sits under the run directory and ends in EXIT=, and the suite runs on the fleet allocation, not the login node. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the changed Python files. Write paths: <code>reckon/serve.py</code> and the test file.</p>
+
+    <h2 id="s14">§14 — A figure revision is fetched once per browser</h2>
+<section data-reckon="section" data-id="s14" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> Figures and thumbnails answer <code>Cache-Control: no-cache</code> with an ETag, so every view of a figure the browser already holds costs a revalidation round trip through the tunnel, and a list of 60 thumbnails costs 60 of them.</p>
+<p><strong>Deliverable.</strong> The SPA requests a figure or thumbnail by a URL that carries the file's revision, taken from the index row it already has. The server answers such a URL with <code>Cache-Control: max-age=31536000, immutable</code> when the revision matches the file, and as today when it does not. A changed figure therefore gets a new URL and is fetched again, and an unchanged one is not revalidated.</p>
+<p><strong>Done when</strong> a test requests a temporary figure by its current revision and asserts the immutable header. It then rewrites the figure and asserts that the old revision's URL is no longer answered as immutable. A test in the style of <code>tests/test_spa_crew_cards.py</code> asserts that the thumbnail and reader image sources carry the revision. The negative control drops the revision from the URL, and the header assertion fails. Tests importing <code>reckon/serve.py</code> and the SPA test files show no added failure against base. Every log sits under the run directory and ends in EXIT=, and the suite runs on the fleet allocation, not the login node. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the changed Python files. Write paths: <code>reckon/serve.py</code>, <code>docs/ui/shell-plans.jsx</code>, <code>docs/ui/plan.jsx</code> and the test files.</p>
+
+    <h2 id="s15">§15 — The figure list renders the rows on screen</h2>
+<section data-reckon="section" data-id="s15" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> Nova's figure list puts all 1,344 rows, each with an <code>&lt;img&gt;</code>, into the page at once. The headless load measured seven long tasks totalling 1.05 s, the longest 383 ms, while the first screen holds about 60 rows.</p>
+<p><strong>Deliverable.</strong> The artifact list renders only the rows within and near the viewport, keeping the scroll height of the full list. Scrolling renders the rows it reaches, and the row order, filters and selection behave as today.</p>
+<p><strong>Done when</strong> a browser test loads a temporary project with at least 1,000 figures. It asserts that the page holds at most 150 rows and no long task above 200 ms, and that scrolling to the end renders the last figure's row. The negative control renders every row, and the row-count assertion fails. The SPA test files show no added failure against base. Every log sits under the run directory and ends in EXIT=. Write paths: <code>docs/ui/shell-plans.jsx</code> and the test file.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
