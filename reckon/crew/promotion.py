@@ -9,6 +9,7 @@ import re
 import shlex
 import shutil
 import subprocess
+import sys
 import time
 from collections.abc import (
     Callable,
@@ -748,17 +749,19 @@ def _complete_locked(
                     landing=_declared_manifest_landing(record),
                 )
             )
-            _commit_landing_writes(
-                run_id=run_id,
-                verdict=str(gate).strip().lower(),
-                checkout=checkout,
-                paths=_plan_comment_store_path(
-                    project=project,
-                    plan=str(node.get("plan") or ""),
-                    comment=comment,
-                    root=ledger_root,
+            landing_check = _report_landing_check(
+                _commit_landing_writes(
+                    run_id=run_id,
+                    verdict=str(gate).strip().lower(),
                     checkout=checkout,
-                ),
+                    paths=_plan_comment_store_path(
+                        project=project,
+                        plan=str(node.get("plan") or ""),
+                        comment=comment,
+                        root=ledger_root,
+                        checkout=checkout,
+                    ),
+                )
             )
             capture = capture_run_session(record)
             path = pointer_path(run_id)
@@ -791,6 +794,7 @@ def _complete_locked(
                 "session_capture": capture,
                 "plan_comment": comment,
                 "release": release,
+                "landing_check": landing_check,
             }
             lane_receipt = existing.get("lane_receipt")
             if isinstance(lane_receipt, Mapping):
@@ -1336,6 +1340,13 @@ def _complete_locked(
                 )
                 if store_row_written:
                     _discard_run_store_row(run_id)
+                _record_landing_refusal(
+                    run_id,
+                    step="review-record",
+                    message=str(exc),
+                    checkout=checkout,
+                    rollback=rollback,
+                )
                 raise _landing_refusal(
                     f"cannot store the review record for run {run_id!r} in the "
                     f"committed reviews tree, so the landing was rolled back: {exc}",
@@ -1347,22 +1358,24 @@ def _complete_locked(
         # checkout carries no uncommitted state the next reader would trip on. A
         # refused landing then takes back every write it made, including the store
         # row this attempt's own append inserted, so a retry promotes cleanly.
-        _commit_landing_writes(
-            run_id=run_id,
-            verdict=str(gate).strip().lower(),
-            checkout=checkout,
-            paths=[
-                Path(written["path"]),
-                *_plan_comment_store_path(
-                    project=project,
-                    plan=str(node.get("plan") or ""),
-                    comment=comment,
-                    root=ledger_root,
-                    checkout=checkout,
-                ),
-                *committed_review_paths,
-            ],
-            store_row_written=store_row_written,
+        landing_check = _report_landing_check(
+            _commit_landing_writes(
+                run_id=run_id,
+                verdict=str(gate).strip().lower(),
+                checkout=checkout,
+                paths=[
+                    Path(written["path"]),
+                    *_plan_comment_store_path(
+                        project=project,
+                        plan=str(node.get("plan") or ""),
+                        comment=comment,
+                        root=ledger_root,
+                        checkout=checkout,
+                    ),
+                    *committed_review_paths,
+                ],
+                store_row_written=store_row_written,
+            )
         )
 
         # Return capture metadata while the pointer still exists. Session
@@ -1405,10 +1418,39 @@ def _complete_locked(
             "store": store_outcome,
             "impl_move": dict(impl_move),
             "negative_control": dict(negative_control),
+            "landing_check": landing_check,
         }
 
 
 DISCARD_RECORD_NAME = "discard.json"
+
+
+def _report_landing_check(landing: Mapping[str, Any]) -> dict[str, Any]:
+    """Print a landing's self-check on stderr and return it for the receipt.
+
+    A reversal another session staged and a post-commit mismatch both leave the
+    checkout wrong while the landing itself succeeded, so they are written to
+    stderr where whoever ran the promotion sees them, and carried on the
+    receipt for a caller that reads the payload instead. A mismatch rolls
+    nothing back and changes no exit status: the commit has landed.
+    """
+    check = landing.get("landing_check") if isinstance(landing, Mapping) else None
+    if not isinstance(check, Mapping):
+        return {}
+    for reversal in check.get("reversals") or ():
+        print(
+            f"landing check: {reversal.get('path')} is staged in reverse of "
+            f"{reversal.get('commit')} ({reversal.get('subject')})",
+            file=sys.stderr,
+        )
+    for mismatch in check.get("mismatched") or ():
+        print(
+            f"landing check: {mismatch.get('path')} differs after commit "
+            f"(head={mismatch.get('head')} index={mismatch.get('index')} "
+            f"worktree={mismatch.get('worktree')})",
+            file=sys.stderr,
+        )
+    return dict(check)
 
 
 def discard_record_path(run_id: str) -> Path:
@@ -1954,6 +1996,7 @@ from reckon.crew.promotion_scope import (
     _promoted_revision,
     _prose_changed_paths_name_no_paths,
     _record_landing_comment,
+    _record_landing_refusal,
     _record_stream_paths,
     _refuse_unrelated_plan_edit,
     _report_written_ledger_row,

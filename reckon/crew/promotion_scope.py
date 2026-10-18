@@ -1759,6 +1759,189 @@ def _path_has_a_staged_change(checkout: Path, path: Path) -> bool:
     return bool(diff.stdout.strip())
 
 
+LANDING_RECORD_NAME = "landing.json"
+_LANDING_SUBJECT_PREFIXES = ("promote(", "release(")
+
+
+def _landing_record_path(run_id: str) -> Path:
+    """Path of the record every landing attempt appends to in the run's home."""
+    return run_dir(run_id) / LANDING_RECORD_NAME
+
+
+def _head_revision(checkout: Path) -> str | None:
+    """The revision HEAD resolves to, or None when git will not say."""
+    result = _git(checkout, "rev-parse", "HEAD", check=False)
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip() or None
+
+
+def _append_landing_record(run_id: str, entry: Mapping[str, Any]) -> str | None:
+    """Append one landing attempt to the run's ``landing.json``, best-effort.
+
+    The record survives the rollback that motivated it: the ledger row and the
+    plan comment are among the writes a refused landing takes back, so what a
+    rollback did is written here, where nothing reverts it. One entry per
+    attempt, appended rather than overwritten, so a run refused twice carries
+    both refusals. A run directory that cannot be written answers None; a
+    record that cannot be kept never replaces the landing's own outcome.
+    """
+    path = _landing_record_path(run_id)
+    try:
+        entries: list[Any] = []
+        if path.is_file():
+            try:
+                loaded = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                loaded = None
+            if isinstance(loaded, list):
+                entries = loaded
+        entries.append(dict(entry))
+        _store.write_json_atomically(path, entries)
+    except OSError:
+        return None
+    return str(path)
+
+
+def _record_landing_refusal(
+    run_id: str,
+    *,
+    step: str,
+    message: str,
+    checkout: Path,
+    rollback: Mapping[str, bool],
+    head: str | None = None,
+) -> str | None:
+    """Record one refused landing: its step, git's message, HEAD and report.
+
+    ``head`` is passed when the caller read HEAD before restoring, so the
+    record states the revision the rollback actually ran against rather than
+    one read a moment later.
+    """
+    return _append_landing_record(
+        run_id,
+        {
+            "time": _utc_now(),
+            "step": step,
+            "message": message,
+            "head": head if head is not None else _head_revision(checkout),
+            "rollback": {str(path): bool(state) for path, state in rollback.items()},
+        },
+    )
+
+
+def _newest_commit_touching_path(checkout: Path, relative: str) -> str | None:
+    """The newest commit on HEAD that changed ``relative``, or None."""
+    result = _git(checkout, "log", "-1", "--format=%H", "--", relative, check=False)
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip() or None
+
+
+def _commit_subject(checkout: Path, revision: str) -> str:
+    """A commit's subject line, or the empty string when it cannot be read."""
+    result = _git(checkout, "log", "-1", "--format=%s", revision, check=False)
+    if result.returncode != 0:
+        return ""
+    return result.stdout.strip()
+
+
+def _revision_blob(checkout: Path, revision: str, relative: str) -> str | None:
+    """The blob id ``revision`` holds for ``relative``, or None when absent."""
+    result = _git(checkout, "rev-parse", f"{revision}:{relative}", check=False)
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip() or None
+
+
+def _index_blob(checkout: Path, relative: str) -> str | None:
+    """The staged blob id for ``relative``, or None when the index lacks it."""
+    result = _git(checkout, "ls-files", "-s", "--", relative, check=False)
+    if result.returncode != 0:
+        return None
+    lines = result.stdout.splitlines()
+    if not lines:
+        return None
+    fields = lines[0].split()
+    return fields[1] if len(fields) >= 2 else None
+
+
+def _worktree_blob(checkout: Path, path: Path) -> str | None:
+    """The blob id of a working-tree file's content, or None when it is gone."""
+    if not Path(path).is_file():
+        return None
+    result = _git(checkout, "hash-object", "--", str(path), check=False)
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip() or None
+
+
+def _staged_reversals(checkout: Path) -> list[dict[str, str]]:
+    """Staged paths that undo an earlier landing, with the commit each reverses.
+
+    Read before a landing stages, so a checkout left holding an earlier
+    landing's paths staged in reverse — by a racing rollback or a peer's git
+    command — is reported at the next landing rather than staged over. Only
+    staged changes are read: an uncommitted edit to a landed plan file is
+    ordinary peer work. A staged path is a reversal of the newest commit on
+    HEAD that wrote it when that commit is a reckon landing — a ``promote(`` or
+    ``release(`` subject — and the staged content is exactly what the path held
+    in that commit's parent, or the path is staged as deleted and the parent
+    did not have it.
+    """
+    listing = _git(checkout, "diff", "--cached", "--name-only", check=False)
+    if listing.returncode != 0:
+        return []
+    reversals: list[dict[str, str]] = []
+    for relative in sorted(
+        {line.strip() for line in listing.stdout.splitlines() if line.strip()}
+    ):
+        landing = _newest_commit_touching_path(checkout, relative)
+        if landing is None:
+            continue
+        subject = _commit_subject(checkout, landing)
+        if not subject.startswith(_LANDING_SUBJECT_PREFIXES):
+            continue
+        staged = _index_blob(checkout, relative)
+        parent = _revision_blob(checkout, f"{landing}^", relative)
+        if staged is None:
+            if parent is None:
+                reversals.append(
+                    {"path": relative, "commit": landing, "subject": subject}
+                )
+            continue
+        if parent is not None and staged == parent:
+            reversals.append({"path": relative, "commit": landing, "subject": subject})
+    return reversals
+
+
+def _landing_path_mismatches(
+    checkout: Path, targets: Sequence[Path]
+) -> list[dict[str, Any]]:
+    """Paths whose HEAD, index and working-tree blobs do not all agree.
+
+    Read once per path after the landing commit returns, so a revert made
+    inside the landing's own process — a hook or a wrapper that rewrites a
+    written path after git returns — is reported rather than silently left in
+    the checkout. A path whose three blobs agree is not reported.
+    """
+    mismatched: list[dict[str, Any]] = []
+    for path in targets:
+        try:
+            relative = Path(path).resolve().relative_to(checkout.resolve()).as_posix()
+        except (OSError, ValueError):
+            continue
+        head = _revision_blob(checkout, "HEAD", relative)
+        index = _index_blob(checkout, relative)
+        worktree = _worktree_blob(checkout, path)
+        if head == index == worktree:
+            continue
+        mismatched.append(
+            {"path": relative, "head": head, "index": index, "worktree": worktree}
+        )
+    return mismatched
+
+
 LANDING_ROLLBACK_ATTRIBUTE = "landing_rollback"
 
 
@@ -1941,18 +2124,39 @@ def _commit_landing_writes(
 
     ``subject`` and ``body`` override the promotion-flavoured defaults; a
     caller that records a landing that is not a promotion (a gate re-run at
-    the integrated revision) passes its own subject naming what it did.
+    the integrated revision, a release outcome) passes its own subject naming
+    what it did.
+
+    Two checks bracket the commit. Before staging, the shared index is read for
+    paths already staged in reverse of an earlier landing; they are reported
+    and never repaired, because restoring them would write to an index other
+    sessions share. After the commit returns, each written path's blobs in
+    HEAD, the index and the working tree are read once and any disagreement is
+    reported; nothing is rolled back, because the commit has landed. Every
+    refusal appends its step, git's message, the HEAD the rollback read and the
+    rollback's per-path report to the run's record, and a success appends its
+    commit, the HEAD before it and its landing check.
     """
     targets = sorted(
         {Path(p).expanduser().resolve() for p in paths if Path(p).is_file()}
     )
     if not targets:
         return {"committed": False, "reason": "no_write"}
+    reversals = _staged_reversals(checkout)
     staged = _git(checkout, "add", "--", *(str(p) for p in targets), check=False)
     if staged.returncode != 0:
+        head = _head_revision(checkout)
         rollback = _restore_landing_writes(checkout, targets)
         if store_row_written:
             _discard_run_store_row(run_id)
+        _record_landing_refusal(
+            run_id,
+            step="stage",
+            message=staged.stderr.strip() or staged.stdout.strip(),
+            checkout=checkout,
+            rollback=rollback,
+            head=head,
+        )
         raise _landing_refusal(
             f"could not stage the landing writes for run {run_id!r} in "
             f"{checkout}: {staged.stderr.strip() or staged.stdout.strip()}",
@@ -1964,6 +2168,26 @@ def _commit_landing_writes(
         "plan comment in one commit, so a promotion leaves the checkout "
         "without uncommitted state at the paths it wrote."
     )
+    unchanged = _git(
+        checkout,
+        "diff",
+        "--cached",
+        "--quiet",
+        "--",
+        *(str(p) for p in targets),
+        check=False,
+    )
+    if unchanged.returncode == 0:
+        return {
+            "committed": False,
+            "reason": "no_change",
+            "landing_check": {
+                "ok": True,
+                "reversals": reversals,
+                "mismatched": [],
+            },
+        }
+    head_before = _head_revision(checkout)
     committed = _git(
         checkout,
         "commit",
@@ -1977,15 +2201,46 @@ def _commit_landing_writes(
         check=False,
     )
     if committed.returncode != 0:
+        head = _head_revision(checkout)
         rollback = _restore_landing_writes(checkout, targets)
         if store_row_written:
             _discard_run_store_row(run_id)
+        _record_landing_refusal(
+            run_id,
+            step="commit",
+            message=committed.stderr.strip() or committed.stdout.strip(),
+            checkout=checkout,
+            rollback=rollback,
+            head=head,
+        )
         raise _landing_refusal(
             f"could not commit the landing writes for run {run_id!r} in "
             f"{checkout}: {committed.stderr.strip() or committed.stdout.strip()}",
             rollback,
         )
-    return {"committed": True, "subject": subject, "paths": [str(p) for p in targets]}
+    mismatched = _landing_path_mismatches(checkout, targets)
+    landing_check = {
+        "ok": not mismatched,
+        "reversals": reversals,
+        "mismatched": mismatched,
+    }
+    _append_landing_record(
+        run_id,
+        {
+            "time": _utc_now(),
+            "step": "commit",
+            "committed": True,
+            "commit": _head_revision(checkout),
+            "head_before": head_before,
+            "landing_check": landing_check,
+        },
+    )
+    return {
+        "committed": True,
+        "subject": subject,
+        "paths": [str(p) for p in targets],
+        "landing_check": landing_check,
+    }
 
 
 
