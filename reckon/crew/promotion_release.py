@@ -632,17 +632,21 @@ def _record_release_on_ledger(
     # retried: a refused commit has already taken its write back, so repeating
     # it would append a second record for one refusal.
     if checkout is not None:
-        _commit_landing_writes(
-            run_id=run_id,
-            verdict="released",
-            checkout=checkout,
-            paths=[path],
-            subject=f"release({run_id}): record workspace outcome",
-            body=(
-                "Record the worktree and process release receipt after promotion "
-                "without rewriting a commit another session may have published."
-            ),
+        landing_check = _report_landing_check(
+            _commit_landing_writes(
+                run_id=run_id,
+                verdict="released",
+                checkout=checkout,
+                paths=[path],
+                subject=f"release({run_id}): record workspace outcome",
+                body=(
+                    "Record the worktree and process release receipt after promotion "
+                    "without rewriting a commit another session may have published."
+                ),
+            )
         )
+        if landing_check:
+            release = {**release, "landing_check": landing_check}
     return dict(release), updated
 
 
@@ -1043,4 +1047,5 @@ from reckon.crew.promotion_scope import (
     _commit_landing_writes,
     _is_shadow,
     _promoted_revision,
+    _report_landing_check,
 )

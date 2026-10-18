@@ -219,3 +219,44 @@ def test_a_release_that_changes_nothing_lands_no_commit(repository: Path) -> Non
     assert recorded == release
     assert row is not None
     assert _head(repository) == after_first
+
+
+def test_a_reversal_found_while_landing_a_release_is_reported(
+    repository: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    run_id = "r-release-reversal"
+    run_file = ledger.run_path(PROJECT, run_id, repository)
+    run_file.parent.mkdir(parents=True, exist_ok=True)
+    run_file.write_text(
+        ledger.serialize_run({"run_id": run_id, "project": PROJECT}),
+        encoding="utf-8",
+    )
+    git(repository, "add", "--", str(run_file.relative_to(repository)))
+    git(repository, "commit", "-q", "-m", "test: run record")
+
+    created = repository / "created.txt"
+    created.write_text("an earlier landing\n", encoding="utf-8")
+    _landing(repository, "r-first", [created])
+    first_commit = _head(repository)
+
+    # A peer stages the earlier landing back while this release lands. The
+    # release's own landing runs the same pre-staging check a promotion's does,
+    # so the reversal reaches stderr and the returned receipt, not only the
+    # record file.
+    created.unlink()
+    git(repository, "add", "--", "created.txt")
+
+    recorded, _row = _record_release_on_ledger(
+        project=PROJECT,
+        root=repository,
+        run_id=run_id,
+        release={"worktree_released": True},
+        checkout=repository,
+    )
+
+    reversals = {
+        entry["path"]: entry for entry in recorded["landing_check"]["reversals"]
+    }
+    assert set(reversals) == {"created.txt"}
+    assert reversals["created.txt"]["commit"] == first_commit
+    assert "staged in reverse of" in capsys.readouterr().err

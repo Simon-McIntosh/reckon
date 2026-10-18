@@ -7,6 +7,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import contextmanager
 from datetime import UTC
@@ -2094,6 +2095,40 @@ def _discard_run_store_row(run_id: str) -> bool:
         return False
     finally:
         connection.close()
+
+
+def _report_landing_check(landing: Mapping[str, Any]) -> dict[str, Any]:
+    """Print a landing's self-check on stderr and return it for the receipt.
+
+    A reversal another session staged and a post-commit mismatch both leave the
+    checkout wrong while the landing itself succeeded, so they are written to
+    stderr where whoever ran the landing sees them, and carried on the receipt
+    for a caller that reads the payload instead. A mismatch rolls nothing back
+    and changes no exit status: the commit has landed. A landing that performed
+    no check at all — a no-change write, a landing whose caller passed no
+    result — reports nothing.
+
+    Every landing sites through this, not only the promotion paths: a release
+    outcome lands through the same owner and its check would otherwise be
+    recorded in ``landing.json`` and read by nobody.
+    """
+    check = landing.get("landing_check") if isinstance(landing, Mapping) else None
+    if not isinstance(check, Mapping):
+        return {}
+    for reversal in check.get("reversals") or ():
+        print(
+            f"landing check: {reversal.get('path')} is staged in reverse of "
+            f"{reversal.get('commit')} ({reversal.get('subject')})",
+            file=sys.stderr,
+        )
+    for mismatch in check.get("mismatched") or ():
+        print(
+            f"landing check: {mismatch.get('path')} differs after commit "
+            f"(head={mismatch.get('head')} index={mismatch.get('index')} "
+            f"worktree={mismatch.get('worktree')})",
+            file=sys.stderr,
+        )
+    return dict(check)
 
 
 def _commit_landing_writes(

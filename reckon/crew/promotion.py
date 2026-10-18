@@ -9,7 +9,6 @@ import re
 import shlex
 import shutil
 import subprocess
-import sys
 import time
 from collections.abc import (
     Callable,
@@ -1425,34 +1424,6 @@ def _complete_locked(
 DISCARD_RECORD_NAME = "discard.json"
 
 
-def _report_landing_check(landing: Mapping[str, Any]) -> dict[str, Any]:
-    """Print a landing's self-check on stderr and return it for the receipt.
-
-    A reversal another session staged and a post-commit mismatch both leave the
-    checkout wrong while the landing itself succeeded, so they are written to
-    stderr where whoever ran the promotion sees them, and carried on the
-    receipt for a caller that reads the payload instead. A mismatch rolls
-    nothing back and changes no exit status: the commit has landed.
-    """
-    check = landing.get("landing_check") if isinstance(landing, Mapping) else None
-    if not isinstance(check, Mapping):
-        return {}
-    for reversal in check.get("reversals") or ():
-        print(
-            f"landing check: {reversal.get('path')} is staged in reverse of "
-            f"{reversal.get('commit')} ({reversal.get('subject')})",
-            file=sys.stderr,
-        )
-    for mismatch in check.get("mismatched") or ():
-        print(
-            f"landing check: {mismatch.get('path')} differs after commit "
-            f"(head={mismatch.get('head')} index={mismatch.get('index')} "
-            f"worktree={mismatch.get('worktree')})",
-            file=sys.stderr,
-        )
-    return dict(check)
-
-
 def discard_record_path(run_id: str) -> Path:
     """Path of the marker a discard leaves in one run's directory."""
     return run_dir(run_id) / DISCARD_RECORD_NAME
@@ -1999,6 +1970,7 @@ from reckon.crew.promotion_scope import (
     _record_landing_refusal,
     _record_stream_paths,
     _refuse_unrelated_plan_edit,
+    _report_landing_check,
     _report_written_ledger_row,
     _repository_scope_paths,
     _repository_tree_boundary_violations,
