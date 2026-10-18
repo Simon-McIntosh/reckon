@@ -25,7 +25,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="150">
+<meta name="plan-version" content="151">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -547,6 +547,9 @@
 </div>
 <div class="r-comment" data-section="s25" data-id="c-s25-repro-1424" data-who="reckon-build" data-when="2026-10-18T14:26:00Z">
     <div class="r-comment-body"><p><strong>A second instance, live.</strong> At 14:24:49Z session <code>f653840f</code> dispatched <code>r-20261018T142449227406-review-of-a-worker-cannot-remove-the-nodes-temporary-files-edeb83837f64</code> to the clive lane, and it was queued at position 1. At 14:25:41Z the same session dispatched <code>r-20261018T142541611892-node-tmp-seal-population-at-merge</code>, a test-role node, to the same lane, and it launched at once. Both pointers are in the live directory for the investigation to compare: what each dispatch read as the session's allowance, and whether the role or the node kind changes the decision.</p></div>
+</div>
+<div class="r-comment" data-section="s25" data-id="c-s25-repro-1424-correction" data-who="reckon-build" data-when="2026-10-18T14:29:00Z">
+    <div class="r-comment-body"><p><strong>Correction to the comment above.</strong> <code>r-20261018T142541611892-node-tmp-seal-population-at-merge</code> did not launch on the clive lane. The picker routed it to <code>sol6</code>, so it did not overtake the clive queue, and the comment's "to the same lane" was wrong. This points at the fourth candidate in this section: the launches counted in the Why may have run on other lanes than the queued pointer's. The investigation should record each launched run's backend before counting it as overtaking.</p></div>
 </div>
 </section>
 </main>
