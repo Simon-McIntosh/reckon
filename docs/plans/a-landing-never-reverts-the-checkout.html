@@ -25,7 +25,7 @@
   <title>A Landing Never Reverts The Checkout | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="26">
+<meta name="plan-version" content="27">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -89,20 +89,22 @@
 <li>If a peer's git command rewrote the index and working tree, reckon cannot stop that command. Then the fix is what reckon owns: §2's check sees the result, and the shared-checkout guidance names the command and the safe form.</li>
 <li>If another reckon path restores from a snapshot, that path gets the same guard as the first case.</li>
 </ul>
-<p><strong>What §1 found.</strong> The first case holds, with one refinement. The rollback reverted nova's paths only because a second promotion of the same review run ran beside the first. Run at the landed HEAD, the rollback changes nothing. The cause to remove is therefore two promotions of one run at once, and the rollback itself needs no new condition. A guard that restored only while HEAD still resolved to the landing's starting commit would not have stopped nova's interleaving, because the second promotion's rollback read exactly that commit. It would also block a legitimate rollback after an unrelated peer commit moved HEAD.</p>
-<p><strong>Deliverable.</strong> One promotion of a run at a time. A promotion takes an exclusive claim on its run before it writes anything (the ledger row, the plan comment or a review record) and holds it until its landing, or its rollback, has finished. The claim lives under the shared crew home, as <code>_pointer_lock</code> (<code>reckon/crew/runs.py:316</code>) keys one per run, so it holds across hosts on the shared filesystem. Whether the existing pointer lock already spans the whole promotion, and why it did not stop nova's second promotion, is read from the code first and stated in the manifest.</p>
+<p><strong>What §1 found, and what it adds.</strong> The rollback reverted nova's paths only because a second promotion of the same review run ran beside the first; run at the landed HEAD, the rollback changes nothing. <code>promotion.complete</code> already holds <code>_pointer_lock</code> for its whole span (<code>reckon/crew/promotion.py:197</code>, defined at <code>reckon/crew/runs.py:316</code>). But that lock is a blocking <code>flock</code>, and <code>flock</code> is node-local on this home, as measured in <code>a-seat-held-elsewhere-is-not-restarted</code> §8. So two promotions of one run on two hosts run at once: nova's producer seat on <code>98dci4-srv-1006</code> and a review sweep on <code>98dci4-clu-2002</code>, both reaching <code>complete</code> through <code>promote_review_run_itself</code> (<code>reckon/crew/recovery_review_acceptance.py:322</code>). That is the interleaving §1 reproduced. The rollback needs no new condition. A guard that restored only while HEAD still resolved to the landing's starting commit would not have stopped this interleaving, because the second promotion's rollback read exactly that commit. It would also block a legitimate rollback after an unrelated peer commit moved HEAD.</p>
+<p><strong>Deliverable.</strong> A promotion holds a claim on its run that excludes other hosts as well as other processes, for its whole span. The claim is a <code>HostLease</code> (<code>reckon/crew/host_lease.py</code>) named for the run: it claims by an atomic link, names its holder's host, pid and job, and is taken over once its holder stops renewing. No new lock mechanism is written.</p>
 <ul>
-<li>A second promotion of a run that is already being promoted refuses at once without writing, naming the holder.</li>
-<li>A promotion of a run already promoted reports that and writes nothing, as today.</li>
-<li><code>promote_review_run_itself</code> (<code>reckon/crew/recovery_review_acceptance.py</code>) goes through the same claim, so two sweepers on two hosts cannot both land one review run. A sweeper that finds the claim held reports it as a refused self-promotion, not as an error.</li>
+<li>The promotion takes the lease before its first write (the ledger row, the plan comment or a review record) and releases it after its landing or rollback. It renews the lease while it runs, so a slow landing on a congested shared filesystem is not taken over mid-landing.</li>
+<li>A promotion that finds the lease freshly held by another holder refuses at once without writing, naming the holder's host, pid and job.</li>
+<li>A lease whose holder has stopped renewing past the stale window is taken over, and that promotion proceeds.</li>
+<li>The node-local pointer lock stays for the pointer's own read-modify-write. <code>promote_review_run_itself</code> reaches <code>complete</code>, so it inherits the claim. A sweep that finds the lease held reports a refused self-promotion naming the holder, not an error.</li>
 </ul>
-<p><strong>Write paths.</strong> <code>reckon/crew/promotion.py</code>, <code>reckon/crew/runs.py</code>, <code>reckon/crew/recovery_review_acceptance.py</code>, and <code>tests/test_one_promotion_of_a_run_at_a_time.py</code>, which is new.</p>
-<p><strong>Negative control.</strong> At the base revision, nothing refuses the second promotion, so the new test's claim cases fail by id.</p>
-<p><strong>Done when</strong> all four of these hold:</p>
+<p><strong>Write paths.</strong> <code>reckon/crew/promotion.py</code>, <code>reckon/crew/host_lease.py</code>, <code>reckon/crew/recovery_review_acceptance.py</code>, and <code>tests/test_one_promotion_of_a_run_at_a_time.py</code>, which is new.</p>
+<p><strong>Negative control.</strong> At the base revision, a second promotion that does not share the first's node-local lock, as on another host, proceeds and writes. So the new test's cross-host case fails by id.</p>
+<p><strong>Done when</strong> all five of these hold:</p>
 <ul>
-<li>A test promotes one review run twice at once in a repository and crew home it creates under a temporary directory. Both promotions go through <code>promotion.complete</code>, and the second starts while the first holds its claim, ordered with a barrier rather than with a sleep. Exactly one lands a commit. The other refuses without writing, naming the holder. Afterwards every written path reads equal in HEAD, the index and the working tree.</li>
-<li>A test runs two sweeps' <code>promote_review_run_itself</code> on one review run at once. One promotion lands, and the other is reported as refused because the claim is held.</li>
-<li>The negative control is shown: the new test file, run at the base revision with the same command, reports the claim cases as FAILED by id in a log under the run directory.</li>
+<li>A test promotes one review run twice at once in a repository and crew home it creates under a temporary directory. Both promotions go through <code>promotion.complete</code>. The second runs as a process on another host would: its node-local pointer lock does not exclude the first, because the test gives it a separate lock path. The two are ordered with a barrier rather than a sleep. Exactly one lands a commit. The other refuses without writing, naming the holder's host, pid and job. Afterwards every written path reads equal in HEAD, the index and the working tree.</li>
+<li>A test leaves a lease whose holder stopped renewing past the stale window, and shows the next promotion takes it over and lands.</li>
+<li>A test runs a sweep's <code>promote_review_run_itself</code> while the lease is held, and shows a refused self-promotion naming the holder.</li>
+<li>The negative control is shown: the new test file, run at the base revision with the same command, reports the cross-host case as FAILED by id in a log under the run directory.</li>
 <li><code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q -rA</code> over the new test file, <code>tests/test_a_review_run_promotes_itself.py</code>, <code>tests/test_failed_landing_leaves_nothing_behind.py</code>, <code>tests/test_rollback_asks_head.py</code> and <code>tests/test_a_landing_checks_what_it_left.py</code> adds no failure against the base. <code>ruff check</code> and <code>ruff format --check</code> report no new finding on the changed files.</li>
 </ul>
 
