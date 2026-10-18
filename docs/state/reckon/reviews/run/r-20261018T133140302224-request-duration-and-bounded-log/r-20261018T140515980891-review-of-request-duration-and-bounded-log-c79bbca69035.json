@@ -1,0 +1,131 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T133140302224-request-duration-and-bounded-log/logs/after_arm.log",
+  "assertion_analysis": [
+    {
+      "assertion": "status == 200",
+      "fails_if": "the served endpoint changes status from 200",
+      "line": 84
+    },
+    {
+      "assertion": "header is not None",
+      "fails_if": "Server-Timing is omitted",
+      "line": 87
+    },
+    {
+      "assertion": "_TIMING_HEADER.match(header)",
+      "fails_if": "the header is present but not app;dur=<unsigned number>",
+      "line": 89
+    },
+    {
+      "assertion": "header_ms >= 0.0",
+      "fails_if": "no matching value can make this fail; the regex excludes a minus sign",
+      "line": 91
+    },
+    {
+      "assertion": "lines",
+      "fails_if": "the request produces no output line containing its path",
+      "line": 95
+    },
+    {
+      "assertion": "_DURATION_ON_LINE.search(lines[-1])",
+      "fails_if": "the last path-bearing line has no unsigned millisecond token",
+      "line": 97
+    },
+    {
+      "assertion": "float(on_line.group(1)) >= 0.0",
+      "fails_if": "no matching value can make this fail; the regex excludes a minus sign",
+      "line": 98
+    },
+    {
+      "assertion": "len(original) > bound",
+      "fails_if": "the test fixture stops placing an oversized input; this checks the fixture, not production",
+      "line": 108
+    },
+    {
+      "assertion": "predecessor.is_file()",
+      "fails_if": "rotation creates no predecessor; the recorded negative control shows this failure",
+      "line": 114
+    },
+    {
+      "assertion": "predecessor.read_bytes() == original",
+      "fails_if": "rotation drops or changes copied input bytes; original is fixed before the request, so this comparison is independent of the output",
+      "line": 115
+    },
+    {
+      "assertion": "log.stat().st_size <= bound",
+      "fails_if": "the oversized live file is not truncated or otherwise bounded",
+      "line": 118
+    }
+  ],
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T133140302224-request-duration-and-bounded-log/logs/base_arm.log",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/serve.py:4616 main constructs ThreadingHTTPServer with Handler",
+    "reckon/serve.py:3020 Handler.handle_one_request calls _bound_server_log",
+    "reckon/serve.py:4598 main bounds at startup",
+    "reckon/service.py:127 log_path names the systemd append target"
+  ],
+  "completed_at": "2026-10-18T14:12:27Z",
+  "dispatched_at": "2026-10-18T14:06:31Z",
+  "failure_delta_basis": "baseline_suite completed=true, exit_status=0, failure_ids=[]; after_suite completed=true, exit_status=0, failure_ids=[]; each log ends EXIT=0",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "673",
+      "severity": "blocking",
+      "text": "blocking: copying the live log and later truncating it loses any access lines systemd appends in that interval; _LOG_ROTATION_LOCK excludes other rotations but cannot exclude stdout or stderr writes, violating the per-request log goal under concurrent traffic."
+    },
+    {
+      "file": "tests/test_request_duration_and_log_bound.py",
+      "line": "91",
+      "severity": "follow-on",
+      "text": "follow-on: the regex already admits only nonnegative digits, so this assertion and line 98 cannot fail on a negative duration; the test also accepts duplicate access lines and never compares the header and logged values, leaving those regressions undetected."
+    },
+    {
+      "file": "docs/evidence/fragments/the-site-answers-fast-and-agrees/request-duration-and-bounded-log.html",
+      "line": "8",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment says the header and log carry the same figure, but reckon/serve.py:3043 samples at header completion and line 3063 samples after the request returns, so the recorded claim is false for a response with a nontrivial body."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "c79bbca69035134f777f5d56e4ae7c9fff595190 is the single reviewed commit with parent 82f9dd658d89f625741211e8aace1f28b7e75dee; reckon/serve.py:650-688 and 3015-3063 add rotation and timing, the test adds two cases, and the evidence fragment records the result.",
+    "done_when": "prompt.txt:95-96 requires one logged and header duration, a bounded current file with one predecessor, no added serve/service failures, and clean lint delta; tests/test_request_duration_and_log_bound.py:80-120 covers the two simple cases, but does not exercise concurrent append writes or assert one line per request.",
+    "goal": "prompt.txt:30 asks for per-request access durations, a Server-Timing duration, and a bounded log with one predecessor; reckon/serve.py:3015-3063 adds the timing paths and reckon/serve.py:650-680 adds rotation, but the copy/truncate interval can lose access lines.",
+    "manifest": "manifest.md reports status complete, commit c79bbca6, three changed paths, a 2-passed focused gate, 70 base versus 72 head passes, zero added failures, and a red negative control at logs/negative_control.log.",
+    "write_paths": "prompt.txt:69-75 declares serve.py, service.py, the named test, an evidence fragment and figure directory; git show c79bbca6 changes only reckon/serve.py, tests/test_request_duration_and_log_bound.py and that declared fragment."
+  },
+  "justifications": {
+    "durability": "logs/negative_control.log shows the predecessor assertion at tests/test_request_duration_and_log_bound.py:114 fails without rotation, but lines 91 and 98 are guaranteed by their digit regexes and lines 94-98 permit duplicate access lines and differing header/log durations.",
+    "evidence": "logs/gate_head.log records 2 passed and logs/negative_control.log records the missing predecessor failure, while tests/test_request_duration_and_log_bound.py:80-120 never checks append-descriptor writes during rotation.",
+    "fit": "reckon/serve.py:3004 extends the existing Handler, reckon/serve.py:686 calls the service's log_path owner, and the new names in reckon/serve.py:643-688 describe their mechanism.",
+    "goal_fidelity": "reckon/serve.py:673-676 can discard access lines written after the copy and before the truncation, despite reckon/serve.py:3063 logging each completed request.",
+    "reuse": "the search for bounded log rotation found reckon/crew/watch_unit.py:792 _WatchLogStream, whose rename and descriptor-repoint mechanism cannot serve the systemd-held append descriptor documented in reckon/service.py:44; reckon/serve.py:650 adds the distinct needed mechanism and wraps service.log_path at line 686.",
+    "scope_discipline": "the only changed paths at c79bbca69035134f777f5d56e4ae7c9fff595190 are reckon/serve.py, tests/test_request_duration_and_log_bound.py and the declared evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks for per-request access durations, a Server-Timing duration, and a bounded log with one predecessor; reckon/serve.py:3015-3063 adds the timing paths and reckon/serve.py:650-680 adds rotation, but the copy/truncate interval can lose access lines.\nVERDICT done_when: prompt.txt:95-96 requires one logged and header duration, a bounded current file with one predecessor, no added serve/service failures, and clean lint delta; tests/test_request_duration_and_log_bound.py:80-120 covers the two simple cases, but does not exercise concurrent append writes or assert one line per request.\nVERDICT write_paths: prompt.txt:69-75 declares serve.py, service.py, the named test, an evidence fragment and figure directory; git show c79bbca6 changes only reckon/serve.py, tests/test_request_duration_and_log_bound.py and that declared fragment.\nVERDICT manifest: manifest.md reports status complete, commit c79bbca6, three changed paths, a 2-passed focused gate, 70 base versus 72 head passes, zero added failures, and a red negative control at logs/negative_control.log.\nVERDICT diff: c79bbca69035134f777f5d56e4ae7c9fff595190 is the single reviewed commit with parent 82f9dd658d89f625741211e8aace1f28b7e75dee; reckon/serve.py:650-688 and 3015-3063 add rotation and timing, the test adds two cases, and the evidence fragment records the result.\nCALL_SITES: reckon/serve.py:4616 main constructs ThreadingHTTPServer with Handler, reckon/serve.py:3020 Handler.handle_one_request calls _bound_server_log, reckon/serve.py:4598 main bounds at startup, reckon/service.py:127 log_path names the systemd append target\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/serve.py:673-676 can discard access lines written after the copy and before the truncation, despite reckon/serve.py:3063 logging each completed request.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate_head.log records 2 passed and logs/negative_control.log records the missing predecessor failure, while tests/test_request_duration_and_log_bound.py:80-120 never checks append-descriptor writes during rotation.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only changed paths at c79bbca69035134f777f5d56e4ae7c9fff595190 are reckon/serve.py, tests/test_request_duration_and_log_bound.py and the declared evidence fragment.\nSCORE durability: 13\nJUSTIFICATION durability: logs/negative_control.log shows the predecessor assertion at tests/test_request_duration_and_log_bound.py:114 fails without rotation, but lines 91 and 98 are guaranteed by their digit regexes and lines 94-98 permit duplicate access lines and differing header/log durations.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/serve.py:3004 extends the existing Handler, reckon/serve.py:686 calls the service's log_path owner, and the new names in reckon/serve.py:643-688 describe their mechanism.\nSCORE reuse: 20\nJUSTIFICATION reuse: the search for bounded log rotation found reckon/crew/watch_unit.py:792 _WatchLogStream, whose rename and descriptor-repoint mechanism cannot serve the systemd-held append descriptor documented in reckon/service.py:44; reckon/serve.py:650 adds the distinct needed mechanism and wraps service.log_path at line 686.\nFINDING reckon/serve.py:673 blocking: copying the live log and later truncating it loses any access lines systemd appends in that interval; _LOG_ROTATION_LOCK excludes other rotations but cannot exclude stdout or stderr writes, violating the per-request log goal under concurrent traffic.\nFINDING tests/test_request_duration_and_log_bound.py:91 follow-on: the regex already admits only nonnegative digits, so this assertion and line 98 cannot fail on a negative duration; the test also accepts duplicate access lines and never compares the header and logged values, leaving those regressions undetected.\nFINDING docs/evidence/fragments/the-site-answers-fast-and-agrees/request-duration-and-bounded-log.html:8 follow-on: the fragment says the header and log carry the same figure, but reckon/serve.py:3043 samples at header completion and line 3063 samples after the request returns, so the recorded claim is false for a response with a nontrivial body.\n",
+  "review_run_id": "r-20261018T140515980891-review-of-request-duration-and-bounded-log-c79bbca69035",
+  "reviewed_base_sha": "82f9dd658d89f625741211e8aace1f28b7e75dee",
+  "reviewed_head_sha": "c79bbca69035134f777f5d56e4ae7c9fff595190",
+  "reviewed_run_id": "r-20261018T133140302224-request-duration-and-bounded-log",
+  "reviewer": "review-of-request-duration-and-bounded-log-c79bbca69035",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T14:10:02.069085+00:00",
+  "total": 101
+}
