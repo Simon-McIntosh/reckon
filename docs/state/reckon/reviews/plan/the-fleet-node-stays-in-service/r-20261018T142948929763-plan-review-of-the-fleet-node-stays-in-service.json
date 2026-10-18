@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T14:46:21.707Z",
+  "dispatched_at": "2026-10-18T14:31:01Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-fleet-node-stays-in-service.html:206",
+      "id": "reasoning-1",
+      "reason": "\u00a75 would close on a false pass and gate `g-tfnsis-move-ready`, which \u00a78 waits on, would rest on a rehearsal that never ran; \u00a74's fix must extend to the rehearsal path, or \u00a75 must name a fresh probe and say how the stale done ledger is cleared.",
+      "text": "\u00a74 makes \"a done ledger begins a new move\" true for the move ledger only; the rehearsal ledger has the same one-shot guard (`_rehearse` returns \"rehearsal complete for <name>\" when its `next_step` is `done`, `reckon/crew/fleet_migrate.py:708`\u2013`716`), and a `probe-rehearsal/ledger.json` already sits at `next_step=done` in the live state dir (`~/.local/state/fleet/migration/rehearsals/`), so \u00a75's named mechanism `reckon fleet-node migrate --rehearse` will no-op and report its pass state without running, and \u00a75's negative control (\"a probe whose recorded tab is removed \u2026 must be refused\") cannot fire either",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c04d9889e92fe7c230b8666be2344c7fe842501d7bf3839314b31dc50d1d55e1",
+  "plan_slug": "the-fleet-node-stays-in-service",
+  "plan_version": 7,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T142948929763-plan-review-of-the-fleet-node-stays-in-service",
+  "reviewed_blob_sha": "8baf85986e4f2c6a534c0aaab298dac0600494b4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited commits `66610d127` and `2bb703ece` resolve as commits, both \u00a72/\u00a77 fragments and the archive record exist, and the gate `href` carrying its evidence sentence (line 332) is the house convention seen across plans, not a broken path; \u00a74's own claims verify against the live ledger `move-20261008T000138Z` (next_step `done`, promoted job 1281970, old job 1277272).",
+    "done_when": "pass \u2014 \u00a74's done-when names a test set and a negative control (a ledger mid-move at `cutover` must still resume rather than start a new move) that fails if the new-move guard is triggered for any ledger rather than only a `done` one.",
+    "evidence_paths": "pass \u2014 the evidence fragments (`docs/evidence/fragments/the-fleet-node-stays-in-service/\u2026`) and the archive record (`docs/evidence/archive/the-fleet-node-stays-in-service-landed.html`) sit on durable repo paths, not a scratchpad or node-local temporary.",
+    "naming": "pass \u2014 the changed \u00a74 prose introduces no plan labels, version tags or ticket numbers; it names mechanisms (census, layout, stand-up) and the `move-<stamp>` artifact \u2014 output data, not a stage identifier.",
+    "reasoning": "a finding \u2014 \u00a74 repairs the move ledger's one-shot defect but leaves the identical defect in the rehearsal ledger that \u00a75's measure runs on, so \u00a75 will read a pass without rehearsing.",
+    "single_goal": "pass \u2014 \u00a74 still bundles the migrate fix and the `status` wording into one node, the coupling the earlier review declined (single_goal-1); this edit changed only the migrate rule, not the coupling \u2014 nothing re-raised.",
+    "wiring": "pass \u2014 \u00a74's place in the graph is carried by the driving followup `f-tfnsis-001` (\"\u00a75 follows \u00a74\"; \"\u00a76 shares fleet_node.py with \u00a74 and runs after it lands\"), and both plan gates resolve; \u00a74 declares no link of its own, as no section in this plan does."
+  },
+  "section_digests": {
+    "_document": "bd73ac7bd1bddd2c0c4faba0bbf6eaa7c567a2613c68809ef4d970bee646bc82",
+    "s1": "6e04065e334dfddf94228e26ccc5040265b76da7397e5f58cf73c7d37f623504",
+    "s2": "6155f820ac9515ec6066931aa10a1e66fdcff1b4184ba4014c19c572b1e6dfe6",
+    "s3": "2cb481d156747fffcc333364251970f82823dcf8ed5fb1b85f1f03d49a2395df",
+    "s4": "9bf0fe68b8db66abd6daa8fdd98af93ada5d71be048a240fee7b2d68906b8b32",
+    "s5": "d4f488d07892837dc407622ba39c93de73227ef500f14b72a58ef244b3118a2c",
+    "s6": "6869c09a477eaafc5a4780340f667b673175561e4bca9b0640c8af759c878f77",
+    "s7": "3a45b0d0d40cbd44ec6f8209f8a125004c44cc3cdccfb33e97882ef8331f7d70",
+    "s8": "e112e1202f352739982d9a42da2469ddd34f8ab2e4c217d172c90ed776b7a354",
+    "s9": "f575efb8382bf8f279ec8c873642e49846c5abb7b4124831a6b834bc3b8756c8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T14:50:15.488985+00:00"
+}
