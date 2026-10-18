@@ -1,0 +1,68 @@
+<article class="landed-report" data-run-id="r-20261018T064639822890-a-pick-sees-each-review-dimension" data-node="a-pick-sees-each-review-dimension"
+  <h3 id="a-pick-sees-each-review-dimension-summary">a-pick-sees-each-review-dimension — a pick's at-requirement block reads each review dimension's median and the fully scored review count</h3>
+  <p id="a-pick-sees-each-review-dimension-change">
+    <strong>Change.</strong> A candidate's at-requirement block in
+    <code>reckon/crew/picker/snapshot.py</code> reported one review-total median
+    and never said how many rows it covered, so a total that hid a weak
+    dimension read the same as one that did not. <code>_candidates_scan</code>
+    now collects a fully scored matched row's scores into one list per name in
+    <code>REVIEW_DIMENSIONS</code> in its existing single pass and counts those
+    rows, beside the <code>reviews</code>, <code>walls</code> and
+    <code>attempts</code> lists it already kept. A row is fully scored when its
+    <code>review.scores</code> holds a real number (never a bool) for every
+    dimension, so a review the parser recorded with a dimension absent, or one
+    scored before <code>reuse</code> existed, feeds the dimension lists and the
+    count not at all while its recorded total still counts toward
+    <code>review_total_median</code>. <code>_requirement_block</code> adds
+    <code>reviewed</code>, the count of fully scored matched rows, and
+    <code>review_dimensions_median</code>, each dimension's median over exactly
+    those rows rounded to one decimal and keyed in <code>REVIEW_DIMENSIONS</code>
+    order, null when <code>reviewed</code> is 0. The dimension names are imported
+    from <code>reckon/crew/review.py</code> as the source of truth rather than copied.
+    The <code>outcomes_at_requirement</code> glossary entry in
+    <code>reckon/crew/picker/prompts.py</code> defines both fields and says
+    <code>review_total_median</code> may rest on a different number of rows.
+    Nothing else changed: the question template's instructions, the
+    <code>outcomes</code> and <code>moved_in</code> blocks, the hold logic and
+    dispatch are untouched, and no pick is routed or overridden.
+  </p>
+  <p id="a-pick-sees-each-review-dimension-measure">
+    <strong>Measure.</strong> Gate: <code>tests/test_a_pick_sees_each_review_dimension.py</code>
+    plus the ten picker files named in the node brief, run in place on the fleet
+    allocation with the shared environment's
+    <code>.venv/bin/python -m pytest -p no:cacheprovider -q -rP</code>. Head arm
+    at the change: <strong>96 passed, 1 failed, <code>EXIT=1</code></strong>. The
+    one failure is <code>test_every_module_fits_a_worker_window</code>, which
+    reports <code>reckon/ledger.py: 50505 estimated tokens exceeds the 50000
+    bound</code> — a module outside this node's write scope, present at the base
+    arm too. Base arm over the same ten pre-existing files at
+    <code>1eff1f93503acdd1a927795c5fec22b6e3c92265</code>: 92 passed, 1 failed,
+    <code>EXIT=1</code>, the identical <code>ledger.py</code> failure. Added
+    failures against the base: <strong>0</strong>. The four tests the new file
+    contributes are the whole delta (97 tests head over the common set against 93
+    base). The representative state the picker prompt renders measures
+    <strong>2068/2200</strong> tokens at the base arm and <strong>2068/2200</strong>
+    at the head arm, against <code>tests/test_picker_pressure.py</code>'s ceiling
+    of 2200. Ruff <code>check</code> and <code>format --check</code> add no
+    finding on the three staged paths, judged by delta: both base blobs and the
+    new file are already clean. Logs <code>gate-head.log</code> and
+    <code>gate-base.log</code> under the run directory, each ending in an
+    <code>EXIT=</code> line.
+  </p>
+  <p id="a-pick-sees-each-review-dimension-negative-control">
+    <strong>Negative control.</strong> Three mutations, each applied alone to a
+    scratch copy and run under the new file:
+    <code>negative-control-1.log</code> removes the per-dimension collection from
+    <code>_candidates_scan</code> and the first case fails on
+    <code>review_dimensions_median</code> (an empty sample raises
+    <code>StatisticsError: no median for empty data</code>);
+    <code>negative-control-2.log</code> takes <code>reviewed</code> as the length
+    of the <code>reviews</code> list and the first case fails
+    <code>assert 3 == 2</code>; <code>negative-control-3.log</code> collects every
+    row's scores whether or not it is fully scored and the first case fails
+    <code>assert 17.5 == 14.5</code> on <code>goal_fidelity</code>. Each log ends
+    <code>EXIT=1</code> and its only failing test is
+    <code>test_the_block_reads_each_dimension_median_and_its_count</code>, which
+    the head arm passes.
+  </p>
+</article>

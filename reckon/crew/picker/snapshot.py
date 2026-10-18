@@ -30,6 +30,7 @@ from reckon.crew.dispatch import (
     _lane_worker_allowance,
 )
 from reckon.crew.node import NodeValidation
+from reckon.crew.review import REVIEW_DIMENSIONS
 
 from . import lane_context
 from .types import Candidate, PickRequest
@@ -276,7 +277,10 @@ def _candidates_scan(
     per-candidate block, rows that recorded no requirement count under
     ``unrecorded``, and rows that recorded a different requirement count in
     neither. The block's review-total and wall-time medians are read over the
-    matched rows in the same walk, so no figure here costs a second pass. The
+    matched rows in the same walk, so no figure here costs a second pass. A
+    matched row whose review scored every dimension also feeds one list per
+    dimension beside the reviews list, and the block counts those rows, so the
+    dimension medians rest on one shared sample. The
     launches a matched row took are collected in the same walk too: the row's
     ``attempt`` joins an ``attempts`` list, and a passed row's first-launch
     count is tallied beside it while the row's gate and attempt are still
@@ -354,6 +358,8 @@ def _candidates_scan(
                 "walls": [],
                 "attempts": [],
                 "passed_first_attempt": 0,
+                "reviewed": 0,
+                "dimension_scores": {name: [] for name in REVIEW_DIMENSIONS},
             },
         )
         recorded = _recorded_requirement(row)
@@ -372,6 +378,11 @@ def _candidates_scan(
         total = review.get("total") if isinstance(review, Mapping) else None
         if isinstance(total, (int, float)) and not isinstance(total, bool):
             entry["reviews"].append(float(total))
+        scores = review.get("scores") if isinstance(review, Mapping) else None
+        if _fully_scored(scores):
+            entry["reviewed"] += 1
+            for name in REVIEW_DIMENSIONS:
+                entry["dimension_scores"][name].append(float(scores[name]))
         wall = row.get("wall_seconds")
         if isinstance(wall, (int, float)) and not isinstance(wall, bool):
             entry["walls"].append(float(wall))
@@ -384,18 +395,42 @@ def _outcome_counts(counts: Counter[str]) -> dict[str, int]:
     return {key: counts[key] for key in ("passed", "failed", "not-run", "unknown")}
 
 
+def _fully_scored(scores: Any) -> bool:
+    """Whether a review's scores cover every dimension with a real number.
+
+    A review scored before a dimension existed, or one the parser recorded with a
+    dimension absent, is not fully scored: its total still counts, but its
+    per-dimension figures are taken over a different sample, so it feeds the
+    dimension medians not at all. A bool is excluded though it is an ``int``,
+    because a ``True`` in a score field is a recorded flag, not a score.
+    """
+
+    if not isinstance(scores, Mapping):
+        return False
+    return all(
+        isinstance(scores.get(name), (int, float))
+        and not isinstance(scores.get(name), bool)
+        for name in REVIEW_DIMENSIONS
+    )
+
+
 def _requirement_block(entry: Mapping[str, Any] | None) -> dict[str, Any]:
     """One candidate's gate history at the request's requirement.
 
     The block restates the outcome vocabulary over the rows whose recorded
     requirement equals the request's, adds ``unrecorded``, the count of rows
     that recorded no requirement, and carries the median review total and wall
-    seconds over the matched rows. It also carries ``attempts_median``, the
-    median of the launches those rows took, and ``passed_first_attempt``, how
-    many of them passed on their first launch, so a pass that needed resumes is
-    not weighed as a pass on the first try. A candidate with no matched row
-    reads zero gate counts, null medians and a zero first-attempt count, never a
-    median over an empty sample.
+    seconds over the matched rows. It also carries ``reviewed``, how many
+    matched rows a review scored on every dimension, and
+    ``review_dimensions_median``, each dimension's median over exactly those
+    rows. A dimension median needs the full sample, so a row that scored fewer
+    than every dimension feeds neither the medians nor ``reviewed``, though its
+    recorded total still counts toward ``review_total_median``. It also carries
+    ``attempts_median``, the median of the launches those rows took, and
+    ``passed_first_attempt``, how many of them passed on their first launch, so
+    a pass that needed resumes is not weighed as a pass on the first try. A
+    candidate with no matched row reads zero gate counts, null medians and a
+    zero first-attempt count, never a median over an empty sample.
     """
 
     entry = entry or {}
@@ -403,10 +438,21 @@ def _requirement_block(entry: Mapping[str, Any] | None) -> dict[str, Any]:
     reviews = entry.get("reviews") or []
     walls = entry.get("walls") or []
     attempts = entry.get("attempts") or []
+    dimensions = entry.get("dimension_scores") or {}
+    reviewed = int(entry.get("reviewed") or 0)
     return {
         **_outcome_counts(counts),
         "unrecorded": int(entry.get("unrecorded") or 0),
+        "reviewed": reviewed,
         "review_total_median": round(median(reviews), 1) if reviews else None,
+        "review_dimensions_median": (
+            {
+                name: round(median(dimensions.get(name) or []), 1)
+                for name in REVIEW_DIMENSIONS
+            }
+            if reviewed
+            else None
+        ),
         "wall_seconds_median": round(median(walls), 1) if walls else None,
         "attempts_median": round(median(attempts), 1) if attempts else None,
         "passed_first_attempt": int(entry.get("passed_first_attempt") or 0),
