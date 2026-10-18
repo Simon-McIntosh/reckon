@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_the_review_reflex_asks_before_it_requeues.py::test_no_alternative_lane_still_re_queues_on_the_local_lane"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": "3dc3f89c8dbd7b21825484ac7727d0fea7e52f10",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:172 _launch_queued calls dispatch",
+    "reckon/crew/dispatch.py:722 shadow calls dispatch",
+    "reckon/crew/dispatch.py:933 dispatch_pair calls dispatch",
+    "reckon/crew/dispatch.py:952 dispatch_pair calls dispatch",
+    "reckon/crew/plan_review.py:2771 dispatch_code_review calls dispatch",
+    "reckon/crew/plan_review.py:3379 dispatch_portfolio_review calls dispatch"
+  ],
+  "completed_at": "2026-10-18T17:28:13.006Z",
+  "dispatched_at": "2026-10-18T17:12:08Z",
+  "findings": [
+    {
+      "file": "tests/test_the_review_reflex_asks_before_it_requeues.py",
+      "line": "391",
+      "severity": "follow-on",
+      "text": "follow-on: this head-only failure is raised in teardown (recovery.unwatch finds a registration whose project reads '') on a test that exercises the modified queued branch, so the change is not excluded as its cause; the done-when's no-added-failure clause is unmet and the cause should be established before the node is treated as clean."
+    }
+  ],
+  "head_log_revision": "27fc5f44ed59ade91c453ef7217ac2d7f143fab5",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read commit by commit from 3dc3f89c8 to 85a5bd5a6; 36e046d08 extracts _arrange_dispatch_follower and calls it from both queued branches and the launching path, 27fc5f44e adds the regression test, 85a5bd5a6 adds the evidence fragment.",
+    "done_when": "The done_when names a FIFO-held dispatch stored queued with the session attached before the call returns, one admission pass that launches it with no _FollowerAdmissionUnmet, importer/ruff/suite clauses; the manifest records the focused gate 2 passed (head-green.log EXIT=0), the negative control 2 failed, and a 6-to-5 importer delta with one head-only failure.",
+    "goal": "The node goal is to make the queued dispatch branch arrange the session's follower through the same helper a launching dispatch uses; reckon/crew/dispatch.py:1522 and :1585 now call _arrange_dispatch_follower in the two queued branches and :1841 routes the launching path through the same helper.",
+    "manifest": "Read; it names commits 36e046d08/27fc5f44e/85a5bd5a6, the focused gate result, negative_control_log, and baseline_suite (6 failed) and after_suite (5 failed) with added_failure_count 1.",
+    "write_paths": "The declared scope is reckon/crew/dispatch.py, reckon/crew/dispatch_watch.py, tests/test_a_queued_request_arranges_its_follower.py, a fragment and a figures directory; git diff 3dc3f89..85a5bd5 changes only dispatch.py, the test and the fragment, every one inside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_request_arranges_its_follower.py:85 asserts host.line from the stub host's FIFO read and :99 asserts admitted_from against the stored run_id, both of which reproduce the defect at base and fail under the declared mutation.",
+    "evidence": "the focused gate at tests/test_a_*_follower.py records 2 passed in head-green.log and the added-failure arithmetic from baseline_suite/after_suite is 1, leaving the done-when's importer clause unmet.",
+    "fit": "reckon/crew/dispatch.py:273 extracts _arrange_dispatch_follower with a one-line docstring matching the module's style and introduces no forbidden name.",
+    "goal_fidelity": "reckon/crew/dispatch.py:1522 and :1585 call _arrange_dispatch_follower from the two queued branches, so a rejected request's session is arranged to attach before dispatch returns.",
+    "reuse": "the change creates the single owner _arrange_dispatch_follower at reckon/crew/dispatch.py:273 and the launching and queued paths all call it, so no capability is forked.",
+    "scope_discipline": "git diff 3dc3f89..85a5bd5 changes only reckon/crew/dispatch.py, tests/test_a_queued_request_arranges_its_follower.py and the declared fragment, all inside the granted write paths."
+  },
+  "method": "Read the source node's goal, done_when and write paths from its dispatch prompt, its manifest.md, and the diff of 3dc3f89c8..85a5bd5a6 commit by commit; no code was re-derived and no suite re-run. The negative control and the base reproduction were read from the run's own logs.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to make the queued dispatch branch arrange the session's follower through the same helper a launching dispatch uses; reckon/crew/dispatch.py:1522 and :1585 now call _arrange_dispatch_follower in the two queued branches and :1841 routes the launching path through the same helper.\nVERDICT done_when: The done_when names a FIFO-held dispatch stored queued with the session attached before the call returns, one admission pass that launches it with no _FollowerAdmissionUnmet, importer/ruff/suite clauses; the manifest records the focused gate 2 passed (head-green.log EXIT=0), the negative control 2 failed, and a 6-to-5 importer delta with one head-only failure.\nVERDICT write_paths: The declared scope is reckon/crew/dispatch.py, reckon/crew/dispatch_watch.py, tests/test_a_queued_request_arranges_its_follower.py, a fragment and a figures directory; git diff 3dc3f89..85a5bd5 changes only dispatch.py, the test and the fragment, every one inside the grant.\nVERDICT manifest: Read; it names commits 36e046d08/27fc5f44e/85a5bd5a6, the focused gate result, negative_control_log, and baseline_suite (6 failed) and after_suite (5 failed) with added_failure_count 1.\nVERDICT diff: Read commit by commit from 3dc3f89c8 to 85a5bd5a6; 36e046d08 extracts _arrange_dispatch_follower and calls it from both queued branches and the launching path, 27fc5f44e adds the regression test, 85a5bd5a6 adds the evidence fragment.\nCALL_SITES: reckon/crew/queue_admission.py:172 _launch_queued calls dispatch, reckon/crew/dispatch.py:722 shadow calls dispatch, reckon/crew/dispatch.py:933 dispatch_pair calls dispatch, reckon/crew/dispatch.py:952 dispatch_pair calls dispatch, reckon/crew/plan_review.py:2771 dispatch_code_review calls dispatch, reckon/crew/plan_review.py:3379 dispatch_portfolio_review calls dispatch\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1522 and :1585 call _arrange_dispatch_follower from the two queued branches, so a rejected request's session is arranged to attach before dispatch returns.\nSCORE evidence: 15\nJUSTIFICATION evidence: the focused gate at tests/test_a_*_follower.py records 2 passed in head-green.log and the added-failure arithmetic from baseline_suite/after_suite is 1, leaving the done-when's importer clause unmet.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 3dc3f89..85a5bd5 changes only reckon/crew/dispatch.py, tests/test_a_queued_request_arranges_its_follower.py and the declared fragment, all inside the granted write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_queued_request_arranges_its_follower.py:85 asserts host.line from the stub host's FIFO read and :99 asserts admitted_from against the stored run_id, both of which reproduce the defect at base and fail under the declared mutation.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch.py:273 extracts _arrange_dispatch_follower with a one-line docstring matching the module's style and introduces no forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change creates the single owner _arrange_dispatch_follower at reckon/crew/dispatch.py:273 and the launching and queued paths all call it, so no capability is forked.\nFINDING tests/test_the_review_reflex_asks_before_it_requeues.py:391 follow-on: this head-only failure is raised in teardown (recovery.unwatch finds a registration whose project reads '') on a test that exercises the modified queued branch, so the change is not excluded as its cause; the done-when's no-added-failure clause is unmet and the cause should be established before the node is treated as clean.",
+  "review_run_id": "r-20261018T171101079873-review-of-a-queued-request-arranges-its-follower-85a5bd5a6ee2",
+  "reviewed_base_sha": "3dc3f89c8dbd7b21825484ac7727d0fea7e52f10",
+  "reviewed_head_sha": "85a5bd5a6ee261fe3605c0b3b844214062705f57",
+  "reviewed_run_id": "r-20261018T161524656712-a-queued-request-arranges-its-follower",
+  "rubric": "dimensions",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T17:35:15.206158+00:00",
+  "total": 110
+}
