@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-paired-arm-is-reviewed-as-itself">
   <meta name="plan-title" content="A Paired Arm Is Reviewed As Itself">
   <meta name="plan-summary" content="Both arms of a pair share a node id, so the composed review of one arm resolves to its partner; a paired arm&#x27;s review must name the arm by its run id.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="1.0">
   <meta name="plan-capability-version" content="1.0">
@@ -25,7 +25,7 @@
   <title>A Paired Arm Is Reviewed As Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -99,6 +99,12 @@ The test writes nothing outside its temporary directory.</li>
     <pre class="r-fu-prompt">/reckon-build a-paired-arm-is-reviewed-as-itself §2</pre>
     <p class="r-fu-outcome"><p>§2 landed at review 113: a shadow arm is reviewed on its retained patch. The post-merge check decides the plan's close.</p></p>
     </article>
+<article class="r-fu" data-id="f-apairas-003" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-paired-arm-is-reviewed-as-itself" data-resolved-at="2026-10-18T10:40:00Z" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Plan closed</h4>
+    <div class="r-fu-body"><p>Both sections have landed: a paired arm's review is named by its run id, with an ambiguous node id refused at the grant, and a shadow is reviewed on its retained patch. The post-merge checks pass.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-paired-arm-is-reviewed-as-itself</pre>
+    <p class="r-fu-outcome">done — no followup</p>
+    </article>
 </section>
   
 <section data-reckon="comments" id="comments" class="r-comments">
@@ -118,7 +124,10 @@ The test writes nothing outside its temporary directory.</li>
     <div class="r-comment-body"><p>§2 landed: a shadow's run-review brief names its retained worktree patch against its base as the reviewed change, and treats empty commits as its contract (commits <code>f030e70cb</code>, <code>3ff5072bd</code>). Gate: 37 passed at head, 33 at base, with the same pre-existing <code>ledger.py</code> size failure in both. Both negative controls fail their case. Review total 113, no added failures. A post-merge check of a live shadow's composed brief is still owed. <a href="/reckon/evidence/archive/a-paired-arm-is-reviewed-as-itself-landed.html#s2">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261018T094229241369-a-shadow-review-reads-its-patch" data-who="reckon-build" data-when="2026-10-18T10:32:44Z">
-    <div class="r-comment-body"><p>A shadow&#x27;s run-review brief now names its retained worktree patch as the reviewed change: _review_brief_text appends a shadow block (read through promotion_scope._is_shadow, no second shadow test) that names git -C &lt;worktree&gt; diff &lt;base_sha&gt; plus git -C &lt;worktree&gt; ls-files --others --exclude-standard from the record&#x27;s own worktree and base, states an empty commits list and a head equal to the base are the contract rather than findings, and binds every dimension to that patch; a run that is not a shadow and a paired primary without a shadow lineage both keep the brief unchanged. Gate: base 1 failed / 33 passed, head 1 failed / 37 passed, same pre-existing reckon/ledger.py module-size failure, zero added failure ids; both negative controls fail their declared case.</p></div>
+    <div class="r-comment-body"><p>A shadow's run-review brief now names its retained worktree patch as the reviewed change: _review_brief_text appends a shadow block (read through promotion_scope._is_shadow, no second shadow test) that names git -C &lt;worktree&gt; diff &lt;base_sha&gt; plus git -C &lt;worktree&gt; ls-files --others --exclude-standard from the record's own worktree and base, states an empty commits list and a head equal to the base are the contract rather than findings, and binds every dimension to that patch; a run that is not a shadow and a paired primary without a shadow lineage both keep the brief unchanged. Gate: base 1 failed / 33 passed, head 1 failed / 37 passed, same pre-existing reckon/ledger.py module-size failure, zero added failure ids; both negative controls fail their declared case.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-s2-integration-check" data-who="reckon-build" data-when="2026-10-18T10:40:00Z">
+    <div class="r-comment-body"><p>Post-merge check for §2, run at merge <code>4d0f9cb83</code> against live pointers, writing nothing. <code>_review_brief_text</code> for nova's codex shadow arm <code>r-20261018T063028156864-lobe-share-partition</code> appends the shadow block. It names <code>git -C</code> its own worktree <code>diff 80ee84b28</code>, its untracked-files listing, and the sentence that empty commits are its contract. The clive primary <code>r-20261018T063028156714-lobe-share-partition</code> gets the brief as before, with no shadow block. Shadow reviews stored before this merge keep their scores. A review the reflex composes picks up the new brief once the producer has reloaded this code.</p></div>
 </div>
 </section>
 </main>
