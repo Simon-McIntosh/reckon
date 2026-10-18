@@ -1,0 +1,32 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T19:50:20.255Z",
+  "dispatched_at": "2026-10-18T19:39:45Z",
+  "findings": [],
+  "plan_fingerprint": "c3f91425a488171b0f19953ff67370c184f8e5d2c7d2d532d0493e878d8e5406",
+  "plan_slug": "a-landing-never-reverts-the-checkout",
+  "plan_version": 8,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T193620384131-plan-review-of-a-landing-never-reverts-the-checkout",
+  "reviewed_blob_sha": "3d825227526a4e2f218034745351843c710708be",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every file, line and test file \u00a72 cites resolves; `promotion_release.py:634` sits within the \"near line 632\" the plan names, and all other line citations are exact.",
+    "done_when": "pass \u2014 each of the five bullets names a case that fails at the base revision, and the negative control at line 73 names the reversal, mismatch and record cases as the ones that fail.",
+    "evidence_paths": "pass \u2014 the negative-control log and `landing.json` both sit in the run's directory (`run_dir(run_id)`), a durable path, not a scratchpad or node-local temp.",
+    "naming": "pass \u2014 `landing_check`, `landing_check.reversals`, `landing.json` are mechanism names carrying no plan label, stage name, ticket number or changelog prose; the run ids in prose are evidence identifiers, not code symbols.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (no post-landing observation exists, and the ledger row is a write the rollback takes back, both verified in code); each mechanism produces its done-when; and the mechanism runs on the real landing path, whose callers `_commit_landing_writes` (promotion.py:751, :1350) and the release-outcome commit are the plan's named write targets.",
+    "single_goal": "pass \u2014 the three mechanisms (before-staging check, after-commit check, refusal/rollback record) all serve one goal \u2014 a landing accounting for its own writes \u2014 at one mechanism site, and each has its own done-when bullet, so the gate proves each separately.",
+    "wiring": "pass \u2014 \u00a72 declares no dependency, f-alnrtc-002 declares it independent of \u00a71, and \u00a72's Why (\"Whatever \u00a71 finds\") is consistent with that; the meta carries no \u00a72 edge and none is needed."
+  },
+  "section_digests": {
+    "_document": "479ad99e4e7ec690c76f853bbaa2d01eaa1b8f0a44a8f6ce0f762821bdb2dd5c",
+    "s1": "7d2b4a6ecd5d674369de3a47af6938b85f80085d727b860073a00e4b1cddd382",
+    "s2": "b1c00f06faf44e98b269f12531f0685b9d34ffeddb5284a74c9eb4029274fe86",
+    "s3": "5b86c755ce5f9a57c024e57d7a66b2f089c181482d11c34216c6170cb33a2fde"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T19:54:27.363167+00:00"
+}
