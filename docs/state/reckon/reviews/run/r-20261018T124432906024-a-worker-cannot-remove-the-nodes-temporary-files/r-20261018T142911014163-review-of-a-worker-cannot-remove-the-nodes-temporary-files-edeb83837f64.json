@@ -1,0 +1,96 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "the node tmp is not overlaid read-only: the composed argv carries no --ro-bind whose destination is the node tmp (positive control)",
+      "path": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:177"
+    },
+    {
+      "fails_if": "the own-scratch or a runtime-path writable grant is emitted before the node-tmp overlay, so the read-only bind would shadow it",
+      "path": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:179-194"
+    },
+    {
+      "fails_if": "fewer than two runtime paths are returned or any is not a Path",
+      "path": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:195-199"
+    },
+    {
+      "fails_if": "the fenced stub could not create and remove a file in its own scratch or in an enumerated runtime path",
+      "path": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:237-246"
+    },
+    {
+      "fails_if": "the fenced rm of the outside file succeeded: returncode 0, stderr not naming the path with Read-only file system, or the outside file removed; reddens under the declared control",
+      "path": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:239-249"
+    }
+  ],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/_backends.py:launch_plan"
+  ],
+  "completed_at": "2026-10-18T14:48:50.376Z",
+  "dispatched_at": "2026-10-18T14:30:28Z",
+  "findings": [
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": "1372",
+      "severity": "follow-on",
+      "text": "follow-on: node_tmp_runtime_paths() is filtered by path.exists() at composition, so a runtime path the launch must write but which is absent when the fence is composed composes no writable grant; /tmp/.codex is a directory codex's sandbox creates lazily, so on a node where it does not yet exist the grant this change promises is silently absent."
+    },
+    {
+      "file": "manifest.md",
+      "line": "23",
+      "severity": "follow-on",
+      "text": "follow-on: failure_attribution names three added failures in tests/test_spawn_retries_a_vanished_bind.py, but the recorded after_suite and after-suite.log contain only the single pre-existing test_dispatch_returns_without_worker.py failure, so the field describes a superseded head rather than the one it reports on."
+    },
+    {
+      "file": "docs/evidence/fragments/a-worker-cannot-write-your-home/a-worker-cannot-remove-the-nodes-temporary-files.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the source prompt's landing contract states this node writes no figure and no evidence prose, yet the diff adds a 36-line evidence fragment and a 40-line SVG; both are inside the declared write paths so the contradiction is recorded rather than treated as a scope breach."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read the five commits ff9b7f230..edeb83837 commit by commit \u2014 the node-tmp seal, the protected-bind ordering fix, the figure, the evidence fragment and the bind-order note \u2014 421 insertions across the four declared paths.",
+    "done_when": "prompt.txt:92 requires a test launching the fence's argv around a shell that tries to remove a file created in /tmp outside the fence, with the file surviving and the attempt refused; tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:223 executes exactly that, and the manifest records 3 passed at head, 1 failed 2 passed under the declared control, a zero-delta importer arm and all three lanes reaching a first turn.",
+    "goal": "prompt.txt:30 asks the fence to make a fenced worker see the node's /tmp read-only apart from its own scratch and the runtime paths its launch writes; reckon/_worker_fence.py:1368-1372 composes that read-only overlay and re-grants the scratch and the enumerated runtime paths after it.",
+    "manifest": "read manifest.md; it records the head gate (3 passed), the negative control (1 failed, 2 passed), the importer population at base and head (1 failed, 421 passed each) and the three lane smokes, but its failure_attribution sentence names added failures the recorded after_suite does not contain.",
+    "write_paths": "the manifest's orientation declares reckon/_worker_fence.py, tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py, the evidence fragment and the figure directory; git diff ff9b7f230..edeb83837 lists exactly those four paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:249 reddens under the declared control that patches node_tmp_seal_root to compose no seal, so a regression dropping the seal fails it.",
+    "evidence": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:223 executes the composed argv and the manifest records both importer arms at 1 failed 421 passed, though the base-arm header records no module.__file__.",
+    "fit": "reckon/_worker_fence.py:1158 follows the existing seal-seam idiom of worker_scratch_seal_root, with a named list and a reason comment per entry.",
+    "goal_fidelity": "reckon/_worker_fence.py:1368-1372 seals the node tmp read-only and re-opens the run scratch and node_tmp_runtime_paths() after it, matching the goal.",
+    "reuse": "reckon/_worker_fence.py:1194 extends the existing seal mechanism rather than forking it, and calls the existing reckon/crew/fleet_supervisor.py:262 runtime_directory owner for the fleet sockets.",
+    "scope_discipline": "git diff ff9b7f230..edeb83837 changes only the four declared paths, though the source prompt's landing contract says this node writes no evidence prose and no figure."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: ff9b7f23091922881210e118835876de65a52ce0\nreviewed_head_sha: edeb83837f6404ce4a1eb110e6599a3371f6eafd\nVERDICT goal: prompt.txt:30 asks the fence to make a fenced worker see the node's /tmp read-only apart from its own scratch and the runtime paths its launch writes; reckon/_worker_fence.py:1368-1372 composes that read-only overlay and re-grants the scratch and the enumerated runtime paths after it.\nVERDICT done_when: prompt.txt:92 requires a test launching the fence's argv around a shell that tries to remove a file created in /tmp outside the fence, with the file surviving and the attempt refused; tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:223 executes exactly that, and the manifest records 3 passed at head, 1 failed 2 passed under the declared control, a zero-delta importer arm and all three lanes reaching a first turn.\nVERDICT write_paths: the manifest's orientation declares reckon/_worker_fence.py, tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py, the evidence fragment and the figure directory; git diff ff9b7f230..edeb83837 lists exactly those four paths.\nVERDICT manifest: read manifest.md; it records the head gate (3 passed), the negative control (1 failed, 2 passed), the importer population at base and head (1 failed, 421 passed each) and the three lane smokes, but its failure_attribution sentence names added failures the recorded after_suite does not contain.\nVERDICT diff: read the five commits ff9b7f230..edeb83837 commit by commit \u2014 the node-tmp seal, the protected-bind ordering fix, the figure, the evidence fragment and the bind-order note \u2014 421 insertions across the four declared paths.\nCALL_SITES: reckon/_backends.py:launch_plan\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:1368-1372 seals the node tmp read-only and re-opens the run scratch and node_tmp_runtime_paths() after it, matching the goal.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:223 executes the composed argv and the manifest records both importer arms at 1 failed 421 passed, though the base-arm header records no module.__file__.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: git diff ff9b7f230..edeb83837 changes only the four declared paths, though the source prompt's landing contract says this node writes no evidence prose and no figure.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:249 reddens under the declared control that patches node_tmp_seal_root to compose no seal, so a regression dropping the seal fails it.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/_worker_fence.py:1158 follows the existing seal-seam idiom of worker_scratch_seal_root, with a named list and a reason comment per entry.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/_worker_fence.py:1194 extends the existing seal mechanism rather than forking it, and calls the existing reckon/crew/fleet_supervisor.py:262 runtime_directory owner for the fleet sockets.\nFINDING reckon/_worker_fence.py:1372 follow-on: node_tmp_runtime_paths() is filtered by path.exists() at composition, so a runtime path the launch must write but which is absent when the fence is composed composes no writable grant; /tmp/.codex is a directory codex's sandbox creates lazily, so on a node where it does not yet exist the grant this change promises is silently absent.\nFINDING manifest.md:23 follow-on: failure_attribution names three added failures in tests/test_spawn_retries_a_vanished_bind.py, but the recorded after_suite and after-suite.log contain only the single pre-existing test_dispatch_returns_without_worker.py failure, so the field describes a superseded head rather than the one it reports on.\nFINDING docs/evidence/fragments/a-worker-cannot-write-your-home/a-worker-cannot-remove-the-nodes-temporary-files.html:1 follow-on: the source prompt's landing contract states this node writes no figure and no evidence prose, yet the diff adds a 36-line evidence fragment and a 40-line SVG; both are inside the declared write paths so the contradiction is recorded rather than treated as a scope breach.",
+  "review_run_id": "r-20261018T142911014163-review-of-a-worker-cannot-remove-the-nodes-temporary-files-edeb83837f64",
+  "reviewed_base_sha": "ff9b7f23091922881210e118835876de65a52ce0",
+  "reviewed_head_sha": "edeb83837f6404ce4a1eb110e6599a3371f6eafd",
+  "reviewed_run_id": "r-20261018T124432906024-a-worker-cannot-remove-the-nodes-temporary-files",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "suite_delta_basis": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T124432906024-a-worker-cannot-remove-the-nodes-temporary-files/after-suite.log",
+    "after_summary": "1 failed, 421 passed in 326.05s; EXIT=1",
+    "base_summary": "1 failed, 421 passed in 314.54s; EXIT=1",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T124432906024-a-worker-cannot-remove-the-nodes-temporary-files/baseline-suite.log",
+    "limit": "the single failure test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated is present in both arms, so the added-failure delta is zero; no other failure appears in either log"
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T14:52:00+00:00",
+  "total": 104
+}
