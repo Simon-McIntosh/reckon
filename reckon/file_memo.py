@@ -6,7 +6,10 @@ pure function of the file's bytes, so its result is kept until the file's
 device, inode, size, mtime or ctime moves — any write changes at least one.
 
 Callers receive a deep copy, so mutating a returned value never poisons the
-entry another request will read.
+entry another request will read. A caller that reads many documents once and
+will not change them opens a :func:`read_only_region`, which trades that copy
+for a read-only view of the stored value: the copy is what a reader pays per
+hand-out, and a caller that changes nothing gains nothing from it.
 """
 
 from __future__ import annotations
@@ -16,9 +19,10 @@ import copy
 import os
 import threading
 from collections import OrderedDict
-from collections.abc import Callable, Hashable, Iterator
+from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping
 from contextvars import ContextVar
 from pathlib import Path
+from typing import Any, Self
 
 _MAX_ENTRIES = 50_000
 
@@ -30,21 +34,230 @@ _LOCK = threading.Lock()
 
 # A read-only region in which a memoised value is shared rather than copied.
 # Within the region each document is stat'ed once, decoded once, and handed to
-# the caller itself; a caller that must mutate what it reads passes
-# ``mutable=True`` and is handed a copy at that hand-over. Outside a region the
-# memo keeps returning the copy it always has.
-_REGION: ContextVar[dict[tuple[str, str, Hashable], object] | None] = ContextVar(
+# the caller as a read-only view of the parsed value: the region refuses any
+# change to what it hands out, so a caller that would mutate a shared document
+# is stopped at the change rather than silently corrupting the process-wide memo
+# for every later reader. A caller that must mutate what it reads passes
+# ``mutable=True`` and is handed a mutable copy at that hand-over. Outside a
+# region the memo keeps returning the copy it always has.
+_REGION: ContextVar[dict[tuple[str, str, Hashable], list[Any]] | None] = ContextVar(
     "file_memo_region", default=None
 )
 
 
+class _ReadOnlyDict(dict):
+    """A parsed document handed out inside a region; a change to it raises.
+
+    It carries the document's own items, so reads are unchanged —
+    ``dict(value)``, ``json.dumps`` and equality all see the document — while
+    every mutating method refuses, so a caller that would change a shared
+    document is detected at the change rather than poisoning the memo for every
+    later reader. Copying is the way to a mutable value: ``copy.copy`` returns a
+    plain mapping and ``copy.deepcopy`` a plain, fully mutable document.
+    """
+
+    __slots__ = ()
+
+    def __init__(self, source: Mapping[str, Any]) -> None:
+        super().__init__({key: _read_only(value) for key, value in source.items()})
+
+    def _refuse(self, *_arguments: Any, **_keywords: Any) -> None:
+        raise TypeError("a document handed out inside a read-only region is read-only")
+
+    __setitem__ = _refuse
+    __delitem__ = _refuse
+    __ior__ = _refuse
+    clear = _refuse
+    pop = _refuse
+    popitem = _refuse
+    setdefault = _refuse
+    update = _refuse
+
+    def __copy__(self) -> dict[str, Any]:
+        return dict(self)
+
+    def __deepcopy__(self, memo: dict[int, Any] | None = None) -> dict[str, Any]:
+        return _plain_copy(self, memo)
+
+
+class _ReadOnlyList(list):
+    """A parsed document's list, handed out inside a region; a change raises.
+
+    Copying yields a mutable value: ``copy.copy`` a plain list, ``mutating`` it
+    leaves the view untouched, and ``copy.deepcopy`` a plain, fully mutable
+    list.
+    """
+
+    __slots__ = ()
+
+    def __init__(self, source: Iterable[Any]) -> None:
+        super().__init__(_read_only(value) for value in source)
+
+    def _refuse(self, *_arguments: Any, **_keywords: Any) -> None:
+        raise TypeError("a document handed out inside a read-only region is read-only")
+
+    __setitem__ = _refuse
+    __delitem__ = _refuse
+    __iadd__ = _refuse
+    __imul__ = _refuse
+    append = _refuse
+    clear = _refuse
+    extend = _refuse
+    insert = _refuse
+    pop = _refuse
+    remove = _refuse
+    reverse = _refuse
+    sort = _refuse
+
+    def __copy__(self) -> list[Any]:
+        return list(self)
+
+    def __deepcopy__(self, memo: dict[int, Any] | None = None) -> list[Any]:
+        return _plain_copy(self, memo)
+
+
+class _ReadOnlyTuple(tuple):
+    """A document's tuple, handed out inside a region; its containers refuse.
+
+    A tuple is already immutable, so nothing here refuses a change to the tuple
+    itself; it exists so the containers a tuple can hold — the members a tuple
+    is otherwise a window onto — are wrapped. Copying yields a plain tuple.
+    """
+
+    __slots__ = ()
+
+    def __new__(cls, source: Iterable[Any]) -> Self:
+        return super().__new__(cls, (_read_only(value) for value in source))
+
+    def __copy__(self) -> tuple[Any, ...]:
+        return tuple(self)
+
+    def __deepcopy__(self, memo: dict[int, Any] | None = None) -> tuple[Any, ...]:
+        return _plain_copy(self, memo)
+
+
+class _ReadOnlySet(set):
+    """A document's set, handed out inside a region; a change to it raises."""
+
+    __slots__ = ()
+
+    def __init__(self, source: Iterable[Any]) -> None:
+        super().__init__(_read_only(value) for value in source)
+
+    def _refuse(self, *_arguments: Any, **_keywords: Any) -> None:
+        raise TypeError("a document handed out inside a read-only region is read-only")
+
+    __iand__ = _refuse
+    __ior__ = _refuse
+    __isub__ = _refuse
+    __ixor__ = _refuse
+    add = _refuse
+    clear = _refuse
+    difference_update = _refuse
+    discard = _refuse
+    intersection_update = _refuse
+    pop = _refuse
+    remove = _refuse
+    symmetric_difference_update = _refuse
+    update = _refuse
+
+    def __copy__(self) -> set[Any]:
+        return set(self)
+
+    def __deepcopy__(self, memo: dict[int, Any] | None = None) -> set[Any]:
+        return _plain_copy(self, memo)
+
+
+def _read_only(value: Any) -> Any:
+    """Return ``value`` as a read-only view, rebuilding each container once.
+
+    A mapping is rebuilt as a :class:`_ReadOnlyDict`, a list as a
+    :class:`_ReadOnlyList`, a tuple as a :class:`_ReadOnlyTuple` and a set as a
+    :class:`_ReadOnlySet`, each carrying the value's own items so every read is
+    unchanged; a frozenset, which cannot hold a mutable member, is rebuilt as a
+    plain frozenset of read-only members, and anything else is returned as it
+    is. The rebuild is the region's one added cost, and :func:`_handout` does it
+    once per document per region rather than once per hand-out.
+    """
+
+    if isinstance(value, (_ReadOnlyDict, _ReadOnlyList, _ReadOnlyTuple, _ReadOnlySet)):
+        return value
+    if isinstance(value, dict):
+        return _ReadOnlyDict(value)
+    if isinstance(value, list):
+        return _ReadOnlyList(value)
+    if isinstance(value, tuple):
+        return _ReadOnlyTuple(value)
+    if isinstance(value, set):
+        return _ReadOnlySet(value)
+    if isinstance(value, frozenset):
+        return frozenset(_read_only(member) for member in value)
+    return value
+
+
+def _plain_copy(value: Any, memo: dict[int, Any] | None = None) -> Any:
+    """A plain, fully mutable copy of a read-only view.
+
+    Every wrapped container is rebuilt as its plain counterpart and every leaf
+    kept as it is, so a caller that copies a document handed out inside a region
+    gets back an ordinary value it may change; the view it copied from is
+    untouched, and the memo behind it stays unchanged. ``memo`` carries the
+    objects :func:`copy.deepcopy` already copied, so a view that names the same
+    container twice is copied once.
+    """
+
+    seen = {} if memo is None else memo
+    existing = seen.get(id(value))
+    if existing is not None:
+        return existing
+    if isinstance(value, _ReadOnlyDict):
+        copied: Any = {}
+        seen[id(value)] = copied
+        for key, leaf in value.items():
+            copied[key] = _plain_copy(leaf, seen)
+        return copied
+    if isinstance(value, _ReadOnlyList):
+        copied = []
+        seen[id(value)] = copied
+        copied.extend(_plain_copy(leaf, seen) for leaf in value)
+        return copied
+    if isinstance(value, _ReadOnlyTuple):
+        copied = tuple(_plain_copy(leaf, seen) for leaf in value)
+        seen[id(value)] = copied
+        return copied
+    if isinstance(value, _ReadOnlySet):
+        copied = set()
+        seen[id(value)] = copied
+        copied.update(_plain_copy(member, seen) for member in value)
+        return copied
+    return copy.deepcopy(value, seen)
+
+
+def _handout(entry: list[Any], mutable: bool) -> Any:
+    """The value to hand a region's caller: a mutable copy, or the cached view.
+
+    ``entry`` is ``[value, view]``: the region's own value and, once built, the
+    read-only view of it. A caller that asked for ``mutable`` gets a mutable
+    copy of the value; every other caller shares the one view the region builds.
+    """
+
+    if mutable:
+        return copy.deepcopy(entry[0])
+    view = entry[1]
+    if view is None:
+        view = _read_only(entry[0])
+        entry[1] = view
+    return view
+
+
 @contextlib.contextmanager
 def read_only_region() -> Iterator[None]:
-    """Open a region in which :func:`memoized` shares its stored value.
+    """Open a region in which :func:`memoized` shares a read-only view.
 
-    A reader inside the region must not mutate a value it is handed; one that
-    must asks for it with ``mutable=True``. The region is per-thread-task, so a
-    concurrent reader outside it is unaffected.
+    A reader inside the region is handed a view, so mutating what it reads
+    raises rather than mutating the memo; a reader that must mutate asks for it
+    with ``mutable=True`` and is handed a copy. The region is per-thread-task,
+    so a concurrent reader outside it is unaffected.
     """
 
     token = _REGION.set({})
@@ -82,15 +295,15 @@ def memoized[T](
     that cannot be stat'ed is parsed uncached, so its error path is unchanged.
 
     Inside a :func:`read_only_region` the value is stat'ed and decoded once and
-    handed over without copying; ``mutable=True`` asks for a copy at that
-    hand-over, for a caller that will change what it is given.
+    handed to the caller as a read-only view of it, so mutating what is read is
+    refused; ``mutable=True`` asks for a mutable copy at that hand-over, for a
+    caller that will change what it is given.
     """
 
     region = _REGION.get()
     key = (kind, os.fspath(path), variant)
     if region is not None and key in region:
-        value = region[key]
-        return copy.deepcopy(value) if mutable else value  # type: ignore[return-value]
+        return _handout(region[key], mutable)  # type: ignore[return-value]
     try:
         signature = file_signature(path)
     except OSError:
@@ -101,21 +314,22 @@ def memoized[T](
             _CACHE.move_to_end(key)
             value = entry[1]
             if region is not None:
-                region[key] = value
-                return copy.deepcopy(value) if mutable else value  # type: ignore[return-value]
+                region[key] = [value, None]
+                return _handout(region[key], mutable)  # type: ignore[return-value]
             return copy.deepcopy(value)  # type: ignore[return-value]
     value = compute()
     if region is not None:
         # One stat and one decode for the region: the computed value is stored
-        # itself, and the region hands it on from here, so a second reader of
-        # the same document inside the region neither stats nor decodes again.
+        # itself, the region hands a read-only view of it on from here, so a
+        # second reader of the same document inside the region neither stats nor
+        # decodes again, and no caller can change the stored value.
         with _LOCK:
             _CACHE[key] = (signature, value)
             _CACHE.move_to_end(key)
             while len(_CACHE) > _MAX_ENTRIES:
                 _CACHE.popitem(last=False)
-        region[key] = value
-        return copy.deepcopy(value) if mutable else value
+        region[key] = [value, None]
+        return _handout(region[key], mutable)  # type: ignore[return-value]
     try:
         unchanged = file_signature(path) == signature
     except OSError:
