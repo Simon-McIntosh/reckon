@@ -1,0 +1,38 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T13:44:27.927Z",
+  "dispatched_at": "2026-10-18T13:27:48Z",
+  "findings": [],
+  "plan_fingerprint": "7b334adc6284a4aa5b2f1fda9b6b980c6a565ede67439159ad7964e920d2bdad",
+  "plan_slug": "the-fleet-node-stays-in-service",
+  "plan_version": 6,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T132658323825-plan-review-of-the-fleet-node-stays-in-service",
+  "reviewed_blob_sha": "fdccd9bf15845a73d7b1d3b3d02332bb1cfe6930",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor resolves: `dispatch_launch.py:2078` (`_start_supervisor`), `supervisor_main.py:23` (`main`), `dispatch_launch.py:2860\u20132884` and `2936\u20132963` (the two stop paths), `placement.py:233` (`step_prefix`), `fleet_node.py:358` (`placement_argv`) and `fleet_node.py:44` (`DEFAULT_MEMORY`), `recovery_watch.py:2247` (`watch_ticker`), and `runs.py:705`/`runs.py:720` (the live listing and its filter). The gate-evidence value carries whitespace and is a prose sentence by design \u2014 docs/ui/plan.jsx's `gateEvidenceIsReference` renders it as prose rather than as a link \u2014 so it is not a broken href.",
+    "done_when": "pass \u2014 \u00a73, \u00a76 and \u00a79 each name a measurable positive arm and a distinct negative control that can fail (\u00a73: the old path, a signal to the `srun` client, shows CANCELLED against COMPLETED; \u00a76: a probe allocating past its bound lands its OOM in the step's `memory.events`, not the job's; \u00a79: a cycle whose pointer mtime moves must sweep).",
+    "evidence_paths": "pass \u2014 the only explicit evidence path is \u00a72's durable repository fragment `docs/evidence/fragments/the-fleet-node-stays-in-service/name-how-a-stopped-worker-step-ends.html`, \u00a73 writes to the run directory, and no reviewed unit names a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 the plan introduces no new option or plan-labelled symbol (it explicitly reuses the existing dispatch `--set` override), and the symbols it cites (`step_prefix`, `placement_argv`, `memory_gb`, `DEFAULT_MEMORY`, `watch_ticker`) are mechanism names, not tracker or version tags.",
+    "reasoning": "pass \u2014 \u00a76's root cause now matches its evidence (the killed processes were legitimate 52\u201359 GB map solves, so the defect is placement, not leakage, consistent with \u00a71's `oom_memcg=job_1281970` record); each revised section's mechanism produces its done-when (\u00a76 bounds the OOM inside the step so the job-level killer no longer picks the largest process elsewhere; \u00a79 gates the sweep on a change signal while keeping the per-live-run liveness probe on the fixed beat); and the real code path is named with its caller (`_start_supervisor` \u2192 `supervisor_main.main` \u2192 the `dispatch_launch.py` stop path for \u00a73; `watch_ticker` for \u00a79; `step_prefix`/`placement_argv for \u00a76).",
+    "single_goal": "pass \u2014 \u00a73 (\"a stopped worker ends inside its step\"), \u00a76 (\"a worker step carries a memory bound\") and \u00a79 (\"a watch producer sweeps only when the crew home changes\") each carry one deliverable.",
+    "wiring": "pass \u2014 the two hard dependencies are carried by gates that resolve (g-tfnsis-stop-path: s2 gates s3, closed/passed; g-tfnsis-move-ready: s5 gates s8, open), `plan-after` names `the-fleet-moves-to-a-new-node`, which resolves in docs/plans/, and the \u00a74\u2192\u00a75 ordering is recorded in the f-tfnsis-001 followup body."
+  },
+  "section_digests": {
+    "_document": "f01981668ee546ed80e3379a14bc976feac514cb671ed15b96f007c9d8fe3fc5",
+    "s1": "600cb64faef5767f73d860ed9e70a11bdff957b9eb929ff957aaf20e7aaedef7",
+    "s2": "6155f820ac9515ec6066931aa10a1e66fdcff1b4184ba4014c19c572b1e6dfe6",
+    "s3": "2cb481d156747fffcc333364251970f82823dcf8ed5fb1b85f1f03d49a2395df",
+    "s4": "f7b38e78e6c15ee255582765714f19819bb2c1e3ba9be956538ed4cbebf35b4d",
+    "s5": "d4f488d07892837dc407622ba39c93de73227ef500f14b72a58ef244b3118a2c",
+    "s6": "c24e764022d016649916eca1055d40a71e58111a38bbe6a7c18e2ed11d8fe953",
+    "s7": "3a45b0d0d40cbd44ec6f8209f8a125004c44cc3cdccfb33e97882ef8331f7d70",
+    "s8": "eb2fb9fcc72be96e074c705a111e8a1693e50277fcbe75ce2468a02731f0d16f",
+    "s9": "f575efb8382bf8f279ec8c873642e49846c5abb7b4124831a6b834bc3b8756c8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T13:49:19.312869+00:00"
+}
