@@ -1,0 +1,119 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T182335545704-reserved-lane-reads-a-fresh-window/resume-final-head.log",
+  "assertion_analysis": [
+    {
+      "failure_condition": "More than one probe occurs in two picks, or the fixed 42% and 60% fixtures produce the wrong offered state.",
+      "lines": "88-90"
+    },
+    {
+      "failure_condition": "The published source is not reserved-probe, the stored value differs from the fixture's used input, its stamp is undated, or the 60% refusal omits the fixed percentage; line 95 is self-comparison.",
+      "lines": "94-98"
+    },
+    {
+      "failure_condition": "A supplied live budget view remains stale after a successful 42% probe or the candidate is excluded.",
+      "lines": "122-125"
+    },
+    {
+      "failure_condition": "The crew pick command fails or the route criteria include Claude for the fixed 60%/unknown fixtures or exclude it for the fixed 42% fixture.",
+      "lines": "178-181"
+    },
+    {
+      "failure_condition": "Two unknown-source picks send more or fewer than one probe, fail to say unknown or stale, invent a numeric window, or lose the failure marker; the mutation log reds line 198.",
+      "lines": "198-203"
+    },
+    {
+      "failure_condition": "A rejected event opens the lane, publishes a numeric five-hour window, or loses the probe failure.",
+      "lines": "214-217"
+    },
+    {
+      "failure_condition": "The subprocess builder omits tool exclusion, budget cap, model, input, or timeout, or fails to return a stream; the fake subprocess does not verify a real provider response.",
+      "lines": "232-239"
+    },
+    {
+      "failure_condition": "A routine request invokes the reserved probe or offers Claude.",
+      "lines": "253-254"
+    },
+    {
+      "failure_condition": "The weekly-only fixture suppresses the probe, the 42% lane is excluded, or a new probe overwrites the fixed 20% weekly reading.",
+      "lines": "291-295"
+    },
+    {
+      "failure_condition": "A cached pick invokes the probe or opens an unknown reserved window.",
+      "lines": "316-317"
+    },
+    {
+      "failure_condition": "Publishing drops the fixed 42% probed figure or changes the already-stored attempt marker; the comparison tests preservation, not marker correctness.",
+      "lines": "337-338"
+    },
+    {
+      "failure_condition": "A direct refresh reports no change, an unknown view contains a figure, the refreshed view lacks fixed 42%, or its source is not the document.",
+      "lines": "366-371"
+    }
+  ],
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T182335545704-reserved-lane-reads-a-fresh-window/resume-base-focused-complete.log",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:390",
+    "reckon/crew/picker/replay.py:91",
+    "reckon/crew/paid_lanes.py:800"
+  ],
+  "completed_at": "2026-10-18T21:09:07Z",
+  "dispatched_at": "2026-10-18T21:00:42Z",
+  "findings": [
+    {
+      "file": "tests/test_reserved_lane_window_reading.py",
+      "line": "95",
+      "severity": "follow-on",
+      "text": "follow-on: this round-trip equality uses the same used parameter that built the synthetic event, so it cannot independently establish the numeric reference; the fixed offer and refusal assertions on lines 89-98 carry the decision guard."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites",
+    "diff": "I read 094a801b, merge 500fdc8c, 51682c9c, 480a24bd and baf9e73a commit by commit; the merge imports current main, while the node's authored code and fragment stay in its four declared paths.",
+    "done_when": "brief.md requires 42% offer, 60% refusal, unknown refusal and one probe per shelf life; tests/test_reserved_lane_window_reading.py:73-203 and :128-181 assert these, with base/head receipts at 44/58 passes.",
+    "goal": "brief.md asks for a dated fresh five-hour reading on a qualifying reserved pick; reckon/crew/picker/snapshot.py:1158-1192 refreshes it and line 1348 applies the reserved ceiling.",
+    "manifest": "manifest.md lists five commits, four changed paths, 44/58 passing base/head receipts and a mutation-only failure in negative-control-final.log; both suite arms declare completion.",
+    "write_paths": "brief.md grants paid_lanes.py, snapshot.py, the new test and evidence fragment among six paths; the node-authored diff from 500fdc8c to baf9e73a changes exactly those four."
+  },
+  "justifications": {
+    "durability": "tests/test_reserved_lane_window_reading.py:88-98 and :178-203 fail on lost probe caching or wrong 42%/60% decisions, but line 95 alone compares the stored value with its own fixture parameter.",
+    "evidence": "resume-base-focused-complete.log records 44 passed/EXIT=0, resume-final-head.log records 58 passed/EXIT=0, and negative-control-final.log records one failing id/EXIT=1.",
+    "fit": "reckon/crew/paid_lanes.py:626 extends its document publisher and reckon/crew/picker/snapshot.py:1066 extends the existing reserved-lane gate using capability names rather than release labels.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:1158-1192 refreshes a qualifying unknown five-hour window and line 1357 gates the reserved lane on that clock.",
+    "reuse": "reckon/crew/paid_lanes.py:712 uses the existing window_reading.read_windows owner at reckon/crew/window_reading.py:93; capability searches found existing account probes in paid_lanes.py:756 but no serving probe for the reserved five-hour clock.",
+    "scope_discipline": "The node-authored diff from 500fdc8c to baf9e73a touches only the four granted paths named in brief.md, while 500fdc8c merges unrelated current-main commits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: brief.md asks for a dated fresh five-hour reading on a qualifying reserved pick; reckon/crew/picker/snapshot.py:1158-1192 refreshes it and line 1348 applies the reserved ceiling.\nVERDICT done_when: brief.md requires 42% offer, 60% refusal, unknown refusal and one probe per shelf life; tests/test_reserved_lane_window_reading.py:73-203 and :128-181 assert these, with base/head receipts at 44/58 passes.\nVERDICT write_paths: brief.md grants paid_lanes.py, snapshot.py, the new test and evidence fragment among six paths; the node-authored diff from 500fdc8c to baf9e73a changes exactly those four.\nVERDICT manifest: manifest.md lists five commits, four changed paths, 44/58 passing base/head receipts and a mutation-only failure in negative-control-final.log; both suite arms declare completion.\nVERDICT diff: I read 094a801b, merge 500fdc8c, 51682c9c, 480a24bd and baf9e73a commit by commit; the merge imports current main, while the node's authored code and fragment stay in its four declared paths.\nCALL_SITES: reckon/crew/picker/__init__.py:390, reckon/crew/picker/replay.py:91, reckon/crew/paid_lanes.py:800\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:1158-1192 refreshes a qualifying unknown five-hour window and line 1357 gates the reserved lane on that clock.\nSCORE evidence: 17\nJUSTIFICATION evidence: resume-base-focused-complete.log records 44 passed/EXIT=0, resume-final-head.log records 58 passed/EXIT=0, and negative-control-final.log records one failing id/EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The node-authored diff from 500fdc8c to baf9e73a touches only the four granted paths named in brief.md, while 500fdc8c merges unrelated current-main commits.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_reserved_lane_window_reading.py:88-98 and :178-203 fail on lost probe caching or wrong 42%/60% decisions, but line 95 alone compares the stored value with its own fixture parameter.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/paid_lanes.py:626 extends its document publisher and reckon/crew/picker/snapshot.py:1066 extends the existing reserved-lane gate using capability names rather than release labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/paid_lanes.py:712 uses the existing window_reading.read_windows owner at reckon/crew/window_reading.py:93; capability searches found existing account probes in paid_lanes.py:756 but no serving probe for the reserved five-hour clock.\nFINDING tests/test_reserved_lane_window_reading.py:95 follow-on: this round-trip equality uses the same used parameter that built the synthetic event, so it cannot independently establish the numeric reference; the fixed offer and refusal assertions on lines 89-98 carry the decision guard.\n",
+  "review_run_id": "r-20261018T205914158474-review-of-reserved-lane-reads-a-fresh-window-baf9e73aa82f",
+  "reviewed_base_sha": "a5d6c0018049cbd5a8dfa6061a3f3337089312cb",
+  "reviewed_commits": [
+    "094a801b831a9e3fef7af65df07fd4e30dbf4468",
+    "500fdc8c3da3d83c95d61abda44a51e1b93f29a5",
+    "51682c9cbe60933fb128bcdc77422ee339904fb1",
+    "480a24bd1c0a7edfdc06e52c64ac16f9758ed215",
+    "baf9e73aa82fceedcc3e518d4cceba24b0b84d7a"
+  ],
+  "reviewed_head_sha": "baf9e73aa82fceedcc3e518d4cceba24b0b84d7a",
+  "reviewed_run_id": "r-20261018T182335545704-reserved-lane-reads-a-fresh-window",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [
+    "tests/test_reserved_lane_window_reading.py:95"
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T21:14:43.663029+00:00",
+  "total": 110
+}
