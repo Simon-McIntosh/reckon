@@ -1,0 +1,79 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T20:36:30.219Z",
+  "dispatched_at": "2026-10-18T20:20:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-promotes-only-its-own-verdict.html:46",
+      "id": "reasoning-1",
+      "reason": "the node cannot edit the tests its own deliverable tells it to change without a scope grant, so the plan must add those test files to \u00a71's write paths (or restore the widen clause).",
+      "text": "\u00a71's write paths grant only recovery_review_delivery.py, recovery_review_dispatch.py, recovery_review_acceptance.py and the new tests/test_a_review_promotes_only_its_own_verdict.py, yet the deliverable requires changing the existing tests that \"relied on the legacy path counting as a delivery\" \u2014 tests/test_a_review_run_promotes_itself.py (write_paths=[legacy review_path] at line 147) and tests/test_a_delivered_review_ends_its_turn.py (write_paths=[legacy review_path] at line 139) \u2014 neither of which is in scope, and the \"added to the scope with crew widen\" clause present in the prior revision of this line has been removed",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-promotes-only-its-own-verdict.html:54",
+      "id": "reasoning-2",
+      "reason": "leaving them red satisfies item 5 only by naming them, which contradicts the deliverable's instruction to change the tests that encoded the defect; the plan must either scope the edits or state that these two tests are expected to stay red.",
+      "text": "done-when item 5 runs tests/test_a_review_run_promotes_itself.py and tests/test_a_delivered_review_ends_its_turn.py and requires \"no failure against the base, beyond the tests the manifest names as encoding the defect\", but under \u00a71's four conditions those two tests FAIL at the fixed revision (each stores its record at the legacy review_path(...) and declares write_paths=[that legacy path], so _delivered_review_record now returns None and self-promotion is refused)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d8ea4bab0558e973a95fb43b401721895315c55dd6f7081dc2fff7d290af02e2",
+  "plan_slug": "a-review-promotes-only-its-own-verdict",
+  "plan_version": 8,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-18T20:42:42.155428+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-18T20:42:53.898140+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T20:42:42.155428+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T20:42:53.898140+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-review-promotes-only-its-own-verdict.v8.json",
+  "review_run_id": "r-20261018T201954857909-plan-review-of-a-review-promotes-only-its-own-verdict",
+  "reviewed_blob_sha": "23696e8d6e8a7041757a626b5bf10ab7f7c7cd47",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited line resolves: _delivered_review_record (reckon/crew/recovery_review_delivery.py:236), _read_complete_review:222, the store fallback 251-261, review_delivered:265, promote_review_run_itself (reckon/crew/recovery_review_acceptance\u2192reckon/crew/recovery_review_acceptance.py:314), promotion_checks.py:1152 and :2327, _review_subject (reckon/crew/recovery_review_dispatch.py:153), and the nova ledger row docs/state/nova/runs/r-20261018T192200408612-review-of-tcv-liuqe-known-answer-0a451acfdb02.json \u2014 which carries reviewed_head_sha fbc3788e\u2026, total 91, promoted_by review-self and the head-keyed .at-0a451acfdb02d4b05a5d8f77c7a711943f0d4cce write path, exactly as \u00a71 states.",
+    "done_when": "pass \u2014 s1 declares a negative control (the new test's predecessor-round, three mismatch and no-head cases FAIL at the base revision) and s2 declares a known-positive control (nova's r-20261018T192200408612 row listed as mismatched); both are measurable.",
+    "evidence_paths": "pass \u2014 s1's negative-control log is written under the run directory, s2's output goes to docs/research/, both durable; neither lands in a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 the new file names (scripts/review_rows_with_another_rounds_verdict.py, docs/research/review-rows-with-another-rounds-verdict.html, tests/test_a_review_promotes_only_its_own_verdict.py) state the behaviour, carry no plan label, ticket number or version tag, and there is no changelog prose.",
+    "reasoning": "a finding \u2014 \u00a71's fix to _delivered_review_record invalidates two existing tests its own done-when runs (tests/test_a_review_run_promotes_itself.py and tests/test_a_delivered_review_ends_its_turn.py), both of which store the record at the legacy store path and declare only that path in write_paths, yet neither file is among \u00a71's declared write paths.",
+    "single_goal": "pass \u2014 s1 delivers one predicate change (delivery keyed to the dispatched head), s2 delivers one read-only census.",
+    "wiring": "pass \u2014 plan-section-depends-on declares s3 -> s2 and each reference resolves; s1 and s2 declare no dependency and are correctly independent (followup f-arpoiov-002 says \u00a72 is independent of \u00a71)."
+  },
+  "section_digests": {
+    "_document": "a89ba6e7de39330fc5176496045373dcff7a6d34147d487dbd5acaa0ec842ddd",
+    "s1": "51099b8fe03ee22b71e9ad803d5f25c5a0292cb132aaf306987d90aca333fb78",
+    "s2": "d2fcef76482885575da5e2b62a2a9029c73b5107f00ed2a305795b30665a7a4c",
+    "s3": "18f479da831c1adb4dd53260c6b8c26ddcb1fc069308b21f243d7216647cd6e8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T20:42:36.066315+00:00"
+}
