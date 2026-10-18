@@ -69,7 +69,6 @@ from reckon.crew.runs import (
 )
 
 
-
 @dataclass
 class DispatchPlan:
     """Everything a dispatch resolved, before anything on disk has changed.
@@ -144,9 +143,7 @@ class DispatchPlan:
             "lane_reading": (
                 None if self.lane_reading is None else dict(self.lane_reading)
             ),
-            "lane_gate": (
-                None if self.lane_gate is None else dict(self.lane_gate)
-            ),
+            "lane_gate": (None if self.lane_gate is None else dict(self.lane_gate)),
             "lane_allowance": (
                 None if self.lane_allowance is None else dict(self.lane_allowance)
             ),
@@ -1321,6 +1318,7 @@ def _carry_declared_gate_documents(
     for key in ("gate_document", "lane_document"):
         if configured.get(key):
             backend[key] = configured[key]
+
 
 from .dispatch_admission import (  # noqa: E402
     LanePaused,
