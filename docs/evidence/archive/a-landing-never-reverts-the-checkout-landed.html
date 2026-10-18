@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-landing-never-reverts-the-checkout-landed">
+  <meta name="plan-title" content="A Landing Never Reverts The Checkout — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Landing Never Reverts The Checkout: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-landing-never-reverts-the-checkout">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Landing Never Reverts The Checkout — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Landing Never Reverts The Checkout — landed record</h1>
+  <p>Closure synthesis for A Landing Never Reverts The Checkout: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s1">
+    <h2>§1 — what turned nova&#x27;s checkout back below its landing commit</h2>
+    <p>Run <code>r-20261018T212807537070-what-turned-a-landing-back</code>, merged at <code>653d8e042</code> (head <code>a5b62bac3</code>). It delivered <code>docs/research/what-turned-a-landing-back.html</code>, <code>scripts/reproduce_landing_reversion.py</code> and <code>docs/figures/what-turned-a-landing-back/timeline.svg</code>.</p><p><strong>Finding.</strong> The reverted state is exactly what <code>_restore_landing_writes</code> (<code>reckon/crew/promotion_scope.py:1672</code>) leaves when it resolves a pre-landing HEAD. Run at the landed HEAD, the rollback changes nothing. <code>git commit --only</code> holds the shared index lock while it reads its paths, so the commit and the rollback did not contend for one lock. The leading candidate is a second promotion of the same review run through <code>promote_review_run_itself</code> (<code>reckon/crew/recovery_review_acceptance.py:416</code>), which is reachable when the sweep is not confined to one session (<code>_sweeping_session</code>, <code>reckon/crew/recovery_repair_dispatch.py:1000</code>). The peer's pull is ruled out, because no reflog entry exists for it or for its merge.</p><p><strong>Measure.</strong> The reproduction imports and calls the production rollback. With the interleaving, the plan path ends staged back to its pre-landing content, and the three created paths end staged as deletions and absent from disk. Without the interleaving, all four paths are equal in HEAD, the index and the working tree; that run is the negative control (EXIT=0, <code>reproduce-production-rollback.log</code>).</p><p><strong>Record that would separate the candidates.</strong> None survives today, because the rollback's per-path report travels only on the refusal exception. §2 adds it.</p><p>Independent review: first round reuse 5, which the worker repaired; re-review 14 to 19 with no added failures. Its two follow-ons, a timeline sentence and a log stamp off by one commit, were exempted with reasons.</p>
+  </section>
+
+</main>
+</body>
+</html>

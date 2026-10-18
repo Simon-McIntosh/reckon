@@ -20,19 +20,19 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It changes how a promotion&#x27;s landing commit is checked, rolled back and recorded; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-landing-never-reverts-the-checkout#s1&quot;]}">
   <title>A Landing Never Reverts The Checkout | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
 <body>
   <main class="plan-doc">
     <h2 id="s1">§1 — Find what turned nova's checkout back below its landing commit</h2>
-<section data-reckon="section" data-id="s1" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="standard" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> On 2026-10-18 nova's lead asked reckon to root-cause and fix a promotion that committed its landing and then left nova's shared checkout holding a staged reversal of that same commit. The facts, as reported by the nova session that found it and as read from nova's repository the same evening:</p>
 <ul>
 <li>At 19:23:52 +02:00 nova's HEAD moved to <code>2321fba57</code>, <code>promote(r-20261018T171142922335-review-of-census-proposal-coverage-f7ed7e9d8ef6): not-run</code> (nova's HEAD reflog). No <code>release(...)</code> commit followed. HEAD next moved at 19:37:06, to <code>4ee29141f</code>, another run's promotion.</li>
@@ -93,10 +93,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-alnrtc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-landing-never-reverts-the-checkout §1" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alnrtc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-landing-never-reverts-the-checkout §1" data-resolved-at="2026-10-18T23:23:25+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Find what turned the landing back in nova&#x27;s checkout</h4>
     <div class="r-fu-body"><p>Filed at nova's lead's request after a promotion's landing was left staged in reverse in nova's checkout. §1 names the mechanism; §3 waits on it.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-never-reverts-the-checkout §1</pre>
+    <p class="r-fu-outcome">§1 landed at 653d8e042: the reverted state is reckon's rollback resolving a pre-landing HEAD, with a second promotion of the same review run as the leading cause.</p>
     </article>
 <article class="r-fu" data-id="f-alnrtc-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-landing-never-reverts-the-checkout §2" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Check every landing&#x27;s paths and record every refusal and rollback</h4>
@@ -115,6 +116,9 @@
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261018T212807537070-what-turned-a-landing-back" data-who="reckon-build" data-when="2026-10-18T22:48:01Z">
     <div class="r-comment-body"><p>docs/research/what-turned-a-landing-back.html + scripts/reproduce_landing_reversion.py + docs/figures/what-turned-a-landing-back/timeline.svg — timeline of every HEAD/index/worktree change at nova's four paths 19:23:40–19:37:06 with each record, drawn as one figure embedded in the document; the reproduction calls it, importing _restore_landing_writes (promotion_scope.py:1672) from reckon.crew.promotion_scope with the repository on PYTHONPATH rather than modelling it, and reports all four paths True; the reverted state is that rollback resolving a pre-landing HEAD, leading candidate a second promotion of the same review run via promote_review_run_itself (recovery_review_acceptance.py:416); the reproduction exits 0, interleaving reverts all four paths and the control leaves them equal.</p></div>
 </div>
+<div class="r-comment" data-section="s1" data-id="c-close-s1" data-who="reckon-build" data-when="2026-10-18T23:22:59Z">
+    <div class="r-comment-body"><p>§1 landed at <code>653d8e042</code>. The reverted state is reckon's rollback resolving a pre-landing HEAD, and the leading cause is a second promotion of the same review run through the review sweep. The reproduction calls the production rollback, and the timeline figure is embedded. The record that would confirm the cause is what §2 adds. §3's done-when is written from this finding. <a href="/reckon/evidence/archive/a-landing-never-reverts-the-checkout-landed.html#s1">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261018T220839303156-review-of-a-landing-checks-what-it-left-ef8d39c1ed03" data-who="reckon-build" data-when="2026-10-18T22:23:19.682Z">
     <div class="r-comment-body"><p>Reviewed r-20261018T213033460177-a-landing-checks-what-it-left at head ef8d39c1ed0392723dac1efec8c36d043392e7c9 (base 88d10cb5b9e7380a9ded4ac4828d0b32b28de4dd) and stored a parsed record at review-records/r-20261018T213033460177-a-landing-checks-what-it-left.json scoring goal_fidelity 18, evidence 18, scope_discipline 19, durability 17, fit 19, reuse 20, with added_failure_count 0 and two follow-on findings; the landing is sound and blocks nothing.</p></div>
 </div>
@@ -122,7 +126,10 @@
     <div class="r-comment-body"><p>independent review of run r-20261018T213033460177-a-landing-checks-what-it-left at head b904bf13022c0bb47d84d610470a29b77dd7a42f (base 88d10cb5b9e7380a9ded4ac4828d0b32b28de4dd) scores goal_fidelity 18, evidence 17, scope_discipline 20, durability 17, fit 18, reuse 19 (total 109); added_failure_count 0; three follow-on findings (promotion_gate.py:960 discards the gate landing's check; manifest cites an absent negative-control-repair.log; tests/test_a_landing_checks_what_it_left.py:226 asserts the returned value against its own input)</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261018T213033460177-a-landing-checks-what-it-left" data-who="reckon-build" data-when="2026-10-18T22:53:49Z">
-    <div class="r-comment-body"><p>A landing now checks the shared index before staging and reports any path staged back to an earlier landing commit&#x27;s parent (naming that commit, never repairing it), reads each written path&#x27;s HEAD/index/worktree blobs once after the commit and reports any mismatch with the three blob ids, and appends every refusal (stage/commit/review-record) and success to landing.json in the run directory; the release outcome lands through the same _commit_landing_writes and its result is reported on stderr and on the receipt it returns; gate 28 passed / 0 failed EXIT=0 at b904bf130, baseline 21 passed / 0 failed EXIT=0 at 88d10cb5, negative control 6 failed / 1 passed EXIT=1</p></div>
+    <div class="r-comment-body"><p>A landing now checks the shared index before staging and reports any path staged back to an earlier landing commit's parent (naming that commit, never repairing it), reads each written path's HEAD/index/worktree blobs once after the commit and reports any mismatch with the three blob ids, and appends every refusal (stage/commit/review-record) and success to landing.json in the run directory; the release outcome lands through the same _commit_landing_writes and its result is reported on stderr and on the receipt it returns; gate 28 passed / 0 failed EXIT=0 at b904bf130, baseline 21 passed / 0 failed EXIT=0 at 88d10cb5, negative control 6 failed / 1 passed EXIT=1</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-land-s2-1" data-who="reckon-build" data-when="2026-10-18T23:22:59Z">
+    <div class="r-comment-body"><p>§2's node landed at <code>1c9c9ce43</code> (run <code>r-20261018T213033460177-a-landing-checks-what-it-left</code>, head <code>b904bf13</code>, 28 passed, 7 tests added). Every landing now checks for a staged reversal before staging and for a HEAD, index and working-tree mismatch after committing. Each refusal, rollback and success is appended to <code>landing.json</code>, and the release outcome commits through <code>_commit_landing_writes</code>. The section stays open until the integrated-gate landing (<code>promotion_gate.py:960</code>) also reports its check, a follow-up node folded from the re-review.</p></div>
 </div>
 </section>
 </main>
