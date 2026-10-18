@@ -77,6 +77,10 @@ def _invoke(*args: str):
     return CliRunner().invoke(main, ["crew", *args])
 
 
+def _raw_field(raw: bytes, key: str, following: str) -> bytes:
+    return raw.split(f'"{key}"'.encode(), 1)[1].split(f'"{following}"'.encode(), 1)[0]
+
+
 def test_check_review_names_unfileable_fields_and_accepts_a_valid_record(
     delivery: Path,
 ) -> None:
@@ -147,6 +151,7 @@ def test_delivery_reports_refusal_and_status_repair_files_without_changing_revie
 ) -> None:
     original = _record(status="complete")
     delivery.write_text(json.dumps(original, indent=4), encoding="utf-8")
+    delivered_bytes = delivery.read_bytes()
     reviewer = runs.read_pointer(REVIEW_RUN)
     filed = review.file_delivered_run_reviews(
         reviewer, run_directory=runs.run_dir(REVIEWED_RUN)
@@ -170,11 +175,18 @@ def test_delivery_reports_refusal_and_status_repair_files_without_changing_revie
     preserved = Path(receipt["as_delivered"])
     assert preserved.read_bytes() == json.dumps(original, indent=4).encode()
     repaired = json.loads(delivery.read_text(encoding="utf-8"))
+    repaired_bytes = delivery.read_bytes()
     for key in ("scores", "findings"):
         assert (
             json.dumps(repaired[key], sort_keys=True).encode()
             == json.dumps(original[key], sort_keys=True).encode()
         )
+    assert _raw_field(repaired_bytes, "scores", "added_failure_count") == _raw_field(
+        delivered_bytes, "scores", "added_failure_count"
+    )
+    assert _raw_field(repaired_bytes, "findings", "status") == _raw_field(
+        delivered_bytes, "findings", "status"
+    )
     assert repaired["repair_reason"] == "parsed rubric verified"
     assert Path(receipt["filed"]).is_file()
 
@@ -184,6 +196,7 @@ def test_subject_repair_fills_only_missing_identity_and_rejects_other_sets(
 ) -> None:
     body = _record(project="", reviewed_run_id="", review_run_id="")
     delivery.write_text(json.dumps(body), encoding="utf-8")
+    delivered_bytes = delivery.read_bytes()
     refused = _invoke(
         "repair-review",
         "--run",
@@ -210,6 +223,7 @@ def test_subject_repair_fills_only_missing_identity_and_rejects_other_sets(
     )
     assert result.exit_code == 0, result.output
     repaired = json.loads(delivery.read_text(encoding="utf-8"))
+    repaired_bytes = delivery.read_bytes()
     assert (
         repaired["project"],
         repaired["reviewed_run_id"],
@@ -220,6 +234,12 @@ def test_subject_repair_fills_only_missing_identity_and_rejects_other_sets(
             json.dumps(repaired[key], sort_keys=True).encode()
             == json.dumps(body[key], sort_keys=True).encode()
         )
+    assert _raw_field(repaired_bytes, "scores", "added_failure_count") == _raw_field(
+        delivered_bytes, "scores", "added_failure_count"
+    )
+    assert _raw_field(repaired_bytes, "findings", "status") == _raw_field(
+        delivered_bytes, "findings", "status"
+    )
 
 
 def test_complete_reports_a_refused_review_before_promotion(delivery: Path) -> None:

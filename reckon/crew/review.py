@@ -74,7 +74,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import _store
-from reckon._store import write_json_atomically
+from reckon._store import write_atomically, write_json_atomically
 
 # ── The schema: six dimensions, one maximum ────────────────────────────────
 # A dimension added later is added in exactly one place. The mirror lives in
@@ -2612,6 +2612,60 @@ def file_delivered_run_review_report(
     return {"filed": filed, "refused": refused}
 
 
+def _repaired_review_bytes(original: bytes, updates: Mapping[str, Any]) -> bytes:
+    """Replace top-level repair fields while preserving every other JSON byte."""
+    source = original.decode("utf-8")
+    decoder = json.JSONDecoder()
+
+    def skip_space(position: int) -> int:
+        while position < len(source) and source[position].isspace():
+            position += 1
+        return position
+
+    position = skip_space(0)
+    if source[position : position + 1] != "{":
+        raise ValueError("review record is not an object")
+    position += 1
+    fields: dict[str, tuple[int, int]] = {}
+    while True:
+        position = skip_space(position)
+        if source[position : position + 1] == "}":
+            closing = position
+            break
+        key, position = decoder.raw_decode(source, position)
+        if not isinstance(key, str):
+            raise TypeError("review record has a non-string key")
+        position = skip_space(position)
+        if source[position : position + 1] != ":":
+            raise ValueError("review record has no separator after a key")
+        position = skip_space(position + 1)
+        start = position
+        _, position = decoder.raw_decode(source, position)
+        fields[key] = (start, position)
+        position = skip_space(position)
+        if source[position : position + 1] == ",":
+            position += 1
+            continue
+        if source[position : position + 1] != "}":
+            raise ValueError("review record has no separator after a value")
+    edits = [
+        (start, end, json.dumps(value, ensure_ascii=False))
+        for key, value in updates.items()
+        if key in fields
+        for start, end in (fields[key],)
+    ]
+    added = [
+        f"{json.dumps(key)}: {json.dumps(value, ensure_ascii=False)}"
+        for key, value in updates.items()
+        if key not in fields
+    ]
+    if added:
+        edits.append((closing, closing, ("," if fields else "") + ", ".join(added)))
+    for start, end, replacement in sorted(edits, reverse=True):
+        source = source[:start] + replacement + source[end:]
+    return source.encode("utf-8")
+
+
 def repair_run_review(
     reviewed_run_id: str, record_path: str | Path, change: str, reason: str
 ) -> dict[str, str]:
@@ -2641,6 +2695,7 @@ def repair_run_review(
         raise TypeError("review record is not an object")
     if body.get("reviewed_run_id") and body["reviewed_run_id"] != reviewed_run_id:
         raise ValueError("review record names a different reviewed run")
+    updates: dict[str, Any] = {}
     if change == "subject":
         reviewed = runs.read_pointer(reviewed_run_id)
         project = str(reviewed.get("project") or "")
@@ -2660,20 +2715,26 @@ def repair_run_review(
         ):
             if not body.get(key):
                 body[key] = value
+                updates[key] = value
     else:
         body["status"] = value
+        updates["status"] = value
     body["repair_reason"] = explanation
+    updates["repair_reason"] = explanation
     refusals = review_record_refusals(body)
     if refusals:
         raise ValueError("repaired review remains unfileable: " + "; ".join(refusals))
     revision_refusal = unresolved_reviewed_revision(body)
     if revision_refusal:
         raise ValueError(revision_refusal)
+    rewritten = _repaired_review_bytes(original, updates)
+    if json.loads(rewritten) != body:
+        raise ValueError("review repair changed fields outside the permitted set")
     preserved = source.with_name(source.stem + ".asdelivered.json")
     if not preserved.exists():
         preserved.write_bytes(original)
     filed = store_review(body)
-    _write_record(source, body)
+    write_atomically(source, lambda handle: handle.write(rewritten), binary=True, fsync=False)
     return {
         "record": str(source),
         "as_delivered": str(preserved),
