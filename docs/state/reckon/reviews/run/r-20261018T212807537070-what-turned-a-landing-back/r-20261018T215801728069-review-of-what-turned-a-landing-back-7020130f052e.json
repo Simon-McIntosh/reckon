@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "None against product code: the arm asserts literal end-states ('in-HEAD, reverted', 'in-HEAD, staged-deleted') that the script itself produced with its own git calls, so changing reckon/crew/promotion_scope.py:1672._restore_landing_writes leaves the assertion true.",
+      "lines": "183-190"
+    },
+    {
+      "failure_condition": "The control arm at lines 195-205 would redden only if the no-rollback landing failed to leave the four paths equal, i.e. if the script's own landing sequence broke.",
+      "lines": "195-205"
+    }
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-18T22:12:25.265Z",
+  "dispatched_at": "2026-10-18T21:59:57Z",
+  "findings": [
+    {
+      "file": "docs/research/what-turned-a-landing-back.html",
+      "line": "92",
+      "severity": "follow-on",
+      "text": "follow-on: cites reckon/ledger.py:2312 for ledger._commit_state_write, which is defined at reckon/ledger.py:2321; line 2312 is inside _state_checkout_paths. In a document whose value is precise file-and-line sourcing, a wrong line misdirects the reader."
+    },
+    {
+      "file": "scripts/reproduce_landing_reversion.py",
+      "line": "88",
+      "severity": "follow-on",
+      "text": "follow-on: restore_landing_writes (line 87) re-implements reckon/crew/promotion_scope.py:1672 _restore_landing_writes rather than calling it, so the reproduction proves its own model reproduces the state, not that reckon's rollback does, and it would still exit 0 if the production function changed."
+    },
+    {
+      "file": "docs/figures/what-turned-a-landing-back",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the declared figure write path is unused; the plan's Deliverable names a timeline figure and the document is a research doc with a six-row timeline and three candidates, so no timeline figure landed."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "none \u2014 the landed change is a research document and a standalone script; no runtime code reaches it.",
+    "diff": "Read commit by commit against the base: 7020130f0 adds docs/research/what-turned-a-landing-back.html, scripts/reproduce_landing_reversion.py and docs/evidence/fragments/a-landing-never-reverts-the-checkout/what-turned-a-landing-back.html, 446 insertions, no product code.",
+    "done_when": "The measure is the reproduction plus the sourced timeline; the manifest records 'python3 scripts/reproduce_landing_reversion.py' EXIT=0, and I re-ran it from the reviewed commit and got the same EXIT=0 with both arms matching the document's quoted output.",
+    "goal": "The node goal names the process and call that turned nova's checkout back and reproduces it; docs/research/what-turned-a-landing-back.html:110 names _restore_landing_writes (reckon/crew/promotion_scope.py:1672) and the leading candidate at recovery_review_acceptance.py:416, and the script reproduces the leading candidate.",
+    "manifest": "The source manifest.md reads complete, names commit 7020130f0, the three changed paths, the gate command and EXIT=0, and records no baseline_suite or after_suite (null), consistent with a non-test-role node.",
+    "write_paths": "The brief grants docs/research/what-turned-a-landing-back.html, scripts/reproduce_landing_reversion.py, docs/figures/what-turned-a-landing-back, docs/evidence/fragments/a-landing-never-reverts-the-checkout/what-turned-a-landing-back.html and docs/figures/a-landing-never-reverts-the-checkout/what-turned-a-landing-back; the diff changes three of them, all inside the grant."
+  },
+  "justifications": {
+    "durability": "No test covers the landed change and the script's own checks (scripts/reproduce_landing_reversion.py:183-205) assert literal states it produced itself, so nothing reddens if reckon/crew/promotion_scope.py:1672 regresses.",
+    "evidence": "scripts/reproduce_landing_reversion.py exits 0 with the interleaving leaving the plan path reverted and the three created paths staged-deleted and the control leaving all four equal, re-run by me from the reviewed commit, but the reproduction models the mechanism rather than calling the owner.",
+    "fit": "docs/research/what-turned-a-landing-back.html follows the repository's research-doc shape and scripts/reproduce_landing_reversion.py sits with the standalone scripts/ checks; no path, symbol or comment carries a plan label, version number or ticket id.",
+    "goal_fidelity": "docs/research/what-turned-a-landing-back.html:110-119 names _restore_landing_writes (reckon/crew/promotion_scope.py:1672) as the mechanism and the second promotion via promote_review_run_itself (reckon/crew/recovery_review_acceptance.py:416) as the leading candidate, and rules out the pull.",
+    "reuse": "The capability search over reckon/ found the rollback owner _restore_landing_writes at reckon/crew/promotion_scope.py:1672 and no standalone reproduction owner; scripts/reproduce_landing_reversion.py:87 duplicates that owner's git sequence instead of calling it.",
+    "scope_discipline": "The three paths in the 6b88e9b7..7020130f0 diff are all inside the brief's write paths and no product code changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal names the process and call that turned nova's checkout back and reproduces it; docs/research/what-turned-a-landing-back.html:110 names _restore_landing_writes (reckon/crew/promotion_scope.py:1672) and the leading candidate at recovery_review_acceptance.py:416, and the script reproduces the leading candidate.\nVERDICT done_when: The measure is the reproduction plus the sourced timeline; the manifest records 'python3 scripts/reproduce_landing_reversion.py' EXIT=0, and I re-ran it from the reviewed commit and got the same EXIT=0 with both arms matching the document's quoted output.\nVERDICT write_paths: The brief grants docs/research/what-turned-a-landing-back.html, scripts/reproduce_landing_reversion.py, docs/figures/what-turned-a-landing-back, docs/evidence/fragments/a-landing-never-reverts-the-checkout/what-turned-a-landing-back.html and docs/figures/a-landing-never-reverts-the-checkout/what-turned-a-landing-back; the diff changes three of them, all inside the grant.\nVERDICT manifest: The source manifest.md reads complete, names commit 7020130f0, the three changed paths, the gate command and EXIT=0, and records no baseline_suite or after_suite (null), consistent with a non-test-role node.\nVERDICT diff: Read commit by commit against the base: 7020130f0 adds docs/research/what-turned-a-landing-back.html, scripts/reproduce_landing_reversion.py and docs/evidence/fragments/a-landing-never-reverts-the-checkout/what-turned-a-landing-back.html, 446 insertions, no product code.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/research/what-turned-a-landing-back.html:110-119 names _restore_landing_writes (reckon/crew/promotion_scope.py:1672) as the mechanism and the second promotion via promote_review_run_itself (reckon/crew/recovery_review_acceptance.py:416) as the leading candidate, and rules out the pull.\nSCORE evidence: 16\nJUSTIFICATION evidence: scripts/reproduce_landing_reversion.py exits 0 with the interleaving leaving the plan path reverted and the three created paths staged-deleted and the control leaving all four equal, re-run by me from the reviewed commit, but the reproduction models the mechanism rather than calling the owner.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: The three paths in the 6b88e9b7..7020130f0 diff are all inside the brief's write paths and no product code changed.\nSCORE durability: 12\nJUSTIFICATION durability: No test covers the landed change and the script's own checks (scripts/reproduce_landing_reversion.py:183-205) assert literal states it produced itself, so nothing reddens if reckon/crew/promotion_scope.py:1672 regresses.\nSCORE fit: 18\nJUSTIFICATION fit: docs/research/what-turned-a-landing-back.html follows the repository's research-doc shape and scripts/reproduce_landing_reversion.py sits with the standalone scripts/ checks; no path, symbol or comment carries a plan label, version number or ticket id.\nSCORE reuse: 5\nJUSTIFICATION reuse: The capability search over reckon/ found the rollback owner _restore_landing_writes at reckon/crew/promotion_scope.py:1672 and no standalone reproduction owner; scripts/reproduce_landing_reversion.py:87 duplicates that owner's git sequence instead of calling it.\nFINDING docs/research/what-turned-a-landing-back.html:92 follow-on: cites reckon/ledger.py:2312 for ledger._commit_state_write, which is defined at reckon/ledger.py:2321; line 2312 is inside _state_checkout_paths. In a document whose value is precise file-and-line sourcing, a wrong line misdirects the reader.\nFINDING scripts/reproduce_landing_reversion.py:88 follow-on: restore_landing_writes (line 87) re-implements reckon/crew/promotion_scope.py:1672 _restore_landing_writes rather than calling it, so the reproduction proves its own model reproduces the state, not that reckon's rollback does, and it would still exit 0 if the production function changed.\nFINDING docs/figures/what-turned-a-landing-back:1 follow-on: the declared figure write path is unused; the plan's Deliverable names a timeline figure and the document is a research doc with a six-row timeline and three candidates, so no timeline figure landed.\n",
+  "review_run_id": "r-20261018T215801728069-review-of-what-turned-a-landing-back-7020130f052e",
+  "reviewed_base_sha": "6b88e9b757edefd9f37f430c18d057dc2f07811c",
+  "reviewed_commits": [
+    "7020130f052ecf252ba7cac8d0c0e0e7e848765c"
+  ],
+  "reviewed_head_sha": "7020130f052ecf252ba7cac8d0c0e0e7e848765c",
+  "reviewed_run_id": "r-20261018T212807537070-what-turned-a-landing-back",
+  "scores": {
+    "durability": 12,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T22:13:28.236846+00:00"
+}
