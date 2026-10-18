@@ -1,0 +1,16 @@
+<section data-reckon="landing" id="every-module-imports-alone">
+  <h2>§10 — Every reckon module imports on its own</h2>
+  <p id="every-module-imports-alone-outcome"><strong>Outcome.</strong> The import cycle between <code>reckon.project_state</code> and
+    <code>reckon.crew.fleet_supervisor</code> is broken. <code>reckon.project_state</code> reached the crew package through
+    <code>reckon.sprint_liveness</code> while it was still initialising, and <code>reckon.crew.fleet_supervisor</code> imported
+    <code>_sha256_path</code> from it at module scope, so importing <code>reckon.mcp_edit_plan</code> first raised a circular
+    <code>ImportError</code>. <code>fleet_supervisor</code> now re-exports the shared digest through a module
+    <code>__getattr__</code> and imports it lazily at its one call site, so no module-level edge runs back into
+    <code>project_state</code> and the helper stays a single implementation.</p>
+  <p id="every-module-imports-alone-measure"><strong>Measure.</strong> The new test imports each module under <code>reckon/</code> first in its
+    own fresh interpreter, with the repository root first on <code>sys.path</code> and an isolated home. At the head revision
+    <strong>176 passed</strong> (EXIT=0); at the base revision <strong>4 failed, 172 passed</strong> (EXIT=1), failing on
+    <code>reckon.mcp_edit_plan</code>, <code>reckon.project_state</code>, <code>reckon.project_state_parity</code> and
+    <code>reckon.sprint_liveness</code>. The negative control restores the module-level import in
+    <code>fleet_supervisor.py</code> and fails the same four (EXIT=1). Logs sit under the node's run directory.</p>
+</section>

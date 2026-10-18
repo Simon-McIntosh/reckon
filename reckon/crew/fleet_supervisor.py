@@ -80,7 +80,6 @@ from reckon import service
 from reckon._store import write_json_atomically
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease
 from reckon.crew.routing import signal_worker
-from reckon.project_state import _sha256_path
 
 RUNTIME_DIR_ENV = "FLEET_RUNTIME_DIR"
 STATE_DIR_ENV = "FLEET_STATE_DIR"
@@ -228,6 +227,22 @@ SERVICE_LOG_KEEP_BYTES = 4 * 1024 * 1024
 
 ALERTS_NAME = "alerts.log"
 NOTICE_NAME = "notice"
+
+
+def __getattr__(name: str) -> Any:
+    """Re-export the shared whole-file digest without importing it at module scope.
+
+    ``reckon.project_state`` reaches this module transitively through
+    ``sprint_liveness`` while it is still initialising, so a module-level import
+    from it would close an import cycle and make several reckon modules depend
+    on which one an interpreter reaches first. The digest stays project_state's
+    single implementation; this resolves the re-export on first attribute access.
+    """
+    if name == "_sha256_path":
+        from reckon.project_state import _sha256_path
+
+        return _sha256_path
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def _utc_now() -> str:
@@ -763,6 +778,8 @@ def _bound_run_file(
         row["action"] = "reported"
         row["binary"] = True
         return row
+    from reckon.project_state import _sha256_path
+
     digest = _sha256_path(path)
     row["original_sha256"] = digest
     if not apply:
