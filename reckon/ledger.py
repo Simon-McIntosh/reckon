@@ -1693,7 +1693,11 @@ def run_rows_from_documents(
     """
     try:
         data, _version = _load_aggregate(project, root)
-    except LedgerError:
+    except Exception:  # noqa: BLE001 — a damaged aggregate is not a lost read
+        # Every way the aggregate can fail to read lands here, not just the
+        # malformed-collection refusal: an envelope a conflict marker or a
+        # truncated write has damaged raises the store's own error, which is no
+        # more a reason to lose the documents than a malformed list is.
         data = {"members": [], "runs": [], "holds": []}
     _merge_run_documents(project, root, data, refuse=False)
     return list(data["runs"])

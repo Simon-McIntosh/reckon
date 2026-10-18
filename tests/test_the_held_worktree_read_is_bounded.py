@@ -35,7 +35,7 @@ from typing import Any
 
 import pytest
 
-from reckon import ledger
+from reckon import _store, ledger
 from reckon.crew import obligation_snapshot
 from tests.helpers.git import git as _git
 
@@ -336,6 +336,40 @@ def test_a_refused_namings_reader_leaves_every_run_a_candidate(
     }
     assert got == expected
     assert len(expected) == TREE_COUNT
+
+
+def test_a_damaged_aggregate_leaves_the_run_documents_readable(
+    home: tuple[Path, list[Path]],
+) -> None:
+    """A damaged aggregate costs its own rows, never the per-run documents.
+
+    The aggregate is a copy of the rows each run's own writer already put in a
+    file under ``runs/``, so an envelope a truncated write or a conflict marker
+    has damaged is no reason to answer with no duties at all. The corruption is
+    shown to be real before the fallback read is relied on — the refusing read
+    raises on the same file — so rows returned here measure the fallback rather
+    than a patch that never took. The bytes are restored whatever happens,
+    because the fixture is shared with the other cases.
+    """
+    root, _trees = home
+    path = ledger.ledger_path(PROJECT, root)
+    original = path.read_bytes() if path.exists() else None
+    try:
+        path.write_bytes(b'{"data": {"_version": 3, "runs": [')
+        # A damaged envelope is a damaged envelope: the ordinary read refuses it
+        # rather than folding it into an empty history.
+        with pytest.raises(_store.CorruptEnvelopeError):
+            ledger.load(PROJECT, root=root, use_index=False)
+
+        rows = ledger.run_rows_from_documents(PROJECT, root)
+        assert {str(row["run_id"]) for row in rows} == {
+            source.stem for source in (path.parent / "runs").glob("*.json")
+        }
+    finally:
+        if original is None:
+            path.unlink(missing_ok=True)
+        else:
+            path.write_bytes(original)
 
 
 def _retain_after_publication(root: Path, run_id: str, tree: Path) -> None:
