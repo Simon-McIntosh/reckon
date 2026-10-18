@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;], &quot;s10&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;], &quot;s14&quot;: [&quot;lane-and-model-routing#s4&quot;], &quot;s17&quot;: [&quot;lane-and-model-routing#s14&quot;, &quot;lane-and-model-routing#s16&quot;], &quot;s18&quot;: [&quot;lane-and-model-routing#s21&quot;], &quot;s19&quot;: [&quot;lane-and-model-routing#s17&quot;, &quot;lane-and-model-routing#s18&quot;, &quot;lane-and-model-routing#s21&quot;], &quot;s23&quot;: [&quot;lane-and-model-routing#s14&quot;, &quot;lane-and-model-routing#s16&quot;, &quot;lane-and-model-routing#s17&quot;, &quot;lane-and-model-routing#s21&quot;], &quot;s16&quot;: [&quot;lane-and-model-routing#s14&quot;], &quot;s25&quot;: [&quot;lane-and-model-routing#s24&quot;], &quot;s22&quot;: [&quot;lane-and-model-routing#s26&quot;], &quot;s27&quot;: [&quot;lane-and-model-routing#s25&quot;, &quot;jev-learns-from-its-routes#s5&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s0&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;implementable&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s0&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;implementable&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;implementable&quot;,&quot;s34&quot;:&quot;deferred&quot;}">
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="211">
+<meta name="plan-version" content="212">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -241,6 +241,33 @@ It asserts that the candidate's <code>outcomes_at_requirement</code> reads <code
 </ul>
 <p><strong>Negative control</strong>, three mutations, each applied alone. With the dimension collection removed from <code>_candidates_scan</code>, the first case must fail on <code>review_dimensions_median</code>. With <code>reviewed</code> taken as the length of the <code>reviews</code> list, it must fail on <code>reviewed</code>, which would read 3. With every row's scores collected, fully scored or not, it must fail on <code>review_dimensions_median</code>, whose goal_fidelity would read 17.5.</p>
 
+    <h2 id="s33">§33 — Measure which dispatch-time size separates outcomes within a requirement</h2>
+<section data-reckon="section" data-id="s33" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> On 2026-10-18 nova's lead reported that Jev's outcome evidence is not conditioned on how large a node is, so whichever lane receives the largest nodes looks worse. nova's implement rows show both lanes falling together when the work moved onto the deep nodes of its <code>converged-forward-solve</code> plan. From 10-04 to 10-08, clive passed 24 of 26 with a median review of 112, and codex 8 of 10 with 104. From 10-09 to 10-14, clive passed 8 of 11 with 102, and codex 8 of 14 with 103.5. On that plan since 10-15, clive passed 9 of 21 and codex 0 of 13.</p>
+<p>Two readings must be separated before anything is conditioned. First, the block already conditions on difficulty as assessed: <code>_candidates_scan</code> (<code>reckon/crew/picker/snapshot.py:256</code>) matches a row's role, spec level and recorded (reasoning, risk). What it lacks is a size inside that requirement. The size the picker already has, <code>_size_class</code> (<code>reckon/crew/run_time_profile.py:179</code>), buckets by declared time budget. It cannot separate nova's nodes, because every implement row on that plan declares <code>60m</code>. Second, codex's "0 of 13" on that plan is mostly not codex's own picks. As read from nova's ledger on 2026-10-18, 9 of the 13 rows carry a <code>lane-change</code> lineage, meaning a coordinator moved them onto codex, and all 9 were promoted with gate <code>not-run</code>. Under §4 of jev-learns-from-its-routes those rows count in <code>moved_in</code>, not in codex's own outcomes. Codex's own rows there are 3 failed and 1 not-run.</p>
+<p><strong>Deliverable.</strong> A read-only measurement of which size signal, available at dispatch, separates outcomes within a requirement. It writes a new research document, <code>docs/research/what-sizes-a-node.html</code>, and reads the committed ledgers of every mounted project: implement rows over the 30 days to the run, matched as <code>_candidates_scan</code> matches them, moved rows left out. For each recorded requirement it reports gate pass rate, median attempts and median review total, bucketed by each candidate signal in turn:</p>
+<ul>
+<li>the number of clauses in <code>node_definition.done_when</code>, counted as sentences ending in a full stop;</li>
+<li>the length of <code>node_definition.write_paths</code>;</li>
+<li>whether <code>node_definition.negative_control</code> is declared;</li>
+<li><code>node_definition.estimated_hours</code>, where present;</li>
+<li>the <code>estimated_context</code> the pick rendered, read from <code>picker_selection.rendered_state</code>.</li>
+</ul>
+<p>It names the signal that best separates pass rate within a requirement, with its bucket counts, or says that none does. It changes no code.</p>
+<p><strong>Write paths.</strong> <code>docs/research/what-sizes-a-node.html</code>, which is new, and its figures under <code>docs/figures/what-sizes-a-node</code>.</p>
+<p><strong>Done when</strong> all three of these hold:</p>
+<ul>
+<li>The document carries one table per signal: requirement, bucket, rows, passed, median attempts, median review total. It also names the separating signal, or none, with the rows behind that verdict, and every count is read from the ledgers at a stated revision and time.</li>
+<li>The script that computed it sits in the run directory, and the document names its path and the command that ran it.</li>
+<li>No file outside the write paths changes.</li>
+</ul>
+
+    <h2 id="s34">§34 — A pick reads outcomes at the node&#x27;s size as well as its requirement</h2>
+<section data-reckon="section" data-id="s34" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
+<p><strong>Why.</strong> §33 measures which dispatch-time signal separates outcomes within a requirement. This section conditions the at-requirement block on that signal, so a lane that received the larger nodes is weighed against nodes of their size. It stays deferred until §33 names a signal, because conditioning on a guessed signal would split thin samples further without evidence that the split carries information.</p>
+<p><strong>Deliverable, once §33 lands.</strong> In <code>_candidates_scan</code>'s existing single pass, also count each matched row under the size bucket §33 chose, and add to the at-requirement block the same gate counts and medians over the rows in the request's own bucket. The size rule has one owner. If §33 chooses the declared time budget, reuse <code>_size_class</code>. Otherwise add the new rule beside <code>_size_class</code> in <code>reckon/crew/run_time_profile.py</code>, never inside the picker. The glossary defines the new field. Nothing else changes: no weighting, no instruction, no routing.</p>
+<p>The done-when, write paths and negative control are written when §33's result is recorded, and the section is then reviewed before it is built.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="jev-picks-pairs" data-choice="pairs" data-by="lead" data-when="2026-10-07">
@@ -274,6 +301,15 @@ It asserts that the candidate's <code>outcomes_at_requirement</code> reads <code
       <button class="r-opt" data-value="early">Retire early: land §7 before §3</button>
       </p>
     <p class="r-dec-rat">A derived entry leaves the resolved config once nothing declares it, and its old name keeps resolving as an alias, so retirement breaks no caller and needs no ordering of section 7 before section 3.</p>
+    </div>
+<div class="r-dec" data-key="reasoned-move-evidence" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Does a coordinator&#x27;s move off Jev&#x27;s pick, made with a stated reason, count as evidence for the lane it moved to, or keep counting against Jev&#x27;s pick as §4 of jev-learns-from-its-routes rules?</p>
+    <p class="r-dec-ctx">nova&#x27;s lead said on 2026-10-18 that forcing a lane for a specific reason is legitimate and that Jev should treat a named lane as authoritative. A lane named at dispatch already counts in that lane&#x27;s own outcomes. A move made after Jev&#x27;s pick still counts against the pick under §4, so nova&#x27;s three moves of clive picks to codex that day, each with a reason, sit in moved_in rather than in codex&#x27;s own outcomes.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="counts-against-pick">Keep §4: a move counts against the pick and sits in moved_in</button>
+      <button class="r-opt" data-value="reasoned-counts-for-lane">A move with a stated reason counts in the receiving lane&#x27;s own outcomes, like a named lane at dispatch</button>
+      </p>
+    <p class="r-dec-rat"></p>
     </div>
 </section>
 
@@ -403,6 +439,11 @@ It asserts that the candidate's <code>outcomes_at_requirement</code> reads <code
     <div class="r-fu-body"><p>Filed at nova's request, relaying its lead's directive that Jev learn the quality of each lane's work. A pick reads only the review total today; §32 adds the six dimension medians and the number of reviews they rest on, so Jev weighs them.</p></div>
     <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §32</pre>
     <p class="r-fu-outcome"><p>§32 landed: a pick's at-requirement block shows each review dimension's median and the number of fully scored reviews behind it (review 109). Done; no followup.</p></p>
+    </article>
+<article class="r-fu" data-id="f-lamr-033" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-18" data-recommends-skill="/reckon-build lane-and-model-routing §33" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Measure which dispatch-time size separates outcomes</h4>
+    <div class="r-fu-body"><p>Filed at nova's lead's request: Jev's outcomes are not conditioned on node size. §33 measures which signal separates outcomes within a requirement; §34 conditions on it and stays deferred until then. The decision reasoned-move-evidence is the lead's.</p></div>
+    <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §33</pre>
     </article>
 </section>
   <section data-reckon="gates" id="gates" class="r-gates">
@@ -739,7 +780,7 @@ It asserts that the candidate's <code>outcomes_at_requirement</code> reads <code
     <div class="r-comment-body"><p>§32 landed: the at-requirement block carries <code>reviewed</code> and <code>review_dimensions_median</code> over fully scored rows only, defined in the glossary (commits <code>0ac715b51</code>, <code>282c9f99f</code>). Gate: 96 passed at head, 92 at base, the same pre-existing <code>ledger.py</code> width failure in both. All three negative controls fail the first case. Review total 109, no added failures. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s32">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s32" data-id="c-run-r-20261018T064639822890-a-pick-sees-each-review-dimension" data-who="reckon-build" data-when="2026-10-18T07:12:21.315Z">
-    <div class="r-comment-body"><p>A pick&#x27;s at-requirement block now carries reviewed (fully scored matched rows) and review_dimensions_median (each REVIEW_DIMENSIONS name&#x27;s median over exactly those rows, null when reviewed is 0), collected in _candidates_scan&#x27;s existing single pass and defined in the outcomes_at_requirement glossary; head gate 96 passed / 1 pre-existing failure / EXIT=1 with 0 added failures against the base, representative state 2068/2200 tokens at both arms.</p></div>
+    <div class="r-comment-body"><p>A pick's at-requirement block now carries reviewed (fully scored matched rows) and review_dimensions_median (each REVIEW_DIMENSIONS name's median over exactly those rows, null when reviewed is 0), collected in _candidates_scan's existing single pass and defined in the outcomes_at_requirement glossary; head gate 96 passed / 1 pre-existing failure / EXIT=1 with 0 added failures against the base, representative state 2068/2200 tokens at both arms.</p></div>
 </div>
 </section>
 </main>
