@@ -219,6 +219,17 @@ def test_review_exclusions_match_pair_across_names(exclusion):
     assert config == original
 
 
+def test_local_backend_exclusion_matches_pair_across_names():
+    config = {
+        "backends": {
+            "other-model": {"lane": "claude", "model_key": "sonnet", "launch": "cli"},
+        },
+        "local_backend": "claude-opus",
+        "review_excluded_backends": ["opus 5.5"],
+    }
+    assert recovery._ordered_review_lanes(config) == ["other-model"]
+
+
 def test_lane_exclusion_covers_all_models_and_unknown_exclusion_still_works():
     config = {
         "backends": {"claude-opus": {}, "claude-haiku": {}, "custom": {}, "safe": {}},

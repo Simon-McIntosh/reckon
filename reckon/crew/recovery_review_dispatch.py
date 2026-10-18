@@ -1238,7 +1238,11 @@ def _ordered_review_lanes(
     its coordinator chose; the locally served backend follows, then the rest in
     a stable alphabetical order. Excluded backends never appear: a coordinator
     that has removed a backend from review routing must not see a fallback land
-    on it, or the exclusion is a note rather than a rule. Neither does an
+    on it, or the exclusion is a note rather than a rule. Every candidate,
+    the preferred pair included, is judged through the resolver that reads an
+    exclusion as a lane-and-model pair, so a lane named by an older spelling of
+    that pair is removed exactly as its current spelling is, while a lane under a
+    lift in force still survives, because the fleet has opened it. Neither does an
     in-harness backend, whatever any list says about it: a review composed onto
     one is a run nothing starts, which is the shape this ordering exists to
     prevent. The owning lane and the local lane lead even when the configuration
@@ -1249,6 +1253,7 @@ def _ordered_review_lanes(
     """
     backends = config.get("backends") or {}
     excluded = _review_excluded_backends(config, session=session)
+    lifted = _lifted_backends(config, session=session)
     in_harness = _review_in_harness_backends(config)
     names = [
         str(name)
@@ -1262,6 +1267,8 @@ def _ordered_review_lanes(
         if (
             preferred
             and preferred not in excluded
+            and preferred not in lifted
+            and not _review_backend_excluded(preferred, config)
             and preferred not in in_harness
             and preferred not in ordered
         ):
