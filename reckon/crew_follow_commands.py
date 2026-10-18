@@ -3357,6 +3357,15 @@ def crew_watch(
     ``watcher-required`` instead of a worker. Following holds the seat from an
     empty project, through every landing, until the fleet drains.
     """
+    from reckon.crew.dispatch_watch import _scrub_session_identity
+
+    # The producer outlives the session that armed it and sweeps every
+    # session's runs, so it must carry no coordinator's identity. Its
+    # environment is fixed when it starts, but it reloads in place rather than
+    # restarting, so a producer armed before this shed the identity here, at
+    # its next reload, keeping its pid and its seat rather than being restarted
+    # into a clean environment.
+    _scrub_session_identity(os.environ)
     crew_module, _ = _crew_modules()
     if ensure_service:
         # The service is the durable seat: it survives the shell that ensured

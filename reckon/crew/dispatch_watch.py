@@ -16,6 +16,7 @@ from pathlib import (
 from typing import (
     Any,
     Mapping,
+    MutableMapping,
 )
 from reckon import (
     _store,
@@ -62,6 +63,57 @@ WATCHER_LOAD_BOUND_SECONDS = 30.0
 # through this variable.
 WATCH_ARMING_ENV = "RECKON_WATCH_ARMING"
 _PYTEST_TEMPORARY_ROOT = re.compile(r"^(pytest-of-.+|pytest-\d+)$")
+
+
+# A watcher producer outlives the session that armed it and sweeps every
+# session's runs, so it must run under no coordinator's identity. Inheriting
+# one, it reads another session's environment as its own: a sweep composes a
+# dispatch that resolves its coordinator from the inherited variables and hands
+# a follower for some other session's run to whichever host the inherited
+# process names. Measured on 2026-10-18: a watcher armed from a coordinator
+# session drew five-day-old rows belonging to a session idle since 2026-10-07.
+# One list names the variables, covering every one that
+# ``dispatch_accounting._coordinator_runtime`` and ``_session_host_owner``
+# consult -- a Claude Code session's process, id, messaging socket and token,
+# and a Codex session's id and thread -- so a producer armed from either
+# harness sheds its identity.
+SESSION_IDENTITY_ENV_NAMES = (
+    "CLAUDE_PID",
+    "CLAUDECODE",
+    "CODEX_SESSION_ID",
+    "CODEX_THREAD_ID",
+)
+# Every ``CLAUDE_CODE_*`` variable names the session too, including the
+# messaging socket and the token a session host is reached through, so the
+# prefix is matched rather than each name enumerated.
+SESSION_IDENTITY_ENV_PREFIX = "CLAUDE_CODE_"
+
+
+def _is_session_identity_variable(name: str) -> bool:
+    """Whether an environment variable names the coordinator session."""
+    return name in SESSION_IDENTITY_ENV_NAMES or name.startswith(
+        SESSION_IDENTITY_ENV_PREFIX
+    )
+
+
+def _without_session_identity(environment: Mapping[str, str]) -> dict[str, str]:
+    """A copy of an environment with every coordinator session variable removed."""
+    return {
+        name: value
+        for name, value in environment.items()
+        if not _is_session_identity_variable(name)
+    }
+
+
+def _scrub_session_identity(environment: MutableMapping[str, str]) -> None:
+    """Remove every coordinator session variable from a live environment.
+
+    A producer's environment is fixed when it starts, but it reloads in place
+    rather than restarting, so a producer armed before this scrub removes the
+    identity here at its next reload and keeps its pid and its seat.
+    """
+    for name in [key for key in environment if _is_session_identity_variable(key)]:
+        del environment[name]
 
 
 def _watch_arming_intent() -> str:
@@ -197,6 +249,16 @@ import subprocess
 import sys
 import time
 
+# The producer outlives the session that armed it, so it must carry none of
+# that session's identity. The fleet route runs this supervisor from the batch
+# step's own environment, so the scrub happens here rather than only at the
+# Popen the process route makes. The names are the module's own list, rendered
+# in because this script cannot import the arming process's modules.
+for _name in __IDENTITY_NAMES__:
+    os.environ.pop(_name, None)
+for _name in [_key for _key in os.environ if _key.startswith(__IDENTITY_PREFIX__)]:
+    os.environ.pop(_name, None)
+
 os.environ[sys.argv[1]] = sys.argv[2]
 first_delay = float(sys.argv[3])
 cap = float(sys.argv[4])
@@ -242,7 +304,9 @@ while True:
         raise SystemExit(status)
     time.sleep(delay)
     delay = min(delay * 2, cap)
-"""
+""".replace("__IDENTITY_NAMES__", repr(SESSION_IDENTITY_ENV_NAMES)).replace(
+    "__IDENTITY_PREFIX__", repr(SESSION_IDENTITY_ENV_PREFIX)
+)
 
 
 def _watch_producer_argv(project: str) -> list[str]:
@@ -320,6 +384,9 @@ def _start_watch_producer(project: str) -> Any:
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
+        # The producer must run in no coordinator's identity, so the arming
+        # process's session variables are dropped rather than inherited.
+        env=_without_session_identity(os.environ),
         start_new_session=True,
         close_fds=True,
     )
