@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (base-impl.log, revision 82f9dd65) ran 22 passed EXIT=0 with no failing test ids, after_suite (impl-after-3.log, revision b7c1757ca) ran 27 passed EXIT=0 with no failing test ids; after minus baseline is empty, so no added failure.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/_plan_html.py:1220",
+    "reckon/_plan_html.py:2361",
+    "reckon/_plan_html.py:2054",
+    "reckon/_store.py:2550"
+  ],
+  "completed_at": "2026-10-18T14:40:51.226Z",
+  "dispatched_at": "2026-10-18T14:20:47Z",
+  "findings": [
+    {
+      "file": "reckon/_plan_html.py",
+      "line": "934",
+      "severity": "follow-on",
+      "text": "follow-on: the plan section 2 prose states impl_source reads computed whenever any hours were used, but the imputed partial-coverage case at line 934 returns declarations; the value deviates from the written spec and the coordinator must reconcile it, since the out-of-scope tests/test_impl_writes_are_refused_where_derived.py:123 pins declarations for partial records."
+    },
+    {
+      "file": "reckon/_plan_html.py",
+      "line": "833",
+      "severity": "follow-on",
+      "text": "follow-on: the imputed mean is taken over the hours of every record including a section declared deferred, whose record sits outside the denominator, so a deferred record's large effort can inflate the weight of an in-scope section with no recorded hours; no test drives a deferred record through the imputation."
+    },
+    {
+      "file": "tests/test_progress_from_section_effort.py",
+      "line": "147",
+      "severity": "follow-on",
+      "text": "follow-on: the declarations-with-no-records case has no base-arm comparison on disk, so the done_when's 'add no failure against base' for the reader set is inferred from a green head arm rather than measured."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 82f9dd65; f3e2c4970 adds the imputation function and the head-declarations branch, b1e9d75a4/b7c1757ca/169fd2738 touch only the evidence fragment, with no path outside the declared scope.",
+    "done_when": "the done_when names five cases; tests/test_progress_from_section_effort.py:74 asserts all-hours 0.4, :101 the partial case at 2/9, :117 the count 1/3, :132 the authored 0.3 and :147 the two readers agreeing, and the manifest records the run and its result.",
+    "goal": "the node's goal is to derive a plan's progress from its declared done-or-implementable sections weighted by effort with mean-imputed hours through one entry point every reader calls; reckon/_plan_html.py:800 adds derive_impl_imputing_effort and reckon/_plan_html.py:917 routes derive_impl_with_source through it, now the single path both the body parse and the head-only reader call.",
+    "manifest": "read; it records status complete with the gate command, baseline_suite and after_suite both exit 0 with empty failure_ids, and the declared negative control log.",
+    "write_paths": "read the manifest's declared paths; the diff changes exactly reckon/_plan_html.py, tests/test_impl_derives_from_declarations.py, tests/test_progress_from_section_effort.py and the evidence fragment, all inside the fence; the figures path is unused."
+  },
+  "justifications": {
+    "durability": "the negative-control log shows removing the head-declarations branch reddens test_declarations_with_no_records_read_alike_in_both_readers and test_no_hours_falls_back_to_the_count, so the guards fail when the change regresses.",
+    "evidence": "tests/test_progress_from_section_effort.py:101 asserts the named 2/9 partial case and the log impl-after-3.log records 27 passed EXIT=0, but the done_when's 'no added failure against base' for the sixteen consumer files rests on a head arm (readers-after.log, 288 passed) with no matching base arm recorded.",
+    "fit": "reckon/_plan_html.py:800 and :2314 are mechanism-named module-private helpers matching the surrounding derivation family, but derive_impl_with_source at line 921 documents a source rule the partial branch at line 934 does not follow.",
+    "goal_fidelity": "reckon/_plan_html.py:932 imputes the missing hours by the mean of those present and reckon/_plan_html.py:2361 makes both readers call the one entry point.",
+    "reuse": "derive_impl_imputing_effort extends the derivation family rather than forking it, and _head_declarations (reckon/_plan_html.py:2314) is the first head-meta declaration reader beside the body reader at reckon/_plan_html.py:1203.",
+    "scope_discipline": "every path in the diff (reckon/_plan_html.py, tests/test_impl_derives_from_declarations.py, tests/test_progress_from_section_effort.py, docs/evidence/fragments/the-site-answers-fast-and-agrees/progress-from-effort-weighted-sections.html) sits inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to derive a plan's progress from its declared done-or-implementable sections weighted by effort with mean-imputed hours through one entry point every reader calls; reckon/_plan_html.py:800 adds derive_impl_imputing_effort and reckon/_plan_html.py:917 routes derive_impl_with_source through it, now the single path both the body parse and the head-only reader call.\nVERDICT done_when: the done_when names five cases; tests/test_progress_from_section_effort.py:74 asserts all-hours 0.4, :101 the partial case at 2/9, :117 the count 1/3, :132 the authored 0.3 and :147 the two readers agreeing, and the manifest records the run and its result.\nVERDICT write_paths: read the manifest's declared paths; the diff changes exactly reckon/_plan_html.py, tests/test_impl_derives_from_declarations.py, tests/test_progress_from_section_effort.py and the evidence fragment, all inside the fence; the figures path is unused.\nVERDICT manifest: read; it records status complete with the gate command, baseline_suite and after_suite both exit 0 with empty failure_ids, and the declared negative control log.\nVERDICT diff: read commit by commit against 82f9dd65; f3e2c4970 adds the imputation function and the head-declarations branch, b1e9d75a4/b7c1757ca/169fd2738 touch only the evidence fragment, with no path outside the declared scope.\nCALL_SITES: reckon/_plan_html.py:1220, reckon/_plan_html.py:2361, reckon/_plan_html.py:2054, reckon/_store.py:2550\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:932 imputes the missing hours by the mean of those present and reckon/_plan_html.py:2361 makes both readers call the one entry point.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_progress_from_section_effort.py:101 asserts the named 2/9 partial case and the log impl-after-3.log records 27 passed EXIT=0, but the done_when's 'no added failure against base' for the sixteen consumer files rests on a head arm (readers-after.log, 288 passed) with no matching base arm recorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/_plan_html.py, tests/test_impl_derives_from_declarations.py, tests/test_progress_from_section_effort.py, docs/evidence/fragments/the-site-answers-fast-and-agrees/progress-from-effort-weighted-sections.html) sits inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the negative-control log shows removing the head-declarations branch reddens test_declarations_with_no_records_read_alike_in_both_readers and test_no_hours_falls_back_to_the_count, so the guards fail when the change regresses.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/_plan_html.py:800 and :2314 are mechanism-named module-private helpers matching the surrounding derivation family, but derive_impl_with_source at line 921 documents a source rule the partial branch at line 934 does not follow.\nSCORE reuse: 18\nJUSTIFICATION reuse: derive_impl_imputing_effort extends the derivation family rather than forking it, and _head_declarations (reckon/_plan_html.py:2314) is the first head-meta declaration reader beside the body reader at reckon/_plan_html.py:1203.\nFINDING reckon/_plan_html.py:934 follow-on: the plan section 2 prose states impl_source reads computed whenever any hours were used, but the imputed partial-coverage case at line 934 returns declarations; the value deviates from the written spec and the coordinator must reconcile it, since the out-of-scope tests/test_impl_writes_are_refused_where_derived.py:123 pins declarations for partial records.\nFINDING reckon/_plan_html.py:833 follow-on: the imputed mean is taken over the hours of every record including a section declared deferred, whose record sits outside the denominator, so a deferred record's large effort can inflate the weight of an in-scope section with no recorded hours; no test drives a deferred record through the imputation.\nFINDING tests/test_progress_from_section_effort.py:147 follow-on: the declarations-with-no-records case has no base-arm comparison on disk, so the done_when's 'add no failure against base' for the reader set is inferred from a green head arm rather than measured.\n",
+  "review_run_id": "r-20261018T141924778868-review-of-progress-from-effort-weighted-sections-169fd27389f4",
+  "reviewed_base_sha": "82f9dd658d89f625741211e8aace1f28b7e75dee",
+  "reviewed_head_sha": "169fd27389f4a8823e14fed66345f75d78e4e8a9",
+  "reviewed_run_id": "r-20261018T132829727897-progress-from-effort-weighted-sections",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T14:44:14.038190+00:00",
+  "total": 107
+}
