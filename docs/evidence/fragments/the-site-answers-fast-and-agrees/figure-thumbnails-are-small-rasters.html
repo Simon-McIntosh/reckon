@@ -1,0 +1,37 @@
+<section data-reckon="landing" id="figure-thumbnails-are-small-rasters">
+  <h2>§12 — A figure's thumbnail is a small raster image</h2>
+  <p id="figure-thumbnails-are-small-rasters-outcome"><strong>Outcome.</strong> The thumbnail route rasterises an SVG
+    figure to a PNG instead of passing the vector through. <code>_render_thumbnail</code> in
+    <code>reckon/serve.py</code> now dispatches on the source's suffix: a raster is decoded by Pillow as before, and an
+    SVG is drawn straight to the thumbnail's pixel size by <code>resvg_py.svg_to_bytes</code> and then bounded by
+    Pillow's <code>thumbnail</code>, so neither edge can exceed <code>THUMB_MAX_EDGE</code>. The output goes through the
+    existing per-revision cache keyed by the source's stat identity, so a second request is a cache read and a
+    rewritten figure keys a new entry. A figure that fails to rasterise — an SVG included — falls through the
+    route's existing handler and is served as itself under its own media type, rather than answered with a 500. The
+    SVG passthrough branch is retired.</p>
+  <p id="figure-thumbnails-are-small-rasters-rasteriser"><strong>The rasteriser.</strong> <code>resvg-py</code>
+    0.5.0, added with <code>uv add --no-sync resvg-py</code> and recorded in <code>pyproject.toml</code> and
+    <code>uv.lock</code>. It was chosen because the wheel is self-contained: the manylinux
+    <code>x86_64</code> build carries its own <code>resvg_py.abi3.so</code> and needs no system library, so the
+    server and its tests get a rasteriser wherever they run. <code>rsvg-convert</code> was the measured reference
+    (11 to 32 KB PNGs in 18 to 141 ms each against six sampled figures) but it exists on the login node only, and
+    <code>cairosvg</code> would need a system <code>libcairo</code> present at import time.</p>
+  <p id="figure-thumbnails-are-small-rasters-environment"><strong>Environment.</strong> The wheel is named in the
+    project's lockfile so every checkout and CI install it with <code>uv sync</code>. It could not be installed
+    into the operator's shared environment from this run: <code>/home/ITER/mcintos/Code/reckon</code> is mounted
+    read-only inside the worker fence, so
+    <code>UV_PROJECT_ENVIRONMENT=/home/ITER/mcintos/Code/reckon/.venv uv sync --no-install-project --inexact</code>
+    reports <code>WARN Failed to acquire environment lock</code> and installs nothing. The gate was run against the
+    same interpreter with the locked wheel unpacked on <code>PYTHONPATH</code>. Until the shared environment is
+    synced, <code>import resvg_py</code> fails and the route falls back to the SVG — the pre-change behaviour.</p>
+  <table id="figure-thumbnails-are-small-rasters-measure">
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td><code>tests/test_figure_thumbnails_are_small_rasters.py</code></td><td>6 passed, EXIT=0</td></tr>
+      <tr><td>An SVG figure becomes a PNG bounded by <code>THUMB_MAX_EDGE</code></td><td>640&times;480 viewBox answers <code>image/png</code> at 200&times;150, in fewer bytes than the source</td></tr>
+      <tr><td>Second request reuses the cache</td><td>one render for two requests; the cached file equals the body</td></tr>
+      <tr><td>Rewritten SVG renders afresh</td><td>second render, new ETag, a second cache entry</td></tr>
+      <tr><td>An SVG that cannot be rasterised</td><td>the source is served as <code>image/svg+xml</code></td></tr>
+    </tbody>
+  </table>
+</section>
