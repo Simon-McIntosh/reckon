@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "2dc7f5677f47b3ef3b022f57114f650129680d87",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:269",
+    "reckon/crew_follow_commands.py:407"
+  ],
+  "completed_at": "2026-10-17T23:58:09.961Z",
+  "dispatched_at": "2026-10-17T23:49:13Z",
+  "findings": [
+    {
+      "file": "reckon/checkout_trust.py",
+      "line": "156",
+      "severity": "follow-on",
+      "text": "follow-on: the sibling branch returns prune when the record names only the pruning node (if named: return False), so an in-flight pin on another node stays exposed there too; the plan scopes the fixed window to a record naming another host, making this an adjacent gap rather than a regression."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T232936711248-a-stale-lease-record-does-not-expose-a-pin/manifest.md",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "follow-on: the after_suite command carries the angle-bracket placeholder <seven checkout_trust-touching files> instead of the literal command that ran, which the manifest contract forbids for that field."
+    }
+  ],
+  "head_log_revision": "865489816b91f8ceb458ce5aaa1c463481c8ba79",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit (89801ff86 fix, 865489816 docs) against base 2dc7f5677; three files changed, 210 insertions and 2 deletions, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_stale_lease_record_does_not_expose_a_pin.py; the manifest records its run and logs/gate-head.log ends EXIT=0 with 38 passed.",
+    "goal": "the node goal is to keep a tree whose lease record names a stale host while a third host is pinning it; reckon/checkout_trust.py:140-155 in _prune_must_keep implements exactly that, and pin_materialized_tree stamps the mark at reckon/checkout_trust.py:271.",
+    "manifest": "read; status complete, tests record the node file at 2 passed EXIT=0 and the checkout_trust suite at 38 passed EXIT=0, and baseline_suite/after_suite carry the two gate logs.",
+    "write_paths": "declared paths are reckon/checkout_trust.py, tests/test_a_stale_lease_record_does_not_expose_a_pin.py and the landing fragment; every path in the diff is inside them and the unused figure directory is untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_stale_lease_record_does_not_expose_a_pin.py:154 reddens if either the new branch at reckon/checkout_trust.py:152 or the stamp at reckon/checkout_trust.py:271 is reverted.",
+    "evidence": "logs/gate-head.log ends EXIT=0 (38 passed) and logs/negative-control-base.log ends EXIT=1 with the paused-pin test failing, both recorded in the manifest.",
+    "fit": "the new comments at reckon/checkout_trust.py:143-151 state the mechanism and reuse _marker_age_seconds, matching the module's existing comment idiom.",
+    "goal_fidelity": "reckon/checkout_trust.py:140-155 keeps a stale-record tree whose .in-use mtime is inside the publish grace, which is the stated goal.",
+    "reuse": "no definition was added; the change extends _prune_must_keep at reckon/checkout_trust.py:122, the sole owner of the keep/prune decision, reusing its existing .in-use recency rule.",
+    "scope_discipline": "the three changed paths are inside the declared write paths and COMMITTED_TREE_RETENTION, COMMITTED_TREE_PUBLISH_GRACE_SECONDS and COMMITTED_TREE_LEASE_WINDOW_SECONDS at reckon/checkout_trust.py:83-85 are unchanged."
+  },
+  "node": "review-of-a-stale-lease-record-does-not-expose-a-pin-865489816b91",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to keep a tree whose lease record names a stale host while a third host is pinning it; reckon/checkout_trust.py:140-155 in _prune_must_keep implements exactly that, and pin_materialized_tree stamps the mark at reckon/checkout_trust.py:271.\nVERDICT done_when: the done_when names tests/test_a_stale_lease_record_does_not_expose_a_pin.py; the manifest records its run and logs/gate-head.log ends EXIT=0 with 38 passed.\nVERDICT write_paths: declared paths are reckon/checkout_trust.py, tests/test_a_stale_lease_record_does_not_expose_a_pin.py and the landing fragment; every path in the diff is inside them and the unused figure directory is untouched.\nVERDICT manifest: read; status complete, tests record the node file at 2 passed EXIT=0 and the checkout_trust suite at 38 passed EXIT=0, and baseline_suite/after_suite carry the two gate logs.\nVERDICT diff: read commit by commit (89801ff86 fix, 865489816 docs) against base 2dc7f5677; three files changed, 210 insertions and 2 deletions, all inside the declared scope.\nCALL_SITES: reckon/crew_follow_commands.py:269, reckon/crew_follow_commands.py:407\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/checkout_trust.py:140-155 keeps a stale-record tree whose .in-use mtime is inside the publish grace, which is the stated goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-head.log ends EXIT=0 (38 passed) and logs/negative-control-base.log ends EXIT=1 with the paused-pin test failing, both recorded in the manifest.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three changed paths are inside the declared write paths and COMMITTED_TREE_RETENTION, COMMITTED_TREE_PUBLISH_GRACE_SECONDS and COMMITTED_TREE_LEASE_WINDOW_SECONDS at reckon/checkout_trust.py:83-85 are unchanged.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_stale_lease_record_does_not_expose_a_pin.py:154 reddens if either the new branch at reckon/checkout_trust.py:152 or the stamp at reckon/checkout_trust.py:271 is reverted.\nSCORE fit: 19\nJUSTIFICATION fit: the new comments at reckon/checkout_trust.py:143-151 state the mechanism and reuse _marker_age_seconds, matching the module's existing comment idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition was added; the change extends _prune_must_keep at reckon/checkout_trust.py:122, the sole owner of the keep/prune decision, reusing its existing .in-use recency rule.\nFINDING reckon/checkout_trust.py:156 follow-on: the sibling branch returns prune when the record names only the pruning node (if named: return False), so an in-flight pin on another node stays exposed there too; the plan scopes the fixed window to a record naming another host, making this an adjacent gap rather than a regression.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T232936711248-a-stale-lease-record-does-not-expose-a-pin/manifest.md:18 follow-on: the after_suite command carries the angle-bracket placeholder <seven checkout_trust-touching files> instead of the literal command that ran, which the manifest contract forbids for that field.",
+  "review_run_id": "r-20261017T234818074586-review-of-a-stale-lease-record-does-not-expose-a-pin-865489816b91",
+  "reviewed_base_sha": "2dc7f5677f47b3ef3b022f57114f650129680d87",
+  "reviewed_head_sha": "865489816b91f8ceb458ce5aaa1c463481c8ba79",
+  "reviewed_run_id": "r-20261017T232936711248-a-stale-lease-record-does-not-expose-a-pin",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T00:02:53.618001+00:00",
+  "total": 116
+}
