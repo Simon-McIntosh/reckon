@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T12:50:20.910Z",
+  "dispatched_at": "2026-10-18T12:38:02Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:55",
+      "id": "done_when-1",
+      "reason": "the gate would accept a document with one biased median and no fallback share, dropping the log-only/all-runs split that the last change added to defeat that bias.",
+      "text": "done-when clause 2 requires \"a table per lane: runs, median gate share of wall time, and runs with a truncated gate\", one median, but the second deliverable bullet at line 48 requires the gate share reported \"twice: once over the runs whose every gate duration came from a log, and once over all runs\", with \"the share of runs that used the fallback\" beside each median, and the background-gate runs listed separately; a worker can satisfy the done-when with the single all-runs median \u2014 the fallback-undercounted figure the bullet says \"would miss exactly the long gates this plan is about\"",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "447f3da969c0d83c23db863032a9c18e723769020addc4261678333b3c8bf05f",
+  "plan_slug": "test-time-is-not-the-nodes-time",
+  "plan_version": 5,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-18T12:55:02.385760+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T12:55:02.385760+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-test-time-is-not-the-nodes-time.v5.json",
+  "review_run_id": "r-20261018T123717931219-plan-review-of-test-time-is-not-the-nodes-time",
+  "reviewed_blob_sha": "627a55aca5d240cc2783d7174ab9d5344141cd75",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited code anchors resolve (`reckon/crew/node.py` budget check at 1284-1297, `reckon/crew/routing.py:473`, `reckon/crew/prompts.py:382` and the stop-when-blocked line 701, `reckon/crew/recovery_stream.py:320`, `reckon/crew/dispatch_sessions.py:337`, `reckon/schema/flight-defaults.yaml:201` sets `enforce_budget_watchdog: false`, and `fences.time_budget: 60m` matches the \"60-minute fence\"), and the control run's `gate-after.log` line 19 reads \"1 failed, 63 passed in 543.02s\".",
+    "done_when": "a finding \u2014 done-when clause 2 still enumerates \"runs, median gate share of wall time, and runs with a truncated gate\", a single median, while the second deliverable bullet now requires the share twice (log-only and all runs) plus a fallback share and a separate background-gate list, so the measure does not gate the falsification the last change introduced.",
+    "evidence_paths": "pass \u2014 the document (`docs/research/how-much-of-a-node-is-its-gate.html`), script (`scripts/gate_share_of_run_time.py`) and figures (`docs/figures/how-much-of-a-node-is-its-gate`) sit on durable repo paths, and clause 4 requires the script and command behind every figure to be named.",
+    "naming": "pass \u2014 the deliverables (`how-much-of-a-node-is-its-gate`, `gate_share_of_run_time.py`) carry no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "pass \u2014 the dedup rule matches its evidence (for control run `r-20261018T084035535944-a-paired-arm-review-names-its-run`, `test_logs` is gate-after.log/gate-base.log and `baseline_suite.log_path`/`after_suite.log_path` name those same two files), the twice-report confines the fallback the bullet still discredits, and the deadline paths are named with their caller (`dispatch_sessions.py:337`).",
+    "single_goal": "pass \u2014 s1 carries one deliverable, a read-only investigation writing one document and one script.",
+    "wiring": "pass \u2014 `plan-section-depends-on` wires s2 to `test-time-is-not-the-nodes-time#s1`, and the `gate-time-shape` decision carries `data-sections=\"s2\"`, so no node waits on a missing edge and no relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "2db4f914f773c39fa5c0355f5fee5250c02797289c687519a353ee05268ffa98",
+    "s1": "7a577943fe37df048e9345da3a22ee69b103e9064991f69dff812ff156884a54",
+    "s2": "e1683f33056739230ebe8f8cc40375d3a6cce727983bbbca1379cf0b80c058f6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T12:54:08.841214+00:00"
+}
