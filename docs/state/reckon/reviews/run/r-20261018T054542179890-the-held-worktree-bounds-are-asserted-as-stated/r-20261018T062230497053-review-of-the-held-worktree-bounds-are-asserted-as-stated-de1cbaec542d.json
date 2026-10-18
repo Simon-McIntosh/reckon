@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest's baseline_suite and after_suite fields are empty; the delta was derived from the reviewed run's own arm logs (baseline_suite=base_arm.log at a617367a1, after_suite=tests_head.log at head), both pytest, giving 0 added failures (the head reports no failing test the base does not; the base's single failing id is the test the change repairs).",
+  "after_suite": {
+    "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/the-held-worktree-bounds-are-asserted-as-stated /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_held_worktree_read_is_bounded.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T054542179890-the-held-worktree-bounds-are-asserted-as-stated/tests_head.log",
+    "revision": "e9ca18b90"
+  },
+  "assertion_analysis": [],
+  "baseline_suite": {
+    "command": "PYTHONPATH=/tmp/reckon-crew-scratch/r-20261018T054542179890-the-held-worktree-bounds-are-asserted-as-stated/base-dARE /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -k one_derivation tests/test_the_held_worktree_read_is_bounded.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 1,
+    "failure_ids": [
+      "tests/test_the_held_worktree_read_is_bounded.py::test_one_derivation_reads_only_the_documents_that_can_change_it"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T054542179890-the-held-worktree-bounds-are-asserted-as-stated/base_arm.log",
+    "revision": "a617367a1"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:_derive_fleet_state",
+    "reckon/crew/obligations.py:_held_worktrees",
+    "reckon/crew/promotion.py:_fleet_state_reading"
+  ],
+  "completed_at": "2026-10-18T06:40:10.675Z",
+  "dispatched_at": "2026-10-18T06:23:24Z",
+  "findings": [
+    {
+      "file": "negative_control.log",
+      "line": "4",
+      "severity": "follow-on",
+      "text": "the recorded negative-control command's PYTHONPATH ends ':/tw', a path that does not exist, so '-p nc_plugin' could not have imported the plugin from it; the plugin actually delivered at /tmp/reckon-crew-scratch/r-20261018T054542179890-the-held-worktree-bounds-are-asserted-as-stated/nc_plugin.py is not on the logged path, so the logged command is not reproducible as written even though its result (stat 537, EXIT=1) shows the withholding mutation took effect by some route the header does not record."
+    },
+    {
+      "file": "tests_head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the head gate log's header names revision e9ca18b90, the commit before the change, not the landed head de1cbaec5, so a reader comparing the review's reviewed_head_sha against the log cannot tie the 3-passed result to the landed tree; the evidence fragment at docs/evidence/fragments/a-read-answers-inside-its-deadline/the-held-worktree-bounds-are-asserted-as-stated.html:6 repeats 'Gate at e9ca18b90', carrying the same mislabel."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commit de1cbaec5 against base e9ca18b90; it changes three files - a new twelve-line evidence fragment, a nine-line swap in _run_namings and a rework of the two bound assertions - and no other path.",
+    "done_when": "The done_when requires the test to show head deepcopy 0 and stat at most the per-run documents plus the held trees (515), base a617367a1 failing both, and a negative control restoring the removed stats logged under the run directory; tests_head.log reports 3 passed, base_arm.log fails both bounds at a617367a1 (deepcopy 500, stat 519), and negative_control.log fails the stat assertion at 537.",
+    "goal": "The node's goal is to make the held-worktree read meet and assert the copy and stat bounds its section states; reckon/crew/obligations.py:499-505 routes the naming screen through the ledger's last-published index snapshot and tests/test_the_held_worktree_read_is_bounded.py:229-234 asserts copy.deepcopy == 0 and posix.stat <= RECORD_COUNT + TREE_COUNT, so the goal's two bounds are delivered.",
+    "manifest": "The source manifest.md records status complete, commit de1cbaec5, three changed paths, the four gate logs and the counts (head deepcopy 0 / stat 37, base 500 / 519, negative control 537), though its baseline_suite and after_suite fields are empty so its suite-delta keys carry no machine-readable arm.",
+    "write_paths": "The source brief fences reckon/file_memo.py, reckon/crew/obligations.py, tests/test_the_held_worktree_read_is_bounded.py and an evidence fragment under docs/evidence/fragments/a-read-answers-inside-its-deadline/; git diff e9ca18b90..de1cbaec5 changes exactly reckon/crew/obligations.py, tests/test_the_held_worktree_read_is_bounded.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-held-worktree-bounds-are-asserted-as-stated.html, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_held_worktree_read_is_bounded.py:224-234 compares measured counts against the test's own RECORD_COUNT/TREE_COUNT constants, so reverting the read-only sharing reddens the deepcopy bound (base_arm.log shows 500) and restoring the per-document stats reddens the stat bound (negative_control.log 537 > 515), with no assertion comparing a value against the variable it passed in.",
+    "evidence": "The gate's result is recorded at tests_head.log (3 passed) with base_arm.log and negative_control.log both red, but tests_head.log:1 names revision e9ca18b90, the pre-change parent, and negative_control.log:4 records a PYTHONPATH whose plugin directory '/tw' does not exist, so neither log ties its result to the landed head from its own header.",
+    "fit": "reckon/crew/obligations.py:499-505 reaches ledger._last_good_index_data exactly as the sibling _aggregate_rows at obligations.py:477 already reaches ledger._load_aggregate, the added comment is mechanism-only, and no plan, ticket or version identifier appears in the landed source.",
+    "goal_fidelity": "reckon/crew/obligations.py:499-505 replaces the per-document-stating ledger.runs read with ledger._last_good_index_data so the head's posix.stat falls from 537 to 37, and tests/test_the_held_worktree_read_is_bounded.py:229-234 asserts the 0 and 515 bounds the section states, both met at head.",
+    "reuse": "The change adds no new definition; reckon/crew/obligations.py:499 routes _run_namings onto the existing owner ledger._last_good_index_data (reckon/ledger.py:1317), which ledger.load already uses, rather than forking a second last-good reader.",
+    "scope_discipline": "Every path in the diff - reckon/crew/obligations.py, tests/test_the_held_worktree_read_is_bounded.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/the-held-worktree-bounds-are-asserted-as-stated.html - lies inside the source brief's declared write paths and nothing else changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is to make the held-worktree read meet and assert the copy and stat bounds its section states; reckon/crew/obligations.py:499-505 routes the naming screen through the ledger's last-published index snapshot and tests/test_the_held_worktree_read_is_bounded.py:229-234 asserts copy.deepcopy == 0 and posix.stat <= RECORD_COUNT + TREE_COUNT, so the goal's two bounds are delivered.\nVERDICT done_when: The done_when requires the test to show head deepcopy 0 and stat at most the per-run documents plus the held trees (515), base a617367a1 failing both, and a negative control restoring the removed stats logged under the run directory; tests_head.log reports 3 passed, base_arm.log fails both bounds at a617367a1 (deepcopy 500, stat 519), and negative_control.log fails the stat assertion at 537.\nVERDICT write_paths: The source brief fences reckon/file_memo.py, reckon/crew/obligations.py, tests/test_the_held_worktree_read_is_bounded.py and an evidence fragment under docs/evidence/fragments/a-read-answers-inside-its-deadline/; git diff e9ca18b90..de1cbaec5 changes exactly reckon/crew/obligations.py, tests/test_the_held_worktree_read_is_bounded.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-held-worktree-bounds-are-asserted-as-stated.html, all inside them.\nVERDICT manifest: The source manifest.md records status complete, commit de1cbaec5, three changed paths, the four gate logs and the counts (head deepcopy 0 / stat 37, base 500 / 519, negative control 537), though its baseline_suite and after_suite fields are empty so its suite-delta keys carry no machine-readable arm.\nVERDICT diff: Read commit de1cbaec5 against base e9ca18b90; it changes three files - a new twelve-line evidence fragment, a nine-line swap in _run_namings and a rework of the two bound assertions - and no other path.\nCALL_SITES: reckon/crew/obligation_snapshot.py:_derive_fleet_state, reckon/crew/obligations.py:_held_worktrees, reckon/crew/promotion.py:_fleet_state_reading\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:499-505 replaces the per-document-stating ledger.runs read with ledger._last_good_index_data so the head's posix.stat falls from 537 to 37, and tests/test_the_held_worktree_read_is_bounded.py:229-234 asserts the 0 and 515 bounds the section states, both met at head.\nSCORE evidence: 15\nJUSTIFICATION evidence: The gate's result is recorded at tests_head.log (3 passed) with base_arm.log and negative_control.log both red, but tests_head.log:1 names revision e9ca18b90, the pre-change parent, and negative_control.log:4 records a PYTHONPATH whose plugin directory '/tw' does not exist, so neither log ties its result to the landed head from its own header.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: Every path in the diff - reckon/crew/obligations.py, tests/test_the_held_worktree_read_is_bounded.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/the-held-worktree-bounds-are-asserted-as-stated.html - lies inside the source brief's declared write paths and nothing else changed.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_held_worktree_read_is_bounded.py:224-234 compares measured counts against the test's own RECORD_COUNT/TREE_COUNT constants, so reverting the read-only sharing reddens the deepcopy bound (base_arm.log shows 500) and restoring the per-document stats reddens the stat bound (negative_control.log 537 > 515), with no assertion comparing a value against the variable it passed in.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/obligations.py:499-505 reaches ledger._last_good_index_data exactly as the sibling _aggregate_rows at obligations.py:477 already reaches ledger._load_aggregate, the added comment is mechanism-only, and no plan, ticket or version identifier appears in the landed source.\nSCORE reuse: 20\nJUSTIFICATION reuse: The change adds no new definition; reckon/crew/obligations.py:499 routes _run_namings onto the existing owner ledger._last_good_index_data (reckon/ledger.py:1317), which ledger.load already uses, rather than forking a second last-good reader.\nFINDING negative_control.log:4 follow-on: the recorded negative-control command's PYTHONPATH ends ':/tw', a path that does not exist, so '-p nc_plugin' could not have imported the plugin from it; the plugin actually delivered at /tmp/reckon-crew-scratch/r-20261018T054542179890-the-held-worktree-bounds-are-asserted-as-stated/nc_plugin.py is not on the logged path, so the logged command is not reproducible as written even though its result (stat 537, EXIT=1) shows the withholding mutation took effect by some route the header does not record.\nFINDING tests_head.log:1 follow-on: the head gate log's header names revision e9ca18b90, the commit before the change, not the landed head de1cbaec5, so a reader comparing the review's reviewed_head_sha against the log cannot tie the 3-passed result to the landed tree; the evidence fragment at docs/evidence/fragments/a-read-answers-inside-its-deadline/the-held-worktree-bounds-are-asserted-as-stated.html:6 repeats 'Gate at e9ca18b90', carrying the same mislabel.\n",
+  "review_run_id": "r-20261018T062230497053-review-of-the-held-worktree-bounds-are-asserted-as-stated-de1cbaec542d",
+  "reviewed_base_sha": "e9ca18b90ef9b5738ac1f5837dc171100653978b",
+  "reviewed_commits": [
+    "de1cbaec542dc8190e031200fa4f59d0ecc6166f"
+  ],
+  "reviewed_head_sha": "de1cbaec542dc8190e031200fa4f59d0ecc6166f",
+  "reviewed_run_id": "r-20261018T054542179890-the-held-worktree-bounds-are-asserted-as-stated",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T06:42:45.919280+00:00",
+  "total": 110
+}
