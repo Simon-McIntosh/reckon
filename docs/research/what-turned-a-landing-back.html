@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="reckon-slug" content="what-turned-a-landing-back">
+  <meta name="reckon-title" content="What turned a landing back">
+  <meta name="reckon-summary" content="Who or what left nova's shared checkout holding a staged reversal of promotion 2321fba57, read from nova's reflog, the run directory and the promotion code, with a reproduction.">
+  <meta name="reckon-status" content="open">
+  <meta name="reckon-owner" content="Simon McIntosh">
+  <meta name="reckon-tags" content="crew,reckon-tooling">
+  <title>What turned a landing back | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="doc">
+  <h1>What turned a landing back</h1>
+
+  <p>A promotion of review run
+  <code>r-20261018T171142922335-review-of-census-proposal-coverage-f7ed7e9d8ef6</code>
+  committed its landing <code>2321fba57</code> into nova's shared checkout on
+  2026-10-18 and then left the checkout holding a <em>reversed</em> copy of that
+  same commit: HEAD carried the landing, while the index and the working tree
+  held the pre-landing content at the tracked plan file and were staged as
+  deletions at the three paths the commit created. This document gives the
+  sourced timeline, names the mechanism the code makes possible, and reproduces
+  the state in a throwaway repository.</p>
+
+  <h2>Timeline, 19:23:40 to 19:37:06 (+02:00)</h2>
+  <p>Every change to HEAD, the index and the working tree at the four paths,
+  each with the record it was read from. The four paths are
+  <code>docs/plans/converged-forward-solve.html</code> and the three created
+  files <code>docs/state/nova/reviews/run/r-20261018T145203666018-census-proposal-coverage/legacy-5ef79bad605b.json</code>,
+  <code>…/r-20261018T171142922335-review-of-census-proposal-coverage-f7ed7e9d8ef6.json</code>
+  and <code>docs/state/nova/runs/r-20261018T171142922335-review-of-census-proposal-coverage-f7ed7e9d8ef6.json</code>.</p>
+  <table>
+    <thead><tr><th>Time</th><th>Change</th><th>Record read from</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>19:20:59</td>
+        <td>the review worker exits and its record is filed</td>
+        <td>run directory <code>exit.json</code> (<code>exited_at 17:20:59Z</code>) and <code>review-filed.json</code></td>
+      </tr>
+      <tr>
+        <td>19:23:52</td>
+        <td>HEAD moves <code>0d2c2ff1c</code> → <code>2321fba57</code>; the landing commit writes plan-version 396 plus the comment and creates the three files</td>
+        <td>nova <code>.git/logs/HEAD</code> entry 7079; <code>git show --stat 2321fba57</code></td>
+      </tr>
+      <tr>
+        <td>19:23:57.9</td>
+        <td>nova's <code>.git/FETCH_HEAD</code> is written, by the session's <code>git pull --no-rebase</code>; no reflog entry follows</td>
+        <td>nova's own record of the pull/merge, offered by that session (the stamp has since been overwritten by later activity)</td>
+      </tr>
+      <tr>
+        <td>~19:23:59</td>
+        <td>the index and working tree at the four paths are set back to the pre-landing state: plan staged at 395 without the comment, the three files staged as deletions and absent from disk</td>
+        <td>the session's <code>git diff --cached --name-only</code> and its merge refusal listing all four as tracked local changes; <strong>not</strong> present in any persisted log (see below)</td>
+      </tr>
+      <tr>
+        <td>19:24:01.577</td>
+        <td><code>classification.json</code> written and the run's live pointer removed</td>
+        <td>run directory mtimes; <code>classification.json</code> header</td>
+      </tr>
+      <tr>
+        <td>19:37:06</td>
+        <td>HEAD moves <code>2321fba57</code> → <code>4ee29141f</code> (the next promotion)</td>
+        <td>nova <code>.git/logs/HEAD</code> entry 7080</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>HEAD moved exactly twice in the window (entries 7079 and 7080 of
+  <code>.git/logs/HEAD</code>) and carried <code>2321fba57</code> throughout the
+  interval between them, so the reversal happened while HEAD already carried the
+  landing.</p>
+
+  <h2>What the code and two experiments fix</h2>
+  <ul>
+    <li><strong>The state is exactly the rollback.</strong> The reverted state is
+    what <code>_restore_landing_writes</code> (<code>reckon/crew/promotion_scope.py:1672</code>)
+    leaves when it runs while HEAD still resolves to the commit before the
+    landing: its <code>git restore --source=HEAD --staged --worktree</code>
+    (line 1695-1703) returns a tracked path to that commit's content in index and
+    working tree, and a path the landing created is dropped from the index and
+    unlinked (<code>_restore_one_landing_write</code>, lines 1734-1741).</li>
+    <li><strong>The landing commit reads the working tree and holds the shared
+    index lock.</strong> Measured in a scratch repository:
+    <code>git commit --only -- &lt;paths&gt;</code> — what
+    <code>_commit_landing_writes</code> (<code>promotion_scope.py:1916</code>) and
+    <code>ledger._commit_state_write</code> (<code>reckon/ledger.py:2312</code>)
+    run — records the <em>working-tree</em> content of the named paths, and holds
+    <code>.git/index.lock</code> from before the pre-commit hook until after HEAD
+    moves. A concurrent <code>git restore --staged</code> fails on that lock.</li>
+    <li><strong>Run at the landed HEAD the rollback changes nothing.</strong> With
+    HEAD carrying the landing, <code>--source=HEAD</code> restores the landing
+    content and <code>HEAD:&lt;path&gt;</code> resolves for the created files, so
+    <code>_restore_one_landing_write</code> returns before unlinking. So the
+    rollback is only an actor when it resolves a <em>pre-landing</em> HEAD.</li>
+  </ul>
+  <p>Taken together these fix the shape of the actor: a rollback that resolved a
+  HEAD before the landing while a landing commit of the same run committed the
+  landing's own content. A <code>git commit</code> on the shared index holds that
+  lock from reading its paths until after it moves HEAD, and
+  <code>git restore --staged</code> needs the same lock, so if reckon's rollback
+  is the actor then the committing process used another index file — which is
+  why the reproduction below stages the landing through a private
+  <code>GIT_INDEX_FILE</code>.</p>
+
+  <h2>Candidates still standing, and the record that would separate them</h2>
+  <ol>
+    <li><strong>reckon's own rollback (<code>_restore_landing_writes</code>,
+    <code>promotion_scope.py:1672</code>) resolving a pre-landing HEAD.</strong>
+    It is reached from a refused stage or commit in
+    <code>_commit_landing_writes</code> (lines 1953 and 1980), from a refused
+    review-record store in <code>reckon/crew/promotion.py:1334</code>, and from a
+    refused release in <code>reckon/crew/promotion_release.py:615</code> and
+    <code>:646</code>. One way to reach it is a second promotion of the same run:
+    the run's ledger row reads <code>promoted_by: review-self</code>, so the
+    review sweep's <code>promote_review_run_itself</code>
+    (<code>reckon/crew/recovery_review_acceptance.py:416</code>) promoted it, and
+    that sweep confines itself to one session only when its process holds a
+    follower registration (<code>_sweeping_session</code>,
+    <code>reckon/crew/recovery_repair_dispatch.py:1000</code>). Any other
+    sweeping process handles every session's review runs, so two sweepers — for
+    example on two hosts — can promote one review run at once. <em>This is the
+    leading candidate; the reproduction models it.</em></li>
+    <li><strong>A peer git command acting on an index it read before the
+    landing</strong> (the session's <code>git pull</code>). Ruled out by
+    <code>.git/logs/HEAD</code>: neither the pull nor the later
+    <code>git merge --no-commit</code> wrote a reflog entry, so neither moved
+    HEAD, and the reversal was already complete when those commands ran.</li>
+    <li><strong>Another path, in reckon or outside it, that restores files from
+    a snapshot</strong> rather than from HEAD (an editor or tool reverting to a
+    saved copy). Not separator from (1) by any record I can read.</li>
+  </ol>
+  <p><strong>The record that would separate (1) from (2)/(3)</strong> is a log of
+  a <em>second</em> promotion of this run in the interval, or a receipt of the
+  index lock. Neither survives: the run directory holds no landing-failure
+  record, and the event that would name it — the per-path rollback report — rides
+  only on the exception <code>_landing_refusal</code> carries
+  (<code>LANDING_ROLLBACK_ATTRIBUTE</code>, <code>promotion_scope.py:1762</code>),
+  which the incident never saw. §2 of the plan is what adds that record: a landing
+  that reads the paths already staged before it stages, naming the commit it
+  reverses.</p>
+
+  <h2>The reproduction</h2>
+  <p><code>scripts/reproduce_landing_reversion.py</code> builds a four-path
+  stand-in for the checkout and runs two arms. Command and both outputs:</p>
+  <pre>$ python3 scripts/reproduce_landing_reversion.py
+
+=== interleaving: landing committed, rollback resolved pre-landing HEAD ===
+  in-HEAD, reverted            docs/plans/converged-forward-solve.html
+  in-HEAD, staged-deleted      docs/state/nova/reviews/run/r-20261018T145203666018-census-proposal-coverage/legacy-5ef79bad605b.json
+  in-HEAD, staged-deleted      docs/state/nova/reviews/run/r-20261018T145203666018-census-proposal-coverage/r-20261018T171142922335-review-of-census-proposal-coverage-f7ed7e9d8ef6.json
+  in-HEAD, staged-deleted      docs/state/nova/runs/r-20261018T171142922335-review-of-census-proposal-coverage-f7ed7e9d8ef6.json
+  HEAD moved: yes
+  -> reproduces the reverted state: HEAD carries the landing, the
+     plan path is staged back to pre-landing content, and the three
+     created paths are absent from disk and staged as deletions.
+
+=== control: same landing, no rollback ===
+  equal                        docs/plans/converged-forward-solve.html
+  equal                        docs/state/nova/reviews/run/r-20261018T145203666018-census-proposal-coverage/legacy-5ef79bad605b.json
+  equal                        docs/state/nova/reviews/run/r-20261018T145203666018-census-proposal-coverage/r-20261018T171142922335-review-of-census-proposal-coverage-f7ed7e9d8ef6.json
+  equal                        docs/state/nova/runs/r-20261018T171142922335-review-of-census-proposal-coverage-f7ed7e9d8ef6.json
+  HEAD moved: yes
+  -> negative control holds: all four paths equal in HEAD, index and worktree.
+
+workspace: /tmp/…/landing-reversion-XXXX
+EXIT=0</pre>
+  <p>With the interleaving the run ends with HEAD carrying the landing, the
+  tracked plan path staged back to its pre-landing content, and the three created
+  paths staged as deletions and absent from disk — the incident state. Without
+  the interleaving the same script ends with all four paths equal in HEAD, the
+  index and the working tree: the negative control.</p>
+
+  <h2>Scope</h2>
+  <p>Read-only. This investigation changes no product code: it writes only this
+  document and the reproduction script.</p>
+</main>
+</body>
+</html>

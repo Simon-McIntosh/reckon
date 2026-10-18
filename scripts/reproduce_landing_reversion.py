@@ -1,0 +1,223 @@
+#!/usr/bin/env python3
+"""Reproduce, in a throwaway repository, the state a promotion left behind.
+
+On 2026-10-18 a promotion of review run
+``r-20261018T171142922335-review-of-census-proposal-coverage-f7ed7e9d8ef6``
+committed its landing (``2321fba57``) into nova's shared checkout and then left
+that checkout holding a *reversed* copy of the same commit: HEAD carried the
+landing, while the index and the working tree held the pre-landing content at
+the tracked plan file and were staged as deletions at the three paths the
+commit created.
+
+This script builds a four-path stand-in for that checkout and runs two arms:
+
+* **interleaving** — a landing commit taken through a private index (the
+  "committing process used another index file" clause the plan names) racing a
+  rollback that resolves HEAD to the commit *before* the landing. It ends with
+  HEAD carrying the landing and the shared index and working tree staged back
+  to the pre-landing content, the created paths absent from disk.
+* **control** — the same landing with no rollback. It ends with all four paths
+  equal in HEAD, the index and the working tree.
+
+The rollback arm issues the two calls ``reckon.crew.promotion_scope`` makes:
+
+  ``git restore --source=HEAD --staged --worktree -- <path>``   (line 1695-1703)
+  ``git rm --cached --force -- <path>`` then unlink the file    (lines 1737, 1741)
+
+When ``_restore_landing_writes`` runs while HEAD still resolves to the commit
+before the landing, ``--source=HEAD`` is the pre-landing commit, which is what
+this script models with an explicit ``--source=<pre-landing sha>`` so the two
+phases can be ordered deterministically. Run after HEAD carries the landing,
+the same calls change nothing, because the landing's own paths are then in HEAD.
+
+Usage:  python3 scripts/reproduce_landing_reversion.py
+Exit status is 0 only when both arms produce their expected end state.
+"""
+
+from __future__ import annotations
+
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+PLAN = "docs/plans/converged-forward-solve.html"
+CREATED = [
+    "docs/state/nova/reviews/run/r-20261018T145203666018-census-proposal-coverage/legacy-5ef79bad605b.json",
+    "docs/state/nova/reviews/run/r-20261018T145203666018-census-proposal-coverage/r-20261018T171142922335-review-of-census-proposal-coverage-f7ed7e9d8ef6.json",
+    "docs/state/nova/runs/r-20261018T171142922335-review-of-census-proposal-coverage-f7ed7e9d8ef6.json",
+]
+PATHS = [PLAN, *CREATED]
+PRE_PLAN = "plan\nmeta plan-version 395\nend\n"
+LANDING_PLAN = "plan\nmeta plan-version 396\n# promote(...) landed comment\nend\n"
+
+
+def git(
+    repo: Path, *args: str, env: dict[str, str] | None = None
+) -> subprocess.CompletedProcess[str]:
+    full_env = {**os.environ, **(env or {})}
+    return subprocess.run(
+        ["git", "-C", str(repo), *args],
+        capture_output=True,
+        text=True,
+        env=full_env,
+        check=False,
+    )
+
+
+def must(repo: Path, *args: str, env: dict[str, str] | None = None) -> str:
+    r = git(repo, *args, env=env)
+    if r.returncode != 0:
+        raise RuntimeError(
+            f"git {' '.join(args)} failed: {r.stderr.strip() or r.stdout.strip()}"
+        )
+    return r.stdout
+
+
+def write_landing_writes(repo: Path) -> None:
+    (repo / PLAN).write_text(LANDING_PLAN)
+    for rel in CREATED:
+        p = repo / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text('{"review": "landed"}\n')
+
+
+def restore_landing_writes(repo: Path, source: str) -> None:
+    """Mirror promotion_scope._restore_landing_writes with an explicit source.
+
+    ``_restore_landing_writes`` passes ``--source=HEAD``; when HEAD is the
+    pre-landing commit this is identical to passing that commit explicitly.
+    """
+    for rel in PATHS:
+        r = git(
+            repo, "restore", f"--source={source}", "--staged", "--worktree", "--", rel
+        )
+        if r.returncode == 0:
+            continue
+        # _restore_one_landing_write: cat-file -e HEAD:<rel>; rm --cached --force; unlink
+        committed = git(repo, "cat-file", "-e", f"{source}:{rel}")
+        if committed.returncode == 0:
+            continue
+        git(repo, "rm", "--cached", "--force", "--", rel)
+        staged = git(repo, "diff", "--cached", "--name-only", "--", rel)
+        if staged.stdout.strip():
+            continue
+        (repo / rel).unlink(missing_ok=True)
+
+
+def fresh_repo(root: Path) -> tuple[Path, str]:
+    repo = root / "checkout"
+    repo.mkdir(parents=True)
+    must(repo, "init", "-q", ".")
+    must(repo, "config", "user.email", "repro@local")
+    must(repo, "config", "user.name", "repro")
+    (repo / PLAN).parent.mkdir(parents=True, exist_ok=True)
+    (repo / PLAN).write_text(PRE_PLAN)
+    must(repo, "add", "--", PLAN)
+    must(repo, "commit", "-qm", "before the landing")
+    return repo, must(repo, "rev-parse", "HEAD").strip()
+
+
+def snapshot(repo: Path, state: dict[str, str], label: str) -> None:
+    head = must(repo, "rev-parse", "HEAD").strip()
+    for rel in PATHS:
+        in_head = git(repo, "cat-file", "-e", f"HEAD:{rel}").returncode == 0
+        staged = (
+            git(repo, "diff", "--cached", "--name-only", "--", rel).stdout.strip() != ""
+        )
+        on_disk = (repo / rel).exists()
+        if not in_head:
+            state[f"{label}:{rel}"] = "absent-in-HEAD"
+        elif staged:
+            state[f"{label}:{rel}"] = (
+                "in-HEAD, reverted" if on_disk else "in-HEAD, staged-deleted"
+            )
+        else:
+            state[f"{label}:{rel}"] = "equal"
+    state[f"{label}:head-moved"] = "yes" if head != state.get(f"{label}:base") else "no"
+
+
+def run_arm(root: Path, interleaving: bool) -> tuple[dict[str, str], str]:
+    repo, pre = fresh_repo(root)
+    state: dict[str, str] = {}
+    write_landing_writes(repo)
+
+    if interleaving:
+        # The committing process stages into a private index (GIT_INDEX_FILE), so
+        # the shared index is free while HEAD is still the pre-landing commit.
+        priv = root / "private.index"
+        env = {"GIT_INDEX_FILE": str(priv)}
+        must(repo, "read-tree", "HEAD", env=env)  # private index = pre-landing tree
+        must(repo, "add", "--", *PATHS, env=env)  # private index = landing content
+        # The rollback runs now, while --source=HEAD is still the pre-landing commit.
+        restore_landing_writes(repo, pre)
+        # The landing commit lands from the private index, carrying the landing.
+        must(repo, "commit", "-qm", "promote(...): not-run", env=env)
+    else:
+        must(repo, "add", "--", *PATHS)
+        must(repo, "commit", "-qm", "promote(...): not-run")
+
+    state["base"] = pre
+    snapshot(repo, state, "arm")
+    head = must(repo, "rev-parse", "HEAD").strip()
+    return state, head
+
+
+def report(title: str, state: dict[str, str]) -> None:
+    print(f"\n=== {title} ===")
+    for rel in PATHS:
+        print(f"  {state['arm:' + rel]:<28} {rel}")
+    print(f"  HEAD moved: {state['arm:head-moved']}")
+
+
+def main() -> int:
+    root = Path(tempfile.mkdtemp(prefix="landing-reversion-"))
+    try:
+        ok = True
+
+        replay, _ = run_arm(root / "interleaving", interleaving=True)
+        report(
+            "interleaving: landing committed, rollback resolved pre-landing HEAD",
+            replay,
+        )
+        want_reverted = {"equal", "in-HEAD, reverted", "in-HEAD, staged-deleted"}
+        for rel in PATHS:
+            if replay["arm:" + rel] == "equal":
+                ok = False
+                print(f"  UNEXPECTED: {rel} was left equal")
+        if (
+            all(replay["arm:" + r] in want_reverted for r in PATHS)
+            and replay["arm:" + PLAN] == "in-HEAD, reverted"
+            and all(replay["arm:" + r] == "in-HEAD, staged-deleted" for r in CREATED)
+            and replay["arm:head-moved"] == "yes"
+        ):
+            print("  -> reproduces the reverted state: HEAD carries the landing, the")
+            print("     plan path is staged back to pre-landing content, and the three")
+            print("     created paths are absent from disk and staged as deletions.")
+        else:
+            ok = False
+            print("  -> did NOT reproduce the reverted state")
+
+        control, _ = run_arm(root / "control", interleaving=False)
+        report("control: same landing, no rollback", control)
+        if (
+            all(control["arm:" + r] == "equal" for r in PATHS)
+            and control["arm:head-moved"] == "yes"
+        ):
+            print(
+                "  -> negative control holds: all four paths equal in HEAD, index and worktree."
+            )
+        else:
+            ok = False
+            print("  -> negative control FAILED: paths not left equal")
+
+        print(f"\nworkspace: {root}")
+        return 0 if ok else 1
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <title>what-turned-a-landing-back — landing record</title>
+</head>
+<body>
+<section id="what-turned-a-landing-back-landing">
+  <h2>what-turned-a-landing-back</h2>
+  <p>Read-only investigation of the promotion that committed its landing
+  <code>2321fba57</code> and left nova's shared checkout holding a staged
+  reversal of it. Delivered <code>docs/research/what-turned-a-landing-back.html</code>
+  (timeline of every HEAD, index and working-tree change at the four paths from
+  19:23:40 to 19:37:06, each with its record) and
+  <code>scripts/reproduce_landing_reversion.py</code>.</p>
+  <p><strong>Finding.</strong> The reverted state is exactly what
+  <code>_restore_landing_writes</code> (<code>reckon/crew/promotion_scope.py:1672</code>)
+  leaves when it resolves a <em>pre-landing</em> HEAD. Two scratch-repository
+  experiments fix the shape: <code>git commit --only -- &lt;paths&gt;</code>
+  records the working-tree content and holds the shared <code>index.lock</code>,
+  and run at the landed HEAD the rollback changes nothing. So the committing
+  process must have used another index file. The leading candidate is a rollback
+  from a second promotion of the same review run through
+  <code>promote_review_run_itself</code>
+  (<code>reckon/crew/recovery_review_acceptance.py:416</code>), reachable when the
+  sweep is not confined to one session (<code>_sweeping_session</code>,
+  <code>reckon/crew/recovery_repair_dispatch.py:1000</code>). The peer-pull
+  candidate is ruled out: no reflog entry exists for the pull or its merge.</p>
+  <p><strong>Measure.</strong> <code>python3 scripts/reproduce_landing_reversion.py</code>
+  exits 0: with the interleaving the plan path ends staged back to pre-landing
+  content and the three created paths staged as deletions and absent from disk;
+  without it all four paths are equal in HEAD, index and worktree (negative control).</p>
+  <p><strong>Separating record.</strong> None survives; the per-path rollback
+  report rides only on the <code>LANDING_ROLLBACK_ATTRIBUTE</code> exception
+  (<code>promotion_scope.py:1762</code>). §2 is what adds it.</p>
+</section>
+</body>
+</html>
