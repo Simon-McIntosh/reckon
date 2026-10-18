@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s54">
+  <meta name="plan-recorded-at" content="2026-10-18">
+  <meta name="plan-verdict" content="passed">
+  <title>A commit that changes no reckon source moves no follower or producer | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-commit-without-code-moves-no-identity-landing" data-node="a-commit-without-code-moves-no-identity" data-reckon="landed" data-when="2026-10-18">
+  <h2>A process's code identity names the reckon package content at HEAD</h2>
+  <p>A reckon process's code identity was the commit at the checkout's HEAD, so every commit to main moved every follower's and producer's identity whether or not it changed code. Identity now names the content of the <code>reckon/</code> package at HEAD, the <code>HEAD:reckon</code> tree id. Three sites changed together in <code>reckon/checkout_trust.py</code> and <code>reckon/crew_follow_commands.py</code>: <code>source_code_identity</code> reads the tree id (new reader <code>committed_reckon_tree</code>); <code>_FollowerReloader.poll</code> compares that identity in place of the commit; and <code>materialize_committed_tree</code> extracts the package with <code>git archive --format=tar --prefix=reckon/ &lt;tree&gt;</code>, resolving a commit that an older image still carries to its <code>reckon/</code> subtree so a commit identity reloads once and compares equal thereafter. <strong>Commit <code>e33a0ff39</code>.</strong></p>
+  <p><strong>Gate.</strong> <code>tests/test_a_commit_without_code_moves_no_identity.py</code> over a temporary repository: (a) a commit touching only a file outside <code>reckon/</code> leaves the identity unchanged, a follower holding the same identity starts no reload and extracts no tree, with no deferral line; (b) a commit under <code>reckon/</code> moves the identity and the reload materialises a tree named by it with the package at its root; (c) a follower and a producer whose images came from different commits with the same <code>reckon/</code> content compare equal, and the identity differs from the commit. 6 passed. No added failure against base over the direct-import population (<code>reckon/checkout_trust.py</code>, <code>reckon/crew/follower_registration.py</code>, <code>reckon/crew_follow_commands.py</code>): base <code>b82313f9a</code> 58 passed / 0 failed; head <code>e33a0ff39</code> 64 passed / 0 failed. The first head arm read 1 failed on the owner-takeover timing test while the base arm ran concurrently; it passes alone at head and the solo head arm is clean, so the count reflects load, not the change. <code>ruff check</code> and <code>ruff format --check</code> add no findings (check 4 to 4, would-reformat files 2 to 2, both pre-existing in <code>crew_follow_commands.py</code>).</p>
+  <p><strong>Negative control.</strong> Keying the identity on the commit again (<code>source_code_identity</code> using <code>committed_head</code>), case (a) goes red: 4 failed, 2 passed, <code>EXIT=1</code>, including <code>test_a_commit_outside_reckon_moves_no_identity_and_no_reload</code>. Log under the run directory: <code>logs/negative-control.log</code>.</p>
+</article>
+</body>
+</html>
