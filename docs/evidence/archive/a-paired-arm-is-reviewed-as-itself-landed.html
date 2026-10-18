@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-paired-arm-is-reviewed-as-itself-landed">
+  <meta name="plan-title" content="A Paired Arm Is Reviewed As Itself — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Paired Arm Is Reviewed As Itself: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-paired-arm-is-reviewed-as-itself">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Paired Arm Is Reviewed As Itself — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Paired Arm Is Reviewed As Itself — landed record</h1>
+  <p>Closure synthesis for A Paired Arm Is Reviewed As Itself: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s1">
+    <h2>§1 — the review of a paired arm names the arm by its run id</h2>
+    <p>Run <code>r-20261018T084035535944-a-paired-arm-review-names-its-run</code>, commits <code>0f4de52af</code> and <code>a5985da3f</code>. <code>_review_dispatch_fields</code> in <code>reckon/crew/recovery_review_subject.py</code> now mints the review node id from the run id when <code>_paired_partner_run_id</code> (imported inside the function, since the two modules import each other) finds a partner. <code>source_node</code> stays the node id. <code>_resolved_reviewed_run_id</code> in <code>reckon/crew/recovery_review_delivery.py</code> takes a keyword-only <code>refuse_ambiguous</code> flag: with it set, more than one live pointer carrying the source node id returns the bare source. Only <code>_reviewed_run_id_for_node</code> in <code>reckon/crew/dispatch_admission.py</code> sets it, so only the dispatch grant changes. Because <code>_paired_partner_run_id</code> reads any shadow lineage, a standalone <code>crew shadow</code> run also has its review minted from its run id. A run id resolves directly in every reader, so that case resolves correctly.</p><p><strong>Measure.</strong> <code>tests/test_a_paired_arm_is_reviewed_as_itself.py</code> (5 tests) covers four cases: each paired arm's review names its own run while <code>source_node</code> stays <code>pair-node</code>; an unpaired run keeps its node-id source; the grant resolver returns the bare source for an ambiguous node id while the unflagged resolver still returns an arm; and the record grant refuses that bare source. It also checks that the real crew home is untouched. The 10-file gate reads 63 passed and 1 failed at head, against 58 passed and 1 failed at base. The one failure in both arms is <code>test_every_module_fits_a_worker_window</code> on <code>reckon/ledger.py</code>, outside this node's scope. Removing the pairing test fails the first case; not setting the flag fails the third. Both logs list pytest's FAILED ids. Independent review: total 117, no added failures. Its one follow-on, that the standalone-shadow case is unpinned, was exempted for the reason above.</p>
+  </section>
+
+</main>
+</body>
+</html>

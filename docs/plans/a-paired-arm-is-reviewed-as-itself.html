@@ -20,19 +20,19 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It repairs review composition for the landed paired dispatch of a-shadow-cannot-see-its-primary; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s2&quot;: [&quot;a-paired-arm-is-reviewed-as-itself#s1&quot;]}">
   <title>A Paired Arm Is Reviewed As Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
 <body>
   <main class="plan-doc">
     <h2 id="s1">§1 — The review of a paired arm names the arm by its run id</h2>
-<section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p>On 2026-10-18 nova ran a paired dispatch of <code>efit-field-swap</code>: primary <code>r-20261018T063236394668-efit-field-swap</code> on clive, and shadow <code>r-20261018T063236394831-efit-field-swap</code> on codex. Both live pointers carry the node id <code>efit-field-swap</code>. The obligation for the codex arm printed a review command with <code>--node review-of-efit-field-swap-eba500937412</code> and write paths under the codex arm's <code>review-records/</code>. Dispatch refused it as not-dispatchable on the <code>scoped</code> property. nova re-dispatched it by hand as <code>review-of-r-20261018T063236394831-efit-field-swap-eba500937412</code>, which ran.</p>
 <p>The cause is that the review node id names the node, and a pair has two runs with one node id. <code>_review_dispatch_fields</code> (<code>reckon/crew/recovery_review_subject.py:460</code>) takes <code>source_node</code> from the reviewed record's node id, falling back to its run id only when there is none (line 608). It mints the node id from that through <code>round_node_id</code>. Dispatch recovers the reviewed run through <code>_reviewed_run_id_for_node</code> (<code>reckon/crew/dispatch_admission.py:1866</code>), which calls <code>_resolved_reviewed_run_id</code> (<code>reckon/crew/recovery_review_delivery.py:156</code>). That resolver returns a run id source as it is. Any other source it matches against the live fleet's node ids, returning the first pointer that matches (lines 172 to 174). For this pair the first match was the clive primary. So the record-directory grant named the primary's directory, and the codex arm's declared record path fell outside it. The same ambiguity hits the primary's own review, whichever pointer the listing returns first.</p>
 <p><strong>Remedy</strong>, two parts:</p>
@@ -87,10 +87,11 @@ The test writes nothing outside its temporary directory.</li>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-apairas-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-paired-arm-is-reviewed-as-itself §1" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-apairas-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-paired-arm-is-reviewed-as-itself §1" data-resolved-at="2026-10-18T09:37:14+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Name a paired arm&#x27;s review by the arm&#x27;s run id</h4>
     <div class="r-fu-body"><p>Filed after nova reported that the printed review command for a paired codex arm resolved to its clive primary and was refused as unscoped. §1 carries the remedy and its done-when.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-paired-arm-is-reviewed-as-itself §1</pre>
+    <p class="r-fu-outcome"><p>§1 landed at review 117: a paired arm's review names the arm by its run id, and an ambiguous node id grants no record directory. §2's followup carries the remaining work.</p></p>
     </article>
 <article class="r-fu" data-id="f-apairas-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-paired-arm-is-reviewed-as-itself §2" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Review a shadow arm on its retained patch</h4>
@@ -102,6 +103,9 @@ The test writes nothing outside its temporary directory.</li>
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261018T091827074986-review-of-a-paired-arm-review-names-its-run-a5985da3f218" data-who="reckon-build" data-when="2026-10-18T09:33:30.478Z">
     <div class="r-comment-body"><p>Review of run r-20261018T084035535944-a-paired-arm-review-names-its-run at head a5985da from base 2405a5ba: goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19, reuse 20; zero added failure ids; one follow-on finding recording that the new test pins only a paired shadow, not a standalone shadow lineage, whose review node id also changes.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-close-s1" data-who="reckon-build" data-when="2026-10-18T09:40:00Z">
+    <div class="r-comment-body"><p>§1 landed: a paired arm's review node is minted from its run id, and the dispatch grant refuses a node id shared by two live runs (commits <code>0f4de52af</code>, <code>a5985da3f</code>). Gate: 63 passed at head, 58 at base, with the same pre-existing <code>ledger.py</code> size failure in both. Both negative controls fail their case. Review total 117, no added failures. §2 can now be dispatched. <a href="/reckon/evidence/archive/a-paired-arm-is-reviewed-as-itself-landed.html#s1">evidence</a></p></div>
 </div>
 </section>
 </main>
