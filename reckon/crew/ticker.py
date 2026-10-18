@@ -1220,13 +1220,16 @@ class RowPolicy:
         self._lift_groups: set[str] = {
             str(group) for group in (lift_groups or ()) if group
         }
-        # One grant is one event, but a session's followers each write the same
+        # One grant is one event, but the followers of a pane each write the same
         # pane, and every project's producer sweeps the whole lift document into
         # its own stream, so the same grant reaches this pane once per project
-        # followed. ``lift_claim`` is the shared, on-disk claim (per session, lift
+        # followed. ``lift_claim`` is the shared, on-disk claim (per pane, lift
         # id and transition) that lets whichever follower reaches a lift row
-        # first take it and the rest draw nothing. ``None`` draws every lift row
-        # on this pane's own memory alone, the behaviour before the claim.
+        # first take it and the rest draw nothing. The pane's key is the host
+        # that spawned the followers when they have one, and the follower's own
+        # session otherwise, so a host following two sessions draws each lift
+        # once between them. ``None`` draws every lift row on this pane's own
+        # memory alone, the behaviour before the claim.
         self._lift_claim = lift_claim
 
     @property
@@ -1745,11 +1748,11 @@ class RowPolicy:
         baseline a reloaded watcher re-announces for a group already drawn adds
         no row. A row with no group cannot be keyed, so it prints as before.
 
-        A row the pane keeps is then offered to the session's shared claim on
-        (session, lift id, transition): the followers of one session write one
-        pane, and every project's producer carries the same grant, so whichever
-        follower reaches a lift row first takes the claim and draws it, and the
-        others draw nothing. The claim is taken here, at the point the row would
+        A row the pane keeps is then offered to the pane's shared claim on
+        (pane, lift id, transition): the followers of one pane write it, and
+        every project's producer carries the same grant, so whichever follower
+        reaches a lift row first takes the claim and draws it, and the others
+        draw nothing. The claim is taken here, at the point the row would
         print, after every hold has decided — a follower that claimed and then
         held the row would leave no pane drawing it. A follower that loses the
         claim keeps no memory of a lift it did not show, so its grant's end is a
