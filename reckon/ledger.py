@@ -47,6 +47,7 @@ import sys
 import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
@@ -1364,6 +1365,38 @@ def _last_good_index_data(
     return data, version, max(0.0, time.time() - refreshed_at)
 
 
+# A derivation reads the ledger from several of its steps, and each read rebuilt
+# the run index and decoded it again — the profile showed the index built twice
+# inside one pass, for milliseconds-apart reads over files that had not moved.
+# The first read in a region builds it and the rest are served the same result.
+# Outside a region each read keeps the behaviour it has now.
+_INDEX_REGION: ContextVar[
+    dict[tuple[str, str, bool, bool], tuple[dict[str, Any], int]] | None
+] = ContextVar("ledger_index_region", default=None)
+
+
+@contextlib.contextmanager
+def index_reuse() -> Iterable[
+    dict[tuple[str, str, bool, bool], tuple[dict[str, Any], int]]
+]:
+    """Build the run index once for every reader inside this region.
+
+    A nested region joins the cache already open rather than starting a fresh
+    one, so a read made while slicing a session's payload is served the index
+    the derivation built.
+    """
+    active = _INDEX_REGION.get()
+    if active is not None:
+        yield active
+        return
+    cache: dict[tuple[str, str, bool, bool], tuple[dict[str, Any], int]] = {}
+    token = _INDEX_REGION.set(cache)
+    try:
+        yield cache
+    finally:
+        _INDEX_REGION.reset(token)
+
+
 def _indexed_data(
     project: str,
     root: str | Path | None,
@@ -1371,6 +1404,15 @@ def _indexed_data(
     headers_only: bool = False,
     picker_only: bool = False,
 ) -> tuple[dict[str, Any], int]:
+    reuse = _INDEX_REGION.get()
+    index_key = (
+        str(project),
+        str(root) if root is not None else "",
+        headers_only,
+        picker_only,
+    )
+    if reuse is not None and index_key in reuse:
+        return reuse[index_key]
     aggregate = ledger_path(project, root)
     aggregate_stamp = json.dumps(_file_identity(aggregate))
     snapshot = _run_snapshot(project, root)
@@ -1510,7 +1552,7 @@ def _indexed_data(
 
     with contextlib.closing(sqlite3.connect(path, timeout=0.2)) as connection:
         try:
-            return update(connection)
+            result = update(connection)
         except sqlite3.OperationalError:
             raise
         except (sqlite3.DatabaseError, ValueError, KeyError, TypeError):
@@ -1522,9 +1564,11 @@ def _indexed_data(
                 with contextlib.closing(sqlite3.connect(temporary)) as replacement:
                     result = update(replacement)
                 os.replace(temporary, path)
-                return result
             finally:
                 Path(temporary).unlink(missing_ok=True)
+    if reuse is not None:
+        reuse[index_key] = result
+    return result
 
 
 def indexed_headers(

@@ -826,6 +826,25 @@ def _derivation_module():
     return module
 
 
+def _ledger_module():
+    """The ledger, imported where it is used and not before."""
+    from reckon import ledger as module
+
+    return module
+
+
+def _review_head_module():
+    """The reviewed-head resolution's own module, imported where it is used.
+
+    The module carries the region that resolves each live run's reviewed head
+    once; it is reached here rather than through the recovery package so that
+    one region spans a whole derivation and its slices.
+    """
+    from reckon.crew import recovery_review_dispatch as module
+
+    return module
+
+
 @dataclass
 class FleetState:
     """The fleet inputs one sweep's per-session payloads share.
@@ -853,7 +872,22 @@ class FleetState:
 
 
 def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
-    """Derive everything a sweep's per-session payloads are sliced from."""
+    """Derive everything a sweep's per-session payloads are sliced from.
+
+    The derivation opens the two regions its readers share: one run index built
+    once for every ledger read inside it, and one resolution of each live run's
+    reviewed head and tree that the classifier, the derivation and its slices
+    all read. A derivation nested in a sweep joins the regions already open, so
+    the slices the sweep builds afterwards read what the derivation resolved.
+    """
+    ledger_module = _ledger_module()
+    head_module = _review_head_module()
+    with ledger_module.index_reuse(), head_module.review_heads_resolve_once():
+        return _derive_fleet_state(project, now=now)
+
+
+def _derive_fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
+    """Build the fleet state, inside the regions :func:`fleet_state` opened."""
     module = _derivation_module()
     instant = _utc_now() if now is None else now
     config = module.flight.resolve(project).config
@@ -1045,27 +1079,33 @@ def sweep(
         return []
 
     written: list[Path] = []
-    try:
-        state = fleet_state(project, now=instant)
-    except Exception:  # noqa: BLE001 - one unreadable input costs one sweep
-        _report_sweep_failure(project, session="")
-    else:
-        for session in dict.fromkeys(str(session or "") for session in sessions):
-            if not session:
-                continue
-            try:
-                payload = payload_for(state, session)
-                document = document_for(
-                    payload,
-                    computed_at=instant,
-                    stream_offset=stream_offset,
-                    producer=producer,
-                    findings=state.findings,
-                )
-                written.append(write_snapshot(project, session, document))
-            except Exception:  # noqa: BLE001 - the sweep answers for every other session
-                _report_sweep_failure(project, session=session)
-                continue
+    ledger_module = _ledger_module()
+    head_module = _review_head_module()
+    # One region spans the derivation and every session's slice, so the index is
+    # built once and each live run's reviewed head is resolved once for the
+    # whole sweep rather than once per session that names it.
+    with ledger_module.index_reuse(), head_module.review_heads_resolve_once():
+        try:
+            state = fleet_state(project, now=instant)
+        except Exception:  # noqa: BLE001 - one unreadable input costs one sweep
+            _report_sweep_failure(project, session="")
+        else:
+            for session in dict.fromkeys(str(session or "") for session in sessions):
+                if not session:
+                    continue
+                try:
+                    payload = payload_for(state, session)
+                    document = document_for(
+                        payload,
+                        computed_at=instant,
+                        stream_offset=stream_offset,
+                        producer=producer,
+                        findings=state.findings,
+                    )
+                    written.append(write_snapshot(project, session, document))
+                except Exception:  # noqa: BLE001 - the sweep answers for every other session
+                    _report_sweep_failure(project, session=session)
+                    continue
     _SWEEPS[key] = _SweepMemory(
         identity=identity,
         checked_at=instant if not checked else memory.checked_at,
