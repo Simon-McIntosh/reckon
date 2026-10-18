@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "absorbed": null,
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_scoring_dispatches_its_review.py::test_an_unattached_session_refuses_the_automatic_dispatch_too"
+  ],
+  "added_failures_note": "Derived from the reviewed run's own baseline_suite (revision 820d1f1c3, completed, 7 failures) and after_suite (revision b2b0fc636, completed, 7 failures): the head-only set is {tests/test_scoring_dispatches_its_review.py::test_an_unattached_session_refuses_the_automatic_dispatch_too} (1), and the base-only set is {tests/test_dispatch_context_estimate_is_one_figure.py::test_request_estimate_and_candidate_blocks_are_one_figure} which the node fixed. Both arms ran to their summary line (completed true). added_failure_count is 1, not 0: the source done_when asked for zero added failures, and this head-only id is present in the parallel (-n 8) head arm and absent from the base arm. Verified independently: running tests/test_scoring_dispatches_its_review.py alone at head yields 4 passed, EXIT=0, so the id does not reproduce in isolation.",
+  "base_log_revision": "820d1f1c3b266f525cc2b5216257cc0047326183",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:390",
+    "reckon/crew/dispatch_picker.py:545",
+    "reckon/crew_dispatch_commands.py:813",
+    "reckon/crew/picker/replay.py:57"
+  ],
+  "completed_at": "2026-10-18T22:39:27.583Z",
+  "dispatched_at": "2026-10-18T22:25:16Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "The head arm adds one failure id absent from the base arm, tests/test_scoring_dispatches_its_review.py::test_an_unattached_session_refuses_the_automatic_dispatch_too, so the done_when's literal 'zero added failures' criterion is not met by the recorded arms; the failure is a genuine parallel-run (flock contention) flake outside the node's write scope, verified by running the file alone at head (4 passed, EXIT=0), so it does not hold the node."
+    },
+    {
+      "file": "manifest.md",
+      "line": "23",
+      "severity": "follow-on",
+      "text": "The head-only failure carries a failure_attribution of 'scaffolding: ...', but the contract reserves the scaffolding label for the worker's own probe, measurement script or helper failing before reaching code under test; a test-role suite failure belongs mapped to candidate commits, so the attribution label is the wrong kind even though its stated cause (flock contention in recovery.unwatch teardown) is correct."
+    }
+  ],
+  "head_log_revision": "b2b0fc6366d1bbcc54fa5abe2ed24cb6511e44e3",
+  "item_aggregate": null,
+  "item_verdicts": {
+    "diff": "git show --stat b2b0fc6366d1bbcc54fa5abe2ed24cb6511e44e3 against base 820d1f1c3b266f525cc2b5216257cc0047326183 is one commit changing exactly three files, +12/-5: reckon/crew/picker/snapshot.py reworks the attempts and orchestrator_assessment reads to getattr fallbacks, and tests/test_dispatch_context_estimate_is_one_figure.py and tests/test_pick_paths_carry_authority.py re-point a monkeypatch from picker.pick.__kwdefaults__['caller'] to picker.client.ask.",
+    "goal": "the node goal is to repair the four picker tests broken by the reserved-lane and window-refresh commits while keeping the reserved-lane policy's behaviour exactly as merged; the landed getattr fallbacks at reckon/crew/picker/snapshot.py:1123-1129 and the two re-pointed stubs make all four named tests pass, and reckon/crew/picker/snapshot.py:1123-1129 leaves every production path unchanged.",
+    "manifest": "read; it records the four test files' gate (11 passed), the reserved-lane/window-reading gate (31 passed), base_arm and head_arm JSON with completed=true, a negative_control_log naming an existing log with EXIT=1 and the four failures, and a follow_ons entry for the pre-existing base failures.",
+    "write_paths": "the node declared five paths (reckon/crew/picker/snapshot.py, reckon/crew/dispatch_picker.py, tests/test_jev_weighs_context.py, tests/test_dispatch_context_estimate_is_one_figure.py, tests/test_pick_paths_carry_authority.py); the diff touches three of them and nothing else."
+  },
+  "justifications": {
+    "durability": "The two jev failures are guarded by the production fallback itself: reverting snapshot.py to the direct request.attempts read reddens tests/test_jev_weighs_context.py under the SimpleNamespace stand-in the negative_control_log records (EXIT=1, 4 failed), and the two re-pointed tests keep assertions that are independent of the value under test \u2014 tests/test_pick_paths_carry_authority.py:363-368 compares each block against snapshot_module.estimated_context_tokens(...) computed outside the stubbed client, and tests/test_dispatch_context_estimate_is_one_figure.py:150-160 compares request_estimate against picker.snapshot.estimated_context_tokens(node, repo, authority=authority) with a with_authority < without_authority discriminator, so neither assertion moves with its own input.",
+    "evidence": "The done_when's zero-added-failures measure is recorded, not just claimed: baseline_suite and after_suite both reach completed=true with their commands, exit_status and log paths (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T214918901498-picker-tests-after-reserved-lanes/base_arm.log and head_arm.log), and the negative_control.log exists with EXIT=1 and exactly the four named failures; the one deduction is that the head arm adds tests/test_scoring_dispatches_its_review.py::test_an_unattached_session_refuses_the_automatic_dispatch_too absent at base, so 'zero added failures' is literally unmet, though the failure clears alone at head (4 passed).",
+    "fit": "The change follows the module's own idiom: the added local `declared_attempts` at reckon/crew/picker/snapshot.py:1122 mirrors the surrounding reads and the getattr defaults (None and None-or-{}) match PickRequest's declarations at reckon/crew/picker/types.py:17 and :22; the added comments in the two test files describe the mechanism ('the production dispatch wraps the live client in its own caller so the reserved lane's reason survives the pick') with no plan, sprint, ticket or version identifier and no author attribution.",
+    "goal_fidelity": "The landed change does what the goal states: reckon/crew/picker/snapshot.py:1122-1136 reads attempts and orchestrator_assessment through getattr with defaults that reproduce PickRequest's own (None, {}), so a request built without them counts ledger rows and weighs no assessment rather than raising, and the two test stubs now intercept picker.client.ask, the exact call the production answering_caller at reckon/crew/dispatch_picker.py:513-521 makes; all four named tests pass and every production caller (a real PickRequest) is unchanged, so reserved-lane behaviour is preserved (31/31).",
+    "reuse": "The diff adds no function, class or module \u2014 it is an inline getattr and a monkeypatch target change \u2014 so it forks no capability; a search for an existing defensive request-field reader (grep -rn 'getattr(request' reckon/) found none, so no owner was bypassed, and the getattr defaults are taken from the existing owner PickRequest rather than re-declared."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to repair the four picker tests broken by the reserved-lane and window-refresh commits while keeping the reserved-lane behaviour as merged; the landed getattr fallbacks at reckon/crew/picker/snapshot.py:1122-1136 and the two re-pointed stubs make all four named tests pass.\nVERDICT done_when: the done_when names the four tests, the reserved-lane/window-reading tests, base/head zero-added-failures and a negative control; head1.log records 11 passed, reserved_lane.log 31 passed, negative_control.log EXIT=1 with the four failures, but the head arm adds one failure absent at base, so zero-added-failures is literally unmet (verified flaky alone).\nVERDICT write_paths: five paths declared; git show --stat b2b0fc636 lists three changed files, reckon/crew/picker/snapshot.py, tests/test_dispatch_context_estimate_is_one_figure.py and tests/test_pick_paths_carry_authority.py, all inside the declared scope and nothing else.\nVERDICT manifest: read; it records the gates and their results, base_arm.json and head_arm.json with completed=true, an existing negative_control_log with EXIT=1, and a follow_ons entry for the pre-existing base failures.\nVERDICT diff: one commit b2b0fc636 against base 820d1f1c3 changes three files (+12/-5): the attempts/orchestrator_assessment getattr fallbacks in snapshot.py and two test stubs re-pointed from picker.pick.__kwdefaults__['caller'] to picker.client.ask.\nCALL_SITES: reckon/crew/picker/__init__.py:390, reckon/crew/dispatch_picker.py:545, reckon/crew_dispatch_commands.py:813, reckon/crew/picker/replay.py:57\nSCORE goal_fidelity: 19\nSCORE evidence: 18\nSCORE scope_discipline: 20\nSCORE durability: 19\nSCORE fit: 20\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:1122-1136 reads attempts and orchestrator_assessment through getattr with defaults matching PickRequest's own (None, {}) at reckon/crew/picker/types.py:17 and :22, so a request built without them counts ledger rows rather than raising, all four named tests pass, and every production caller is unaffected so reserved-lane behaviour is preserved (31/31).\nJUSTIFICATION evidence: baseline_suite and after_suite both reach completed=true with commands, exit_status and log paths (base_arm.log, head_arm.log), and negative_control.log exists with EXIT=1 and exactly the four named failures; the one deduction is that the head arm adds tests/test_scoring_dispatches_its_review.py::test_an_unattached_session_refuses_the_automatic_dispatch_too absent at base, so 'zero added failures' is literally unmet though it clears alone at head (4 passed).\nJUSTIFICATION scope_discipline: git show --stat b2b0fc636 lists exactly three changed files, all inside the node's five declared write paths, with no source or test outside them touched and dispatch_picker.py and tests/test_jev_weighs_context.py left unmodified as the fix did not need them.\nJUSTIFICATION durability: reverting snapshot.py reddens tests/test_jev_weighs_context.py under the SimpleNamespace stand-in (negative_control.log, EXIT=1, 4 failed), and the two re-pointed tests keep independent assertions \u2014 tests/test_pick_paths_carry_authority.py:363-368 compares each block against estimated_context_tokens computed outside the stub, and tests/test_dispatch_context_estimate_is_one_figure.py:150-160 pins request_estimate against an independently computed with_authority figure plus a with_authority < without_authority discriminator.\nJUSTIFICATION fit: the added local declared_attempts at reckon/crew/picker/snapshot.py:1122 mirrors the surrounding reads and matches PickRequest at reckon/crew/picker/types.py:17; the added test comments describe the mechanism of the caller wrapper with no plan, sprint, ticket, version or author reference.\nJUSTIFICATION reuse: the diff adds no function, class or module, so it forks no capability; a search for an existing defensive request-field reader (grep -rn 'getattr(request' reckon/) found none, and the getattr defaults are taken from the existing owner PickRequest rather than re-declared in parallel.\nFINDING manifest.md 22 follow-on: the head arm adds one failure id absent from the base arm, tests/test_scoring_dispatches_its_review.py::test_an_unattached_session_refuses_the_automatic_dispatch_too, so the done_when's literal 'zero added failures' is not met by the recorded arms; it is a genuine parallel-run flock flake outside the node's scope and clears alone at head (4 passed, EXIT=0), so it does not hold the node.\nFINDING manifest.md 23 follow-on: the head-only failure is labelled a 'scaffolding:' attribution, but the contract reserves that label for the worker's own probe, measurement script or helper failing before reaching code under test; a test-role suite failure belongs mapped to candidate commits, so the label names the wrong class even though the stated cause (flock contention in recovery.unwatch) is correct.",
+  "review_run_id": "r-20261018T222428295425-review-of-picker-tests-after-reserved-lanes-b2b0fc6366d1",
+  "reviewed_base_sha": "820d1f1c3b266f525cc2b5216257cc0047326183",
+  "reviewed_head_sha": "b2b0fc6366d1bbcc54fa5abe2ed24cb6511e44e3",
+  "reviewed_run_id": "r-20261018T214918901498-picker-tests-after-reserved-lanes",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T22:47:00.000000+00:00",
+  "total": 116
+}
