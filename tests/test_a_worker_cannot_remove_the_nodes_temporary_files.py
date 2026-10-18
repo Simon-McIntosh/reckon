@@ -15,7 +15,7 @@ protected paths, then re-binding writable only the run's own scratch directory
 sockets and codex's sandbox marker directory, enumerated once in
 ``node_tmp_runtime_paths`` beside ``worker_scratch_seal_root``.
 
-The property is asserted two ways, because a shape assertion cannot tell a
+The property is asserted three ways, because a shape assertion cannot tell a
 fence that holds from one spelled correctly and doing nothing, and an executed
 refusal cannot tell which overlay produced it:
 
@@ -25,7 +25,6 @@ refusal cannot tell which overlay produced it:
 * The fence holds, proved by *executing* the composed argv: a fenced command
   creates and removes a file in its own scratch and reaches each runtime path,
   while a file it created in the node tmp outside those is refused and survives.
-
 * The runtime directories are *created* before the argv is composed, so a node
   whose harness has never run still gets the grant: composed on a temporary
   node tmp whose runtime directories do not exist, each one is found created
