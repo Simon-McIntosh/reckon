@@ -1003,7 +1003,7 @@ def _reserved_lane_floor_met(
     for is not met: an undeclared requirement is an undeclared one, never the
     strength the node was not asked to state.
     """
-    from reckon.capability import REQUIREMENT_LEVELS
+    from reckon.capability import REQUIREMENT_LEVELS, _rank
 
     if not floor:
         return True
@@ -1014,8 +1014,8 @@ def _reserved_lane_floor_met(
         value = declared.get(key)
         if not isinstance(value, str) or value not in levels:
             return False
-        bar = min(levels.index(item) for item in accepted if item in levels)
-        if levels.index(value) < bar:
+        bar = min(_rank(item, levels) for item in accepted if item in levels)
+        if _rank(value, levels) < bar:
             return False
     return True
 
