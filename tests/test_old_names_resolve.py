@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -13,7 +14,9 @@ from click.testing import CliRunner
 
 from reckon import flight, ledger, mcp_views
 from reckon.cli import main
+from reckon.crew import budget_lift as bl
 from reckon.crew import query, recovery, reports
+from reckon.crew import recovery_review_dispatch as rrd
 
 ALIASES = {
     "claude-opus": ("claude", "opus"),
@@ -217,6 +220,65 @@ def test_review_exclusions_match_pair_across_names(exclusion):
         "other-model"
     ]
     assert config == original
+
+
+def test_local_backend_exclusion_matches_pair_across_names():
+    config = {
+        "backends": {
+            "other-model": {"lane": "claude", "model_key": "sonnet", "launch": "cli"},
+        },
+        "local_backend": "claude-opus",
+        "review_excluded_backends": ["opus 5.5"],
+    }
+    assert recovery._ordered_review_lanes(config) == ["other-model"]
+
+
+LIFT_GROUP = "review-lift-fixture"
+
+
+def test_a_lifted_preferred_lane_keeps_that_lead(monkeypatch, tmp_path):
+    """A lane under a lift in force is admitted even when nothing excludes it.
+
+    The lift releases the group's reserves, so the fleet means to spend it: the
+    owning lane keeps its lead rather than being dropped for a reason that only
+    an exclusion could give. The ordering is asserted as a whole, because a
+    lane dropped from the head is still present in the alphabetical tail.
+    """
+    now = datetime.now(UTC)
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path))
+    monkeypatch.delenv(bl.RUN_ID_ENV, raising=False)
+    reading = {
+        "observed_at": now.isoformat(),
+        "five_hour": {
+            "utilisation": 0.05,
+            "resets_at": (now + timedelta(hours=4)).isoformat(),
+        },
+        "seven_day": {
+            "utilisation": 0.85,
+            "resets_at": (now + timedelta(hours=2)).isoformat(),
+        },
+    }
+    monkeypatch.setattr(bl, "published_readings", lambda *args, **kwargs: [reading])
+    config = {
+        "backends": {
+            "claude": {"model": "opus", "launch": "cli", "budget_group": LIFT_GROUP},
+            "alpha-model": {"model": "sonnet", "launch": "cli"},
+        },
+    }
+    bl.grant(
+        config,
+        group=LIFT_GROUP,
+        reason="spend the window into its reset",
+        multiple=1.8,
+        readings=[reading],
+        now=now,
+        environ={"USER": "lead"},
+    )
+    assert rrd._lifted_backends(config) == {"claude"}
+    assert recovery._ordered_review_lanes(config, owning_backend="claude") == [
+        "claude",
+        "alpha-model",
+    ]
 
 
 def test_lane_exclusion_covers_all_models_and_unknown_exclusion_still_works():

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s24">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-18">
+  <meta name="plan-tags" content="crew,review-routing,exclusion,historical-names">
+  <title>A review exclusion names a pair under any name | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-review-exclusion-names-a-pair-under-any-name" data-reckon="landed" data-when="2026-10-18">
+  <h2 id="a-review-exclusion-names-a-pair-under-any-name-title">A review exclusion names a pair under any of its historical names.</h2>
+  <p id="a-review-exclusion-names-a-pair-under-any-name-cause"><strong>Cause.</strong>
+  <code>recovery._ordered_review_lanes</code> builds the set of review-excluded backends
+  through <code>_review_backend_excluded</code>, which resolves an exclusion to a
+  lane-and-model pair, but then tests the two preferred candidates — the owning backend
+  and the local backend — as literal strings against that expanded set
+  (<code>preferred not in excluded</code>). The set holds the configured backends the
+  resolver accepted, keyed by their configured name. The preferred names are not in it: the
+  owning lane is often stated as a run-record spelling the configuration does not carry as a
+  key, so an exclusion that names the same pair through an older spelling removes the
+  configured backends of that lane but leaves the preferred alias admitted. The regression
+  landed with <code>a04480487</code> (2026-10-15, "route with the session's own worker slots
+  and any lift in view"), which replaced the pair call
+  <code>not _review_backend_excluded(preferred, config)</code> with the literal membership
+  test while adding the lift subtraction. The test predates it, added <code>2026-10-07</code>
+  in <code>fa9f9dc36</code>, and all three parameters passed at <code>a04480487^</code> and
+  fail from <code>a04480487</code> onward: the two historical spellings
+  <code>claude-opus-5-5</code> and <code>opus 5.5</code> are admitted while the current
+  spelling <code>claude-opus</code> is removed.</p>
+  <p id="a-review-exclusion-names-a-pair-under-any-name-fix"><strong>Fix.</strong>
+  <code>_ordered_review_lanes</code> now judges every candidate, the preferred pair
+  included, through <code>_review_backend_excluded</code>, which resolves the pair. A
+  preferred lane named by an older spelling of an excluded pair is removed exactly as its
+  current spelling is. A lift in force is honoured rather than overridden: a lane under a
+  lift is admitted first, because the fleet has opened it, and only a lane without a lift
+  is judged through the pair resolver. The test is not loosened; two cases are added
+  beside it. An independent review of an earlier attempt at this repair found that the
+  guard as first written rejected a lifted lane outright — including one no exclusion
+  named — which dropped the owning lane's lead and could remove a preferred lane that is
+  not a configured backend from the ordering entirely; that is the behaviour this repair
+  now holds against, and the case below covers it.</p>
+  <p id="a-review-exclusion-names-a-pair-under-any-name-newcase"><strong>New case.</strong>
+  <code>tests/test_old_names_resolve.py::test_local_backend_exclusion_matches_pair_across_names</code>
+  sets <code>local_backend</code> to <code>claude-opus</code>, leaves the owning backend
+  empty, excludes <code>opus 5.5</code>, declares one other backend and expects
+  <code>['other-model']</code>. It exercises the local preference path the owning lane
+  cannot, so both preferred candidates are covered.
+  <code>test_a_lifted_preferred_lane_keeps_that_lead</code> grants a real lift on a
+  declared group and asserts the whole ordering <code>['claude', 'alpha-model']</code>,
+  with the lifted owning lane leading. The ordering is asserted whole because a lane
+  dropped from the head still appears in the alphabetical tail, so a first-element check
+  would miss it; and the case first asserts the lift is in force, so it cannot pass by
+  quietly exercising no lift at all.</p>
+  <p id="a-review-exclusion-names-a-pair-under-any-name-measure"><strong>Measure.</strong>
+  Logs are under the run directory. Head arm (repair present) on
+  <code>tests/test_old_names_resolve.py</code>: 37 passed, EXIT=0. Negative control, the
+  repair reverted, run against a tree extracted at the parent revision with this node's test
+  file present: the two parameters and the local-backend case fail, 3 failed 33 passed,
+  EXIT=1. A second negative control reverts the lift guard, keeping the new lift case: that
+  case alone fails, 1 failed 36 passed, EXIT=1. The revision since which the two parameters failed is <code>a04480487</code>,
+  confirmed by running the three parameters against the base tree extracted at
+  <code>a04480487^</code>, where all three pass. Population of the sixteen further test
+  files naming <code>review_excluded_backends</code> or the historical-name resolver,
+  together with this node's file: at base <code>2 failed, 207 passed</code>,
+  <code>EXIT=1</code>, the two failures being the historical-spelling parameters; at
+  head <code>211 passed</code>, <code>EXIT=0</code>. The repair removes both failures and
+  adds none. <code>ruff check</code> and <code>ruff format --check</code> add no finding
+  on the two changed files.</p>
+</article>
+</body>
+</html>
