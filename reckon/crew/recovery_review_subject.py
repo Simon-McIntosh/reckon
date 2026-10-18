@@ -153,10 +153,25 @@ def select_review_for_head(
 
 
 def _reviewed_run_head(record: Mapping[str, Any]) -> str:
-    """The revision a review of this run is evidence about: its tree's head."""
+    """The revision a review of this run is evidence about: its tree's head.
+
+    A worker's worktree is detached, so its ``HEAD`` file holds the revision
+    itself and no subprocess is needed to read it. The files answer only when
+    one of them carries a full revision; a ref kept solely in ``packed-refs``,
+    an unreadable git directory, or anything else unresolved falls through to
+    git, which is the only writer that can resolve an arbitrary ref. The helper
+    lives in the recovery memo beside the sweep that owns the same
+    git-directory resolution; it is imported here rather than at module scope
+    because that memo imports this module in turn.
+    """
     tree = _review_tree(record)
     if tree is None:
         return ""
+    from reckon.crew.recovery_memo import _worktree_head_revision
+
+    revision = _worktree_head_revision(tree)
+    if revision:
+        return revision
     try:
         completed = subprocess.run(
             ["git", "rev-parse", "HEAD"],
