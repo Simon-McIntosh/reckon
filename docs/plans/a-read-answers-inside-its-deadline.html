@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="286">
+<meta name="plan-version" content="287">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -931,6 +931,9 @@
 </div>
 <div class="r-comment" data-section="s35" data-id="c-close-s35" data-who="reckon-build" data-when="2026-10-18T09:30:00Z">
     <div class="r-comment-body"><p>§35 landed. The held-worktree screen reads fresh records, fails open when its reader refuses, and copies nothing on the derivation path (merge <code>864874aee</code>). The stat count is recorded, 521 against base 519, because no bound separates the two in this corpus. Zero added failures over 72 files. §37 restores the decode guard next. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s35">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s35" data-id="c-run-r-20261018T054542179890-the-held-worktree-bounds-are-asserted-as-stated" data-who="reckon-build" data-when="2026-10-18T08:36:52Z">
+    <div class="r-comment-body"><p>the held-worktree screen reads its rows from the ledger reader that refreshes per-run records and never acts on a record older than its run file; a reader that refuses or fails leaves the screen dropped rather than the answer, with every run a candidate and the documents read directly, so a bounded read that cannot screen still answers from the per-run files; the test asserts the zero deep-copy bound, records the posix.stat count rather than bounding it, asserts the stale-record case, and requires the whole-ledger answer when the namings reader is refused.</p></div>
 </div>
 </section>
 </main>
