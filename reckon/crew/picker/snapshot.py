@@ -1120,9 +1120,10 @@ def candidates(
     rows = ledger.runs(request.project, root=repo) if records is None else records
     # The same declared tier and attempt count govern the probe and the gate.
     reserved = flight.reserved_lane_policies(config)
+    declared_attempts = getattr(request, "attempts", None)
     attempts = (
-        request.attempts
-        if request.attempts is not None
+        declared_attempts
+        if declared_attempts is not None
         else sum(
             row.get("node") == request.node.id and row.get("plan") == request.node.plan
             for row in rows
@@ -1130,7 +1131,7 @@ def candidates(
     )
     declared_requirements = {
         **(request.capability.get("requirements") or {}),
-        **(request.orchestrator_assessment or {}),
+        **(getattr(request, "orchestrator_assessment", None) or {}),
     }
     shared = (
         verdict_inputs
