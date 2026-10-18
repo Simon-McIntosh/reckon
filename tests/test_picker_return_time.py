@@ -125,7 +125,7 @@ def test_return_time_figures_and_size_bucket(ledger):
     blocks = lane_context.return_times(
         profile, _node(time_budget="45m"), [_candidate("clive")], now=NOW
     )
-    block = blocks["clive"]
+    block = blocks[lane_context.option_key(_candidate("clive"))]
     assert block["p50_s"] == 250.0
     assert block["p90_s"] == 400.0
     assert block["runs"] == 4
@@ -140,8 +140,8 @@ def test_group_matches_role_and_specification(ledger):
     ledger(rows)
     profile = lane_context.run_time_profile("reckon", now=NOW)
     blocks = lane_context.return_times(profile, _node(), [_candidate("clive")], now=NOW)
-    assert blocks["clive"]["p50_s"] == 15.0
-    assert blocks["clive"]["runs"] == 2
+    assert blocks[lane_context.option_key(_candidate("clive"))]["p50_s"] == 15.0
+    assert blocks[lane_context.option_key(_candidate("clive"))]["runs"] == 2
 
 
 def test_ledger_reading_past_shelf_life_is_stale(ledger):
@@ -156,7 +156,7 @@ def test_ledger_reading_past_shelf_life_is_stale(ledger):
     blocks = lane_context.return_times(
         profile, _node(), [_candidate("clive")], budget_snapshot=snapshot, now=NOW
     )
-    block = blocks["clive"]
+    block = blocks[lane_context.option_key(_candidate("clive"))]
     assert block["budget_source"] == "ledger"
     assert block["budget_age_s"] == pytest.approx(7200.0)
     assert block["stale"] is True
@@ -174,8 +174,10 @@ def test_fresh_ledger_reading_is_not_stale(ledger):
     blocks = lane_context.return_times(
         profile, _node(), [_candidate("clive")], budget_snapshot=snapshot, now=NOW
     )
-    assert blocks["clive"]["stale"] is False
-    assert blocks["clive"]["budget_age_s"] == pytest.approx(300.0)
+    assert blocks[lane_context.option_key(_candidate("clive"))]["stale"] is False
+    assert blocks[lane_context.option_key(_candidate("clive"))][
+        "budget_age_s"
+    ] == pytest.approx(300.0)
 
 
 def test_account_surface_reading_past_shelf_life_is_stale(ledger):
@@ -193,8 +195,11 @@ def test_account_surface_reading_past_shelf_life_is_stale(ledger):
     blocks = lane_context.return_times(
         profile, _node(), [_candidate("clive")], budget_snapshot=snapshot, now=NOW
     )
-    assert blocks["clive"]["budget_source"] == "account-surface"
-    assert blocks["clive"]["stale"] is True
+    assert (
+        blocks[lane_context.option_key(_candidate("clive"))]["budget_source"]
+        == "account-surface"
+    )
+    assert blocks[lane_context.option_key(_candidate("clive"))]["stale"] is True
 
 
 def test_missing_lane_document_is_null(isolated_lane):
@@ -271,8 +276,17 @@ def test_representative_nine_candidate_state_is_bounded(ledger, isolated_lane):
     )
     assert len(rendered) <= 1500 * 5
     payload = json.loads(rendered)
-    assert set(payload["candidates"]["clive"]) == CANDIDATE_KEYS
-    assert set(payload["return_times"]["clive"]) == RETURN_TIME_KEYS
-    assert payload["return_times"]["clive"]["p50_s"] == 400.0
+    assert (
+        set(payload["candidates"][lane_context.option_key(candidates[0])])
+        == CANDIDATE_KEYS
+    )
+    assert (
+        set(payload["return_times"][lane_context.option_key(candidates[0])])
+        == RETURN_TIME_KEYS
+    )
+    assert (
+        payload["return_times"][lane_context.option_key(candidates[0])]["p50_s"]
+        == 400.0
+    )
     assert payload["local_lane"]["running"] == 3
     assert payload["local_lane"]["waiting"] == 9
