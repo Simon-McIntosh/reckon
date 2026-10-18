@@ -25,7 +25,7 @@
   <title>A Paired Arm Is Reviewed As Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -116,6 +116,9 @@ The test writes nothing outside its temporary directory.</li>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-18T10:30:00Z">
     <div class="r-comment-body"><p>§2 landed: a shadow's run-review brief names its retained worktree patch against its base as the reviewed change, and treats empty commits as its contract (commits <code>f030e70cb</code>, <code>3ff5072bd</code>). Gate: 37 passed at head, 33 at base, with the same pre-existing <code>ledger.py</code> size failure in both. Both negative controls fail their case. Review total 113, no added failures. A post-merge check of a live shadow's composed brief is still owed. <a href="/reckon/evidence/archive/a-paired-arm-is-reviewed-as-itself-landed.html#s2">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261018T094229241369-a-shadow-review-reads-its-patch" data-who="reckon-build" data-when="2026-10-18T10:32:44Z">
+    <div class="r-comment-body"><p>A shadow&#x27;s run-review brief now names its retained worktree patch as the reviewed change: _review_brief_text appends a shadow block (read through promotion_scope._is_shadow, no second shadow test) that names git -C &lt;worktree&gt; diff &lt;base_sha&gt; plus git -C &lt;worktree&gt; ls-files --others --exclude-standard from the record&#x27;s own worktree and base, states an empty commits list and a head equal to the base are the contract rather than findings, and binds every dimension to that patch; a run that is not a shadow and a paired primary without a shadow lineage both keep the brief unchanged. Gate: base 1 failed / 33 passed, head 1 failed / 37 passed, same pre-existing reckon/ledger.py module-size failure, zero added failure ids; both negative controls fail their declared case.</p></div>
 </div>
 </section>
 </main>
