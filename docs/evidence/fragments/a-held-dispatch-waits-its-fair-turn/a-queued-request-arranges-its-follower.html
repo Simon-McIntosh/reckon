@@ -10,17 +10,23 @@
     The held and launching paths now use one helper to ensure the producer and
     ask the calling session host. A queued request leaves its session attached
     before dispatch returns, so the first admission pass can launch it.
+    The held path can also start a producer just before a test cleans up its
+    watcher. That test now waits for the raw producer registration before
+    calling <code>unwatch</code>, with a bounded failure if it never appears.
   </p>
   <p id="a-queued-request-arranges-its-follower-measure">
-    Measure: the focused gate reports <strong>2 passed</strong> at the committed
+    Measure: the focused gate reports <strong>2 passed</strong> at the repaired
     head, and removing the queue branch's helper call makes both cases fail
-    (<strong>2 failed</strong>, <code>EXIT=1</code>). Ruff adds no findings and
-    both changed Python files pass format checking. Across 80 direct importer
-    files, the complete base arm reports 6 failed, 569 passed, 1 skipped; the
-    head arm, including the new regression, reports 5 failed, 572 passed,
-    1 skipped. One failed test id appears only at the head:
-    <code>tests/test_the_review_reflex_asks_before_it_requeues.py::test_no_alternative_lane_still_re_queues_on_the_local_lane</code>.
-    Its watcher cleanup could not acquire the registration lock, so the
-    zero-added-failures gate remains unmet.
+    (<strong>2 failed</strong>, <code>EXIT=1</code>). The delayed-registration
+    case and its three neighbouring tests passed in three consecutive
+    eight-worker runs (<strong>4 passed</strong> each); before the teardown
+    change, that case and the queued-review case both failed with an empty
+    locked registration. Across 80 direct importer files, the complete base
+    arm reports 6 failed, 569 passed, 1 skipped. The final repaired-head arm,
+    including the new regressions, reports 4 failed, 574 passed, 1 skipped,
+    with <strong>zero added failure ids</strong>. An earlier repaired-head arm
+    had two different head-only timing failures outside the changed paths;
+    both arms and their failure ids remain in the run record. Ruff adds no
+    findings, and all three changed Python files pass format checking.
   </p>
 </section>
