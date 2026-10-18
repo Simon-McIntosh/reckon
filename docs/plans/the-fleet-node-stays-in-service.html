@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-moves-to-a-new-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -173,7 +173,7 @@
     </p>
 
     <h2 id="s4">&sect;4 &mdash; The migrate command starts a second move</h2>
-    <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       <code>reckon fleet-node migrate</code> reads the newest
       <code>move-*/ledger.json</code>, and once that ledger's next step is
@@ -394,7 +394,10 @@
     <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T135110566087-migrate-starts-a-second-move/review-records/r-20261018T135110566087-migrate-starts-a-second-move.at-8df89b94cbcf76cc759efb0b6af040b9724812a5.json — parsed review of base 4a53860316f27ff60204a2bbf359559093cd92cd through head 8df89b94cbcf76cc759efb0b6af040b9724812a5, 6 dimensions and 6 checklist items, 2 production call sites, 3 findings including 1 blocking scope violation; added-failure delta unmeasured because the reviewed manifest names no paired suite arms.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261018T135110566087-migrate-starts-a-second-move" data-who="reckon-build" data-when="2026-10-18T15:29:35Z">
-    <div class="r-comment-body"><p>docs/evidence/fragments/the-fleet-node-stays-in-service/migrate-starts-a-second-move.html — a done ledger always advances the next invocation to census (dry-run says census, a new move ledger is written, the earlier one untouched), and the status drain warning states the allocation continues until it ends and the node returns only on administrator resume (4 focused tests pass; related suites 91 pass). This repair round re-lands tests/test_fleet_migrate_cutover.py&#x27;s completed-move assertion as its own commit (cf0ab7e97) under the extended write scope.</p></div>
+    <div class="r-comment-body"><p>docs/evidence/fragments/the-fleet-node-stays-in-service/migrate-starts-a-second-move.html — a done ledger always advances the next invocation to census (dry-run says census, a new move ledger is written, the earlier one untouched), and the status drain warning states the allocation continues until it ends and the node returns only on administrator resume (4 focused tests pass; related suites 91 pass). This repair round re-lands tests/test_fleet_migrate_cutover.py's completed-move assertion as its own commit (cf0ab7e97) under the extended write scope.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-18T15:45:00Z">
+    <div class="r-comment-body"><p>§4 landed: a done move ledger now makes the next <code>fleet-node migrate</code> begin a census, and the drain warning is corrected (merged <code>c2e033c6c</code>; 91 tests pass; review 82/120, blocking scope finding accepted). §5's rehearsal can now run at this head. Correction to the resume advice the worker was given: it named the plan fix as 'reckon main 75a', a sha nobody read; the plan correction is commit <code>15ba1406d</code>. <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s4">evidence</a></p></div>
 </div>
 </section>
 </main>
