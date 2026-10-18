@@ -36,6 +36,7 @@ import hashlib
 import json
 import os
 import re
+import time
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
@@ -156,6 +157,28 @@ def continues(record: Mapping[str, Any], path: str | Path) -> bool:
     return offset <= size
 
 
+def written_moment(
+    project: str, session: str | None, record: Mapping[str, Any]
+) -> float | None:
+    """The moment a checkpoint's place was recorded, or ``None`` if unknowable.
+
+    Read from the record's own stamp. A record written before the stamp existed
+    carries none, so its file's modification time stands in: the record's age is
+    what tells a re-arm whether the rows written since it are still a margin the
+    pane would have shown, and a record that cannot state its moment must still
+    be aged rather than read as fresh. ``None`` means neither the stamp nor the
+    file could be read, and the caller then treats the record as it did before
+    any age was consulted.
+    """
+    stamp = record.get("written_at")
+    if isinstance(stamp, (int, float)) and not isinstance(stamp, bool):
+        return float(stamp)
+    try:
+        return checkpoint_path(project, session).stat().st_mtime
+    except OSError:
+        return None
+
+
 def read(project: str, session: str | None) -> dict[str, Any]:
     """Return the durable checkpoint for one session, or ``{}`` when none.
 
@@ -195,6 +218,7 @@ def write(
     reported: Mapping[str, str],
     lift_groups: Iterable[str] | None = None,
     identity: Mapping[str, Any] | None = None,
+    written_at: float | None = None,
 ) -> None:
     """Atomically record a follower's place after the last delivered line.
 
@@ -208,6 +232,11 @@ def write(
     from an open file (:func:`identity_of`), so the recorded identity is the
     file the offset describes. Without it the identity is read from the path,
     which is correct only for an offset taken from the path itself.
+
+    ``written_at`` is the moment the place is recorded. A re-arm compares it
+    against the pane's history window to decide whether the rows written since
+    are still a margin the pane would have shown, so the stamp is written with
+    every place; the caller overrides it only where a test fixes the moment.
     """
     target = checkpoint_path(project, session)
     if identity is not None:
@@ -227,6 +256,7 @@ def write(
         "stream_identity": recorded_identity,
         "offset": int(offset),
         "reported": {str(k): str(v) for k, v in dict(reported).items()},
+        "written_at": float(time.time() if written_at is None else written_at),
     }
     drawn_lifts = sorted({str(group) for group in (lift_groups or ()) if group})
     if drawn_lifts:

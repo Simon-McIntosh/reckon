@@ -1068,6 +1068,14 @@ def _follow_resume_plan(
     recorded offset no longer names a boundary: the file is re-read from its
     start and filtered to the runs whose state differs from the checkpoint's.
 
+    A checkpoint whose place is older than the pane's own history window is
+    treated as no place at all and resumes in ``baseline``: the rows written
+    since it are a margin the pane would not have shown, because the history
+    replay beside it is capped at that same window, and replaying them draws
+    days of transitions the reader never had on screen. The arming then reports
+    each run's current state from live run state, and a run that has not moved
+    is not announced again.
+
     The recorded state travels back with the mode either way, so a continuation
     delivers only what changed rather than re-announcing the fleet. The lift
     groups the pane already drew travel back with it, so a continuation holds
@@ -1112,8 +1120,41 @@ def _follow_resume_plan(
         str(group) for group in (record.get("lift_groups") or ()) if group
     )
     if follow_checkpoint.continues(record, stream_path):
+        if _follow_checkpoint_stale(project, session, record):
+            # The recorded place is older than the pane's history window, so the
+            # rows written since it are not a margin the pane would have shown:
+            # the arming resumes as a first attachment does, reporting each run's
+            # current state from live run state rather than reading that margin.
+            return "baseline", 0, recorded, recorded_lifts
         return "continue", max(0, int(record["offset"])), recorded, recorded_lifts
     return "restart", 0, recorded, recorded_lifts
+
+
+def _follow_checkpoint_stale(
+    project: str,
+    session: str | None,
+    record: Mapping[str, Any],
+    *,
+    now: float | None = None,
+) -> bool:
+    """Whether a checkpoint's place is older than the pane's history window.
+
+    The pane's history replay is capped at that window, so a margin older than
+    it is not a margin the pane would otherwise show and replaying it draws days
+    of rows the reader never had on screen. The window is read through the same
+    reader the history burst resolves it with, so the margin replay and the
+    history replay cannot disagree about where the window falls. A record whose
+    moment cannot be read is not treated as stale, because an age that cannot be
+    established is not evidence of one.
+    """
+    from reckon.crew import follow_checkpoint
+
+    _, window = _follow_history_caps(project)
+    moment = follow_checkpoint.written_moment(project, session, record)
+    if moment is None:
+        return False
+    current = time.time() if now is None else now
+    return (current - moment) > window
 
 
 
