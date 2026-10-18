@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:2236",
+    "reckon/crew_follow_commands.py:3136",
+    "reckon/cli.py:329",
+    "reckon/crew_follow_commands.py:1829"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-18T06:40:28Z",
+  "findings": [
+    {
+      "file": "tests/test_writer_callers_second_wave.py",
+      "line": "73",
+      "severity": "follow-on",
+      "text": "follow-on: The diff edits a file outside the node's declared write paths (the five paths under FENCE - SCOPE exclude it); the edit is necessary because follow_checkpoint.write now emits written_at, but the coordinator must record the wider write scope or relocate the golden under the writer's own scope."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-stale-checkpoint-replays-no-old-margin.html",
+      "line": "44",
+      "severity": "follow-on",
+      "text": "follow-on: The fragment names the measured head as 91397e2ce while the run head is 1699d4854; the record carries the canonical pair, but the prose revision is not the head a reader compares against."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read line by line 440b594fb through 1699d4854 against base 56ab504fe; follow_checkpoint.py plus 30, crew_follow_commands.py plus 41, the 546-line test, the writer golden plus 8 minus 2, and the 87-line evidence fragment.",
+    "done_when": "The done_when names tests/test_a_stale_checkpoint_replays_no_old_margin.py; that gate ran 7 passed EXIT=0 (gate-head.log) and asserts cases (a)-(d) plus the caps/delivered mechanism and the mtime fallback.",
+    "goal": "The node goal is that a follower re-armed on a checkpoint older than the pane's history window resumes in baseline mode instead of replaying the margin; reckon/crew_follow_commands.py:1123 returns \"baseline\" from _follow_resume_plan when _follow_checkpoint_stale reports the place older than the window.",
+    "manifest": "Read; status complete, recording 7 passed EXIT=0, importer suite base 426 / head 433 both EXIT=0, negative control 4 failed / 3 passed EXIT=1, and the out-of-scope writer-test path named under blockers.",
+    "write_paths": "The manifest's declared scope is five paths; the diff stays inside them except tests/test_writer_callers_second_wave.py, which the manifest itself declares as its blocker."
+  },
+  "justifications": {
+    "durability": "tests/test_a_stale_checkpoint_replays_no_old_margin.py:273 fails if a stale checkpoint replays its margin, and negative-control.log shows that case red with the age check removed.",
+    "evidence": "tests/test_a_stale_checkpoint_replays_no_old_margin.py:227 and :401 assert cases (a) and (d), and negative-control.log records 4 failed / 3 passed EXIT=1 on the declared mutation.",
+    "fit": "reckon/crew/follow_checkpoint.py:160 follows the module's lazy-import and docstring idiom, and no added name carries a plan label.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:1123 returns \"baseline\" from _follow_resume_plan when the checkpoint's age, read at reckon/crew/follow_checkpoint.py:160, exceeds the window resolved at reckon/crew_follow_commands.py:1152.",
+    "reuse": "the staleness check reuses _follow_history_caps at reckon/crew_follow_commands.py:1152 rather than re-reading the constant, and written_moment extends follow_checkpoint, the checkpoint record's owner.",
+    "scope_discipline": "five of the six changed paths are inside the declared scope, and tests/test_writer_callers_second_wave.py:73 is not among them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a follower re-armed on a checkpoint older than the pane's history window resumes in baseline mode instead of replaying the margin; reckon/crew_follow_commands.py:1123 returns \"baseline\" from _follow_resume_plan when _follow_checkpoint_stale reports the place older than the window.\nVERDICT done_when: The done_when names tests/test_a_stale_checkpoint_replays_no_old_margin.py; that gate ran 7 passed EXIT=0 (gate-head.log) and asserts cases (a)-(d) plus the caps/delivered mechanism and the mtime fallback.\nVERDICT write_paths: The manifest's declared scope is five paths; the diff stays inside them except tests/test_writer_callers_second_wave.py, which the manifest itself declares as its blocker.\nVERDICT manifest: Read; status complete, recording 7 passed EXIT=0, importer suite base 426 / head 433 both EXIT=0, negative control 4 failed / 3 passed EXIT=1, and the out-of-scope writer-test path named under blockers.\nVERDICT diff: Read line by line 440b594fb through 1699d4854 against base 56ab504fe; follow_checkpoint.py plus 30, crew_follow_commands.py plus 41, the 546-line test, the writer golden plus 8 minus 2, and the 87-line evidence fragment.\nCALL_SITES: reckon/crew_follow_commands.py:2236, reckon/crew_follow_commands.py:3136, reckon/cli.py:329, reckon/crew_follow_commands.py:1829\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:1123 returns \"baseline\" from _follow_resume_plan when the checkpoint's age, read at reckon/crew/follow_checkpoint.py:160, exceeds the window resolved at reckon/crew_follow_commands.py:1152.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_a_stale_checkpoint_replays_no_old_margin.py:227 and :401 assert cases (a) and (d), and negative-control.log records 4 failed / 3 passed EXIT=1 on the declared mutation.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: five of the six changed paths are inside the declared scope, and tests/test_writer_callers_second_wave.py:73 is not among them.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_stale_checkpoint_replays_no_old_margin.py:273 fails if a stale checkpoint replays its margin, and negative-control.log shows that case red with the age check removed.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/follow_checkpoint.py:160 follows the module's lazy-import and docstring idiom, and no added name carries a plan label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the staleness check reuses _follow_history_caps at reckon/crew_follow_commands.py:1152 rather than re-reading the constant, and written_moment extends follow_checkpoint, the checkpoint record's owner.\nFINDING tests/test_writer_callers_second_wave.py:73 follow-on: The diff edits a file outside the node's declared write paths (the five paths under FENCE - SCOPE exclude it); the edit is necessary because follow_checkpoint.write now emits written_at, but the coordinator must record the wider write scope or relocate the golden under the writer's own scope.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-stale-checkpoint-replays-no-old-margin.html:44 follow-on: The fragment names the measured head as 91397e2ce while the run head is 1699d4854; the record carries the canonical pair, but the prose revision is not the head a reader compares against.\n",
+  "review_run_id": "legacy-6b71a1322e02",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "56ab504fe98a5d5b71c711b3c70c45078585bbfd",
+  "reviewed_head_sha": "1699d4854138bbb93ae26dbd7d70b3fc6cd32496",
+  "reviewed_run_id": "r-20261018T063856147181-a-stale-checkpoint-replays-no-old-margin",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T07:41:46.954791+00:00",
+  "total": 106
+}

@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="314">
+<meta name="plan-version" content="315">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1241,6 +1241,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s49" data-id="c-run-r-20261018T051327730136-a-watcher-carries-no-session-identity" data-who="reckon-build" data-when="2026-10-18T06:35:12Z">
     <div class="r-comment-body"><p>landing: reckon/crew/dispatch_watch.py gains SESSION_IDENTITY_ENV_NAMES (CLAUDE_PID, CLAUDECODE, CODEX_SESSION_ID, CODEX_THREAD_ID) plus the CLAUDE_CODE_ prefix and the helpers _without_session_identity/_scrub_session_identity; _start_watch_producer hands its Popen env=_without_session_identity(os.environ), the embedded _WATCH_PRODUCER_SUPERVISOR script pops those names before its first spawn, and crew_watch in reckon/crew_follow_commands.py scrubs os.environ before its first sweep. Measure: tests/test_a_watcher_carries_no_session_identity.py 5 passed, EXIT=0.</p></div>
+</div>
+<div class="r-comment" data-section="s50" data-id="c-run-r-20261018T072515532699-review-of-a-stale-checkpoint-replays-no-old-margin-1699d4854138" data-who="reckon-build" data-when="2026-10-18T07:40:04.661Z">
+    <div class="r-comment-body"><p>Independent review of r-20261018T063856147181-a-stale-checkpoint-replays-no-old-margin at base 56ab504fe head 1699d4854: the landed change does what §50 asks (a stale checkpoint re-arms in baseline mode, the window read through _follow_history_caps and suppression through runs.read_delivered), the four done-when cases plus the mechanism and mtime cases are asserted and green with a negative control that reddens case (a), and one file — tests/test_writer_callers_second_wave.py — was written outside the declared scope, which the coordinator must record or relocate.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
