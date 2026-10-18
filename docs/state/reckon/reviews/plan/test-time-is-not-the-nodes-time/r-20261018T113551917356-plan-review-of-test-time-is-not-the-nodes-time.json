@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T11:49:34.046Z",
+  "dispatched_at": "2026-10-18T11:36:48Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:56",
+      "id": "reasoning-1",
+      "reason": "as written the control cannot be met by the stated mechanism, and the same blind spot drops every backgrounded gate from the per-lane table \u2014 exactly the long, squeezed gates the plan exists to measure \u2014 so the builder would either fail its own gate or silently substitute a different measurement.",
+      "text": "the third done-when clause controls the timing scan on `r-20261018T084035535944-a-paired-arm-review-names-its-run`, asserting it \"measures that run's after-arm gate within 5% of the 543 s its own log records\", but that gate was launched as a backgrounded Bash call, so the section's own measure \u2014 the summed wall time of the tool calls that run the gate \u2014 records about 120 s, not 543 s (`stream.jsonl` tool_use `call_b32719741f4d4ceaa662134d` returned \"Command did not complete within its 120s timeout and was moved to the background\"; the other arm was launched with `run_in_background: true`, `call_74ea9003c16e408bbb6b458a`).",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8eb4d4e785d8622a33f8efb69297515bf1f3b74adbbdc23cd230a73236b983ff",
+  "plan_slug": "test-time-is-not-the-nodes-time",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T113551917356-plan-review-of-test-time-is-not-the-nodes-time",
+  "reviewed_blob_sha": "02f9fa57c44527e31adcee9ea613fdcf7ffae569",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: `reckon/crew/node.py:1284-1301` (the budget-ceiling refusal), `reckon/crew/routing.py:473` (`resolved_time_ceiling`, reached as `budget_ceiling` from `reckon/crew/dispatch_plan.py:470` into `validate_node`), `reckon/crew/prompts.py:382` and `:701`, `reckon/crew/recovery_stream.py:320` (`_apply_budget_watchdog`) called at `reckon/crew/dispatch_sessions.py:337`, `reckon/schema/flight-defaults.yaml:201-202` (`enforce_budget_watchdog: false`, `budget_grace_multiple: 1.5`), the control run `r-20261018T084035535944-a-paired-arm-review-names-its-run` and its `gate-after.log` (\"in 543.02s\" at line 19), and the crew-observability-truth coordinator ruling for `an-overrun-names-its-cause` (2026-10-03).",
+    "done_when": "pass \u2014 \u00a71's four clauses are measurable (file+line per deadline path, per-lane table with truncated runs by id, both scanners shown a known positive, no file outside the write paths), and a positive control is declared for each scanner.",
+    "evidence_paths": "pass \u2014 the document, the script and the figures sit on durable in-repo paths (`docs/research/`, `scripts/`, `docs/figures/`), none in a scratchpad or run directory.",
+    "naming": "pass \u2014 the deliverable filenames (`how-much-of-a-node-is-its-gate`, `gate_share_of_run_time.py`) and the cited symbols carry no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 \u00a71's root cause matches its cited code and the mechanism. But the timing scan's declared mechanism (summing tool-call wall time) cannot produce the value its own done-when control asserts on the named run.",
+    "single_goal": "pass \u2014 \u00a71 is one read-only investigation whose single deliverable is a research document plus the script that computes it.",
+    "wiring": "pass \u2014 `plan-section-depends-on` resolves `s2` to `test-time-is-not-the-nodes-time#s1`, and the `gate-time-shape` decision now carries `data-sections=\"s2\"` (line 72) so it gates \u00a72 rather than the whole plan."
+  },
+  "section_digests": {
+    "_document": "2db4f914f773c39fa5c0355f5fee5250c02797289c687519a353ee05268ffa98",
+    "s1": "868bda6e17bc64024d14991ce3590822ae5a11b227cdbd9222c1b17f26526747",
+    "s2": "e1683f33056739230ebe8f8cc40375d3a6cce727983bbbca1379cf0b80c058f6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T11:55:38.895806+00:00"
+}
