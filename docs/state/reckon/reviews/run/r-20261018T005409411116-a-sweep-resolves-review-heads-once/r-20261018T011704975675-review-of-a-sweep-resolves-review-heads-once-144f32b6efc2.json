@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "c4264aed4683b9d4c0adb302e7606441d9603e7b",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/obligations.py:375 (_review_duty_item)",
+    "reckon/crew/obligations.py:698 (_review_state_for_run)",
+    "reckon/crew/recovery_review_subject.py:934",
+    "reckon/crew/recovery_review_acceptance.py:152",
+    "reckon/crew_run_commands.py:588",
+    "reckon/crew/obligation_snapshot.py:872 (fleet_state) and :1079 (sweep)",
+    "reckon/ledger.py:1546 (load/_indexed_data) and :1604 (indexed_headers)"
+  ],
+  "completed_at": "2026-10-18T01:28:39.584Z",
+  "dispatched_at": "2026-10-18T01:19:07Z",
+  "findings": [
+    {
+      "file": "tests/test_a_sweep_resolves_review_heads_once.py",
+      "line": "183",
+      "severity": "follow-on",
+      "text": "follow-on: test_one_derivation_builds_the_index_once passes on the base tree, which negative-control/base-tree-counts.log records as the passing first case of \".FF.\", so the ledger index_reuse half of the change is unguarded by any assertion that fails when it is reverted; the negative control satisfies the section only through the two head counts, and the index clause the section also names is not shown to discriminate."
+    }
+  ],
+  "head_log_revision": "144f32b6e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "Read the single landed revision 144f32b6e against base c4264aed; it adds two ContextVar-backed regions and extends _indexed_data and _review_head_and_tree in place, with one test file and one evidence fragment, and touches nothing outside the declared scope.",
+    "done_when": "The done_when requires _index_payload called once and _reviewed_run_head at most once per live run in one fleet_state, and at most once per live run in one sweep; tests/test_a_sweep_resolves_review_heads_once.py asserts all three and gate/head-test.log records 4 passed and EXIT=0.",
+    "goal": "The node's goal is to resolve each live run's reviewed head once and build the ledger run index once inside one derivation and one sweep; reckon/crew/obligation_snapshot.py:884-888 opens both regions around the derivation and lines 1085-1090 wrap the sweep's derivation and its per-session slices.",
+    "manifest": "Read; it names the head gate and its 4 passes, the ruff delta, the base-tree negative control with its 36/42-head counts, and discloses that heads are shared through a region cache rather than a new FleetState field.",
+    "write_paths": "The declared paths are reckon/crew/obligations.py, recovery_review_subject.py, recovery_review_dispatch.py, reckon/ledger.py, reckon/crew/obligation_snapshot.py, the test file, the evidence fragment and the figures directory; every path changed by 144f32b6e is inside that set."
+  },
+  "justifications": {
+    "durability": "the head-resolution counts fail on the base tree, but tests/test_a_sweep_resolves_review_heads_once.py:183 passes at base because that fixture's derivation already builds the index once, so the ledger half of the change has no assertion that reddens if it regresses.",
+    "evidence": "tests/test_a_sweep_resolves_review_heads_once.py:183,194-203,211 assert exactly the counts the done_when names, and negative-control/base-tree-counts.log records the same test failing at base with EXIT=1.",
+    "fit": "reckon/crew/recovery_review_dispatch.py:510-533 and reckon/ledger.py:1373-1397 follow the existing ContextVar region idiom in reckon/resources.py:459-483, names are descriptive and no plan or ticket identifier appears in the diff.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:1374-1397 and :509-533 bound the two resolutions the section's deliverable names, and the later readers of a run are answered from the region the derivation opened.",
+    "reuse": "the search over reckon/ for a region-cache owner found reckon/file_memo.py:43 (a stat-identity parse memo, a different capability) and reckon/resources.py:508 (a resource-scan scope), and both additions extend the function that already owned the capability (_indexed_data, _review_head_and_tree) rather than re-implementing it.",
+    "scope_discipline": "the stat of c4264aed..144f32b6e changes only the five declared paths, and neither obligations.py nor recovery_review_subject.py is touched."
+  },
+  "node": {
+    "id": "review-of-a-sweep-resolves-review-heads-once-144f32b6efc2"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is to resolve each live run's reviewed head once and build the ledger run index once inside one derivation and one sweep; reckon/crew/obligation_snapshot.py:884-888 opens both regions around the derivation and lines 1085-1090 wrap the sweep's derivation and its per-session slices.\nVERDICT done_when: The done_when requires _index_payload called once and _reviewed_run_head at most once per live run in one fleet_state, and at most once per live run in one sweep; tests/test_a_sweep_resolves_review_heads_once.py asserts all three and gate/head-test.log records 4 passed and EXIT=0.\nVERDICT write_paths: The declared paths are reckon/crew/obligations.py, recovery_review_subject.py, recovery_review_dispatch.py, reckon/ledger.py, reckon/crew/obligation_snapshot.py, the test file, the evidence fragment and the figures directory; every path changed by 144f32b6e is inside that set.\nVERDICT manifest: Read; it names the head gate and its 4 passes, the ruff delta, the base-tree negative control with its 36/42-head counts, and discloses that heads are shared through a region cache rather than a new FleetState field.\nVERDICT diff: Read the single landed revision 144f32b6e against base c4264aed; it adds two ContextVar-backed regions and extends _indexed_data and _review_head_and_tree in place, with one test file and one evidence fragment, and touches nothing outside the declared scope.\nCALL_SITES: reckon/crew/obligations.py:375 (_review_duty_item), reckon/crew/obligations.py:698 (_review_state_for_run), reckon/crew/recovery_review_subject.py:934, reckon/crew/recovery_review_acceptance.py:152, reckon/crew_run_commands.py:588, reckon/crew/obligation_snapshot.py:872 (fleet_state) and :1079 (sweep), reckon/ledger.py:1546 (load/_indexed_data) and :1604 (indexed_headers)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:1374-1397 and :509-533 bound the two resolutions the section's deliverable names, and the later readers of a run are answered from the region the derivation opened.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_sweep_resolves_review_heads_once.py:183,194-203,211 assert exactly the counts the done_when names, and negative-control/base-tree-counts.log records the same test failing at base with EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the stat of c4264aed..144f32b6e changes only the five declared paths, and neither obligations.py nor recovery_review_subject.py is touched.\nSCORE durability: 14\nJUSTIFICATION durability: the head-resolution counts fail on the base tree, but tests/test_a_sweep_resolves_review_heads_once.py:183 passes at base because that fixture's derivation already builds the index once, so the ledger half of the change has no assertion that reddens if it regresses.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/recovery_review_dispatch.py:510-533 and reckon/ledger.py:1373-1397 follow the existing ContextVar region idiom in reckon/resources.py:459-483, names are descriptive and no plan or ticket identifier appears in the diff.\nSCORE reuse: 19\nJUSTIFICATION reuse: the search over reckon/ for a region-cache owner found reckon/file_memo.py:43 (a stat-identity parse memo, a different capability) and reckon/resources.py:508 (a resource-scan scope), and both additions extend the function that already owned the capability (_indexed_data, _review_head_and_tree) rather than re-implementing it.\nFINDING tests/test_a_sweep_resolves_review_heads_once.py:183 follow-on: test_one_derivation_builds_the_index_once passes on the base tree, which negative-control/base-tree-counts.log records as the passing first case of \".FF.\", so the ledger index_reuse half of the change is unguarded by any assertion that fails when it is reverted; the negative control satisfies the section only through the two head counts, and the index clause the section also names is not shown to discriminate.",
+  "review_run_id": "r-20261018T011704975675-review-of-a-sweep-resolves-review-heads-once-144f32b6efc2",
+  "reviewed_base_sha": "c4264aed4683b9d4c0adb302e7606441d9603e7b",
+  "reviewed_head_sha": "144f32b6efc2c34c3229d3893487dd7939961a22",
+  "reviewed_run_id": "r-20261018T005409411116-a-sweep-resolves-review-heads-once",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T01:33:03.613579+00:00",
+  "total": 106
+}
