@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T21:16:15.369Z",
+  "dispatched_at": "2026-10-18T21:07:13Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-promotes-only-its-own-verdict.html:63",
+      "id": "done_when-1",
+      "reason": "adding a row known to be correctly attributed and asserting it is not listed is the negative control that lets \u00a72's counts be trusted, and its absence is the one thing \u00a73 would act on wrongly.",
+      "text": "\u00a72's done-when shows only that the census lists a row known to be mismatched (item 2), never that it excludes a correctly-attributed row, so a census that classifies every promoted review as mismatched passes all three items and its per-project counts \u2014 the input \u00a73's design waits on \u2014 are unverified in the over-reporting direction",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "94523410ebe04334eb34d45215eea955ab3f2d83699cb215245aa76c15790a79",
+  "plan_slug": "a-review-promotes-only-its-own-verdict",
+  "plan_version": 12,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-18T21:22:23.473089+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T21:22:23.473089+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-review-promotes-only-its-own-verdict.v12.json",
+  "review_run_id": "r-20261018T210605790720-plan-review-of-a-review-promotes-only-its-own-verdict",
+  "reviewed_blob_sha": "b22ef615c654f32a16251e9390a9856644cde0fa",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves at its stated line (recovery_review_delivery.py:236/222/265, recovery_review_acceptance.py:314 within promote_review_run_itself, promotion_checks.py:1152/2327, recovery_review_dispatch.py:133/153, recovery_review_subject.py:80/102/111, review.py:2541/2584), and the two test lines 147/139 are each the write_paths declaration storing at the legacy review_path; no plan itself declares any href that needs resolving.",
+    "done_when": "a finding \u2014 \u00a72's done-when declares a known positive but no negative control, so a census that over-classifies is not excluded.",
+    "evidence_paths": "pass \u2014 \u00a71's negative-control log lands \"under the run directory\" and the gate log is a durable path; \u00a72's document is committed under docs/research/ and both target directories already exist.",
+    "naming": "pass \u2014 the new symbols follow the repo's behaviour-sentence convention and carry no version, ticket, stage or plan-label token.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (the predicate reads any complete record on the write paths, ignoring head and dispatch time), the \u00a71 mechanism (head-keyed path + head/run-id/mtime conditions in _delivered_review_record) produces its done-when, and every caller it relies on is a real caller of that function.",
+    "single_goal": "pass \u2014 \u00a71 carries one deliverable (delivery names the dispatched head) with the head-keyed path as its definition, and \u00a72 one (a read-only census).",
+    "wiring": "pass \u2014 every relationship resolves: s3 depends-on s2, matching \u00a73's \"deferred until \u00a72 lands\", and \u00a71/\u00a72 declare none because the plan states them independent."
+  },
+  "section_digests": {
+    "_document": "a89ba6e7de39330fc5176496045373dcff7a6d34147d487dbd5acaa0ec842ddd",
+    "s1": "b5cea03aef396e4aea2b2b9c76f01fd0b684b3da7cce27ab57a3fe3cd364801d",
+    "s2": "9a7a73a32c82403b4e6ff8060c2373d41c579ba750a5c1ccedd506a9c1dad3d9",
+    "s3": "18f479da831c1adb4dd53260c6b8c26ddcb1fc069308b21f243d7216647cd6e8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T21:22:13.274779+00:00"
+}
