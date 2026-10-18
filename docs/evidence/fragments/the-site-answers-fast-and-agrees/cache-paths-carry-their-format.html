@@ -6,7 +6,9 @@
     <tbody>
       <tr><td>Alternating writers, three reads per format per cache</td><td>4/4 cases passed; each format built once and reused twice</td></tr>
       <tr><td>Base reproduction</td><td>4/4 cases failed because both formats chose one path</td></tr>
-      <tr><td>Declared negative control: remove format from path</td><td>4/4 cases failed, EXIT=1</td></tr>
+      <tr><td>Declared negative control: remove format from path</td><td>4/4 cases failed; each writer rebuilt three times instead of once, EXIT=1</td></tr>
+      <tr><td>Selected import tests (71 files at head)</td><td>Final head: 670 passed, 4 failed, 1 skipped. Base: 660 passed, 6 failed, 4 errors, 1 skipped. All four head failure IDs also fail at base; zero added.</td></tr>
+      <tr><td>Additional persistence and compliance tests</td><td>53 passed, EXIT=0</td></tr>
       <tr><td>Ruff on changed Python files</td><td>17 existing findings at base and head; 0 added; 4/4 files formatted</td></tr>
     </tbody>
   </table>
