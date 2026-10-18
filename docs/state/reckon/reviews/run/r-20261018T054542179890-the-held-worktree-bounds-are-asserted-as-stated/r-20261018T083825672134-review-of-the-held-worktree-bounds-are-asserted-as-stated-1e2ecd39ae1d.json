@@ -1,0 +1,117 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest's baseline_suite and after_suite fields are empty; the delta was derived from the reviewed run's own arm logs, baseline_suite=base_arm.log at a617367a1 (1 failure) and after_suite=gate-failopen.log at 6c8f66f18 (0 failures), both pytest and both ending in EXIT=. The head gate reports no failing id at all, so added_failure_ids is empty whatever the base's set; the base's single failing id is the test the change repairs. The reviewed head 1e2ecd39a differs from 6c8f66f18 only by the evidence fragment (a docs file), and an independent re-run of the named test file at 1e2ecd39a by this review returned 5 passed with 'held-worktree derivation: posix.stat 521, decoded 0, copy.deepcopy 0', confirming the recorded head result.",
+  "after_suite": {
+    "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/the-held-worktree-bounds-are-asserted-as-stated /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/the-held-worktree-bounds-are-asserted-as-stated/tests/test_the_held_worktree_read_is_bounded.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/the-held-worktree-bounds-are-asserted-as-stated/tests/test_held_worktree_records_match_each_record_once.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/the-held-worktree-bounds-are-asserted-as-stated/tests/test_held_worktrees_read_run_files.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T054542179890-the-held-worktree-bounds-are-asserted-as-stated/gate-failopen.log",
+    "revision": "6c8f66f18"
+  },
+  "assertion_analysis": [
+    {
+      "assertion": "assert counts.deepcopy == 0",
+      "fails_when": "the read-only path deep-copies a document again; reinstating the copy on the derivation path reddens it (base_arm.log measures 500 against the bound 0), so the assertion is independent of any value the test passes in and the counter is measured over the call.",
+      "file": "tests/test_the_held_worktree_read_is_bounded.py",
+      "line": "236"
+    },
+    {
+      "assertion": "assert got == expected, where expected is _whole_ledger_held(root)",
+      "fails_when": "the bounded read answers from a record older than its run file; expected is computed by the whole-ledger scan, an independent source, and negative_control.log shows the case red when the stale snapshot is served.",
+      "file": "tests/test_the_held_worktree_read_is_bounded.py",
+      "line": "373"
+    },
+    {
+      "assertion": "test_a_refused_namings_reader_leaves_each_run_a_candidate asserts got == expected after ledger.runs is monkeypatched to raise, with pytest.raises showing the refusal is real",
+      "fails_when": "the fail-open fallback is removed so the derivation answers with nothing; then got is empty and differs from the whole-ledger expected, so the assertion reddens.",
+      "file": "tests/test_the_held_worktree_read_is_bounded.py",
+      "line": "300"
+    }
+  ],
+  "baseline_suite": {
+    "command": "PYTHONPATH=/tmp/reckon-crew-scratch/r-20261018T054542179890-the-held-worktree-bounds-are-asserted-as-stated/base-dARE /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -s -k 'not stays_a_candidate' /tmp/reckon-crew-scratch/r-20261018T054542179890-the-held-worktree-bounds-are-asserted-as-stated/base-dARE/tests/test_the_held_worktree_read_is_bounded.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 1,
+    "failure_ids": [
+      "tests/test_the_held_worktree_read_is_bounded.py::test_one_derivation_reads_only_the_documents_that_can_change_it"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T054542179890-the-held-worktree-bounds-are-asserted-as-stated/base_arm.log",
+    "revision": "a617367a1"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:_derive_fleet_state",
+    "reckon/crew/obligations.py:_held_worktrees",
+    "reckon/crew/promotion.py:_fleet_state_reading"
+  ],
+  "completed_at": "2026-10-18T08:56:25.379Z",
+  "dispatched_at": "2026-10-18T08:39:10Z",
+  "findings": [
+    {
+      "file": "tests/test_the_held_worktree_read_is_bounded.py",
+      "line": "242",
+      "severity": "follow-on",
+      "text": "the diff base asserted counts.record <= TREE_COUNT (the only documents decoded are the TREE_COUNT that name a tree) and the head replaced it with a print, so a regression that re-decodes every per-run document while keeping the read-only sharing passes the suite; the section asks the stat count to be recorded rather than bounded but says nothing about the decode count, so this guard was dropped without being asked."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "489",
+      "severity": "follow-on",
+      "text": "_run_file_rows re-implements the aggregate-plus-per-run union and its (completed_at, run_id) sort that reckon/ledger.py:1581 load owns and the run_id==stem validation that reckon/ledger.py:1252 _read_run owns, rather than extending a ledger entry point; the fallback must not refuse as load does, so the duplication is defensible, but it is a second implementation of the merge that will drift from the owner."
+    },
+    {
+      "file": "manifest.md",
+      "line": "tests",
+      "severity": "follow-on",
+      "text": "the reviewed manifest's tests field cites head_gate.log as showing 5 passed at ee84a703a, but that log records '4 passed' (the fifth test, test_a_refused_namings_reader_leaves_every_run_a_candidate, lands in 6c8f66f18), so a reader checking the manifest against its own cited log finds them disagree; the 5-passed figure is real at the landed head only, and was confirmed by an independent run at 1e2ecd39a."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commits ee84a703a, e578afce9, 6c8f66f18 and 1e2ecd39a against base cea8c70fe; they change three files - obligations.py (the removed _run_file_record and memoised _aggregate_rows, the new fail-open _run_file_rows and _aggregate_rows, and the fresh-or-fallback branch in _held_worktree_records_read), the bounded-read test (the copy assertion kept, the stat bound recorded, the stale-record and refused-reader tests added) and the evidence fragment - and no other path.",
+    "done_when": "The done_when asserts copy.deepcopy 0 at head failing at base a617367a1, the stat count recorded not bounded, the post-publication retention case answered as the whole-ledger scan, and a negative control on which that case fails; gate-failopen.log records 19 passed at head, base_arm.log fails the copy assertion at a617367a1 (deepcopy 500), the stat count is printed (521) rather than bounded, and negative_control.log fails test_a_run_retaining_a_tree_after_the_index_is_published_is_read.",
+    "goal": "The node's goal is to make the held-worktree read meet and assert the copy and stat bounds its section states; reckon/crew/obligations.py:664-675 routes the screen through the refreshing ledger reader with a fail-open fallback and tests/test_the_held_worktree_read_is_bounded.py:236-246 asserts copy.deepcopy == 0 and records posix.stat 521, so the goal is met.",
+    "manifest": "The source manifest.md records status complete, commits cea8c70fe/ee84a703a/e578afce9/6c8f66f18/1e2ecd39a, changed paths obligations.py and the test and the fragment, the counts (head stat 521 decoded 0 deepcopy 0, base deepcopy 500 stat 519) and the four gate logs, though its baseline_suite and after_suite fields are empty so its suite-delta keys carry no machine-readable arm and its tests field misstates head_gate.log as 'passes 5' where the log reads 4 passed.",
+    "write_paths": "The source brief fences reckon/file_memo.py, reckon/crew/obligations.py, tests/test_the_held_worktree_read_is_bounded.py, a docs/evidence fragment and a docs/figures directory; git diff cea8c70fe..1e2ecd39a changes exactly obligations.py, the bounded-read test and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_held_worktree_read_is_bounded.py:236 fails if the read-only sharing is reverted (base_arm.log shows 500 vs the bound 0), :348-353 fails if the screen again serves the published index (negative_control.log red), and the refused-reader test at :299-325 fails if the fail-open fallback is removed; the deduction is that the diff base's decode bound assert counts.record <= TREE_COUNT was replaced by a print at :242-246, so a change that re-decodes every document without copying now passes.",
+    "evidence": "The gate is recorded at gate-failopen.log (rev 6c8f66f18, 19 passed, EXIT=0) with base_arm.log red on the copy assertion at a617367a1 (deepcopy 500) and negative_control.log red on the stale-record case (EXIT=1), and ruff check / ruff format --check add no findings on the changed Python files; deductions: the manifest's tests field cites head_gate.log as 'passes 5' where that log records 4 passed, and the 'no added failure against base' for the importer files rests on importers_head.log (head only) with no base arm.",
+    "fit": "reckon/crew/obligations.py:474-521 names its helpers by mechanism (_aggregate_rows, _run_file_rows, _run_namings) and follows the sibling readers' style, and no plan, ticket or version identifier appears in the landed source or the test names.",
+    "goal_fidelity": "reckon/crew/obligations.py:664-675 takes the screen's rows from the ledger reader that refreshes per-run records and, when it refuses, reads the documents for itself, and tests/test_the_held_worktree_read_is_bounded.py:236 asserts copy.deepcopy == 0 while :242-246 records the posix.stat count (521) rather than bounding it, so both bounds the section states are delivered and the stale-record defect behind them is repaired.",
+    "reuse": "reckon/crew/obligations.py:489-521 re-implements the union-and-sort of reckon/ledger.py:1581 _read_run/load and the per-run validation of reckon/ledger.py:1252 _read_run rather than extending that owner, though it reuses the owner's primitives (_run_files, read_document, _load_aggregate) and the pre-existing _ledger_order_key, and the fork is justified because ledger.load refuses by design on the very disagreement the fallback must survive.",
+    "scope_discipline": "Every path in git diff cea8c70fe..1e2ecd39a - reckon/crew/obligations.py, tests/test_the_held_worktree_read_is_bounded.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/the-held-worktree-bounds-are-asserted-as-stated.html - lies inside the source brief's declared write paths and no plan meta line or other path changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is to make the held-worktree read meet and assert the copy and stat bounds its section states; reckon/crew/obligations.py:664-675 routes the screen through the refreshing ledger reader with a fail-open fallback and tests/test_the_held_worktree_read_is_bounded.py:236-246 asserts copy.deepcopy == 0 and records posix.stat 521, so the goal is met.\nVERDICT done_when: The done_when asserts copy.deepcopy 0 at head failing at base a617367a1, the stat count recorded not bounded, the post-publication retention case answered as the whole-ledger scan, and a negative control on which that case fails; gate-failopen.log records 19 passed at head, base_arm.log fails the copy assertion at a617367a1 (deepcopy 500), the stat count is printed (521) rather than bounded, and negative_control.log fails test_a_run_retaining_a_tree_after_the_index_is_published_is_read.\nVERDICT write_paths: The source brief fences reckon/file_memo.py, reckon/crew/obligations.py, tests/test_the_held_worktree_read_is_bounded.py, a docs/evidence fragment and a docs/figures directory; git diff cea8c70fe..1e2ecd39a changes exactly obligations.py, the bounded-read test and the fragment, all inside them.\nVERDICT manifest: The source manifest.md records status complete, commits cea8c70fe/ee84a703a/e578afce9/6c8f66f18/1e2ecd39a, changed paths obligations.py and the test and the fragment, the counts (head stat 521 decoded 0 deepcopy 0, base deepcopy 500 stat 519) and the four gate logs, though its baseline_suite and after_suite fields are empty and its tests field misstates head_gate.log as 'passes 5' where the log reads 4 passed.\nVERDICT diff: Read commits ee84a703a, e578afce9, 6c8f66f18 and 1e2ecd39a against base cea8c70fe; they change three files - obligations.py, the bounded-read test and the evidence fragment - and no other path.\nCALL_SITES: reckon/crew/obligation_snapshot.py:_derive_fleet_state, reckon/crew/obligations.py:_held_worktrees, reckon/crew/promotion.py:_fleet_state_reading\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:664-675 takes the screen's rows from the refreshing ledger reader with a document-reading fallback, and tests/test_the_held_worktree_read_is_bounded.py:236-246 asserts copy.deepcopy == 0 and records posix.stat 521, both bounds the section states.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-failopen.log records 19 passed at 6c8f66f18 with base_arm.log and negative_control.log red, but the manifest's tests field cites head_gate.log as 'passes 5' where that log reads 4 passed, and the importer 'no added failure' rests on a head-only log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff cea8c70fe..1e2ecd39a is inside the brief's declared write paths and no plan meta line changed.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_held_worktree_read_is_bounded.py:236 reddens if the read copies (base_arm.log 500) and :373 reddens if the screen serves the stale index (negative_control.log), but the diff base's decode bound assert counts.record <= TREE_COUNT was replaced by a print at :242, dropping a guard.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/obligations.py:474-521 names its helpers by mechanism and matches the sibling readers' style, and no plan or ticket identifier appears in source or test names.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/obligations.py:489-521 re-implements the union-and-sort and per-run validation of reckon/ledger.py:1581 ledger.load and :1252 _read_run rather than extending the owner, though it reuses the owner's primitives and pre-existing _ledger_order_key.\nFINDING tests/test_the_held_worktree_read_is_bounded.py:242 follow-on: the diff base asserted counts.record <= TREE_COUNT and the head replaced it with a print, so a regression that re-decodes every document while keeping the read-only sharing passes the suite.\nFINDING reckon/crew/obligations.py:489 follow-on: _run_file_rows re-implements ledger.load's union-and-sort and _read_run's validation instead of extending a ledger entry point, a defensible but drifting second merge.\nFINDING manifest.md:tests follow-on: the manifest cites head_gate.log as 'passes 5' where the log records 4 passed; the 5-passed figure is real only at the landed head and was confirmed by an independent run.\n",
+  "review_run_id": "r-20261018T083825672134-review-of-the-held-worktree-bounds-are-asserted-as-stated-1e2ecd39ae1d",
+  "reviewed_base_sha": "cea8c70fe4e24d568499d20491fddaed4d420f04",
+  "reviewed_commits": [
+    "ee84a703adb0d0cffa3c64ff95323eab3ff11bdd",
+    "e578afce918c1374b004a6b423af42e08b6cec51",
+    "6c8f66f18c2cd90dac63b2a6721ba09722cc2d2e",
+    "1e2ecd39ae1d067295ecea43c9d7e585ead95059"
+  ],
+  "reviewed_head_sha": "1e2ecd39ae1d067295ecea43c9d7e585ead95059",
+  "reviewed_run_id": "r-20261018T054542179890-the-held-worktree-bounds-are-asserted-as-stated",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T08:59:16.542914+00:00",
+  "total": 101
+}
