@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log, so the added-failure count was not taken",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/mcp_views.py:_attempt_inputs",
+    "reckon/mcp_views.py:section_attempts_by_plan",
+    "reckon/mcp_views.py:section_attempt_count",
+    "reckon/roadmap.py:2591",
+    "reckon/crew/routing.py:299"
+  ],
+  "completed_at": "2026-10-18T00:13:25.578Z",
+  "dispatched_at": "2026-10-18T00:07:55Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "1498",
+      "severity": "follow-on",
+      "text": "follow-on: the return annotation of _attempt_inputs still declares list[Any] for its first element, which is now the dict[str, Any] returned by ledger.index_state_stamp, so a reader following the annotation is told the stamp is a positional list, which is exactly the shape this node removed and _attempt_state no longer expects."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base 2dc7f5677; 33ce96405 introduces index_state_stamp and the name-keyed comparison, e3f34aad4 folds a prior review's reuse finding by moving both onto the single owner ledger._index_stamp_members.",
+    "done_when": "the done_when names tests/test_the_attempt_memo_names_its_stamp_members.py with a base-arm control; manifest.md records 5 passed EXIT=0 and my re-run at e3f34aad4 returned 5 passed EXIT=0, and neg-control-base.log:1 shows the base arm failing 1 test EXIT=1.",
+    "goal": "the node's goal is to make the attempts memo compare the ledger index stamp members by name rather than by a positional slice; reckon/mcp_views.py:1559 builds the memo's comparison as a name-keyed tuple from the record reckon/ledger.py:1166 index_state_stamp returns.",
+    "manifest": "read; status complete, commits 33ce96405 and e3f34aad4, tests recorded as 5 passed EXIT=0 over the named gate, test_logs names head-gate.log, neg-control-base.log, related-tests.log and ruff.log.",
+    "write_paths": "the dispatch fenced reckon/mcp_views.py, reckon/ledger.py, tests/test_the_attempt_memo_names_its_stamp_members.py and the landing fragment, and the resume advice added tests/test_the_attempts_derivation_is_cached.py; the diff touches exactly those and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_attempt_memo_names_its_stamp_members.py:93 fails at base (the inserted member pushes runs_identity out of the four-member slice), and :150 fails if a member added to the set stops reaching the memo.",
+    "evidence": "head-gate.log:1 names revision e3f34aad4 and reports 5 passed EXIT=0, and neg-control-base.log:1 shows the same test failing at base with assert 1 == 2 EXIT=1.",
+    "fit": "the added names ledger._index_stamp_members and index_state_stamp carry no plan or ticket token, but the unchanged return annotation at reckon/mcp_views.py:1498 still declares list[Any] for a value that is now a mapping.",
+    "goal_fidelity": "reckon/mcp_views.py:1559 reads the stamp members by name out of the mapping ledger.py:1166 returns, so the positional stamp[0][:4] slice the goal names is gone.",
+    "reuse": "reckon/ledger.py:1127 index_stamp and :1166 index_state_stamp both render the one member set owned by _index_stamp_members, so the re-listing a prior review flagged is gone and no capability is forked.",
+    "scope_discipline": "every path in the base..head diff is one of the fenced write paths, with tests/test_the_attempts_derivation_is_cached.py granted at resume."
+  },
+  "node": "review-of-the-attempt-memo-names-its-stamp-members-e3f34aad42c9",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the attempts memo compare the ledger index stamp members by name rather than by a positional slice; reckon/mcp_views.py:1559 builds the memo's comparison as a name-keyed tuple from the record reckon/ledger.py:1166 index_state_stamp returns.\nVERDICT done_when: the done_when names tests/test_the_attempt_memo_names_its_stamp_members.py with a base-arm control; manifest.md records 5 passed EXIT=0 and I re-ran that file at e3f34aad4 for 5 passed EXIT=0, and neg-control-base.log:1 shows the base arm failing 1 test EXIT=1.\nVERDICT write_paths: the dispatch fenced reckon/mcp_views.py, reckon/ledger.py, tests/test_the_attempt_memo_names_its_stamp_members.py and the landing fragment, and the resume advice added tests/test_the_attempts_derivation_is_cached.py; the diff touches exactly those and nothing else.\nVERDICT manifest: read; status complete, commits 33ce96405 and e3f34aad4, tests recorded as 5 passed EXIT=0 over the named gate, test_logs names head-gate.log, neg-control-base.log, related-tests.log and ruff.log.\nVERDICT diff: read commit by commit against base 2dc7f5677; 33ce96405 introduces index_state_stamp and the name-keyed comparison, e3f34aad4 folds a prior review's reuse finding by moving both onto the single owner ledger._index_stamp_members.\nCALL_SITES: reckon/mcp_views.py:_attempt_inputs, reckon/mcp_views.py:section_attempts_by_plan, reckon/mcp_views.py:section_attempt_count, reckon/roadmap.py:2591, reckon/crew/routing.py:299\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:1559 reads the stamp members by name out of the mapping ledger.py:1166 returns, so the positional stamp[0][:4] slice the goal names is gone.\nSCORE evidence: 19\nJUSTIFICATION evidence: head-gate.log:1 names revision e3f34aad4 and reports 5 passed EXIT=0, and neg-control-base.log:1 shows the same test failing at base with assert 1 == 2 EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the base..head diff is one of the fenced write paths, with tests/test_the_attempts_derivation_is_cached.py granted at resume.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_attempt_memo_names_its_stamp_members.py:93 fails at base (the inserted member pushes runs_identity out of the four-member slice), and :150 fails if a member added to the set stops reaching the memo.\nSCORE fit: 18\nJUSTIFICATION fit: the added names ledger._index_stamp_members and index_state_stamp carry no plan or ticket token, but the unchanged return annotation at reckon/mcp_views.py:1498 still declares list[Any] for a value that is now a mapping.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/ledger.py:1127 index_stamp and :1166 index_state_stamp both render the one member set owned by _index_stamp_members, so the re-listing a prior review flagged is gone and no capability is forked.\nFINDING reckon/mcp_views.py:1498 follow-on: the return annotation of _attempt_inputs still declares list[Any] for its first element, which is now the dict[str, Any] returned by ledger.index_state_stamp, so a reader following the annotation is told the stamp is a positional list, which is exactly the shape this node removed and _attempt_state no longer expects.",
+  "review_run_id": "r-20261018T000704813706-review-of-the-attempt-memo-names-its-stamp-members-e3f34aad42c9",
+  "reviewed_base_sha": "2dc7f5677f47b3ef3b022f57114f650129680d87",
+  "reviewed_head_sha": "e3f34aad42c9f99c99161efecffad9a42c6d4ce4",
+  "reviewed_run_id": "r-20261017T233051496152-the-attempt-memo-names-its-stamp-members",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T00:12:04.823137+00:00",
+  "total": 116
+}
