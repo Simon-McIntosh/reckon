@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T14:24:06.352Z",
+  "dispatched_at": "2026-10-18T14:11:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-fleet-node-stays-in-service.html:285",
+      "id": "wiring-1",
+      "reason": "the followup is the dispatch instruction, so a section absent from it is work that never reaches a worker.",
+      "text": "\u00a79 is an implementable 1.5-hour node with no place in the plan's own graph: no `data-links`, no gate, and the driving followup's wave and ordering name \u00a72, \u00a73, \u00a74, \u00a75, \u00a76, \u00a77 and \u00a78 but never \u00a79, so a coordinator dispatching from `f-tfnsis-001` would never schedule it",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-fleet-node-stays-in-service.html:244",
+      "id": "reasoning-1",
+      "reason": "\u00a76's \"declaration above the ceiling routed to its own job\" cannot be built without the ceiling value, so a node reading its section as un-decided stops on a decision that is already made.",
+      "text": "\u00a76 states the default and the ceiling are \"the open decision `worker-step-memory` below\", but the decisions block at line 333 now carries `data-choice=\"24G-default-48G-ceiling\"`, `data-by` and `data-when` and the 24G/48G option marked `chosen`; the section therefore tells a reader to await a lead decision the plan has already locked",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-fleet-node-stays-in-service.html:96",
+      "id": "reasoning-2",
+      "reason": "the count and range are the population the memory bound and the 48 GB ceiling are argued from, and \u00a71 as written contradicts both \u00a76 and the scheduler's record.",
+      "text": "\u00a71 records \"four Python processes with 52\u201359 GB resident, each in its own worker step\" killed at the job-level limit, but \u00a76 (line 219) attributes them to two runs across three steps (5614, 5621, 5700), and `sacct -j 1281970` shows exactly three OOM steps (5614 51,742,948K; 5621 55,564,480K; 5700 58,808,596K), with 5614 below the stated 52 GB floor; four steps of 52\u201359 GB also exceed the job's whole 96 GB allocation (`scontrol show job 1281970` \u2192 `AllocTRES=\u2026mem=96G`), the figure \u00a76's sizing rests on",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-fleet-node-stays-in-service.html:279",
+      "id": "done_when-1",
+      "reason": "without an arm that drives the node to `DRAIN`, the node's single measure of success cannot fail for the reason it exists.",
+      "text": "\u00a78's done-when (\"the new node's state is `ALLOCATED` without `DRAIN` after the first wave of worker stops\") names no negative control, so nothing in the node shows the state reading can see a `DRAIN` at all \u2014 a false `ALLOCATED` and a true one are indistinguishable",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9593a7c713b5efff591e6850d5a4fd68dbddd250ba09c5bd0bb644c0a46289ba",
+  "plan_slug": "the-fleet-node-stays-in-service",
+  "plan_version": 7,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T135440337391-plan-review-of-the-fleet-node-stays-in-service",
+  "reviewed_blob_sha": "3332880471a6e1c69ae9bf65e378bba73cb40922",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited module (`dispatch_launch.py`, `supervisor_main.py`, `process_signal.py`, `fleet_node.py`, `placement.py`, `recovery_watch.py`, `runs.py`), line anchor (`dispatch_launch.py:2078` = `def _start_supervisor`, `:2860\u20132884`/`:2936\u20132963` = the stop and terminal-grace paths, `placement.py:233` = `def step_prefix`, `fleet_node.py:358` = `def placement_argv`, `runs.py:705`/`:720` inside the live-listing path), evidence file, figure and cited commit (`66610d127`, `2bb703ece`, `517c1d32373b` all resolve) exists; the prose-valued `r-gate-evidence` hrefs are the house convention (that value renders as text, per `docs/evidence/fragments/lane-and-model-routing/gate-evidence-renders-as-written.html`), not a broken link.",
+    "done_when": "a finding \u2014 \u00a78 (line 279) declares no negative control; every other implementable node names one (\u00a73 line 171, \u00a74 line 198, \u00a75 line 212, \u00a76 line 248, \u00a79 line 311).",
+    "evidence_paths": "pass \u2014 gate and investigation evidence lands under `docs/evidence/fragments/the-fleet-node-stays-in-service/` and `docs/evidence/archive/the-fleet-node-stays-in-service-landed.html`; \u00a73 records to the run directory; no session scratchpad or node-local path is named.",
+    "naming": "pass \u2014 the sections name mechanism (`step_prefix`, `placement_argv`, `memory_gb`, `--mem`), no plan label, stage name, ticket number or version tag reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 \u00a76 (line 244) calls `worker-step-memory` \"the open decision \u2026 below\" while the decisions block (line 333) now records it locked with `data-choice=\"24G-default-48G-ceiling\"`; and \u00a71's OOM population (line 96) does not match \u00a76's own and the scheduler's record.",
+    "single_goal": "pass \u2014 each node names one deliverable; \u00a74's pairing of the migrate fix with the one-string status rewording was raised by an earlier review and declined, and the plan has not changed that scope since.",
+    "wiring": "a finding \u2014 \u00a79 (`s9`) is implementable but carries no `data-links`, no gate, and is named in no relationship; the driving followup `f-tfnsis-001` (line 356) enumerates the wave and the ordering (\"\u00a72, \u00a74, \u00a76 and \u00a77 \u2026 \u00a73 waits on the \u00a72 gate, and \u00a75 on \u00a74. \u00a78 waits on the move-ready gate\") and omits \u00a79 entirely."
+  },
+  "section_digests": {
+    "_document": "bd73ac7bd1bddd2c0c4faba0bbf6eaa7c567a2613c68809ef4d970bee646bc82",
+    "s1": "600cb64faef5767f73d860ed9e70a11bdff957b9eb929ff957aaf20e7aaedef7",
+    "s2": "6155f820ac9515ec6066931aa10a1e66fdcff1b4184ba4014c19c572b1e6dfe6",
+    "s3": "2cb481d156747fffcc333364251970f82823dcf8ed5fb1b85f1f03d49a2395df",
+    "s4": "f7b38e78e6c15ee255582765714f19819bb2c1e3ba9be956538ed4cbebf35b4d",
+    "s5": "d4f488d07892837dc407622ba39c93de73227ef500f14b72a58ef244b3118a2c",
+    "s6": "c24e764022d016649916eca1055d40a71e58111a38bbe6a7c18e2ed11d8fe953",
+    "s7": "3a45b0d0d40cbd44ec6f8209f8a125004c44cc3cdccfb33e97882ef8331f7d70",
+    "s8": "eb2fb9fcc72be96e074c705a111e8a1693e50277fcbe75ce2468a02731f0d16f",
+    "s9": "f575efb8382bf8f279ec8c873642e49846c5abb7b4124831a6b834bc3b8756c8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T14:27:08.266926+00:00"
+}
