@@ -719,13 +719,13 @@ def _write_access_line(line: str, path: Path | None = None) -> None:
 def _bound_server_log(path: Path | None = None, *, bound: int | None = None) -> bool:
     """Move an over-bound served log to one predecessor and empty the live file.
 
-    Returns True when a rotation happened. The predecessor is written to a
-    staging path and moved into place, so a reader never sees a half-copied
-    ``.1``; only then is the live file emptied. The copy and the empty both run
-    under the lock every access line takes, so no line can land between them and
-    be lost to the empty. The copy-then-empty ordering also keeps the content: a
-    crash between the two leaves the predecessor whole and the live file still
-    carrying it.
+    Returns True when a rotation happened. The predecessor is published through
+    the shared atomic writer, so a reader never sees a half-copied ``.1`` and no
+    private staging file is kept beside this one; only then is the live file
+    emptied. The copy and the empty both run under the lock every access line
+    takes, so no line can land between them and be lost to the empty. The
+    copy-then-empty ordering also keeps the content: a crash between the two
+    leaves the predecessor whole and the live file still carrying it.
     """
 
     target = _server_log_path() if path is None else path
@@ -740,9 +740,12 @@ def _bound_server_log(path: Path | None = None, *, bound: int | None = None) -> 
         try:
             if target.stat().st_size <= limit:
                 return False
-            staging = predecessor.with_name(predecessor.name + ".tmp")
-            shutil.copyfile(target, staging)
-            os.replace(staging, predecessor)
+
+            def stage_live(handle) -> None:
+                with target.open("rb") as source:
+                    shutil.copyfileobj(source, handle)
+
+            write_atomically(predecessor, stage_live, binary=True)
             with target.open("wb"):
                 pass
         except OSError as exc:
