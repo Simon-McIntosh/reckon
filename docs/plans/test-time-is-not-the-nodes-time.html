@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="test-time-is-not-the-nodes-time">
+  <meta name="plan-title" content="Test Time Is Not The Node's Time">
+  <meta name="plan-summary" content="Workers cut their gates short to meet a deadline that counts test runs as work; time spent running a declared gate should not count against a node's budget.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="3.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-standalone" content="It changes how a node's own time budget is stated and accounted; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s2&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;]}">
+  <title>Test Time Is Not The Node's Time | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-18">
+<meta name="plan-north-star" content="unattended-execution">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Measure what a node's time budget controls, and how much of it the gates spend</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> On 2026-10-18 nova's lead directed that "test work should not count as timing towards the node's work". nova reports that most blocking review findings that day, on both lanes, came from gates squeezed to fit the 60-minute fence. Workers ran suites in-process under <code>timeout 480</code> or <code>timeout 560</code>, cut them off at 75 of 104 tests, skipped baseline arms, or let jobs reach their limit.</p>
+<p>What the budget controls, as read from the code on 2026-10-18:</p>
+<ul>
+<li>At dispatch, <code>validate_node</code> refuses a declared budget above the flight's <code>fences.time_budget</code> (<code>reckon/crew/node.py</code>, around line 1293; the fence is read by <code>resolved_time_ceiling</code>, <code>reckon/crew/routing.py:473</code>).</li>
+<li>The worker's prompt states a deadline, its launch instant plus the budget (<code>time_fence_statement</code>, <code>reckon/crew/prompts.py:382</code>). It tells the worker to stop as blocked when "the time budget is spent with the measure still unmet" (line 701).</li>
+<li>Classification reports <code>budget_overrun</code> and its cause after the fact (<code>reckon/crew/recovery_stream.py</code>).</li>
+</ul>
+<p>No code path found so far stops a run at its deadline. If none does, workers cut their own gates to meet a deadline they are told to keep, and the remedy is to change the deadline they are given, not to pause anything.</p>
+<p><strong>Deliverable.</strong> A read-only investigation that writes <code>docs/research/how-much-of-a-node-is-its-gate.html</code>. It answers two questions:</p>
+<ul>
+<li>Does anything stop, cut short or penalise a run when it passes its deadline? The places to check are the supervisor, the watch and sweep, the review and repair reflexes, the picker's outcome and run-time readers, and the review rubric. The answer names each such path with its file and line, or says there is none.</li>
+<li>How much of a run's wall time is its gates? Over the worker streams of implement runs in every mounted project in the 14 days to the run, sum the wall time of tool calls that run the node's declared gate or a test command (pytest, ctest, a declared gate script) as a share of the run's wall time, per lane. Also count the runs whose gate was visibly truncated: a <code>timeout</code> prefix on the test command, <code>-x</code> or <code>--maxfail</code>, a partial test count, or a skipped baseline arm.</li>
+</ul>
+<p>It changes no code.</p>
+<p><strong>Write paths.</strong> <code>docs/research/how-much-of-a-node-is-its-gate.html</code>, which is new, and its figures under <code>docs/figures/how-much-of-a-node-is-its-gate</code>.</p>
+<p><strong>Done when</strong> all three of these hold:</p>
+<ul>
+<li>The document answers the first question with a file and line for every path that acts on a deadline, or states that none does, naming the readers it checked.</li>
+<li>It answers the second with a table per lane: runs, median gate share of wall time, and runs with a truncated gate. Every figure is read at a stated time, from streams it names by count and date range.</li>
+<li>The script that computed it sits in the run directory, the document names it and its command, and no file outside the write paths changes.</li>
+</ul>
+
+    <h2 id="s2">§2 — Time spent running a declared gate does not count against the node's budget</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
+<p><strong>Why.</strong> This carries out the lead's directive once §1 has said what the budget actually controls. It is deferred until §1 lands and the decision <code>gate-time-shape</code> is locked, because the two candidate shapes differ in what they build.</p>
+<ul>
+<li><strong>A stated gate allowance.</strong> Dispatch takes a gate allowance beside the work budget. The fence applies to the work budget only. The worker's stated deadline becomes launch plus work budget plus gate allowance, and the prompt says the allowance is for running the declared gate and its base arm in full. Nothing pauses at run time. This fits if §1 finds that nothing enforces the deadline.</li>
+<li><strong>A gate verb.</strong> The worker runs its gate through a reckon verb, for example <code>reckon crew gate run -- &lt;command&gt;</code>. The supervisor excludes that time from the budget and records the gate's wall time separately on the run. This fits if §1 finds that something does act on the deadline.</li>
+</ul>
+<p>Under either shape the gate's wall time is still recorded as a cost the picker can read, so Jev keeps seeing what a node costs. Until §2 lands, nova's briefs size <code>--time-budget</code> as the work plus the gate's wall time, and split nodes with more than three done-when clauses.</p>
+<p>The done-when, write paths and negative control are written once §1 has landed and the decision is locked, and the section is then reviewed before it is built.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="gate-time-shape" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How does a node's gate stop counting against its time budget?</p>
+    <p class="r-dec-ctx">Decide after §1 reports whether anything acts on a run's deadline. A stated gate allowance changes only what dispatch accepts and what the worker is told. A gate verb adds a new command and supervisor accounting.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="gate-allowance">A stated gate allowance extends the worker's deadline</button>
+      <button class="r-opt" data-value="gate-verb">A reckon gate verb whose time the supervisor excludes and records</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ttintt-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build test-time-is-not-the-nodes-time §1">
+    <h4 class="r-fu-title">Measure what a node's time budget controls and how much of it the gates spend</h4>
+    <div class="r-fu-body"><p>Filed at nova's lead's request: test work should not count against a node's time. §1 measures first; §2 and the decision gate-time-shape follow its result.</p></div>
+    <pre class="r-fu-prompt">/reckon-build test-time-is-not-the-nodes-time §1</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+</section>
+</main>
+</body>
+</html>
