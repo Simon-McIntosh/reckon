@@ -1,0 +1,26 @@
+<section id="a-queued-request-arranges-its-follower" class="evidence-fragment">
+  <h2>A queued request arranges its session's follower</h2>
+  <p>
+    A held dispatch previously stored its queued pointer and returned before
+    ensuring the producer or asking the calling session host for a follower.
+    The new FIFO-backed regression reproduced both effects: the host received
+    no request, and the first admission pass launched no run.
+  </p>
+  <p>
+    The held and launching paths now use one helper to ensure the producer and
+    ask the calling session host. A queued request leaves its session attached
+    before dispatch returns, so the first admission pass can launch it.
+  </p>
+  <p id="a-queued-request-arranges-its-follower-measure">
+    Measure: the focused gate reports <strong>2 passed</strong> at the committed
+    head, and removing the queue branch's helper call makes both cases fail
+    (<strong>2 failed</strong>, <code>EXIT=1</code>). Ruff adds no findings and
+    both changed Python files pass format checking. Across 80 direct importer
+    files, the complete base arm reports 6 failed, 569 passed, 1 skipped; the
+    head arm, including the new regression, reports 5 failed, 572 passed,
+    1 skipped. One failed test id appears only at the head:
+    <code>tests/test_the_review_reflex_asks_before_it_requeues.py::test_no_alternative_lane_still_re_queues_on_the_local_lane</code>.
+    Its watcher cleanup could not acquire the registration lock, so the
+    zero-added-failures gate remains unmet.
+  </p>
+</section>
