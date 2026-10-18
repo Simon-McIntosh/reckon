@@ -1,0 +1,79 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T23:45:59.513Z",
+  "dispatched_at": "2026-10-18T23:40:59Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-never-reverts-the-checkout.html:93",
+      "id": "reasoning-1",
+      "reason": "the named mechanism cannot yield the refusal the section demands and already exists on the real caller path, so a node built from this section would either reimplement a working guard or stall on a blocking lock instead of refusing, and the builder needs the section rewritten before it can land a guard that fires.",
+      "text": "\u00a73's deliverable names `_pointer_lock` (`reckon/crew/runs.py:316`) as the run-wide claim, but that lock is a plain blocking `fcntl.flock(LOCK_EX)` whose lock file carries no holder identity, while the bullet at line 95 requires the second promotion to \"refuse at once without writing, naming the holder\" \u2014 a blocking lock waits rather than refusing, and there is no holder name to report; and the same lock already wraps the whole of `promotion.complete` (`reckon/crew/promotion.py:197`), the path `promote_review_run_itself` reaches through `complete` (`recovery_review_acceptance.py:322`), so the claim \u00a73 proposes to add is the serialization the base already holds",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-reverts-the-checkout.html:100",
+      "id": "done_when-1",
+      "reason": "a control whose red comes from behaviour the base already has measures nothing about \u00a73's new guard, so the node's whole done-when rests on a case that does not test the change.",
+      "text": "the negative control asserts \"At the base revision, nothing refuses the second promotion\", but at the base revision a second concurrent `promotion.complete` for one run blocks on the pointer lock held by the first (`promotion.py:197`) and then reports `\"already_promoted\": True` (`promotion.py:792`), so the claim case is red for a pre-existing serialization rather than for the guard \u00a73 adds, and the sibling done-when bullet's assertion that the loser \"refuses ... naming the holder\" cannot be satisfied by the cited lock",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "79dd967cee26b81007e18d00aaa61ec514332d7f244f6deaabdc47638b7ff79d",
+  "plan_slug": "a-landing-never-reverts-the-checkout",
+  "plan_version": 26,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-18T23:48:00.627021+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-18T23:48:07.308735+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T23:48:07.308735+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T23:48:00.627021+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-landing-never-reverts-the-checkout.v26.json",
+  "review_run_id": "r-20261018T234017735492-plan-review-of-a-landing-never-reverts-the-checkout",
+  "reviewed_blob_sha": "215802754fca7ce7fc7851764f594f4395c173e0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_pointer_lock` resolves to `reckon/crew/runs.py:316`, `promote_review_run_itself` exists (`recovery_review_acceptance.py:248`), `promotion.complete` exists (`promotion.py:143`), and the four named test files all exist.",
+    "done_when": "a finding \u2014 \u00a73's negative control claims the base revision refuses nothing, but the cited lock already spans the promotion.",
+    "evidence_paths": "pass \u2014 \u00a73's negative-control log is placed \"under the run directory\", a durable path, not a scratch or node-local temporary directory.",
+    "naming": "pass \u2014 \u00a73's new symbols are mechanism-named (`test_one_promotion_of_a_run_at_a_time.py`, `promote_review_run_itself`) with no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 the mechanism cannot produce the done-when, and the lock it names already does the job it is claimed to add.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable, \"one promotion of a run at a time\"; the three bullets are facets of that single claim, closable on one verdict.",
+    "wiring": "pass \u2014 the changed \u00a73 declares only `s3 -> s1` (plan.html:24), \u00a71 is `done`, and the chosen fix (case 1, a per-run promotion claim) relies on no \u00a72 mechanism, so no missing or misdirected edge."
+  },
+  "section_digests": {
+    "_document": "479ad99e4e7ec690c76f853bbaa2d01eaa1b8f0a44a8f6ce0f762821bdb2dd5c",
+    "s1": "ee9b8c30fd2d5b2dfb1dc7d01e8045c3f8d91294fd8bfd32b710f64690ad3daf",
+    "s2": "23098dde0aefcf0425da2867612f3318289f1d02963bc3243cc25d95d0ac066b",
+    "s3": "a729f1cdc094f6ab0e782c75e3662f156e1286241b64993b04ecab2b7e8528d1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T23:47:56.470180+00:00"
+}
