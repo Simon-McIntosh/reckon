@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:751",
+    "reckon/crew/promotion.py:1350",
+    "reckon/crew/promotion_gate.py:960",
+    "reckon/crew/promotion_release.py:635"
+  ],
+  "completed_at": "2026-10-18T22:23:19.682Z",
+  "dispatched_at": "2026-10-18T22:10:01Z",
+  "findings": [
+    {
+      "file": "tests/test_a_landing_checks_what_it_left.py",
+      "line": "219",
+      "text": "follow-on: 'assert recorded == release' compares the value _record_release_on_ledger returned against the very dict the test passed in as release=<same dict>, so the two sides move together and the assertion holds whatever the function does; the no-change rule it is placed to guard is carried instead by the independent line 221 ('assert _head(repository) == after_first')."
+    },
+    {
+      "file": "reckon/crew/promotion_release.py",
+      "line": "635",
+      "text": "follow-on: the release landing's _commit_landing_writes result is discarded, so a staged reversal or a post-commit mismatch found while landing the release outcome is written to landing.json but never printed to stderr and never reaches any receipt, unlike the two promotion call sites that wrap the call in _report_landing_check."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/promotion.py:751, reckon/crew/promotion.py:1350, reckon/crew/promotion_gate.py:960, reckon/crew/promotion_release.py:635",
+    "diff": "read ef8d39c1 against base 88d10cb5 commit by commit; five files, +665/-78, carrying the two checks and the landing-record appends in promotion_scope.py, the receipt/stderr reporting in promotion.py, and promotion_release.py losing its inline stage/no-change/commit/rollback block and its _git import.",
+    "done_when": "the done_when names the six cases in tests/test_a_landing_checks_what_it_left.py plus the five-file pytest gate; after-suite.log records '27 passed in 195.76s' EXIT=0 at ef8d39c1 and baseline-suite.log '21 passed in 148.92s' EXIT=0 at 88d10cb5, and negative-control-base.log names the five cases by id at the base revision (5 failed, 1 passed, EXIT=1).",
+    "goal": "the node goal is to make every landing check its paths before staging and after committing and record every refusal and rollback in the run directory; reckon/crew/promotion_scope.py:2099 _commit_landing_writes now brackets its commit with _staged_reversals (line 1879) and _landing_path_mismatches (line 1918) and appends every attempt to run_dir(run_id)/landing.json (LANDING_RECORD_NAME, line 1762).",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T213033460177-a-landing-checks-what-it-left/manifest.md; status complete, commit ef8d39c1, tests '27 passed in 195.76s, EXIT=0', baseline_suite 0 failures and after_suite 0 failures (so 0 added failures), negative control 5 failed / 1 passed; I read all three logs and each recorded number matches that log's own summary line.",
+    "write_paths": "read the reviewed manifest's declared paths; git show --stat ef8d39c1 changes reckon/crew/promotion_scope.py, reckon/crew/promotion_release.py, reckon/crew/promotion.py, tests/test_a_landing_checks_what_it_left.py and docs/evidence/fragments/a-landing-never-reverts-the-checkout/a-landing-checks-what-it-left.html, every one inside the declared list (the declared docs/figures path is unused, which the dispatch permitted)."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_checks_what_it_left.py:87 would redden if _staged_reversals stopped reporting (it asserts the two reversal paths by name against a commit id it reads from git itself), but line 219 compares the returned value against the dict the test passed in.",
+    "evidence": "the done_when's gate is tests/test_a_landing_checks_what_it_left.py; after-suite.log (head, ef8d39c1) reads '27 passed in 195.76s' EXIT=0 against baseline-suite.log (base, 88d10cb5) '21 passed in 148.92s' EXIT=0, and negative-control-base.log records the five red case ids at base.",
+    "fit": "reckon/crew/promotion_scope.py:1779 _append_landing_record follows the file's existing run-directory record idiom (compare promotion.py:1411 discard_record_path) and reuses _store.write_json_atomically; every new name states a mechanism and carries no plan, issue or version label.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:2099 _commit_landing_writes performs both checks the goal names and records every refusal, and reckon/crew/promotion_release.py:635 routes the release outcome through it, though the release caller discards the check result rather than reporting it.",
+    "reuse": "the additions extend the owner (reckon/crew/promotion_scope.py:2099 _commit_landing_writes) rather than forking it and make promotion_release.py call that owner; a search over reckon/ for an append-to-JSON-list owner and for a landing-reversal check found none (only the unrelated watch-stream _append_rows, reckon/crew/lift_watch.py:148).",
+    "scope_discipline": "git show --stat ef8d39c1 lists only the four declared source/test paths plus the permitted evidence fragment, and promotion_gate.py:960 needed no edit because the function signature is unchanged."
+  },
+  "node": "review-of-a-landing-checks-what-it-left-ef8d39c1ed03",
+  "node:reviewed": "a-landing-checks-what-it-left",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make every landing check its paths before staging and after committing and record every refusal and rollback in the run directory; reckon/crew/promotion_scope.py:2099 _commit_landing_writes now brackets its commit with _staged_reversals (line 1879) and _landing_path_mismatches (line 1918) and appends every attempt to run_dir(run_id)/landing.json (LANDING_RECORD_NAME, line 1762).\nVERDICT done_when: the done_when names the six cases in tests/test_a_landing_checks_what_it_left.py plus the five-file pytest gate; after-suite.log records '27 passed in 195.76s' EXIT=0 at ef8d39c1 and baseline-suite.log '21 passed in 148.92s' EXIT=0 at 88d10cb5, and negative-control-base.log names the five cases by id at the base revision (5 failed, 1 passed, EXIT=1).\nVERDICT write_paths: read the reviewed manifest's declared paths; git show --stat ef8d39c1 changes reckon/crew/promotion_scope.py, reckon/crew/promotion_release.py, reckon/crew/promotion.py, tests/test_a_landing_checks_what_it_left.py and docs/evidence/fragments/a-landing-never-reverts-the-checkout/a-landing-checks-what-it-left.html, every one inside the declared list (the declared docs/figures path is unused, which the dispatch permitted).\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T213033460177-a-landing-checks-what-it-left/manifest.md; status complete, commit ef8d39c1, tests '27 passed in 195.76s, EXIT=0', baseline_suite 0 failures and after_suite 0 failures (so 0 added failures), negative control 5 failed / 1 passed; I read all three logs and each recorded number matches that log's own summary line.\nVERDICT diff: read ef8d39c1 against base 88d10cb5 commit by commit; five files, +665/-78, carrying the two checks and the landing-record appends in promotion_scope.py, the receipt/stderr reporting in promotion.py, and promotion_release.py losing its inline stage/no-change/commit/rollback block and its _git import.\nCALL_SITES: reckon/crew/promotion.py:751, reckon/crew/promotion.py:1350, reckon/crew/promotion_gate.py:960, reckon/crew/promotion_release.py:635\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:2099 _commit_landing_writes performs both checks the goal names and records every refusal, and reckon/crew/promotion_release.py:635 routes the release outcome through it, though the release caller discards the check result rather than reporting it.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when's gate is tests/test_a_landing_checks_what_it_left.py; after-suite.log (head, ef8d39c1) reads '27 passed in 195.76s' EXIT=0 against baseline-suite.log (base, 88d10cb5) '21 passed in 148.92s' EXIT=0, and negative-control-base.log records the five red case ids at base.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat ef8d39c1 lists only the four declared source/test paths plus the permitted evidence fragment, and promotion_gate.py:960 needed no edit because the function signature is unchanged.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_landing_checks_what_it_left.py:87 would redden if _staged_reversals stopped reporting (it asserts the two reversal paths by name against a commit id it reads from git itself), but line 219 compares the function's return against the very dict the test passed in.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion_scope.py:1779 _append_landing_record follows the file's existing run-directory record idiom (compare promotion.py:1411 discard_record_path) and reuses _store.write_json_atomically; every new name states a mechanism and carries no plan, issue or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the additions extend the owner (reckon/crew/promotion_scope.py:2099 _commit_landing_writes) rather than forking it and make promotion_release.py call that owner; a search over reckon/ for an append-to-JSON-list owner and for a landing-reversal check found none (only the unrelated watch-stream _append_rows, reckon/crew/lift_watch.py:148).\nFINDING tests/test_a_landing_checks_what_it_left.py:219 follow-on: 'assert recorded == release' compares the value _record_release_on_ledger returned against the very dict the test passed in as release=<same dict>, so the two sides move together and the assertion holds whatever the function does; the no-change rule it is placed to guard is carried instead by the independent line 221.\nFINDING reckon/crew/promotion_release.py:635 follow-on: the release landing's _commit_landing_writes result is discarded, so a staged reversal or a post-commit mismatch found while landing the release outcome is written to landing.json but never printed to stderr and never reaches any receipt, unlike the two promotion call sites that wrap the call in _report_landing_check.\n",
+  "review_run_id": "r-20261018T220839303156-review-of-a-landing-checks-what-it-left-ef8d39c1ed03",
+  "reviewed_base_sha": "88d10cb5b9e7380a9ded4ac4828d0b32b28de4dd",
+  "reviewed_head_sha": "ef8d39c1ed0392723dac1efec8c36d043392e7c9",
+  "reviewed_run_id": "r-20261018T213033460177-a-landing-checks-what-it-left",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T22:20:52+00:00",
+  "total": 111
+}
