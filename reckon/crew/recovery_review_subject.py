@@ -395,7 +395,40 @@ def _review_brief_text(record: Mapping[str, Any], head: str) -> str:
     ]
     if brief_path:
         lines.append(f"Reviewed run's brief: {brief_path}")
-    return rubric.rstrip("\n") + "\n\n" + "\n".join(lines) + "\n"
+    text = rubric.rstrip("\n") + "\n\n" + "\n".join(lines) + "\n"
+    from reckon.crew.promotion_scope import _is_shadow
+
+    if _is_shadow(record):
+        text += _shadow_review_block(record)
+    return text
+
+
+def _shadow_review_block(record: Mapping[str, Any]) -> str:
+    """The paragraph a shadow's review brief carries in place of a commit diff.
+
+    A shadow is dispatched to produce evidence without committing, and the
+    patch its worktree retains is its real deliverable — the same patch
+    promotion preserves. A brief that describes the run only as committed work
+    sends its reviewer to an empty commit diff and a head equal to the base, so
+    this block names the patch commands the reviewer must read instead, states
+    that an empty commit list is the contract rather than a finding, and binds
+    every dimension to that patch. The two commands are composed from the
+    record's own worktree and base, so they name the same patch promotion
+    retains rather than a path the reviewer would have to infer.
+    """
+    worktree = shlex.quote(str(record.get("worktree") or ""))
+    base = shlex.quote(str(record.get("base_sha") or ""))
+    return (
+        "\nThis run is a shadow, and its deliverable is its retained worktree "
+        "patch, never its commits.\n"
+        f"The diff to review is `git -C {worktree} diff {base}` together with "
+        f"the new files named by `git -C {worktree} ls-files --others "
+        "--exclude-standard`, which is exactly the patch promotion preserves "
+        "for this run.\n"
+        "An empty commits list and a head equal to the base are this run's "
+        "contract, not a finding.\n"
+        "Score every dimension on that patch as the reviewed change.\n"
+    )
 
 
 def _review_brief_path(record: Mapping[str, Any]) -> Path:
