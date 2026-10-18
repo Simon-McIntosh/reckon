@@ -1,0 +1,39 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T07:37:34.897Z",
+  "dispatched_at": "2026-10-18T07:27:25Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-paired-arm-is-reviewed-as-itself.html#s1",
+      "id": "reasoning-1",
+      "reason": "the plan either narrows the change to the node_id mint while leaving source_node the node id, or states and tests the repair-node-id consequence; as written a builder ships an unmeasured behavior change to repair dispatch for paired arms, and a reader hitting a mismatched or duplicated repair round would have no way to trace it to this edit.",
+      "text": "the remedy sets source_node to the run id for a paired arm, but source_node is not only the node_id input: recovery_repair_dispatch.py:665 passes fields[\"source_node\"] into compose_repair_for_run, which forwards it to compose_repair_node and repair_node_id (repair.py:492), so a repair of a paired arm's review mints a different repair node id (repair-of-r-\u2026-<head> instead of repair-of-<node-id>-<head>) with no line in the plan stating that consequence and no test in the gate list covering repair dispatch",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "10130d0c7b959cf03370bb50a5925f4234aeabe9057e1498b0df59252137a3bc",
+  "plan_slug": "a-paired-arm-is-reviewed-as-itself",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T072612925997-plan-review-of-a-paired-arm-is-reviewed-as-itself",
+  "reviewed_blob_sha": "f2db5cf64688764644e599e240ef5faf6cd09583",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves in the tree: recovery_review_subject.py:460 (_review_dispatch_fields) and :608 (source_node from node id), promotion_checks.py:606 (_paired_partner_run_id, resolves both sides), dispatch_admission.py:1866 (_reviewed_run_id_for_node) and :1883 (_review_record_directory_grant), recovery_review_delivery.py:156 and its first-match loop at :172-174, dispatch_sessions.py:457 (_reviewed_run_id, newest match); the cited arms r-20261018T063236394668 and r-20261018T063236394831 both live and both carry node id efit-field-swap, one with paired_shadow_run_id and the other a shadow lineage naming its primary.",
+    "done_when": "pass \u2014 the three bullets are measurable (minted node ids and resolver returns asserted by a new test, pytest delta over a named file list, ruff delta against base blobs) and the section declares a negative control of two mutations, each firing a named case.",
+    "evidence_paths": "pass \u2014 the gate writes its pytest and ruff output on disk and the new test points the crew home at a temporary directory, so no evidence or state lands in a session scratchpad or node-local path.",
+    "naming": "pass \u2014 the section heading and the new test filename carry a descriptive slug, not a plan label, ticket number or version tag, and no stage identifier reaches a symbol.",
+    "reasoning": "a finding \u2014 the stated root cause matches the cited evidence and the mechanism does reach the real path (the printed command's --node is fields[\"node_id\"], minted by round_node_id at recovery_review_subject.py:666, and dispatch resolves it through _reviewed_run_id_for_node at dispatch_admission.py:1820), but remedy part 1 also changes the returned source_node field, which has a second consumer the plan does not name.",
+    "single_goal": "pass \u2014 \u00a71 names one deliverable: a paired arm's review is scoped to its own run, delivered as two edits that both serve that outcome.",
+    "wiring": "pass \u2014 the plan declares no depends-on/informs/gates and its plan-standalone meta justifies that (it repairs the landed paired dispatch of a-shadow-cannot-see-its-primary, no live plan waits on it); the sibling pair plans (a-pair-never-runs-its-arms-alike, a-paired-shadow-runs-on-its-named-backend) touch none of this plan's three write paths, so no needed relationship is missing."
+  },
+  "section_digests": {
+    "_document": "8040896d3e1fbba1bd73cf164e59e5eb7153bac3fe010485fd15c069ce26a191",
+    "s1": "0085ff011067e6eab06d2e1f3895bf7bd939502f8156374870f1aa916dd7a97f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T07:46:09.785754+00:00"
+}
