@@ -1,0 +1,111 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: baseline_suite=base_arm.log (9adf82d4, 38 passed / 1 failed) and after_suite=gate.log (5832ba4dd, 41 passed / 1 failed). Both arms fail exactly the same id, tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window (reckon/ledger.py 50505 estimated tokens > 50000), so the head adds no failing test the base does not.",
+  "after_suite": {
+    "command": "cd /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/36355bc4-c7d8-45bc-a3eb-b6ea284801ec/a-pair-refuses-alike-arms && PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/36355bc4-c7d8-45bc-a3eb-b6ea284801ec/a-pair-refuses-alike-arms /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_pair_never_runs_its_arms_alike.py tests/test_a_paired_dispatch_hides_each_arm.py tests/test_a_paired_shadow_runs_on_its_named_backend.py tests/test_a_picked_model_is_the_model_launched.py tests/test_crew_peers.py tests/test_dispatch_names_a_model.py tests/test_every_module_fits_a_worker_window.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 1,
+    "failure_ids": [
+      "tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T074018927209-a-pair-refuses-alike-arms/gate.log",
+    "revision": "5832ba4dd1ac6e362f1c367c9658708be1c42f90"
+  },
+  "assertion_analysis": [
+    {
+      "assertion": "dispatch_pair raises CrewError for both the dry run and the real dispatch, the message contains 'Resolve with', candidate and candidate-model, no worker is launched and the run-dir name set is unchanged",
+      "falsified_by": "removing _refuse_arms_that_resolve_alike from dispatch_pair - the negative control records exactly this (DID NOT RAISE CrewError, EXIT=1); a message naming a backend other than the one both arms resolved to would redden the PAIR_BACKEND-in-message assertion",
+      "file": "tests/test_a_pair_never_runs_its_arms_alike.py",
+      "line": "125-171"
+    },
+    {
+      "assertion": "a pair with the primary on the flight default pairs, its dry run reporting primary backend 'alpha' and shadow backend 'candidate' with model candidate-model",
+      "falsified_by": "a code change that refused this pair, ignored pair_backend, or routed the shadow onto the primary's backend; the two sides are the returned result and independent constants, not the value passed in",
+      "file": "tests/test_a_pair_never_runs_its_arms_alike.py",
+      "line": "174-191"
+    },
+    {
+      "assertion": "a pair whose arms share the candidate backend but run different models pairs, with the primary model other-model and the shadow model candidate-model",
+      "falsified_by": "dropping the model branch so the check fires on equal backends alone - the backends-only mutant fails this case (negative_control_backends_only.log EXIT=1), which also confirms the monkeypatched model substitution reaches the comparison",
+      "file": "tests/test_a_pair_never_runs_its_arms_alike.py",
+      "line": "194-233"
+    }
+  ],
+  "baseline_suite": {
+    "command": "cd /tmp/reckon-crew-scratch/r-20261018T074018927209-a-pair-refuses-alike-arms/base-tree && PYTHONPATH=/tmp/reckon-crew-scratch/r-20261018T074018927209-a-pair-refuses-alike-arms/base-tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_paired_dispatch_hides_each_arm.py tests/test_a_paired_shadow_runs_on_its_named_backend.py tests/test_a_picked_model_is_the_model_launched.py tests/test_crew_peers.py tests/test_dispatch_names_a_model.py tests/test_every_module_fits_a_worker_window.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 1,
+    "failure_ids": [
+      "tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T074018927209-a-pair-refuses-alike-arms/base_arm.log",
+    "revision": "9adf82d4c5f4d09b6bcebbabebebed486394f1a2",
+    "revision_note": "parent of the reviewed base; the pre-change arm"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1509",
+    "reckon/crew_dispatch_commands.py:1521"
+  ],
+  "completed_at": "2026-10-18T08:30:41.657Z",
+  "dispatched_at": "2026-10-18T08:22:26Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "the negative_control_note claims the backends-only mutation 'leaves that case green and fails the third case', but negative_control_backends_only.log shows 2 failed ids - the first case test_arms_that_resolve_alike_are_refused also fails, at tests/test_a_pair_never_runs_its_arms_alike.py:153 on 'assert CANDIDATE_MODEL in dry_message' - so the note contradicts the log it cites; state that the mutant reddens both cases and why."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "574",
+      "severity": "follow-on",
+      "text": "the check infers 'models equal' from '\"model\" not in substituted', which holds only because the sole call site dispatch.py:814 passes configuration_overrides=(); a future caller passing an explicit model override would put 'model' in substituted even when both arms resolve to the same model and silently skip the refusal, so the coupling is latent rather than guarded."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read commit by commit against base 9adf82d4c5f4: 5832ba4dd adds the _refuse_arms_that_resolve_alike helper (dispatch.py:558-586) and its call (dispatch.py:816), a new 253-line tests/test_a_pair_never_runs_its_arms_alike.py, a docstring-plus-one-removed-fixture-line edit in tests/test_a_paired_dispatch_hides_each_arm.py, and a 29-line fragment; 10ff6fcf58 rewrites the _primary_on_candidate_config docstring to state the mechanism, removing the 'incident' citation the earlier review flagged.",
+    "done_when": "The done_when names three cases in tests/test_a_pair_never_runs_its_arms_alike.py, a seven-file pytest gate adding no failure against the base, a ruff check/format delta, and two negative-control mutations; the manifest records gate.log 41 passed / 1 failed at 5832ba4dd, base_arm.log 38 passed / 1 failed at 9adf82d4 (both the same pre-existing reckon/ledger.py window failure), the ruff delta, and both control logs, so the recorded gate asserts the measure.",
+    "goal": "The node's goal is to refuse a paired dispatch whose two arms resolve to one backend and one model before either arm launches; reckon/crew/dispatch.py:558 defined _refuse_arms_that_resolve_alike raises D21 when the comparison's substituted backend entry carries equal primary and shadow values and 'model' is not among the substituted entries, and dispatch.py:816 calls it before the dry-run return and before any run directory or worktree exists, so the goal is met.",
+    "manifest": "Read; it records status complete, commits [5832ba4dd1ac, 10ff6fcf58d], four changed paths, the gate and two negative-control logs, the helper-still-routes measurement (7 of 9 fail), a landing line, the ruff delta, and a typed baseline_suite/after_suite pair; its negative_control_note at line 16 misstates which cases the backends-only mutant reddens.",
+    "write_paths": "The brief fences reckon/crew/dispatch.py, tests/test_a_paired_dispatch_hides_each_arm.py, tests/test_a_pair_never_runs_its_arms_alike.py and docs/evidence/fragments/a-pair-never-runs-its-arms-alike/a-pair-refuses-alike-arms.html; git diff --stat 9adf82d4..10ff6fcf5 changes exactly those four paths."
+  },
+  "justifications": {
+    "durability": "Removing the check reddens test_arms_that_resolve_alike_are_refused (DID NOT RAISE CrewError, negative_control_removed.log EXIT=1) and the backends-only mutant reddens test_a_shared_backend_with_different_models_pairs (negative_control_backends_only.log EXIT=1), and no added assertion compares a value against the variable the test passed in.",
+    "evidence": "The gate tests/test_a_pair_never_runs_its_arms_alike.py reports 41 passed / 1 failed in gate.log at 5832ba4dd with base_arm.log reproducing the same single failure at 9adf82d4 (zero added), the manifest now records the ruff delta the prior review found missing, and the two negative-control logs are on disk.",
+    "fit": "reckon/crew/dispatch.py:558-586 follows the shape of the sibling D21 refusals at dispatch.py:485-486 and the new test's docstrings now state the mechanism with no unresolved event reference, though dispatch.py:574 encodes the model branch as a membership test rather than a model comparison.",
+    "goal_fidelity": "reckon/crew/dispatch.py:558-586 refuses exactly the alike pair and dispatch.py:816 places that call before the dry-run return and before any run directory or worktree is created, so both arms are refused before either launches.",
+    "reuse": "reckon/crew/dispatch.py:569-574 reads the comparison that _shadow_dispatch_config (dispatch.py:465) already returns rather than comparing the two agents a second time, and reuses the registered D21 remedy at reckon/crew/refusals.py:81; a search of reckon/crew found no existing alike-arm refusal mechanism, so the helper is the first owner of that capability.",
+    "scope_discipline": "git diff --stat 9adf82d4..10ff6fcf5 touches only reckon/crew/dispatch.py, tests/test_a_pair_never_runs_its_arms_alike.py, tests/test_a_paired_dispatch_hides_each_arm.py and the declared evidence fragment, all inside the brief's fenced write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is to refuse a paired dispatch whose two arms resolve to one backend and one model before either arm launches; reckon/crew/dispatch.py:558 defined _refuse_arms_that_resolve_alike raises D21 when the comparison's substituted backend entry carries equal primary and shadow values and 'model' is not among the substituted entries, and dispatch.py:816 calls it before the dry-run return and before any run directory or worktree exists, so the goal is met.\nVERDICT done_when: The done_when names three cases in tests/test_a_pair_never_runs_its_arms_alike.py, a seven-file pytest gate adding no failure against the base, a ruff check/format delta, and two negative-control mutations; the manifest records gate.log 41 passed / 1 failed at 5832ba4dd, base_arm.log 38 passed / 1 failed at 9adf82d4 (both the same pre-existing reckon/ledger.py window failure), the ruff delta, and both control logs, so the recorded gate asserts the measure.\nVERDICT write_paths: The brief fences reckon/crew/dispatch.py, tests/test_a_paired_dispatch_hides_each_arm.py, tests/test_a_pair_never_runs_its_arms_alike.py and docs/evidence/fragments/a-pair-never-runs-its-arms-alike/a-pair-refuses-alike-arms.html; git diff --stat 9adf82d4..10ff6fcf5 changes exactly those four paths.\nVERDICT manifest: Read; it records status complete, commits [5832ba4dd1ac, 10ff6fcf58d], four changed paths, the gate and two negative-control logs, the helper-still-routes measurement (7 of 9 fail), a landing line, the ruff delta, and a typed baseline_suite/after_suite pair; its negative_control_note at line 16 misstates which cases the backends-only mutant reddens.\nVERDICT diff: Read commit by commit against base 9adf82d4c5f4: 5832ba4dd adds the _refuse_arms_that_resolve_alike helper (dispatch.py:558-586) and its call (dispatch.py:816), a new 253-line tests/test_a_pair_never_runs_its_arms_alike.py, a docstring-plus-one-removed-fixture-line edit in tests/test_a_paired_dispatch_hides_each_arm.py, and a 29-line fragment; 10ff6fcf58 rewrites the _primary_on_candidate_config docstring to state the mechanism, removing the 'incident' citation the earlier review flagged.\nCALL_SITES: reckon/crew_dispatch_commands.py:1509, reckon/crew_dispatch_commands.py:1521\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:558-586 refuses exactly the alike pair and dispatch.py:816 places that call before the dry-run return and before any run directory or worktree is created, so both arms are refused before either launches.\nSCORE evidence: 19\nJUSTIFICATION evidence: The gate tests/test_a_pair_never_runs_its_arms_alike.py reports 41 passed / 1 failed in gate.log at 5832ba4dd with base_arm.log reproducing the same single failure at 9adf82d4 (zero added), the manifest now records the ruff delta the prior review found missing, and the two negative-control logs are on disk.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 9adf82d4..10ff6fcf5 touches only reckon/crew/dispatch.py, tests/test_a_pair_never_runs_its_arms_alike.py, tests/test_a_paired_dispatch_hides_each_arm.py and the declared evidence fragment, all inside the brief's fenced write paths.\nSCORE durability: 19\nJUSTIFICATION durability: Removing the check reddens test_arms_that_resolve_alike_are_refused (DID NOT RAISE CrewError, negative_control_removed.log EXIT=1) and the backends-only mutant reddens test_a_shared_backend_with_different_models_pairs (negative_control_backends_only.log EXIT=1), and no added assertion compares a value against the variable the test passed in.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch.py:558-586 follows the shape of the sibling D21 refusals at dispatch.py:485-486 and the new test's docstrings now state the mechanism with no unresolved event reference, though dispatch.py:574 encodes the model branch as a membership test rather than a model comparison.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/dispatch.py:569-574 reads the comparison that _shadow_dispatch_config (dispatch.py:465) already returns rather than comparing the two agents a second time, and reuses the registered D21 remedy at reckon/crew/refusals.py:81; a search of reckon/crew found no existing alike-arm refusal mechanism, so the helper is the first owner of that capability.\nFINDING manifest.md:16 follow-on: the negative_control_note claims the backends-only mutation 'leaves that case green and fails the third case', but negative_control_backends_only.log shows 2 failed ids - the first case test_arms_that_resolve_alike_are_refused also fails, at tests/test_a_pair_never_runs_its_arms_alike.py:153 on 'assert CANDIDATE_MODEL in dry_message' - so the note contradicts the log it cites; state that the mutant reddens both cases and why.\nFINDING reckon/crew/dispatch.py:574 follow-on: the check infers 'models equal' from '\"model\" not in substituted', which holds only because the sole call site dispatch.py:814 passes configuration_overrides=(); a future caller passing an explicit model override would put 'model' in substituted even when both arms resolve to the same model and silently skip the refusal, so the coupling is latent rather than guarded.\n",
+  "review_run_id": "r-20261018T082131525934-review-of-a-pair-refuses-alike-arms-10ff6fcf58d4",
+  "reviewed_base_sha": "9adf82d4c5f4d09b6bcebbabebebed486394f1a2",
+  "reviewed_commits": [
+    "5832ba4dd1ac6e362f1c367c9658708be1c42f90",
+    "10ff6fcf58d4061208694a5d2bbd6a7a3a623410"
+  ],
+  "reviewed_head_sha": "10ff6fcf58d4061208694a5d2bbd6a7a3a623410",
+  "reviewed_run_id": "r-20261018T074018927209-a-pair-refuses-alike-arms",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T08:32:55.043114+00:00",
+  "total": 117
+}
