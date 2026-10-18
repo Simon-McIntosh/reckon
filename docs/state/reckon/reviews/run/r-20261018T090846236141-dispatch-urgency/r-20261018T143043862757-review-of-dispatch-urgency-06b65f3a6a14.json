@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "8f4d4651bbc68528ad2e768f4c0429f28c0a590b",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1421",
+    "reckon/crew_dispatch_commands.py:1800",
+    "reckon/crew/dispatch.py:1144",
+    "reckon/crew/picker/prompts.py:466",
+    "reckon/crew/picker/lane_context.py:976"
+  ],
+  "commits_read": [
+    "e26d6b51bdd19fc45678d8ad2f6cb65df2b3ef1a",
+    "1217f68ad1325bbff01d3207230ed307d45d2968",
+    "06b65f3a6a143610610ffd9d14a4528892b04c12"
+  ],
+  "completed_at": "2026-10-18T14:37:51Z",
+  "dispatched_at": "2026-10-18T14:31:57Z",
+  "findings": [
+    {
+      "file": "tests/test_dispatch_urgency.py",
+      "line": "107",
+      "severity": "follow-on",
+      "text": "follow-on: the expected due is read from the same mutable node.urgency object passed into build_state, so this assertion would stay green if build_state rewrote that object; compare with the independent deadline created by the test."
+    },
+    {
+      "file": "reckon/crew/dispatch_picker.py",
+      "line": "47",
+      "severity": "follow-on",
+      "text": "follow-on: the new duration branch duplicates reckon/crew/node.py:803 rather than extending or wrapping its existing parser, so accepted duration forms can drift between dispatch and the rest of crew."
+    }
+  ],
+  "head_log_revision": "1217f68ad1325bbff01d3207230ed307d45d2968",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "commits e26d6b51, 1217f68a, and 06b65f3a were read against base 8f4d4651; the first adds routing and tests, the second repairs picker guidance and bounded state, and the third adds coordinator guidance.",
+    "done_when": "the source brief requires input, template, queueing, base-count regression, and a negative control; urgency-final.log records 27 passes, negative-control.log records the expected failure, and the paired regression logs each record 64 passes and the same two failures.",
+    "goal": "the source brief asks for due time and urgency in dispatch routing; reckon/crew_dispatch_commands.py:983 accepts both and reckon/crew/picker/prompts.py:370 renders them to the picker.",
+    "manifest": "the reviewed run's manifest.md names three commits, focused and paired regression logs, a negative-control log, and the two base-identical failure IDs; each named log was read.",
+    "write_paths": "the source brief lists the original scope, and the two resume advice files explicitly extend it to reckon/crew_dispatch_commands.py and skills/reckon-build/references/lane-routing.md; all eight diff paths fall within that combined scope."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_urgency.py:215 fails if an urgent lifted hold is silently queued, although the due equality at tests/test_dispatch_urgency.py:107 uses the same mutable node field as its expected value.",
+    "evidence": "tests/test_dispatch_urgency.py:162 exercises urgent routing and its ordinary control; the reviewed run's urgency-final.log, negative-control.log, and paired regression logs record the required results.",
+    "fit": "reckon/crew/picker/prompts.py:25 reuses the shared UTC parser and reckon/crew_dispatch_commands.py:1257 follows its surrounding Click validation pattern without forbidden names.",
+    "goal_fidelity": "reckon/crew/dispatch.py:1176 preserves an urgent lifted-lane hold and reckon/crew/picker/templates/questions.jinja:1 tells the picker to compare local wait with remaining time while keeping service constraints.",
+    "reuse": "reckon/crew/dispatch_picker.py:47 adds a duration parser that duplicates the s, m, and h capability already owned by reckon/crew/node.py:803, with a separate day suffix and case rule.",
+    "scope_discipline": "the diff's eight paths match the source brief plus the two explicit scope extensions, including reckon/crew_dispatch_commands.py:983 and skills/reckon-build/references/lane-routing.md:12."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source brief asks for due time and urgency in dispatch routing; reckon/crew_dispatch_commands.py:983 accepts both and reckon/crew/picker/prompts.py:370 renders them to the picker.\nVERDICT done_when: the source brief requires input, template, queueing, base-count regression, and a negative control; urgency-final.log records 27 passes, negative-control.log records the expected failure, and the paired regression logs each record 64 passes and the same two failures.\nVERDICT write_paths: the source brief lists the original scope, and the two resume advice files explicitly extend it to reckon/crew_dispatch_commands.py and skills/reckon-build/references/lane-routing.md; all eight diff paths fall within that combined scope.\nVERDICT manifest: the reviewed run's manifest.md names three commits, focused and paired regression logs, a negative-control log, and the two base-identical failure IDs; each named log was read.\nVERDICT diff: commits e26d6b51, 1217f68a, and 06b65f3a were read against base 8f4d4651; the first adds routing and tests, the second repairs picker guidance and bounded state, and the third adds coordinator guidance.\nCALL_SITES: reckon/crew_dispatch_commands.py:1421, reckon/crew_dispatch_commands.py:1800, reckon/crew/dispatch.py:1144, reckon/crew/picker/prompts.py:466, reckon/crew/picker/lane_context.py:976\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1176 preserves an urgent lifted-lane hold and reckon/crew/picker/templates/questions.jinja:1 tells the picker to compare local wait with remaining time while keeping service constraints.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_dispatch_urgency.py:162 exercises urgent routing and its ordinary control; the reviewed run's urgency-final.log, negative-control.log, and paired regression logs record the required results.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's eight paths match the source brief plus the two explicit scope extensions, including reckon/crew_dispatch_commands.py:983 and skills/reckon-build/references/lane-routing.md:12.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_dispatch_urgency.py:215 fails if an urgent lifted hold is silently queued, although the due equality at tests/test_dispatch_urgency.py:107 uses the same mutable node field as its expected value.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/picker/prompts.py:25 reuses the shared UTC parser and reckon/crew_dispatch_commands.py:1257 follows its surrounding Click validation pattern without forbidden names.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/dispatch_picker.py:47 adds a duration parser that duplicates the s, m, and h capability already owned by reckon/crew/node.py:803, with a separate day suffix and case rule.\nFINDING tests/test_dispatch_urgency.py:107 follow-on: the expected due is read from the same mutable node.urgency object passed into build_state, so this assertion would stay green if build_state rewrote that object; compare with the independent deadline created by the test.\nFINDING reckon/crew/dispatch_picker.py:47 follow-on: the new duration branch duplicates reckon/crew/node.py:803 rather than extending or wrapping its existing parser, so accepted duration forms can drift between dispatch and the rest of crew.\n",
+  "review_run_id": "r-20261018T143043862757-review-of-dispatch-urgency-06b65f3a6a14",
+  "reviewed_base_sha": "8f4d4651bbc68528ad2e768f4c0429f28c0a590b",
+  "reviewed_commit": "06b65f3a6a143610610ffd9d14a4528892b04c12",
+  "reviewed_head_sha": "06b65f3a6a143610610ffd9d14a4528892b04c12",
+  "reviewed_run_id": "r-20261018T090846236141-dispatch-urgency",
+  "reviewing_run_id": "r-20261018T143043862757-review-of-dispatch-urgency-06b65f3a6a14",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T14:40:32.098712+00:00",
+  "total": 96
+}
