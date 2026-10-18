@@ -2236,13 +2236,13 @@ def _follow_watch_lines(
         its own, so the note that it is reloading reaches the JSON stream but
         stays off the pane, which otherwise carries a line for every reload on
         a branch that moves many times an hour. Only a mismatch that outlasts
-        the window earns a pane line -- the reloading note once, then the cycle
-        advice that says the seat needs cycling by hand. A fresh arming has no
-        such window to grant: it never saw the code move and cannot vouch that
-        the mismatch is fresh, so the advice is owed at once. The deferral keys
-        on ``reloaded_in_place`` rather than on a non-empty checkpoint: the
-        fact that matters is that this image replaced another, and a reload
-        whose checkpoint was empty is still a reload.
+        the window earns a pane line -- the reloading note and cycle advice for
+        a local seat, or only the host-specific advice for a foreign seat. A
+        fresh arming has no such window to grant: it never saw the code move
+        and cannot vouch that the mismatch is fresh, so the advice is owed at
+        once. The deferral keys on ``reloaded_in_place`` rather than on a
+        non-empty checkpoint: the fact that matters is that this image replaced
+        another, and a reload whose checkpoint was empty is still a reload.
         """
         nonlocal producer_stale_since, producer_reload_deferred, producer_stale_advised
         if not identity.get("stale"):
@@ -2265,13 +2265,14 @@ def _follow_watch_lines(
             return [_producer_stale_event(identity)]
         if moment - producer_stale_since < reload_window:
             return []
-        # The reload overran its window: the note reaches the pane once, then
-        # the remedy, because a producer still behind after the window is one a
-        # reader has to cycle rather than wait out.
+        # The reload overran its window. A local seat needs both the reloading
+        # note and the cycle remedy. A foreign seat's advice already says it
+        # reloads itself and names its host, so only that line reaches the pane.
         producer_stale_advised = True
+        advice = _producer_stale_event(identity)
         return [
-            _producer_reloading_event(identity, pane_line=True),
-            _producer_stale_event(identity),
+            _producer_reloading_event(identity, pane_line="host" not in advice),
+            advice,
         ]
 
     def _producer_reload_pending() -> bool:
