@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from click.testing import CliRunner
@@ -261,3 +262,47 @@ def test_obligation_names_a_delivered_refusal_and_its_repair(
     assert "status 'complete'" in item["reason"]
     assert "crew repair-review" in item["next_command"]
     assert "redispatch" not in item["next_command"]
+    monkeypatch.setattr(
+        obligations_module.flight,
+        "resolve",
+        lambda _project: SimpleNamespace(config={}),
+    )
+    monkeypatch.setattr(
+        obligations_module.runs,
+        "list_live",
+        lambda **_kwargs: [
+            runs.read_pointer(REVIEWED_RUN),
+            runs.read_pointer(REVIEW_RUN),
+        ],
+    )
+    monkeypatch.setattr(
+        obligations_module,
+        "_classified_rows",
+        lambda _project: [
+            {
+                "run_id": REVIEWED_RUN,
+                "session": "session-fixture",
+                "classification": "scoring",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        obligations_module, "_live_review_runs", lambda *_args: {REVIEWED_RUN}
+    )
+    monkeypatch.setattr(
+        obligations_module, "_sub_floor_items", lambda *_args, **_kwargs: []
+    )
+    monkeypatch.setattr(
+        obligations_module, "_held_worktrees", lambda *_args, **_kwargs: []
+    )
+    monkeypatch.setattr(
+        obligations_module, "_acknowledgements_in_force", lambda *_args, **_kwargs: {}
+    )
+    monkeypatch.setattr(
+        obligations_module.runs,
+        "drain",
+        lambda *_args, **_kwargs: {"unreconciled_runs": 1},
+    )
+    report = obligations_module.obligations(PROJECT, "session-fixture")
+    assert report["obligations"][0]["kind"] == "review-refused"
+    assert "crew repair-review" in report["obligations"][0]["next_command"]
