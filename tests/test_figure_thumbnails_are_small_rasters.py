@@ -25,7 +25,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from reckon import serve
+from reckon import figures, serve
 
 _PROJECT = "sample"
 _NEGATIVE_CONTROL_ENV = "RECKON_TEST_THUMBNAIL_SVG_PASSTHROUGH"
@@ -117,7 +117,7 @@ def _negative_control_when_armed(monkeypatch):
     if os.environ.get(_NEGATIVE_CONTROL_ENV) != "1":
         return
 
-    def passthrough(_svg_text: str) -> bytes:
+    def passthrough(_source: Path) -> bytes:
         raise RuntimeError("negative control: the SVG passthrough is restored")
 
     monkeypatch.setattr(serve, "_rasterise_svg", passthrough)
@@ -218,6 +218,25 @@ def test_an_svg_that_cannot_be_rasterised_falls_back_to_the_svg(project):
     assert status == 200
     assert body == source_bytes
     assert headers["Content-Type"] == "image/svg+xml"
+
+
+def test_the_thumbnail_is_sized_by_the_figure_inventory_reader(project, monkeypatch):
+    """One SVG dimension reader, not two.
+
+    The size a row is listed at comes from ``reckon.figures``; the thumbnail
+    sizes itself from the same call, so a change in what that reader makes of
+    an SVG moves both together.
+    """
+
+    monkeypatch.setattr(figures, "_svg_dims", lambda _path: (400.0, 1000.0))
+    with _served() as port:
+        status, _headers, body = _get(port, f"/_thumb/{_PROJECT}/figures/demo/plot.svg")
+
+    assert status == 200
+    # The fixture's own viewBox is 640 by 480, whose thumbnail is 200 by 150.
+    # A raster bounded by 80 can only come from the reader's answer.
+    with Image.open(io.BytesIO(body)) as thumbnail:
+        assert max(thumbnail.size) == 80, thumbnail.size
 
 
 def test_the_rasteriser_is_declared_as_a_project_dependency():

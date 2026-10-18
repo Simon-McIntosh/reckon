@@ -2941,52 +2941,27 @@ def _thumbnail_cache_path(source: Path, identity: str) -> Path:
     return _config_home() / "cache" / "thumbs" / f"{digest}.png"
 
 
-_SVG_ROOT = re.compile(r"<svg\b[^>]*>", re.IGNORECASE)
-
-
-def _svg_intrinsic_size(svg_text: str) -> tuple[float, float] | None:
-    """Return an SVG's own width and height, from its attributes or its viewBox.
-
-    Only the root element is read, and only far enough to learn the aspect
-    ratio a raster can be sized by; anything unparseable returns None and the
-    caller falls back to a square box.
-    """
-
-    root = _SVG_ROOT.search(svg_text)
-    if root is None:
-        return None
-    tag = root.group(0)
-    width = re.search(r"\bwidth\s*=\s*[\"']\s*([0-9.]+)", tag)
-    height = re.search(r"\bheight\s*=\s*[\"']\s*([0-9.]+)", tag)
-    if width and height:
-        return float(width.group(1)), float(height.group(1))
-    view_box = re.search(r"\bviewBox\s*=\s*[\"']([^\"']+)[\"']", tag)
-    if view_box:
-        parts = view_box.group(1).replace(",", " ").split()
-        if len(parts) == 4:
-            try:
-                return float(parts[2]), float(parts[3])
-            except ValueError:
-                return None
-    return None
-
-
-def _rasterise_svg(svg_text: str) -> bytes:
+def _rasterise_svg(source: Path) -> bytes:
     """Rasterise an SVG to a PNG bounded by THUMB_MAX_EDGE on its long edge.
 
     The vector is drawn straight to the thumbnail's pixel size rather than at
     its authored size and then downscaled, so a figure with thousands of paths
-    costs the icon it is drawn as rather than the whole drawing.
+    costs the icon it is drawn as rather than the whole drawing. The authored
+    size comes from the figure inventory's own reader, so the size a row is
+    listed at and the size its icon is drawn at cannot disagree.
     """
 
     import resvg_py
 
-    size = _svg_intrinsic_size(svg_text)
+    from reckon.figures import _svg_dims
+
+    size = _svg_dims(source)
     if size and min(size) > 0:
         width = max(1, round(size[0] / max(size) * THUMB_MAX_EDGE))
         height = max(1, round(size[1] / max(size) * THUMB_MAX_EDGE))
     else:
         width = height = THUMB_MAX_EDGE
+    svg_text = source.read_text(encoding="utf-8", errors="replace")
     drawn = resvg_py.svg_to_bytes(svg_string=svg_text, width=width, height=height)
 
     from PIL import Image
@@ -3007,7 +2982,7 @@ def _render_thumbnail(source: Path) -> bytes:
     """
 
     if source.suffix.lower() == ".svg":
-        return _rasterise_svg(source.read_text(encoding="utf-8", errors="replace"))
+        return _rasterise_svg(source)
 
     from PIL import Image
 
