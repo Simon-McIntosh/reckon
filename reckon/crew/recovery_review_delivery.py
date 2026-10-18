@@ -153,7 +153,9 @@ def file_review_records_into_store(record: Mapping[str, Any]) -> list[Path]:
         return []
 
 
-def _resolved_reviewed_run_id(record: Mapping[str, Any], project: str) -> str:
+def _resolved_reviewed_run_id(
+    record: Mapping[str, Any], project: str, *, refuse_ambiguous: bool = False
+) -> str:
     """The run a reviewer reviews, resolved from its minted node id, or empty.
 
     The review node id carries what its dispatch reviewed — the source run's id
@@ -162,6 +164,16 @@ def _resolved_reviewed_run_id(record: Mapping[str, Any], project: str) -> str:
     that is not a run id is matched against the live fleet's node ids, which is
     the only place the reviewed run's id is recoverable once its own node id
     was resolved to a run id at dispatch.
+
+    ``refuse_ambiguous`` is set only by the dispatch grant that fences a
+    reviewer's record directory. A paired dispatch launches two arms under one
+    node id, so a bare node id matched against the live fleet finds two runs
+    and the first match is one arm chosen by listing order rather than by
+    intent — the grant would then reach whichever arm the listing happened to
+    return first. With the flag set, more than one matching pointer returns the
+    bare source itself, which names no run directory, so the grant is refused
+    rather than given to the wrong run. One matching pointer, and every reader
+    that leaves the flag false, resolves as before.
     """
     node_id = str((record.get("node") or {}).get("id") or "")
     source = round_node_source(node_id, REVIEW_NODE_PREFIX)
@@ -169,10 +181,16 @@ def _resolved_reviewed_run_id(record: Mapping[str, Any], project: str) -> str:
         return ""
     if source.startswith("r-"):
         return source
-    for pointer in list_live(project=project):
-        if str((pointer.get("node") or {}).get("id") or "") == source:
-            return str(pointer.get("run_id") or "")
-    return source
+    matches = [
+        str(pointer.get("run_id") or "")
+        for pointer in list_live(project=project)
+        if str((pointer.get("node") or {}).get("id") or "") == source
+    ]
+    if not matches:
+        return source
+    if refuse_ambiguous and len(matches) > 1:
+        return source
+    return matches[0]
 
 
 def _complete_manifest_write_time(path: Path) -> float | None:

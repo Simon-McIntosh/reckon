@@ -606,6 +606,16 @@ def _review_dispatch_fields(
     run_id = str(record.get("run_id") or "")
     project = str(record.get("project") or "")
     source_node = str(node.get("id") or run_id)
+    # A paired dispatch launches two arms under one node id, so a review node id
+    # minted from that node id resolves to whichever arm the fleet listing
+    # returns first — the wrong one as easily as the right. The run id is the
+    # arm's own identity, so a paired arm's review is minted from it, while
+    # ``source_node`` stays the node id every other reader composes from. The
+    # pairing test is the one promotion already resolves a partner through, so
+    # both arms read it the same way and it is not written a second time here.
+    from reckon.crew.promotion_checks import _paired_partner_run_id
+
+    review_node_source = run_id if _paired_partner_run_id(record) else source_node
     head = _run_head_for_review(record)
     # Declared inside a directory of the reviewed run's own rather than at
     # the store path the record is finally read from. The store holds every run
@@ -663,7 +673,7 @@ def _review_dispatch_fields(
         "brief": str(brief_file),
         "brief_text": brief_text,
         "source_node": source_node,
-        "node_id": round_node_id(REVIEW_NODE_PREFIX, source_node, head),
+        "node_id": round_node_id(REVIEW_NODE_PREFIX, review_node_source, head),
         "session": str(record.get("session") or "<session>"),
         "time_budget": str(node.get("time_budget") or "20m"),
         "goal": (
