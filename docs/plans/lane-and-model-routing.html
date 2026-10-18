@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="222">
+<meta name="plan-version" content="225">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -254,12 +254,12 @@ It asserts that the candidate's <code>outcomes_at_requirement</code> reads <code
 <li>the <code>estimated_context</code> the pick rendered, read from <code>picker_selection.rendered_state</code>: under 20,000 tokens, 20,000 to 60,000, over 60,000, or absent;</li>
 <li>a control signal that carries no size information: the parity of the run id's timestamp seconds, even or odd.</li>
 </ul>
-<p>The control is judged on two conditions alone: its two buckets each hold at least 5 rows, and their pass rates differ by at least 20 percentage points. A candidate signal separates a requirement only when its lowest and highest buckets meet those same two conditions and its difference also exceeds the control's difference at that requirement. The document names every signal that clears that bar, with its bucket counts, or says that none does. It changes no code.</p>
+<p>The control is judged on two conditions alone: its two buckets each hold at least 5 rows, and their pass rates differ by at least 20 percentage points. A candidate signal separates a cell, one project, role, spec level and requirement, only when its lowest and highest buckets in that cell meet those same two conditions and its difference also exceeds the control's difference in that cell. The document names every signal that clears that bar, with its bucket counts, or says that none does. It changes no code.</p>
 <p><strong>Write paths.</strong> <code>docs/research/what-sizes-a-node.html</code>, which is new, and its figures under <code>docs/figures/what-sizes-a-node</code>.</p>
 <p><strong>Done when</strong> all four of these hold:</p>
 <ul>
-<li>The document carries one table per signal, the control included: requirement, bucket, rows, passed, median attempts, median review total. It names every signal that clears the stated bar, or none, with the rows behind that verdict, and every count is read from the ledgers at a stated revision and time.</li>
-<li>The control signal's own result is reported. Where the control itself clears the bar at a requirement, the document says that requirement's sample cannot rank signals and names no separating signal there.</li>
+<li>The document carries one table per signal, the control included, with one row per cell and bucket: project, role, spec level, requirement, bucket, rows, passed, median attempts, median review total. It names every signal that clears the stated bar, or none, with the rows behind that verdict, and every count is read from the ledgers at a stated revision and time.</li>
+<li>The control signal's own result is reported. Where the control itself clears the bar in a cell, the document says that cell's sample cannot rank signals and names no separating signal there.</li>
 <li>The script that computed it sits in the run directory, and the document names its path and the command that ran it.</li>
 <li>No file outside the write paths changes.</li>
 </ul>
