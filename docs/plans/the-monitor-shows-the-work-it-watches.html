@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="299">
+<meta name="plan-version" content="300">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1195,6 +1195,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s48" data-id="c-close-s48" data-who="reckon-build" data-when="2026-10-18T00:27:00Z">
     <div class="r-comment-body"><p>§48 landed. A pin stamps its tree in use before it locks, so a stale lease record no longer exposes a tree another host is pinning (merge <code>f4d017aa3</code>). Zero added failures over 261 files. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s48">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s48" data-id="c-run-r-20261017T232936711248-a-stale-lease-record-does-not-expose-a-pin" data-who="reckon-build" data-when="2026-10-17T23:46:55.879Z">
+    <div class="r-comment-body"><p>a stale lease record does not expose a pin — `pin_materialized_tree` in `reckon/checkout_trust.py` now stamps the tree&#x27;s `.in-use` mtime as it takes the lease, before its flock and record write, and `_prune_must_keep` keeps a tree whose lease record names a host renewed past `COMMITTED_TREE_LEASE_WINDOW_SECONDS` when that mark was stamped inside `COMMITTED_TREE_PUBLISH_GRACE_SECONDS`, so a pin between its two steps on a third host is not exposed to a pruner here; the retention count, grace and lease window are unchanged and a stale record with no pin is pruned as before — measured by two cases in `tests/test_a_stale_lease_record_does_not_expose_a_pin.py` (2 passed, EXIT=0); against the base tree the paused pin loses its tree (`RuntimeError: materialized tree vanished before its lease`), EXIT=1.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
