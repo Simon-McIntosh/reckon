@@ -632,6 +632,62 @@ SAFE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
 MAX_POST_BYTES = 1_000_000
 CREW_LOG_TAIL_BYTES = 64 * 1024
 
+# The size the served access log may reach before its content is moved aside to
+# one predecessor and the live file is emptied. The unit opens the log with
+# ``StandardOutput=append:``, so systemd holds one descriptor open in append
+# mode for the process's whole life; the served process cannot rotate that
+# descriptor by renaming the file, because systemd would keep writing to the
+# renamed inode and the live path would stop growing. It empties the file in
+# place instead, which works with append mode: every write seeks to the current
+# end, so the next line lands at the start of the same, now-short file.
+SERVER_LOG_BOUND_BYTES = 8 * 1024 * 1024
+
+# One rotation at a time: handler threads share the served log, and two
+# rotations racing would truncate the file one of them just filled.
+_LOG_ROTATION_LOCK = threading.Lock()
+
+
+def _bound_server_log(path: Path | None = None, *, bound: int | None = None) -> bool:
+    """Move an over-bound served log to one predecessor and empty the live file.
+
+    Returns True when a rotation happened. The predecessor is written to a
+    staging path and moved into place, so a reader never sees a half-copied
+    ``.1``; only then is the live file emptied. The copy-then-empty ordering
+    keeps the content: a crash between the two leaves the predecessor whole and
+    the live file still carrying it.
+    """
+
+    target = _server_log_path() if path is None else path
+    limit = SERVER_LOG_BOUND_BYTES if bound is None else bound
+    try:
+        if target.stat().st_size <= limit:
+            return False
+    except OSError:
+        return False
+    predecessor = target.with_name(target.name + ".1")
+    with _LOG_ROTATION_LOCK:
+        try:
+            if target.stat().st_size <= limit:
+                return False
+            staging = predecessor.with_name(predecessor.name + ".tmp")
+            shutil.copyfile(target, staging)
+            os.replace(staging, predecessor)
+            with target.open("wb"):
+                pass
+        except OSError as exc:
+            LOGGER.warning("Could not bound the served log %s: %s", target, exc)
+            return False
+    return True
+
+
+def _server_log_path() -> Path:
+    """The file the systemd unit appends the served process's output to."""
+
+    from reckon.service import log_path
+
+    return log_path()
+
+
 # The long edge a served figure thumbnail is downscaled to, in pixels. A list
 # row draws a figure at 50 px, so 200 leaves it sharp on a 2x display while
 # costing a fraction of the capture's bytes.
@@ -2954,6 +3010,58 @@ class Handler(BaseHTTPRequestHandler):
         ts = datetime.now().strftime("%H:%M:%S")
         print(f"[{ts}] {self.address_string()} {fmt % args}", flush=True)
 
+    # ── Request duration: the access line and the Server-Timing header ────
+
+    def handle_one_request(self) -> None:
+        """Time one request, bound the log, and log the duration when it ends."""
+
+        self._request_started = time.perf_counter()
+        self._response_status: int | None = None
+        _bound_server_log()
+        try:
+            super().handle_one_request()
+        finally:
+            self._log_access()
+
+    def log_request(self, code: int | str = "-", size: int | str = "-") -> None:
+        """Record the status; the base line is replaced by ``_log_access``.
+
+        The base ``log_request`` runs inside ``send_response``, before the body
+        is written and before the handler knows the request's duration, so its
+        line cannot carry one. Suppressing it here and emitting one line at the
+        end of the request is what puts the duration on the logged line.
+        """
+
+        if isinstance(code, HTTPStatus):
+            code = int(code)
+        try:
+            self._response_status = int(code)
+        except (TypeError, ValueError):
+            self._response_status = None
+
+    def end_headers(self) -> None:
+        self._request_duration_ms = self._elapsed_ms()
+        self.send_header("Server-Timing", f"app;dur={self._request_duration_ms:.1f}")
+        super().end_headers()
+
+    def _elapsed_ms(self) -> float:
+        started = getattr(self, "_request_started", None)
+        if started is None:
+            return 0.0
+        return (time.perf_counter() - started) * 1000.0
+
+    def _log_access(self) -> None:
+        request_line = getattr(self, "requestline", "") or ""
+        if not request_line:
+            # A read that timed out or a connection that closed before a
+            # request line was parsed: nothing was served, nothing to log.
+            return
+        status = getattr(self, "_response_status", None)
+        code = str(status) if status is not None else "-"
+        # ``log_message`` carries the same timestamp and address prefix as the
+        # rest of the served log, so the access line reads like every other.
+        self.log_message("%s %s %.1fms", request_line, code, self._elapsed_ms())
+
     def _refuse_stale_code(self) -> bool:
         """Stop a request before it can import code newer than this process."""
 
@@ -4484,6 +4592,10 @@ def main(
     _CHECK_REFRESH_ENABLED = True
     try:
         _resolve_paths(mounts_file)
+        # A log left oversized by an earlier run is bounded as the server
+        # starts, so the bound holds from the first request rather than only
+        # once the first request crosses it again.
+        _bound_server_log()
         _SIGNATURE_TTL_S = _served_signature_ttl()
         _host = host or os.environ.get("DOCS_SERVER_BIND", "127.0.0.1")
         _port = port or int(os.environ.get("DOCS_SERVER_PORT", "8765"))

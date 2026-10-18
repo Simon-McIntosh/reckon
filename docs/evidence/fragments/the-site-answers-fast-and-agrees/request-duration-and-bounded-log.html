@@ -1,0 +1,42 @@
+<section id="request-duration-and-bounded-log" class="evidence-fragment">
+  <h2>§9 — The server records each request's duration, in a bounded log</h2>
+  <p>
+    Every latency in this plan had been reconstructed by hand because the access
+    log carried no duration, and the served log had grown to hundreds of
+    megabytes unrotated. Each answered request now logs one line carrying its
+    duration in milliseconds, and answers with the same figure in a
+    <code>Server-Timing</code> header. The handler times the request in
+    <code>handle_one_request</code>, sets <code>Server-Timing: app;dur=&lt;ms&gt;</code>
+    in <code>end_headers</code>, and emits the access line through the existing
+    <code>log_message</code>, which the base <code>log_request</code> cannot do
+    because it runs inside <code>send_response</code>, before the duration is
+    known. The base access line is suppressed in favour of this one.
+  </p>
+  <p>
+    The served log is bounded and keeps one predecessor. The unit opens the log
+    with <code>StandardOutput=append:</code>, so systemd holds one descriptor in
+    append mode for the process's life and a rename would leave it writing the
+    renamed inode. <code>_bound_server_log</code> therefore copies an over-bound
+    log to one predecessor (<code>server.log.1</code>, via a staging file and
+    <code>os.replace</code>) and then empties the live file in place; append mode
+    re-seeks to the current end on every write, so the next logged line lands at
+    offset 0 of the same short file. The bound is checked once per request and
+    once at start-up, under one lock shared by the handler threads.
+  </p>
+  <p id="request-duration-and-bounded-log-measure">
+    Measure: the focused gate
+    <code>pytest -q tests/test_request_duration_and_log_bound.py</code> reports
+    <strong>2 passed</strong> at the head revision — one request carries its
+    duration on the logged line and in the header, and after the log is driven
+    past its bound one predecessor holds the prior content and the live file is
+    bounded. The test files that import <code>reckon/serve.py</code> or
+    <code>reckon/service.py</code> report <strong>72 passed</strong> at the head;
+    the same set (minus the new file, which exists only at head) reports
+    <strong>70 passed</strong> at the base — no added failures. <code>ruff
+    check</code> reports 17 findings on <code>serve.py</code> at both base and
+    head and zero on <code>service.py</code>, and <code>ruff format --check</code>
+    is clean on all three changed files. The negative control removes the log
+    size bound (rotation returns <code>False</code>) and the bounded-size case
+    then fails, <code>EXIT=1</code>, on the missing predecessor.
+  </p>
+</section>
