@@ -499,6 +499,20 @@ def _admit_code_stamp() -> str:
     return follower_code_stamp()
 
 
+def _source_root() -> Path:
+    """The sys.path root that supplied this imported package.
+
+    The followers' reloader resolves its checkout the same way, so both name
+    one root rather than each counting its own way up the tree. This module
+    sits in a subpackage, where counting parents stops at ``reckon/`` -- the
+    package directory, which is not a checkout and reads as clean and
+    importable wherever it is asked.
+    """
+    from reckon.crew_follow_commands import _import_root
+
+    return _import_root(sys.modules[__name__])
+
+
 def _checkout_code_is_trusted() -> bool:
     """Whether the checkout's current code may be loaded and run.
 
@@ -508,8 +522,7 @@ def _checkout_code_is_trusted() -> bool:
     """
     from reckon import checkout_trust
 
-    root = Path(__file__).resolve().parent.parent
-    return checkout_trust.moved_checkout_is_trustworthy(root).trusted
+    return checkout_trust.moved_checkout_is_trustworthy(_source_root()).trusted
 
 
 def _reexec_into_current_code() -> None:
@@ -520,7 +533,7 @@ def _reexec_into_current_code() -> None:
     disk. The launcher leads with the sys.path root that supplied this import,
     so the replacement loads the checkout rather than whatever argv[0] named.
     """
-    root = str(Path(__file__).resolve().parent.parent)
+    root = str(_source_root())
     launcher = (
         f"import sys; sys.path.insert(0, {root!r}); from reckon.cli import main; main()"
     )
