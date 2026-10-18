@@ -260,6 +260,11 @@
     <p><strong>Landing.</strong> The worker's own importer arms flagged <code>test_a_reloaded_follower_adopts_launched_workers_before_it_hands_off</code> as failing only at the head under load. Five isolated runs at base <code>de943e8e3</code> and at head, in a compute-node job, failed five times out of five at both. That is a host dependence of the test, not of this change, and it is filed as suite-green §26. Review 108/120, with its two follow-ons folded into §59. Merge population of 43 files at main <code>da72cd6f4</code>: both arms green, no failing id added. Merged to main as <code>6a5d06b0c</code> with <code>crew merge</code>.</p>
   </section>
 
+  <section id="s60">
+    <h2>§60 — a reloaded process finds the fleet script its dispatch needs</h2>
+    <p><strong>Landing.</strong> The first review (104/120) blocked on the diagnosis: the worker had checked only whether later commits changed the resolver or the materialiser. The repair reproduced six historical reckon-only images reaching the same missing-script refusal before and after the candidate dispatch-path commits, so those commits did not cause it. Re-review 110/120 with no finding. Merge population of 192 files at main <code>18816c0ba</code>: one added id, <code>tests/test_scoring_dispatches_its_review.py::test_an_unattached_session_refuses_the_automatic_dispatch_too</code>, fails alone at base five times out of five, so it is not attributable to the merge. Merged to main as <code>913e4c24b</code> with <code>crew merge</code>. Reload trees made after the merge hold both <code>reckon/</code> and <code>skills/</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>
