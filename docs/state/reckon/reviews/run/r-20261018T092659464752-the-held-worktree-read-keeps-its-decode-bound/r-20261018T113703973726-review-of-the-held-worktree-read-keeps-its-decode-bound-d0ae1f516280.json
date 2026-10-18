@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T092659464752-the-held-worktree-read-keeps-its-decode-bound/gate-head.log",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Restoring the regression (decoding every per-run document again) raises the hook-counted decoded value above TREE_COUNT and the assertion fails; shown red at base a617367a1 (500 <= 15) and under the recorded negative control.",
+      "lines": "242"
+    },
+    {
+      "failure_condition": "Returning the aggregate read to its narrow LedgerError guard makes run_rows_from_documents raise CorruptEnvelopeError for a damaged envelope, so the rows assertion at line 365 never runs and the case fails; shown red by negative-control-repair.log.",
+      "lines": "361-367"
+    }
+  ],
+  "base_log_revision": "a617367a1f3d03f40fbb1b78e76c5ca0ea17bb6d",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T092659464752-the-held-worktree-read-keeps-its-decode-bound/gate-base-arm.log",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligations.py:_run_file_rows",
+    "reckon/crew/obligations.py:_held_worktree_records_read",
+    "reckon/ledger.py:load",
+    "reckon/ledger.py:_index_payload"
+  ],
+  "completed_at": "2026-10-18T12:00:58.253Z",
+  "dispatched_at": "2026-10-18T11:38:17Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "1696",
+      "severity": "follow-on",
+      "text": "follow-on: the promoted code head 4901dfcf2 changed this function, but the done_when's clause that the test files importing reckon/crew/obligations.py or reckon/ledger.py show no added failure was measured only at b9a45b761 (importers-head-00.log:1 and importers-head-01.log:1, both green at that revision) and never re-run at 4901dfcf2, so the revision being promoted carries no test-file population and the broadened `except Exception` here has no recorded importer outcome."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T092659464752-the-held-worktree-read-keeps-its-decode-bound/negative-control-repair.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the log's header records rev=b9a45b761b5783fa30d290b5c21644e836121882, a revision at which tests/test_the_held_worktree_read_is_bounded.py holds no test_a_damaged_aggregate_leaves_the_run_documents_readable, so the red run it records \u2014 the check that falsifies the repaired guard \u2014 cannot be tied to the revision it names and did not exist there."
+    }
+  ],
+  "head_log_revision": "4901dfcf2a3954d888e07c5a1fd5270ce582bc74",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against f5c1ad2c1a8750fbf1d7a9d23e0088d8b00adfcf; b9a45b761 factors load's merge into _merge_run_documents, adds promotion_order_key and run_rows_from_documents and points _run_file_rows at the last, 4901dfcf2 broadens the aggregate guard to Exception and adds the damaged-aggregate case, and d0ae1f516 touches the landing fragment only.",
+    "done_when": "the done_when's decode measure is asserted at tests/test_the_held_worktree_read_is_bounded.py:242 and the run's own gate-base-arm.log records it red at base a617367a1f3d03f40fbb1b78e76c5ca0ea17bb6d as \"assert 500 <= 15\"; obligations.py was checked and holds no union, sort or stem check of the ledger rows, the earlier section's stale-record, fail-open and deep-copy cases are still present and green in that file, both logs end EXIT=, and ruff measures no added finding; the importer-population clause is the one part not shown at the promoted revision, and is recorded as a finding.",
+    "goal": "the node goal is to make the held-worktree read assert its decode bound again and read runs through the ledger's own merge; reckon/crew/obligations.py:489 returns ledger.run_rows_from_documents(project, repository) and tests/test_the_held_worktree_read_is_bounded.py:242 asserts decoded <= TREE_COUNT.",
+    "manifest": "read; it reports status complete, commits b9a45b761, 4901dfcf2 and d0ae1f516, tests \"6 passed ... EXIT=0\", a base arm red at 500 and negative_control_log .../negative-control.log, but leaves baseline_suite and after_suite empty, so the added-failure pair is derived here from the two gate logs the manifest names in test_logs.",
+    "write_paths": "the manifest declares reckon/crew/obligations.py, reckon/ledger.py, tests/test_the_held_worktree_read_is_bounded.py, the landing fragment and a figures directory; the f5c1ad2c1..d0ae1f516 diff changes exactly the first four files and writes no figure."
+  },
+  "justifications": {
+    "durability": "tests/test_the_held_worktree_read_is_bounded.py:242 counts decodes through ledger.read_document and reddens at the base revision (500 <= 15) and under the recorded negative control, and tests/test_the_held_worktree_read_is_bounded.py:365 fails when the aggregate read is returned to the narrow guard, as negative-control-repair.log shows.",
+    "evidence": "gate-head.log's first line is rev=4901dfcf2 and records 6 passed with decoded 0, and gate-base-arm.log names revision a617367a1 with \"assert 500 <= 15\", but the reviewed manifest's baseline_suite and after_suite fields are empty and its importer population was run only at b9a45b761 (importers-head-00.log:1).",
+    "fit": "reckon/ledger.py:1614 promotion_order_key and reckon/ledger.py:1626 _merge_run_documents follow the module's existing private-helper and docstring idiom and carry no plan, version or ticket label.",
+    "goal_fidelity": "reckon/crew/obligations.py:489 delegates the screen's rows to ledger.run_rows_from_documents and tests/test_the_held_worktree_read_is_bounded.py:242 asserts the decode bound again, so both halves of the node goal are met.",
+    "reuse": "run_rows_from_documents at reckon/ledger.py:1679 is load's own union, order and run-id-against-file check with refuse=False, sharing _merge_run_documents and promotion_order_key with load, and the duplicate obligations.py used to hold was deleted.",
+    "scope_discipline": "every path in the f5c1ad2c1..d0ae1f516 diff is one of the manifest's declared write paths, and no file outside reckon/crew/obligations.py, reckon/ledger.py, tests/test_the_held_worktree_read_is_bounded.py and the landing fragment is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the held-worktree read assert its decode bound again and read runs through the ledger's own merge; reckon/crew/obligations.py:489 returns ledger.run_rows_from_documents(project, repository) and tests/test_the_held_worktree_read_is_bounded.py:242 asserts decoded <= TREE_COUNT.\nVERDICT done_when: the done_when's decode measure is asserted at tests/test_the_held_worktree_read_is_bounded.py:242 and the run's own gate-base-arm.log records it red at base a617367a1f3d03f40fbb1b78e76c5ca0ea17bb6d as \"assert 500 <= 15\"; obligations.py was checked and holds no union, sort or stem check of the ledger rows, the earlier section's stale-record, fail-open and deep-copy cases are still present and green in that file, both logs end EXIT=, and ruff measures no added finding; the importer-population clause is the one part not shown at the promoted revision, and is recorded as a finding.\nVERDICT write_paths: the manifest declares reckon/crew/obligations.py, reckon/ledger.py, tests/test_the_held_worktree_read_is_bounded.py, the landing fragment and a figures directory; the f5c1ad2c1..d0ae1f516 diff changes exactly the first four files and writes no figure.\nVERDICT manifest: read; it reports status complete, commits b9a45b761, 4901dfcf2 and d0ae1f516, tests \"6 passed ... EXIT=0\", a base arm red at 500 and negative_control_log .../negative-control.log, but leaves baseline_suite and after_suite empty, so the added-failure pair is derived here from the two gate logs the manifest names in test_logs.\nVERDICT diff: read commit by commit against f5c1ad2c1a8750fbf1d7a9d23e0088d8b00adfcf; b9a45b761 factors load's merge into _merge_run_documents, adds promotion_order_key and run_rows_from_documents and points _run_file_rows at the last, 4901dfcf2 broadens the aggregate guard to Exception and adds the damaged-aggregate case, and d0ae1f516 touches the landing fragment only.\nCALL_SITES: reckon/crew/obligations.py:_run_file_rows, reckon/crew/obligations.py:_held_worktree_records_read, reckon/ledger.py:load, reckon/ledger.py:_index_payload\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:489 delegates the screen's rows to ledger.run_rows_from_documents and tests/test_the_held_worktree_read_is_bounded.py:242 asserts the decode bound again, so both halves of the node goal are met.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head.log's first line is rev=4901dfcf2 and records 6 passed with decoded 0, and gate-base-arm.log names revision a617367a1 with \"assert 500 <= 15\", but the reviewed manifest's baseline_suite and after_suite fields are empty and its importer population was run only at b9a45b761 (importers-head-00.log:1).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the f5c1ad2c1..d0ae1f516 diff is one of the manifest's declared write paths, and no file outside reckon/crew/obligations.py, reckon/ledger.py, tests/test_the_held_worktree_read_is_bounded.py and the landing fragment is touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_held_worktree_read_is_bounded.py:242 counts decodes through ledger.read_document and reddens at the base revision (500 <= 15) and under the recorded negative control, and tests/test_the_held_worktree_read_is_bounded.py:365 fails when the aggregate read is returned to the narrow guard, as negative-control-repair.log shows.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/ledger.py:1614 promotion_order_key and reckon/ledger.py:1626 _merge_run_documents follow the module's existing private-helper and docstring idiom and carry no plan, version or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: run_rows_from_documents at reckon/ledger.py:1679 is load's own union, order and run-id-against-file check with refuse=False, sharing _merge_run_documents and promotion_order_key with load, and the duplicate obligations.py used to hold was deleted.\nFINDING reckon/ledger.py:1696 follow-on: the promoted code head 4901dfcf2 changed this function, but the done_when's clause that the test files importing reckon/crew/obligations.py or reckon/ledger.py show no added failure was measured only at b9a45b761 (importers-head-00.log:1 and importers-head-01.log:1, both green at that revision) and never re-run at 4901dfcf2, so the revision being promoted carries no test-file population and the broadened `except Exception` here has no recorded importer outcome.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T092659464752-the-held-worktree-read-keeps-its-decode-bound/negative-control-repair.log:1 follow-on: the log's header records rev=b9a45b761b5783fa30d290b5c21644e836121882, a revision at which tests/test_the_held_worktree_read_is_bounded.py holds no test_a_damaged_aggregate_leaves_the_run_documents_readable, so the red run it records \u2014 the check that falsifies the repaired guard \u2014 cannot be tied to the revision it names and did not exist there.",
+  "review_run_id": "r-20261018T113703973726-review-of-the-held-worktree-read-keeps-its-decode-bound-d0ae1f516280",
+  "reviewed_base_sha": "f5c1ad2c1a8750fbf1d7a9d23e0088d8b00adfcf",
+  "reviewed_commits": [
+    "b9a45b761b5783fa30d290b5c21644e836121882",
+    "4901dfcf2a3954d888e07c5a1fd5270ce582bc74",
+    "d0ae1f51628008ed5fcdf36ec4377e0a243476e6"
+  ],
+  "reviewed_head_sha": "d0ae1f51628008ed5fcdf36ec4377e0a243476e6",
+  "reviewed_run_id": "r-20261018T092659464752-the-held-worktree-read-keeps-its-decode-bound",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T11:52:08.610474+00:00",
+  "total": 110
+}
