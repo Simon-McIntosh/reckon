@@ -33,6 +33,7 @@ from reckon.crew.node import INTERRUPTED_RUN_PHASE, parse_duration
 from reckon.crew.routing import (
     WorktreeRecordIndex,
     _registered_worktrees,
+    _retained_worktree,
     record_names_worktree,
 )
 
@@ -480,47 +481,60 @@ def _aggregate_rows(project: str, repository: Path) -> tuple[Mapping[str, Any], 
     return rows
 
 
-def _run_nodes(project: str, repository: Path) -> dict[str, str]:
-    """Each run's node id, from the ledger's own picker projection.
+def _run_namings(project: str, repository: Path) -> dict[str, tuple[str, Path | None]]:
+    """Each run's node id and the tree it retained, from one index read.
 
-    A per-run file can name an inspected tree only by its node id: a tree lives
-    at ``<root>/<session>/<node id>``, and a run retains its own tree there, so
-    the tree's directory name is the run's node id on both naming routes. The
-    projection is the ledger's index of every run, read here to screen which
-    documents are worth decoding in full. A run the projection does not carry
-    is left unscreened, so an index that lags costs a read rather than dropping
-    a duty.
+    A per-run document can name an inspected tree by either route
+    :func:`record_names_worktree` applies: the node id it carries, or the path
+    its retention carries. Both are taken here from the ledger's index of every
+    run — the reader the derivation's own region already holds, so one
+    derivation builds that index once rather than once per read. The retained
+    path is taken through the naming rule's own helper, so this screen cannot
+    drift from the rule it screens for. A run the index does not carry is left
+    unscreened, so a lagging index costs a read rather than dropping a duty.
     """
 
-    nodes: dict[str, str] = {}
+    namings: dict[str, tuple[str, Path | None]] = {}
     try:
-        rows = ledger.picker_runs(project, repository)
+        rows = ledger.runs(project, root=repository)
     except Exception:  # noqa: BLE001 — a screen must never fail the derivation
         return {}
     for row in rows:
         run_id = str(row.get("run_id") or "")
+        if not run_id:
+            continue
         node = row.get("node")
         node_id = (
             str(node.get("id") or "") if isinstance(node, Mapping) else str(node or "")
         )
-        if run_id and node_id:
-            nodes[run_id] = node_id
-    return nodes
+        namings[run_id] = (node_id, _retained_worktree(row))
+    return namings
 
 
-def _may_name_a_tree(source: Path, names: set[str], nodes: Mapping[str, str]) -> bool:
+def _may_name_a_tree(
+    source: Path,
+    names: set[str],
+    trees: set[Path],
+    namings: Mapping[str, tuple[str, Path | None]],
+) -> bool:
     """Whether a per-run document could name one of the inspected trees.
 
-    A run whose node id matches no inspected tree's directory name cannot name
-    one, on either route; such a document is left undecoded. A run whose node
-    id the projection does not carry is read, so the screen never drops a duty
-    on an index that lags.
+    The routes are exactly the ones :func:`record_names_worktree` applies, so
+    the screen never narrows the rule it screens for: a run whose node id
+    matches no inspected tree's directory name is still read when the path its
+    retention carries is one of those trees, which is how a run dispatched for
+    another node comes to hold a tree named for a node it never had. A run the
+    index does not carry is read, so the screen never drops a duty on an index
+    that lags.
     """
 
     if not names:
         return True
-    node_id = nodes.get(source.stem)
-    return node_id is None or node_id in names
+    naming = namings.get(source.stem)
+    if naming is None:
+        return True
+    node_id, retained = naming
+    return node_id in names or (retained is not None and retained in trees)
 
 
 def _ledger_order_key(record: Mapping[str, Any]) -> tuple[str, str]:
@@ -577,12 +591,13 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     to the live run and the collector will not take it, so naming the promoted
     run would send a coordinator at the wrong run for a tree it cannot free.
 
-    Each per-run file the aggregate does not carry and whose run's node id names
-    an inspected tree is read once for the call; one whose node id names no
-    inspected tree is left undecoded, since a run names a tree only by its own
-    node id (its own tree lives at ``<root>/<session>/<node id>``) and so cannot
-    name a tree it does not match. A run whose node id is not carried by the
-    ledger's projection is read, so a lagging index costs a read, never a duty.
+    Each per-run file the aggregate does not carry and whose run can name an
+    inspected tree is read once for the call; one that can name none is left
+    undecoded. A run names a tree by either route :func:`record_names_worktree`
+    applies — its node id, or the path its retention carries — and the screen
+    admits on both, so a run dispatched for one node and retaining a tree named
+    for another is still read and still answers. A run the ledger's index does
+    not carry is read, so a lagging index costs a read, never a duty.
     The whole call runs inside :func:`reckon.file_memo.read_only_region`, so a
     document is stat'ed and decoded once for the call and handed on unshared.
     Records from both sources are filed into one index of the trees they name,
@@ -622,16 +637,18 @@ def _held_worktree_records_read(
     # A file whose row the aggregate already holds is never opened: the merged
     # reader reads that run from its row, at the row's own position. Every other
     # file carries a record no row does, and any of them may name an inspected
-    # tree, so each is read once for this call. A file whose run's node id names
-    # no inspected tree cannot name one, so it is left undecoded: the read is
-    # then bounded by the trees that are held rather than by the corpus.
+    # tree, so each is read once for this call. A file whose run can name no
+    # inspected tree on either route the naming rule applies is left undecoded:
+    # the read is then bounded by the trees that are held rather than by the
+    # corpus.
     names = {worktree.name for worktree in inspected}
-    nodes = _run_nodes(project, repository) if names else {}
+    trees = set(inspected)
+    namings = _run_namings(project, repository) if names else {}
     records = [
         record
         for source in sources
         if source.stem not in known
-        and _may_name_a_tree(source, names, nodes)
+        and _may_name_a_tree(source, names, trees, namings)
         and (record := _run_file_record(source)) is not None
     ]
     # The reader that merges both sources re-sorts the merged list only when it
