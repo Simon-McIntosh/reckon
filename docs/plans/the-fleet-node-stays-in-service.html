@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Our own step cancels drained three nodes; end a stopped worker inside its step, let migrate start a second move, bound step memory, then move">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="7.5">
+  <meta name="plan-effort-hours" content="9.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
@@ -19,7 +19,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-moves-to-a-new-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -131,27 +131,45 @@
     <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
     <p>
       The step must end by its own task exiting, never by the scheduler's kill. The
-      task that a worker step runs gains a reaper as its first process. On SIGTERM
-      the reaper signals the worker's process group, then waits for every process in
-      the step's cgroup to exit, and only then exits itself, carrying the worker's
-      status. The wait has no deadline shorter than a GPFS stall: a process in
-      uninterruptible sleep is waited for, not escalated, because escalation is
-      exactly what drains the node. The stop path signals the reaper and never sends
-      SIGKILL to the <code>srun</code> client while the step is live. If a worker
-      still runs past a long ceiling (named in the brief, at least ten minutes), the
-      reaper records the processes and their wait channels to the run directory and
-      keeps waiting. It does not escalate.
+      per-run supervisor already owns a worker's parentage, its stop signals and its
+      exit record. It is started by <code>_start_supervisor</code>
+      (<code>reckon/crew/dispatch_launch.py:2078</code>), its entry point is
+      <code>reckon/crew/supervisor_main.py:23</code>, and its stop path is at
+      <code>dispatch_launch.py:2860–2884</code> and <code>2936–2963</code>. So this
+      section extends that supervisor and adds no new reaper or process.
     </p>
     <p>
-      §2's evidence sets where the reaper sits and which pid the stop path signals,
-      so the gate below holds this section until §2 lands. Done when two things hold.
-      A unit test proves that the stop path signals the reaper's pid and records no
-      SIGKILL to an <code>srun</code> client. And a probe on the fleet allocation
-      stops a worker step whose child ignores SIGTERM for 40 s: <code>sacct</code>
-      then reports the step <code>COMPLETED</code>, the reaper's record names the
-      child, and the node's state is unchanged. The negative control runs the same
-      probe through the old path, by direct <code>scancel</code> of the step, and
-      shows <code>CANCELLED</code>.
+      For a worker placed as a step (its argv built by
+      <code>placement.step_prefix</code>), the supervisor delivers the stop to the
+      task inside the step and never to the <code>srun</code> client. §2 showed that a
+      signal to the client makes Slurm cancel the step in that second. The worker
+      chooses the delivery primitive and names it in the evidence. One candidate is
+      <code>scancel --signal=TERM</code> addressed to the step id, which signals the
+      task without cancelling the step; another is a signal <code>srun</code> forwards
+      to its task without cancelling. The supervisor then waits for the client to
+      exit by itself. A later escalation is SIGKILL delivered to the task the same
+      way, still never a cancel. The wait has no deadline shorter than a GPFS stall.
+      If the worker outlives a long ceiling, at least ten minutes, the supervisor
+      records the step's processes and their wait channels to the run directory and
+      keeps waiting.
+    </p>
+    <p>
+      A step that ends normally can drain the node too. When the task exits,
+      <code>slurmstepd</code> kills whatever is left in the step's cgroup under the
+      same 60 s timeout. The probe therefore also checks that the sandbox's
+      PID-namespace init holds the task open until every descendant has exited. If
+      it does not, this section is re-planned; it is not patched with a second
+      waiter.
+    </p>
+    <p>
+      Done when two things hold. A unit test proves that the stop path, for a
+      step-placed worker, delivers to the step's task and records no signal to the
+      <code>srun</code> client. And a probe on the fleet allocation stops a worker
+      step whose child ignores SIGTERM for 40 s: <code>sacct</code> then reports the
+      step <code>COMPLETED</code>, the supervisor's record names the child, and the
+      node's state is unchanged. The negative control runs the same probe through
+      the old path, a signal to the <code>srun</code> client, and shows
+      <code>CANCELLED</code>.
     </p>
 
     <h2 id="s4">&sect;4 &mdash; The migrate command starts a second move</h2>
@@ -170,7 +188,9 @@
       same file pair, <code>reckon fleet-node status</code> replaces its warning that
       "the allocation ends when the drain completes". The replacement states that the
       scheduler places no new job on the node, that the allocation continues until it
-      ends, and that the node returns only when an administrator resumes it.
+      ends, and that the node returns only when an administrator resumes it. Neither
+      change adds or retires an option: the first changes what the existing command
+      does when its newest ledger is done, and the second replaces one string.
     </p>
     <p>
       Done when tests in <code>tests/</code> cover a completed ledger followed by a
@@ -207,12 +227,22 @@
     </p>
     <p>
       Every worker step is therefore placed with an explicit <code>--mem</code>, so
-      undeclared work stays inside a share that leaves room for the sessions. A node
-      whose work needs more declares it at dispatch, and the declaration is recorded on
-      the run. A declaration above the fleet's per-node ceiling is placed in its own
-      job on a <code>*_debug</code> partition rather than inside the fleet allocation.
-      The default and the ceiling are the open decision <code>worker-step-memory</code>
-      below. Done when a test shows the placed <code>srun</code> argv carrying the
+      undeclared work stays inside a share that leaves room for the sessions.
+      <code>placement.step_prefix</code> (<code>reckon/crew/placement.py:233</code>)
+      is the one owner of a step's options and carries the bound.
+      <code>fleet_node.placement_argv</code> (<code>reckon/crew/fleet_node.py:358</code>)
+      builds the same <code>srun --overlap --jobid=…</code> prefix for the migrate and
+      place commands, so it is folded into <code>step_prefix</code> rather than given
+      the bound separately. A node whose work needs more declares it through the
+      existing dispatch <code>--set</code> override, recorded on the run, so no new
+      option is added. The bound uses the memory vocabulary placement already has:
+      <code>memory_gb</code> in <code>placement.reservation_options</code>, and
+      <code>DEFAULT_MEMORY</code> with its environment override in
+      <code>fleet_node.py</code>. A declaration above the fleet's per-node ceiling
+      is placed in its own job on a <code>*_debug</code> partition rather than inside
+      the fleet allocation. The default and the ceiling are the open decision
+      <code>worker-step-memory</code> below. Done when a test shows the placed
+      <code>srun</code> argv carrying the
       default and a declared bound, and a test shows a declaration above the ceiling
       routed to its own job. A probe step on the fleet allocation must also show its
       cgroup <code>memory.max</code> equal to the bound. The negative control is a probe
@@ -250,6 +280,39 @@
       session cut over and verified, and the new node's state is
       <code>ALLOCATED</code> without <code>DRAIN</code> after the first wave of
       worker stops.
+    </p>
+
+    <h2 id="s9">&sect;9 &mdash; A watch producer sweeps only when the crew home changes</h2>
+    <section data-reckon="section" data-id="s9" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      §7 measured that one producer cycle, in <code>watch_ticker</code>
+      (<code>reckon/crew/recovery_watch.py</code>), sweeps the whole fleet every
+      second whether or not anything has moved. It lists every project's
+      <code>live/</code> before filtering (<code>runs.py:705</code>,
+      <code>runs.py:720</code>), walks run directories, parses streams and calls the
+      git shim. That is about 1,880 opens and 1,575 stats per cycle plus 1.25
+      git-shim calls, whatever the live pointer count. Five producers make roughly
+      9,000 GPFS opens a second.
+    </p>
+    <p>
+      The sweep runs only when the crew home changes. The change signal is inotify
+      on <code>live/</code>, <code>runs/</code> and the watch directory, or one mtime
+      stat of each where inotify is unavailable on GPFS; the worker states which in
+      the evidence. The per-live-run liveness probe stays on the fixed beat, because
+      a process can die without touching a file. The listing filters to the
+      producer's own project before it stats pointers.
+    </p>
+    <p>
+      Done when two things hold. A test drives a producer through quiet cycles and
+      sees no directory walk and no git-shim spawn, then touches a pointer and sees
+      exactly one sweep. A 32 s strace of a producer against the fleet's copied
+      <code>live/</code> must also show per-cycle <code>openat</code> and
+      <code>stat</code> counts below a tenth of §7's figures while no file changes.
+      The negative control is a cycle in which a pointer's mtime moves, which must
+      sweep. A transition test must still deliver a run's death within one beat when
+      no file moved. Because this changes load on the run trees that
+      <code>reckon serve</code> also reads, the session owning that work is told
+      before this section dispatches.
     </p>
 
     <section data-reckon="gates" id="gates" class="r-gates">
