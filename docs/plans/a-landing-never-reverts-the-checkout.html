@@ -25,7 +25,7 @@
   <title>A Landing Never Reverts The Checkout | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -111,6 +111,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261018T224935782479-review-of-what-turned-a-landing-back-a5b62bac3772" data-who="reckon-build" data-when="2026-10-18T23:08:09.940Z">
     <div class="r-comment-body"><p>Independent review of run r-20261018T212807537070-what-turned-a-landing-back at head a5b62bac377251a460f4217c4001470a83fc49fc stored as a parsed record scoring goal_fidelity 18, evidence 17, scope_discipline 19, durability 14, fit 18, reuse 18, with two follow-on findings (a timeline sentence that reads as if the rollback resolved the landed HEAD, and a gate log stamped with the pre-fix revision) and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261018T212807537070-what-turned-a-landing-back" data-who="reckon-build" data-when="2026-10-18T22:48:01Z">
+    <div class="r-comment-body"><p>docs/research/what-turned-a-landing-back.html + scripts/reproduce_landing_reversion.py + docs/figures/what-turned-a-landing-back/timeline.svg — timeline of every HEAD/index/worktree change at nova&#x27;s four paths 19:23:40–19:37:06 with each record, drawn as one figure embedded in the document; the reproduction calls it, importing _restore_landing_writes (promotion_scope.py:1672) from reckon.crew.promotion_scope with the repository on PYTHONPATH rather than modelling it, and reports all four paths True; the reverted state is that rollback resolving a pre-landing HEAD, leading candidate a second promotion of the same review run via promote_review_run_itself (recovery_review_acceptance.py:416); the reproduction exits 0, interleaving reverts all four paths and the control leaves them equal.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261018T220839303156-review-of-a-landing-checks-what-it-left-ef8d39c1ed03" data-who="reckon-build" data-when="2026-10-18T22:23:19.682Z">
     <div class="r-comment-body"><p>Reviewed r-20261018T213033460177-a-landing-checks-what-it-left at head ef8d39c1ed0392723dac1efec8c36d043392e7c9 (base 88d10cb5b9e7380a9ded4ac4828d0b32b28de4dd) and stored a parsed record at review-records/r-20261018T213033460177-a-landing-checks-what-it-left.json scoring goal_fidelity 18, evidence 18, scope_discipline 19, durability 17, fit 19, reuse 20, with added_failure_count 0 and two follow-on findings; the landing is sound and blocks nothing.</p></div>
