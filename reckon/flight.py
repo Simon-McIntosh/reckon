@@ -87,6 +87,31 @@ PLAN_REVIEW_GATE_DEFAULT = "report"
 SPRINT_RECENT_DAYS_KEY = "sprint_recent_days"
 DEFAULT_SPRINT_RECENT_DAYS = 14
 
+# The lanes a pick may reach only on the terms a policy states, keyed by lane
+# name and read from the host layer and the project layer like any other key. A
+# reserved lane is offered for a non-review node at the declared difficulty
+# floor, or to a node that has already been attempted elsewhere, and only while
+# the lane's own account window holds headroom: it is a lane the orchestrators
+# run on, so a pick that reaches it spends the capacity they need. Reckon-owned
+# in the same sense as the plan-review gate and the recent-closed window above:
+# the provider-neutral schema names no such key, so the resolved config carries
+# it, a layer may set it, and the schema check is shown a copy without it.
+PICKER_RESERVED_LANES_KEY = "picker_reserved_lanes"
+PICKER_RESERVED_LANE_FLOOR_KEY = "floor"
+PICKER_RESERVED_LANE_ATTEMPTS_KEY = "or_after_attempts"
+PICKER_RESERVED_LANE_CEILING_KEY = "window_ceiling"
+# What one reserved lane admits when the declaration names no term of its own:
+# the hardest declared tier only, a node that has already been attempted twice,
+# and an account window below 60 per cent of its allowance, which leaves the
+# rest of the lane to the orchestrators that share it.
+DEFAULT_PICKER_RESERVED_LANE_FLOOR = {
+    "reasoning": ("deep",),
+    "verification": ("strict",),
+    "risk": ("elevated", "critical"),
+}
+DEFAULT_PICKER_RESERVED_LANE_ATTEMPTS = 2
+DEFAULT_PICKER_RESERVED_LANE_CEILING = 0.6
+
 # The review tier thresholds. The shipped defaults layer carries both, so a
 # resolved config always supplies them; the module constants are the fallback
 # for a config assembled by hand — an in-process caller or a test — which
@@ -351,6 +376,7 @@ def _schema_view(data: Mapping[str, Any]) -> dict[str, Any]:
     cleaned.pop(HARNESS_HOME_FILES, None)
     cleaned.pop(HARNESS_HOME_ADJACENT_FILES, None)
     cleaned.pop(SPRINT_RECENT_DAYS_KEY, None)
+    cleaned.pop(PICKER_RESERVED_LANES_KEY, None)
     review = cleaned.get(REVIEW_KEY)
     if isinstance(review, Mapping):
         cleaned[REVIEW_KEY] = {
@@ -712,6 +738,162 @@ def _validate_sprint_recent_days(data: Mapping[str, Any], source: str | Path) ->
         )
 
 
+def _validate_picker_reserved_lanes(
+    data: Mapping[str, Any], source: str | Path
+) -> None:
+    """Check the reserved-lane policies, which the generated schema omits.
+
+    Each policy is read at the terms it states, so a value the picker cannot
+    compare against is refused by name rather than left to read as a floor no
+    node reaches: a requirement key outside the capability vocabulary, a value
+    that key does not accept, an attempt count that is not a whole number, or a
+    policy key the picker does not read. A lane declared with no policy at all
+    is legal and takes every default.
+    """
+    if PICKER_RESERVED_LANES_KEY not in data:
+        return
+    from reckon.capability import REQUIREMENT_LEVELS
+
+    lanes = data[PICKER_RESERVED_LANES_KEY]
+    if not isinstance(lanes, Mapping) or not lanes:
+        raise FlightConfigError(
+            source,
+            PICKER_RESERVED_LANES_KEY,
+            "must be a mapping from lane name to admission policy",
+        )
+    accepted = {
+        PICKER_RESERVED_LANE_FLOOR_KEY,
+        PICKER_RESERVED_LANE_ATTEMPTS_KEY,
+        PICKER_RESERVED_LANE_CEILING_KEY,
+    }
+    for lane, policy in lanes.items():
+        key_path = f"{PICKER_RESERVED_LANES_KEY}.{lane}"
+        if not isinstance(lane, str) or not lane.strip():
+            raise FlightConfigError(
+                source,
+                PICKER_RESERVED_LANES_KEY,
+                "lane names must be non-empty strings",
+            )
+        if policy is None:
+            continue
+        if not isinstance(policy, Mapping):
+            raise FlightConfigError(source, key_path, "must be a mapping or null")
+        unknown = sorted(set(policy) - accepted)
+        if unknown:
+            raise FlightConfigError(
+                source,
+                key_path,
+                f"unknown keys {unknown!r}; accepted {sorted(accepted)!r}",
+            )
+        attempts = policy.get(PICKER_RESERVED_LANE_ATTEMPTS_KEY)
+        if attempts is not None and (
+            isinstance(attempts, bool) or not isinstance(attempts, int) or attempts < 1
+        ):
+            raise FlightConfigError(
+                source,
+                f"{key_path}.{PICKER_RESERVED_LANE_ATTEMPTS_KEY}",
+                "must be a whole number of attempts of at least one",
+            )
+        ceiling = policy.get(PICKER_RESERVED_LANE_CEILING_KEY)
+        if ceiling is not None and (
+            isinstance(ceiling, bool)
+            or not isinstance(ceiling, (int, float))
+            or not 0 < ceiling <= 1
+        ):
+            raise FlightConfigError(
+                source,
+                f"{key_path}.{PICKER_RESERVED_LANE_CEILING_KEY}",
+                "must be a fraction of the window above zero and at most one",
+            )
+        floor = policy.get(PICKER_RESERVED_LANE_FLOOR_KEY)
+        if floor is None:
+            continue
+        if not isinstance(floor, Mapping) or not floor:
+            raise FlightConfigError(
+                source,
+                f"{key_path}.{PICKER_RESERVED_LANE_FLOOR_KEY}",
+                "must be a mapping from requirement key to accepted value or values",
+            )
+        for key, declared in floor.items():
+            levels = REQUIREMENT_LEVELS.get(str(key))
+            if levels is None:
+                raise FlightConfigError(
+                    source,
+                    f"{key_path}.{PICKER_RESERVED_LANE_FLOOR_KEY}",
+                    f"unknown requirement key {key!r}; accepted keys {sorted(REQUIREMENT_LEVELS)}",
+                )
+            values = declared if isinstance(declared, (list, tuple)) else [declared]
+            if not values:
+                raise FlightConfigError(
+                    source,
+                    f"{key_path}.{PICKER_RESERVED_LANE_FLOOR_KEY}",
+                    f"{key!r} must name at least one accepted value",
+                )
+            for value in values:
+                if value not in levels:
+                    raise FlightConfigError(
+                        source,
+                        f"{key_path}.{PICKER_RESERVED_LANE_FLOOR_KEY}.{key}",
+                        f"{value!r} is not an accepted value for {key!r}; "
+                        f"accepted values {list(levels)!r}",
+                    )
+
+
+def reserved_lane_policies(
+    config: Mapping[str, Any] | None,
+) -> dict[str, dict[str, Any]]:
+    """Return the reserved-lane policies a resolved config declares, filled out
+    with the defaults for every term a declaration leaves out.
+
+    A lane that is not listed is not reserved. One listed with no policy, or
+    with only some of the terms, admits exactly what the missing terms first
+    shipped as, so a host that reserves a lane and states only its window
+    ceiling is not also stating a weaker floor by omission. A declared floor
+    replaces the default floor rather than merging into it, because a floor is
+    one conjunction of terms and a merge would silently keep a term the
+    declaration left out. Each policy reads ``floor`` as a mapping from
+    requirement key to the tuple of accepted values, ``or_after_attempts`` as a
+    whole count and ``window_ceiling`` as a fraction of the account window. A
+    config declaring no such key — an in-process caller or a hand-assembled test
+    config — reserves nothing, which is how the policy is switched off.
+    """
+    from reckon.capability import REQUIREMENT_LEVELS
+
+    declared = (config or {}).get(PICKER_RESERVED_LANES_KEY)
+    if not isinstance(declared, Mapping):
+        return {}
+    policies: dict[str, dict[str, Any]] = {}
+    for lane, raw_policy in declared.items():
+        policy: Mapping[str, Any] = (
+            raw_policy if isinstance(raw_policy, Mapping) else {}
+        )
+        declared_floor = policy.get(PICKER_RESERVED_LANE_FLOOR_KEY)
+        floor: dict[str, tuple[str, ...]] = dict(DEFAULT_PICKER_RESERVED_LANE_FLOOR)
+        if isinstance(declared_floor, Mapping):
+            floor = {}
+            for key, raw in declared_floor.items():
+                if str(key) not in REQUIREMENT_LEVELS:
+                    continue
+                listed = raw if isinstance(raw, (list, tuple)) else [raw]
+                floor[str(key)] = tuple(str(value) for value in listed)
+        attempts = policy.get(PICKER_RESERVED_LANE_ATTEMPTS_KEY)
+        ceiling = policy.get(PICKER_RESERVED_LANE_CEILING_KEY)
+        policies[str(lane)] = {
+            PICKER_RESERVED_LANE_FLOOR_KEY: floor,
+            PICKER_RESERVED_LANE_ATTEMPTS_KEY: (
+                attempts
+                if isinstance(attempts, int) and not isinstance(attempts, bool)
+                else DEFAULT_PICKER_RESERVED_LANE_ATTEMPTS
+            ),
+            PICKER_RESERVED_LANE_CEILING_KEY: (
+                float(ceiling)
+                if isinstance(ceiling, (int, float)) and not isinstance(ceiling, bool)
+                else DEFAULT_PICKER_RESERVED_LANE_CEILING
+            ),
+        }
+    return policies
+
+
 def sprint_recent_days(config: Mapping[str, Any] | None) -> int:
     """Return the configured window, in days, for a recently closed sprint.
 
@@ -1038,9 +1220,9 @@ def validate_layer(data: Mapping[str, Any], source: str | Path) -> None:
     unknown keys, and leaves whole-config rules to :func:`_validate_resolved`.
 
     The reckon-owned keys the generated schema does not carry, the plan-review
-    gate's mode and the harness-home file declarations, are held out of the
-    schema check and validated just below, so the generated model stays the
-    artifact its source produces.
+    gate's mode, the harness-home file declarations and the reserved-lane
+    policies, are held out of the schema check and validated just below, so the
+    generated model stays the artifact its source produces.
     """
     from pydantic import ValidationError
 
@@ -1071,6 +1253,7 @@ def validate_layer(data: Mapping[str, Any], source: str | Path) -> None:
                 )
 
     _validate_sprint_recent_days(data, source)
+    _validate_picker_reserved_lanes(data, source)
 
     for backend_name, backend in (data.get("backends") or {}).items():
         if not isinstance(backend, Mapping):

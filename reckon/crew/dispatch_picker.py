@@ -21,6 +21,7 @@ from reckon import (
     ledger,
 )
 from reckon._timestamps import parse_utc
+from reckon.flight import reserved_lane_policies
 from reckon.crew.node import (
     CrewError,
     PlanVisibilityError,
@@ -42,6 +43,14 @@ from reckon.crew.runs import (
 
 
 PICKER_DISPATCH_TIMEOUT_SECONDS = 5.0
+
+#: The record of a pick that reached a lane a flight policy reserves. One JSON
+#: line per such pick, appended under the crew home: the lane, the backend and
+#: model chosen, the reason the pick gave for it, and whether the pick was
+#: refused for giving none. The run record carries the reason too; this log is
+#: what makes a reserved-lane decision readable across runs, on the same crew
+#: home the pick log lives in, without opening each run's pointer.
+RESERVED_LANE_PICKS_LOG = "reserved-lane-picks.jsonl"
 
 
 def parse_dispatch_due(value: str | None) -> str | None:
@@ -232,9 +241,7 @@ def _picker_budget_snapshot(
     )
 
 
-def _picker_input(
-    name: str, build: Callable[[], Any], errors: dict[str, str]
-) -> Any:
+def _picker_input(name: str, build: Callable[[], Any], errors: dict[str, str]) -> Any:
     """Build one dispatch-scope picker input, recording a failure instead of raising.
 
     These inputs are advisory: the picker re-reads whatever it is not handed, so
@@ -406,7 +413,9 @@ def dispatch_picker_selection(
     stages: dict[str, float | None] = {name: None for name in PICK_STAGES}
     if stage_ms:
         stages.update(stage_ms)
-    elif records is not None or verdict_inputs is not None or budget_snapshot is not None:
+    elif (
+        records is not None or verdict_inputs is not None or budget_snapshot is not None
+    ):
         # A caller that built the dispatcher-scope inputs and handed them in left
         # their cost stashed here; carry it onto the selection so every
         # dispatcher stage is recorded, then clear it so a later pick cannot
@@ -499,8 +508,23 @@ def dispatch_picker_selection(
             estimated_context = marked("context-estimate", measure_estimate)
             estimated_context_ms = stages["context-estimate"]
 
+            from reckon.crew.picker import client as picker_client
+
+            def answering_caller(*args: Any, **kwargs: Any) -> dict[str, Any]:
+                """Return the answer and keep a copy of it on the result.
+
+                The pick consumes the answer and keeps none of it, so a reserved
+                lane's reason reaches the run record only if it is captured here,
+                at the one call the pick makes. A failure travels on unchanged:
+                the pick records its own fallback for it.
+                """
+                payload = picker_client.ask(*args, **kwargs)
+                result["answer"] = payload
+                return payload
+
             inputs = {
                 "records": pick_records,
+                "caller": answering_caller,
                 "verdict_inputs": pick_verdicts,
                 "budget_snapshot": pick_budget,
                 "authority": pick_authority,
@@ -545,6 +569,27 @@ def dispatch_picker_selection(
         selection = {**result["selection"], "stage_ms": dict(stages)}
         if authority_error:
             selection["authority_error"] = authority_error
+        # A reserved lane is named and its reason recorded before the zero-slot
+        # re-ask, so a route that is refused for giving no reason is refused
+        # ahead of any other re-ask and the two cannot compound.
+        selection = _name_reserved_lane(
+            selection, config=config, answer=result.get("answer")
+        )
+        selection = _reask_off_unreasoned_reserved_lane(
+            selection,
+            node=node,
+            config=config,
+            project=project,
+            repo=repo,
+            session=session,
+            comment=comment,
+            authority=authority,
+            authority_error=authority_error,
+            orchestrator_assessment=orchestrator_assessment,
+            due=due,
+            urgency=urgency,
+            allow=_allow_reask,
+        )
         return _reask_off_zero_slot_lane(
             selection,
             node=node,
@@ -614,6 +659,157 @@ def _zero_slot_lane(selection: Mapping[str, Any], config: Mapping[str, Any]) -> 
             return ""
         return str(row.get("family") or row.get("lane") or backend)
     return ""
+
+
+def _chosen_lane(selection: Mapping[str, Any], config: Mapping[str, Any]) -> str:
+    """The lane the answer routed to, or ``""`` for anything but a route."""
+    if str(selection.get("action") or "") != "route":
+        return ""
+    backend = str(selection.get("backend") or "")
+    if not backend:
+        return ""
+    return lane_family(config, backend)
+
+
+def _reserved_lane_reason(answer: Any) -> str:
+    """The reason a pick's answer gave, in whichever field it carried it.
+
+    A reserved-lane pick must say why, and the answer reaches the picker as
+    data: the reason is read from the route answer that carries the choice, and
+    from the answer mapping beside it, so a caller that states it either way is
+    heard. Anything that is not a non-empty string is no reason.
+    """
+    if not isinstance(answer, Mapping):
+        return ""
+    answers = answer.get("answers")
+    if not isinstance(answers, Mapping):
+        return ""
+    route = answers.get("route")
+    if isinstance(route, Mapping):
+        route_reason = route.get("reason")
+        if isinstance(route_reason, str) and route_reason.strip():
+            return route_reason.strip()
+    for key in ("reserved_reason", "reason"):
+        value = answers.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+def _record_reserved_lane_pick(
+    selection: Mapping[str, Any], *, lane: str, reason: str, refused: bool
+) -> None:
+    """Append one reserved-lane decision to the crew home's log, best effort.
+
+    Written through the pick log's own appender, which never fails on its own
+    record and writes one atomic append, so a decision recorded here cannot
+    stall or fail a dispatch.
+    """
+    from reckon.crew.picker import _append_crew_log_line
+
+    _append_crew_log_line(
+        RESERVED_LANE_PICKS_LOG,
+        {
+            "at": datetime.now(UTC).isoformat(),
+            "lane": lane,
+            "backend": selection.get("backend"),
+            "model": selection.get("model"),
+            "reason": reason or None,
+            "refused_unreasoned": refused,
+        },
+    )
+
+
+def _name_reserved_lane(
+    selection: Mapping[str, Any],
+    *,
+    config: Mapping[str, Any],
+    answer: Any,
+) -> dict[str, Any]:
+    """Name the reserved lane a route chose and the reason it gave for it.
+
+    A route that lands on a reserved lane is recorded with the lane's name and,
+    when the answer carried one, the reason for spending it. The lane is named
+    under a key of its own rather than written over the selection's ``reason``
+    alone, so a reader can tell a reserved-lane decision from any other. The
+    decision is logged once, where its outcome is known, by the refusal check
+    that follows this naming. Every other route, hold, refusal and fallback is
+    returned unchanged.
+    """
+    lane = _chosen_lane(selection, config)
+    if not lane or lane not in reserved_lane_policies(config):
+        return dict(selection)
+    reason = _reserved_lane_reason(answer)
+    named = {**selection, "reserved_lane": lane}
+    if reason:
+        named["reason"] = reason
+    return named
+
+
+def _reask_off_unreasoned_reserved_lane(
+    selection: Mapping[str, Any],
+    *,
+    node: Any,
+    config: Mapping[str, Any],
+    project: str,
+    repo: Path,
+    session: str,
+    comment: str,
+    authority: Mapping[str, Any] | None,
+    authority_error: str | None,
+    orchestrator_assessment: Mapping[str, Any] | None,
+    due: str | None,
+    urgency: str | None,
+    allow: bool,
+) -> dict[str, Any]:
+    """Refuse a reserved-lane route that gave no reason, and pick again.
+
+    A pick that sends a node to a lane reserved for the orchestrators that share
+    it owes a reason naming the node's difficulty and the headroom it relied on,
+    because the policy that let the lane be offered is also the record of why it
+    was spent. A route that names the reserved lane and no reason is refused
+    rather than followed: the lane is excluded and Jev is asked again, so the
+    answer given with the reserved lane in view is not the only answer this
+    dispatch hears. Both asks are recorded, and a re-ask that routes elsewhere
+    stands as the pick.
+    """
+    lane = str(selection.get("reserved_lane") or "")
+    if not lane:
+        return dict(selection)
+    if selection.get("reason"):
+        _record_reserved_lane_pick(
+            selection=selection,
+            lane=lane,
+            reason=str(selection["reason"]),
+            refused=False,
+        )
+        return dict(selection)
+    _record_reserved_lane_pick(selection=selection, lane=lane, reason="", refused=True)
+    if not allow:
+        # No re-ask is allowed here, so the lane stands as chosen; the row just
+        # written is the record that it was spent with no reason given.
+        return dict(selection)
+    second = _ask_excluding_lane(
+        lane,
+        _ask_summary(selection),
+        node=node,
+        config=config,
+        project=project,
+        repo=repo,
+        session=session,
+        comment=comment,
+        authority=authority,
+        authority_error=authority_error,
+        orchestrator_assessment=orchestrator_assessment,
+        due=due,
+        urgency=urgency,
+    )
+    return {
+        **second,
+        "action": second.get("action") or "refuse",
+        "reserved_lane_unreasoned": lane,
+        "reissued": True,
+    }
 
 
 def lane_family(
@@ -844,9 +1040,7 @@ def _record_shadow_picker_selection(spec_path: Path) -> None:
             # so it resolves the same one and passes it, reporting a resolution
             # failure on the selection rather than leaving the granted fragment
             # silently charged.
-            authority, authority_error = resolve_picker_authority(
-                spec["project"], repo
-            )
+            authority, authority_error = resolve_picker_authority(spec["project"], repo)
             result["selection"] = dispatch_picker_selection(
                 node=node,
                 config=spec["config"],
