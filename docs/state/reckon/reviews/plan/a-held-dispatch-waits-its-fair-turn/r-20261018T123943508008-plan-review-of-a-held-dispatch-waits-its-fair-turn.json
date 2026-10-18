@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T12:52:57.496Z",
+  "dispatched_at": "2026-10-18T12:40:27Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-held-dispatch-waits-its-fair-turn/r-20261018T123943508008-plan-review-of-a-held-dispatch-waits-its-fair-turn/plan.html:165",
+      "id": "reasoning-1",
+      "reason": "the stated root cause directs the node at a second reader that does not exist, so the deliverable's remedy sentence must be rewritten to name the actual gap (dispatch ignores the session's own queued requests) or the node will chase a divergence the code refutes and leave \u00a725 unbuilt.",
+      "text": "\u00a725 asserts \"Dispatch and admission decide a session's room from different readers\" and its Deliverable opens by requiring them to \"decide a session's room from one owner, the reader the admission pass uses\", but the code already routes both through the same function: the admission pass's `_session_allowance` calls `_dispatch_lane_allowance` (`reckon/crew/queue_admission.py:332`), and dispatch sets `lane_allowance = _dispatch_lane_allowance(backend, session=session)` (`reckon/crew/dispatch_plan.py:702`); both resolve to `_lane_worker_allowance` (`reckon/crew/dispatch_plan.py:1151`) and both hold on the identical predicate, `allowance <= 0` (`queue_admission.py:820-821` versus `dispatch.py:1491`). So the two-reader divergence the Why blames does not exist, and the Deliverable's first sentence names a unification that is already the case \u2014 a node implementing it verbatim will hunt for a second reader, find none, and either change nothing or stop (as \u00a724's \"if the observed shape is not reproduced, stop and report\" invites). The cited evidence (opposite verdicts for the same session) is more consistent with a cause the plan has not shown, such as the admit service's `--lane` backend filter excluding the pointer (\u00a724's fault) or the pass's per-session `remaining` accounting, neither of which is \"two readers\". The real mechanism \u00a725 needs \u2014 and which its second Deliverable sentence and its done-when do state correctly \u2014 is that dispatch never consults the session's *other* queued requests, so a direct dispatch launches ahead of a distinct node's queued request from the same session",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f67b8342d7153a8517b3aa46ef7d9a46dd1c4ab1047340f96e1d28d654342687",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 141,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T123943508008-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "f6be2b9c3e6bceb4a81fabb72e1d63e98fee1f3a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited queued review resolves (its discard record is present at `~/.config/reckon/crew/discards/r-20261018T085353346020-review-of-the-inventory-lists-the-reload-tree-publish-9abe3b66c30c.json`), the named run `r-20261018T123636631280` is a live pointer carrying `session f653840f`, `backend clive`, and the cited modules and \u00a73/\u00a712 references exist.",
+    "done_when": "pass \u2014 \u00a725 declares a negative control (\"lets dispatch decide room by its current reader, and the new dispatch then launches ahead of the queued request\"), and that removal does fail the case, so the node can show its guard fires.",
+    "evidence_paths": "pass \u2014 the gate and both arms are logged \"under the run directory\", a durable path, not a session scratchpad.",
+    "naming": "pass \u2014 \u00a725's label appears only in plan prose and the followup id; no plan label, stage name or ticket number reaches a symbol, filename or comment.",
+    "reasoning": "a finding \u2014 \u00a725's stated root cause (\"dispatch and admission decide a session's room from different readers\") is contradicted by the code, which shows one reader for both.",
+    "single_goal": "pass \u2014 \u00a725 carries one deliverable: a session's new dispatch joins the queue behind its own queued request rather than launching ahead.",
+    "wiring": "pass \u2014 \u00a725 shares `reckon/crew/queue_admission.py` and `reckon/crew/dispatch.py` only with sections that are already `done` (\u00a711, \u00a712, \u00a713, \u00a714, \u00a718, \u00a720, \u00a722, \u00a724), and the new followup `f-ahdwift-s25` names \u00a725, so no ordering or relationship is missing or misdirected."
+  },
+  "section_digests": {
+    "_document": "0879cec507ce77f282537fb75f63ee560daf4cf686d9e9864c2426659f4d8b18",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "f67610611bfb819007234cb2d266523cab773379dedf07c8b53feb8f9e78ef59",
+    "s19": "1a735ef01d42913d9085a7d2db7eb238ecd99450b1ee61e3702d9951b4be8b04",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s20": "27cbb7d66474dcc03ee947d28d02bf69241181f95114d64b5dfd64cece9a6d2d",
+    "s21": "9d6a0b0914d4b7c617f66b56c23c29f423e83783cee042a59efd0844e910758e",
+    "s22": "04e32404c6bd6fba4d019c4ac2feb930c097b69019a6b5feeab58d4c16120a94",
+    "s23": "70ceaed3d3c3bdadbebbb977a408f022cd463ddb7697e91a9f3ddb9783544474",
+    "s24": "d7f6c25b7737b87618ce073988379c3a183b8bd0c2da8d647b9b86dd29f1ca6d",
+    "s25": "dde96071ae673e1277768c38e1b5a8b9105294979327a89b05457715cf1258b2",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T12:55:25.465303+00:00"
+}
