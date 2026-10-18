@@ -236,14 +236,28 @@ def test_the_seat_names_the_log_the_service_path_already_writes(
 # watch``. It does what a watcher does at the one point that matters here: it
 # takes the seat — which is where the log is adopted — and then writes a line
 # to its own stderr, one the parent can look for in the log the arming named.
+# It handles SIGTERM the way the real ``crew watch`` does, raising
+# ``SystemExit(128 + signum)``: the supervisor restarts a producer that dies by
+# signal (a negative status) or with a code in 1..127, but a code above 127 is
+# fatal to it, so a stop the test's teardown sends ends the whole producer
+# rather than spawning a replacement.
 ADMISSION_DRIVER = (
     "#!{python}\n"
-    "import sys, time\n"
+    "import signal, sys, time\n"
     "sys.path.insert(0, {root!r})\n"
     "\n"
     "from reckon.crew import runs\n"
     "\n"
     "project = {project!r}\n"
+    "\n"
+    "\n"
+    "def _stop(signum, _frame):\n"
+    "    raise SystemExit(128 + signum)\n"
+    "\n"
+    "\n"
+    "for _signum in (signal.SIGTERM, signal.SIGHUP):\n"
+    "    signal.signal(_signum, _stop)\n"
+    "\n"
     'with runs._project_watch_claim(project, "30s") as (acquired, watcher):\n'
     "    if not acquired:\n"
     "        raise SystemExit(3)\n"
@@ -295,15 +309,22 @@ def test_the_dispatch_admission_route_writes_the_log_its_seat_names(
     monkeypatch.setenv(dispatch_module.WATCH_ARMING_ENV, "on")
 
     state = dispatch_module._ensure_watch_producer(PROJECT)
-    assert state["watcher_live"] is True, state
+    try:
+        assert state["watcher_live"] is True, state
 
-    log_path = runs.watch_log_path(PROJECT)
-    assert _wait_for_marker(log_path, "the watcher took the seat"), (
-        "the dispatch admission route armed a producer that kept no log"
-    )
-    # A seat that names a log nothing writes is worse than no seat at all: the
-    # reader is sent to a file that is not there.
-    assert _seat_record(PROJECT).get("log_path") == str(log_path)
+        log_path = runs.watch_log_path(PROJECT)
+        assert _wait_for_marker(log_path, "the watcher took the seat"), (
+            "the dispatch admission route armed a producer that kept no log"
+        )
+        # A seat that names a log nothing writes is worse than no seat at all:
+        # the reader is sent to a file that is not there.
+        assert _seat_record(PROJECT).get("log_path") == str(log_path)
+    finally:
+        # Arming is detached, so this producer is no test's child and nothing
+        # else returns it: the session reaper would find it still polling a
+        # home the suite is about to prune. Stop it through the owner of
+        # stopping a seat, in a finally so a failing assertion still stops it.
+        dispatch_watch_module._stop_watch_producer_within(PROJECT, 15.0)
 
 
 def test_the_fleet_delegated_spawn_carries_the_log_without_the_arming_environment(

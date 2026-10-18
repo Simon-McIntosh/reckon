@@ -1,0 +1,42 @@
+<section id="a-test-stops-the-producer-it-starts" data-reckon="evidence-fragment">
+<h2>§22 — A test that starts a watch producer stops it</h2>
+
+<p id="a-test-stops-the-producer-it-starts-why"><strong>Why.</strong>
+<code>test_the_dispatch_admission_route_writes_the_log_its_seat_names</code> drives
+the real <code>_ensure_watch_producer</code>, so it arms a detached supervisor
+and a producer under its <code>tmp_path</code> home and never stops them. The
+session reaper <code>reaped_watch_producers</code> SIGTERMs what it finds and
+fails the session on a producer still alive after its grace, reported against
+whichever test ran last on the same xdist worker.</p>
+
+<p id="a-test-stops-the-producer-it-starts-mechanism"><strong>Mechanism.</strong>
+The stop goes through <code>dispatch_watch._stop_watch_producer_within</code> in a
+<code>finally</code>, so a failing assertion still stops the producer. The
+test's driver now handles SIGTERM the way the real <code>crew watch</code> does,
+raising <code>SystemExit(128 + signum)</code> (exit 143). The supervisor restarts
+a producer that dies by signal (a negative status) or with a code in 1..127, but
+a code above 127 is fatal to it — so the stop ends the whole producer rather
+than spawning a replacement. Measured with a probe: without the handler the
+supervisor restarts the watcher ~5 s after the stop (the producer lingers past
+the reaper); with it, the whole tree exits on the stop.</p>
+
+<p id="a-test-stops-the-producer-it-starts-head"><strong>Head arm.</strong> Four
+runs of <code>tests/test_unmanaged_producer_keeps_a_log.py</code> under
+<code>-n 4</code> at d674fe8d end 7 passed, EXIT=0, no session error
+(<code>logs/head-n4-run1..4.log</code>, <code>logs/head-n4-final.log</code>).</p>
+
+<p id="a-test-stops-the-producer-it-starts-negative"><strong>Negative
+control.</strong> Removing the stop (and the stop-handling the stop depends on)
+reverts the file to base; a run under <code>-n 4</code> then reports the leaked
+producer by pid and home — <code>pid 1630534
+(RECKON_HOME=…/pytest-of-mcintos/pytest-3/popen-gw1/test_the_dispatch_admission_ro0/config)</code>
+— with 7 passed, 1 error, EXIT=1
+(<code>logs/negative-control-no-stop.log</code>).</p>
+
+<p id="a-test-stops-the-producer-it-starts-evidence"><strong>Evidence.</strong>
+<code>ruff check</code> and <code>ruff format --check</code> add no findings on
+the changed file. The leak is a produce-then-observe measurement: <code>-n 4</code>
+runs of the full file, read for the reaper's own pid-and-home report. Changed
+path: <code>tests/test_unmanaged_producer_keeps_a_log.py</code> (30 insertions,
+9 deletions).</p>
+</section>
