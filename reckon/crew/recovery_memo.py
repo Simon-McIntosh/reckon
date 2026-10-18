@@ -230,6 +230,73 @@ def _git_directory(tree: Path) -> Path | None:
     return written
 
 
+def _named_ref(head: str) -> str:
+    """The ref ``head`` names, or empty when it carries a revision itself."""
+    return head.split(":", 1)[1].strip() if head.startswith("ref:") else ""
+
+
+def _ref_roots(git_dir: Path) -> tuple[Path, Path]:
+    """The directories a ref named by HEAD may live in, worktree first.
+
+    A linked worktree's git directory holds a ``commondir`` pointer to the
+    repository that keeps its refs, so the worktree's own directory is searched
+    first and the shared one second. A checkout without the pointer is its own
+    common directory, and both entries are then that same path.
+    """
+    try:
+        pointer = (git_dir / "commondir").read_text(encoding="utf-8").strip()
+    except OSError:
+        pointer = ""
+    if not pointer:
+        return git_dir, git_dir
+    written = Path(pointer)
+    common = written if written.is_absolute() else git_dir / written
+    return git_dir, common
+
+
+def _is_full_revision(value: str) -> bool:
+    """Whether ``value`` is a full object id a caller may trust unresolved.
+
+    A branch name, an abbreviation or a ref name all spell a revision, but any
+    of them may move or name nothing, so only a full object id written down is
+    safe to return without asking git what it currently resolves to.
+    """
+    return bool(re.fullmatch(r"[0-9A-Fa-f]{40,64}", value))
+
+
+def _worktree_head_revision(tree: Path | None) -> str:
+    """The full revision a checkout currently names, read from git's files.
+
+    A detached worktree's ``HEAD`` carries the revision itself, and an attached
+    checkout names a ref whose loose file carries it, so an ordinary row's head
+    is two small file reads rather than a subprocess. The revision is returned
+    only when a file holds one: a ref kept solely in ``packed-refs``, an
+    unreadable git directory, or anything else unresolved returns empty, and the
+    caller asks git as it does today.
+    """
+    if tree is None:
+        return ""
+    git_dir = _git_directory(tree)
+    if git_dir is None:
+        return ""
+    try:
+        head = (git_dir / "HEAD").read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+    if _is_full_revision(head):
+        return head
+    ref = _named_ref(head)
+    if not ref:
+        return ""
+    for base in _ref_roots(git_dir):
+        try:
+            resolved = (base / ref).read_text(encoding="utf-8").strip()
+        except OSError:
+            continue
+        return resolved if _is_full_revision(resolved) else ""
+    return ""
+
+
 def _worktree_head_identity(tree: Path | None) -> str:
     """The revision a checkout currently names, read as files rather than by git.
 
@@ -251,16 +318,9 @@ def _worktree_head_identity(tree: Path | None) -> str:
     except OSError:
         return "no-head"
     parts = [head]
-    ref = head.split(":", 1)[1].strip() if head.startswith("ref:") else ""
+    ref = _named_ref(head)
     if ref:
-        common = git_dir
-        try:
-            pointer = (git_dir / "commondir").read_text(encoding="utf-8").strip()
-        except OSError:
-            pointer = ""
-        if pointer:
-            written = Path(pointer)
-            common = written if written.is_absolute() else git_dir / written
+        _, common = _ref_roots(git_dir)
         loose = None
         for base in (git_dir, common):
             candidate = base / ref
