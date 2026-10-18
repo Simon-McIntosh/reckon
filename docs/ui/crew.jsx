@@ -316,41 +316,15 @@ function crewScopedProjects(selectedProject, visibleProjects, allVisible) {
   return [selectedProject];
 }
 
-function CrewView({ visibleProjects, mountedProjectCount, selectedProject, quota }) {
-  const [runs, setRuns] = useState([]);
-  const [error, setError] = useState("");
-  const [loaded, setLoaded] = useState(false);
+function CrewView({ visibleProjects, mountedProjectCount, selectedProject, quota, runs = [], loaded = false, error = "" }) {
   const [refreshedAt, setRefreshedAt] = useState(null);
   const [allVisible, setAllVisible] = useState(false);
 
+  // The shell owns the single /crew poll and passes its result down, so this
+  // view renders the same run list without polling the same route again.
   useEffect(() => {
-    let active = true;
-
-    const poll = async () => {
-      try {
-        const response = await fetch("/crew", { cache: "no-store" });
-        if (!response.ok) throw new Error(`crew route returned ${response.status}`);
-        const payload = await response.json();
-        if (!Array.isArray(payload.runs)) throw new Error("crew route returned no run list");
-        if (!active) return;
-        setRuns(payload.runs);
-        setError("");
-        setRefreshedAt(new Date());
-      } catch (cause) {
-        if (!active) return;
-        setError(cause instanceof Error ? cause.message : "crew route unavailable");
-      } finally {
-        if (active) setLoaded(true);
-      }
-    };
-
-    poll();
-    const timer = window.setInterval(poll, CREW_POLL_INTERVAL_MS);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
-  }, []);
+    if (loaded) setRefreshedAt(new Date());
+  }, [runs, loaded]);
 
   const scopedProjects = crewScopedProjects(selectedProject, visibleProjects, allVisible);
   const visibleRuns = crewRunsForVisibleProjects(runs, scopedProjects);
