@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="migrate-starts-a-second-move">
+  <meta name="plan-title" content="The migrate command starts a second move">
+  <meta name="plan-summary" content="A completed move ledger whose fleet record names a different job now begins a new move at census; the drain warning states the allocation continues until it ends">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-node-stays-in-service">
+  <meta name="plan-verifies" content="reckon:the-fleet-node-stays-in-service#s4">
+  <meta name="plan-recorded-at" content="2026-10-18">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,fleet">
+  <title>The migrate command starts a second move — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<section id="migrate-starts-a-second-move">
+  <h2>The migrate command starts a second move</h2>
+  <p><strong>Finding.</strong> <code>reckon fleet-node migrate</code> read the
+  newest <code>move-*/ledger.json</code> and, once its <code>next_step</code> was
+  <code>done</code>, returned <code>migration complete</code> on every later
+  invocation. Because the <code>census</code> step was reachable only when no
+  ledger existed, the command could carry exactly one move, so a fleet that had
+  since been replaced left the command reporting a stale completion.</p>
+
+  <p><strong>Change.</strong> In <code>fleet_migrate.migrate</code>, a ledger
+  whose <code>next_step</code> is <code>done</code> is compared against the fleet
+  record: a record naming a job other than the one the move's
+  <code>stand_up</code> promoted means the allocation has moved on, and the
+  invocation begins a new move at census, writing a fresh
+  <code>move-&lt;stamp&gt;/ledger.json</code>. The earlier ledger is left
+  untouched, <code>--dry-run</code> reports the census step, and a record still
+  naming the move's own job keeps the previous <code>migration complete</code>
+  behaviour.</p>
+
+  <p><strong>Status wording.</strong> <code>fleet_node.describe_allocation</code>
+  no longer says "the allocation ends when the drain completes" (the reverse
+  holds — the drain completes when the allocation ends). The warning now states
+  that the scheduler places no new job on the node, that the allocation
+  continues until it ends, and that the node returns only when an administrator
+  resumes it.</p>
+
+  <p><strong>Evidence.</strong> Focused tests pass in
+  <code>tests/test_migrate_starts_a_second_move.py</code> (4 selected): a
+  completed ledger with a matching fleet record reports <code>migration
+  complete</code> in both dry and non-dry runs and writes nothing; a completed
+  ledger with a moved fleet announces the census in <code>--dry-run</code> and
+  writes a new move ledger while leaving the old bytes untouched; a ledger at
+  <code>cutover</code> still resumes its move rather than starting a census; and
+  the drain warning carries the three replacement statements and not the old
+  one. The related suites (<code>test_fleet_migrate*</code>,
+  <code>test_fleet_node</code>) pass 91 tests.</p>
+
+  <p><strong>Negative control.</strong> Declared string: "a ledger at cutover
+  must resume its move, not start a new census". Applying the mutation — reading
+  the fleet record for every ledger rather than only a completed one — makes the
+  cutover ledger start a census, and the cutover test fails with
+  <code>assert 'census: read…' == 'cutover: sessions still to move: one-fleet'</code>
+  (<code>1 failed, 3 passed</code>). See
+  <code>negative-control.log</code> in the run record.</p>
+
+  <p><strong>Commits and paths.</strong> <code>reckon/crew/fleet_migrate.py</code>
+  (census-on-done move), <code>reckon/crew/fleet_node.py</code> (drain-warning
+  wording and the comments that described the old behaviour),
+  <code>tests/test_migrate_starts_a_second_move.py</code> (new).</p>
+</section>
+</body>
+</html>

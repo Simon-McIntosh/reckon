@@ -392,6 +392,38 @@ def _new_ledger_path(state: Path) -> Path:
     return _ledger_root(state) / f"move-{stamp}" / "ledger.json"
 
 
+def _promoted_job_id(ledger: Mapping[str, Any]) -> str:
+    """The scheduler job a move promoted to own the fleet."""
+    stand_up = ledger.get("stand_up")
+    if not isinstance(stand_up, Mapping):
+        return ""
+    return str(stand_up.get("job_id") or "")
+
+
+def _fleet_left_its_move(
+    ledger: Mapping[str, Any],
+    read_fleet_record: Callable[[Path], dict[str, Any]],
+    state: Path,
+) -> bool:
+    """Whether the fleet record now names a job other than the move's own.
+
+    A completed move promotes one job, and the fleet record names it when the
+    move finishes, so a record naming a different job means the allocation has
+    since been replaced and the next invocation must begin a new move rather
+    than report the old one complete. A record that cannot be read, or one
+    naming no job, names nothing to compare, so the move is reported complete.
+    """
+    promoted = _promoted_job_id(ledger)
+    if not promoted:
+        return False
+    try:
+        record = read_fleet_record(state)
+    except MigrationError:
+        return False
+    current = str(record.get("job_id") or "")
+    return bool(current) and current != promoted
+
+
 def _read_runs() -> list[dict[str, Any]]:
     rows = []
     for pointer in runs.list_live():
@@ -864,6 +896,18 @@ def migrate(
     path = _latest_ledger(state)
     ledger = json.loads(path.read_text()) if path else None
     step = "census" if ledger is None else ledger["next_step"]
+    if (
+        step == "done"
+        and ledger is not None
+        and _fleet_left_its_move(ledger, read_fleet_record, state)
+    ):
+        # The newest ledger is complete, but the fleet record names a job that
+        # ledger never promoted, so the allocation has moved on and this
+        # invocation begins a new move at census. The earlier ledger is left
+        # untouched; the census branch writes the new move-<stamp> ledger.
+        ledger = None
+        path = None
+        step = "census"
     if session and step != "cutover":
         raise MigrationError("--session applies only to a cutover step")
     if step == "census":

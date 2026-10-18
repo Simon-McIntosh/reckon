@@ -79,9 +79,10 @@ EARLIER_FLEET_COMMENTS = ("ambix-fleet",)
 REMAINING_WARNING_SECONDS = 30 * 60
 
 # Scheduler node-state stem that means the node is being taken out of service.
-# A draining node still runs its jobs, but the allocation ends when the drain
-# completes. The spelling varies (DRAIN, DRAINED, DRAINING) but always starts
-# with this stem, so the match is a token prefix rather than an equality.
+# A draining node still runs its jobs and the allocation continues until it
+# ends, but the scheduler places no new job there. The spelling varies (DRAIN,
+# DRAINED, DRAINING) but always starts with this stem, so the match is a token
+# prefix rather than an equality.
 _DRAINING_STATE_PREFIX = "DRAIN"
 
 # The queue fields read for each job: id, name, state, elapsed, node or pending
@@ -463,9 +464,8 @@ def describe_allocation(
 
     An allocation with no wall clock reads as unbounded and never warns on
     time; a finite one below :data:`REMAINING_WARNING_SECONDS` warns. A node
-    that is draining ends the allocation when the drain completes regardless of
-    any wall clock, so it warns on its own, which is the only way an unbounded
-    allocation is warned about at all.
+    that is draining warns on its own regardless of any wall clock, which is
+    the only way an unbounded allocation is warned about at all.
     """
     job_id = job.get("jobid", "") or "unknown"
     state = job.get("state", "") or "unknown"
@@ -488,8 +488,9 @@ def describe_allocation(
     if node_is_draining(state_of_node):
         lines.append(
             f"WARNING: fleet allocation {job_id} runs on {node}, which the "
-            f"scheduler reports {state_of_node}; the allocation ends when the "
-            "drain completes"
+            f"scheduler reports {state_of_node}; the scheduler places no new "
+            "job on the node, the allocation continues until it ends, and the "
+            "node returns only when an administrator resumes it"
         )
     if seconds is not None and seconds < REMAINING_WARNING_SECONDS:
         lines.append(
