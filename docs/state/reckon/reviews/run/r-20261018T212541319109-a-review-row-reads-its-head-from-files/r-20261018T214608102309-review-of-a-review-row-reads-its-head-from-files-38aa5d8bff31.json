@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:_resolve_review_head_and_tree",
+    "reckon/crew/recovery_review_subject.py:681",
+    "reckon/crew/review.py:428"
+  ],
+  "completed_at": "2026-10-18T22:02:50.032Z",
+  "dispatched_at": "2026-10-18T21:48:13Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T212541319109-a-review-row-reads-its-head-from-files/logs/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate log's revision: header names the base revision 18c55df30 while its own tree: and module_file: lines point at the worktree head 4479f14b8, so a reader cannot tell from the header which revision the gate ran at."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T212541319109-a-review-row-reads-its-head-from-files/logs/ruff-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: this log records four ruff findings in tests/test_a_review_row_reads_its_head_from_files.py (F841 at line 177, PLC0206 at 283, W292 at 288) and '1 file would be reformatted', none of which exist in the landed revision, where ruff check and ruff format --check are clean on the changed files; it is a stale pre-fix run kept beside the manifest that claims ruff adds no findings."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is for a review row to read its run's detached head from git's files instead of spawning git rev-parse HEAD; reckon/crew/recovery_review_subject.py:170 now calls recovery_memo._worktree_head_revision before any subprocess.\nVERDICT done_when: done_when names tests/test_a_review_row_reads_its_head_from_files.py, whose four cases assert its clauses (zero rev-parse over 6 detached rows with a positive control, head equality with git, a packed-refs ref through git, a moved head), and the manifest records the gate at 4 passed EXIT=0.\nVERDICT write_paths: the manifest declares five paths; every path in the diff (reckon/crew/recovery_review_subject.py, reckon/crew/recovery_memo.py, tests/test_a_review_row_reads_its_head_from_files.py and the landing fragment) is inside them.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T212541319109-a-review-row-reads-its-head-from-files/manifest.md; it records the gate 4 passed EXIT=0 at 4479f14b8, the negative control red at 6 rev-parse HEAD calls over 6 rows, and a base-arm compare of 2 failed/61 passed identical at base and head.\nVERDICT diff: read commit by commit against 18c55df30; 4479f14b8 changes recovery_memo.py (adding _worktree_head_revision and factoring _named_ref/_ref_roots out of _worktree_head_identity) and recovery_review_subject.py (the file read plus the git fallback), and 38aa5d8b adds the landing fragment, all inside scope.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:_resolve_review_head_and_tree, reckon/crew/recovery_review_subject.py:681, reckon/crew/review.py:428\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_subject.py:170 calls recovery_memo._worktree_head_revision and returns its revision before reaching the subprocess at line 176.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_review_row_reads_its_head_from_files.py asserts each done_when clause and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T212541319109-a-review-row-reads-its-head-from-files/logs/gate-head.log records 4 passed EXIT=0, though the log's revision header names the base rather than the tested revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is one of the write paths declared in the landing fragment's manifest, the two fenced product modules plus the new test file and the fragment.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_review_row_reads_its_head_from_files.py:223 asserts spy.head_calls == [] and the negative control at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T212541319109-a-review-row-reads-its-head-from-files/logs/negative-control.log reddens it with 6 calls over 6 rows.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers at reckon/crew/recovery_memo.py:233 follow the module's private-helper idiom, though the fallback at recovery_review_subject.py:186 re-spells the full-revision regex rather than the new _is_full_revision.\nSCORE reuse: 20\nJUSTIFICATION reuse: _named_ref and _ref_roots at reckon/crew/recovery_memo.py:233 were factored out of the existing _worktree_head_identity owner at line 300, which the change reuses rather than duplicating.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T212541319109-a-review-row-reads-its-head-from-files/logs/gate-head.log:1 follow-on: the gate log's revision: header names the base revision 18c55df30 while its own tree: and module_file: lines point at the worktree head 4479f14b8, so a reader cannot tell from the header which revision the gate ran at.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T212541319109-a-review-row-reads-its-head-from-files/logs/ruff-head.log:1 follow-on: this log records four ruff findings in tests/test_a_review_row_reads_its_head_from_files.py (F841 at line 177, PLC0206 at 283, W292 at 288) and '1 file would be reformatted', none of which exist in the landed revision, where ruff check and ruff format --check are clean on the changed files; it is a stale pre-fix run kept beside the manifest that claims ruff adds no findings.\n",
+  "review_run_id": "r-20261018T214608102309-review-of-a-review-row-reads-its-head-from-files-38aa5d8bff31",
+  "reviewed_base_sha": "18c55df308896620918c8169203e0ff833e87e4c",
+  "reviewed_commits": [
+    "4479f14b8d4973785445532107a72f6bfe3b364c",
+    "38aa5d8bff315daf7fb87cee9005b79f1a1d1196"
+  ],
+  "reviewed_head_sha": "38aa5d8bff315daf7fb87cee9005b79f1a1d1196",
+  "reviewed_run_id": "r-20261018T212541319109-a-review-row-reads-its-head-from-files",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T21:57:42.017319+00:00"
+}
