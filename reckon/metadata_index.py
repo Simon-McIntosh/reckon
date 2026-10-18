@@ -1073,10 +1073,10 @@ def _make_stamp(
 
 
 def _persisted_cache_path(kind: str, version: int, *identity: str) -> Path:
-    """Keep each persisted cache format in its own directory."""
+    """Keep each persisted cache format in its own file."""
 
     digest = hashlib.sha256("\0".join(identity).encode("utf-8")).hexdigest()
-    return _config_home() / "cache" / kind / f"v{version}" / f"{digest}.json"
+    return _config_home() / "cache" / kind / f"{digest}-v{version}.json"
 
 
 def _index_path(docs_dir: Path, project: str) -> Path:
