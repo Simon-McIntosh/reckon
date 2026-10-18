@@ -1,0 +1,126 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_stale_producer_warning_waits_for_its_reload.py::test_a_reload_handed_through_crew_follow_defers_the_mismatch"
+  ],
+  "added_failures_note": "Baseline arm 0 failures, head arm 1 failure. The manifest attributes the head-arm failure to scaffolding: it ran with the node's changes uncommitted, so reckon/crew_follow_commands.py was dirty against HEAD and the follower's reloader deferred the image replacement (after-suite-head.log:70), never reaching the assertion at tests/test_stale_producer_warning_waits_for_its_reload.py:440. The attribution is consistent with the log line, but no log records the clean-tree re-run the manifest claims passed.",
+  "after_suite": {
+    "command": "UV_PROJECT_ENVIRONMENT=/home/ITER/mcintos/Code/reckon/.venv PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/a-watcher-carries-no-session-identity /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_crashed_producer_is_restarted.py tests/test_a_crew_verb_ok_reads_its_outcome.py tests/test_a_duration_override_is_read_one_way.py tests/test_a_lift_is_drawn_once_per_pane.py tests/test_a_pane_does_not_settle_during_admission.py tests/test_a_pane_settles_when_no_work_is_live.py tests/test_a_reload_never_aborts_on_a_tree_a_peer_pruned.py tests/test_a_reload_probe_timeout_is_not_a_broken_image.py tests/test_a_reload_runs_the_committed_head.py tests/test_a_reload_tree_in_use_on_any_host_is_not_pruned.py tests/test_a_remembered_state_renders_as_a_pane_word.py tests/test_a_session_lift_stays_with_its_session.py tests/test_a_stale_lease_record_does_not_expose_a_pin.py tests/test_a_standing_lift_survives_a_follower_reload.py tests/test_a_stop_during_a_reload_says_so.py tests/test_a_watcher_carries_no_session_identity.py tests/test_arm_lock_is_never_held_by_a_follower.py tests/test_arming_guard_knows_a_test_session.py tests/test_attach_shows_each_live_run.py tests/test_crew_dispatch_watcher_required.py tests/test_crew_refusal_visibility.py tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_fleet_migrate_stand_up.py tests/test_follow_counts_its_session.py tests/test_follow_lifetime_survives_reload.py tests/test_follow_rearm_continues.py tests/test_follow_replays_the_gap.py tests/test_follow_sweep_is_session_scoped.py tests/test_follower_bounds_its_lifetime.py tests/test_follower_checks_its_owner.py tests/test_follower_hands_off_to_host.py tests/test_follower_keeps_memory.py tests/test_follower_rearm_shows_nothing_twice.py tests/test_one_check_trusts_a_moved_checkout.py tests/test_producer_seat_across_hosts.py tests/test_producer_survives_its_reload.py tests/test_producer_takes_new_code.py tests/test_reload_tree_housekeeping_stays_off_the_stream.py tests/test_removed_flag_migration.py tests/test_stale_producer_warning_waits_for_its_reload.py tests/test_the_live_pane_delivers_its_own_starts.py tests/test_unmanaged_producer_keeps_a_log.py tests/test_watch_arming_isolation.py tests/test_watch_observer_is_host_aware.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 1,
+    "failure_ids": [
+      "tests/test_stale_producer_warning_waits_for_its_reload.py::test_a_reload_handed_through_crew_follow_defers_the_mismatch"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T051327730136-a-watcher-carries-no-session-identity/after-suite-head.log",
+    "revision": "4288805dea516129c7d47cdd98c21da84587ed38"
+  },
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T051327730136-a-watcher-carries-no-session-identity/after-suite-head.log",
+  "assertion_analysis": [
+    {
+      "file": "tests/test_a_watcher_carries_no_session_identity.py",
+      "line": "112",
+      "text": "assert environment is not None, 'the launcher was handed no environment' - fails if _start_watch_producer stops passing env= to its Popen; demonstrated by the declared negative control, whose log ends EXIT=1 with this test failing."
+    },
+    {
+      "file": "tests/test_a_watcher_carries_no_session_identity.py",
+      "line": "114",
+      "text": "assert name not in environment, name - fails if SESSION_IDENTITY_ENV_NAMES or the CLAUDE_CODE_ prefix drops one of the six names, since the test sets each through monkeypatch.setenv and reads the value back out of the environment the code composed."
+    },
+    {
+      "file": "tests/test_a_watcher_carries_no_session_identity.py",
+      "line": "146",
+      "text": "assert harness is None, name - for CLAUDE_CODE_SESSION_ID, CODEX_SESSION_ID and CODEX_THREAD_ID it fails if the list fails to cover the variable; for CLAUDE_PID it cannot fail because _coordinator_runtime returns early without CLAUDE_CODE_SESSION_ID, and the MESSAGING iterations never reach a reader that consults those names."
+    },
+    {
+      "file": "tests/test_a_watcher_carries_no_session_identity.py",
+      "line": "261",
+      "text": "assert name not in environment, name (supervisor case) - fails if the pops in _WATCH_PRODUCER_SUPERVISOR are removed, because the stub producer records its own os.environ and the test reads it back from the file."
+    },
+    {
+      "file": "tests/test_a_watcher_carries_no_session_identity.py",
+      "line": "347",
+      "text": "assert coordinator['runtime_session_id'] is None and assert coordinator['harness'] is None - fails if the scrubbed environment still resolves a session through dispatch_accounting._coordinator_runtime when recovery.dispatch_review_for_run composes the review."
+    },
+    {
+      "file": "tests/test_a_watcher_carries_no_session_identity.py",
+      "line": "352",
+      "text": "assert written == b\"\" on a live session-host FIFO - fails if the dispatch wrote a session-host request, which a leaked identity would do; the FIFO is held open by a reader so a leaked request would be visible."
+    }
+  ],
+  "base_log_revision": "1b0774ef6f55a072558e431d217f962245ef6858",
+  "baseline_suite": {
+    "command": "UV_PROJECT_ENVIRONMENT=/home/ITER/mcintos/Code/reckon/.venv PYTHONPATH=/tmp/reckon-base-arm-DykCo2 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_crashed_producer_is_restarted.py tests/test_a_crew_verb_ok_reads_its_outcome.py tests/test_a_duration_override_is_read_one_way.py tests/test_a_lift_is_drawn_once_per_pane.py tests/test_a_pane_does_not_settle_during_admission.py tests/test_a_pane_settles_when_no_work_is_live.py tests/test_a_reload_never_aborts_on_a_tree_a_peer_pruned.py tests/test_a_reload_probe_timeout_is_not_a_broken_image.py tests/test_a_reload_runs_the_committed_head.py tests/test_a_reload_tree_in_use_on_any_host_is_not_pruned.py tests/test_a_remembered_state_renders_as_a_pane_word.py tests/test_a_session_lift_stays_with_its_session.py tests/test_a_stale_lease_record_does_not_expose_a_pin.py tests/test_a_standing_lift_survives_a_follower_reload.py tests/test_a_stop_during_a_reload_says_so.py tests/test_arm_lock_is_never_held_by_a_follower.py tests/test_arming_guard_knows_a_test_session.py tests/test_attach_shows_each_live_run.py tests/test_crew_dispatch_watcher_required.py tests/test_crew_refusal_visibility.py tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_fleet_migrate_stand_up.py tests/test_follow_counts_its_session.py tests/test_follow_lifetime_survives_reload.py tests/test_follow_rearm_continues.py tests/test_follow_replays_the_gap.py tests/test_follow_sweep_is_session_scoped.py tests/test_follower_bounds_its_lifetime.py tests/test_follower_checks_its_owner.py tests/test_follower_hands_off_to_host.py tests/test_follower_keeps_memory.py tests/test_follower_rearm_shows_nothing_twice.py tests/test_one_check_trusts_a_moved_checkout.py tests/test_producer_seat_across_hosts.py tests/test_producer_survives_its_reload.py tests/test_producer_takes_new_code.py tests/test_reload_tree_housekeeping_stays_off_the_stream.py tests/test_removed_flag_migration.py tests/test_stale_producer_warning_waits_for_its_reload.py tests/test_the_live_pane_delivers_its_own_starts.py tests/test_unmanaged_producer_keeps_a_log.py tests/test_watch_arming_isolation.py tests/test_watch_observer_is_host_aware.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T051327730136-a-watcher-carries-no-session-identity/baseline-suite-base.log",
+    "revision": "1b0774ef6f55a072558e431d217f962245ef6858"
+  },
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T051327730136-a-watcher-carries-no-session-identity/baseline-suite-base.log",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1755",
+    "reckon/crew/watch_unit.py:397",
+    "reckon/cli.py:404"
+  ],
+  "completed_at": "2026-10-18T06:09:09.524Z",
+  "dispatched_at": "2026-10-18T05:54:27Z",
+  "findings": [
+    {
+      "file": "tests/test_a_watcher_carries_no_session_identity.py",
+      "line": "146",
+      "severity": "follow-on",
+      "text": "follow-on: the loop at test_a_watcher_carries_no_session_identity.py:133-148 sets each of the six identity variables alone, scrubs, and asserts _coordinator_runtime() names no harness and _session_host_owner() returns None, but its CLAUDE_PID-alone and CLAUDE_CODE_MESSAGING_SOCKET/TOKEN-alone iterations cannot fail whatever the code does: dispatch_accounting._coordinator_runtime (reckon/crew/dispatch_accounting.py:125-152) reads CLAUDE_PID only after CLAUDE_CODE_SESSION_ID is non-empty, and never reads the MESSAGING variables, so with any one of those three set alone both readers already return None with or without the scrub and the assertion is vacuous for the variable it means to cover. The negative control is unaffected (it reddens case (a) at :112-114, which asserts the three names directly through _without_session_identity), so no real gap is left, but three of the six iterations are not the guard the docstring at :121-125 describes."
+    },
+    {
+      "file": "after-suite-head.log",
+      "line": "71",
+      "severity": "follow-on",
+      "text": "follow-on: the head suite arm recorded at after-suite-head.log:71 has one added failure against the baseline (tests/test_stale_producer_warning_waits_for_its_reload.py::test_a_reload_handed_through_crew_follow_defers_the_mismatch), so the done-when clause 'the test files importing reckon/crew/dispatch_watch.py or reckon/crew_follow_commands.py show no added failure against base' is not demonstrated by the artefact the manifest carries; after-suite-head.log:70 shows the cause was a dirty tree ('tracked files are modified against HEAD ... keeping the current image'), which is independent of the semantic change, and the manifest claims a clean-tree re-run passes 1 passed EXIT=0 without naming a log for it, so the measure rests on a claim rather than a recorded result."
+    }
+  ],
+  "head_log_revision": "4288805dea516129c7d47cdd98c21da84587ed38",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commit 4288805de against base 1b0774ef; it adds SESSION_IDENTITY_ENV_NAMES, SESSION_IDENTITY_ENV_PREFIX, _is_session_identity_variable, _without_session_identity and _scrub_session_identity to reckon/crew/dispatch_watch.py, the env= at its Popen and the popped names in _WATCH_PRODUCER_SUPERVISOR, the crew_watch scrub in reckon/crew_follow_commands.py, the new test file, and the evidence fragment.",
+    "done_when": "The done_when names tests/test_a_watcher_carries_no_session_identity.py and its four cases (a)-(d); the file carries one test per case plus the per-variable loop and the dispatched-review case, and the manifest records that gate at 5 passed, EXIT=0, but the 'no added failure against base' half is unmet by the recorded head arm, which failed once on a dirty tree (after-suite-head.log:71).",
+    "goal": "The node's goal is to make the watch producer run with no coordinator session's identity on every launch route; reckon/crew/dispatch_watch.py:80-95 names the variables, :389 scrubs the process route, :257 scrubs the fleet-route supervisor, and reckon/crew_follow_commands.py:3368 scrubs the in-place reload, covering every variable dispatch_accounting._coordinator_runtime (CLAUDE_CODE_SESSION_ID, CODEX_SESSION_ID, CODEX_THREAD_ID, CLAUDE_PID) and _session_host_owner consult.",
+    "manifest": "Read; it records status complete, commit 4288805de, the four changed paths, the gate at 5 passed/EXIT=0, baseline-suite-base.log 0 failures, after-suite-head.log 1 failure attributed to scaffolding, negative-control.log EXIT=1, and the two ruff claims, but names no log for the clean-tree re-run it asserts.",
+    "write_paths": "The manifest declares reckon/crew/dispatch_watch.py, reckon/crew_follow_commands.py, tests/test_a_watcher_carries_no_session_identity.py and the evidence fragment docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-watcher-carries-no-session-identity.html; git diff 1b0774ef..4288805de changes exactly those four files."
+  },
+  "justifications": {
+    "durability": "Removing env=_without_session_identity(os.environ) from the Popen at dispatch_watch.py:389 reddens test_start_watch_producer_hands_over_a_scrubbed_environment (negative-control.log:1-6), and omitting the CLAUDE_CODE_ prefix or the CODEX names reddens the loop at test_a_watcher_carries_no_session_identity.py:133-148, but the CLAUDE_PID-alone and CLAUDE_CODE_MESSAGING_*-alone iterations of that loop cannot fail whatever the code does, because _coordinator_runtime needs CLAUDE_CODE_SESSION_ID before it reads CLAUDE_PID.",
+    "evidence": "tests/test_a_watcher_carries_no_session_identity.py:96-402 carries one test per done-when case and negative-control.log ends 'EXIT=1' with a failing id the head arm does not fail, but after-suite-head.log:71 records one added failure for a head arm run on a dirty tree, and the clean-tree re-run the manifest claims is stated with no log.",
+    "fit": "The addition at reckon/crew/dispatch_watch.py:76-119 follows the module's own comment-and-docstring idiom beside _watch_arming_intent, the supervisor scrub at :251-260 is placed after 'import os' and before the script's first Popen, and no added symbol or comment carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "The goal is that the watch producer runs with no coordinator session's identity on every launch route, and reckon/crew/dispatch_watch.py:389 hands the process route env=_without_session_identity(os.environ), dispatch_watch.py:257 pops the same names inside _WATCH_PRODUCER_SUPERVISOR for the fleet route, and reckon/crew_follow_commands.py:3368 scrubs the live environment before the first sweep for the in-place reload.",
+    "reuse": "The scrub of session-identity variables has no existing owner: a search over reckon/ for environment scrubbing (os.environ.pop, _without_, scrub, sanitize_env) found only per-variable pops in reckon/crew_follow_commands.py and reckon/crew/dispatch_launch.py, and _watcher_service_environment in reckon/crew/watch_unit.py:297 is a whitelist for the systemd route rather than a scrub, so the new list and helpers are the first owner of this capability.",
+    "scope_discipline": "git diff 1b0774ef6f55a072558e431d217f962245ef6858..4288805dea516129c7d47cdd98c21da84587ed38 changes exactly reckon/crew/dispatch_watch.py, reckon/crew_follow_commands.py, tests/test_a_watcher_carries_no_session_identity.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-watcher-carries-no-session-identity.html, the four paths the manifest declares."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the watch producer run with no coordinator session's identity on every launch route; reckon/crew/dispatch_watch.py:80-95 (SESSION_IDENTITY_ENV_NAMES plus the CLAUDE_CODE_ prefix) with the scrub applied at dispatch_watch.py:389 (process route), :257 (supervisor script, fleet route) and reckon/crew_follow_commands.py:3368 (in-place reload) delivers exactly that, covering every variable dispatch_accounting._coordinator_runtime and _session_host_owner consult.\nVERDICT done_when: the done_when names tests/test_a_watcher_carries_no_session_identity.py and its four cases (a)-(d); the file carries one test per case plus the per-variable loop and the dispatched-review case (5 passed, EXIT=0), but the 'no added failure against base' half is unmet by the recorded head arm, which failed once on a dirty tree (after-suite-head.log:71).\nVERDICT write_paths: read the manifest's four declared paths; git diff 1b0774ef..4288805de touches exactly reckon/crew/dispatch_watch.py, reckon/crew_follow_commands.py, tests/test_a_watcher_carries_no_session_identity.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-watcher-carries-no-session-identity.html, all inside the declared scope.\nVERDICT manifest: read; it records status complete, commit 4288805de, the four changed paths, the gate at 5 passed EXIT=0, baseline 0 failures, head 1 failure attributed to scaffolding, and negative-control.log EXIT=1, but names no log for the claimed clean-tree re-run.\nVERDICT diff: read commit 4288805de against base 1b0774ef; it adds SESSION_IDENTITY_ENV_NAMES, the CLAUDE_CODE_ prefix, _is_session_identity_variable, _without_session_identity, _scrub_session_identity, the env= on _start_watch_producer's Popen, the popped names in the _WATCH_PRODUCER_SUPERVISOR script, and the crew_watch scrub, plus the test file and the evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:1755, reckon/crew/watch_unit.py:397, reckon/cli.py:404\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_watch.py:389 hands the process route env=_without_session_identity(os.environ), :257 pops the names in the fleet-route supervisor, and reckon/crew_follow_commands.py:3368 scrubs the live environment before the first sweep.\nSCORE evidence: 14\nJUSTIFICATION evidence: tests/test_a_watcher_carries_no_session_identity.py:96-402 carries all four done-when cases and negative-control.log ends EXIT=1 with a failing id, but after-suite-head.log:71 records one added failure for a head arm run on a dirty tree and the clean re-run is claimed with no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 1b0774ef6f55a072558e431d217f962245ef6858..4288805dea516129c7d47cdd98c21da84587ed38 changes exactly the four paths the manifest declares.\nSCORE durability: 16\nJUSTIFICATION durability: removing env=_without_session_identity(os.environ) from dispatch_watch.py:389 reddens test_start_watch_producer_hands_over_a_scrubbed_environment per negative-control.log, but the CLAUDE_PID-alone and CLAUDE_CODE_MESSAGING_*-alone iterations of the loop at test_a_watcher_carries_no_session_identity.py:133-148 cannot fail because _coordinator_runtime reads CLAUDE_PID only after CLAUDE_CODE_SESSION_ID.\nSCORE fit: 18\nJUSTIFICATION fit: the addition at reckon/crew/dispatch_watch.py:76-119 follows the module's comment-and-docstring idiom beside _watch_arming_intent and introduces no plan, sprint or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: no owner for scrubbing session-identity variables exists in reckon/ (the search found only per-variable pops and the whitelist _watcher_service_environment at reckon/crew/watch_unit.py:297), so dispatch_watch.py:80-119 is the first owner of the capability.\nFINDING tests/test_a_watcher_carries_no_session_identity.py:146 follow-on: the CLAUDE_PID-alone and CLAUDE_CODE_MESSAGING_SOCKET/TOKEN-alone iterations of the loop at :133-148 cannot fail whatever the code does, because dispatch_accounting._coordinator_runtime reads CLAUDE_PID only after CLAUDE_CODE_SESSION_ID is non-empty and never reads the MESSAGING variables.\nFINDING after-suite-head.log:71 follow-on: the recorded head arm has one added failure (test_a_reload_handed_through_crew_follow_defers_the_mismatch) run on a dirty tree, so the done-when clause 'no added failure against base' is unmet by the artefact and the clean-tree re-run the manifest asserts names no log.\n",
+  "review_run_id": "r-20261018T055334708783-review-of-a-watcher-carries-no-session-identity-4288805dea51",
+  "reviewed_base_sha": "1b0774ef6f55a072558e431d217f962245ef6858",
+  "reviewed_commits": [
+    "4288805dea516129c7d47cdd98c21da84587ed38"
+  ],
+  "reviewed_head_sha": "4288805dea516129c7d47cdd98c21da84587ed38",
+  "reviewed_run_id": "r-20261018T051327730136-a-watcher-carries-no-session-identity",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T06:03:43+00:00",
+  "total": 106
+}
