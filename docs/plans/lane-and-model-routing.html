@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="234">
+<meta name="plan-version" content="235">
 <meta name="plan-modified" content="2026-10-18">
 </head>
 <body>
@@ -849,6 +849,9 @@ It asserts that the candidate's <code>outcomes_at_requirement</code> reads <code
 </div>
 <div class="r-comment" data-section="s32" data-id="c-run-r-20261018T064639822890-a-pick-sees-each-review-dimension" data-who="reckon-build" data-when="2026-10-18T07:12:21.315Z">
     <div class="r-comment-body"><p>A pick's at-requirement block now carries reviewed (fully scored matched rows) and review_dimensions_median (each REVIEW_DIMENSIONS name's median over exactly those rows, null when reviewed is 0), collected in _candidates_scan's existing single pass and defined in the outcomes_at_requirement glossary; head gate 96 passed / 1 pre-existing failure / EXIT=1 with 0 added failures against the base, representative state 2068/2200 tokens at both arms.</p></div>
+</div>
+<div class="r-comment" data-section="s36" data-id="c-run-r-20261018T181147911663-review-of-each-model-of-a-lane-has-its-own-row-06eeb6623a7e" data-who="reckon-build" data-when="2026-10-18T18:42:00.443Z">
+    <div class="r-comment-body"><p>Reviewed r-20261018T173209225855-each-model-of-a-lane-has-its-own-row at base aac37e7d4 / head 06eeb6623; the rekey of the candidate and return-time tables by option_key is correct and guarded (negative controls red at logs/neg1.log and logs/neg2.log, added failures 0), with one blocking finding — tests/test_picker.py:265 raises a byte bound the plan&#x27;s grant forbade changing, needing coordinator adjudication.</p></div>
 </div>
 </section>
 </main>
