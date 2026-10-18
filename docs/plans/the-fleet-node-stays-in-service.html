@@ -210,8 +210,13 @@
       cutover relay was broken on the night. Since then, §16 of the previous plan
       fixed the relay, and the code has moved for ten days. Run
       <code>reckon fleet-node migrate --rehearse</code> on a probe session in the
-      fleet allocation at the head that §4 lands on. Done when the rehearsal ledger
-      reaches its pass state, with the probe's tab list and conversation id the same
+      fleet allocation at the head that §4 lands on. A finished rehearsal ledger
+      answers <code>rehearsal complete</code> without running
+      (<code>fleet_migrate.py:708–716</code>). <code>rehearsals/probe-rehearsal/ledger.json</code>
+      already reads <code>done</code>, so the rehearsal uses a probe session named
+      for this run (the name must start with <code>probe-</code>), passed with <code>--session</code>, whose ledger does not exist
+      before it starts. Done when that new rehearsal ledger, created after dispatch,
+      reaches its pass state with the probe's tab list and conversation id the same
       before and after, recorded in the evidence fragment. The negative control is a
       probe whose recorded tab is removed before the check, which must be refused.
     </p>
