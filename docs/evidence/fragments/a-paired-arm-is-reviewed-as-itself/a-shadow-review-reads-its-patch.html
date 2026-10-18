@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-paired-arm-is-reviewed-as-itself">
+  <meta name="plan-verifies" content="reckon:a-paired-arm-is-reviewed-as-itself#s2">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-18">
+  <title>A shadow is reviewed on its retained patch | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-shadow-review-reads-its-patch">
+  <h2>A shadow is reviewed on its retained patch</h2>
+
+  <p><strong>Change.</strong> A shadow is dispatched to produce evidence without
+  committing: its head equals its base and its <code>commits:</code> list is empty, and
+  the deliverable promotion preserves is the worktree patch it leaves behind. The
+  run-review brief carried the landed-node rubric plus the run's identity and nothing
+  else, so a shadow's reviewer read the diff of an empty commit list and scored the
+  change that was not there. <code>_review_brief_text</code>
+  (<code>reckon/crew/recovery_review_subject.py</code> unchanged rubric) appends a
+  shadow block, through the promotion module's own <code>_is_shadow</code>
+  (<code>reckon/crew/promotion_scope.py</code>) rather than a second shadow test. The
+  block names the two commands that produce the retained patch —
+  <code>git -C &lt;worktree&gt; diff &lt;base_sha&gt;</code> and
+  <code>git -C &lt;worktree&gt; ls-files --others --exclude-standard</code> — composed
+  from the record's own worktree and base, states that an empty commits list and a head
+  equal to the base are the contract rather than findings, and binds every dimension to
+  that patch. A run that is not a shadow keeps the brief it had;
+  <code>reckon/crew/prompts/review.md</code> is unchanged.</p>
+
+  <p><strong>Gate.</strong> The declared gate ran twice, each log carrying an
+  <code>EXIT=</code> line under the run directory. The base arm (<code>git archive</code>
+  of <code>5439244388</code>, the six pre-existing files) reports
+  <strong>1 failed, 33 passed</strong>, <code>EXIT=1</code>, failure id
+  <code>test_every_module_fits_a_worker_window</code>. The head arm (the same six plus
+  <code>tests/test_a_shadow_is_reviewed_on_its_patch.py</code>, at commit
+  <code>f030e70cbc</code>) reports <strong>1 failed, 37 passed</strong>,
+  <code>EXIT=1</code>, the same failure id. The lone failure is pre-existing and outside
+  this node's scope: <code>reckon/ledger.py: 50505 estimated tokens exceeds the 50000
+  bound</code>, a module this node does not write. Added failure ids: <strong>none</strong>; the
+  four added passes are the new file's cases. Each base-arm header names the
+  <code>module.__file__</code> it imported (the scratch extraction's own
+  <code>recovery_review_subject.py</code>) and the working directory it resolved from, so
+  the scratch tree could not have been served by the worktree. <code>ruff check</code> and
+  <code>ruff format --check</code> add no finding on the staged paths judged by delta
+  against the base blobs: the base module already carries one finding this change does not
+  add, and the new test file is clean.</p>
+
+  <p><strong>New test</strong>
+  (<code>tests/test_a_shadow_is_reviewed_on_its_patch.py</code>):</p>
+  <ul>
+    <li>the shadow brief contains the record's <code>base_sha</code> and worktree inside
+      <code>git -C &lt;worktree&gt; diff &lt;base_sha&gt;</code>, the
+      <code>ls-files --others --exclude-standard</code> command, and the sentence that an
+      empty commits list is the contract and not a finding;</li>
+    <li>a second record's worktree and base appear in the composed commands while the
+      first record's do not, so the block reads them from the record rather than from a
+      fixed string;</li>
+    <li>the record that is not a shadow composes exactly <code>load_review_prompt()</code>
+      followed by the identity lines, with no shadow block;</li>
+    <li>a paired primary carrying <code>paired_shadow_run_id</code> but no shadow lineage
+      gets no shadow block, so the block keys on shadow evidence and not on pairing.</li>
+  </ul>
+
+  <p><strong>Negative control</strong>, two mutations, each applied alone, each under pytest
+  with its default short summary, each log ending in a bare <code>EXIT=</code> line:</p>
+  <ul>
+    <li>the shadow block removed from <code>_review_brief_text</code> makes
+      <code>test_a_shadow_brief_names_the_retained_patch</code> fail
+      (<code>EXIT=1</code>, log <code>negative-control-remove-block.log</code>, 2 failed,
+      2 passed);</li>
+    <li>the block appended for every paired arm rather than for a shadow makes
+      <code>test_a_paired_primary_gets_no_shadow_block</code> fail
+      (<code>EXIT=1</code>, log <code>negative-control-paired-arm.log</code>, 1 failed,
+      3 passed).</li>
+  </ul>
+</section>
+</main>
+</body>
+</html>
