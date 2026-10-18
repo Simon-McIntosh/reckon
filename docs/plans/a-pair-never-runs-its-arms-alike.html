@@ -24,7 +24,7 @@
   <title>A Pair Never Runs Its Arms Alike | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-modified" content="2026-10-18">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -71,7 +71,10 @@ The test writes nothing outside its temporary directory.</li>
     <div class="r-comment-body"><p>§1 landed: <code>dispatch_pair</code> refuses a pair whose arms resolve to one backend and one model, read from the existing shadow comparison, before anything launches (commits <code>5832ba4dd</code>, <code>10ff6fcf5</code>). Gate: 41 passed at head, 38 at base, with the same pre-existing <code>ledger.py</code> size failure in both. Both negative controls fail their case. Review total 114, no added failures. A post-merge dry run against this host's flight is still owed. <a href="/reckon/evidence/archive/a-pair-never-runs-its-arms-alike-landed.html#s1">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261018T082131525934-review-of-a-pair-refuses-alike-arms-10ff6fcf58d4" data-who="reckon-build" data-when="2026-10-18T08:30:41.657Z">
-    <div class="r-comment-body"><p>independent review of run r-20261018T074018927209-a-pair-refuses-alike-arms at head 10ff6fcf58d4061208694a5d2bbd6a7a3a623410 — total 117, no added failures, no blocking finding; two follow-ons (manifest negative_control_note misstates which cases the backends-only mutant reddens; the alike check&#x27;s model branch is a membership test that only holds while the sole caller passes no model override)</p></div>
+    <div class="r-comment-body"><p>independent review of run r-20261018T074018927209-a-pair-refuses-alike-arms at head 10ff6fcf58d4061208694a5d2bbd6a7a3a623410 — total 117, no added failures, no blocking finding; two follow-ons (manifest negative_control_note misstates which cases the backends-only mutant reddens; the alike check's model branch is a membership test that only holds while the sole caller passes no model override)</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261018T074018927209-a-pair-refuses-alike-arms" data-who="reckon-build" data-when="2026-10-18T08:15:47Z">
+    <div class="r-comment-body"><p>a-pair-refuses-alike-arms — dispatch_pair now reads the comparison _shadow_dispatch_config returns and refuses with D21 when the substituted backend entry carries equal primary/shadow values and model is not among its substituted entries, before the dry-run return and before any run directory or worktree exists; gate 41 passed / 1 failed (pre-existing ledger.py worker-window failure, also red on the base arm), 3 new cases green.</p></div>
 </div>
 </section>
 </main>
