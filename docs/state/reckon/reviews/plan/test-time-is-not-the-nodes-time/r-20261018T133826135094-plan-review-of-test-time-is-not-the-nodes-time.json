@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T13:50:18.434Z",
+  "dispatched_at": "2026-10-18T13:40:04Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:48",
+      "id": "reasoning-1",
+      "reason": "the plan states the base of both medians, and naming the reader (the stamp-derived figure from `read_records`) rather than the field is what keeps the measured shares the quantity the section claims to report.",
+      "text": "the changed bullet fixes the denominator of every share as \"its ledger row's `wall_seconds`\", but `reckon/ledger.py` documents two distinct quantities under that name: `read_records` returns a stamp-derived span (`read_records` docstring: \"``wall_seconds``, the span between that row's own ``dispatched_at`` and ``completed_at`` stamps\"), while the stored field `runs()` carries is not that span (\"The stored field carrying the first name is never passed through \u2014 on nearly half the ledger it is a different quantity from the span\"), and `runs()` warns \"Use read_records for stamp-derived duration rather than the stored wall_seconds carried here\"; the bullet names the field without naming the reader, so a node reading `ledger.runs(project)` gets the stored figure that disagrees on nearly half the ledger and the medians in the same section are computed against a wrong denominator",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a1162d6979a5d99d03ecff858005bcfe5660a79b870c4677c0b080ce97b65260",
+  "plan_slug": "test-time-is-not-the-nodes-time",
+  "plan_version": 10,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T133826135094-plan-review-of-test-time-is-not-the-nodes-time",
+  "reviewed_blob_sha": "a78c7fa4ddf8b6d0833ce9d34c1b628fc2eece2b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every \u00a71 citation resolves in this tree: `reckon/crew/node.py` `validate_node` (def 1130, the budget `fail(\"bounded\", \u2026)` at ~1293), `reckon/crew/routing.py:473` `resolved_time_ceiling`, `reckon/crew/prompts.py:382` `time_fence_statement`/line 701 stop text, `reckon/crew/recovery_stream.py:320` `_apply_budget_watchdog`, `reckon/crew/dispatch_sessions.py:337` its caller, `reckon/schema/flight-defaults.yaml:201` `enforce_budget_watchdog: false`; the control run `r-20261018T084035535944-a-paired-arm-review-names-its-run` exists and its `gate-after.log` reads `1 failed, 63 passed in 543.02s`; `crew-observability-truth.html` exists.",
+    "done_when": "pass \u2014 \u00a71's four clauses are measurable (file+line actors, the resolved `fences.enforce_budget_watchdog`, a per-lane table, and two named positive controls: `_apply_budget_watchdog` for the deadline scan and the 543.02 s gate for the timing scan), and the previously missing control is now declared.",
+    "evidence_paths": "pass \u2014 the deliverable writes `docs/research/how-much-of-a-node-is-its-gate.html`, `scripts/gate_share_of_run_time.py` and `docs/figures/how-much-of-a-node-is-its-gate`, all durable repository paths, not a run scratchpad.",
+    "naming": "pass \u2014 the changed bullet carries no plan label, stage name or ticket number; the run id in clause 3 is a data identifier, not a code symbol.",
+    "reasoning": "a finding \u2014 the changed bullet makes a run's wall time \"its ledger row's `wall_seconds`\", but the ledger documents two figures under that name and the stored one is the one it warns against, so the stated denominator is the wrong source for the shares the same section computes.",
+    "single_goal": "pass \u2014 \u00a71 is one read-only investigation producing one document plus its script; \u00a72 carries the change and is deferred.",
+    "wiring": "pass \u2014 the decision `gate-time-shape` carries `data-sections=\"s2\"` and `s2` declares `depends-on: test-time-is-not-the-nodes-time#s1`, so the open decision scopes to \u00a72 and does not hold \u00a71."
+  },
+  "section_digests": {
+    "_document": "2db4f914f773c39fa5c0355f5fee5250c02797289c687519a353ee05268ffa98",
+    "s1": "5194ac2708f38182ebb09ba430fadd3143d0d4ae8644d26dd333d3318801015d",
+    "s2": "e1683f33056739230ebe8f8cc40375d3a6cce727983bbbca1379cf0b80c058f6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T18:23:53.415139+00:00"
+}
