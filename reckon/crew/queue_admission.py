@@ -16,6 +16,8 @@ from __future__ import annotations
 import contextlib
 import copy
 import fcntl
+import os
+import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager, nullcontext
@@ -486,6 +488,67 @@ def _is_lane_hold(failure: Any) -> bool:
     return _failure_text(failure).startswith(("LaneHeld", "LanePaused"))
 
 
+def _admit_code_stamp() -> str:
+    """The content identity of the checkout the admission service would run.
+
+    The same identity the followers compute, so a commit that changes no file
+    under ``reckon/`` moves nothing here and re-executes nothing.
+    """
+    from reckon.crew.follower_registration import follower_code_stamp
+
+    return follower_code_stamp()
+
+
+def _source_root() -> Path:
+    """The sys.path root that supplied this imported package.
+
+    The followers' reloader resolves its checkout the same way, so both name
+    one root rather than each counting its own way up the tree. This module
+    sits in a subpackage, where counting parents stops at ``reckon/`` -- the
+    package directory, which is not a checkout and reads as clean and
+    importable wherever it is asked.
+    """
+    from reckon.crew_follow_commands import _import_root
+
+    return _import_root(sys.modules[__name__])
+
+
+def _checkout_code_is_trusted() -> bool:
+    """Whether the checkout's current code may be loaded and run.
+
+    The same trusted-checkout test the followers' reloader uses: clean under
+    ``reckon/`` against ``HEAD`` and importable. A tree mid-merge refuses, so a
+    running service is never replaced by code a half-finished edit produced.
+    """
+    from reckon import checkout_trust
+
+    return checkout_trust.moved_checkout_is_trustworthy(_source_root()).trusted
+
+
+def _reexec_into_current_code() -> None:
+    """Replace this process with a fresh image of the checkout's current code.
+
+    ``os.execve`` reuses the process, so the supervisor that declared this
+    service need not restart it: the same pid continues on the code now on
+    disk. The launcher leads with the sys.path root that supplied this import,
+    so the replacement loads the checkout rather than whatever argv[0] named.
+    """
+    root = str(_source_root())
+    launcher = (
+        f"import sys; sys.path.insert(0, {root!r}); from reckon.cli import main; main()"
+    )
+    os.execve(  # noqa: S606 - replacement preserves descriptors and stdout.
+        sys.executable,
+        [sys.executable, "-c", launcher, *sys.argv[1:]],
+        dict(os.environ),
+    )
+
+
+def _pause(seconds: float) -> None:
+    """Wait out the interval between two admission passes."""
+    time.sleep(seconds)
+
+
 def _file_stamp(path: str) -> str:
     """A change detector for one dependency: its stat, or that it is absent."""
     if not path:
@@ -504,9 +567,12 @@ def _dependency_guard(
     """The things a queued request depends on, fingerprinted at failure time.
 
     The request is retried without waiting out its back-off the moment any of
-    these changes: its brief file, its plan document, or the flight
-    configuration that resolved its backend. Only their stamps are kept, so the
-    guard is a comparison rather than a copy of the request.
+    these changes: its brief file, its plan document, the flight configuration
+    that resolved its backend, or the code of the checkout it would launch
+    from. Only their stamps are kept, so the guard is a comparison rather than a
+    copy of the request. Fingerprinting the code stamp is what lets a request a
+    pass refused under older code be retried by the first pass after the service
+    re-executes onto the current code, rather than waiting out its back-off.
 
     The lane document the router publishes is deliberately not watched: it is
     republished every few seconds, so its stamp moves constantly and would
@@ -538,6 +604,7 @@ def _dependency_guard(
         "plan": _file_stamp(plan_path),
         "host-config": _file_stamp(host_config),
         "project-config": _file_stamp(project_config),
+        "code": _admit_code_stamp(),
     }
 
 
@@ -972,14 +1039,28 @@ def admit_until_stopped(
     ``--once`` runs a single pass and returns, which is what a test drives. The
     loop otherwise catches ``KeyboardInterrupt`` so a stopped service returns
     the count of passes it ran rather than a traceback.
+
+    The code stamp is compared at the head of every pass, before the pass runs.
+    A pass must never validate or launch a queued request with code older than
+    the checkout it launches from, and the checkout can move during the wait
+    between passes: checking afterwards would let one more pass run on the old
+    code before the move was noticed. So a stamp the checkout has moved past, on
+    a checkout the trusted test accepts, re-executes this process in place before
+    the next pass begins, and the failure guard's code fingerprint retries
+    whatever the old code held. A stamp on a checkout the trusted test refuses
+    leaves the service on its current code, so a tree mid-merge never replaces a
+    running service.
     """
     if once:
         return admit_once(lane=lane)
     passes = 0
+    code_stamp = _admit_code_stamp()
     try:
         while True:
+            if _admit_code_stamp() != code_stamp and _checkout_code_is_trusted():
+                _reexec_into_current_code()
             admit_once(lane=lane)
             passes += 1
-            time.sleep(interval)
+            _pause(interval)
     except KeyboardInterrupt:
         return {"passes": passes}
