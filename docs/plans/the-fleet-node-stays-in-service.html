@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -493,7 +493,10 @@
     <div class="r-comment-body"><p>§5 dispatch refused at launch (2026-10-19 05:47). Dispatch confines a node's write paths to registered repositories and reckon's delivery directories (<code>reckon/crew/dispatch_admission.py:1773</code>), with no override. The rehearsal must write <code>~/.config/zellij/layouts/</code>, where the supervisor reads layouts by name, and <code>~/.local/state/fleet/migration/rehearsals/</code>, where <code>_rehearse</code> keeps its ledger. So no worker can be authorised to run it. The same command passed <code>--dry-run</code> with all eight properties and no warning, so the dry-run does not apply this check. The node needs either an operator run of <code>reckon fleet-node migrate --rehearse --session probe-current-head</code> from a plain shell on the fleet node, with a worker writing only the evidence fragment, or a reckon change that lets a node be granted fleet state paths. No move is planned, so §5 is not urgent.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261019T044951548662-review-of-a-stopped-worker-ends-inside-its-step-2d3edd6c2d75" data-who="reckon-build" data-when="2026-10-19T05:08:46.290Z">
-    <div class="r-comment-body"><p>Reviewed r-20261018T150822949393 delta a6808040..2d3edd6c (fix(crew): refuse unverified step client stops): scores goal_fidelity 17, evidence 16, scope_discipline 18, durability 18, fit 18, reuse 20; three follow-on findings (plan section 3&#x27;s scheduler-confirmed pending-step client signal removed with no replacement; two non-independent test assertions); added_failure_count 0 over the reviewed head&#x27;s green focused gate (36 passed, 1 skipped at 2d3edd6c).</p></div>
+    <div class="r-comment-body"><p>Reviewed r-20261018T150822949393 delta a6808040..2d3edd6c (fix(crew): refuse unverified step client stops): scores goal_fidelity 17, evidence 16, scope_discipline 18, durability 18, fit 18, reuse 20; three follow-on findings (plan section 3's scheduler-confirmed pending-step client signal removed with no replacement; two non-independent test assertions); added_failure_count 0 over the reviewed head's green focused gate (36 passed, 1 skipped at 2d3edd6c).</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261019T051757344703-review-of-a-stopped-worker-ends-inside-its-step-04f6ace9a31c" data-who="reckon-build" data-when="2026-10-19T06:05:59Z">
+    <div class="r-comment-body"><p>review of r-20261018T150822949393-a-stopped-worker-ends-inside-its-step gained commit 04f6ace9 (base 2d3edd6c): six dimensions scored, added_failures=0, one blocking finding (squeue resolved beside a shim srun so the reinstated pending-step stop never fires).</p></div>
 </div>
 </section>
 </main>

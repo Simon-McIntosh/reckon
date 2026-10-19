@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own paired arms in manifest.md:19-20 \u2014 baseline_suite (revision 8afeb0709f341be7690765c47387ebc69cb4dbe6) reads pass_count 21, failure_count 0, failure_ids []; after_suite (revision 04f6ace9a31c14f7755c5727bd371fd329091322) reads pass_count 43, skip_count 1, failure_count 0, failure_ids []. Both arms completed true and their logs (baseline-suite.log, after-suite.log) end at EXIT0 with '21 passed in 2.62s' and '43 passed, 1 skipped in 3.21s'. after minus baseline is the empty set, so added_failure_count=0.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:3088 (_reap_worker_on_its_terminal_manifest -> signal_pending_step_client)",
+    "reckon/crew/dispatch_launch.py:1201 (resolve_backend_placement -> apply_backend_placement, run_id into --job-name)",
+    "reckon/crew/dispatch.py:2257 (dispatch calls resolve_backend_placement with payload=record)",
+    "reckon/crew/dispatch_sessions.py:1224 (session launch calls resolve_backend_placement)"
+  ],
+  "completed_at": "2026-10-19T06:05:59Z",
+  "dispatched_at": "2026-10-19T05:19:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/process_signal.py",
+      "line": "482",
+      "severity": "blocking",
+      "text": "blocking: the scheduler binary is resolved as Path(argv[0]).with_name(\"squeue\"), but for a placed worker argv[0] is the host-shim srun. The reviewed run's own worker.json records argv[0] = /home/ITER/mcintos/Code/reckon/reckon/host_shims/srun, and that host_shims directory holds only salloc, sbatch and srun \u2014 there is no squeue beside it (squeue resolves on PATH to /usr/bin/squeue, and host_shims sits ahead of /usr/bin). So subprocess.run raises FileNotFoundError, the except (OSError, ...) returns None, and signal_pending_step_client can never reach its identity check or its single TERM: the function degrades to the unreadable-scheduler branch for every shim-launched placed worker and is retried each poll forever. Reproduced: calling signal_pending_step_client(101, run) with argv[0] set to the shim path returns None and writes no senders.jsonl (squeue_next_to_shim_exists=False, os.kill guarded so no signal is sent). The reinstated pending-step stop that this commit exists to deliver is therefore inert in production, so a step-placed run whose srun request never started still holds its slot \u2014 the exact condition the commit was written to fix. The four unit tests cannot catch this because they monkeypatch process_signal.subprocess.run wholesale and pass argv[0]=\"/usr/bin/srun\", so the executable path is never resolved against the filesystem; the fix is to resolve the scheduler through the same shutil.which used at reckon/crew/dispatch_launch.py:1104 rather than deriving it from argv[0]."
+    },
+    {
+      "file": "tests/test_a_stopped_worker_ends_inside_its_step.py",
+      "line": "321",
+      "severity": "follow-on",
+      "text": "follow-on: assert sent == [(101, signal.SIGTERM)] and assert ended == [101] compare against pid 101, which is the same value the test hands to _reap_worker_on_its_terminal_manifest at the call and writes into worker.json, and the signal_step stub also rechecks it (assert pid == 101 at line 289); the receipt assertion at line 344 likewise rechecks entry[\"target_pid\"] against that same 101. All three move with the input, so none independently protects the signal target \u2014 a defect that signalled a wrong-but-in-range pid would be handed the wrong value on both sides. The independent guards are the assert sent == [] branches in the named-step and record-present cases, which do redden under the reverted-source control."
+    }
+  ],
+  "incremental_of": "r-20261018T150822949393-a-stopped-worker-ends-inside-its-step.at-2d3edd6c2d75feeb42c70ae2d3e07c560e3fe9d6.json",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatch_launch.py:3088 is the sole production caller of signal_pending_step_client, reached through _reap_worker_on_its_terminal_manifest; the --job-name/run_id plumbing is reached through resolve_backend_placement at dispatch_launch.py:1201, called from dispatch.py:2257 and dispatch_sessions.py:1224.",
+    "diff": "read commit by commit against 2d3edd6c: the delta restores signal_pending_step_client in place of refuse_unverified_step_client, gates the _STEP_TASK_WRAPPER exec on the record write, appends --job-name=<run_id> to the placed prefix, and adds four unit tests, all inside the declared paths.",
+    "done_when": "prompt.txt:99-100 requires a unit test proving no client signal plus a fleet probe reading sacct COMPLETED; scheduler-repair-focused-at-head.log records 43 passed / 1 skipped at 04f6ace9 and scheduler-repair-negative.log records 8 failed under reverted source, but scheduler-live-probe-valid.log carries REVISION=2d3edd6c (not the reviewed head) and its step 1281970.7012 ended FAILED|9:0, not the COMPLETED the done_when names; the live probe was not rerun on this delta.",
+    "goal": "prompt.txt:30 asks the supervisor to stop a step-placed worker inside its step and let the client exit by itself; commit 04f6ace9 reinstates a scheduler-confirmed client stop at reckon/crew/process_signal.py:464 plus the record-write gate at reckon/crew/dispatch_launch.py:1064 and per-run --job-name at dispatch_launch.py:1125, addressing the prior review's follow-on, but the scheduler lookup is non-functional for shim-launched workers.",
+    "manifest": "manifest.md:17-25 records the focused gate at 04f6ace9, the reverted-source negative control (scheduler-repair-negative.log, 8 failed), and paired baseline/after arms (21 passed; 43 passed, 1 skipped) with failure_ids empty on both and added_failures=0.",
+    "write_paths": "prompt.txt:69-74 grants reckon/crew/dispatch_launch.py, reckon/crew/process_signal.py, tests/test_a_stopped_worker_ends_inside_its_step.py and the evidence fragment; git diff 2d3edd6c..04f6ace9 changes exactly those four paths."
+  },
+  "justifications": {
+    "durability": "scheduler-repair-negative.log shows 8 tests red under the reverted-source control, but the tests monkeypatch subprocess.run wholesale, so the production scheduler-path defect above cannot redden any of them, and tests/test_a_stopped_worker_ends_inside_its_step.py:321 compares the pid the test itself passed in.",
+    "evidence": "the delta's own gate is recorded and independently reproduced (13 passed for the five delta tests at 04f6ace9), but the done_when's live probe was not rerun at this head and its logged step ended FAILED|9:0 rather than the COMPLETED the measure names.",
+    "fit": "reckon/crew/process_signal.py:464 follows the surrounding sender-record idiom and the added names (signal_pending_step_client, pending_step_resolution) state the mechanism with no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/process_signal.py:482 derives the scheduler from argv[0], which is the host-shim srun for a placed worker, so the reinstated pending-step stop cannot fire in production even though the goal depends on it.",
+    "reuse": "the added function replaces the prior refuse_unverified_step_client in place and reuses _write_sender_record, _signal_one, _step_argv and _worker_record, but its squeue resolution at reckon/crew/process_signal.py:482 diverges from the repository's own scheduler-resolution owner at reckon/crew/dispatch_launch.py:1104, which uses shutil.which over the launch search path.",
+    "scope_discipline": "git diff 2d3edd6c..04f6ace9 touches only the four paths granted in prompt.txt:69-74 and adds no capability the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks the supervisor to stop a step-placed worker inside its step and let the client exit by itself; the delta re-adds signal_pending_step_client at reckon/crew/process_signal.py:464 and its caller at reckon/crew/dispatch_launch.py:3088, but the scheduler lookup is non-functional for shim-launched workers.\nVERDICT done_when: prompt.txt:99-100 requires a unit test proving no client signal and a fleet probe reading sacct COMPLETED; scheduler-repair-focused-at-head.log records 43 passed / 1 skipped at 04f6ace9 and scheduler-repair-negative.log records 8 failed under reverted source, but scheduler-live-probe-valid.log carries REVISION=2d3edd6c and its step 1281970.7012 ended FAILED|9:0, not COMPLETED.\nVERDICT write_paths: prompt.txt:69-74 grants the two product modules, the focused test and the evidence fragment; git diff 2d3edd6c..04f6ace9 changes exactly those four paths.\nVERDICT manifest: manifest.md:17-25 records the head gate, the reverted-source negative control and the paired baseline/after arms (21 passed; 43 passed, 1 skipped) with added_failures=0.\nVERDICT diff: read commit by commit against 2d3edd6c; the delta restores the scheduler-confirmed pending-step stop, names the placed step for its run, gates the wrapper exec on the record write and adds four unit tests, inside the four granted paths.\nCALL_SITES: reckon/crew/dispatch_launch.py:3088, reckon/crew/dispatch_launch.py:1201, reckon/crew/dispatch.py:2257, reckon/crew/dispatch_sessions.py:1224\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/process_signal.py:482 derives squeue from argv[0], the host-shim srun for a placed worker, so the reinstated pending-step stop cannot fire in production though the goal depends on it.\nSCORE evidence: 14\nJUSTIFICATION evidence: the delta's gate is recorded and independently reproduced, but the done_when's live probe was not rerun at this head and its logged step ended FAILED|9:0 rather than COMPLETED.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 2d3edd6c..04f6ace9 touches only the four paths granted in prompt.txt:69-74.\nSCORE durability: 14\nJUSTIFICATION durability: scheduler-repair-negative.log reddens 8 tests under reverted source, but the production scheduler-path defect cannot redden them because the tests stub subprocess.run, and tests/test_a_stopped_worker_ends_inside_its_step.py:321 compares the pid the test itself passed in.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/process_signal.py:464 follows the surrounding sender-record idiom and introduces no banned name.\nSCORE reuse: 14\nJUSTIFICATION reuse: the added function replaces refuse_unverified_step_client in place and reuses _write_sender_record and _signal_one, but its squeue resolution at process_signal.py:482 diverges from the which-based owner at dispatch_launch.py:1104.\nFINDING reckon/crew/process_signal.py:482 blocking: squeue is resolved as Path(argv[0]).with_name(\"squeue\"), but a placed worker's argv[0] is the host-shim srun with no squeue beside it, so subprocess.run raises FileNotFoundError, the function returns None and the pending-step client stop never fires in production; reproduced returning None and writing no record, and the unit tests cannot catch it because they stub subprocess.run.\nFINDING tests/test_a_stopped_worker_ends_inside_its_step.py:321 follow-on: sent == [(101, SIGTERM)], ended == [101], the stub recheck at line 289 and the receipt target_pid at line 344 all compare against the pid the test itself passed in, so none independently protects the signal target.\n",
+  "review_run_id": "r-20261019T051757344703-review-of-a-stopped-worker-ends-inside-its-step-04f6ace9a31c",
+  "reviewed_base_sha": "2d3edd6c2d75feeb42c70ae2d3e07c560e3fe9d6",
+  "reviewed_head_sha": "04f6ace9a31c14f7755c5727bd371fd329091322",
+  "reviewed_run_id": "r-20261018T150822949393-a-stopped-worker-ends-inside-its-step",
+  "reviewer_run_id": "r-20261019T051757344703-review-of-a-stopped-worker-ends-inside-its-step-04f6ace9a31c",
+  "scores": {
+    "durability": 14,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 12,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T06:10:00Z",
+  "total": 91
+}
