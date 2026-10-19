@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/capabilities.py:_arm_figures",
+    "reckon/crew/picker/snapshot.py:_candidates_scan",
+    "reckon/crew/picker/outcomes.py:summarize",
+    "reckon/ledger.py:review_scores",
+    "reckon/mcp.py:2096 ledger.review_scores",
+    "reckon/crew_run_commands.py:crew_supersede_review"
+  ],
+  "completed_at": "2026-10-19T10:41:37.010Z",
+  "dispatched_at": "2026-10-19T10:27:36Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "800",
+      "severity": "follow-on",
+      "text": "_dispatched_head_for_row composes the dispatched head the same way scripts/review_rows_with_another_rounds_verdict.py:59 _dispatched_head does \u2014 loop the declared write_paths through _review_record_subject, then fall back to round_node_head_suffix(node, REVIEW_NODE_PREFIX) \u2014 so the capability now has two implementations and no package owner; the node could have hoisted the composition beside _review_record_subject or round_node_head_suffix and reused it from the script, but the script's copy was left in place."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T034147435864-supersede-a-misattributed-review-row/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "the tests: line records a bare checkout-runnable command (uv run pytest ...) but no result and not the literal command the logs ran, which used PATH=/usr/bin:$PATH and the absolute .venv interpreter at the head-gate-full.log:2 header; the field's contract asks for the command that actually ran and its result, and the discrepancy is left implicit rather than stated."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 49b9973b: b7c35ae8d adds review_block, round_node_head_suffix and the verb; 63171c42e, 5c3e4bef9 and bd3cd5c35 carry the CLI contract registrations; f417d0be1 and 2edc38cc add and correct the landing fragment; 49d927983 moves the script onto the package owner.",
+    "done_when": "the node's evidence fence names the verb's one-correction append, its three refusals, the new test file failing by id at the base, the CLI contract tests and ruff; the manifest records head-gate-full.log (182 passed, EXIT=0) and base-arm-full.log (175 passed, EXIT=0) over the named files, and I reproduced the new test file at 7 passed at the head and 7 failed by id at the base, matching negative-control-base-arm.log.",
+    "goal": "the node goal is a supersede-review verb plus one accessor every review reader routes through; reckon/crew_run_commands.py:825 supersede_run_review appends review_correction and reckon/ledger.py:3675 review_block is the accessor, called from reckon/capabilities.py:968, reckon/crew/picker/snapshot.py:377, reckon/crew/picker/outcomes.py:477 and reckon/ledger.py:3721.",
+    "manifest": "read; it records all seven commits in order, the six-file gate command, four log paths, one-line-JSON baseline_suite and after_suite (both completed, 0 failures), and negative_control_log; after_suite names revision 49d927983 rather than the head 2edc38cc, which is one docs-only commit later and whose docs-sensitive re-run head-docs-recheck.log (69 passed) the fragment states.",
+    "write_paths": "the base fence held 11 paths and the coordinator widened it to skills/reckon-build/SKILL.md, tests/test_skill_contracts.py and scripts/review_rows_with_another_rounds_verdict.py (resume-1-advice.txt and resume-2-advice.txt); every one of the 12 changed paths in git diff 49b9973b..2edc38cc lies inside the base fence or a recorded widening."
+  },
+  "justifications": {
+    "durability": "tests/test_a_corrected_review_row_reads_as_unreviewed.py asserts each named reader's view directly, and it reddens when the change is reverted: I ran the file against base 49b9973b and it reported 7 failed by id, so each reader assertion fails if review_block returns the stale block again.",
+    "evidence": "the manifest records the head and base arms as completed logs with 0 failures (head-gate-full.log, base-arm-full.log) and I independently re-ran the new test file at 2edc38cc and 49b9973b to confirm 7 passed versus 7 failed by id; the after_suite revision is one docs-only commit behind the head.",
+    "fit": "reckon/ledger.py:3675 and reckon/crew_run_commands.py:825 follow the surrounding docstring-and-structure idiom and carry no plan, ticket or version identifier, matching the neighbours they sit beside.",
+    "goal_fidelity": "reckon/crew_run_commands.py:825 supersede_run_review appends one review_correction {time, reason, dispatched_head, recorded_head, superseded_field} and reckon/ledger.py:3688 review_block returns None for a corrected row, so the four routed readers drop it from totals and medians as the goal states.",
+    "reuse": "review_block is defined on the row owner (reckon/ledger.py) and round_node_head_suffix extends reckon/crew/repair.py:331 beside round_node_source, with the census script's private copy deleted and now importing the owner; _dispatched_head_for_row nonetheless duplicates the census script's dispatched-head composition with no package owner (see FINDING).",
+    "scope_discipline": "every path in git diff 49b9973b..2edc38cc is inside the base SCOPE fence (prompt.txt:69-80) or a widening the coordinator recorded in resume-1-advice.txt and resume-2-advice.txt; reckon/cli.py is declared and unchanged."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a supersede-review verb plus one accessor every review reader routes through; reckon/crew_run_commands.py:825 supersede_run_review appends review_correction and reckon/ledger.py:3675 review_block is the accessor called from capabilities, picker snapshot, picker outcomes and review_scores.\nVERDICT done_when: the evidence fence names the append, the three refusals, the base-arm red by id, the CLI contract tests and ruff; the manifest records head-gate-full.log 182 passed and base-arm-full.log 175 passed, and I reproduced 7 passed at the head and 7 failed by id at the base.\nVERDICT write_paths: every one of the 12 changed paths is inside the base fence or a widening the coordinator recorded in resume-1-advice.txt and resume-2-advice.txt.\nVERDICT manifest: read; it records the seven commits, the six-file gate, four logs, baseline_suite and after_suite as completed JSON with 0 failures, and negative_control_log; after_suite names 49d927983, one docs-only commit before the head 2edc38cc.\nVERDICT diff: read commit by commit against 49b9973b; the verb, the accessor, the four reader routings, the CLI registrations and the landing fragment.\nCALL_SITES: reckon/capabilities.py:_arm_figures, reckon/crew/picker/snapshot.py:_candidates_scan, reckon/crew/picker/outcomes.py:summarize, reckon/ledger.py:review_scores, reckon/mcp.py:2096 ledger.review_scores, reckon/crew_run_commands.py:crew_supersede_review\nSCORE goal_fidelity: 19\nSCORE evidence: 18\nSCORE scope_discipline: 19\nSCORE durability: 19\nSCORE fit: 18\nSCORE reuse: 15\nFINDING reckon/crew_run_commands.py:800 follow-on: _dispatched_head_for_row duplicates the dispatched-head composition in scripts/review_rows_with_another_rounds_verdict.py:59 rather than extending an owner; both compose _review_record_subject and round_node_head_suffix identically.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T034147435864-supersede-a-misattributed-review-row/manifest.md:11 follow-on: the tests: line records a bare gate command with no result and not the literal command the logs ran.",
+  "review_run_id": "r-20261019T102643719447-review-of-supersede-a-misattributed-review-row-2edc38cc5e15",
+  "reviewed_base_sha": "49b9973b488c4de54b9ad8bebf0b39ae99cdc868",
+  "reviewed_head_sha": "2edc38cc5e1590aad4f26ae1614a50f07c7d7d58",
+  "reviewed_run_id": "r-20261019T034147435864-supersede-a-misattributed-review-row",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T10:43:13.202442+00:00"
+}
