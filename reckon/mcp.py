@@ -29,8 +29,7 @@ from __future__ import annotations
 
 import json
 import logging
-import subprocess
-import sys
+import threading
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -276,86 +275,15 @@ _RECONNECT_REMEDY = "reconnect the reckon MCP server: /mcp → reckon → reconn
 #: running an answer on the current code.
 _REGISTERED_TOOL_PARAMS: dict[str, tuple[str, ...]] = {}
 
-#: The child that runs one tool call against the checkout's current code, and
-#: prints one JSON object: the tool's parameter names, and its answer when it
-#: made one. It is a child rather than the running process because a stdio
-#: server's client holds the session this process initialised; replacing the
-#: image would discard it, so the front stays and the current code runs behind
-#: it. This is the one text both the answer and the signature check share.
-_CURRENT_CODE_RUNNER = r"""
-import asyncio, json, sys
-
-root, name, payload = sys.argv[1], sys.argv[2], sys.argv[3]
-sys.path.insert(0, root)
-
-import reckon.mcp as reckon_mcp
-
-
-def structured(result):
-    if isinstance(result, tuple):
-        for item in result:
-            if isinstance(item, dict):
-                return item
-        result = result[0]
-    if isinstance(result, list):
-        for block in result:
-            text = getattr(block, "text", None)
-            if text:
-                try:
-                    return json.loads(text)
-                except json.JSONDecodeError:
-                    return {"text": text}
-    return {"unstructured": repr(result)}
-
-
-out = {"params": [], "reached": False}
-try:
-    tool = next(
-        item
-        for item in reckon_mcp.mcp._tool_manager.list_tools()
-        if item.name == name
-    )
-    out["params"] = sorted(tool.fn_metadata.arg_model.model_fields)
-    #: A failure raised after this point is the tool's own answer. One raised
-    #: before it is the child's — the moved code serves no such tool, or the
-    #: child died on the way — and answers for no code the caller can retry on.
-    out["reached"] = True
-    # The tool itself rather than the guard around it: this child is already
-    # the checkout's current code, so a second copy of that decision here would
-    # answer with a refusal of its own instead of the tool's answer.
-    inner = getattr(getattr(tool, "fn", None), "_stale_guard_inner", None)
-    arguments = json.loads(payload)
-    if inner is None:
-        result = structured(asyncio.run(reckon_mcp.mcp.call_tool(name, arguments)))
-    else:
-        result = asyncio.run(inner(**arguments))
-        if not isinstance(result, dict):
-            result = structured(result)
-    out["answer"] = result
-except BaseException as exc:  # noqa: BLE001 - any failure is the child's answer
-    reason = f"{type(exc).__name__}: {exc}"
-    out["error"] = reason
-    out["answer"] = {"ok": False, "error": "crew_error", "detail": reason}
-print(json.dumps(out))
-"""
-
-#: How long one child gets to answer on the current code. It imports the whole
-#: package, so it is generous; a child that runs out is a child that did not
-#: answer, and the caller keeps the refusal.
+#: How long the persistent child gets to answer one request. It runs a whole
+#: tool, so it is generous; a request the child runs out of is one it made no
+#: answer to, and the caller then falls back or keeps its own result.
 _CURRENT_CODE_TIMEOUT_S = 120.0
 
 
 def _import_root() -> Path:
     """The sys.path root that supplied this imported package."""
     return Path(__file__).resolve().parent.parent
-
-
-def _error_text(result: Any) -> str | None:
-    """The original error text of a failed tool result, when it carries one."""
-    if not isinstance(result, Mapping) or result.get("ok") is not False:
-        return None
-    detail = result.get("detail") or result.get("error")
-    return str(detail)
 
 
 def _moved_checkout_state() -> served_code.MovedCheckout:
@@ -366,66 +294,69 @@ def _moved_checkout_state() -> served_code.MovedCheckout:
     )
 
 
-def _run_on_current_code(name: str, kwargs: Mapping[str, Any]) -> dict[str, Any] | None:
-    """Run one tool call against the checkout's current code in a child.
+def _failed_result(result: Any) -> Mapping[str, Any] | None:
+    """The failed tool result, when the tool returned one rather than raising."""
 
-    ``None`` means the child made no answer — it failed to start, ran out of its
-    bound, or printed nothing readable — and every caller then keeps the failure
-    it already has. A child that answered returns its parameter names and, when
-    it made one, its answer.
-    """
-
-    try:
-        payload = json.dumps(dict(kwargs))
-    except (TypeError, ValueError):
-        return None
-    try:
-        completed = subprocess.run(
-            [
-                sys.executable,
-                "-c",
-                _CURRENT_CODE_RUNNER,
-                str(_import_root()),
-                name,
-                payload,
-            ],
-            capture_output=True,
-            text=True,
-            timeout=_CURRENT_CODE_TIMEOUT_S,
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    lines = [line for line in completed.stdout.splitlines() if line.strip()]
-    if not lines:
-        return None
-    try:
-        child = json.loads(lines[-1])
-    except json.JSONDecodeError:
-        return None
-    return child if isinstance(child, dict) else None
+    if isinstance(result, Mapping) and result.get("ok") is False:
+        return result
+    return None
 
 
-def _current_code_signature_changed(name: str, child: Mapping[str, Any]) -> bool:
-    """Whether the child's parameter list differs from the registered one.
+def _probe_signature_changed(name: str, probe: Mapping[str, Any]) -> bool:
+    """Whether the child's probe reports different parameters for ``name``.
 
-    A child that reported no parameter names at all did not reach the tool —
-    it failed to import the checkout, or died before reading the tool's
-    metadata — and only a list that disagrees with the registered one is a
-    signature change.
+    A probe that names no parameters for the tool reports nothing about it — the
+    moved code may not serve it at all — and only a list that disagrees with the
+    registered one is a signature change. This is what detects a tool whose
+    parameters moved: no in-process answer can stand for it, because the client
+    holds the schema it connected with.
     """
 
     registered = _REGISTERED_TOOL_PARAMS.get(name)
     if registered is None:
         return False
-    params = child.get("params")
-    if not isinstance(params, list) or not params:
+    params = probe.get("params")
+    if not isinstance(params, Mapping):
         return False
-    return tuple(sorted(str(item) for item in params)) != tuple(sorted(registered))
+    reported = params.get(name)
+    if not isinstance(reported, list) or not reported:
+        return False
+    return tuple(sorted(str(item) for item in reported)) != tuple(sorted(registered))
 
 
 #: The code of the refusal this guard composes, and of no tool's own answer.
 _STALE_CODE_ERROR = "stale_server_code"
+
+#: The code a routed write gets when the current code did not answer it in time.
+WRITE_MAY_HAVE_LANDED_ERROR = "write_may_have_landed"
+
+#: The field an answer carries when the tree's current code served it.
+SERVED_BY_CODE_STAMP = "served_by_code_stamp"
+
+
+def _is_routed_write(name: str, kwargs: Mapping[str, Any]) -> bool:
+    """Whether this call changes state, so it is never re-run on the image.
+
+    A write already sent to the current code, which made no answer, may have
+    landed there. Running it again on the image would double it, so such a call
+    is answered with the timeout instead.
+    """
+
+    if name == "edit_plan":
+        return True
+    return name == "crew" and bool(kwargs.get("action"))
+
+
+def _reread_hint(name: str, kwargs: Mapping[str, Any]) -> str:
+    """The read a caller makes to learn whether a timed-out write landed."""
+
+    project = kwargs.get("project")
+    slug = kwargs.get("slug")
+    if name == "edit_plan" and project and slug:
+        return f"read_plan(project={str(project)!r}, slug={str(slug)!r})"
+    if name == "crew":
+        return f"crew(view={str(kwargs.get('view') or 'summary')!r})"
+    return f"{name} read"
 
 
 def _current_code_answer(child: Mapping[str, Any]) -> Mapping[str, Any] | None:
@@ -438,7 +369,7 @@ def _current_code_answer(child: Mapping[str, Any]) -> Mapping[str, Any] | None:
     Neither is a failure the child raised before it reached the tool — the moved
     code serves no such tool, or the child died on the way — because that answer
     belongs to no code the caller could retry on, and returning it marked with
-    the checkout's stamp would credit the current code with a call it never ran.
+    the tree's stamp would credit the current code with a call it never ran.
     """
 
     if child.get("reached") is not True:
@@ -457,11 +388,12 @@ def _stale_code_response(
     """The reconnect refusal for a call the current code will not take over.
 
     ``None`` means the failure is not the stale image's: either the code is the
-    image this process started with, or the checkout cannot be trusted — a
-    tracked file differs from ``HEAD``, or the checkout does not import — and
-    the original failure stands. ``tool`` names a tool whose parameters changed,
-    for which no in-process answer can stand and a reconnect is owed.
+    image this process started with, or the tree cannot be trusted — a tracked
+    file differs from ``HEAD``, or the tree does not import — and the original
+    failure stands. ``tool`` names a tool whose parameters changed, for which no
+    in-process answer can stand and a reconnect is owed.
     """
+
     state = _moved_checkout_state()
     if not state.may_load:
         return None
@@ -474,8 +406,9 @@ def _stale_code_response(
         "error": _STALE_CODE_ERROR,
         "detail": (
             f"this reckon MCP server started {started}; the code it imported has "
-            f"changed on disk since then (code stamp {state.running_stamp[:12]} → "
-            f"{state.disk_stamp[:12]}), so it no longer matches the checkout. "
+            f"changed on disk since then (code stamp {state.running_stamp[:12]} to "
+            f"{state.disk_stamp[:12]}), so it no longer matches the tree's current "
+            f"code. "
             f"{'The ' + change + ', which this session cannot cover; ' if tool else 'This call failed on the current code too; '}"
             f"{_RECONNECT_REMEDY}."
         ),
@@ -491,39 +424,44 @@ def _stale_code_response(
     return response
 
 
-def _answer_on_current_code(
-    name: str, kwargs: Mapping[str, Any], *, original_error: str | None
-) -> dict[str, Any] | None:
-    """The answer a failed call gets from the checkout's current code, or None.
+def _unanswered_on_current_code(
+    failure: Mapping[str, Any], state: served_code.MovedCheckout
+) -> dict[str, Any]:
+    """The call's own result, marked with the current code's failure to answer.
 
-    ``None`` means the current code did not answer at all: the checkout has not
-    moved, or cannot be trusted, or the child that runs the call made nothing —
-    and the caller then keeps the reconnect refusal. Any answer the current code
-    did make is returned, a failure as much as a success, because a failure the
-    current code gives is the caller's real answer and a reconnect would only
-    deliver the same one a turn later. It carries the stamp of the code that
-    served it, so a caller can tell it is not the image's. A tool whose
-    parameters changed is the one refusal: the client holds the schema it
-    connected with and no in-process answer can stand in for it.
+    The current code did not run: its child was still cold, or made no answer
+    within its bound. The failed call therefore keeps its own error code and
+    detail — which is what the caller retries on — and gains the two stamps and
+    a note, rather than the reconnect refusal a non-answer used to become.
     """
 
-    state = _moved_checkout_state()
-    if not state.may_load:
-        return None
-    child = _run_on_current_code(name, kwargs)
-    if child is None:
-        return None
-    if _current_code_signature_changed(name, child):
-        return _stale_code_response(original_error, tool=name)
-    answer = _current_code_answer(child)
-    if answer is None:
-        return None
-    _SERVE_ON_CURRENT_CODE.add(name)
-    return _served_on_current_code(answer, state.disk_stamp)
+    return {
+        **failure,
+        "code_stamp_at_start": state.running_stamp,
+        "code_stamp_now": state.disk_stamp,
+        "current_code_note": (
+            "the current code did not answer this call within its bound; this "
+            "call's own result stands."
+        ),
+    }
 
 
-#: The field an answer carries when the checkout's current code served it.
-SERVED_BY_CODE_STAMP = "served_by_code_stamp"
+def _write_may_have_landed(
+    state: served_code.MovedCheckout, name: str, kwargs: Mapping[str, Any]
+) -> dict[str, Any]:
+    """The timeout a routed write gets when the current code did not answer it."""
+
+    return {
+        "ok": False,
+        "error": WRITE_MAY_HAVE_LANDED_ERROR,
+        "detail": (
+            "the current code did not answer this write within its bound, so it "
+            f"may have landed. Re-read with {_reread_hint(name, kwargs)} before "
+            "retrying."
+        ),
+        "code_stamp_at_start": state.running_stamp,
+        "code_stamp_now": state.disk_stamp,
+    }
 
 
 def _served_on_current_code(answer: Mapping[str, Any], stamp: str) -> dict[str, Any]:
@@ -533,56 +471,102 @@ def _served_on_current_code(answer: Mapping[str, Any], stamp: str) -> dict[str, 
 
 
 #: Tools whose calls this session has started answering on the current code. A
-#: session whose image went stale keeps serving from the checkout behind it,
-#: rather than falling back to the image every later call.
+#: session whose image went stale keeps serving from the tree behind it, rather
+#: than falling back to the image every later call.
 _SERVE_ON_CURRENT_CODE: set[str] = set()
+
+#: The one persistent child per code stamp behind this guard. It is started when
+#: the guard first sees the stamp move and reused for every routed call until
+#: the stamp moves again, so a session pays one import per commit rather than
+#: one per call.
+_CURRENT_CODE_HOLDER: dict[str, served_code.CurrentCodeServer] = {}
+_CURRENT_CODE_SERVER_LOCK = threading.Lock()
+
+
+def _current_code_server() -> served_code.CurrentCodeServer:
+    """The persistent child server, started on first use."""
+
+    with _CURRENT_CODE_SERVER_LOCK:
+        server = _CURRENT_CODE_HOLDER.get("server")
+        if server is None:
+            server = served_code.CurrentCodeServer(_import_root())
+            _CURRENT_CODE_HOLDER["server"] = server
+        return server
+
+
+def _answer_from_child(
+    state: served_code.MovedCheckout,
+    server: served_code.CurrentCodeServer | None,
+    probe: Mapping[str, Any] | None,
+    name: str,
+    kwargs: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    """The current code's answer to a failed call, or None when it made none."""
+
+    if server is None or probe is None:
+        return None
+    routed = server.run(state.disk_stamp, name, kwargs)
+    answer = _current_code_answer(routed) if routed is not None else None
+    if answer is None:
+        return None
+    _SERVE_ON_CURRENT_CODE.add(name)
+    return _served_on_current_code(answer, state.disk_stamp)
 
 
 def _refuse_when_stale(tool: Callable[..., Any], *, name: str) -> Callable[..., Any]:
     """Wrap one registered tool so it answers on the current code once it moves.
 
     A call that returns normally is returned untouched, so a commit that moves
-    the code without breaking the running image costs nothing. The checkout's
-    stamp is computed only on failure, and only a failure is re-run on the
-    current code.
+    the code without breaking the running image costs nothing. The stamp is
+    computed per call, and on a moved, trusted tree the guard starts its one
+    persistent child and asks it for a readiness probe. Until that probe answers
+    the child is cold and the running image serves every call, so a cold child
+    never makes a caller wait; a call that fails while it is cold keeps its own
+    result, marked with the two stamps, rather than becoming a reconnect. Once
+    the child is warm, a call of a tool that has fallen back runs in the child
+    instead of the image, so it runs once. A routed read the child does not
+    answer falls back to the image; a routed write never does, because it may
+    have landed, and its timeout names the re-read to make first. A tool whose
+    probed parameters changed is the one refusal, and a reconnect is its remedy.
     """
     signature = getattr(tool, "__signature__", None)
 
     async def guarded(**kwargs: Any) -> Any:
-        if name in _SERVE_ON_CURRENT_CODE:
-            state = _moved_checkout_state()
-            child = _run_on_current_code(name, kwargs)
-            if child is not None:
-                if _current_code_signature_changed(name, child):
-                    refusal = _stale_code_response(_error_text(child), tool=name)
-                    if refusal is not None:
-                        return refusal
-                else:
-                    answer = _current_code_answer(child)
-                    if answer is not None:
-                        return _served_on_current_code(answer, state.disk_stamp)
+        state = _moved_checkout_state()
+        server = _current_code_server() if state.may_load else None
+        probe = server.warm(state.disk_stamp) if server is not None else None
+        routed = False
+
+        if probe is not None:
+            if _probe_signature_changed(name, probe):
+                refusal = _stale_code_response(None, tool=name)
+                if refusal is not None:
+                    return refusal
+            elif name in _SERVE_ON_CURRENT_CODE:
+                routed = True
+                answer = _answer_from_child(state, server, probe, name, kwargs)
+                if answer is not None:
+                    return answer
+                if _is_routed_write(name, kwargs):
+                    return _write_may_have_landed(state, name, kwargs)
+
         try:
             result = await tool(**kwargs)
-        except Exception as exc:
-            text = f"{type(exc).__name__}: {exc}"
-            answer = _answer_on_current_code(name, kwargs, original_error=text)
-            if answer is not None:
-                return answer
-            refusal = _stale_code_response(text)
-            if refusal is not None:
-                return refusal
+        except Exception:
+            if not routed:
+                answer = _answer_from_child(state, server, probe, name, kwargs)
+                if answer is not None:
+                    return answer
             raise
-        failure_text = _error_text(result)
-        if failure_text is not None:
-            answer = _answer_on_current_code(name, kwargs, original_error=failure_text)
-            if answer is not None:
-                return answer
-            refusal = _stale_code_response(failure_text)
-            if refusal is not None:
-                return refusal
+        failure = _failed_result(result)
+        if failure is not None and state.may_load:
+            if not routed:
+                answer = _answer_from_child(state, server, probe, name, kwargs)
+                if answer is not None:
+                    return answer
+            return _unanswered_on_current_code(failure, state)
         return result
 
-    guarded.__name__ = tool.__name__
     guarded.__qualname__ = tool.__qualname__
     guarded.__doc__ = tool.__doc__
     guarded.__module__ = tool.__module__

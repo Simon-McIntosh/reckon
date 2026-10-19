@@ -195,6 +195,22 @@ def commit_the_move():
     )
 
 
+async def warm_the_child():
+    """Wait until the guard's persistent child has answered its readiness probe.
+
+    The child is warmed by the probe rather than by a caller's call, so a call
+    made while it is still cold is served by the running image. These cases are
+    about the answer once the current code is serving, so they wait for it.
+    """
+    for _ in range(1800):
+        state = reckon_mcp._moved_checkout_state()
+        if state.may_load:
+            server = reckon_mcp._current_code_server()
+            if server.warm(state.disk_stamp) is not None:
+                return
+        await asyncio.sleep(0.1)
+
+
 async def main():
     call = crew if mode.startswith("crew_") else edit_plan
     first = await call()
@@ -203,6 +219,7 @@ async def main():
     else:
         move_the_checkout()
         commit_the_move()
+        await warm_the_child()
     second = await call()
     third = await call()
     print(json.dumps({
@@ -404,21 +421,19 @@ def test_a_crew_failure_answers_on_the_current_code_with_its_stamp(
 
 
 def test_a_child_that_never_reaches_the_tool_is_not_its_answer(tmp_path: Path) -> None:
-    """A child that reached no tool made no answer, and reports no signature."""
+    """A child that reached no tool made no answer, so the call keeps its own result."""
     root = _committed_checkout(tmp_path)
     payload = _run_server(tmp_path, root, "crew_never")
     _assert_served_from_the_copy(payload, root)
 
     first, second = payload["first"], payload["second"]
     assert first.get("ok") is False, f"the running image must fail the call: {first!r}"
-    assert second.get("error") == "stale_server_code", (
-        f"a child that never reached the tool made no answer, so the caller keeps "
-        f"the refusal: {second!r}"
+    assert second.get("error") == first.get("error"), (
+        f"a child that reached no tool made no answer, so a failed call keeps its "
+        f"own result: {second!r}"
     )
-    assert "tool" not in second, (
-        f"a child that reached no tool reports no changed signature: {second!r}"
-    )
-    assert "changed its parameters" not in second["detail"], second
+    assert "stale_server_code" not in json.dumps(second), second
+    assert "reconnect" not in second, second
     body = json.dumps(second)
     assert "served_by_code_stamp" not in body, (
         f"the child's own failure is not the current code's answer: {second!r}"
@@ -426,23 +441,21 @@ def test_a_child_that_never_reaches_the_tool_is_not_its_answer(tmp_path: Path) -
     assert "StopIteration" not in body, second
 
 
-def test_a_child_that_makes_no_answer_gets_the_refusal(tmp_path: Path) -> None:
-    """A child that answers nothing at all owes the reconnect refusal, naming why."""
+def test_a_child_that_makes_no_answer_keeps_the_calls_own_result(
+    tmp_path: Path,
+) -> None:
+    """A child that answers nothing leaves the failed call's own result standing."""
     root = _committed_checkout(tmp_path)
     payload = _run_server(tmp_path, root, "crew_silent")
     _assert_served_from_the_copy(payload, root)
 
     first, second = payload["first"], payload["second"]
     assert first.get("ok") is False, f"the running image must fail the call: {first!r}"
-    assert second.get("error") == "stale_server_code", (
-        f"a child that makes no answer owes the refusal: {second!r}"
-    )
-    assert second.get("server_started_at") == payload["started_at"], (
-        f"the refusal names the image that could not answer: {second!r}"
+    assert second.get("error") == first.get("error"), (
+        f"a child that makes no answer leaves the call's own error code alone: {second!r}"
     )
     assert second.get("code_stamp_at_start") != second.get("code_stamp_now"), second
-    assert "reconnect" in second["detail"].lower(), second["detail"]
-    assert second.get("original_error"), (
-        f"the refusal keeps the failed call: {second!r}"
+    assert "reconnect" not in second, (
+        f"a slow child never forces a reconnect: {second!r}"
     )
     assert "served_by_code_stamp" not in json.dumps(second), second
