@@ -86,17 +86,27 @@ _MANIFEST_LIST_KEYS = (
 )
 _NONE_VALUES = {"", "none", "n/a", "-", "nil"}
 
-# The list fields whose entries are paths the write-scope audit reads. A value
-# joined by a separator the parser does not split is refused for these fields
-# only: the scope audit consumes their entries one by one, so a joined value
-# would scope-check the first entry and silently pass every entry after the
-# separator. Every other list field — ``artifacts``, ``evidence_inputs``,
-# ``follow_ons``, ``blockers`` — carries prose, where a semicolon before a path
-# is ordinary punctuation rather than a join, and those fields keep the reading
-# they had. ``orientation_write_paths`` is declared here beside the other list
-# fields because it is a path list too, named as a declaration rather than a
-# delivery, and the same join escapes the same audit.
-_PATH_LIST_KEYS = frozenset({"changed_paths", "orientation_write_paths"})
+# The list fields whose entries a guard consumes one at a time, each as its own
+# path or its own token. A value joined by a separator the parser does not split
+# is refused for these fields only, because that guard reads the entries
+# separately and a joined value hands it a single entry: the write-scope audit
+# checks the first path and passes every path after the separator, the cited-log
+# audit opens the first log and never reads the rest, and a commit citation
+# resolves the first identifier and hides the second. The rule for membership is
+# that shape — some guard consumes the entries one by one — and the prose list
+# fields (``artifacts``, ``evidence_inputs``, ``follow_ons``, ``blockers``) are
+# outside it: a semicolon before a path there is ordinary punctuation rather
+# than a join, so those fields keep the reading they had. ``test_logs`` and
+# ``commits`` are drawn in beside the delivered paths because each is read that
+# way. ``orientation_write_paths`` is included as a declaration of paths rather
+# than a delivery, though a join there is already loud rather than silent:
+# dispatch compares the field as a set against the declared write paths, so a
+# joined value surfaces as an orientation mismatch. It is refused all the same,
+# so the declaration is refused at the parse rather than at the dispatch that
+# reads it.
+_GUARDED_LIST_KEYS = frozenset(
+    {"changed_paths", "orientation_write_paths", "test_logs", "commits"}
+)
 
 # The status spellings a worker writes. This is the single statement of the
 # vocabulary: the classifier decides "was the worker working, not done" against
@@ -769,7 +779,7 @@ def _normalise_manifest_fields(
 ) -> dict[str, Any]:
     """Apply the typed post-processing shared by both manifest formats."""
     has_retry_failures = "retry_failures" in fields
-    for name in _PATH_LIST_KEYS:
+    for name in _GUARDED_LIST_KEYS:
         _refuse_joined_list_separator(name, fields.get(name), path=path)
     for name in _MANIFEST_LIST_KEYS:
         value = fields.get(name)
@@ -807,25 +817,37 @@ def _coerce_list_field(value: Any) -> Any:
 
 # The separator a worker reaches for when writing several list entries on one
 # line. A list value is split on commas and newlines only, so a value joined by
-# a semicolon is read as a single entry: the first path satisfies a scope audit
-# and every path after the separator is never checked, and the guard then looks
-# applied while covering one entry. A semicolon that stands before a path-like
-# token is that join rather than ordinary prose, so it is refused naming the
-# field and the separator instead of being read as the one entry it is not. The
-# path-like test keeps a semicolon inside a sentence — a blocker or a commit
-# subject — from being mistaken for a joined path list, because the token after
-# it there is a word and not a path.
+# a semicolon is read as a single entry: the guard that consumes the entries one
+# at a time then reads only the first and every entry after the separator is
+# never read, so the guard looks applied while covering one entry. A semicolon
+# that stands before an entry-shaped token is that join rather than ordinary
+# prose, so it is refused naming the field and the separator instead of being
+# read as the one entry it is not. The entry-shaped test keeps a semicolon
+# inside a sentence — a blocker or a follow-on — from being mistaken for a join,
+# because the token after it there is a word and neither a path nor an
+# identifier.
 _JOINED_LIST_SEPARATOR = ";"
 _PATH_LIKE_TOKEN = re.compile(r"[A-Za-z0-9_.-]+\.[A-Za-z0-9]+")
+_COMMIT_IDENTIFIER_TOKEN = re.compile(r"[0-9a-fA-F]{7,40}")
 _SEMICOLON_THEN_TOKEN = re.compile(r";[^\S\n]*([^\s;]+)")
 
 
-def _looks_like_a_path_token(token: str) -> bool:
-    """Whether a token reads as a path rather than as a word of prose."""
+def _looks_like_a_list_entry_token(token: str) -> bool:
+    """Whether a token reads as an entry of a guarded list field.
+
+    The guard for each field consumes its entries as paths or as identifiers, so
+    an entry-shaped token is either a path — a dotted filename or one carrying a
+    separator — or a commit identifier. Anything else is prose, and a semicolon
+    before prose is punctuation rather than a join.
+    """
     bare = token.strip("\"'")
     if not bare:
         return False
-    return "/" in bare or bool(_PATH_LIKE_TOKEN.fullmatch(bare))
+    return (
+        "/" in bare
+        or bool(_PATH_LIKE_TOKEN.fullmatch(bare))
+        or bool(_COMMIT_IDENTIFIER_TOKEN.fullmatch(bare))
+    )
 
 
 def _joined_list_separator_candidates(value: Any) -> list[str]:
@@ -845,30 +867,30 @@ def _joined_list_separator_candidates(value: Any) -> list[str]:
 
 
 def _refuse_joined_list_separator(field: str, value: Any, *, path: str | None) -> None:
-    """Refuse a path-list field whose entries a semicolon joins instead of a comma.
+    """Refuse a guarded list field whose entries a semicolon joins.
 
-    Called only for the fields in :data:`_PATH_LIST_KEYS`, whose entries the
-    write-scope audit reads: a joined value there would be scope-checked as one
-    entry and pass every path after the separator. The finding names the field
-    and the separator, and the entry the separator stands before, so its author
-    can rewrite the value as a comma list or a JSON array. ``None`` and an
-    explicit nothing are left alone: this rule judges a joined value, not an
-    empty one.
+    Called only for the fields in :data:`_GUARDED_LIST_KEYS`, whose entries a
+    guard consumes one at a time: a joined value is read as one entry, so the
+    guard sees only what precedes the first separator and every entry after it
+    goes unread. The finding names the field and the separator, and the entry
+    the separator stands before, so its author can rewrite the value as a comma
+    list or a JSON array. ``None`` and an explicit nothing are left alone: this
+    rule judges a joined value, not an empty one.
     """
     for candidate in _joined_list_separator_candidates(value):
         for match in _SEMICOLON_THEN_TOKEN.finditer(candidate):
             token = match.group(1)
-            if not _looks_like_a_path_token(token):
+            if not _looks_like_a_list_entry_token(token):
                 continue
             where = f" at {path}" if path else ""
             raise ManifestParseError(
                 f"cannot read manifest{where}: field '{field}' joins its "
                 f"entries with {_JOINED_LIST_SEPARATOR!r} before {token!r}, a "
                 "separator the list parser does not split on; the value is "
-                "refused rather than read as a single entry, which would "
-                "scope-check only the first entry and pass every entry after "
-                "the separator — write the entries comma-separated or as a "
-                "JSON array"
+                "refused rather than read as a single entry, which would leave "
+                "every entry after the separator unread by the guard that "
+                "consumes them one at a time — write the entries "
+                "comma-separated or as a JSON array"
             )
 
 
