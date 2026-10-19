@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:673 _StampPoll.tick calls reloader.poll",
+    "reckon/crew_follow_commands.py:3253 follower stream loop calls reloader.poll",
+    "reckon/host_shims/srun:22 resolves RECKON_SHIM_PYTHON",
+    "reckon/host_shims/sbatch:22 resolves RECKON_SHIM_PYTHON",
+    "reckon/host_shims/salloc:22 resolves RECKON_SHIM_PYTHON",
+    "reckon/worker_shims/git:21 resolves RECKON_SHIM_PYTHON"
+  ],
+  "completed_at": "2026-10-19T00:41:55.799Z",
+  "dispatched_at": "2026-10-19T00:34:54Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reloaded-process-launches-through-its-interpreter.html",
+      "line": "4",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment and manifest assert ruff check and ruff format --check add no findings on the changed files, but no ruff log is recorded under the run's logs directory, so that done-when clause is claimed rather than shown; the claim holds (a zero delta measured on both files) but is unbacked in the record."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T000300604250-a-reloaded-process-launches-through-its-interpreter/logs/head_population.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T000300604250-a-reloaded-process-launches-through-its-interpreter/logs/base_population.log"
+  },
+  "item_verdicts": {
+    "call_sites": "verified production call sites reach the change through _FollowerReloader.poll and the shims that read RECKON_SHIM_PYTHON",
+    "diff": "Read both commits against base e92944a8; 19ea7962f adds the _SHIM_PYTHON_ENV constant and the guarded export in _FollowerReloader.poll plus a 200-line test file, and 834d59ab adds only the 6-line evidence fragment.",
+    "done_when": "The done_when asks for a re-exec test carrying RECKON_SHIM_PYTHON and keeping a caller's value, a shim test that never reaches a python3.12 stub, a negative control that drops the export, importer-population parity and a ruff delta; focused_gate.log ends 2 passed EXIT=0, negative_control.log ends 2 failed EXIT=1, base_population.log and head_population.log end 361 and 363 passed EXIT=0, and the ruff clause is asserted without a recorded log.",
+    "goal": "The source node's goal is to make a process reloaded into an image launch its shims through the interpreter it runs under; reckon/crew_follow_commands.py:581-582 now sets RECKON_SHIM_PYTHON to sys.executable in the environment handed to the materialised replacement image, and reckon/host_shims/srun:22 already resolves that variable first.",
+    "manifest": "Read; it names commits 19ea7962f8bc287bb14436957dad7afa3c5fdeb6 and 834d59ab75557ccc3ae927e9ad49550a454b907d, the 2-passed focused gate, the red negative control at logs/negative_control.log, and the 361/363 importer population, matching the logs on disk.",
+    "write_paths": "The prompt grants reckon/crew_follow_commands.py, tests/test_a_reloaded_process_launches_through_its_interpreter.py and the fragment and figure paths; the diff of e92944a8..834d59ab touches exactly the first two plus docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reloaded-process-launches-through-its-interpreter.html, all inside that scope."
+  },
+  "justifications": {
+    "durability": "logs/negative_control.log records the declared mutation - dropping the export - reddening both tests with EXIT=1, and tests/test_a_reloaded_process_launches_through_its_interpreter.py:184-198 runs the image's real shim against an independent python3.12 stub.",
+    "evidence": "the two tests, the red negative control and both population arms are recorded in logs/focused_gate.log, logs/negative_control.log, logs/base_population.log and logs/head_population.log, but the done_when's ruff clause carries no log.",
+    "fit": "the new constant at reckon/crew_follow_commands.py:124 follows the module's _*_ENV idiom and carries a mechanism comment, adding no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:581-582 exports RECKON_SHIM_PYTHON=sys.executable on the materialised-image reload path, the variable reckon/host_shims/srun:22 already resolves first, so a reloaded process's shims start through its interpreter.",
+    "reuse": "a capability search over reckon/ found the shim owners (reckon/host_shims/srun, sbatch, salloc, reckon/worker_shims/git) already resolve RECKON_SHIM_PYTHON, and the change feeds that owner rather than adding a second resolver.",
+    "scope_discipline": "the diff of e92944a8..834d59ab changes only the two granted source and test paths and the always-permitted landing fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is to make a process reloaded into an image launch its shims through the interpreter it runs under; reckon/crew_follow_commands.py:581-582 now sets RECKON_SHIM_PYTHON to sys.executable in the environment handed to the materialised replacement image, and reckon/host_shims/srun:22 already resolves that variable first.\nVERDICT done_when: The done_when asks for a re-exec test carrying RECKON_SHIM_PYTHON and keeping a caller's value, a shim test that never reaches a python3.12 stub, a negative control that drops the export, importer-population parity and a ruff delta; logs/focused_gate.log ends 2 passed EXIT=0, logs/negative_control.log ends 2 failed EXIT=1, logs/base_population.log and logs/head_population.log end 361 and 363 passed EXIT=0, and the ruff clause is asserted without a recorded log.\nVERDICT write_paths: The prompt grants reckon/crew_follow_commands.py, tests/test_a_reloaded_process_launches_through_its_interpreter.py and the fragment and figure paths; the diff of e92944a8..834d59ab touches exactly the first two plus docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reloaded-process-launches-through-its-interpreter.html, all inside that scope.\nVERDICT manifest: Read; it names commits 19ea7962f8bc287bb14436957dad7afa3c5fdeb6 and 834d59ab75557ccc3ae927e9ad49550a454b907d, the 2-passed focused gate, the red negative control at logs/negative_control.log, and the 361/363 importer population, matching the logs on disk.\nVERDICT diff: Read both commits against base e92944a8; 19ea7962f adds the _SHIM_PYTHON_ENV constant and the guarded export in _FollowerReloader.poll plus a 200-line test file, and 834d59ab adds only the 6-line evidence fragment.\nCALL_SITES: reckon/crew_follow_commands.py:673 _StampPoll.tick calls reloader.poll, reckon/crew_follow_commands.py:3253 follower stream loop calls reloader.poll, reckon/host_shims/srun:22 resolves RECKON_SHIM_PYTHON, reckon/host_shims/sbatch:22 resolves RECKON_SHIM_PYTHON, reckon/host_shims/salloc:22 resolves RECKON_SHIM_PYTHON, reckon/worker_shims/git:21 resolves RECKON_SHIM_PYTHON\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:581-582 exports RECKON_SHIM_PYTHON=sys.executable on the materialised-image reload path, the variable reckon/host_shims/srun:22 already resolves first, so a reloaded process's shims start through its interpreter.\nSCORE evidence: 17\nJUSTIFICATION evidence: the two tests, the red negative control and both population arms are recorded in logs/focused_gate.log, logs/negative_control.log, logs/base_population.log and logs/head_population.log, but the done_when's ruff clause carries no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff of e92944a8..834d59ab changes only the two granted source and test paths and the always-permitted landing fragment.\nSCORE durability: 19\nJUSTIFICATION durability: logs/negative_control.log records the declared mutation - dropping the export - reddening both tests with EXIT=1, and tests/test_a_reloaded_process_launches_through_its_interpreter.py:184-198 runs the image's real shim against an independent python3.12 stub.\nSCORE fit: 18\nJUSTIFICATION fit: the new constant at reckon/crew_follow_commands.py:124 follows the module's _*_ENV idiom and carries a mechanism comment, adding no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: a capability search over reckon/ found the shim owners (reckon/host_shims/srun, sbatch, salloc, reckon/worker_shims/git) already resolve RECKON_SHIM_PYTHON, and the change feeds that owner rather than adding a second resolver.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reloaded-process-launches-through-its-interpreter.html:4 follow-on: the fragment and manifest assert ruff check and ruff format --check add no findings on the changed files, but no ruff log is recorded under the run's logs directory, so that done-when clause is claimed rather than shown; the claim holds (a zero delta measured on both files) but is unbacked in the record.\n",
+  "review_run_id": "r-20261019T003349335642-review-of-a-reloaded-process-launches-through-its-interpreter-834d59ab7555",
+  "reviewed_base_sha": "e92944a803a013259714d7094f5b8f8b0538ef74",
+  "reviewed_head_sha": "834d59ab75557ccc3ae927e9ad49550a454b907d",
+  "reviewed_run_id": "r-20261019T000300604250-a-reloaded-process-launches-through-its-interpreter",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T00:46:32.595047+00:00"
+}
