@@ -30,11 +30,11 @@ serves and what the client renders; the client never decides staleness itself.
 from __future__ import annotations
 
 import ast
+import contextlib
 import copy
 import hashlib
 import json
 import os
-import queue
 import re
 import subprocess
 import sys
@@ -1450,7 +1450,7 @@ def spawn_served_child(root: Path) -> subprocess.Popen:
 
     environment = dict(os.environ)
     environment.setdefault("PYTHONUNBUFFERED", "1")
-    return subprocess.Popen(  # noqa: S603 - a stdio pipe to our own interpreter
+    return subprocess.Popen(
         [sys.executable, "-c", SERVED_CHILD_PROGRAM, str(root)],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
@@ -1578,19 +1578,15 @@ class ServedChild:
         with self._write_lock:
             stream = self._process.stdin
             if stream is not None:
-                try:
+                with contextlib.suppress(OSError, ValueError):
                     stream.close()
-                except (OSError, ValueError):
-                    pass
                 self._process.stdin = None
-        try:
+        with contextlib.suppress(subprocess.TimeoutExpired):
             self._process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            self._process.kill()
-            try:
-                self._process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                pass
+            return
+        self._process.kill()
+        with contextlib.suppress(subprocess.TimeoutExpired):
+            self._process.wait(timeout=5)
 
 
 class CurrentCodeServer:

@@ -29,8 +29,6 @@ from __future__ import annotations
 
 import json
 import logging
-import subprocess
-import sys
 import threading
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
@@ -481,18 +479,19 @@ _SERVE_ON_CURRENT_CODE: set[str] = set()
 #: the guard first sees the stamp move and reused for every routed call until
 #: the stamp moves again, so a session pays one import per commit rather than
 #: one per call.
-_CURRENT_CODE_SERVER: served_code.CurrentCodeServer | None = None
+_CURRENT_CODE_HOLDER: dict[str, served_code.CurrentCodeServer] = {}
 _CURRENT_CODE_SERVER_LOCK = threading.Lock()
 
 
 def _current_code_server() -> served_code.CurrentCodeServer:
     """The persistent child server, started on first use."""
 
-    global _CURRENT_CODE_SERVER
     with _CURRENT_CODE_SERVER_LOCK:
-        if _CURRENT_CODE_SERVER is None:
-            _CURRENT_CODE_SERVER = served_code.CurrentCodeServer(_import_root())
-        return _CURRENT_CODE_SERVER
+        server = _CURRENT_CODE_HOLDER.get("server")
+        if server is None:
+            server = served_code.CurrentCodeServer(_import_root())
+            _CURRENT_CODE_HOLDER["server"] = server
+        return server
 
 
 def _answer_from_child(
@@ -567,6 +566,7 @@ def _refuse_when_stale(tool: Callable[..., Any], *, name: str) -> Callable[..., 
                     return answer
             return _unanswered_on_current_code(failure, state)
         return result
+
     guarded.__qualname__ = tool.__qualname__
     guarded.__doc__ = tool.__doc__
     guarded.__module__ = tool.__module__

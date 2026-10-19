@@ -31,7 +31,7 @@ from reckon import served_code
 #: The fake child. It re-reads its config for every request, so a test can slow,
 #: silence or kill a tool between calls, and it records every tool call it was
 #: sent, which is what shows that warming used the probe and not a call.
-_FAKE_CHILD = r'''
+_FAKE_CHILD = r"""
 import json, os, sys, time
 
 config_path = os.environ["FAKE_CHILD_CONFIG"]
@@ -85,7 +85,7 @@ for line in sys.stdin:
         "id": ident, "op": "call", "reached": True, "answer": answer,
     }) + "\n")
     sys.stdout.flush()
-'''
+"""
 
 
 class Spawner:
@@ -135,11 +135,13 @@ class Rig:
             self.root, spawn=self.spawner, timeout_s=self.timeout_s
         )
         self.stamp = "1" * 64
-        monkeypatch.setattr(mcp_module, "_CURRENT_CODE_SERVER", self.server)
+        monkeypatch.setattr(mcp_module, "_current_code_server", lambda: self.server)
         monkeypatch.setattr(mcp_module, "_SERVE_ON_CURRENT_CODE", set())
         monkeypatch.setattr(mcp_module, "_moved_checkout_state", self._state)
         monkeypatch.setattr(
-            mcp_module, "_REGISTERED_TOOL_PARAMS", dict(mcp_module._REGISTERED_TOOL_PARAMS)
+            mcp_module,
+            "_REGISTERED_TOOL_PARAMS",
+            dict(mcp_module._REGISTERED_TOOL_PARAMS),
         )
         _apply_control(monkeypatch, control)
 
@@ -167,7 +169,11 @@ class Rig:
 
         async def inner(**kwargs):
             calls.append(kwargs)
-            return dict(answer) if answer is not None else {"ok": True, "served_by": "image"}
+            return (
+                dict(answer)
+                if answer is not None
+                else {"ok": True, "served_by": "image"}
+            )
 
         mcp_module._REGISTERED_TOOL_PARAMS[name] = params
         guarded = mcp_module._refuse_when_stale(inner, name=name)
@@ -224,6 +230,7 @@ def _apply_control(monkeypatch, control: str | None) -> None:
 
         monkeypatch.setattr(served_code.CurrentCodeServer, "_child_for", every_call)
     elif control == "cold-call-waits":
+
         def waits(self, stamp):
             child = self._child_for(stamp)
             if child is None:
@@ -233,7 +240,9 @@ def _apply_control(monkeypatch, control: str | None) -> None:
 
         monkeypatch.setattr(served_code.CurrentCodeServer, "warm", waits)
     elif control == "ignore-probe-params":
-        monkeypatch.setattr(mcp_module, "_probe_signature_changed", lambda name, probe: False)
+        monkeypatch.setattr(
+            mcp_module, "_probe_signature_changed", lambda name, probe: False
+        )
     elif control == "child-outlives-pipe":
         monkeypatch.setattr(served_code.ServedChild, "stop", lambda self: None)
 
@@ -247,9 +256,9 @@ def _wrap_routed(guarded, inner, control: str | None):
         result = await guarded(**kwargs)
         if not isinstance(result, dict):
             return result
-        if control == "image-and-child":
-            await inner(**kwargs)
-        elif result.get("error") == mcp_module.WRITE_MAY_HAVE_LANDED_ERROR:
+        if control == "image-and-child" or (
+            result.get("error") == mcp_module.WRITE_MAY_HAVE_LANDED_ERROR
+        ):
             await inner(**kwargs)
         return result
 
@@ -269,10 +278,14 @@ def _rig(tmp_path, monkeypatch, control: str | None, **config) -> Rig:
 # ── case 1: an unanswered child leaves the failure alone ───────────────────
 
 
-def test_a_version_conflict_survives_an_unanswered_child(tmp_path, monkeypatch, control):
+def test_a_version_conflict_survives_an_unanswered_child(
+    tmp_path, monkeypatch, control
+):
     """A retryable failure never becomes a reconnect because the child was slow."""
     rig = _rig(tmp_path, monkeypatch, control, tools={"edit_plan": "silent"})
-    guarded, _ = rig.tool("edit_plan", answer={"ok": False, "error": "version_conflict"})
+    guarded, _ = rig.tool(
+        "edit_plan", answer={"ok": False, "error": "version_conflict"}
+    )
 
     assert rig.warm(), "the child must answer its probe"
     result = call(guarded, project="reckon", slug="p", expected_version=1)
@@ -319,10 +332,14 @@ def test_twenty_calls_start_one_child_and_a_moved_stamp_starts_one_more(
 # ── case 3: a cold call does not wait ──────────────────────────────────────
 
 
-def test_a_cold_call_is_served_by_the_image_without_waiting(tmp_path, monkeypatch, control):
+def test_a_cold_call_is_served_by_the_image_without_waiting(
+    tmp_path, monkeypatch, control
+):
     """The child is warmed by its probe, never by a caller's call."""
     rig = _rig(tmp_path, monkeypatch, control, probe_delay=1.2)
-    guarded, image = rig.tool("edit_plan", answer={"ok": False, "error": "version_conflict"})
+    guarded, image = rig.tool(
+        "edit_plan", answer={"ok": False, "error": "version_conflict"}
+    )
     guarded = _wrap_routed(guarded, image, control)
 
     started = time.monotonic()
@@ -344,7 +361,9 @@ def test_a_cold_call_is_served_by_the_image_without_waiting(tmp_path, monkeypatc
 def test_a_routed_call_runs_once_in_the_child(tmp_path, monkeypatch, control):
     """A tool that has fallen back runs in the child, and not on the image."""
     rig = _rig(tmp_path, monkeypatch, control)
-    guarded, image = rig.tool("edit_plan", answer={"ok": False, "error": "version_conflict"})
+    guarded, image = rig.tool(
+        "edit_plan", answer={"ok": False, "error": "version_conflict"}
+    )
     guarded = _wrap_routed(guarded, image, control)
 
     assert rig.warm()
@@ -368,7 +387,9 @@ def test_a_routed_write_the_child_does_not_answer_may_have_landed(
 ):
     """A write with no answer is never doubled on the image."""
     rig = _rig(tmp_path, monkeypatch, control)
-    guarded, image = rig.tool("edit_plan", answer={"ok": False, "error": "version_conflict"})
+    guarded, image = rig.tool(
+        "edit_plan", answer={"ok": False, "error": "version_conflict"}
+    )
     guarded = _wrap_routed(guarded, image, control)
 
     assert rig.warm()
@@ -390,13 +411,17 @@ def test_a_routed_write_the_child_does_not_answer_may_have_landed(
 # ── case 6: a changed tool signature still owes a reconnect ────────────────
 
 
-def test_a_changed_tool_signature_still_owes_a_reconnect(tmp_path, monkeypatch, control):
+def test_a_changed_tool_signature_still_owes_a_reconnect(
+    tmp_path, monkeypatch, control
+):
     """The one refusal left: the client holds the schema it connected with."""
     rig = _rig(
         tmp_path,
         monkeypatch,
         control,
-        params={"edit_plan": ["expected_version", "project", "slug", "added_parameter"]},
+        params={
+            "edit_plan": ["expected_version", "project", "slug", "added_parameter"]
+        },
     )
     guarded, _ = rig.tool("edit_plan", answer={"ok": True})
     guarded = _wrap_routed(guarded, None, control)
