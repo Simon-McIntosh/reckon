@@ -1,0 +1,48 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp.py:2822-2860 (the five registered tools read_plan, edit_plan, roadmap, audit and crew, each wrapped by _refuse_when_stale)",
+    "reckon/mcp.py:486-493 (_current_code_server, the sole constructor of served_code.CurrentCodeServer)",
+    "reckon/served_code.py:1443 (spawn_served_child, the production spawn callable)"
+  ],
+  "completed_at": "2026-10-19T22:45:54.009Z",
+  "dispatched_at": "2026-10-19T22:21:27Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-a-slow-child-never-forces-a-reconnect.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the message of 9dbf1cd52 says the fragment records 'the gate and base-arm verdicts', but the fragment carries sections for the mechanism, the seven cases and the controls only, so the evidence anchor does not carry the verdicts its own commit claims for it, and a reader of the fragment alone cannot see the gate figures the manifest holds."
+    },
+    {
+      "file": "reckon/served_code.py",
+      "line": "1572",
+      "severity": "follow-on",
+      "text": "ServedChild.alive has no caller in reckon/ or tests/, and CurrentCodeServer._child_for at reckon/served_code.py:1617 returns the cached child without a liveness check, so a child that dies within one code stamp is never replaced and current-code serving stops silently until the stamp next moves."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source run's prompt.txt GOAL asks the guard to keep a failed call's own result when the current-code child makes no answer and to serve current code from one persistent child per code stamp that warms on a readiness probe; reckon/mcp.py:536-556 computes the stamp per call and warms one persistent child by probe, reckon/mcp.py:441-471 keeps the call's own failure with both stamps instead of the refusal, and reckon/served_code.py:1592-1670 holds the one-child-per-stamp server.\nVERDICT done_when: the source prompt's measure is the four-file pytest gate carrying the section's seven cases; I re-ran tests/test_a_slow_child_never_forces_a_reconnect.py here and it reported '7 passed in 8.59s' with EXIT=0, and the manifest's after_suite records '1 failed, 51 passed' at 9dbf1cd5 against baseline_suite's '1 failed, 44 passed' at 591b2438, the added seven being exactly the cases the done_when names.\nVERDICT write_paths: the source prompt fences reckon/mcp.py, reckon/served_code.py, tests/test_mcp_server_serves_current_code.py, tests/test_a_slow_child_never_forces_a_reconnect.py and the plan's evidence fragment; every path in the 591b2438..9dbf1cd5 diff is inside that list and no path outside it is touched.\nVERDICT manifest: read; it names commits ada13bb60, 03a9d3f2e, 9dbf1cd5, records status complete with the head gate at '1 failed, 44 passed' base against '1 failed, 51 passed' head, and both arms name the same one unchanged failure tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, so zero failures are added.\nVERDICT diff: read commit by commit; ada13bb60 replaces the per-call runner in reckon/mcp.py with the persistent-child guard and adds reckon/served_code.py:1362-1670 plus tests/test_a_slow_child_never_forces_a_reconnect.py, 03a9d3f2e drops the per-call runner imports and refines the test file's controls, and 9dbf1cd52 adds only the landing fragment at 87 lines.\nCALL_SITES: reckon/mcp.py:2822-2860 (the five registered tools read_plan, edit_plan, roadmap, audit and crew, each wrapped by _refuse_when_stale), reckon/mcp.py:486-493 (_current_code_server, the sole constructor of served_code.CurrentCodeServer), reckon/served_code.py:1443 (spawn_served_child, the production spawn callable)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp.py:441-471 returns the call's own failure with code_stamp_at_start, code_stamp_now and a note where the old path returned the refusal, and reckon/served_code.py:1592-1655 keeps one child per stamp, which is what the goal states.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-head-2.log names revision 9dbf1cd5 on its first line and ends '1 failed, 51 passed' with EXIT=1 against logs/gate-base-2.log's 591b2438 and '1 failed, 44 passed' EXIT=1, and I reproduced the seven cases at '7 passed in 8.59s' EXIT=0.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: Every path in the 591b2438..9dbf1cd5 diff is inside the prompt's declared write paths: reckon/mcp.py, reckon/served_code.py, the two test files and the landing fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_slow_child_never_forces_a_reconnect.py:283-296 reddens when the refusal is restored, which I confirmed here: with RECKON_SLOW_CHILD_CONTROL=refusal-on-unanswered the case failed '1 failed, 1 passed' while the unrelated case still passed.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/served_code.py:1443-1670 follows the module's module-level helper and dataclass idiom and introduces no plan or phase name, but reckon/served_code.py:1572 defines ServedChild.alive with no caller anywhere in reckon/ or tests/.\nSCORE reuse: 18\nJUSTIFICATION reuse: A capability search over reckon/ found reckon/route_results.py:48 _REFRESH_CHILDREN, a keyed child cache, but it holds fire-and-forget refresh children and owns no request-tagged persistent child; CurrentCodeServer extends served_code, the module that already owns the served-code concern.\nFINDING docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-a-slow-child-never-forces-a-reconnect.html:1 follow-on: the message of 9dbf1cd52 says the fragment records 'the gate and base-arm verdicts', but the fragment carries sections for the mechanism, the seven cases and the controls only, so the evidence anchor does not carry the verdicts its own commit claims for it, and a reader of the fragment alone cannot see the gate figures the manifest holds.\nFINDING reckon/served_code.py:1572 follow-on: ServedChild.alive has no caller in reckon/ or tests/, and CurrentCodeServer._child_for at reckon/served_code.py:1617 returns the cached child without a liveness check, so a child that dies within one code stamp is never replaced and current-code serving stops silently until the stamp next moves.\n",
+  "review_run_id": "r-20261019T221909655555-review-of-epw-a-slow-child-never-forces-a-reconnect-9dbf1cd52b25",
+  "reviewed_base_sha": "591b2438663d9abf275d8a7660cdbc94fdfb244d",
+  "reviewed_commits": [
+    "ada13bb60",
+    "03a9d3f2e",
+    "9dbf1cd52b258b4813b2a529485c22ef30f3f377"
+  ],
+  "reviewed_head_sha": "9dbf1cd52b258b4813b2a529485c22ef30f3f377",
+  "reviewed_run_id": "r-20261019T211637587066-epw-a-slow-child-never-forces-a-reconnect",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T23:01:53.553025+00:00",
+  "total": 106
+}
