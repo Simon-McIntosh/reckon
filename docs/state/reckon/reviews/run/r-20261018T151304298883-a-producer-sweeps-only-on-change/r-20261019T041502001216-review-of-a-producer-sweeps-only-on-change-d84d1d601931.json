@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "test_quiet_cycles_list_nothing_and_spawn_no_git counts real calls: _install_list_counter wraps recovery_watch.list_live and _install_spawn_counter counts git argv seen by subprocess.run. Reinstating the fixed-beat sweep advances the counter at every boundary, so `marks['list'][1] == marks['list'][0]` and `marks['spawn'][1] == marks['spawn'][0]` redden. Neither side is a value the test handed to the code; the counters observe the code's own calls.",
+      "lines": "tests/test_a_producer_sweeps_only_on_change.py:196-204"
+    },
+    {
+      "failure_condition": "test_a_touched_pointer_sweeps_exactly_once asserts `marks[1] - marks[0] == 1`, where the marks are list_live call counts read at boundaries while os.utime moves a pointer's mtime. This is the assertion the declared negative control reddens (negative-control.log, EXIT=1, `assert (1 - 1) == 1`), so its failure condition is demonstrated: a stamp that ignores mtime leaves the touch invisible and the delta 0.",
+      "lines": "tests/test_a_producer_sweeps_only_on_change.py:215-218"
+    },
+    {
+      "failure_condition": "test_a_death_is_delivered_within_one_beat_with_no_file_change flips the fixture's monkeypatched liveness flag (set up at tests/...:120-127) and asserts the yielded transitions name every live run. If _quiet_beat_snapshots dropped its _fresh_liveness re-probe and served the cached snapshot, no transition would be yielded and the assertion would redden. The liveness source is the fixture's own flag, not a value the assertion passes to the code.",
+      "lines": "tests/test_a_producer_sweeps_only_on_change.py:221-233"
+    },
+    {
+      "failure_condition": "No assertion in the added file can fail on the omission named in the third finding: nothing drives a change confined to a run's exit/worker/attempt record, a review-store candidate or a worktree head while the pointer, stream and manifest hold still. The durability score rests on the three assertions above, which guard the gate's firing and the liveness path, not the completeness of the fingerprint.",
+      "lines": "tests/test_a_producer_sweeps_only_on_change.py (whole file)"
+    }
+  ],
+  "completed_at": "2026-10-19T04:35:34.559Z",
+  "dispatched_at": "2026-10-19T04:17:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "2218",
+      "severity": "follow-on",
+      "text": "follow-on: _stat_stamp re-implements a capability the repository already owns. reckon/capabilities.py:1290 has the public file_stamp(path) -> list[int] | None, documented as a cheap [mtime_ns, size] stamp of one path or None when absent \u2014 the same two fields this function returns, with None as its absent marker. file_stamp is already used inside reckon/crew (reckon/crew/picker/snapshot.py:704 stamps budget_lift.lifts_path()); the addition duplicates it in a new shape rather than extending or wrapping it, the only difference being the absent sentinel. In the same subsystem, reckon/crew/recovery_memo.py:106 _file_identity is the identity owner the classification keys on. Reuse is scored at the rubric cap for a duplicated capability."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "2543",
+      "severity": "follow-on",
+      "text": "follow-on: _sweep_lift_rows now sits inside `if sweep:` while the document it reads is not in the fingerprint. The fold reads <crew-home>/budget-lifts.json via lift_watch.sweep -> budget_lift.read_document (reckon/crew/budget_lift.py:142 lifts_path, directly under the config home). _crew_home_change_token stamps only live/, runs/, each live pointer, each live run's newest stream and its manifest, so granting or ending a lift moves no stamped file and the fold waits for an unrelated pointer, stream, manifest or directory-mtime movement; the base revision folded the document on every poll. The delay is bounded by the next such movement (in an active fleet, the next stream append), so it is recorded rather than held. The same gating now covers runs.sweep_unfollowed_sessions and _stop_delivered_reviews at recovery_watch.py:2555-2558."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "2573",
+      "severity": "follow-on",
+      "text": "follow-on: the quiet-beat path serves a cached snapshot without re-deriving _snapshot_reuse_key, whose input set is wider than the change token. _watch_snapshot (recovery_watch.py:1292-1302) drops a stored snapshot on any change to _snapshot_reuse_key, which composes _classification_inputs (reckon/crew/recovery_memo.py:390-420): the pointer, the manifest, the pointer's own log, the run directory's exit/worker/attempt records, the review store's candidates for the run, and the run's worktree git head. _crew_home_change_token stamps only the pointer, the newest stream, the manifest and the live//runs/ directory mtimes, so a change confined to a run-dir record, a review-store candidate or the worktree head with no pointer/stream/manifest movement leaves the stored snapshot in place and the transition unreported. The window is bounded by the next movement of a stamped file \u2014 short in an active fleet, watchless on a fleet whose only run is idle."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "recovery_watch.py:watch_ticker is the changed function; it is reached in production through recovery_watch.py:watch_follow:2677 and re-exported at recovery.py:445, and the producer process is launched as `crew watch --project <p>` by dispatch_watch.py:_watch_producer_argv:312 via dispatch.py:_ensure_watch_producer:1803. No other production caller reaches the added helpers.",
+    "diff": "Read commit by commit against 284c31716: 2f129ebc9 rewrites the watch_ticker loop to gate the listing, the walk and the git sweeps on a stat-only home fingerprint and adds _stat_stamp, _crew_home_change_token, _run_streams and _quiet_beat_snapshots plus the new test file; d84d1d601 adds the landing fragment. Three files, all inside the declared scope.",
+    "done_when": "The source prompt.txt:112-115 done_when has three arms. The quiet-cycle arm and the touch-pulls-one-sweep arm are asserted by tests/test_a_producer_sweeps_only_on_change.py:196 and :215, and the death-within-one-beat arm by :221; the strace arm was run and its per-cycle figures are derived in the landing fragment by differencing the 5-beat and 40-beat totals (12 openat / 35 stat quiet, 24 / 12 base).",
+    "goal": "The source prompt.txt:44-45 goal asks that the crew watch producer run its live listing, run-directory walk and git sweeps only when the crew home changes, keeping only the per-run liveness probe on the fixed beat. Landed, recovery_watch.py:2530 computes a stat-only token each poll and the listing, handover read and git sweeps run only under `if sweep:` at recovery_watch.py:2532, with _quiet_beat_snapshots re-taking the liveness probe on every beat; the gate also takes the lift fold (recovery_watch.py:2543) and the orphan sweep, which the goal did not name.",
+    "manifest": "The source manifest.md records status complete, commits 2f129ebc9 and d84d1d601, the 3-test node gate at EXIT=0, the declared negative control at EXIT=1 with one failing id, and a failure_attribution for the adjacent cost case. Its baseline_suite and after_suite are prose lines rather than the JSON some nodes write, but they name the revisions, the command and the failing id.",
+    "write_paths": "The source prompt.txt:135-139 declares reckon/crew/recovery_watch.py, reckon/crew/runs.py, tests/test_a_producer_sweeps_only_on_change.py, the evidence fragment and the figures dir. git diff --stat 284c31716..d84d1d601 names recovery_watch.py, the test file and the fragment, and nothing else; runs.py and the figures dir were declared but not touched."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T041502001216-review-of-a-producer-sweeps-only-on-change-d84d1d601931",
+  "reviewed_base_sha": "284c31716ff9af26a17c74eb907bb2448b18b29c",
+  "reviewed_head_sha": "d84d1d60193102a858f71f02b51a37fe1f019c26",
+  "reviewed_run_id": "r-20261018T151304298883-a-producer-sweeps-only-on-change",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T04:35:43.714683+00:00"
+}
