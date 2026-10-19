@@ -1,0 +1,77 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T06:53:00.309Z",
+  "dispatched_at": "2026-10-19T06:46:26Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-site-answers-fast-and-agrees/r-20261019T064532892649-plan-review-of-the-site-answers-fast-and-agrees/plan.html:136",
+      "id": "reasoning-1",
+      "reason": "the mechanism cannot reach the readers its own premise names, so the node must be told whether those clients poll or which stream key carries the fleet change, or it will invent a channel or ship a stale pane.",
+      "text": "\u00a75 says \"A result that changes is pushed over the existing `/_changes/<project>` stream\", but two of the four generalised routes are not project-scoped: `/_projects/index.json` is keyed by route alone (line 130) and the all-project `/crew/velocity` query is keyed by the normalised query (line 138), while the only change stream is per-project (`/_changes/<project>`, reckon/serve.py:4184). A changed fleet rollup or all-project velocity result therefore has no declared delivery path: the home view (\u00a76) would serve a stale rollup, and VelocityView re-requests only after a 202, so once it holds a 200 it never re-reads a later change to the same key. \u00a75's done-when tests the 202/re-request path only for a first cold request, so this never fails its own gate.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-site-answers-fast-and-agrees/r-20261019T064532892649-plan-review-of-the-site-answers-fast-and-agrees/plan.html:130",
+      "id": "reasoning-2",
+      "reason": "line 138 already states the correct velocity key, so a reader who reads the whole section implements it correctly; only the line-130 summary sentence is loose and could be tightened to name both exceptions.",
+      "text": "the interface sentence says \"three functions, keyed by route and project. The exception is the fleet rollup ... keyed by route alone\", but line 138 adds a second key shape (project plus the normalised `since`/`until`/`fields`/`limit`/`cursor` query) and the done-when depends on it (\"two queries differing only in `limit` are stored and answered separately\"). Read alone, line 130 would key velocity by route and project, which is exactly the shape the done-when rejects.",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-site-answers-fast-and-agrees/r-20261019T064532892649-plan-review-of-the-site-answers-fast-and-agrees/plan.html:23",
+      "id": "wiring-1",
+      "reason": "\u00a74 and \u00a79 have already landed, so the absent edges change nothing about dispatch order now; they would only matter if \u00a75 were read as dispatchable while \u00a79 were still open.",
+      "text": "\u00a75's declared depends-on is [s3, s8], but \u00a75's done-when reads \u00a79's durations (\"ten minutes of ordinary fleet activity are logged with \u00a79's durations\") and \u00a74 both writes the same `reckon/serve.py` and lands earlier in the chain \u00a75 itself names. Neither \u00a74 nor \u00a79 appears in \u00a75's dependency entry, though \u00a73 and \u00a711 both list their landed predecessors.",
+      "type": "wiring",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-site-answers-fast-and-agrees/r-20261019T064532892649-plan-review-of-the-site-answers-fast-and-agrees/plan.html:130",
+      "id": "anchors_resolve-1",
+      "reason": "the named symbols resolve and are unambiguous, so the stale line numbers mislead a reader only briefly and change no decision the plan makes.",
+      "text": "\u00a75 cites \"`_start_check_refresh` and `_spawn_check_refresh` in `reckon/serve.py` near line 2889\" and \"`_CHECK_REFRESHES` (near line 1301)\", but the symbols now sit at reckon/serve.py:3171 and :1474; line 2889 is an unrelated exception class and line 1301 is plan-closure code in `derive_impl_with_source`. The symbols are named, so a reader still finds them, but the line anchors point at unrelated code.",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "c40132b01e242acc5958837561f088ba2ea6354f9c9713ee6a81c4160d7d448c",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 40,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T064532892649-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "88613a2e702b1efff8bde0b7a7e0b6ea4363a067",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the two serve.py line anchors added by the re-review comment no longer resolve near their targets (see FINDING).",
+    "done_when": "pass \u2014 each of the four routes carries a forced cold-recompute case with its own inline negative control, the fleet-rollup case asserts one child against its per-project control, and the VelocityView case asserts a re-request after 202.",
+    "evidence_paths": "pass \u2014 gate logs sit under the run directory and every log ends in EXIT=, matching \u00a72's terms; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or changelog prose reach the named symbols or the new interface.",
+    "reasoning": "a finding \u2014 the delivery mechanism for a changed result covers only project-scoped routes, so the two non-project-scoped results have no declared way to reach their readers (see FINDING); the interface-key sentence at line 130 also understates the velocity key shape stated at line 138.",
+    "single_goal": "pass \u2014 one deliverable: generalise the existing check-refresh mechanism from one route to four; the velocity client and the retired compliance-only names are stated parts of that one mechanism.",
+    "wiring": "a finding \u2014 \u00a75 declares depends-on [s3, s8] but its own prose names \u00a79 (\"whose durations this measures\") and \u00a74 as earlier in the same serve.py chain, and neither edge is declared."
+  },
+  "section_digests": {
+    "_document": "88ce37210fb91a9942df0a01024297398c99dbeecebe9b08aad14a9577d150a1",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "b9aa035553d395057dad26d5353e7b79c6bdec033a1ab82eb1042718d03592cd",
+    "s12": "3086e0ba68e51ca085e7178c914c92d64248be41088440dfa18abf077d5819ee",
+    "s13": "fa208e7c5f148ec329458a9824c867762bc66c986ccb7bc85745b08640484173",
+    "s14": "7f21ec58ce9adf4ba663f205fe60555a585a263354e7954c7dd99543a0d56139",
+    "s15": "884c8ab0e973894007385f537b51e29ef55bf2de18ef2cf6a25966e656f62bf2",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s3": "50f2ca1f3b1277d5f4b2d70a240688387a89a3136ad2d6aee26f0b3f324b1afc",
+    "s4": "a1ad15bdafaed28134c2565ad8374bc91928064852c10da6661f2499ca286149",
+    "s5": "cfd21a85e9c648ea945c868f3be86a9826a735504e1944f0ca3d5115455c344c",
+    "s6": "fdb08d5e7b8272372c8ced83ee14c031730239025c2a13ccb211329d7951673e",
+    "s7": "90073ced7051cfae8f66fd6b78f99e6ace90b008ffc6c9e5559d87a2e5c31704",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T06:55:40.965292+00:00"
+}
