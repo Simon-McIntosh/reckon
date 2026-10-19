@@ -14,7 +14,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from reckon import serve
+from reckon import git_dates
 
 FIRST_DATE = "2023-11-14T22:13:20+00:00"
 SECOND_DATE = "2023-11-14T22:21:40+00:00"
@@ -93,13 +93,13 @@ def _make_repo(tmp_path: Path) -> tuple[Path, Path]:
 def _isolate_caches(monkeypatch) -> None:
     """Point every git-date cache at in-process, temporary state."""
 
-    monkeypatch.setattr(serve, "_GIT_CREATION_CACHE", {})
-    monkeypatch.setattr(serve, "_GIT_LAST_MODIFIED_CACHE", {})
-    monkeypatch.setattr(serve, "_GIT_HEAD_MEMO", {})
-    monkeypatch.setattr(serve, "_load_git_creation_cache", lambda key: None)
-    monkeypatch.setattr(serve, "_load_git_last_modified_cache", lambda key: None)
-    monkeypatch.setattr(serve, "_store_git_creation_cache", lambda *args: None)
-    monkeypatch.setattr(serve, "_store_git_last_modified_cache", lambda *args: None)
+    monkeypatch.setattr(git_dates, "_GIT_CREATION_CACHE", {})
+    monkeypatch.setattr(git_dates, "_GIT_LAST_MODIFIED_CACHE", {})
+    monkeypatch.setattr(git_dates, "_GIT_HEAD_MEMO", {})
+    monkeypatch.setattr(git_dates, "_load_git_creation_cache", lambda key: None)
+    monkeypatch.setattr(git_dates, "_load_git_last_modified_cache", lambda key: None)
+    monkeypatch.setattr(git_dates, "_store_git_creation_cache", lambda *args: None)
+    monkeypatch.setattr(git_dates, "_store_git_last_modified_cache", lambda *args: None)
 
 
 def test_lookups_resolve_head_once(tmp_path, monkeypatch):
@@ -107,19 +107,19 @@ def test_lookups_resolve_head_once(tmp_path, monkeypatch):
     _isolate_caches(monkeypatch)
 
     counter = _CountingSubprocess(subprocess)
-    monkeypatch.setattr(serve, "subprocess", counter)
+    monkeypatch.setattr(git_dates, "subprocess", counter)
 
     # The first creation and last-modified lookup may each start processes.
-    serve._git_first_committed(repo, docs)
-    serve._git_last_committed(repo, docs)
+    git_dates._git_first_committed(repo, docs)
+    git_dates._git_last_committed(repo, docs)
     baseline = counter.git_calls
     assert baseline > 0
 
     # The remaining two lookups of each pair reuse the resolved head and their
     # own maps, so they start no git process for an unchanged checkout.
     for _ in range(2):
-        serve._git_first_committed(repo, docs)
-        serve._git_last_committed(repo, docs)
+        git_dates._git_first_committed(repo, docs)
+        git_dates._git_last_committed(repo, docs)
     assert counter.git_calls == baseline, (
         "a warm lookup for an unchanged checkout started a git process"
     )
@@ -129,7 +129,7 @@ def test_lookups_resolve_head_once(tmp_path, monkeypatch):
     (docs / "second.html").write_text("<html>second</html>", encoding="utf-8")
     _commit(repo, SECOND_DATE)
     before = counter.git_calls
-    times = serve._git_first_committed(repo, docs)
+    times = git_dates._git_first_committed(repo, docs)
     assert counter.git_calls > before, "a new commit did not force a re-resolution"
     assert times["docs/second.html"] == SECOND_TS
     assert times["docs/first.html"] == FIRST_TS
@@ -146,18 +146,18 @@ def test_a_linked_worktree_resolves_a_new_commit(tmp_path, monkeypatch):
     repo, _docs = _make_repo(tmp_path)
     _isolate_caches(monkeypatch)
     counter = _CountingSubprocess(subprocess)
-    monkeypatch.setattr(serve, "subprocess", counter)
+    monkeypatch.setattr(git_dates, "subprocess", counter)
 
     worktree = tmp_path / "linked"
     _git(repo, "worktree", "add", "-q", "-b", "wtb", str(worktree))
     docs = worktree / "docs"
 
-    head_before = serve._git_head(worktree)
+    head_before = git_dates._git_head(worktree)
     assert head_before == _rev(worktree)
 
     # An unchanged worktree reuses the memo.
     baseline = counter.git_calls
-    assert serve._git_head(worktree) == head_before
+    assert git_dates._git_head(worktree) == head_before
     assert counter.git_calls == baseline
 
     # A commit in the worktree updates the common ref, so the next lookup
@@ -165,7 +165,7 @@ def test_a_linked_worktree_resolves_a_new_commit(tmp_path, monkeypatch):
     (docs / "third.html").write_text("<html>third</html>", encoding="utf-8")
     _commit(worktree, THIRD_DATE)
     after = counter.git_calls
-    head_after = serve._git_head(worktree)
+    head_after = git_dates._git_head(worktree)
     assert counter.git_calls > after, "a worktree commit did not force a re-resolution"
     assert head_after == _rev(worktree)
     assert head_after != head_before
