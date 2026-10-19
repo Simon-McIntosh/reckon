@@ -1,0 +1,38 @@
+<section id="the-index-row-carries-the-figure-revision">
+  <h2>The index row carries the figure revision</h2>
+  <p>
+    A page's first paint builds its figure and thumbnail URLs from the row
+    <code>/_index/&lt;project&gt;</code> already serves, so the row now carries the
+    revision of the figure's bytes. Nothing asks for a URL before it can name one.
+  </p>
+  <p>
+    The revision is <code>&lt;inode&gt;-&lt;size&gt;-&lt;mtime_ns&gt;</code> in hex, and it
+    has one owner — <code>file_memo.file_revision</code> — that the index row and
+    the file and thumbnail routes all call, so the token a URL carries and the
+    token the response validates against are the same value by construction. A
+    figure entry written before the field existed is rebuilt rather than served
+    without it (<code>metadata_index._row_is_complete</code>).
+  </p>
+  <p>
+    The gate is <code>tests/test_a_figure_revision_is_fetched_once.py</code>:
+    <strong>10 passed, EXIT=0</strong>. It reads a row from
+    <code>/_index/sample</code>, computes the expected token itself from
+    <code>os.stat</code>, and finds the figure and its thumbnail answered
+    <code>Cache-Control: max-age=31536000, immutable</code>. An entry persisted
+    without the field is refreshed to the correct revision. A figure that cannot
+    be rasterised answers exactly one <code>Cache-Control</code> header — the
+    immutable one, where a duplicated <code>no-store</code> previously rode
+    beside it.
+  </p>
+  <p>
+    The declared negative control — drop the revision from the index row — reddens
+    the first-paint case: <strong>2 failed, EXIT=1</strong>. The importer
+    population is unchanged against base except for
+    <code>tests/test_metadata_index_survives_restart.py::test_the_index_endpoint_serves_only_row_fields</code>,
+    which pins <code>ROW_FIELDS</code> and lives outside this node's write scope;
+    the same eleven environmental failures (playwright, browser) fail at base and
+    head alike. Logs:
+    <code>logs/gate-head.log</code>, <code>logs/negative-control.log</code>,
+    <code>logs/pop-head.log</code>, <code>logs/pop-base.log</code>.
+  </p>
+</section>

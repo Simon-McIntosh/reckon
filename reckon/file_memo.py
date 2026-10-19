@@ -280,6 +280,20 @@ def file_signature(path: Path | str) -> _Signature:
     )
 
 
+def file_revision(stat: os.stat_result) -> str:
+    """Return the revision token a served file is addressed by.
+
+    Derived from the file's stat identity — inode, size and modification time —
+    so a rewritten file yields a new token and an untouched one yields the same
+    token across processes. It is the same value the ETag is built from, so a
+    URL carrying it as ``?rev=`` and the response's validator agree by
+    construction. The index row carries it and the file routes check it, so a
+    caller holding a stat identity builds the token here rather than elsewhere.
+    """
+
+    return f"{stat.st_ino:x}-{stat.st_size:x}-{stat.st_mtime_ns:x}"
+
+
 def memoized[T](
     kind: str,
     path: Path | str,

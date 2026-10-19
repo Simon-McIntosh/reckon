@@ -1,16 +1,19 @@
 """A figure revision is fetched once per browser.
 
-A figure or thumbnail URL carries the file's revision — the token the index row
-already holds. The server answers a URL naming the file's *current* revision
-with ``Cache-Control: max-age=31536000, immutable``, so the browser fetches it
-once and never revalidates. A revision that no longer matches (a rewritten
-figure) falls back to ``no-cache``, so the stale URL is refetched under the new
-one the surface now builds. The list and reader image sources carry that
-revision, so both sides agree on the URL.
+A figure or thumbnail URL carries the file's revision. The server answers a URL
+naming the file's *current* revision with ``Cache-Control: max-age=31536000,
+immutable``, so the browser fetches it once and never revalidates; a revision
+that no longer matches (a rewritten figure) falls back to ``no-cache``, so the
+stale URL is refetched under the new one the surface builds.
+
+The revision the page's first paint builds its URLs from is the one carried on
+the row ``/_index/<project>`` serves, so the browser never has to ask for a URL
+before it can name it. The row and the response are addressed by one token: the
+value the index row carries is exactly what the file routes match against.
 
 The negative control, armed with ``RECKON_TEST_DROP_FIGURE_REVISION=1``, makes
-the server ignore the URL's revision so both the figure and the thumbnail fall
-back to ``no-cache``: the immutable-header assertions below fail.
+the index row drop its revision, so the first-paint case finds no revision to
+build a URL from and fails.
 """
 
 from __future__ import annotations
@@ -27,12 +30,29 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from reckon import serve
+from reckon import metadata_index, serve
 
 _PROJECT = "sample"
 _NEGATIVE_CONTROL_ENV = "RECKON_TEST_DROP_FIGURE_REVISION"
 _IMMUTABLE = "max-age=31536000, immutable"
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _revision_of(path: Path) -> str:
+    """The revision token the server answers, derived from ``os.stat``.
+
+    Computed here rather than by calling the servant's own helper, so the
+    assertion fails if the helper and the served value ever disagree.
+    """
+
+    stat = os.stat(path)
+    return f"{stat.st_ino:x}-{stat.st_size:x}-{stat.st_mtime_ns:x}"
+
+
+def _cache_control(headers: list[tuple[str, str]]) -> list[str]:
+    """Every ``Cache-Control`` value, so a duplicated header is visible."""
+
+    return [value for name, value in headers if name.lower() == "cache-control"]
 
 
 def _solid_png(width: int, height: int, colour: tuple[int, int, int]) -> bytes:
@@ -56,11 +76,13 @@ def _served():
 
 
 def _get(port: int, path: str, headers: dict[str, str] | None = None):
+    """Return (status, header list, body); the list keeps a repeated header."""
+
     connection = http.client.HTTPConnection("127.0.0.1", port, timeout=30)
     try:
         connection.request("GET", path, headers=headers or {})
         response = connection.getresponse()
-        return response.status, dict(response.getheaders()), response.read()
+        return response.status, response.getheaders(), response.read()
     finally:
         connection.close()
 
@@ -71,9 +93,10 @@ class _Project:
     def __init__(self, docs_dir: Path):
         self.docs_dir = docs_dir
         self.figure = docs_dir / "figures" / "demo" / "wide.png"
+        self.relative = "figures/demo/wide.png"
 
     def revision(self) -> str:
-        return serve._file_revision(self.figure.stat())
+        return _revision_of(self.figure)
 
 
 @pytest.fixture()
@@ -91,17 +114,119 @@ def project(tmp_path, monkeypatch) -> _Project:
     monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts_file))
     monkeypatch.setenv("RECKON_CLIENT_CACHE", str(tmp_path / "client-cache"))
     monkeypatch.setattr(serve, "_MOUNTS_FILE", mounts_file)
-    return _Project(repository / "docs")
+    metadata_index.clear()
+    yield _Project(repository / "docs")
+    metadata_index.clear()
 
 
 @pytest.fixture(autouse=True)
 def _negative_control_when_armed(monkeypatch):
-    """Arm the declared mutation: the server ignores the URL's revision."""
+    """Arm the declared mutation: the index row drops the revision."""
 
     if os.environ.get(_NEGATIVE_CONTROL_ENV) != "1":
         return
 
-    monkeypatch.setattr(serve, "_revision_matches", lambda requested, identity: False)
+    original = metadata_index._figure_row
+
+    def without_revision(path, docs_dir, project, signature, stamp):
+        row = original(path, docs_dir, project, signature, stamp)
+        if row is not None:
+            row.pop("revision", None)
+        return row
+
+    monkeypatch.setattr(metadata_index, "_figure_row", without_revision)
+
+
+def _figure_row(rows: list[dict]) -> dict:
+    return next(
+        row
+        for row in rows
+        if row.get("type") == "figure" and row.get("slug") == "demo/wide.png"
+    )
+
+
+def test_the_index_row_carries_the_revision_the_first_paint_uses(project, monkeypatch):
+    """The row the page paints from carries the token its figure URLs name."""
+
+    monkeypatch.setattr(serve, "_git_first_committed", lambda *a, **k: {})
+    monkeypatch.setattr(serve, "_git_last_committed", lambda *a, **k: {})
+
+    with _served() as port:
+        index_status, _h, index_body = _get(port, f"/_index/{_PROJECT}")
+        assert index_status == 200
+        row = _figure_row(json.loads(index_body))
+
+        assert row["revision"] == project.revision()
+        assert row["revision"] != ""
+
+        figure_url = f"{row['href']}?rev={row['revision']}"
+        thumb_url = f"/_thumb{row['href']}?rev={row['revision']}"
+        figure_status, figure_headers, figure_body = _get(port, figure_url)
+        thumb_status, thumb_headers, _thumb_body = _get(port, thumb_url)
+
+    assert figure_status == 200
+    assert _cache_control(figure_headers) == [_IMMUTABLE]
+    assert figure_body == project.figure.read_bytes()
+    assert thumb_status == 200
+    assert _cache_control(thumb_headers) == [_IMMUTABLE]
+
+
+def test_an_index_entry_that_predates_the_field_is_refreshed(project, monkeypatch):
+    """A figure entry written before the field is rebuilt, not served bare."""
+
+    monkeypatch.setattr(serve, "_git_first_committed", lambda *a, **k: {})
+    monkeypatch.setattr(serve, "_git_last_committed", lambda *a, **k: {})
+
+    path = project.docs_dir / project.relative
+    stale = {
+        "slug": "demo/wide.png",
+        "href": f"/{_PROJECT}/figures/demo/wide.png",
+        "type": "figure",
+        "title": "Wide",
+        "status": "",
+        "sprint": None,
+        "archived": "",
+        "created": 0,
+        "edited": "",
+        "width": 400,
+        "height": 300,
+    }
+    assert "revision" not in stale
+    metadata_index._store_persisted(
+        project.docs_dir,
+        _PROJECT,
+        [
+            {
+                "path": project.relative,
+                "digest": metadata_index._content_digest(path),
+                "fields": stale,
+            }
+        ],
+        {},
+    )
+    metadata_index.clear()
+
+    rows = serve._served_index_rows(project.docs_dir, _PROJECT)
+    row = _figure_row(rows)
+    assert row["revision"] == _revision_of(path)
+
+
+def test_a_thumbnail_that_cannot_be_rendered_sends_one_cache_control(project):
+    """A non-renderable figure falls back to its bytes under one header only."""
+
+    broken = project.docs_dir / "figures" / "demo" / "broken.png"
+    source = b"this figure cannot be decoded as an image"
+    broken.write_bytes(source)
+
+    with _served() as port:
+        status, headers, body = _get(
+            port,
+            f"/_thumb/{_PROJECT}/figures/demo/broken.png?rev={_revision_of(broken)}",
+        )
+
+    assert status == 200
+    assert _cache_control(headers) == [_IMMUTABLE]
+    assert body == source
 
 
 def test_the_figure_row_carries_the_revision_of_its_bytes(project, monkeypatch):
@@ -117,11 +242,7 @@ def test_the_figure_row_carries_the_revision_of_its_bytes(project, monkeypatch):
     finally:
         serve._DISC_CACHE.clear()
 
-    row = next(
-        item
-        for item in result["inventory"]
-        if item.get("type") == "figure" and item.get("slug") == "demo/wide.png"
-    )
+    row = _figure_row(result["inventory"])
     assert row["revision"] == project.revision()
     assert row["revision"] != ""
 
@@ -134,7 +255,7 @@ def test_a_figure_url_that_carries_its_revision_is_immutable(project):
         )
 
     assert status == 200
-    assert headers["Cache-Control"] == _IMMUTABLE
+    assert _cache_control(headers) == [_IMMUTABLE]
     assert body == source
 
 
@@ -143,7 +264,7 @@ def test_a_figure_url_without_a_revision_is_still_revalidated(project):
         status, headers, _body = _get(port, f"/{_PROJECT}/figures/demo/wide.png")
 
     assert status == 200
-    assert headers["Cache-Control"] == "no-cache"
+    assert _cache_control(headers) == ["no-cache"]
 
 
 def test_a_rewritten_figure_is_not_immutable_at_its_old_revision(project):
@@ -153,7 +274,7 @@ def test_a_rewritten_figure_is_not_immutable_at_its_old_revision(project):
             port, f"/{_PROJECT}/figures/demo/wide.png?rev={previous}"
         )
         assert status == 200
-        assert headers["Cache-Control"] == _IMMUTABLE
+        assert _cache_control(headers) == [_IMMUTABLE]
 
         project.figure.write_bytes(_solid_png(400, 300, (90, 40, 10)))
         stat = project.figure.stat()
@@ -170,8 +291,8 @@ def test_a_rewritten_figure_is_not_immutable_at_its_old_revision(project):
 
     assert status == 200
     assert stale_body == project.figure.read_bytes()
-    assert stale_headers["Cache-Control"] == "no-cache"
-    assert fresh_headers["Cache-Control"] == _IMMUTABLE
+    assert _cache_control(stale_headers) == ["no-cache"]
+    assert _cache_control(fresh_headers) == [_IMMUTABLE]
 
 
 def test_a_thumbnail_url_that_carries_its_revision_is_immutable(project):
@@ -181,8 +302,7 @@ def test_a_thumbnail_url_that_carries_its_revision_is_immutable(project):
         )
 
     assert status == 200
-    assert headers["Content-Type"] == "image/png"
-    assert headers["Cache-Control"] == _IMMUTABLE
+    assert _cache_control(headers) == [_IMMUTABLE]
     with Image.open(io.BytesIO(body)) as thumbnail:
         assert max(thumbnail.size) == serve.THUMB_MAX_EDGE
 
@@ -192,7 +312,7 @@ def test_a_thumbnail_url_without_a_revision_is_still_revalidated(project):
         status, headers, _body = _get(port, f"/_thumb/{_PROJECT}/figures/demo/wide.png")
 
     assert status == 200
-    assert headers["Cache-Control"] == "no-cache"
+    assert _cache_control(headers) == ["no-cache"]
 
 
 _SPA_PROBE = r"""
