@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="what-coordinators-report-about-the-reckon-surface">
+  <meta name="plan-title" content="What Coordinators Report About The Reckon Surface">
+  <meta name="plan-summary" content="Fifteen live coordinators and a census of 37 transcripts: why plans are hand-edited, which crew verbs cost turns, and which plan owns each fix.">
+  <meta name="plan-tags" content="reckon-tooling,crew,measurement">
+  <meta name="plan-informs" content="every-plan-write-goes-through-edit-plan,the-crew-surface-is-one-tool-and-a-few-verbs,a-dry-run-must-resolve-what-the-real-call-resolves,an-orchestrator-is-bound-by-its-inbox,a-review-gate-judges-what-it-covers,the-monitor-shows-the-work-it-watches">
+  <title>What Coordinators Report About The Reckon Surface | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Method</h2>
+    <p>On 2026-10-19 every live coordinator session on the workstation was asked for a return-on-experience report on the reckon
+      surface. There were sixteen, all interactive sessions in a project's main checkout and none of them a headless worker. Each answered
+      the same five headings: hand edits of plan HTML, CLI friction, drift between skills and tools, MCP availability, and the three changes
+      that would cut most turns. Fifteen replied within two hours, and their reports are reproduced verbatim in §5.</p>
+    <p>Beside the reports, a census read the 37 coordinator transcripts under <code>~/.claude/projects</code> modified in the four days
+      before 2026-10-19. It counted every <code>edit_plan</code> call and its refusal code, every <code>Edit</code> or <code>Write</code> on
+      plan, research or evidence HTML, and every <code>reckon</code> CLI verb invoked through Bash with its exit status. The CLI tree was read
+      from the installed command group at <code>d8ff471c9</code>. The census counts calls, not distinct intents: a call retried after a refusal
+      counts twice.</p>
+
+    <h2 id="s2">§2 — Where plan writes go, and why they leave the tool</h2>
+    <table>
+      <thead><tr><th>write path</th><th>calls in 4 days</th></tr></thead>
+      <tbody>
+        <tr><td><code>edit_plan</code>, state mode</td><td>2,134</td></tr>
+        <tr><td><code>edit_plan</code>, text mode</td><td>1,174</td></tr>
+        <tr><td><code>read_plan(view="version")</code>, the read before each write</td><td>1,247</td></tr>
+        <tr><td>Edit on <code>docs/plans/*.html</code></td><td>99</td></tr>
+        <tr><td>Write on <code>docs/plans/*.html</code> (mostly a new plan's first write, which <code>reckon-create</code> directs)</td><td>45</td></tr>
+        <tr><td>Edit or Write on research HTML</td><td>45</td></tr>
+        <tr><td>Edit or Write on evidence HTML</td><td>41</td></tr>
+      </tbody>
+    </table>
+    <p>Most plan writes already go through the tool. The ones that leave it do so for three reasons, each measured as an
+      <code>edit_plan</code> refusal:</p>
+    <table>
+      <thead><tr><th>refusal</th><th>count</th><th>what the caller wanted</th></tr></thead>
+      <tbody>
+        <tr><td><code>op_error</code>: unsupported plan set path</td><td>28</td><td><code>sections.&lt;id&gt;.links</code>, effort, title; <code>followups.&lt;id&gt;.title</code>; <code>section_depends_on.&lt;id&gt;</code></td></tr>
+        <tr><td><code>op_error</code>: followup hides work</td><td>27</td><td>a followup for a deferred section, or a closing note</td></tr>
+        <tr><td><code>op_error</code>: impl is computed</td><td>25</td><td>the <code>set impl</code> that four skill and reference files still show</td></tr>
+        <tr><td><code>op_error</code>: landing leaves no continuation</td><td>17</td><td>to close a plan whose remaining work is deferred or done</td></tr>
+        <tr><td><code>text_edit_error</code>: overlaps a <code>data-reckon</code> region or changes structured state</td><td>37</td><td>to change prose or a list item inside a section body or a gate</td></tr>
+        <tr><td><code>stale_server_code</code></td><td>52</td><td>any write; the server image was older than the checkout</td></tr>
+        <tr><td><code>version_conflict</code></td><td>76</td><td>a retry after a bump, often the caller's own</td></tr>
+      </tbody>
+    </table>
+    <p><code>stale_server_code</code> is returned only after a call has already failed on a moved checkout. So some of those 52 hide a refusal
+      the current code would also give, and a reconnect then shows it one turn later. Coordinators whose image went stale fell back to importing
+      <code>reckon.mcp_edit_plan._edit_plan_tool</code> from Python, or deferred their writes. One plan's closure waited about ten hours for a
+      manual reconnect.</p>
+
+    <h2 id="s3">§3 — The CLI as coordinators use it</h2>
+    <p>The installed CLI has 80 leaf commands carrying 398 options; <code>crew dispatch</code> alone takes
+      44 and <code>crew complete</code> 25. In four days 31 leaves were never invoked by a
+      coordinator. The help text of <code>complete</code> and <code>dispatch</code> was read about 150 times, and retired verbs were still
+      reached for: <code>crew review-plan</code> 263, <code>crew obligations</code> 10, <code>crew promote</code> 2. The <code>review-plan</code> alias was retired in
+      <code>18739912f</code>; long-lived sessions carry skill text loaded before it.</p>
+    <table>
+      <thead><tr><th>verb</th><th>calls</th><th>non-zero exits</th><th>options</th></tr></thead>
+      <tbody>
+<tr><td><code>crew complete</code></td><td>3,754</td><td>267</td><td>25</td></tr>
+<tr><td><code>crew dispatch</code></td><td>2,972</td><td>326</td><td>44</td></tr>
+<tr><td><code>crew review</code></td><td>1,709</td><td>67</td><td>14</td></tr>
+<tr><td><code>crew resume</code></td><td>922</td><td>54</td><td>6</td></tr>
+<tr><td><code>audit-doc</code></td><td>748</td><td>28</td><td>3</td></tr>
+<tr><td><code>crew dispose</code></td><td>718</td><td>7</td><td>8</td></tr>
+<tr><td><code>crew ack</code></td><td>585</td><td>5</td><td>4</td></tr>
+<tr><td><code>crew gc</code></td><td>402</td><td>26</td><td>10</td></tr>
+<tr><td><code>crew observe</code></td><td>171</td><td>6</td><td>3</td></tr>
+<tr><td><code>crew drain</code></td><td>165</td><td>3</td><td>4</td></tr>
+<tr><td><code>crew discard</code></td><td>160</td><td>1</td><td>2</td></tr>
+<tr><td><code>crew repair-status</code></td><td>136</td><td>0</td><td>4</td></tr>
+<tr><td><code>crew widen</code></td><td>133</td><td>4</td><td>3</td></tr>
+<tr><td><code>crew merge</code></td><td>127</td><td>4</td><td>6</td></tr>
+<tr><td><code>crew stop</code></td><td>125</td><td>0</td><td>2</td></tr>
+<tr><td><code>crew list</code></td><td>119</td><td>12</td><td>5</td></tr>
+<tr><td><code>crew verify-gate</code></td><td>113</td><td>11</td><td>7</td></tr>
+<tr><td><code>crew watch</code></td><td>110</td><td>3</td><td>11</td></tr>
+<tr><td><code>crew check-manifest</code></td><td>105</td><td>2</td><td>2</td></tr>
+<tr><td><code>roadmap</code></td><td>77</td><td>5</td><td>5</td></tr>
+<tr><td><code>crew redispatch</code></td><td>69</td><td>12</td><td>7</td></tr>
+<tr><td><code>crew ledger</code></td><td>43</td><td>2</td><td>5</td></tr>
+<tr><td><code>crew pick</code></td><td>32</td><td>1</td><td>19</td></tr>
+<tr><td><code>crew preflight</code></td><td>31</td><td>2</td><td>9</td></tr>
+      </tbody>
+    </table>
+    <p>A non-zero exit includes deliberate branch codes (a budget hold is 3, an unwatched dispatch 8), so it bounds refusals from above. Leaves
+      not invoked in the window: <code>agent-context doctor</code>, <code>badge</code>, <code>build</code>, <code>capabilities</code>, <code>crew attach</code>, <code>crew budget-reset</code>, <code>crew host</code>, <code>crew member add</code>, <code>crew repair-completion</code>, <code>crew split-runs</code>, <code>crew suite waive</code>, <code>evidence synthesize</code>, <code>fleet</code>, <code>fleet-node hold</code>, <code>fleet-node migrate</code>, <code>fleet-node place</code>, <code>fleet-node status</code>, <code>hooks install</code>, <code>install-skills</code>, <code>paste</code>, <code>probe-held-blocker</code>, <code>service install</code>, <code>service logs</code>, <code>service restart</code>, <code>service start</code>, <code>service status</code>, <code>service stop</code>, <code>service uninstall</code>, <code>stamp-superseded-state</code>, <code>tag backfill</code>, <code>tag rename</code>. Several are operator or migration verbs that a coordinator
+      is not expected to call; the census measures coordinator use only.</p>
+
+    <h2 id="s4">§4 — Themes, counted by report, and the plan that owns each</h2>
+    <p>Each theme is counted once per report that raised it. Some asks name ops that already exist at <code>d8ff471c9</code>: text-mode
+      <code>replacements</code>, <code>insert_section</code>, and <code>--answer</code> reading the record the gate reads. Those reports came
+      from sessions running an older server image or skill text. The owning sections confirm that each defect reproduces at their base before
+      they repair it.</p>
+    <table>
+      <thead><tr><th>theme</th><th>reports</th><th>owner</th></tr></thead>
+      <tbody>
+<tr><td>A stale MCP image blocks plan writes and offers no path but a reconnect</td><td>12</td><td><a href="/reckon/every-plan-write-goes-through-edit-plan#s3">every-plan-write-goes-through-edit-plan §3</a></td></tr>
+<tr><td>No op edits an existing section's record: title, links, effort, status, body</td><td>7</td><td><a href="/reckon/every-plan-write-goes-through-edit-plan#s4">every-plan-write-goes-through-edit-plan §4</a></td></tr>
+<tr><td>Skills tell the coordinator to set <code>impl</code>, which the store computes and refuses</td><td>8</td><td><a href="/reckon/every-plan-write-goes-through-edit-plan#s2">every-plan-write-goes-through-edit-plan §2</a></td></tr>
+<tr><td><code>crew complete</code> refuses one guard per call and has no dry run</td><td>7</td><td><a href="/reckon/the-crew-surface-is-one-tool-and-a-few-verbs#s3">the-crew-surface-is-one-tool-and-a-few-verbs §3</a></td></tr>
+<tr><td><code>plan-section-depends-on</code> has no write path</td><td>6</td><td><a href="/reckon/every-plan-write-goes-through-edit-plan#s5">every-plan-write-goes-through-edit-plan §5</a></td></tr>
+<tr><td>Prose inside a structured region (a section body, a gate measure) cannot be replaced</td><td>5</td><td><a href="/reckon/every-plan-write-goes-through-edit-plan#s4">every-plan-write-goes-through-edit-plan §4</a></td></tr>
+<tr><td>Closing a plan, or leaving a deferred section waiting, needs a placeholder followup</td><td>5</td><td><a href="/reckon/every-plan-write-goes-through-edit-plan#s6">every-plan-write-goes-through-edit-plan §6</a></td></tr>
+<tr><td><code>crew complete</code> does not read the gate receipt the manifest already carries</td><td>5</td><td><a href="/reckon/the-crew-surface-is-one-tool-and-a-few-verbs#s3">the-crew-surface-is-one-tool-and-a-few-verbs §3</a></td></tr>
+<tr><td>Retired verbs (<code>review-plan</code>, <code>obligations</code>, <code>promote</code>) are still reached for</td><td>5</td><td><a href="/reckon/the-crew-surface-is-one-tool-and-a-few-verbs#s2">the-crew-surface-is-one-tool-and-a-few-verbs §2</a></td></tr>
+<tr><td>A followup's title and body cannot be changed</td><td>4</td><td><a href="/reckon/every-plan-write-goes-through-edit-plan#s5">every-plan-write-goes-through-edit-plan §5</a></td></tr>
+<tr><td>Landing a run takes five to seven commands (complete, merge, check, push, release)</td><td>4</td><td><a href="/reckon/the-crew-surface-is-one-tool-and-a-few-verbs#s4">the-crew-surface-is-one-tool-and-a-few-verbs §4</a></td></tr>
+<tr><td>Identity flags differ by verb (<code>--project</code>, <code>--run</code> on merge, which review an answer lands on, which of two run ids to complete)</td><td>5</td><td><a href="/reckon/the-crew-surface-is-one-tool-and-a-few-verbs#s8">the-crew-surface-is-one-tool-and-a-few-verbs §8</a></td></tr>
+<tr><td>The dispatch dry run passes what the real dispatch refuses</td><td>4</td><td><a href="/reckon/a-dry-run-must-resolve-what-the-real-call-resolves#s5">a-dry-run-must-resolve-what-the-real-call-resolves §5</a></td></tr>
+<tr><td>A review-missing obligation lags a review already stored or dispatched</td><td>4</td><td><a href="/reckon/an-orchestrator-is-bound-by-its-inbox">an-orchestrator-is-bound-by-its-inbox</a></td></tr>
+<tr><td>A refused or late write gives no next step (no current version; a late landing reads as a conflict)</td><td>3</td><td><a href="/reckon/every-plan-write-goes-through-edit-plan#s7">every-plan-write-goes-through-edit-plan §7</a></td></tr>
+<tr><td>A landing comment re-stales the plan's content review</td><td>3</td><td><a href="/reckon/a-review-gate-judges-what-it-covers">a-review-gate-judges-what-it-covers</a></td></tr>
+<tr><td>Changing a delivered run's fence or reopening it takes two or three verbs (<code>widen</code> refuses a complete run; <code>--accept-path</code>; <code>repair-status</code>, <code>widen</code>, <code>resume</code>)</td><td>3</td><td><a href="/reckon/the-crew-surface-is-one-tool-and-a-few-verbs#s7">the-crew-surface-is-one-tool-and-a-few-verbs §7</a></td></tr>
+<tr><td>A field's legal values are learned from its refusal (section risk, capability shape, followup status, effort granularity)</td><td>4</td><td><a href="/reckon/every-plan-write-goes-through-edit-plan#s7">every-plan-write-goes-through-edit-plan §7</a></td></tr>
+<tr><td>The follower wakes an idle coordinator with housekeeping that is not its own</td><td>2</td><td><a href="/reckon/the-monitor-shows-the-work-it-watches">the-monitor-shows-the-work-it-watches</a></td></tr>
+      </tbody>
+    </table>
+    <p>Asks raised once and not yet owned: <code>verify-gate</code> replaying a stored command that names a removed worktree, and a 300 s default
+      bound that records <code>not-run</code> on a ten-minute suite (nova); <code>dispatch</code> reading the node row from the plan section so
+      the command line carries only overrides (imas-ambix 4fd309f5, fa77649b); <code>crew merge</code> pushing over port 22 from a compute node
+      (reckon 67139f13); and SQLite <code>database is locked</code> inside <code>complete</code> and <code>verify-gate</code>, which a plain
+      retry clears (reckon 67139f13, 7a8f07c4).</p>
+
+    <h2 id="s5">§5 — The reports</h2>
+    <p>Reproduced as delivered, one per coordinator session.</p>
+<h3 id="report-7f0a16c8-imas-ambix-fleet-coordinator">imas-ambix (7f0a16c8)</h3>
+<pre class="r-report">Return on experience — coordinator session 7f0a16c8 (imas-ambix, the-fleet-node-stays-in-service in reckon), 2026-10-18/19
+
+1. HAND EDITS
+- Section prose in reckon §3, §5 and imas-ambix §25/§26 (re-plans after probes, answering a review finding). Done with Edit plus a bypass note in the commit, because no op replaces section prose. Wished op: replace_section_prose {section, html}.
+- Section title for a new section: `set sections.s25.title` is unsupported, so I edited it by hand. Wished op: set on a section&#x27;s title.
+- A comment on §5: written through python, `reckon.mcp_edit_plan._edit_plan`, because the MCP returned stale_server_code and there is no CLI edit path.
+- `data-status=&quot;open&quot;` was refused as invalid; I learned the vocabulary by refusal.
+
+2. CLI FRICTION
+- crew complete: `--no-commit` takes a REASON. Used as a flag, it swallowed the next token and the command failed with &quot;unexpected extra argument&quot;. Review runs need `--gate not-run`, and a test role cannot cite a commit.
+- crew review --answer writes to the newest-mtime record. Finding ids repeat across reviews (reasoning-1 appeared in two), so my answer landed on an older review and blanked that review&#x27;s earlier answer. I repaired it by hand. Wanted: `--review-run &lt;id&gt;`, and a refusal when the target is ambiguous.
+- crew resume needs `crew observe` first (session_id stays None until then), and is refused while the process is alive.
+- dispatch --dry-run passed all eight properties, but the real dispatch refused a write path outside the repo. The dry-run does not run the authority check.
+- dispatch and complete in the foreground often exceed 300 s. My tool timeout once killed a dispatch mid-launch and left an orphan &quot;starting&quot; pointer.
+
+3. SKILL/TOOL DRIFT
+- reckon-build says every operational run is a worker node. A fleet rehearsal cannot be one, because write authority excludes ~/.local/state/fleet and ~/.config/zellij/layouts, and there is no grant mechanism.
+- The skill presents `--answer` without the newest-mtime caveat.
+- The monitor shows &quot;halted&quot; whenever a worker writes `status: in-progress` mid-turn, as the dispatch contract asks: four false alarms in this session.
+
+4. MCP
+- stale_server_code twice this session, once with FlightConfigError on picker_reserved_lanes. Fallbacks: the CLI where it exists, reading review records from disk, and a python import of `_edit_plan`. Each costs 3 to 6 turns.
+
+5. TOP 3
+- A CLI `reckon plan edit --ops &lt;json&gt;` (with text mode) that mirrors edit_plan, plus a prose-replace op, so a stale MCP never forces a hand edit.
+- Review answers addressed by review run id, with finding ids unique per review or ambiguity refused.
+- A dry-run that runs every admission check, a declared grant for fleet-state write paths, and `in-progress` recognised as working rather than halted.</pre>
+<h3 id="report-f653840f">reckon (f653840f)</h3>
+<pre class="r-report">reckon return-on-experience: coordinator session f653840f (reckon project, 2026-10-18/19)
+
+1. HAND EDITS
+- plan-section-depends-on head meta: about 12 times (s16/s17 after s15; s30 after s28; s41-s44 chains; s57, s59 after s55/s61). No edit_plan op writes it, so it was a scripted python edit each time, announced as a bypass. Wanted: {op:set, path:section_depends_on.&lt;sid&gt;, value:[refs]}.
+- Every edit_plan call went through python `reckon.mcp._edit_plan_tool` because the MCP server answered stale_server_code (see 4).
+- Text mode failed once on a heading: the stored HTML spells apostrophes as &amp;#x27;, so old_html written with &#x27; found 0 occurrences.
+- insert_section rejected risk &quot;high&quot;. The legal values (low|moderate|elevated|critical) are discoverable only from the error.
+
+2. CLI FRICTION
+- crew complete: --waive-unreviewed-promotion and --no-impl-change each take a REASON and swallow the next flag when omitted. --accept-path PATH REASON was only found from the refusal.
+- Reopening a delivered run for a superseded test is three verbs: repair-status blocked, widen, resume. widen refuses a manifest that reads complete.
+- crew dispose needs --project, unlike most run verbs.
+- review --answer ids (reasoning-1, wiring-1) must be inferred from report rubric names.
+- No CLI for the obligations or plan-review views; used `reckon.mcp._crew` from python.
+- `crew review` returns both run_id and review_run_id; which one to complete is easy to get wrong.
+
+3. SKILL/TOOL DRIFT
+- reckon-build&#x27;s landing beat suggests setting impl; edit_plan refuses it (computed).
+- insert_section adds no followup. Three content reviews flagged sections as undispatchable by the roadmap until followups were appended.
+- review-missing persists after a hand-dispatched review is stored, when the pointer&#x27;s review_dispatch recorded a failed automatic attempt. Had to ack.
+- reckon-build&#x27;s done-when guidance and briefs say &quot;TMPDIR on node-local /tmp&quot;. Since the node-tmp seal, that is wrong inside a fenced worker, and the crew git shim refuses checkouts outside the run&#x27;s scratch path.
+
+4. MCP
+stale_server_code on effectively every reckon MCP call after the first merge, because each merge moves the code stamp. Workaround every time: python against the current checkout. storage-slow: rare, about 2 cases (a 120 s timeout on a multi-op script that then completed).
+
+5. TOP 3
+- A CLI plan edit (`reckon plan edit --ops file.json`) and `reckon crew view &lt;name&gt;`, so a stale MCP image never blocks a coordinator.
+- Ops for section_depends_on, and insert_section accepting depends_on plus an auto followup.
+- One `crew reopen --run R --write-path P --advice F` verb, and obligations that read review state from stored review records rather than from the last automatic dispatch attempt.</pre>
+<h3 id="report-imas-ambix-05">imas-ambix (e7218579)</h3>
+<pre class="r-report">reckon ROE — imas-ambix-05 (session e7218579, imas-ambix)
+
+Scope note: this session made NO plan edits and no crew dispatches (it built a
+watch tool and a router analysis). Items below come from my project memory
+notes, written in earlier imas-ambix sessions; dates are when each was recorded.
+
+1. HAND EDITS
+- edit_plan text mode refused an edit overlapping a data-reckon region
+  (recorded; I fell back to a structured op). Wished-for op: &quot;replace prose
+  inside a typed section body&quot; without touching its data attributes.
+- review-plan answers misfiled (2026-10-06): --answer targets the newest-mtime
+  review record, a bulk store made the wrong version newest, so I wrote the
+  answer through record_response on the explicit file. Wished-for: --answer
+  keyed on plan_version, not mtime.
+
+2. CLI FRICTION
+- reckon CLI is not on PATH; I recorded ~/Code/reckon/.venv/bin/reckon.
+- check-manifest refuses &quot;no live run&quot; after promotion (2026-09-23): audit by
+  hand. Wanted: check-manifest --run &lt;id&gt; against the archived run record.
+- crew resume needs observe first, else &quot;no captured session&quot;.
+- --base accepted a fabricated full sha in dry-run (2026-10-07); I now fill it
+  with git rev-parse. Dry-run should resolve the object.
+- Implement fence is 8 min; I keep forgetting --time-budget for RCA nodes.
+
+3. SKILL/TOOL DRIFT
+- My memory (2026-10-06) says &quot;run crew review-plan --local yourself after an
+  authored edit, or dispatch is refused&quot;. You report review-plan as retired, so
+  either my note or the refusal text is stale — whichever still names it is drift.
+- Landing commits re-stale the plan review (commits not excluded from the review
+  digest), so the skill order &quot;land, then dispatch&quot; costs a review round.
+
+4. MCP
+- Recorded: a section-ref failure that recurred only because the MCP server
+  served code older than the checkout (fixed in reckon e793fc446). When the
+  server is stale I have no CLI write path, so I wait or ask the user to /mcp
+  reconnect. One MCP CONNECTION_CLOSED was a bad launch path, not the server.
+
+5. TOP 3
+- A CLI edit path equal to edit_plan, so a stale MCP image is never a blocker.
+- Exclude landing commits from the plan-review digest.
+- check-manifest / verify against archived runs, and dry-run that resolves --base.</pre>
+<h3 id="report-imas-ambix-1d">imas-ambix (9fd87e71)</h3>
+<pre class="r-report">imas-ambix-1d (session 9fd87e71) - reckon return on experience
+Coordinator for jt60sa-pulse-ids and jt60sa-signal-figures-from-ids, 2026-10-06 to 10-19.
+Measured from this transcript: 98 edit_plan calls; CLI review-plan 37, complete 35, dispatch 29; --help on dispatch 5, review-plan 3, complete 2.
+
+1. HAND EDITS
+- plan-section-depends-on meta, written with python heredocs on both plans, more than once. Text mode refused it with text_edit_error &quot;changes structured plan state&quot;, and no op writes it. Wished: {op:set, path:section_depends_on}.
+- Evidence fragments, edited with sed twice: a stray &lt;tr&gt;&lt;tr&gt; and a mistyped map hash.
+- Plan-review answers, written through python plan_review.record_response, because --answer picked a stale ~/.config record. Loading that record wiped three answers on the committed repo record.
+
+2. CLI FRICTION
+- complete&#x27;s gate triple (--gate-command, --gate-exit-status, --gate-log-path). It refused &lt;placeholder&gt; commands, refused a missing log path, and read EXIT=1 from a negative-control arm in the same log. I now write a separate check log for each gate.
+- review-plan: --answer selects by mtime, while the gate selects the highest plan_version. I still invoke it 37 times, per the skill. If it is retired, the skills haven&#x27;t been told.
+- dispatch: I read --help for --spec-level, --negative-control and --time-budget each time.
+
+3. SKILL/TOOL DRIFT
+- reckon-build&#x27;s landing beat sets impl. edit_plan refuses it because impl is computed.
+- The landing beat omits the continuation guard (&quot;done - no followup&quot; is required).
+- A followup on a deferred section is refused as hides-work. The skill implies followups for open work.
+- A post-review edit stales the review, and the waiver cannot carry a reason, so I re-reviewed instead.
+
+4. MCP
+- read_plan storage-slow twice (30 s). The crew view hit a flight-defaults.yaml schema error twice. I fell back to ~/Code/reckon/.venv/bin/reckon each time.
+- One edit_plan storage-slow landed late as v30. My retry hit version_conflict, so I verify landing before retrying.
+- MCP lagging the checkout once made a fixed section-ref defect recur.
+
+5. TOP 3
+- A structured op for section_depends_on (and section links). That removes every python hand edit I made.
+- One plan-review record, selected identically by answer and by the gate, stored in the repo, plus a waiver that takes a reason.
+- complete --gate-log &lt;path&gt;: it parses command and exit from the log&#x27;s first line and its final EXIT line, and prints which line it used. Plus an idempotency key on edit_plan, so a late storage-slow landing returns ok instead of a conflict.</pre>
+<h3 id="report-imas-ambix-af3c7bc7">imas-ambix (af3c7bc7)</h3>
+<pre class="r-report">reckon return-on-experience: imas-ambix coordinator session af3c7bc7 (plan jt60sa-tokamap-from-generated-maps, 2026-10-09 to 2026-10-13, 20 sections)
+
+Counted from this session&#x27;s transcript: 45 edit_plan, 37 read_plan, 16 crew MCP reads. CLI: 55 crew complete, 36 dispatch, 5 resume, 5 observe, 4 discard, 4 stop, 4 ack.
+
+1. HAND EDITS
+I made none. There were 0 Edit/Write calls and 0 scripted edits on plan or evidence HTML. Every plan write went through edit_plan, followed by `git commit --only` of the plan and the landed record. The closest to a hand edit was writing fragments into worker briefs, never into the plan. The op I wished existed is resolve_followup (&quot;unknown verb &#x27;resolve_followup&#x27;&quot;). I had to find the real spelling from _store.py.
+
+2. CLI FRICTION
+- complete is the verb I looked up most. Its gate flags interlock and each refuses only after the previous one is fixed: --gate-command, --gate-exit-status, --gate-log-path, --failure-classification (needed on a failing gate), --no-impl-change and --waive-unreviewed-promotion. The waive flag is refused once a review is attached. Five distinct promotion refusals cost about 12 turns.
+- dispatch validator refusals each cost a round trip: &#x27;;&#x27; or &#x27;and&#x27; in the goal, a missing negative control, a placeholder in the done-when, and a test role writing repository paths. A dry-run that lists all of them at once would be enough.
+- complete reads a --gate-log-path log as failing if it contains &quot;exit 1&quot; anywhere beside a pass. I worked around it by pointing at a cleaner log.
+
+3. SKILL/TOOL DRIFT
+- The reckon-build landing beat still shows {op:&#x27;set&#x27;, path:&#x27;impl&#x27;} in its example. edit_plan refuses it because impl is computed.
+- effort_hours must be a multiple of 0.25, and the skill never says so (refused for 0.3).
+- Workers are told to cite real shas, but several local-lane manifests carried fabricated shas. Nothing at complete checks that --commit resolves; I checked each with git cat-file myself.
+
+4. MCP
+- crew(view=...) hit storage-slow twice: a 30 s deadline with about 25 s of CPU, cause &quot;computing&quot;. I fell back to the CLI (reckon crew list).
+- I saw no stale_server_code.
+- The crew-host follower was the larger cost. In the idle tail, a codex-sub budget lift was granted and ended in the same second about every 30 s. That woke the session about 15 times with nothing to do, and I stopped the follower.
+
+5. TOP 3
+1. Make complete validate all its gate inputs in one pass and print the single correct invocation for the run&#x27;s state (review attached or not, impl moved or not, gate passing or failing). It should also resolve --commit.
+2. Have dispatch --dry-run report every failing node property at once with a fix hint, and accept a structured goal so &#x27;and&#x27; detection stops refusing prose.
+3. Debounce no-op lift churn in the follower, and fix the skill examples (impl, effort granularity, resolve verb) so they match what edit_plan accepts.</pre>
+<h3 id="report-imas-ambix-be">imas-ambix (fa77649b)</h3>
+<pre class="r-report">imas-ambix-be (fa77649b), coordinating jt60sa-facility-mint 2026-10-06 to 10-08. From the transcript: 117 edit_plan, 63 read_plan, dispatch 70, complete 48, review-plan 47, ack 14.
+
+1. HAND EDITS
+7 scripted python writes to plan HTML (6 on jt60sa-facility-mint, 1 on nova cocos-standalone-distribution). Six changed existing section records (data-links, effort, status deferred to implementable, and the declarations meta). Cause: no op edits an existing section. `set sections.s1.links` and `set sections` returned op_error; `append sections` was refused with &quot;s1 already exists&quot;. The nova edit followed a &quot;hides work (section-not-implementable)&quot; refusal: its section was deferred and nothing could change that. The seventh replaced a dropped section&#x27;s body, after text mode twice failed &quot;old_html must match exactly once; found 0&quot; on entity and whitespace mismatches. About 25 python reads went to copying exact old_html. Wished-for op: update_section {id, links, effort_hours, status, capability, body}, validated like insert_section.
+
+2. CLI FRICTION
+- Over 20 dispatches went through scratchpad scripts because a long --done-when is fragile to quote inline; a --done-when-file would fix that.
+- `review-plan --answer` writes the newest-mtime record, not the one the gate reads, so I answered six times through reckon.crew.plan_review in python. Answers must also follow promotion of the review run; nothing says so.
+- complete refusals arrived one per attempt: passed with exit 1 needs suite arms; review head mismatch; collapse before impl moves; missing --gate-exit-status; wrong negative-control log (--waive-negative-control). That cost 4 or 5 turns per landing.
+- --help read: dispatch 6x, complete 5x, ack 3x.
+
+3. SKILL/TOOL DRIFT
+- reckon-build says to set impl at every landing because &quot;the server does not compute it&quot;. Promotion now refuses until a collapse moves it.
+- reckon-build says to add --local to every dispatch; AGENTS.md says the picker chooses. It also says to arm a Monitor follower, though the session-host plugin already delivers.
+- Shipping needs a continuation. I satisfied it with an already-resolved followup reading &quot;done — no followup&quot;, which is gaming the guard.
+
+4. MCP
+No stale_server_code here. read_plan hit storage-slow 3 times (30 s deadline); I retried or read the file with python. view=obligations errored twice on flight-defaults.yaml &quot;budget.lift: Extra inputs are not permitted&quot;; I used view=live.
+
+5. TOP 3
+1. An update_section op for existing section records (links, effort, status, body).
+2. complete --dry-run that lists every refusal in one pass.
+3. Review answers select the record the gate reads, and are refused before the review run is promoted.</pre>
+<h3 id="report-imas-ambix-e1">imas-ambix (4fd309f5)</h3>
+<pre class="r-report">imas-ambix-e1 (session 4fd309f5), 2026-10-15 to 10-18; counts from my deduplicated transcript.
+
+1. HAND EDITS
+- Added sections to serving-record-warehouse (s17-s22, then s23, s24) with Edit/python, each with its decision, followups, and the plan-section-declarations entry (sed). No op adds an authored section, and text mode refuses to overlap data-reckon regions. Wished op: add_section {id, heading, body, node table, declaration} in one write.
+- Revised the reckon plan&#x27;s s2 four times after content reviews with Edit/python multi-replace: a review usually needs 3-6 scattered replacements and text mode takes one region per call. Wished op: an all-or-none list of old/new pairs.
+- Research docs: Write, then python replace. Same need.
+- edit_plan itself: 51 calls, 41 ok, 9 stale_server_code, 1 storage-slow, 0 op_error, 0 version_conflict.
+
+2. CLI FRICTION
+- dispatch takes about 15 flags plus long goal/done-when strings, so I kept each dispatch as a scratchpad script, sed-edited after reviews.
+- Storing a plan review is &quot;crew complete --gate not-run&quot;; not discoverable. complete under timeout was killed after it had already stored or promoted.
+- &quot;crew gc --run&quot; after promotion errors &quot;no record names a worktree&quot; instead of no-op.
+- &quot;crew review --around &lt;plan&gt;&quot; fails &quot;names no implementable section write paths&quot;; --path works.
+
+3. SKILL/TOOL DRIFT
+- reckon-build says run &quot;/reckon-review --around &lt;plan&gt;&quot; for the health review; refused as above.
+- reckon-build says answer findings with &quot;crew review --answer&quot;; it targets the newest-mtime record, so I used plan_review.record_response(base_dir=...) from python.
+- &quot;Never edit a plan file directly&quot; conflicts with having no add-section op.
+- Followups without a section are refused (&quot;hides work&quot;); no skill says so.
+
+4. MCP
+- stale_server_code 9 times in about 8 hours; each time a retry 20-60 s later succeeded, costing one turn. storage-slow once with landed:false; I had to read plan-version and content to learn whether it landed before resubmitting.
+
+5. TOP 3
+1) Stop waking idle coordinators with follower housekeeping. After my work ended: 81 notifications in 3 days, none actionable (52 reload-tree kept/removed, 22 deferred-reload, 6 other sessions&#x27; budget lifts, 1 producer-older-code). Log them; deliver only this session&#x27;s runs and obligations.
+2) add_section and multi-replace ops in edit_plan, so plan authoring never leaves the tool.
+3) dispatch reads the node row (goal, done-when, write paths, negative control) from the section; the command line carries only overrides.
+
+Also once: a reload failed with ENOENT on a reload tree a concurrent cleanup removed.</pre>
+<h3 id="report-imas-codex-4f554c2d">imas-codex</h3>
+<pre class="r-report"># reckon RoE — imas-codex coordinator, session 4f554c2d (sprint S18, 2026-10-18/19)
+
+1. HAND EDITS
+Plan HTML: none. All 351 plan writes went through edit_plan. Evidence HTML: two.
+(a) Correcting a merged worker fragment&#x27;s base/head revision sentence. No op amends a landed fragment; I wished for `amend_evidence` (fragment errata with a note).
+(b) Writing a fragment for golden labels the coordinator itself produced. No worker meant no fragment writer.
+Refusals I answered with a comment instead of an edit: a gate measure inside a data-reckon region, refused in text mode, became correction comment c-s37-gate-measure-stale. Wished for `{op:set, path:gate.&lt;id&gt;.measure}`.
+
+2. CLI FRICTION
+--help reads: dispose 13, complete 11, ack 8, dispatch 6, review 5. Repeated lookups:
+- `complete` for a review run needs `--gate not-run --no-commit &quot;&lt;reason&gt;&quot;`; a brief-only run needs `--unplanned-reason`.
+- `dispose --finding` indexes are 0-based, which the help never says.
+- `--allow-unreviewed-plan` takes no value but needs `--comment`.
+- The 60 m fence and the `--negative-control` requirement surfaced only as refusals.
+- `complete` refuses a blocked run while it is resumable, and offers no abandon-resume path. I spent a worker turn re-scoping it just to promote it.
+- `review-missing` obligations stay listed after the review is promoted.
+Merge candidate: complete, then merge `--no-ff` of the reviewed head, push and worktree release. I run these through a scratchpad land.py about 40 times a session.
+
+3. SKILL/TOOL DRIFT
+- reckon-build&#x27;s landing example still sets `impl`, which the server computes and refuses.
+- `crew obligations` is retired, but my habit still reaches for it.
+- The skill says &quot;answer rather than edit&quot; findings, but every landing comment I append marks the section review-owed. The next dispatch then needs `--allow-unreviewed-plan` with a justification, four times in the last hour.
+
+4. MCP
+stale_server_code: 17 refusals this session. There is no CLI edit path, so plan writes stop until the user runs /mcp, and I queue the edits meanwhile. version_conflict: 21. Most were mine (resending N−1 after a bump), but a landing beat that bumps the version mid-sequence makes it easy.
+
+5. TOP 3
+1. `reckon crew land --run &lt;id&gt;`: promote, merge the reviewed head, check content survival, push, release the worktree, and write the landing beat (append_evidence and a c-close comment) in one verb. About six calls per landing become one.
+2. A CLI fallback for edit_plan, plus a server-version handshake that reloads stale code, so stale_server_code stops being a dead stop.
+3. Keep coordinator comments and evidence anchors out of the content-review fingerprint, so landing records stop invalidating reviews and forcing waivers.</pre>
+<h3 id="report-imas-efit-704ee605">imas-efit</h3>
+<pre class="r-report">reckon return-on-experience: imas-efit coordinator, session 704ee605 (2026-10-18/19)
+
+1. HAND EDITS
+- No plan HTML hand edits. Every plan write went through edit_plan. From about 21:00Z, stale_server_code blocked all plan writes, so three landing records are still unwritten.
+- Edited a worker&#x27;s manifest.md. The negative_control_log field was a nested map (declaration/log/result), and complete refused it as unreadable; I rewrote it as a scalar path, keeping manifest.md.asdelivered. Wished for: repair-manifest --field (like repair-status).
+- Edited two claims-rubric review records to drop an all-null scores map. complete crashed with TypeError: int(None) in review.ledger_block. Fixed only after the durable store copy under crew/reviews/ was re-stored. Wished for: no edit at all; claims records should not carry null scores.
+- repair-review --set subject refused an old record with dimension_scores and no status (&quot;unfileable&quot;). I acked and waited for the re-review.
+
+2. CLI FRICTION
+- complete: looked up --gate passed (not &quot;pass&quot;), --no-commit &lt;reason&gt;, the executable gate-command, a gate log that must end EXIT=&lt;n&gt; matching the status, separate gate logs for review runs, --plan-link for brief implement runs, --accept-path, and citing the reviewed sha when a docs-only commit follows it.
+- dispatch:
+  - &quot;&lt;n&gt;&quot; placeholders in done-when are refused as underspecified.
+  - &quot;and&quot; in a goal fails single-goal.
+  - data config (sdcc.yaml, data-manifest.json) counts as a test file, so it demands a negative control.
+  - write paths outside the repo (~/public) are refused, with no staging alternative.
+- gc ran over 300s with no progress output and was killed.
+- A review-missing obligation lagged a live review, so I needed crew ack.
+
+3. SKILL/TOOL DRIFT
+- reckon-build says to set impl on each landing; it is now computed.
+- reckon-build says to work crew(view=&quot;obligations&quot;); that is unreachable when MCP is stale.
+- The test_logs receipt format (command at head, final EXIT=) is enforced only at promotion. Workers never see it in the brief or contract, so receipts fail late.
+- Claims-rubric review records vary in shape: claim_lines vs claims, claim_summary vs claim_summary_line, null scores.
+
+4. MCP
+- stale_server_code twice in this session. The second blocked plan writes for about 10 hours of wall time.
+- There is no CLI fallback. I deferred the landing records and asked the user to reconnect.
+
+5. TOP 3
+- A CLI plan-edit path (reckon plan edit --ops ops.json) with the same version checks as edit_plan, so a stale MCP never blocks a landing.
+- A gate-receipt wrapper given to every worker (reckon gate run -- &lt;cmd&gt; writes REVISION/DIRTY, command, EXIT), with check-manifest run at dispatch end rather than at promotion.
+- One review-record schema across rubrics, read tolerantly by promotion, so null scores or old keys never crash or refuse it. A docs-only commit after the reviewed head should not demand a fresh review.</pre>
+<h3 id="report-nova-2c">nova</h3>
+<pre class="r-report"># nova-2c (nova coordinator, session s21-nova): reckon return on experience
+
+## 1. HAND EDITS
+- Plan HTML: no direct edits since the 2026-10-18 compaction; all went through edit_plan. Before it, one research page (lobe-share) was hand-edited during a merge to fix its base revision.
+- Missing op: `set followups.&lt;id&gt;.body` (and `.title`). Only `.prompt` is settable, so when a follow-on&#x27;s scope widened I put the new scope in its prompt line, which reads badly.
+- Stale MCP: a followup resolve was deferred for hours because there was no CLI write path.
+
+## 2. CLI FRICTION
+- `crew dispatch` requires `--project`; `crew complete` and `crew resume` reject it. I hit &quot;No such option --project&quot; once.
+- I re-read --help for complete, resume, stop, discard, dispose and verify-gate.
+- Manifest `commits:` arrives as a JSON list, a comma list, or annotated short SHAs, and my parser broke once. complete should read and validate the manifest itself.
+- verify-gate:
+  - its default 300 s bound records `not-run` on a 10-minute suite;
+  - stored gate commands name the worker&#x27;s worktree (suite scripts with a hard-coded ROOT, or PYTHONPATH), which is gone after promotion, so I rewrote every merged-head run by hand with --command.
+- Review node ids must be exactly `review-of-&lt;node&gt;-&lt;head12&gt;`. A suffix fails with a write-path scope error rather than a naming error.
+-
+
+## 3. SKILL/TOOL DRIFT
+- reckon-build still says to advance impl with edit_plan before complete, but impl is computed now.
+- nova AGENTS.md says to size the time budget as the work plus the gate wall; dispatch refuses anything over the 60m fence.
+
+## 4. MCP
+- About three stale_server_code hits per long session, one with storage-slow. roadmap failed while read_plan still worked.
+- Fallback: read plan HTML read-only with grep or python, and defer writes until /mcp reconnect.
+- The crew view stayed usable throughout.
+
+## 5. TOP 3
+1. `crew complete --from-manifest`: take commits, gate command, exit status and log from a schema-validated manifest, rejecting a malformed commits line at manifest write.
+2. verify-gate rewrites worktree roots to the checkout in stored commands and defaults its bound to the recorded gate wall, so a re-run at the merged head is one command.
+3. A CLI edit and read path that serves when the MCP image is stale (or auto-reconnects), plus `set followups.&lt;id&gt;.body`.</pre>
+<h3 id="report-power-convertor-83d14db1">power_convertor</h3>
+<pre class="r-report">Return on experience: power_convertor S3 coordinator, session 83d14db1 (18–19 October 2026)
+
+1. HAND EDITS
+No direct edits to plan or evidence HTML this segment. Every plan write went through edit_plan. The cost was the opposite one: when edit_plan was unavailable (stale_server_code), there was no sanctioned path at all, so istt §8&#x27;s closure (append_evidence, set section_declarations.s8, c-close-s8) has waited hours for the lead to reconnect the MCP. Wished-for: a CLI `reckon plan edit --ops &lt;json&gt;` with the same ops and version check. Briefs, which are not plan HTML, I write directly.
+
+2. CLI FRICTION
+- crew complete accepted --gate-log-path tests, a directory, and recorded it. There is no amend, so I corrected it with git notes. It should refuse a path that is not a file ending EXIT=.
+- Refusals arrive one per call: spec-level, then unreconciled runs, then single-goal &quot;and&quot;, then --failure-classification, then --waive-resume-path. Four or five round trips per dispatch or complete. A dry run listing every failing property would save them.
+- redispatch takes no --model. The flight comments call claude-opus an alias, but it is refused as a backend. To reach opus I had to close the run and dispatch fresh with --base &lt;head&gt;.
+- --capability exists on pick but not on dispatch.
+- check-review takes no --run.
+- widen refuses a run whose manifest says complete; the answer is --accept-path at complete. That is two verbs for one idea.
+- Every review run needs a manual `complete --gate not-run` to promote it, once per review.
+
+3. SKILL/TOOL DRIFT
+- reckon-build says to let Jev route with guidance. But the reserved claude lane never opens: the account read returns 403, so the window reading stays stale (about 14 h), and `pick` excludes every claude model whatever the comment says.
+- Automatic repair rounds relaunch after `crew stop`, so coordinator findings cannot join the round. I let it finish, then resumed with my findings: two rounds where one would do.
+- The obligations hook reported review-missing for a run whose review was already stored, while its producer had deferred its reload.
+
+4. MCP
+stale_server_code three times this segment (roadmap, plan reads, plan writes), plus one storage-slow. Reads fall back to `reckon roadmap --json-output`, reading the HTML on disk, and `crew ledger`. Writes have no fallback: I defer them and ask the lead to reconnect.
+
+5. TOP 3
+- A CLI plan-edit path, or an MCP server that re-execs itself when its code stamp changes.
+- One landing verb (promote the review run, dispose its findings, merge, complete), and repair rounds that accept coordinator advice instead of relaunching after a stop.
+- Validation in crew complete (gate log is a file, ends EXIT=, lives under the run directory), an amend path for a completed record, and redispatch --model.</pre>
+<h3 id="report-reckon-27">reckon (7a8f07c4)</h3>
+<pre class="r-report"># reckon-27 — return on experience (lane-and-model-routing §36–§38, fence §16; 2026-10-18/19)
+
+1. HAND EDITS
+No Edit, Write or sed on plan or evidence HTML. But all ~20 plan writes went through `reckon.mcp._edit_plan_tool` imported in a python heredoc, because MCP `read_plan` and `crew` both returned `stale_server_code` (servers started 16:15Z and 16:30Z, code stamp moved under them). Refusals met on that path:
+- op_error `unsupported plan set path &#x27;section_depends_on.s37&#x27;`. I wrote the edge as a text-mode replacement of the head meta. Wished: `set section_depends_on.&lt;id&gt;`.
+- op_error `followups.&lt;id&gt;.title` unsupported. Retitling took resolve plus a new append. Wished: `set followups.&lt;id&gt;.title`.
+- op_error SectionRecord `capability.reasoning`/`verification` extra_forbidden. It took a probe to learn `{version, class, requirements:{…}}`; `view=&quot;schema&quot;` should show an append example.
+- text_edit_error ×3: overlaps a data-reckon region (×2) and &quot;changes structured plan state&quot; (×1) when adding sections.
+- version_conflict with `detail: null` and no current version, so a re-read was needed. `parse_plan()` has no `version` key, so I regexed the meta.
+
+2. CLI FRICTION
+- `crew complete`: 13 calls for 3 landings. Placeholder gate refused, then `--gate-command/--gate-exit-status/--gate-log-path`, the impl-move guard (`--no-impl-change`) and `--accept-path`, one refusal per call. It has no dry run.
+- `crew dispatch` can exceed 4 min. My `timeout 240` killed one and left a starting pointer to discard.
+- plan-review-missing on `_document` forced `--allow-unreviewed-plan`.
+- I invoked the retired `crew obligations` once.
+- The admit service never reloads, so a new flight key (`suits`) waits on a manual restart: old code would refuse it under `extra = &quot;forbid&quot;`.
+
+3. SKILL/TOOL DRIFT
+- reckon-edit SKILL.md:272 says section dependencies are authored in the head meta, while structured `set` refuses the path and text mode refuses structured state. No path is clearly supported.
+- reckon-build assumes a live MCP. When the MCP is stale it names no CLI edit path; only my memory note does.
+
+4. MCP
+`stale_server_code` hit twice in one session, each after my own merges moved the stamp. I fell back to the private function until the user reconnected. `crew complete` printed &quot;store failed: database is locked&quot; (shadow store only; rows landed). `git add` met peer `index.lock` races.
+
+5. TOP 3
+1. A CLI `reckon plan edit --ops &lt;file&gt; --expected-version N`, with the same ops as edit_plan. Then a stale MCP never blocks a write. version_conflict should return the current version.
+2. `crew complete --dry-run` that reports every guard it would refuse on in one pass.
+3. Structured ops for `section_depends_on` and followup title/body, plus a section-append example with capability in `view=&quot;schema&quot;`.</pre>
+<h3 id="report-reckon-3f">reckon (530468fb)</h3>
+<pre class="r-report">reckon-3f (session 530468fb) — return on experience, 2026-10-18/19, coordinating the-site-answers-fast-and-agrees and a-held-dispatch-waits-its-fair-turn
+
+1. HAND EDITS
+- Wrote the new plan with Write (reckon-create&#x27;s primary path), then three Edits before its first commit: plan-section-depends-on, plan-north-star, and removing a followup the audit flagged as hides-work.
+- About 30 further edits ran as python calling reckon.mcp_edit_plan._edit_plan_tool, because the session MCP was stale. These were not direct HTML edits.
+- Ops I wished existed: a structured `set section_depends_on.&lt;sid&gt;`, since I text-replaced the JSON meta five times, and a single op that both appends a comment to a section and edits that section&#x27;s deps.
+
+2. CLI FRICTION
+- crew complete refuses the worker&#x27;s prose `tests:` field, so every promotion needed hand-found --gate-command, --gate-exit-status and --gate-log-path (eight times).
+- crew widen refuses complete or live runs, so I raced the blocked window twice. --accept-path at promotion is the other half of the same need.
+- crew dispose refuses until the review is promoted, because the stored review names an older head, so order matters.
+- crew ack silences the review reflex for that run, so its next review-missing has to be dispatched by hand.
+- Plan reviews carry two run ids, the composer&#x27;s and the dispatched one, and only the dispatched one promotes.
+
+3. SKILL/TOOL DRIFT
+- reckon-build implies the reflex dispatches reviews. In practice I dispatched about 12 reviews from review-missing obligations by hand, and on one run the repair reflex never opened a round for a blocking finding.
+- A worker fence makes the shared .venv read-only, but nothing says the coordinator owns dependency installs. My brief asked a worker for an impossible `uv sync`.
+- The admit service never reloaded, so it held reviews for 1 h 54 min and refused write paths that dispatch accepts. That is fixed by a-held §26 and §28.
+
+4. MCP
+- stale_server_code about 8 times. Two MCP images went stale within hours of start because main moves constantly.
+- flight.yaml schema drift, `picker_reserved_lanes: Extra inputs are not permitted`, made obligations unreadable through MCP. storage-slow appeared once.
+- Fallback each time: python against current code (reckon.crew.obligations.obligations, reckon.mcp._read_plan_tool, mcp_edit_plan._edit_plan_tool). Importing mcp_edit_plan first hit a circular import, fixed by site §10.
+
+5. TOP 3
+1. CLI parity for every MCP read and write (`reckon plan edit`, `reckon crew obligations`), or an MCP that re-execs on a code-stamp change as the admit service now does, so a stale image never blocks.
+2. Workers record a literal, replayable gate command and log path as manifest fields, so crew complete needs no hand-supplied gate flags.
+3. One fence verb that works on any non-running run, folding widen and --accept-path, plus dispose keyed to a review run id rather than to &quot;the current stored head&quot;.</pre>
+<h3 id="report-reckon-67139f13">reckon (67139f13)</h3>
+<pre class="r-report">Session 67139f13, sprint S26. From its transcript: 263 edit_plan calls; 23 op_error, 8 version_conflict, 3 text_edit_error.
+
+1. HAND EDITS (6 occasions)
+- sed removing stray &lt;/div&gt; closers (monitor plan) and inserting missing r-note closers (suite plan), because audit-doc flagged the structure broken and no op repairs it. Wished: normalize_structure.
+- python dropping a stale key from the section_declarations meta, because the guard refuses &quot;todo-without-section&quot; and there is no unset. Wished: unset path.
+- python moving section bodies between plans (a fold), because there is no move. Wished: move_section(from, to).
+- python extracting s18/s19 bodies to build text edits, because a text edit overlapping a data-reckon region is refused. Wished: replace_section_body(id, html).
+Also refused with no fallback: set followups.&lt;id&gt;.body, set section_depends_on.&lt;id&gt;, set impl.
+
+2. CLI FRICTION
+- crew complete --help, read about 5 times: --no-commit, --no-impl-change, --waive-resume-path and --gate-command/-exit-status/-log-path interact. It has no dry run.
+- crew ack --until refuses &quot;45m&quot;; it wants an ISO instant.
+- crew merge&#x27;s built-in push uses port 22 and fails on compute nodes; I pushed by hand over port 443.
+- Retired verbs I still reached for: crew obligations, review-plan, promote.
+- No CLI for plan_review.store_delivered_reviews, so I call it from python.
+
+3. SKILL/TOOL DRIFT
+- The reckon-build landing example sets impl; it is computed now and refused.
+- &quot;Write a next followup on every landing&quot; collides with hides-work: when the only remaining work is a deferred section waiting on an open decision, no followup is accepted.
+- The MCP obligations view printed a review command with old paths and no head suffix. The hook&#x27;s command, plus --local, was correct.
+
+4. MCP
+- storage-slow 17 times: the crew view 13, read_plan 2, roadmap 2. I fell back to the CLI or read the files.
+- sqlite &quot;database is locked&quot; failed the review store inside crew complete once, and crashed verify-gate once. Both succeeded on a plain retry.
+- There is no CLI plan-edit path, so a stale MCP image means waiting for a reconnect.
+
+5. TOP 3
+1. reckon plan edit --ops file.json, the same ops as edit_plan, plus unset, replace_section_body and move_section. This removes every hand edit and the dependence on MCP freshness.
+2. One crew land verb doing complete, merge, push (honouring GIT_SSH_COMMAND), verify-gate and gc, with lock retries. That replaces 5 to 7 commands per node.
+3. A followup that names an open decision as a valid continuation, and obligations rendered by one code path for the MCP view and the hook.</pre>
+<h3 id="report-reckon-8a">reckon (36355bc4)</h3>
+<pre class="r-report"># reckon-8a — return on experience (session 36355bc4, 2026-10-18/19)
+
+## 1. HAND EDITS
+- Most plan writes went through a scripted `reckon.mcp._edit_plan_tool` call, because the MCP server stayed stale_server_code.
+- Direct HTML edits, each announced as a bypass:
+  - Head meta `plan-section-depends-on`, three times. There is no op. Wished: `set section_depends_on.&lt;id&gt;`.
+  - Splitting a followup in a plan I had just authored. Text mode refuses followups. Wished: `update followups.&lt;id&gt;`.
+- Adding a section needs `insert_section`: text mode refuses a new section element.
+
+## 2. CLI FRICTION
+- `crew merge`: tried `--run`, which doesn&#x27;t exist, then forgot `--project`.
+- `dispatch --dry-run` passed where the real dispatch refused:
+  - the investigate role resolves read-only;
+  - the plan-review gate is plan-wide.
+- `crew complete` reports an index.lock refusal only as text. My retry matched &quot;index.lock&quot; in the receipt&#x27;s review text and re-promoted 5 times. A distinct exit code would prevent that.
+- Merge candidate: complete + merge + marker check + gc + landing beat as one `crew land`.
+
+## 3. SKILL/TOOL DRIFT
+- reckon-edit says text mode adds sections. It can&#x27;t.
+- Followup prompts must be `/reckon-build`. A followup for a deferred section is refused as hides-work, so &quot;write §3&#x27;s done-when next&quot; has nowhere to live.
+- reckon-build puts `complete` before the landing beat. `complete` refuses &quot;impl did not move&quot; until the section is ticked.
+- Closing a plan needs the append-resolved-followup trick, which no skill documents.
+- The repair reflex treats findings with no severity as blocking, so it resumed a worker on follow-ons.
+
+## 4. MCP
+- stale_server_code blocked almost every MCP call after about 13:00, because peers&#x27; merges make the server stale within minutes.
+- Fallback: the Python import path, and running `reckon/hooks/coordinator_obligations.py --hook stop` directly.
+- One storage-slow edit took more than 120 s.
+
+## 5. TOP 3
+1. A CLI `reckon plan read` / `reckon plan edit` on current code, with edit_plan&#x27;s ops and version contract.
+2. Make `dispatch --dry-run` run every real gate: the sandbox write scope, plan-review coverage and scope conflicts.
+3. Head-aware obligations:
+   - &quot;review-missing&quot; should see an already-dispatched review;
+   - an ack should be scoped to a head, so a new head&#x27;s obligation isn&#x27;t hidden. Twice I rebuilt the dispatch command by hand.</pre>
+  </main>
+</body>
+</html>
