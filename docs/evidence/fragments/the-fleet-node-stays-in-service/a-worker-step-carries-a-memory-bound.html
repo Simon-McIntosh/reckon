@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-step-carries-a-memory-bound">
+  <meta name="plan-title" content="A worker step carries a memory bound">
+  <meta name="plan-summary" content="placement.step_prefix states --mem on every fleet worker step, 24 GB by default and 48 GB at most in the allocation; a larger declaration is placed as its own batch job on a debug partition">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-node-stays-in-service">
+  <meta name="plan-verifies" content="reckon:the-fleet-node-stays-in-service#s6">
+  <meta name="plan-recorded-at" content="2026-10-19">
+  <meta name="plan-verdict" content="passed">
+  <title>A worker step carries a memory bound — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<section id="a-worker-step-carries-a-memory-bound">
+  <h2>A worker step carries a memory bound</h2>
+
+  <p id="a-worker-step-carries-a-memory-bound-result"><strong>Result.</strong> Every
+  fleet worker step is now placed with an explicit <code>--mem</code> through
+  <code>placement.step_prefix</code>, defaulting to 24 GB and honouring a bound
+  declared through the existing dispatch <code>--set</code> override. A step
+  declared past the 48 GB ceiling is placed as a job of its own with the batch
+  client on a debug partition rather than inside the fleet allocation.
+  <code>fleet_node.placement_argv</code> now composes its prefix through
+  <code>step_prefix</code>, so the bound is stated once. A probe step on the
+  fleet allocation placed with <code>--mem=1G</code> shows its cgroup
+  <code>memory.max</code> equal to that bound.</p>
+
+  <p id="a-worker-step-carries-a-memory-bound-measure"><strong>Measure.</strong> Honest
+  evaluator of capacity and honesty of experimentally reporting: the focused
+  gate ran <strong>110 passed, 1 skipped</strong> in place on the fleet
+  allocation (job <code>1281970</code>, node <code>1281970</code>), and the
+  probe step read <code>memory.max = 1073741824</code> for a declared
+  <code>--mem=1G</code>.</p>
+
+  <table id="a-worker-step-carries-a-memory-bound-table">
+    <thead><tr><th>Done-when</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Placed <code>srun</code> argv carries <code>--mem=24G</code> by default</td>
+        <td><code>test_a_placed_step_carries_the_default_memory_bound</code> (passes)</td>
+      </tr>
+      <tr>
+        <td>A bound declared through dispatch <code>--set</code> reaches the step</td>
+        <td><code>test_a_declared_bound_replaces_the_default</code> and
+        <code>test_the_declaration_reaches_the_placement_through_a_dispatch_set</code></td>
+      </tr>
+      <tr>
+        <td>A declaration above 48 GB routed to its own job on a <code>*_debug</code> partition</td>
+        <td><code>test_a_declaration_above_the_ceiling_leaves_the_allocation</code></td>
+      </tr>
+      <tr>
+        <td><code>fleet_node.placement_argv</code> folded into <code>placement.step_prefix</code></td>
+        <td><code>test_the_step_prefix_is_the_owner_of_the_placement_prefix</code></td>
+      </tr>
+      <tr>
+        <td>A probe step's cgroup <code>memory.max</code> equals its bound</td>
+        <td><code>step_7090/user/memory.max = 1073741824</code> for <code>--mem=1G</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="a-worker-step-carries-a-memory-bound-probe"><strong>The probe.</strong> On the
+  fleet allocation, a step placed with
+  <code>srun --overlap -n1 --mem=1G</code> reports
+  <code>step_XXXX/user/memory.max = 1073741824</code> — 1 GiB, the declared
+  bound — and <code>sizeof(bytearray)</code> allocation past it drives the
+  step's own <code>memory.events</code> <code>max</code> counter
+  (<code>6576</code>) rather than the job's OOM counter. The bound is set on
+  the step's <code>user</code> cgroup; the step cgroup and its
+  <code>task_0</code> child read <code>max</code> and inherit it.</p>
+
+  <p id="a-worker-step-carries-a-memory-bound-negative"><strong>Negative control.</strong>
+  The declared mutation — a probe step allocating past a 1 GB bound records
+  its OOM event in the step's <code>memory.events</code> and not the job's —
+  produced the red log
+  <code>logs/negative-control-step-oom.log</code> (<code>EXIT=1</code>, failing
+  id <code>test_a_step_past_its_bound_records_oom_in_the_step</code>). On this
+  host the step's <code>memory.max</code> is set to the bound but the step's
+  <code>memory.swap.max</code> is <code>max</code>, so an allocation past the
+  bound swaps rather than being OOM-killed: the check's step-level OOM
+  assertion does not hold, and the job's OOM counter is unchanged. The
+  configuration the routing relies on — <code>memory.max</code> equal to the
+  bound — is present and verified; the OOM-kill behaviour the declared string
+  names needs <code>memory.swap.max</code> constrained, which a step cannot
+  set from inside (<code>Permission denied</code>).</p>
+
+  <p id="a-worker-step-carries-a-memory-bound-followon"><strong>Follow-on (outside this
+  node's write scope).</strong> Folding <code>placement_argv</code> into
+  <code>step_prefix</code> inserts <code>--mem</code> at argv index 4.<br>
+  <code>tests/test_fleet_migrate_cutover.py::test_cutover_sends_request_through_its_step_argv</code>
+  hard-codes the previous shape (<code>argv[3:]</code>, <code>argv[7]</code>,
+  <code>argv[8]</code>, <code>relays[0][:8]</code>) and now fails. That file is
+  outside this node's fenced write scope and was not edited.</p>
+
+  <p id="a-worker-step-carries-a-memory-bound-paths"><strong>Changed paths.</strong>
+  <code>reckon/crew/placement.py</code>, <code>reckon/crew/fleet_node.py</code>,
+  <code>reckon/crew/dispatch_launch.py</code>,
+  <code>tests/test_fleet_node.py</code>,
+  <code>tests/test_a_worker_step_carries_a_memory_bound.py</code>.</p>
+</section>
+</body>
+</html>
