@@ -148,19 +148,12 @@ def _validated_record(record: dict, field: str, value: Any) -> dict:
         raise _op_error(_section_contract_refusal(str(exc))) from exc
 
 
-def _section_by_id(sections: Any, section_id: str) -> tuple[int, dict] | None:
-    """The index and record of one section, through the store's own lookup."""
-    from reckon._store import _find_by_id
-
-    if not isinstance(sections, list):
-        return None
-    return _find_by_id(sections, section_id)
-
-
 def apply_section_field_set(
     working: dict, parts: list[str], value: Any, warnings: list[str]
 ) -> None:
     """Handle one ``set sections.<id>.<field>`` op against the working state."""
+    from reckon._store import _find_by_id
+
     if len(parts) != 3:
         raise _op_error(
             "set sections requires the form sections.<id>.<field>; "
@@ -174,7 +167,8 @@ def apply_section_field_set(
         )
     if field not in SECTION_SET_FIELDS:
         raise _op_error(_accepted_fields_message(section_id))
-    hit = _section_by_id(working.get("sections"), section_id)
+    listed = working.get("sections")
+    hit = _find_by_id(listed, section_id) if isinstance(listed, list) else None
     if hit is None:
         raise _op_error(
             f"plan has no section {section_id!r}: sections.{section_id}.{field} "
