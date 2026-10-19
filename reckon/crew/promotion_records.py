@@ -220,27 +220,21 @@ def _manifest_relative_path(value: Any, *, manifest_path: str) -> Path:
     return path
 
 
-_GATE_LOG_COMMAND_PREFIX = "# command:"
-
-
 def _command_from_gate_log(log_text: str) -> str:
-    """The command a gate log's own header names, or the empty string.
+    """The command a gate log's own header names, or the empty string, as a flag.
 
     The fleet's gate logs open with header lines that make the file
-    self-describing, and one of them states the exact text the shell was
-    handed. Reading it back is how a run whose manifest describes its suite in
-    prose still promotes on the command that actually ran. Only the header
-    block is read, so a ``# command:`` line the measured output happens to
-    print below it is not mistaken for the header, and a recovered text that is
-    itself prose is refused rather than filled.
+    self-describing, one of which states the exact text the shell was handed.
+    Reading it back is how a run whose manifest describes its suite in prose
+    still promotes on the command that actually ran. The header is read by the
+    same reader the manifest evidence check applies to a cited test log, so a
+    log reads identically wherever it is cited, and a recovered text that is
+    itself prose is refused rather than filled: a promotion must be handed
+    something a shell could be given.
     """
-    for line in str(log_text or "").splitlines()[:10]:
-        if not line.startswith(_GATE_LOG_COMMAND_PREFIX):
-            continue
-        candidate = line[len(_GATE_LOG_COMMAND_PREFIX) :].strip()
-        if candidate and not _gate_command_prose(candidate):
-            return candidate
-        return ""
+    recovered = _test_log_command(str(log_text or "")) or ""
+    if recovered and not _gate_command_prose(recovered):
+        return recovered
     return ""
 
 
@@ -759,4 +753,5 @@ from reckon.crew.promotion_scope import (
 )
 from reckon.crew.reports import (
     _gate_command_prose,
+    _test_log_command,
 )
