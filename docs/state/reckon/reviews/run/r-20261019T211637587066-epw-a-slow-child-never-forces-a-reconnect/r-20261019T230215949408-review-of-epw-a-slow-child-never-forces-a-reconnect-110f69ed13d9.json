@@ -1,0 +1,48 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp.py:537 (guarded calls server.warm(state.disk_stamp), which reaches CurrentCodeServer._child_for)",
+    "reckon/served_code.py:1660 CurrentCodeServer.warm",
+    "reckon/served_code.py:1668 CurrentCodeServer.run"
+  ],
+  "completed_at": "2026-10-19T23:18:03.000Z",
+  "dispatched_at": "2026-10-19T23:02:59Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-a-slow-child-never-forces-a-reconnect.html",
+      "line": "95",
+      "severity": "follow-on",
+      "text": "The landed fragment records the node head as '1 failed, 51 passed' while the head gate log the manifest cites for it (logs/gate-head-3.log, revision 409521166) reports '1 failed, 52 passed'; the figure predates the eighth case that the same range adds, so a reader of the landed evidence cannot reconcile it with the gate log it cites."
+    },
+    {
+      "file": "reckon/served_code.py",
+      "line": "1627",
+      "severity": "follow-on",
+      "text": "The liveness branch replaces a dead child with no attempt budget, backoff or failure memo, so a child that dies immediately after each spawn (for example a checkout the child cannot import, whose stderr goes to DEVNULL at spawn_served_child) starts one fresh interpreter per guarded call, which is the per-call import cost the persistent child exists to remove and which is silent in the log."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's prompt.txt:30 GOAL asks the guard to keep a failed call's own result and serve current code from one persistent child per code stamp that warms on a readiness probe and runs each routed call once; reckon/served_code.py:1626-1647 now also refuses to hand back a cached child that has stopped running, stopping it and starting exactly one replacement, so the 'runs each routed call once' half of that goal holds for a child that dies without the stamp moving.\nVERDICT done_when: the source node's prompt.txt:98 measure is the four-target pytest gate with zero added failures, and the manifest's baseline_suite (591b2438, logs/gate-base-2.log, '1 failed, 44 passed', EXIT=1) and after_suite (409521166, logs/gate-head-3.log, '1 failed, 52 passed', EXIT=1) both name the same single failing id tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, so the delta is the eight new cases and zero added failures; gate-head-3.log shows the eight dots for tests/test_a_slow_child_never_forces_a_reconnect.py that the done_when's cases require.\nVERDICT write_paths: the manifest's orientation_write_paths name reckon/mcp.py, reckon/served_code.py, tests/test_mcp_server_serves_current_code.py, tests/test_a_slow_child_never_forces_a_reconnect.py and the plan's evidence fragment; all three paths in the 9dbf1cd52..110f69ed1 diff (the fragment, reckon/served_code.py and the one test file) sit at the head sha and none is outside the fence.\nVERDICT manifest: read; it declares status complete, names commits 87d7cb144/409521166/110f69ed1, records the head arm at 409521166 and the base arm at 591b2438 with mirrored one-line JSON and log paths, and names logs/control-dead-child-reused.log as the new control; all eight control logs carry a non-zero EXIT= line, though all eight name revision 87d7cb144 in their header while the case they exercise, test_a_dead_child_is_replaced_and_warms_on_its_probe, lands only in 409521166, so the control logs were produced from a tree with uncommitted changes.\nVERDICT diff: read commit by commit across 9dbf1cd52..110f69ed1; 87d7cb144 adds the fragment's gate paragraph, 409521166 makes the liveness change at reckon/served_code.py:1627-1631 and adds the eighth case plus its control at tests/test_a_slow_child_never_forces_a_reconnect.py:246-257 and :448-495, and 110f69ed1 updates the fragment's case list, adds its liveness paragraph and the eighth control description, changing no source or test.\nCALL_SITES: reckon/mcp.py:537 (the guarded call reads server.warm(state.disk_stamp) before routing, which is the only path that reaches _child_for), reckon/served_code.py:1660 CurrentCodeServer.warm, reckon/served_code.py:1668 CurrentCodeServer.run\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/served_code.py:1627-1633 drops a cached child whose alive property is false and starts one replacement, which is what makes the goal's 'runs each routed call once' hold for a child that dies within a stamp.\nSCORE evidence: 15\nJUSTIFICATION evidence: the manifest's after_suite names logs/gate-head-3.log at 409521166 with '1 failed, 52 passed' EXIT=1 against the base's 44 passed, but the landed fragment it points readers to states at docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-a-slow-child-never-forces-a-reconnect.html:95 that the head ran '1 failed, 51 passed'.\nSCORE scope_discipline: 18\nSCORE durability: 19\nJUSTIFICATION scope_discipline: every path in the 9dbf1cd52..110f69ed1 diff is inside the declared write paths, and the eighth case is a defect in this section's own deliverable rather than work outside it, though the plan's prompt.txt:98 done_when enumerates seven cases and this range ships eight.\nJUSTIFICATION durability: reinstating the pre-fix behaviour reddens the new case, and it is the case's own property that fails -- logs/control-dead-child-reused.log shows 'a call under a dead child is served by the image: 1 image calls' asserting 1 == 1 + 1 at tests/test_a_slow_child_never_forces_a_reconnect.py:478.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/served_code.py:1618-1625 documents the mechanism in the module's own terms ('may-have-landed timeout') and introduces no plan, phase or version name, matching the surrounding dataclass-and-helper idiom.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change extends served_code.CurrentCodeServer, the owner of the served-code child, and uses the pre-existing ServedChild.alive at reckon/served_code.py:1572; a capability search over reckon/ found only reckon/route_results.py:368, which tests child.poll() is None inside _start_refresh for a different concern (fire-and-forget refresh children keyed by route), with no shared owner to extend.\nFINDING docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-a-slow-child-never-forces-a-reconnect.html:95 follow-on: the fragment records the node head as '1 failed, 51 passed' where the head gate log it is meant to summarise records '1 failed, 52 passed', so the landed evidence understates the eight added cases by one and disagrees with the log it cites.\nFINDING reckon/served_code.py:1627 follow-on: the dead-child replacement has no attempt budget or backoff, so a child that dies immediately after each spawn (a checkout the child cannot import, with spawn_served_child sending its stderr to DEVNULL) starts one interpreter per guarded call and amplifies load silently, the opposite of the per-stamp import this file exists to provide.\n",
+  "review_run_id": "r-20261019T230215949408-review-of-epw-a-slow-child-never-forces-a-reconnect-110f69ed13d9",
+  "reviewed_base_sha": "9dbf1cd52b258b4813b2a529485c22ef30f3f377",
+  "reviewed_commits": [
+    "87d7cb144989d27128a544492c11ae2f5bba4c1b",
+    "40952116608f7e7cf77d5c2c63f28e42cf1f4b23",
+    "110f69ed13d9d3c22b4ae32fcd16ee9782ee0476"
+  ],
+  "reviewed_head_sha": "110f69ed13d9d3c22b4ae32fcd16ee9782ee0476",
+  "reviewed_run_id": "r-20261019T211637587066-epw-a-slow-child-never-forces-a-reconnect",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T23:19:17.808100+00:00",
+  "total": 106
+}
