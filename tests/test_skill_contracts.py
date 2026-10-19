@@ -1906,15 +1906,33 @@ def _synthesized_checkout(checkout: Path) -> None:
     path.write_text(_plan_html.write_state(authored, state), encoding="utf-8")
 
 
-def _apply_example(checkout: Path, example: dict) -> dict:
-    path = checkout / "docs" / "plans" / "my-plan.html"
-    state = _plan_html.read_state(path.read_text(encoding="utf-8"))
+def _apply_example(
+    checkout: Path,
+    example: dict,
+    *,
+    slug: str = "my-plan",
+    doc_type: str | None = "plan",
+) -> dict:
+    """Apply one documented op to a resource of a synthesized checkout.
+
+    The single extract-and-apply path: the landing-beat examples and the widened
+    op sweeps all reach the store through this call, so a documented op is
+    applied the same way wherever it is read from. The plan fixture's version is
+    read from disk; any other resource starts at version 0.
+    """
+    if slug == "my-plan":
+        plan_path = checkout / "docs" / "plans" / "my-plan.html"
+        expected_version = _plan_html.read_state(plan_path.read_text(encoding="utf-8"))[
+            "version"
+        ]
+    else:
+        expected_version = 0
     return mcp_module._edit_plan_tool(
         "my-project",
-        "my-plan",
-        expected_version=state["version"],
+        slug,
+        expected_version=expected_version,
         checkout_path=str(checkout),
-        doc_type="plan",
+        doc_type=doc_type,
         mode="state",
         ops=[example],
     )
@@ -2171,29 +2189,6 @@ def _write_index(state_root: Path, project: str, sprints: list[dict]) -> None:
     (project_state / "index.json").write_text(json.dumps(envelope), encoding="utf-8")
 
 
-def _apply_documented_op(
-    checkout: Path, slug: str, op: dict, doc_type: str | None
-) -> dict:
-    """Apply one documented op to the named resource of a synthesized checkout."""
-    kwargs = {"doc_type": doc_type} if doc_type else {}
-    if slug == "my-plan":
-        plan_path = checkout / "docs" / "plans" / "my-plan.html"
-        expected = _plan_html.read_state(plan_path.read_text(encoding="utf-8"))[
-            "version"
-        ]
-    else:
-        expected = 0
-    return mcp_module._edit_plan_tool(
-        "my-project",
-        slug,
-        expected_version=expected,
-        checkout_path=str(checkout),
-        mode="state",
-        ops=[op],
-        **kwargs,
-    )
-
-
 def _candidate_resources(
     doc_type: str | None, slug: str | None
 ) -> list[tuple[str] | tuple[str, str | None, str]]:
@@ -2214,16 +2209,30 @@ def test_every_documented_op_object_is_supported_by_the_store(
     field it will not accept, is one a reader cannot run — so the sweep applies
     each to the resource its example addresses and to the plan, and passes when
     a single application is refused for any other reason.
+
+    A floor keeps the sweep from passing vacuously: an empty corpus applies
+    nothing and reports green, so at least one op object must come from under
+    ``skills/`` and the run fails naming the empty source when none does.
     """
     monkeypatch.setenv("RECKON_STATE_ROOT", str(tmp_path / "state"))
     _write_index(tmp_path / "state", "my-project", [{"id": "S5", "theme": "x"}])
 
-    for ordinal, (path, op, doc_type, slug) in enumerate(_documented_op_objects()):
+    objects = _documented_op_objects()
+    skills_root = ROOT / "skills"
+    assert any(path.is_relative_to(skills_root) for path, *_rest in objects), (
+        "the op-object sweep extracted no op object from under "
+        f"{skills_root}, so it would pass vacuously; the extractor or the "
+        "skills corpus is empty"
+    )
+
+    for ordinal, (path, op, doc_type, slug) in enumerate(objects):
         checkout = tmp_path / f"op-{ordinal}"
         _synthesized_checkout(checkout)
         refusals: list[dict] = []
         for candidate_type, candidate_slug in _candidate_resources(doc_type, slug):
-            result = _apply_documented_op(checkout, candidate_slug, op, candidate_type)
+            result = _apply_example(
+                checkout, op, slug=candidate_slug, doc_type=candidate_type
+            )
             if not _refusal_is_for_path(result):
                 break
             refusals.append(result)
@@ -2257,11 +2266,10 @@ def test_the_op_reference_set_row_documents_supported_paths(
 
     for path in rows["plan"]:
         resolved = _resolve_placeholders(path)
-        result = _apply_documented_op(
+        result = _apply_example(
             checkout,
-            "my-plan",
             {"op": "set", "path": resolved, "value": _set_row_value(path)},
-            None,
+            slug="my-plan",
         )
         assert not _refusal_is_for_path(result), (
             f"{edit_path} op-reference `set` row documents {path!r}, which the "
@@ -2270,11 +2278,11 @@ def test_the_op_reference_set_row_documents_supported_paths(
 
     for path in rows["index"]:
         resolved = _resolve_placeholders(path)
-        result = _apply_documented_op(
+        result = _apply_example(
             checkout,
-            "index",
             {"op": "set", "path": resolved, "value": _set_row_value(path)},
-            None,
+            slug="index",
+            doc_type=None,
         )
         assert not _refusal_is_for_path(result), (
             f"{edit_path} op-reference `set` row documents {path!r}, which the "
