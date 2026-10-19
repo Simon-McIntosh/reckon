@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "assert index.calls == 1 reddens if _ledger_read_root is removed (or returns repository unconditionally) so _run_namings spells root=repository and _indexed_data keys a second entry; the declared negative control reproduces exactly this and records count 2, 1 failed 2 passed, EXIT=1.",
+      "lines": "tests/test_a_derivation_builds_the_ledger_index_once.py:185"
+    },
+    {
+      "failure_condition": "assert explicit.held_worktrees == shared.held_worktrees reddens if sharing the index changes the rows the held screen reads; the monkeypatch at :196-198 forces the base read route, so the two sides are independent derivations rather than a value and its own echo.",
+      "lines": "tests/test_a_derivation_builds_the_ledger_index_once.py:200"
+    },
+    {
+      "failure_condition": "assert index.calls == 2 is the positive control: it reddens if the explicit-root route stops needing a second build, so a count of one cannot be the instrument reporting nothing.",
+      "lines": "tests/test_a_derivation_builds_the_ledger_index_once.py:205"
+    },
+    {
+      "failure_condition": "assert before != after reddens if the second derivation serves a cached index after a run file changed; it is the anti-staleness guard the done_when asks for.",
+      "lines": "tests/test_a_derivation_builds_the_ledger_index_once.py:223"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:925 (fleet_state -> _derive_fleet_state -> _held_worktrees_by_session)",
+    "reckon/crew/obligations.py:698 (_held_worktree_records_read)",
+    "reckon/crew/promotion_release.py:839 (_fleet_state_reading reads fleet_state)"
+  ],
+  "completed_at": "2026-10-19T13:12:15.920Z",
+  "dispatched_at": "2026-10-19T12:50:07Z",
+  "findings": [
+    {
+      "file": "tests/test_a_derivation_builds_the_ledger_index_once.py",
+      "line": "200",
+      "severity": "follow-on",
+      "text": "follow-on: the equivalence check compares only held_worktrees (line 200) between the shared-root route and the explicit-root route, so the done_when's 'every answer identical to the base revision's' is asserted for the ledger-read answer alone; a regression that changed another FleetState field the same way on both routes would not redden. The held screen is the field the ledger read supplies (obligations.py:547 feeds _held_worktree_records_read), so the narrowed comparison still covers the change's reach, but the whole-answer claim is broader than the check."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "505",
+      "severity": "follow-on",
+      "text": "follow-on: _ledger_read_root resolves both spellings on every _run_namings call (two ledger_path(...).resolve() calls, lines 505-507); it is correct and cheap at this call frequency, but the ledger's read-root canonicalisation now lives in a crew caller rather than beside ledger_path in reckon/ledger.py:828, where the next reader that spells a root differently would not find it. Recording the site, not asking for a move."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/obligation_snapshot.py:925 (_held_worktrees_by_session) is the only production path into _run_namings; it runs inside index_reuse() opened at obligation_snapshot.py:885, which is what makes the shared key observable; reckon/crew/promotion_release.py:839 reads fleet_state for the promotion reading.",
+    "diff": "Read commit by commit: 0c9021437 adds _ledger_read_root and routes _run_namings' ledger.runs through it (obligations.py:498-519, 547); 25874a85f adds the evidence fragment and the test is in the change commit. Three files, +274/-1, no production consumer outside the fleet_state path.",
+    "done_when": "The prompt's done_when asks a temporary-crew-home test with N run files to count exactly one _index_payload build per fleet_state with every answer identical to base's, a changed run file reflected in the next derivation, and the negative control restoring the second build reading two, with logs ending EXIT=; tests/test_a_derivation_builds_the_ledger_index_once.py:185 asserts calls==1, :200 asserts equality with the explicit-root route, :223 asserts the changed file is reflected, and the declared negative control restores the second build (logs/negative-control.log ends EXIT=1, 'one derivation built the index 2 times', test_one_derivation_builds_the_index_once FAILED, 1 failed 2 passed); the ruff clause is met at delta zero.",
+    "goal": "The source node's goal is 'Build the ledger index once per fleet_state derivation and hand that index to every reader inside it'; the landed change achieves one build by unifying the reuse key rather than by passing an index object \u2014 reckon/crew/obligations.py:498 _ledger_read_root returns None (the default route) when ledger_path(project, None).resolve() equals ledger_path(project, repository).resolve(), so _run_namings' ledger.runs read at obligations.py:547 shares the index region opened at obligation_snapshot.py:885 with the other readers that already use the default route; it returns the checkout root unchanged when the two spellings name different files.",
+    "manifest": "The source manifest.md records status complete, two commits (0c9021437 the change, 25874a85f the evidence), gate 'tests: [tests/test_a_derivation_builds_the_ledger_index_once.py]', negative_control_log at logs/negative-control.log, and baseline_suite/after_suite objects; I reconciled the suite figures against the logs (baseline b32f13f8: 296 passed, 10 errors, EXIT=1; after 0c9021437: 304 passed, 5 errors, EXIT=1) and every after-arm error id is also present at base, so added failures are zero.",
+    "write_paths": "The source prompt fences reckon/crew/obligation_snapshot.py, reckon/crew/obligations.py, reckon/crew/runs.py, tests/test_a_derivation_builds_the_ledger_index_once.py, the fragment html and the figures dir; git diff --stat b32f13f8..25874a85 changes obligations.py (+23/-1), the new test (+226) and the new fragment (+26), all inside the fence, and touches no file outside it."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T124902820946-review-of-a-derivation-builds-the-ledger-index-once-25874a85fe94",
+  "reviewed_base_sha": "b32f13f8b194a7d4e830aa7500d81e371f27ac7c",
+  "reviewed_head_sha": "25874a85fe944106eee4064f495ae353f7fd1b36",
+  "reviewed_run_id": "r-20261019T115441866930-a-derivation-builds-the-ledger-index-once",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T13:14:21.671182+00:00"
+}
