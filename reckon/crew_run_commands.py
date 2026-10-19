@@ -7,6 +7,7 @@ from typing import Any
 import click
 
 from reckon.crew_dispatch_commands import (
+    _budget_check_report,
     _crew_modules,
     _emit,
     _emit_crew_result,
@@ -2780,34 +2781,7 @@ def crew_velocity(project, since, until, fields, limit, cursor, pretty):
     _emit_crew_result(payload, pretty)
 
 
-@crew.command(name="budget-reset")
-@click.option(
-    "--group",
-    required=True,
-    help="Budget group whose banked reset is flagged, cleared or read.",
-)
-@click.option(
-    "--available",
-    "mark_available",
-    is_flag=True,
-    help=(
-        "Flag one banked reset as available. Idempotent: flagging a group that "
-        "already carries one changes nothing and says so."
-    ),
-)
-@click.option(
-    "--used",
-    "mark_used",
-    is_flag=True,
-    help="Clear the flag, recording that the banked reset was spent.",
-)
-@click.option(
-    "--by",
-    default=None,
-    help="Who is setting or clearing the flag (default: $USER).",
-)
-@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_budget_reset(group, mark_available, mark_used, by, pretty):
+def _budget_reset_payload(group, mark_available, mark_used, by):
     """Set, clear or read whether a budget group's banked reset is available or used.
 
     A metered subscription can carry one banked reset, which grants one extra
@@ -2842,7 +2816,7 @@ def crew_budget_reset(group, mark_available, mark_used, by, pretty):
                 else "no banked reset is available for this group"
             ),
         }
-    _emit_crew_result(result, pretty)
+    return result
 
 
 _LIFT_CLOCKS = ("seven_day", "five_hour")
@@ -2891,86 +2865,7 @@ def _lift_ends(*, until, clock, now):
     return {"kind": "at", "at": moment.isoformat()}
 
 
-@crew.command(name="budget-lift")
-@click.option(
-    "--group",
-    required=True,
-    help="Declared budget group whose pace is being lifted or cleared.",
-)
-@click.option(
-    "--multiple",
-    type=float,
-    default=None,
-    help=(
-        "Grant a pace multiple above the group's configured rate. One of "
-        "--multiple, --drain-by or --uncapped names the lift's form."
-    ),
-)
-@click.option(
-    "--drain-by",
-    default=None,
-    help=(
-        "Grant a lift that holds the pace until the group's window is drained "
-        "by this time (an ISO-8601 stamp or a duration) and then resumes."
-    ),
-)
-@click.option(
-    "--uncapped",
-    is_flag=True,
-    help="Grant a lift that releases the group to its whole window, no pace cap.",
-)
-@click.option(
-    "--global",
-    "global_scope",
-    is_flag=True,
-    help="Grant a workstation-wide lift (the default scope).",
-)
-@click.option(
-    "--session",
-    default=None,
-    help="Scope the lift to one session id rather than the whole workstation.",
-)
-@click.option(
-    "--from",
-    "starts_at",
-    default=None,
-    help="When the lift begins: an ISO-8601 time or a duration from now.",
-)
-@click.option(
-    "--until",
-    default="reset",
-    show_default=True,
-    help=(
-        "'reset' (track the clock's own reset), an ISO-8601 time, or a duration "
-        "from now, at which the lift ends."
-    ),
-)
-@click.option(
-    "--clock",
-    type=click.Choice(_LIFT_CLOCKS),
-    default="seven_day",
-    show_default=True,
-    help="Which rate-limit window the lift is anchored to.",
-)
-@click.option(
-    "--reason",
-    default=None,
-    help="Why the group's pace is being raised; required for a grant.",
-)
-@click.option(
-    "--clear",
-    "clear_flag",
-    is_flag=True,
-    help="Revoke an in-force lift on the group instead of granting one.",
-)
-@click.option(
-    "--id",
-    "lift_id",
-    default=None,
-    help="With --clear, revoke this exact lift id rather than the group's governing lift.",
-)
-@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_budget_lift(
+def _budget_lift_payload(
     group,
     multiple,
     drain_by,
@@ -2983,7 +2878,6 @@ def crew_budget_lift(
     reason,
     clear_flag,
     lift_id,
-    pretty,
 ):
     """Grant or clear a lift on a budget group's pace.
 
@@ -3010,30 +2904,22 @@ def crew_budget_lift(
                 path=None,
             )
             if cleared is None:
-                _emit_crew_result(
-                    {
-                        "ok": True,
-                        "action": "clear",
-                        "group": group,
-                        "cleared": None,
-                        "lift_id": lift_id,
-                        "detail": "no in-force lift matched; nothing was revoked",
-                    },
-                    pretty,
-                )
-                return
-            _emit_crew_result(
-                {
+                return {
                     "ok": True,
                     "action": "clear",
                     "group": group,
-                    "cleared": cleared,
-                    "lift_id": cleared.get("id"),
-                    "detail": f"revoked lift {cleared.get('id')} on {group}",
-                },
-                pretty,
-            )
-            return
+                    "cleared": None,
+                    "lift_id": lift_id,
+                    "detail": "no in-force lift matched; nothing was revoked",
+                }
+            return {
+                "ok": True,
+                "action": "clear",
+                "group": group,
+                "cleared": cleared,
+                "lift_id": cleared.get("id"),
+                "detail": f"revoked lift {cleared.get('id')} on {group}",
+            }
 
         if sum(form_flags) != 1:
             raise click.ClickException(
@@ -3097,37 +2983,27 @@ def crew_budget_lift(
         raise click.ClickException(str(exc)) from exc
 
     scope = lift.get("scope")
-    _emit_crew_result(
-        {
-            "ok": True,
-            "action": "grant",
-            "group": group,
-            "lift_id": lift.get("id"),
-            "form": lift.get("form"),
-            "multiple": lift.get("pace_multiple"),
-            "scope": scope,
-            "clock": clock,
-            "ends": lift.get("ends"),
-            "projected_exhaustion": lift.get("projected_exhaustion"),
-            "admitted": True,
-            "lift": lift,
-            "detail": (
-                f"granted lift {lift.get('id')} on {group}: the group's budget "
-                "is admitted regardless of when the projection lands"
-            ),
-        },
-        pretty,
-    )
+    return {
+        "ok": True,
+        "action": "grant",
+        "group": group,
+        "lift_id": lift.get("id"),
+        "form": lift.get("form"),
+        "multiple": lift.get("pace_multiple"),
+        "scope": scope,
+        "clock": clock,
+        "ends": lift.get("ends"),
+        "projected_exhaustion": lift.get("projected_exhaustion"),
+        "admitted": True,
+        "lift": lift,
+        "detail": (
+            f"granted lift {lift.get('id')} on {group}: the group's budget "
+            "is admitted regardless of when the projection lands"
+        ),
+    }
 
 
-@crew.command(name="budget-lifts")
-@click.option(
-    "--group",
-    default=None,
-    help="Only list lifts for this budget group.",
-)
-@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_budget_lifts(group, pretty):
+def _budget_lifts_payload(group):
     """List active and recent budget lifts, newest first.
 
     Ended lifts are kept as history so a multiple can be tuned against what it
@@ -3137,15 +3013,298 @@ def crew_budget_lifts(group, pretty):
     from reckon.crew import budget_lift as budget_lift_module
 
     lifts = budget_lift_module.list_lifts(group=group, path=None)
-    _emit_crew_result(
-        {
-            "ok": True,
-            "group": group,
-            "count": len(lifts),
-            "lifts": lifts,
-        },
-        pretty,
-    )
+    return {
+        "ok": True,
+        "group": group,
+        "count": len(lifts),
+        "lifts": lifts,
+    }
+
+
+@crew.command(name="budget")
+@click.option(
+    "--lift",
+    "do_lift",
+    is_flag=True,
+    help="Grant or clear a lift on a budget group's pace.",
+)
+@click.option(
+    "--list",
+    "do_list",
+    is_flag=True,
+    help="List active and recent budget lifts, newest first.",
+)
+@click.option(
+    "--reset",
+    "do_reset",
+    is_flag=True,
+    help="Flag, clear or read whether a group's banked reset is available or used.",
+)
+@click.option(
+    "--check",
+    "do_check",
+    is_flag=True,
+    help="Report whether backend budget state allows a wave to open.",
+)
+@click.option(
+    "--group",
+    default=None,
+    help=(
+        "Budget group the action applies to. Required with --lift and --reset, "
+        "optional with --list."
+    ),
+)
+@click.option(
+    "--multiple",
+    type=float,
+    default=None,
+    help=(
+        "With --lift, grant a pace multiple above the group's configured rate. "
+        "One of --multiple, --drain-by or --uncapped names the lift's form."
+    ),
+)
+@click.option(
+    "--drain-by",
+    default=None,
+    help=(
+        "With --lift, hold the pace until the group's window is drained by this "
+        "time (an ISO-8601 stamp or a duration) and then resume."
+    ),
+)
+@click.option(
+    "--uncapped",
+    is_flag=True,
+    help="With --lift, release the group to its whole window, no pace cap.",
+)
+@click.option(
+    "--global",
+    "global_scope",
+    is_flag=True,
+    help="With --lift, grant a workstation-wide lift (the default scope).",
+)
+@click.option(
+    "--session",
+    default=None,
+    help="With --lift, scope the lift to one session id rather than the workstation.",
+)
+@click.option(
+    "--from",
+    "starts_at",
+    default=None,
+    help="With --lift, when the lift begins: an ISO-8601 time or a duration from now.",
+)
+@click.option(
+    "--until",
+    default="reset",
+    show_default=True,
+    help=(
+        "With --lift, 'reset' (track the clock's own reset), an ISO-8601 time, or "
+        "a duration from now, at which the lift ends."
+    ),
+)
+@click.option(
+    "--clock",
+    type=click.Choice(_LIFT_CLOCKS),
+    default="seven_day",
+    show_default=True,
+    help="With --lift, which rate-limit window the lift is anchored to.",
+)
+@click.option(
+    "--reason",
+    default=None,
+    help="With --lift, why the group's pace is being raised; required for a grant.",
+)
+@click.option(
+    "--clear",
+    "clear_flag",
+    is_flag=True,
+    help="With --lift, revoke an in-force lift on the group instead of granting one.",
+)
+@click.option(
+    "--id",
+    "lift_id",
+    default=None,
+    help=(
+        "With --lift --clear, revoke this exact lift id rather than the group's "
+        "governing lift."
+    ),
+)
+@click.option(
+    "--available",
+    "mark_available",
+    is_flag=True,
+    help=(
+        "With --reset, flag one banked reset as available. Idempotent: flagging a "
+        "group that already carries one changes nothing and says so."
+    ),
+)
+@click.option(
+    "--used",
+    "mark_used",
+    is_flag=True,
+    help="With --reset, clear the flag, recording that the banked reset was spent.",
+)
+@click.option(
+    "--by",
+    default=None,
+    help="With --reset, who is setting or clearing the flag (default: $USER).",
+)
+@click.option(
+    "--project",
+    default=None,
+    help="With --check, the project whose run records are read.",
+)
+@click.option(
+    "--role",
+    "roles",
+    multiple=True,
+    help=(
+        "With --check, a role taking part in the wave; its backend is checked. "
+        "Repeat as needed."
+    ),
+)
+@click.option(
+    "--backend",
+    "backends",
+    multiple=True,
+    help="With --check, a backend to check by name, instead of resolving roles.",
+)
+@click.option(
+    "--model",
+    "models",
+    multiple=True,
+    help=(
+        "With --check, a model key, model id or alias to check, resolved through "
+        "the catalogue and added to the backends checked. Repeat as needed."
+    ),
+)
+@click.option(
+    "--purpose",
+    type=click.Choice(["dispatch", "resume"]),
+    default="dispatch",
+    show_default=True,
+    help="With --check, a dispatch keeps back the resume reserve; a resume may spend it.",
+)
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="With --check, the repo root whose ledger and project flight layer are read.",
+)
+@click.option(
+    "--set",
+    "overrides",
+    multiple=True,
+    metavar="KEY=VALUE",
+    help="With --check, a flight override that always wins over config layers.",
+)
+@click.option(
+    "--ready",
+    "ready",
+    multiple=True,
+    metavar="NAME=GROUP:SCORE",
+    help=(
+        "With --check, a node a wave would open with: its name, its declared "
+        "wallet and its open-endedness score. Repeat as needed."
+    ),
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_budget(
+    do_lift,
+    do_list,
+    do_reset,
+    do_check,
+    group,
+    multiple,
+    drain_by,
+    uncapped,
+    global_scope,
+    session,
+    starts_at,
+    until,
+    clock,
+    reason,
+    clear_flag,
+    lift_id,
+    mark_available,
+    mark_used,
+    by,
+    project,
+    roles,
+    backends,
+    models,
+    purpose,
+    checkout_path,
+    overrides,
+    ready,
+    pretty,
+):
+    """Report one budget group's pace, its banked reset, its lifts or backend holds.
+
+    Four actions share one verb, each named by its own flag and giving the
+    answer the retired verb it replaced gave: ``--lift`` grants or clears a
+    pace lift on a group, ``--list`` prints the lifts on record, ``--reset``
+    flags, clears or reads a group's banked reset, and ``--check`` reports
+    whether backend budget state allows a wave to open without spending any of
+    it, exiting 3 when a backend is held. Name exactly one; a retired name
+    answers with the flag to use.
+    """
+    chosen = [
+        flag
+        for flag, set_flag in (
+            ("--lift", do_lift),
+            ("--list", do_list),
+            ("--reset", do_reset),
+            ("--check", do_check),
+        )
+        if set_flag
+    ]
+    if len(chosen) != 1:
+        raise click.UsageError(
+            "name exactly one action: --lift, --list, --reset or --check"
+        )
+
+    if do_check:
+        if project is None:
+            raise click.UsageError("--project is required with --check")
+        report, code = _budget_check_report(
+            project,
+            roles,
+            backends,
+            models,
+            purpose,
+            checkout_path,
+            overrides,
+            ready,
+        )
+        _emit_crew_result(report, pretty, failure_exit=3)
+        raise click.exceptions.Exit(code)
+
+    if group is None and not do_list:
+        raise click.UsageError("--group is required with --lift and --reset")
+
+    if do_list:
+        _emit_crew_result(_budget_lifts_payload(group), pretty)
+        return
+
+    if do_reset:
+        result = _budget_reset_payload(group, mark_available, mark_used, by)
+    else:
+        result = _budget_lift_payload(
+            group=group,
+            multiple=multiple,
+            drain_by=drain_by,
+            uncapped=uncapped,
+            global_scope=global_scope,
+            session=session,
+            starts_at=starts_at,
+            until=until,
+            clock=clock,
+            reason=reason,
+            clear_flag=clear_flag,
+            lift_id=lift_id,
+        )
+    _emit_crew_result(result, pretty)
 
 
 @crew.command(name="split-runs")

@@ -629,7 +629,7 @@ def test_every_host_reference_records_all_four_capabilities() -> None:
 def test_ship_skill_authors_the_budget_fence_alone() -> None:
     ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     assert "Authored here and nowhere else" in ship
-    assert "reckon crew preflight" in ship
+    assert "reckon crew budget --check" in ship
     assert "Unknown never holds" in ship
     assert "orchestrator-harness/<harness>.md" in ship
     others = [
@@ -674,13 +674,13 @@ def test_ship_budget_fence_states_the_all_excluded_bookend_rule() -> None:
 
 
 def test_ship_crew_surface_lists_each_budget_lift_form_on_its_own_line() -> None:
-    """The crew-surface inventory shows each budget-lift verb on its own line."""
+    """The crew-surface inventory shows each budget-lift form on its own line."""
     text = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
     surface = text.split("```text", 1)[1].split("```", 1)[0]
     forms = [
         line.strip()
         for line in surface.splitlines()
-        if line.strip().startswith("reckon crew budget-lift ")
+        if line.strip().startswith("reckon crew budget --lift ")
     ]
     assert len(forms) == 2
     assert sum("--clear" in line for line in forms) == 1
@@ -1187,7 +1187,10 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
     expected = {
         ("crew", "ack"): {"--run", "--reason", "--until"},
         ("crew", "attach"): {"--run", "--task"},
-        ("crew", "budget-lift"): {
+        ("crew", "budget"): {
+            "--lift",
+            "--list",
+            "--check",
             "--group",
             "--multiple",
             "--drain-by",
@@ -1200,9 +1203,10 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
             "--reason",
             "--clear",
             "--id",
+            "--project",
+            "--role",
             "--pretty",
         },
-        ("crew", "budget-lifts"): {"--group", "--pretty"},
         ("crew", "complete"): {
             "--run",
             "--gate",
@@ -1262,7 +1266,6 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
             "--checkout-path",
         },
         ("crew", "placement"): {"--ensure", "--session", "--project"},
-        ("crew", "preflight"): {"--project", "--role"},
         ("crew", "recover"): set(),
         ("crew", "redispatch"): {"--run", "--backend", "--reason"},
         ("crew", "repair-status"): {"--run", "--status", "--reason"},

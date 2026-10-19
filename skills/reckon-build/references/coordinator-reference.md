@@ -82,7 +82,7 @@ read task requirements + apply explicit runtime routing + applicable skill
 → audit plan currency against the code + dispatch the prior-art scout (reuse map)
 → check every node against the eight-property contract (§3b)
 → arm ONE bare `crew follow --project P --session S` as the session's wake-up — never a shell, never a poll loop (rule 18)
-→ reckon crew preflight — a spent backend holds its nodes, the rest still run
+→ reckon crew budget --check — a spent backend holds its nodes, the rest still run
 → reckon crew dispatch each ready node — branch only on the returned launch kind
 → emit the dispatch summary, naming the gate that closes the wave
 → untrust-check, then READ each worker's diff by anomaly (§5b) → orchestrator merges
@@ -148,7 +148,7 @@ the surface is missing.**
   lossless legacy report, which at a real project's size cannot be returned at
   all. `summary` answers nearly every question; ask for `raw` deliberately.
 - `crew(view="flight"|"budget"|"drain"|"live")` answers what `reckon flight`
-  and `reckon crew preflight`/`drain`/`list` answer. Prefer the tool.
+  and `reckon crew budget --check`/`drain`/`list` answer. Prefer the tool.
 - `read_plan(..., view="summary")` before `view="raw"`; raw is for editing, not
   for looking.
 
@@ -605,7 +605,7 @@ reckon crew dispatch --project <project> --plan <slug> --section <section> --rol
 reckon crew discard --run <id>    reckon crew drain --project <project> --leave <id>=<disposition>
 reckon crew follow --project <project>    reckon crew gc    reckon crew ledger --project <project> --view <view>
 reckon crew list    reckon crew member add    reckon crew member list --project <project>
-reckon crew observe --run <id>    reckon crew preflight --project <project> --role <role>
+reckon crew observe --run <id>    reckon crew budget --check --project <project> --role <role>
 reckon crew pick --project <project> --role <role> --spec-level <level> --goal <goal> --done-when <measure> --replay <n> --outcomes --since <ISO> --all-projects --checkout-path <path>    # reads routing state or outcome history, dispatches nothing
 reckon crew placement --ensure --session <session> --project <project>
 reckon crew recover    reckon crew redispatch --run <id> --backend <backend> --reason <text>
@@ -706,7 +706,7 @@ on the page.
 **refuse to open it on a backend whose headroom is spent:**
 
 ```bash
-reckon crew preflight --project P --role implement --role review
+reckon crew budget --check --project P --role implement --role review
 ```
 
 It exits 3 when any backend is held, naming that backend, its utilisation and

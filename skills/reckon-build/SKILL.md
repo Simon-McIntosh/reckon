@@ -198,9 +198,9 @@ Remedies, the carrier rules and the `--brief` contract are in
 
 ```text
 reckon crew attach --run <id> --task <task-id>
-reckon crew budget-lift --group <group> (--multiple <m> | --drain-by <time> | --uncapped) [--global | --session <id>] [--from <time>] [--until reset|<iso>|<duration>] [--clock seven_day|five_hour] --reason <why> [--pretty]
-reckon crew budget-lift --clear --group <group> [--session <id>] [--id <lift>]
-reckon crew budget-lifts [--group <group>] [--pretty]
+reckon crew budget --lift --group <group> (--multiple <m> | --drain-by <time> | --uncapped) [--global | --session <id>] [--from <time>] [--until reset|<iso>|<duration>] [--clock seven_day|five_hour] --reason <why> [--pretty]
+reckon crew budget --lift --clear --group <group> [--session <id>] [--id <lift>]
+reckon crew budget --list [--group <group>] [--pretty]
 reckon crew check-manifest --run <id>
 reckon crew complete --run <id> --gate <verdict> --commit <sha> --outcome <text> --tests-added <n> --scope-changed
 reckon crew directory --project <project> --run <id> --node <node>
@@ -209,7 +209,7 @@ reckon crew discard --run <id>    reckon crew drain --project <project> --leave 
 reckon crew follow --project <project>    reckon crew gc    reckon crew ledger --project <project> --view <view>
 reckon crew gate (--pause <reason> | --open) [--pretty]    # prints the shared gate document before and after the change
 reckon crew list    reckon crew member add    reckon crew member list --project <project>
-reckon crew observe --run <id>    reckon crew preflight --project <project> --role <role>
+reckon crew observe --run <id>    reckon crew budget --check --project <project> --role <role>
 reckon crew pick --project <project> --role <role> --spec-level <level> --goal <goal> --done-when <measure> --replay <n> --outcomes --since <ISO> --all-projects --checkout-path <path>    # reads routing state or outcome history, dispatches nothing
 reckon crew placement --ensure --session <session> --project <project>
 reckon crew recover    reckon crew redispatch --run <id> --backend <backend> --reason <text>
@@ -464,8 +464,8 @@ the gate in the `WHEN` axis before the work starts.
 
 ### 4c. The budget fence — a ready slot does not open into a spent quota
 
-Authored here and nowhere else. Run `reckon crew preflight --project P --role
-implement --role review` before opening a wave and refuse to open one on a
+Authored here and nowhere else. Run `reckon crew budget --check --project P
+--role implement --role review` before opening a wave and refuse to open one on a
 backend whose headroom is spent. It reads the budget signal earlier runs already
 recorded, so it spends nothing. Four properties hold: a hold is not a failure
 (nodes stay ready); a hold is per-backend; Unknown never holds, because absence
@@ -516,7 +516,7 @@ view="budget")`.
 When the lead has decided to spend a window ahead of pace, grant a lift rather
 than bypassing the picker. A lift raises one declared group's pace multiple or
 removes the hold, is visible to every coordinator, and lowers itself with no
-process to remember it. `reckon crew budget-lift --group <group> --multiple
+process to remember it. `reckon crew budget --lift --group <group> --multiple
 <m> --reason "<why>"` raises the multiple; the `--drain-by <time>` form takes a
 target time instead and spreads the remaining budget evenly from the utilisation
 recorded at grant to 100% at the target, clamped to the window's reset;
@@ -536,10 +536,10 @@ A lift ends on any of four conditions, each read at the moment of use rather tha
 run by a process: the clock's reset is observed (the reading's `resets_at` moves,
 or utilisation falls below the figure recorded at grant); the stated end time is
 reached; the hard ceiling `granted_at + budget.lift.max_hours` is passed; or it is
-cleared. `reckon crew budget-lift --clear --group <group>` revokes the group's
+cleared. `reckon crew budget --lift --clear --group <group>` revokes the group's
 governing lift, `--session <id>` names a session's lift to clear, and `--id
 <lift>` revokes one exact record, refusing an id whose lift belongs to another
-group. `reckon crew budget-lifts [--group <group>]` lists active and recent
+group. `reckon crew budget --list [--group <group>]` lists active and recent
 lifts as JSON, newest first; ended lifts are kept as history.
 
 ### 4d. The closure fence — a session does not end into available work

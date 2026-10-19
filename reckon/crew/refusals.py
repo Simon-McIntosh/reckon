@@ -16,9 +16,9 @@ NO_CREW_VERB_SENTENCE = (
 )
 
 DISPATCH_REFUSAL_REMEDIES: Mapping[str, str | None] = {
-    "D01": "`reckon crew preflight` after correcting the cited configuration or ledger condition",
+    "D01": "`reckon crew budget --check` after correcting the cited configuration or ledger condition",
     "D02": (
-        "`reckon crew preflight`, then `reckon crew dispatch`; for an existing "
+        "`reckon crew budget --check`, then `reckon crew dispatch`; for an existing "
         "blocked run, use `reckon crew resume-ready`"
     ),
     "D03": (
@@ -31,7 +31,7 @@ DISPATCH_REFUSAL_REMEDIES: Mapping[str, str | None] = {
         "registering the plan"
     ),
     "D06": (
-        "the same `reckon crew preflight`, `reckon crew dispatch`, or `reckon "
+        "the same `reckon crew budget --check`, `reckon crew dispatch`, or `reckon "
         "crew shadow` after correcting the cited flight key"
     ),
     "D07": ("`reckon crew dispatch` after repairing the named node-contract property"),
@@ -41,7 +41,7 @@ DISPATCH_REFUSAL_REMEDIES: Mapping[str, str | None] = {
         "then `reckon crew dispatch`"
     ),
     "D10": (
-        "`reckon crew preflight`, then `reckon crew dispatch --backend "
+        "`reckon crew budget --check`, then `reckon crew dispatch --backend "
         "<clear-backend>` or `reckon crew resume-ready`"
     ),
     "D11": (

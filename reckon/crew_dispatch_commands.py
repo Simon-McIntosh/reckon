@@ -921,68 +921,19 @@ def crew_pick(
     _emit_crew_result(payload, pretty)
 
 
-@crew.command(name="preflight")
-@click.option("--project", required=True, help="Project whose run records are read.")
-@click.option(
-    "--role",
-    "roles",
-    multiple=True,
-    help="Role taking part in the wave; its backend is checked. Repeat as needed.",
-)
-@click.option(
-    "--backend",
-    "backends",
-    multiple=True,
-    help="Backend to check by name, instead of resolving roles.",
-)
-@click.option(
-    "--model",
-    "models",
-    multiple=True,
-    help=(
-        "Model key, model id or alias to check, resolved through the catalogue "
-        "and added to the backends checked. Repeat as needed."
-    ),
-)
-@click.option(
-    "--purpose",
-    type=click.Choice(["dispatch", "resume"]),
-    default="dispatch",
-    show_default=True,
-    help="A dispatch keeps back the resume reserve; a resume may spend it.",
-)
-@click.option(
-    "--checkout-path",
-    default=None,
-    type=click.Path(path_type=Path),
-    help="Repo root whose ledger and project flight layer are read.",
-)
-@click.option(
-    "--set",
-    "overrides",
-    multiple=True,
-    metavar="KEY=VALUE",
-    help="Flight override for this check; always wins over config layers.",
-)
-@click.option(
-    "--ready",
-    "ready",
-    multiple=True,
-    metavar="NAME=GROUP:SCORE",
-    help="A node a wave would open with: its name, its declared wallet and its "
-    "open-endedness score. Repeat as needed.",
-)
-@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_preflight(
-    project, roles, backends, models, purpose, checkout_path, overrides, ready, pretty
+# The budget hold report is composed here; `crew budget --check` prints it and
+# turns the returned code into the command's own exit status.
+def _budget_check_report(
+    project, roles, backends, models, purpose, checkout_path, overrides, ready
 ):
     """Report whether backend budget state allows a wave to open, without spending it.
 
     Reads the budget signal that earlier runs already recorded, so the check
     costs no worker budget; a backend whose config sets ``budget_check`` also has
-    its own account surface read, which runs no model either. Exits 3 when any
-    backend is held, naming its utilisation and reset time; a backend reporting no
-    headroom is never held, because absence of a signal is not exhaustion.
+    its own account surface read, which runs no model either. The returned exit
+    code is 3 when any backend is held, naming its utilisation and reset time; a
+    backend reporting no headroom is never held, because absence of a signal is
+    not exhaustion.
 
     The pace beside the hold is read per backend, from whichever source speaks
     for that backend: a fresh reading in the published headroom document when the
@@ -1027,8 +978,7 @@ def crew_preflight(
         from reckon.crew.refusals import format_refusal
 
         raise click.ClickException(format_refusal("D01", str(exc))) from exc
-    _emit_crew_result(report, pretty, failure_exit=3)
-    raise click.exceptions.Exit(3 if report["held"] else 0)
+    return report, (3 if report["held"] else 0)
 
 
 @crew.command(name="dispatch")

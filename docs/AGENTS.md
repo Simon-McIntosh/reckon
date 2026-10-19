@@ -38,7 +38,7 @@ first; `reckon crew recover` reports whatever an interrupted orchestrator left
 between them.
 
 Each completed record also carries whatever budget headroom its backend reported,
-which is what makes `reckon crew preflight` free: the pre-flight reads the ledger
+which is what makes `reckon crew budget --check` free: the pre-flight reads the ledger
 and the live pointers rather than making a call that would spend the very resource
 it is measuring. A backend publishing no headroom records `unknown`, and unknown
 never holds a wave — absence of a signal is not evidence of exhaustion.
