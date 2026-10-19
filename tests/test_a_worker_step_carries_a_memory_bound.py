@@ -29,7 +29,6 @@ LaunchResolutionError = dispatch_launch.LaunchResolutionError
 
 RESERVATION_ID = "1281970"
 SRUN = "/opt/slurm/bin/srun"
-SBATCH = "/opt/slurm/bin/sbatch"
 
 
 def _plan() -> LaunchPlan:
@@ -45,7 +44,7 @@ def _plan() -> LaunchPlan:
     )
 
 
-def _placed(placement_options, *, run_id=None, monkeypatch=None) -> list[str]:
+def _placed_plan(placement_options, *, run_id=None, monkeypatch=None) -> LaunchPlan:
     backend = {
         "launch": "cli",
         "command": "codex",
@@ -61,13 +60,18 @@ def _placed(placement_options, *, run_id=None, monkeypatch=None) -> list[str]:
     monkeypatch.setattr(placement, "reservation_alive", lambda _: True)
 
     def which(name, *_, **__):
-        return {"srun": SRUN, "sbatch": SBATCH}.get(name)
+        return {"srun": SRUN}.get(name)
 
     monkeypatch.setattr(dispatch_launch.shutil, "which", which)
-    plan = dispatch_launch.resolve_backend_placement(
+    return dispatch_launch.resolve_backend_placement(
         _plan(), backend, payload={"run_id": run_id} if run_id else None
     )
-    return list(plan.argv)
+
+
+def _placed(placement_options, *, run_id=None, monkeypatch=None) -> list[str]:
+    return list(
+        _placed_plan(placement_options, run_id=run_id, monkeypatch=monkeypatch).argv
+    )
 
 
 def test_a_placed_step_carries_the_default_memory_bound(monkeypatch) -> None:
@@ -93,17 +97,51 @@ def test_a_declared_bound_replaces_the_default(monkeypatch) -> None:
 def test_a_declaration_above_the_ceiling_leaves_the_allocation(monkeypatch) -> None:
     """A step too large for the allocation is placed as a job of its own.
 
-    It is submitted with the batch client, the only one that starts a job of
-    its own from inside a held allocation, on a debug partition, and the step
-    client is not asked for a reservation step.
+    The step client is asked for an allocation of its own on a debug partition:
+    named exactly once, never as a step of the fleet job, with the bound stated
+    and a time limit that fits the window such a partition allows. The command
+    is carried as arguments, so the worker's own standard streams are the ones
+    that run rather than a batch output file's.
     """
-    argv = _placed([placement.step_memory_option(64)], monkeypatch=monkeypatch)
+    plan = _placed_plan(
+        [placement.step_memory_option(64)], run_id="run-abc", monkeypatch=monkeypatch
+    )
+    argv = list(plan.argv)
 
-    assert argv[0] == SBATCH
+    assert argv[0] == SRUN
+    assert argv.count(SRUN) == 1
+    assert not any(token.startswith("--jobid=") for token in argv)
+    assert "--wrap" not in argv
     assert f"--partition={placement.debug_partition()}" in argv
     assert placement.debug_partition().endswith(placement.DEBUG_PARTITION_SUFFIX)
     assert "--mem=64G" in argv
-    assert not any(item.startswith("--jobid=") for item in argv)
+    assert "--job-name=run-abc" in argv
+    # A limit is always stated, and never beyond the window the partition allows.
+    limit = next(token for token in argv if token.startswith("--time="))
+    assert limit <= f"--time={placement.DEBUG_JOB_TIME_CEILING}"
+    # The command is the tail of the invocation, as argv rather than a script.
+    assert argv[-len(_plan().argv) :] == list(_plan().argv)
+    # The allocation's own identity is gone, so the client cannot read itself as
+    # a step of the fleet job; the rest of the environment is untouched.
+    environment = plan.environment
+    assert environment["PATH"] == _plan().environment["PATH"]
+    assert not any(
+        str(key).upper().startswith(placement.SLURM_JOB_ENVIRONMENT_ROOTS)
+        for key in environment
+    )
+
+
+def test_a_job_of_its_own_states_a_limit_inside_the_debug_window() -> None:
+    """A debug partition allows an hour and has no default, so a limit is stated."""
+    assert placement.debug_job_time_limit(None) == placement.DEBUG_JOB_TIME_CEILING
+    assert placement.debug_job_time_limit("8h") == placement.DEBUG_JOB_TIME_CEILING
+    assert (
+        placement.debug_job_time_limit("01:00:00") == placement.DEBUG_JOB_TIME_CEILING
+    )
+    assert placement.debug_job_time_limit("30m") == "00:30:00"
+    assert (
+        placement.debug_job_time_limit("unreadable") == placement.DEBUG_JOB_TIME_CEILING
+    )
 
 
 def test_the_ceiling_is_reached_exactly_not_crossed_at_the_boundary() -> None:

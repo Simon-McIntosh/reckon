@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-worker-step-carries-a-memory-bound">
   <meta name="plan-title" content="A worker step carries a memory bound">
-  <meta name="plan-summary" content="placement.step_prefix states --mem on every fleet worker step, 24 GB by default and 48 GB at most in the allocation; a larger declaration is placed as its own batch job on a debug partition">
+  <meta name="plan-summary" content="placement.step_prefix states --mem on every fleet worker step, 24 GB by default and 48 GB at most in the allocation; a larger declaration is placed as a job of its own on a debug partition">
   <meta name="plan-evidence-for" content="reckon:the-fleet-node-stays-in-service">
   <meta name="plan-verifies" content="reckon:the-fleet-node-stays-in-service#s6">
   <meta name="plan-recorded-at" content="2026-10-19">
@@ -24,16 +24,25 @@
   fleet worker step is now placed with an explicit <code>--mem</code> through
   <code>placement.step_prefix</code>, defaulting to 24 GB and honouring a bound
   declared through the existing dispatch <code>--set</code> override. A step
-  declared past the 48 GB ceiling is placed as a job of its own with the batch
-  client on a debug partition rather than inside the fleet allocation.
+  declared past the 48 GB ceiling is placed as a job of its own on a debug
+  partition rather than inside the fleet allocation, and its standard streams
+  come back to the caller as a step's do.
   <code>fleet_node.placement_argv</code> now composes its prefix through
   <code>step_prefix</code>, so the bound is stated once. A probe step on the
   fleet allocation placed with <code>--mem=1G</code> shows its cgroup
   <code>memory.max</code> equal to that bound.</p>
 
+  <figure>
+    <img src="/reckon/figures/the-fleet-node-stays-in-service/memory-bound-routing.svg"
+         alt="A declared bound at or below 48 GB places a step inside the held allocation; above it, the step is placed as a job of its own on a debug partition">
+    <figcaption>Where a worker step runs, by the bound its placement declares. The
+    in-allocation route keeps the shape the fleet already had; the over-ceiling
+    route is the subject of this record.</figcaption>
+  </figure>
+
   <p id="a-worker-step-carries-a-memory-bound-measure"><strong>Measure.</strong> Honest
   evaluator of capacity and honesty of experimentally reporting: the focused
-  gate ran <strong>127 passed, 1 skipped</strong> in place on the fleet
+  gate ran <strong>132 passed, 1 skipped</strong> in place on the fleet
   allocation (job <code>1281970</code> on host
   <code>98dci4-clu-2002</code>), and the probe step read
   <code>memory.max = 1073741824</code> for a declared <code>--mem=1G</code>.</p>
@@ -52,7 +61,9 @@
       </tr>
       <tr>
         <td>A declaration above 48 GB routed to its own job on a <code>*_debug</code> partition</td>
-        <td><code>test_a_declaration_above_the_ceiling_leaves_the_allocation</code></td>
+        <td><code>test_a_declaration_above_the_ceiling_leaves_the_allocation</code>; live, job
+        <code>1289800</code> on <code>all_debug</code> for a <code>--mem=49G</code>
+        declaration</td>
       </tr>
       <tr>
         <td><code>fleet_node.placement_argv</code> folded into <code>placement.step_prefix</code></td>
@@ -109,8 +120,8 @@
   --set 'backends.&lt;backend&gt;.placement.options=["--ntasks=1","--mem=48G"]'</code></pre>
   <p>The shipped options are <code>["--ntasks=1"]</code>, so they are repeated
   beside the new bound. A declaration at or below the 48 GB ceiling stays a
-  step of the held allocation; a larger one is submitted as its own batch job
-  on the backend partition's <code>_debug</code> sibling. Both spellings of an
+  step of the held allocation; a larger one is placed as a job of its own on
+  the backend partition's <code>_debug</code> sibling. Both spellings of an
   option are read (<code>--mem=64G</code> and <code>--mem 64G</code>), and a
   declared bound is never restated beside itself — a step carries the one
   request its placement made, in the spelling it made it. A
@@ -120,12 +131,42 @@
   than priced as a single task — pricing it low is the direction that overfills
   the allocation.</p>
 
+  <p id="a-worker-step-carries-a-memory-bound-own-job"><strong>A step of its own.</strong>
+  The over-ceiling route is the step client asked for an allocation of its own,
+  not the batch client: <code>srun --partition=&lt;partition&gt;_debug
+  --mem=&lt;bound&gt; --time=&lt;budget&gt; --job-name=&lt;run&gt; &lt;command
+  as argv&gt;</code>. Only the allocation's own identity stood between that
+  launch and a job of its own, so the launch removes it —
+  <code>SLURM_JOB_ID</code>, <code>SLURM_JOBID</code>,
+  <code>SLURM_STEP_ID</code>, <code>SLURM_STEPID</code> and the rest of the
+  <code>SLURM_JOB*</code>/<code>SLURM_STEP*</code> group — and the client asks
+  for its own allocation instead of opening a step of the held one. The command
+  is carried as argv rather than a wrapped script, so the worker's standard
+  streams are the ones the supervisor reads. The time limit is the run's own
+  budget capped at the window such a partition allows: its maximum is an hour
+  and it sets no default, so an omitted limit would leave the job pending
+  rather than bounded (<code>all_debug</code> and <code>rigel_debug</code> both
+  read <code>MaxTime=01:00:00 DefaultTime=NONE</code>).</p>
+
+  <p id="a-worker-step-carries-a-memory-bound-own-job-check"><strong>Checked live,
+  once.</strong> A <code>--mem=49G</code> declaration for a trivial command was
+  placed through this path on the fleet node (host
+  <code>98dci4-clu-2002</code>, holding job <code>1281970</code>): the command's
+  output came back on the caller's stdout (<code>stdout-returned-from-its-own-job</code>),
+  and <code>sacct</code> names <strong>job <code>1289800</code></strong> of its
+  own on partition <code>all_debug</code> with <code>mem=49G</code>, state
+  <code>COMPLETED</code>, its single step <code>1289800.0</code>. It is not
+  among the steps of the holding job: no <code>1289800</code> row appears under
+  <code>1281970</code>. Log:
+  <code>logs/own-job-live-check.log</code>.</p>
+
   <p id="a-worker-step-carries-a-memory-bound-paths"><strong>Changed paths.</strong>
   <code>reckon/crew/placement.py</code>, <code>reckon/crew/fleet_node.py</code>,
   <code>reckon/crew/dispatch_launch.py</code>, <code>reckon/crew/summary.py</code>,
   <code>tests/test_fleet_node.py</code>,
   <code>tests/test_fleet_migrate_cutover.py</code>,
-  <code>tests/test_a_worker_step_carries_a_memory_bound.py</code>.</p>
+  <code>tests/test_a_worker_step_carries_a_memory_bound.py</code>, and the figure
+  <code>docs/figures/the-fleet-node-stays-in-service/memory-bound-routing.svg</code>.</p>
 </section>
 </body>
 </html>

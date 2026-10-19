@@ -1076,6 +1076,7 @@ def apply_backend_placement(
     project: str | None = None,
     *,
     run_id: str | None = None,
+    time_budget: str | None = None,
 ) -> _backends.LaunchPlan:
     """Prefix an already-resolved launch with its backend's declared placement.
 
@@ -1124,33 +1125,28 @@ def apply_backend_placement(
         )
     declared = placement_module.declared_memory_gb(options)
     if declared is not None and placement_module.step_memory_above_ceiling(declared):
-        batch = shutil.which(
-            placement_module.STEP_JOB_SCHEDULER,
-            path=launch_search_path(plan.environment),
-        )
-        if not batch:
-            raise LaunchResolutionError(
-                f"the declared memory of {declared} GB is above the fleet "
-                f"allocation's ceiling and must run as its own job, but "
-                f"{placement_module.STEP_JOB_SCHEDULER} cannot be resolved on the "
-                f"PATH this launch would search: "
-                f"{launch_search_path(plan.environment)} — install it or add its "
-                "directory to PATH, then retry; nothing has been launched"
-            )
+        # The step client is the one already resolved above, asked for an
+        # allocation of its own: with the held allocation's identity removed
+        # from the environment it is no longer a step of the fleet job, so its
+        # partition and its bound are the ones stated here. Its standard
+        # streams are the plan's, so a worker placed this way reports as any
+        # other does rather than into a batch output file.
         return dataclasses.replace(
             plan,
             argv=[
-                os.path.abspath(batch),
+                os.path.abspath(found),
                 *placement_module.own_job_prefix(
-                    declared,
                     plan.argv,
+                    memory_gb=declared,
                     partition=str(
                         placement.get("partition")
                         or placement_module.RESERVATION_PARTITION
                     ),
+                    time_limit=placement_module.debug_job_time_limit(time_budget),
                     job_name=run_id or None,
                 ),
             ],
+            environment=placement_module.without_slurm_job_identity(plan.environment),
             stdin_text="",
         )
     # The one shared reservation, which any project's dispatch resolves: a
@@ -1247,7 +1243,22 @@ def resolve_backend_placement(
         backend,
         project,
         run_id=str(payload.get("run_id") or "") if payload else None,
+        time_budget=_declared_time_budget(payload),
     )
+
+
+def _declared_time_budget(payload: Mapping[str, Any] | None) -> str | None:
+    """The budget the run's own record carries, when a dispatch supplied one.
+
+    A worker placed as a job of its own is submitted under the run's budget
+    rather than an invented one, and the budget is read from the record the
+    dispatch already keeps rather than from a second declaration.
+    """
+    if not payload:
+        return None
+    node = payload.get("node")
+    declared = node.get("time_budget") if isinstance(node, Mapping) else None
+    return str(declared) if declared else None
 
 
 # How long a declared job-id probe is given to answer, and how many times it is

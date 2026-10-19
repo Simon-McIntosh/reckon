@@ -25,7 +25,6 @@ import getpass
 import json
 import os
 import re
-import shlex
 import subprocess
 import time
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
@@ -68,18 +67,18 @@ DEFAULT_STEP_MEMORY_GB = 24
 STEP_MEMORY_CEILING_GB = 48
 STEP_MEMORY_ENV = "RECKON_STEP_MEMORY"
 
-# The client that gives a step a job of its own when the step is too large to
-# sit in the allocation. Only the batch client submits a job of its own from
-# inside a held allocation; a step client from there runs as a step of the held
-# job whatever partition it names. The caller continues with the result, so the
-# submission waits for the job rather than returning at once.
-STEP_JOB_SCHEDULER = "sbatch"
-STEP_JOB_WAIT_OPTION = "--wait"
-STEP_JOB_WRAP_OPTION = "--wrap"
-
 # A step too large for the allocation is placed on a debug partition, so the
-# work is sized for a debug queue rather than a production one.
+# work is sized for a debug queue rather than a production one. Such a partition
+# is a one-hour window with no default: there the scheduler's own maximum is an
+# hour and omitting the limit leaves the job pending forever, so a step placed
+# on one always states a limit and never states more than the window allows.
 DEBUG_PARTITION_SUFFIX = "_debug"
+DEBUG_JOB_TIME_CEILING = "01:00:00"
+
+# A step client inherits the allocation's identity from its environment, and
+# that inheritance is the only thing that would make it a step of the fleet job
+# rather than a job of its own. These are the variables it must not inherit.
+SLURM_JOB_ENVIRONMENT_ROOTS = ("SLURM_JOB", "SLURM_STEP")
 
 # The roster cap and the axis it is measured on. Twenty-five is the concurrency
 # the serve was observed delivering throughput for; the binding quantity is
@@ -440,32 +439,94 @@ def step_prefix(job_id: str, options: list[str]) -> list[str]:
 
 
 def own_job_prefix(
-    memory_gb: int,
     command: Sequence[str],
     *,
+    memory_gb: int,
     partition: str = RESERVATION_PARTITION,
+    time_limit: str = DEBUG_JOB_TIME_CEILING,
     job_name: str | None = None,
 ) -> list[str]:
-    """The scheduler invocation that runs a step as a job of its own.
+    """The scheduler options that run a step as a job of its own.
 
     A step sized past the allocation's ceiling is placed on a debug partition
-    rather than inside the allocation, where a whole node serves it. Only the
-    batch client submits a job of its own from inside a held allocation, so the
-    batch client is used rather than a step client, and it waits because the
-    caller continues with the result. The command is carried as the batch
-    script's body through ``--wrap``, so the argv the caller resolved is the one
-    that runs.
+    rather than inside the allocation, where a whole node serves it. The command
+    is carried as arguments rather than as a wrapped script, so the standard
+    streams the caller composed stay the ones that run and the worker's output
+    reaches the supervisor's pipe as it does for a step of the allocation.
+
+    These are options only and never the scheduler's own name: the caller has
+    already resolved that executable and prepends it, so the invocation names
+    the client exactly once.
     """
     argv = [
-        STEP_JOB_SCHEDULER,
-        STEP_JOB_WAIT_OPTION,
         f"--partition={debug_partition(partition)}",
         step_memory_option(memory_gb),
+        f"--time={time_limit}",
     ]
     if job_name:
         argv.append(f"--job-name={job_name}")
-    argv.extend([STEP_JOB_WRAP_OPTION, shlex.join(str(item) for item in command)])
+
+    argv.extend(str(item) for item in command)
     return argv
+
+
+def debug_job_time_limit(
+    time_budget: str | None, *, ceiling: str = DEBUG_JOB_TIME_CEILING
+) -> str:
+    """The time limit a step of its own is submitted under, capped at the ceiling.
+
+    A debug partition here is a one-hour window: the scheduler's own maximum is
+    an hour and its default is none, so an omitted limit leaves the job pending
+    rather than bounding it. A declared budget is honoured up to that window and
+    stated as the window when it asks for more, because asking for more on such
+    a partition pends the submission instead of shortening the fence. A budget
+    that cannot be read is treated as the window rather than as no limit.
+    """
+    ceiling_seconds = _duration_seconds(ceiling)
+    stated = _duration_seconds(time_budget) if time_budget else None
+    seconds = ceiling_seconds if stated is None else min(stated, ceiling_seconds)
+    hours, remainder = divmod(seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+
+def _duration_seconds(value: str) -> int | None:
+    """A budget written as an ``h/m/s`` suffix pair, in seconds, or None.
+
+    The scheduler states its own limits as ``HH:MM:SS``; a budget may also be
+    written as the number-and-suffix form a dispatch declares. Both are read so
+    the smaller of the two can be taken, and anything else is None.
+    """
+    text = str(value).strip()
+    clock = re.fullmatch(r"(\d+):([0-5]\d)(?::([0-5]\d))?", text)
+    if clock:
+        hours, minutes, secs = clock.group(1), clock.group(2), clock.group(3) or "0"
+        return int(hours) * 3600 + int(minutes) * 60 + int(secs)
+    suffix = re.fullmatch(r"(\d+)([hms])", text, re.IGNORECASE)
+    if not suffix:
+        return None
+    return int(suffix.group(1)) * {"h": 3600, "m": 60, "s": 1}[suffix.group(2).lower()]
+
+
+def without_slurm_job_identity(
+    environment: Mapping[str, str] | None,
+) -> dict[str, str]:
+    """A copy of ``environment`` without the allocation's job or step identity.
+
+    A step client inherits the held allocation from its environment, and that
+    inheritance is the whole reason a client started inside the allocation runs
+    as a step of it: with the identity gone the client asks for an allocation of
+    its own. Without this the job the caller placed for a step too large for the
+    allocation would be that same allocation's step, on the wrong partition and
+    against the wrong bound.
+    """
+    kept: dict[str, str] = {}
+    for key, value in (environment or {}).items():
+        name = str(key)
+        if name.upper().startswith(SLURM_JOB_ENVIRONMENT_ROOTS):
+            continue
+        kept[key] = value
+    return kept
 
 
 def _reservation_query_placement() -> dict[str, Any]:
