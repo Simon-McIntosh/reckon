@@ -25,7 +25,7 @@
   <title>Test Time Is Not The Node's Time | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -109,9 +109,9 @@
 <p><strong>Why.</strong> On 2026-10-19 the power_convertor run <code>r-20261019T150700496206-cs1-fast-discharge-playback</code> stopped an hour early on its local-lane model. Its prompt stated "Launched 2026-10-19T15:07:32Z UTC; deadline 2026-10-19T17:07:32Z" and told it to check the time with <code>date -u</code>. Its stream shows that it did, three times: the last at 15:43:33 UTC. Later it wrote "Time fence is breached (deadline 17:07:32Z, now 18:07Z)" with no <code>date</code> call since the one at 15:43. It stopped and wrote a blocked manifest. When challenged it ran <code>date -u; date</code>, which printed <code>16:12:20 UTC</code> and <code>18:12:20 CEST</code>. It then wrote "I misread local CEST timestamps as UTC — real time is 16:12Z, so 55 minutes remain". File modification times and log stamps on this host print in its local zone, two hours ahead of UTC. A worker that compares one of them with a UTC deadline is wrong by the zone offset. Telling it which clock to read did not stop that.</p>
 <p><strong>Deliverable.</strong> The deadline statement gives the worker a command that answers how much time is left, so it never compares two clock readings.</p>
 <ul>
-<li><code>time_fence_statement</code> (<code>reckon/crew/prompts.py:382</code>) adds one shell command that prints the seconds remaining until the deadline, computed from epoch seconds: the deadline instant through <code>date -d … +%s</code>, less <code>date +%s</code>. Epoch seconds carry no zone, so the answer is the same whatever the host's <code>TZ</code>. Where §3's hard stop differs from the deadline, the command prints the seconds to each.</li>
+<li><code>time_fence_statement</code> in <code>reckon/crew/prompts.py</code> adds one shell command that prints the seconds remaining until the deadline, computed from epoch seconds: the deadline instant through <code>date -d … +%s</code>, less <code>date +%s</code>. Epoch seconds carry no zone, so the answer is the same whatever the host's <code>TZ</code>. Where §3's hard stop differs from the deadline, the command prints the seconds to each.</li>
 <li>The statement tells the worker to judge the deadline only by that command, and never by a file time, a log stamp or a <code>date</code> reading, which may print in the host's local zone.</li>
-<li>A resumed attempt's fence is built by the same function (<code>reckon/crew/dispatch_sessions.py:1468</code>), so it carries the command measured from that attempt's own launch.</li>
+<li>A resumed attempt's fence is built by the same function, called from <code>_restate_time_fence</code> in <code>reckon/crew/dispatch_sessions.py</code>, so it carries the command measured from that attempt's own launch.</li>
 </ul>
 <p><strong>One owner for the multiple, on the first attempt too.</strong> §3's review found that the first attempt still passes the raw <code>fences.budget_grace_multiple</code> (<code>reckon/crew/dispatch.py:1929</code>), which <code>_continuation_multiple</code> in <code>reckon/crew/prompts.py</code> parses a second time. The watchdog and the resumed fence already read <code>resolved_grace_multiple</code>. Here <code>dispatch.py</code> passes <code>resolved_grace_multiple</code>'s value instead, and <code>time_fence_statement</code> takes that resolved number. No code in <code>prompts.py</code> parses the raw value: it keeps only the rule that a multiple at or below 1.0, or none, allows no continuation.</p>
 <p>Change nothing else. The deadline instant, the hard stop and the rule from §3 stay as §3 states them.</p>
