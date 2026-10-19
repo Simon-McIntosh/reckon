@@ -267,6 +267,60 @@ def _lane_paused_detail(gate) -> str:
     return f"the lane gate is {gate.get('state')!r}"
 
 
+def _emit_held_review(
+    queued,
+    *,
+    report_run_id,
+    reason,
+    lane_gate,
+    pretty: bool,
+) -> int:
+    """Report a held review the way dispatch reports a held dispatch.
+
+    A hold is an acceptance rather than a refusal, so it rides the same channel
+    every other review result uses: a queued composition carries ``ok``, the
+    queued crew run's id and its position, and a hold naming a run already in
+    another phase says which. Both exit 0, so a caller keeps working rather than
+    stopping on a lane that is doing its job.
+    """
+    if queued:
+        phase = str(queued.get("phase") or "queued")
+        run_id = str(queued.get("run_id") or "")
+        queued_now = phase == "queued"
+        detail = (
+            f"the local lane queued run {run_id} at position {queued.get('position')}"
+            if queued_now
+            else f"run {run_id} is already {phase} for this subject"
+        )
+        _emit(
+            {
+                "ok": True,
+                "queued": queued_now,
+                "phase": phase,
+                "detail": detail,
+                "run_id": run_id,
+                "position": queued.get("position"),
+                "reason": queued.get("reason") or reason,
+                "lane_gate": lane_gate,
+                "report_run_id": report_run_id,
+            },
+            pretty,
+        )
+        return 0
+    gate = lane_gate or {}
+    _emit(
+        {
+            "ok": False,
+            "error": "lane-paused",
+            "detail": _lane_paused_detail(gate) if gate else str(reason or ""),
+            "reason": reason or gate.get("reason"),
+            "lane_gate": lane_gate,
+        },
+        pretty,
+    )
+    return 75
+
+
 def _resolved_flight(flight_module, project, checkout_path, overrides):
     """Resolve flight config for a dispatch, prompt overrides winning."""
     try:
@@ -2445,7 +2499,30 @@ def _run_review(
             subject = plan_review.code_review_subject(
                 project, session, around=around_plan, paths=paths, local=local
             )
-            result = plan_review.dispatch_code_review(subject, dry_run=dry_run)
+            from reckon.crew.dispatch import LaneHeld
+
+            try:
+                result = plan_review.dispatch_code_review(subject, dry_run=dry_run)
+            except LaneHeld as exc:
+                # A router hold reaches this branch as a raised exception rather
+                # than a returned report, because the code-review dispatch has no
+                # lane-paused result of its own. It is reported exactly as the
+                # plan-review branch reports a hold, so both subjects answer a
+                # queued composition with the queued run's id and exit 0, and a
+                # paused gate that queued nothing with lane-paused at the
+                # temporary-failure code the generic handler would have called
+                # crew_error.
+                raise click.exceptions.Exit(
+                    _emit_held_review(
+                        getattr(exc, "queued", None),
+                        report_run_id=plan_review.code_review_report_directory(
+                            subject
+                        ).name,
+                        reason=str(exc),
+                        lane_gate=getattr(exc, "gate", None),
+                        pretty=pretty,
+                    )
+                ) from None
             _emit(result, pretty)
             if result.get("refused") or result.get("error"):
                 raise click.exceptions.Exit(1)
@@ -2484,6 +2561,22 @@ def _run_review(
                     "brief_text"
                 ],
             }
+        if result.get("queued") or result.get("error") == "lane-paused":
+            # A held composition is an acceptance, not a refusal: it is reported
+            # on the same channel a held dispatch uses, so a caller reads a
+            # queued review the way it reads a queued dispatch rather than
+            # respecting a paused gate that queued nothing. The composed report
+            # directory's id rides under its own key so a reader can still find
+            # the brief the queued run will read.
+            raise click.exceptions.Exit(
+                _emit_held_review(
+                    result.get("queued"),
+                    report_run_id=result.get("run_id"),
+                    reason=result.get("reason"),
+                    lane_gate=result.get("lane_gate"),
+                    pretty=pretty,
+                )
+            )
         _emit(result, pretty)
         if result.get("refused") or result.get("awaiting_lane") or result.get("error"):
             raise click.exceptions.Exit(1)
