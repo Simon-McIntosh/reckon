@@ -14,6 +14,7 @@ reading the answer rather than resting on the suite being green:
 from __future__ import annotations
 
 import json
+import os
 import shlex
 from collections.abc import Sequence
 from pathlib import Path
@@ -24,7 +25,7 @@ from click.testing import CliRunner
 from reckon import _plan_html, _store, crew
 from reckon import cli as cli_module
 from reckon.crew import promotion as promotion_module
-from reckon.crew.runs import _write_json, pointer_path
+from reckon.crew.runs import _write_json, pointer_path, run_dir, runs_dir
 from tests.conftest import EXECUTABLE_GATE_COMMAND
 from tests.helpers.git import git as _git
 
@@ -116,10 +117,11 @@ def _pointer(
     *,
     manifest: Path,
     plan_impl_at_dispatch: float | None = None,
+    project: str | None = PROJECT,
+    write_paths: Sequence[str] = (),
 ) -> None:
     record: dict = {
         "run_id": run_id,
-        "project": PROJECT,
         "repo": str(repository),
         "worktree": str(repository),
         "launch": "in-harness",
@@ -132,12 +134,65 @@ def _pointer(
             "plan": PLAN,
             "section": "s2",
             "time_budget": "25m",
-            "write_paths": [],
+            "write_paths": [str(path) for path in write_paths],
         },
     }
+    if project is not None:
+        record["project"] = project
     if plan_impl_at_dispatch is not None:
         record["plan_impl_at_dispatch"] = plan_impl_at_dispatch
     _write_json(pointer_path(run_id), record)
+
+
+# The four stores a dry run promises to leave alone, read back as bytes rather
+# than as a difference in shape: a pointer rewritten to the same content, a
+# ledger rewritten at the same size and a record refiled byte-identically are
+# each a write, and only the bytes tell them apart from not writing.
+#
+# Three subtrees of the crew home are excluded, each because a *read* writes it
+# and none because it might hold a record: `cache` is the ledger read cache any
+# reader populates, and `locks` and `leases` are the run's pointer lock and the
+# promotion's cross-host claim, which a dry run takes and releases so it cannot
+# race a promotion of the same run. A pointer, a ledger, a review store record
+# and a worktree file are all still compared.
+_COORDINATION_DIRS = ("cache", "locks", "leases")
+
+
+def _files_under(
+    root: Path, *, skip_dirs: Sequence[str] = (), skip_names: Sequence[str] = ()
+) -> dict[str, bytes]:
+    """Every file under ``root`` by relative path, minus the skipped names."""
+    files: dict[str, bytes] = {}
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(root)
+        if any(part in skip_dirs for part in relative.parts[:-1]):
+            continue
+        if path.name in skip_names:
+            continue
+        files[relative.as_posix()] = path.read_bytes()
+    return files
+
+
+def _stores(repository: Path, config_home: Path) -> dict[str, dict[str, bytes]]:
+    """The pointer, the ledger, the review store and the worktree, as bytes.
+
+    Two kinds of file are left out, and neither is a record this node writes.
+    The classification memo is a read cache the classifier persists into the
+    run directory whenever anything classifies the pointer, so every reader of
+    the fleet writes it and no promotion owns it. The run's pointer lock and the
+    promotion's cross-host lease are taken by a dry run and released when it
+    returns, which is how a dry run avoids racing a promotion of the same run.
+    """
+    return {
+        "home": _files_under(
+            config_home,
+            skip_dirs=_COORDINATION_DIRS,
+            skip_names=("classification.json",),
+        ),
+        "worktree": _files_under(repository, skip_dirs=(".git",)),
+    }
 
 
 def _three_guard_run(repository: Path, tmp_path: Path, run_id: str) -> None:
@@ -161,6 +216,8 @@ def test_the_dry_run_reports_three_refusals_and_an_invocation_that_promotes(
 ) -> None:
     run_id = "r-20261019T090000000000-node-a"
     _three_guard_run(repository, tmp_path, run_id)
+    config_home = Path(os.environ["RECKON_HOME"])
+    before = _stores(repository, config_home)
 
     report = promotion_module.complete_dry_run(
         run_id,
@@ -182,8 +239,9 @@ def test_the_dry_run_reports_three_refusals_and_an_invocation_that_promotes(
     assert "impl did not move" in refusals
     assert "review" in refusals
     assert "the check that produced it" in refusals
-    # Nothing was written: the pointer survives for the run the dry run describes.
-    assert pointer_path(run_id).exists()
+    # Nothing was written: every record the promotion would touch reads back
+    # byte-identical, the pointer included.
+    assert _stores(repository, config_home) == before
 
     # The emitted invocation is run as it stands, and promotes.
     argv = shlex.split(report["invocation"])
@@ -194,6 +252,93 @@ def test_the_dry_run_reports_three_refusals_and_an_invocation_that_promotes(
     assert result.exit_code == 0, result.output
     assert not pointer_path(run_id).exists()
     assert "promoted" in result.output or "run_id" in result.output
+
+
+def test_a_dry_run_writes_nothing_on_any_of_its_three_paths(
+    repository: Path, tmp_path: Path
+) -> None:
+    """The withdrawn, review-filing and picker-timeout paths write nothing.
+
+    A promotion reaches each of these before it judges any guard, so a dry run
+    that branches only after them mutates state it promised to leave alone:
+    it retires a withdrawn run's pointer and releases its workspace, files a
+    delivered review into the store, and stamps a picker timeout onto the
+    pointer of a run whose pick has not answered. Each run is asked to do
+    exactly what it would do, and every store is compared byte for byte across
+    the three calls.
+    """
+    ordinary = "r-20261019T091000000000-node-a"
+    withdrawn = "r-20261019T091100000000-node-a"
+    delivered = "r-20261019T091200000000-node-a"
+    reviewed_run = "r-20261019T091300000000-node-a"
+
+    _set_plan(repository, impl=0.5)
+    _pointer(
+        repository,
+        ordinary,
+        manifest=_manifest(tmp_path, ordinary, log_lines=("EXIT=0",)),
+        plan_impl_at_dispatch=0.5,
+    )
+    # A dispatch refused before a project was resolved: no project to hold a row.
+    _pointer(
+        repository,
+        withdrawn,
+        manifest=_manifest(tmp_path, withdrawn, log_lines=("EXIT=0",)),
+        project=None,
+    )
+    # A review whose record is delivered into the reviewed run's directory and
+    # never filed, which is the run the filing ahead of the guards exists for.
+    record = runs_dir() / reviewed_run / "review-records" / "record.json"
+    record.parent.mkdir(parents=True, exist_ok=True)
+    record.write_text(json.dumps({"reviewed_run": reviewed_run}), encoding="utf-8")
+    _pointer(
+        repository,
+        delivered,
+        manifest=_manifest(tmp_path, delivered, log_lines=("EXIT=0",)),
+        write_paths=(str(record),),
+    )
+    # A dispatch whose advisory pick has not answered: a promotion waits for it
+    # and writes the timeout onto the pointer when the wait runs out.
+    run_dir(ordinary).mkdir(parents=True, exist_ok=True)
+    (run_dir(ordinary) / "shadow-picker.json").write_text("{}", encoding="utf-8")
+
+    config_home = Path(os.environ["RECKON_HOME"])
+    before = _stores(repository, config_home)
+    reports = {
+        run_id: promotion_module.complete_dry_run(
+            run_id,
+            root=repository,
+            gate="passed",
+            gate_check={
+                "command": "",
+                "exit_status": None,
+                "log_path": "",
+                "log_digest": "",
+            },
+            require_gate_check=True,
+        )
+        for run_id in (ordinary, withdrawn, delivered)
+    }
+    after = _stores(repository, config_home)
+
+    changed = sorted(
+        name
+        for name in set(before["home"]) | set(after["home"])
+        if before["home"].get(name) != after["home"].get(name)
+    )
+    assert after["home"] == before["home"], changed
+    assert after["worktree"] == before["worktree"]
+    # A withdrawn run says it would be withdrawn, and offers no invocation: its
+    # promotion writes no ledger row to point at.
+    assert reports[withdrawn]["would_withdraw"] is True
+    assert reports[withdrawn]["invocation"] == ""
+    assert "withdraw" in "\n".join(reports[withdrawn]["refusals"])
+    # A run carrying a delivered review says which record a filing would read.
+    assert reports[delivered]["would_file_reviews"] == [str(record)]
+    assert "would_file_reviews" in "\n".join(reports[delivered].get("notes") or [])
+    # A run whose pick is outstanding says a promotion would wait for it.
+    assert reports[ordinary]["would_wait_for_pick"] is True
+    assert pointer_path(ordinary).exists()
 
 
 def test_a_reason_flag_refuses_a_value_that_begins_with_two_dashes() -> None:

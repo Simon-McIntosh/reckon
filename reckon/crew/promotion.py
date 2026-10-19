@@ -805,6 +805,8 @@ def complete_dry_run(run_id: str, **kwargs: Any) -> dict[str, Any]:
         refusals=refusals,
         no_commit=str(kwargs.get("no_commit") or ""),
         no_impl_change=str(kwargs.get("no_impl_change") or ""),
+        would_file_reviews=_delivered_review_records(record),
+        would_wait_for_pick=_shadow_pick_in_flight(run_id),
     )
 
 
