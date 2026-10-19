@@ -53,23 +53,16 @@ from reckon import (
     _plan_html,
 )
 from reckon import (
-    budget as budget_module,
-)
-from reckon import (
-    capabilities as capabilities_module,
-)
-from reckon import (
     crew as crew_module,
 )
 from reckon import (
     flight as flight_module,
 )
-from reckon import (
-    ledger as ledger_module,
-)
-from reckon import (
-    velocity as velocity_module,
-)
+
+# Retained as a name on this module: a caller patches ``mcp.ledger_module`` to
+# substitute the ledger a view reads, so the module object must stay reachable
+# from here even though this file no longer calls it directly.
+from reckon import ledger as ledger_module  # noqa: F401
 from reckon._schema import (
     PlanState,
     gen_json_schema,
@@ -81,8 +74,6 @@ from reckon._schema import (
 from reckon._store import (
     _docs_dir_for_project,
     _mounts_path as _mounts_path,
-    _resolve_html_file,
-    _state_root,
     list_followups_across,
     list_questions_across,
     read_plan,
@@ -91,27 +82,23 @@ from reckon._store import (
 from reckon.capability import (
     map_legacy_capabilities,
 )
-from reckon.crew import obligations as obligations_module
-from reckon.crew.directory import DirectoryError
-from reckon.crew.directory import directory as crew_directory
-from reckon.crew.query import RunQueryError, project_live_rows
-from reckon.crew.query import runs_view as crew_runs_view
-from reckon.crew.runs import project_watch_visibility
 from reckon.doccheck import SEVERITIES, audit_file, audit_lifecycle, audit_links
 from reckon.mcp_views import (
+    CREW_VIEWS,
     ResourceSelector,
     ViewRequestError,
     audit_view,
     authored_plan_text,
-    crew_lanes_view,
     discovery_view,
     error_response,
     normalize_selector,
     normalize_view,
     resource_view,
     roadmap_view,
+    serve_crew_view,
     storage_schema_for,
 )
+
 from reckon.project_state import (
     ProjectStateError,
     audit_project_state,
@@ -239,6 +226,13 @@ from reckon.mcp_edit_plan import (
     _update_sprint as _update_sprint,
     _validate_working as _validate_working,
 )
+
+#: The read views the crew tool publishes. It is derived from the single
+#: registry :data:`reckon.mcp_views.CREW_VIEWS` that :func:`serve_crew_view`
+#: serves, so the tool's own surface cannot diverge from the CLI's; a parity
+#: check compares this set against the served set and fails on a view
+#: registered on one surface only.
+CREW_TOOL_VIEWS: tuple[str, ...] = CREW_VIEWS
 
 _LOGGER = logging.getLogger("reckon.mcp")
 
@@ -1986,61 +1980,7 @@ def _crew(
             advice=advice,
             dry_run=dry_run,
         )
-    if view == "fleet":
-        from reckon import fleet_index
-        from reckon.serve import load_mounts
-
-        try:
-            return {
-                "ok": True,
-                "view": view,
-                "projects": fleet_index.collect_project_rows(
-                    load_mounts(), state_root=_state_root()
-                ),
-            }
-        except (OSError, ProjectStateError, ValueError) as exc:
-            return {
-                "ok": False,
-                "error": "crew_error",
-                "view": view,
-                "detail": str(exc),
-            }
-    if view == "directory":
-        try:
-            return crew_directory(project, run_id=run_id, node_id=node)
-        except DirectoryError as exc:
-            return {
-                "ok": False,
-                "error": "directory_error",
-                "project": project,
-                "detail": str(exc),
-            }
-    if not project:
-        return {
-            "ok": False,
-            "error": "missing_project",
-            "detail": "crew read views need project",
-        }
-    if view not in (
-        "summary",
-        "flight",
-        "live",
-        "scopes",
-        "drain",
-        "records",
-        "ledger",
-        "budget",
-        "lanes",
-        "routing",
-        "directory",
-        "fleet",
-        "runs",
-        "obligations",
-        "velocity",
-        "scores",
-        "plan-review",
-        "findings",
-    ):
+    if view not in CREW_TOOL_VIEWS:
         return {
             "ok": False,
             "error": "invalid_view",
@@ -2055,323 +1995,29 @@ def _crew(
                 "path they name"
             ),
         }
-    if view == "findings":
-        from reckon.crew import findings as findings_module
-
-        try:
-            payload = findings_module.findings_by_path(
-                project, path=path, root=checkout_path
-            )
-        except (OSError, ValueError) as exc:
-            return {
-                "ok": False,
-                "error": "crew_error",
-                "view": view,
-                "detail": str(exc),
-            }
-        return {"ok": True, "view": view, **payload}
-    if view == "plan-review":
-        from reckon.crew import plan_review
-
-        if since is not None:
-            # With a window, the view folds the committed records into the
-            # per-plan day summary; ``plan`` narrows that fold, so it is no
-            # longer required and the flat read below keeps it so.
-            try:
-                summary = plan_review.review_day_summary(
-                    project,
-                    since=since,
-                    until=until if until is not None else datetime.now(UTC).isoformat(),
-                    plan=plan,
-                )
-            except (OSError, ValueError) as exc:
-                return {
-                    "ok": False,
-                    "error": "crew_error",
-                    "view": view,
-                    "detail": str(exc),
-                }
-            return {"day_summary": summary}
-
-        if not plan:
-            return {
-                "ok": False,
-                "error": "missing_plan",
-                "detail": "plan-review needs project and plan",
-            }
-        try:
-            plan_path = _resolve_html_file(project, plan, artifact_type="plan")
-            record = plan_review.read_plan_review(
-                project, plan, plan=plan_path if plan_path is not None else ""
-            )
-        except (OSError, ValueError) as exc:
-            return {
-                "ok": False,
-                "error": "crew_error",
-                "view": view,
-                "detail": str(exc),
-            }
-        payload = {
-            "record": record,
-            "unanswered": plan_review.unanswered_findings(record) if record else [],
-            "delivered": plan_review.delivered_reports(project, plan),
-        }
-        if record is None:
-            stale = _stale_plan_review(project, plan)
-            if stale is not None:
-                payload["stale_review"] = {
-                    "plan_version": stale[0],
-                    "detail": stale[1],
-                }
-        return payload
-    try:
-        if view == "obligations":
-            if not session:
-                return {
-                    "ok": False,
-                    "error": "missing_session",
-                    "project": project,
-                    "detail": (
-                        "obligations are derived for one coordinator session; "
-                        "pass the session id given to crew dispatch"
-                    ),
-                }
-            return {
-                "ok": True,
-                "view": view,
-                **obligations_module.obligations(project, session),
-            }
-        if view == "velocity":
-            # The window parsing, the mount resolution, the default summary and
-            # the paging of the cells live in one function, so this read and the
-            # command line's serve the same payload for the same window.
-            return velocity_module.view(
-                project,
-                since=since,
-                until=until,
-                checkout_path=checkout_path,
-                fields=fields,
-                limit=limit,
-                cursor=cursor,
-            )
-        if view == "runs":
-            return crew_runs_view(
-                project,
-                run_id=run_id,
-                checkout_path=checkout_path,
-                source=source,
-                scope=scope,
-                node=node,
-                plan=plan,
-                section=section,
-                session=session,
-                member=member,
-                classification=classification,
-                resumable=resumable,
-                newest_per_node=newest_per_node,
-                fields=fields,
-                limit=limit,
-            )
-        if view == "scopes":
-            docs_dir = _docs_dir_for_project(project, checkout_path)
-            if docs_dir is None:
-                raise crew_module.CrewError(
-                    f"project {project!r} has no readable docs directory"
-                )
-            repo_root = (
-                Path(checkout_path).expanduser().resolve()
-                if checkout_path is not None
-                else docs_dir.parent
-            )
-            index_data, _version = read_plan(project, "index", checkout_path)
-            projects = index_data.get("projects") or []
-            manifest = projects[0] if projects and isinstance(projects[0], dict) else {}
-            planned = crew_module.plan_scope_lanes(
-                candidates or [],
-                project=project,
-                repo=repo_root,
-                derivations=manifest.get("derivations") or {},
-            )
-            claim_map: dict[str, list[dict[str, Any]]] = {}
-            for claim in planned["claims"]:
-                # Every owner carries a verdict. A claim that arrives without
-                # one is treated as binding, the same answer the read model
-                # defaults to and the rule gives a pointer whose worker is not
-                # yet recorded; a reader must never have to guess the absence.
-                owner: dict[str, Any] = {
-                    "run_id": claim["run_id"],
-                    "node": claim["node"],
-                    "declared_path": claim["declared_path"],
-                    "binding": bool(claim.get("binding", True)),
-                    "disposition_reason": str(claim.get("disposition_reason", "")),
-                }
-                if claim.get("derived_from") is not None:
-                    owner["derived_from"] = claim["derived_from"]
-                claim_map.setdefault(claim["path"], []).append(owner)
-            return {
-                "ok": True,
-                "project": project,
-                "view": view,
-                "repository": str(repo_root),
-                "claim_map": claim_map,
-                **planned,
-            }
-        if view == "budget":
-            config = flight_module.resolve(project, checkout_path=checkout_path).config
-            return {
-                "ok": True,
-                "view": view,
-                **budget_module.preflight(
-                    project,
-                    config,
-                    root=checkout_path,
-                    windows=budget_module.recorded_windows(
-                        project, config, root=checkout_path
-                    ),
-                    document_path=budget_module.published_document_path(),
-                    ready=candidates or [],
-                ),
-            }
-        if view == "lanes":
-            config = flight_module.resolve(project, checkout_path=checkout_path).config
-            mounted = flight_module.mounted_project_docs()
-            ledger_sources: dict[str, str | None] = {
-                mounted_project: str(docs_dir.parent)
-                for mounted_project, docs_dir in mounted.items()
-            }
-            ledger_sources[project] = checkout_path or ledger_sources.get(project)
-            runs = [
-                record
-                for mounted_project, repository in ledger_sources.items()
-                for record in ledger_module.runs(mounted_project, repository)
-            ]
-            runs.extend(crew_module.list_live())
-            return {
-                "ok": True,
-                "project": project,
-                "view": view,
-                **crew_lanes_view(config, runs),
-            }
-        if view == "routing":
-            try:
-                routing = capabilities_module.routing_surface(
-                    project, checkout_path=checkout_path
-                )
-            except (OSError, ValueError) as exc:
-                return {
-                    "ok": False,
-                    "error": "crew_error",
-                    "project": project,
-                    "detail": str(exc),
-                }
-            return {
-                "ok": True,
-                "project": project,
-                "view": view,
-                **routing,
-            }
-        if view == "flight":
-            return {
-                "ok": True,
-                "project": project,
-                "view": view,
-                **flight_module.flight_report(project, checkout_path=checkout_path),
-            }
-        if view == "live":
-            live_records = [
-                record
-                for record in crew_module.list_live()
-                if str(record.get("project") or "") == project
-            ]
-            # `session` is what turns a project-wide read into this session's
-            # read: it marks which rows are the caller's own where several
-            # coordinators share a project, and it is the only way the watcher
-            # block can answer whether this caller will be told anything.
-            # `fields` narrows each row to what was asked for, so a caller
-            # reading one fact no longer receives the whole classification.
-            runs = project_live_rows(live_records, fields=fields, session=session)
-            return {
-                "ok": True,
-                "project": project,
-                "view": view,
-                "session": session,
-                "watcher": project_watch_visibility(project, session=session),
-                "runs": runs,
-            }
-        if view == "drain":
-            return {
-                "ok": True,
-                "view": view,
-                **crew_module.drain(project, session=session),
-            }
-        if view == "ledger":
-            data, version = ledger_module.load(project, checkout_path)
-            return {
-                "ok": True,
-                "project": project,
-                "view": view,
-                "version": version,
-                "path": str(ledger_module.ledger_path(project, checkout_path)),
-                **data,
-            }
-        if view == "records":
-            runs, version = ledger_module.read_records(
-                project,
-                checkout_path,
-                plan=plan,
-                since=since,
-                limit=limit,
-            )
-            return {
-                "ok": True,
-                "project": project,
-                "view": view,
-                "version": version,
-                "path": str(ledger_module.ledger_path(project, checkout_path)),
-                "runs": runs,
-            }
-        if view == "scores":
-            # The committed rows are the only input: the reader is
-            # :func:`reckon.ledger.review_scores`, so a row whose review was
-            # never stored is left out here rather than turned into zeros.
-            runs, version = ledger_module.read_records(
-                project,
-                checkout_path,
-                plan=plan,
-                since=since,
-                limit=limit,
-            )
-            return {
-                "ok": True,
-                "project": project,
-                "view": view,
-                "version": version,
-                "path": str(ledger_module.ledger_path(project, checkout_path)),
-                "scores": ledger_module.review_scores(
-                    runs,
-                    plan=plan,
-                    node=node,
-                    run_id=run_id,
-                ),
-            }
-        return {
-            "ok": True,
-            "project": project,
-            "view": view,
-            **ledger_module.summary(project, root=checkout_path),
-        }
-    except (
-        ledger_module.LedgerError,
-        crew_module.CrewError,
-        flight_module.FlightConfigError,
-        RunQueryError,
-    ) as exc:
-        return {
-            "ok": False,
-            "error": "crew_error",
-            "project": project,
-            "detail": str(exc),
-        }
+    return serve_crew_view(
+        view,
+        project=project,
+        checkout_path=checkout_path,
+        plan=plan,
+        path=path,
+        since=since,
+        until=until,
+        limit=limit,
+        cursor=cursor,
+        candidates=candidates,
+        session=session,
+        run_id=run_id,
+        node=node,
+        section=section,
+        member=member,
+        classification=classification,
+        resumable=resumable,
+        newest_per_node=newest_per_node,
+        source=source,
+        scope=scope,
+        fields=fields,
+    )
 
 
 def _crew_recover(

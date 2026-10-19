@@ -220,6 +220,7 @@ reckon crew shadow    reckon crew stop    reckon crew unwatch --project <project
 reckon crew supersede-review --project <project> --run <id> --reason <text>    # call it when a promoted row's review block names another round: it appends a correction the readers honour and leaves the recorded fields in place
 reckon crew verify-gate --project <project> --run <id> --checkout-path <path>
 reckon crew watch --project <project> --stall-window <duration>
+reckon crew view <name> [--project <project>] [--since <iso>] [--until <iso>] [--fields <block>] [--pretty]    # the one transport for every crew read view the crew MCP tool serves: summary, flight, live, scopes, drain, records, ledger, budget, lanes, routing, directory, fleet, runs, obligations, velocity, scores, plan-review, findings
 reckon crew widen --run <id> --write-path <path>
 reckon flight --project <project>    reckon audit-doc    reckon crew suite
 ```

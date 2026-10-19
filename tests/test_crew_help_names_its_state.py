@@ -60,8 +60,9 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("suite", "run"): "the project's declared suite",
     ("suite", "waive"): "standing-suite hold",
     ("unwatch",): "registered project watcher",
-    ("velocity",): "what the fleet delivered",
     ("verify-gate",): "one run's gate at the integrated revision",
+    ("velocity",): "what the fleet delivered",
+    ("view",): "one crew read view",
     ("watch",): "project-wide live runs",
     ("widen",): "blocked run's own fence",
 }

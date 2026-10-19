@@ -310,6 +310,137 @@ def crew_directory(project, run_id, node_id, pretty):
     _emit_crew_result(result, pretty)
 
 
+@crew.command(name="view")
+@click.argument("name", required=False, default="summary")
+@click.option("--project", default=None, help="Project whose read view to serve.")
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repo root the view resolves in (default: the registered checkout).",
+)
+@click.option(
+    "--plan", default=None, help="Plan a plan-review or records view narrows to."
+)
+@click.option("--path", default=None, help="Path prefix the findings view narrows to.")
+@click.option("--since", default=None, help="Window start, ISO-8601.")
+@click.option("--until", default=None, help="Window close, ISO-8601 (default: now).")
+@click.option("--limit", type=int, default=None, help="Records per page.")
+@click.option("--cursor", default=None, help="Resume a paged view at a cursor.")
+@click.option(
+    "--session", default=None, help="Coordinator session the view is read for."
+)
+@click.option("--run", "run_id", default=None, help="One run the view selects.")
+@click.option("--node", default=None, help="One node the view selects.")
+@click.option("--section", default=None, help="One section the view selects.")
+@click.option("--member", default=None, help="One roster member the view selects.")
+@click.option("--classification", default=None, help="One classification to keep.")
+@click.option(
+    "--resumable/--no-resumable",
+    default=None,
+    help="Keep only runs that are, or are not, resumable.",
+)
+@click.option("--newest-per-node", is_flag=True, help="Keep the newest row per node.")
+@click.option(
+    "--source", default="all", show_default=True, help="Where rows are read from."
+)
+@click.option(
+    "--scope",
+    default="project",
+    show_default=True,
+    help="Project or workstation scope for the runs view.",
+)
+@click.option(
+    "--fields",
+    "fields",
+    multiple=True,
+    help="An optional block to include; repeatable and comma-separated.",
+)
+@click.option(
+    "--candidates",
+    default=None,
+    help="A JSON array of candidate nodes for the scopes view.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_view(
+    name,
+    project,
+    checkout_path,
+    plan,
+    path,
+    since,
+    until,
+    limit,
+    cursor,
+    session,
+    run_id,
+    node,
+    section,
+    member,
+    classification,
+    resumable,
+    newest_per_node,
+    source,
+    scope,
+    fields,
+    candidates,
+    pretty,
+):
+    """Serve one crew read view, the same document the crew MCP tool returns.
+
+    This is the transport for hooks and scripts, and the arrow every retired
+    read verb names. It calls the one function the crew tool also calls, so the
+    two surfaces cannot disagree about a view. NAME is a view name; `summary`
+    is served when none is given.
+    """
+    import json as _json
+
+    from reckon.mcp_views import serve_crew_view
+
+    requested = [
+        part
+        for value in fields
+        for part in (chunk.strip() for chunk in value.split(","))
+        if part
+    ]
+    parsed_candidates = None
+    if candidates is not None:
+        try:
+            parsed_candidates = _json.loads(candidates)
+        except ValueError as exc:
+            raise click.ClickException(
+                f"--candidates is not valid JSON: {exc}"
+            ) from exc
+        if not isinstance(parsed_candidates, list):
+            raise click.ClickException("--candidates must be a JSON array")
+    payload = serve_crew_view(
+        name,
+        project=project,
+        checkout_path=str(checkout_path) if checkout_path is not None else None,
+        plan=plan,
+        path=path,
+        since=since,
+        until=until,
+        limit=limit,
+        cursor=cursor,
+        candidates=parsed_candidates,
+        session=session,
+        run_id=run_id,
+        node=node,
+        section=section,
+        member=member,
+        classification=classification,
+        resumable=resumable,
+        newest_per_node=newest_per_node,
+        source=source,
+        scope=scope,
+        fields=requested or None,
+    )
+    _emit(payload, pretty)
+    if payload.get("ok") is False:
+        raise click.exceptions.Exit(1)
+
+
 _PATH_KINDS = ("config-home", "reports", "runs", "live", "reviews")
 
 
@@ -2608,7 +2739,7 @@ def crew_ledger(project, view, path, checkout_path, pretty):
     multiple=True,
     help=(
         "An optional block to include. Repeatable and comma-separated; the "
-        "aggregate tables are served by default. Unrecognised names are refused."
+        "aggregate tables are served by default."
     ),
 )
 @click.option("--limit", type=int, default=None, help="Cells per page.")
