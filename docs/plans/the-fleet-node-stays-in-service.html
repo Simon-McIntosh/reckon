@@ -472,8 +472,11 @@
       on <code>cxiBlockingMutexAcquire</code> and <code>cxiWaitEventWait</code>, and
       the follower reported <q>the import probe timed out after 30 s</q>. One probe
       alone on the same node took 11.2 s of wall time and 3.4 s of CPU. In the
-      preceding 24 hours, 152 commits moved <code>reckon/</code>, and each starts such
-      a herd. Each retry is herded again, because the retry gap
+      preceding 24 hours, main's first-parent history moved <code>reckon/</code> or
+      <code>skills/</code> 63 times, and each move starts such a herd. That herd
+      followed the 20:47:09 merge. A 15-minute sample afterwards, with no code move,
+      saw at most three probes at once: these were retries, each taking about 27 s.
+      The retries stay in step with one another, because the retry gap
       (<code>crew_follow_commands.py:221</code>) carries no jitter.
     </p>
     <p>
