@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It changes when a review run counts as delivered and how a misattributed review row is found and corrected; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-review-promotes-only-its-own-verdict#s2&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-review-promotes-only-its-own-verdict#s2&quot;], &quot;s4&quot;: [&quot;a-review-promotes-only-its-own-verdict#s3&quot;]}">
   <title>A Review Promotes Only Its Own Verdict | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -68,9 +68,30 @@
 </ul>
 
     <h2 id="s3">§3 — A misattributed review row is corrected by an appended correction every reader honours</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> A committed ledger row records what a promotion believed when it landed. A row whose review fields describe another round should not be rewritten in place, because the record of what was believed is itself evidence. It should carry an appended correction stating the fields' true status, and every reader of review totals should read the correction rather than the stale fields. Until this section lands, <code>e99d2b385</code>'s row stays as it is: nova does not hand-edit it, and reckon applies the correction here once the mechanism exists.</p>
-<p>It is deferred until §2 has counted the rows, because a handful of rows and hundreds call for different mechanisms. The done-when, write paths and negative control are written once §2 lands, and the section is then reviewed before it is built.</p>
+<p><strong>What §2 found.</strong> At least 19 promoted run reviews across six projects carry another round's head. The figure is a lower bound, because the census read only <code>review.reviewed_head_sha</code>. That is a bounded set, so one append-only correction applied by a verb is proportionate, and no bulk migration is needed. This section builds the mechanism. §4 re-counts and applies it.</p>
+<p><strong>Deliverable.</strong></p>
+<ul>
+<li><strong>One reader of a row's review.</strong> An accessor in <code>reckon/ledger.py</code> returns a row's review block, or nothing when the row carries a <code>review_correction</code> that supersedes it. Every reader of a ledger row's <code>review</code> block reads through it. The known readers are <code>reckon/capabilities.py:968</code>, <code>reckon/ledger.py:3702</code>, <code>reckon/crew/picker/snapshot.py:377</code> and <code>reckon/crew/picker/outcomes.py:477</code>. The node finds any other by grep and lists each in the manifest. A corrected row then reads as a run with no review: it drops out of review totals and per-dimension medians, and it is not counted as reviewed.</li>
+<li><strong>A verb that appends the correction.</strong> <code>reckon crew repair-review --project &lt;project&gt; --run &lt;id&gt; --reason &lt;text&gt;</code> sits beside <code>repair-status</code> and <code>repair-completion</code>. It reads the dispatched head from the row's declared <code>.at-</code> write path, through <code>_review_record_subject</code> (<code>reckon/crew/recovery_review_dispatch.py:133</code>), and the recorded head through <code>carried_revision_pair</code> (<code>reckon/crew/review.py</code>). It appends <code>review_correction</code> with the time, the reason, both heads and the superseded field to the row's committed per-run file, and never rewrites the recorded fields. It lands that write as one commit through <code>_commit_landing_writes</code>. It refuses a row whose recorded head is the dispatched head, a row with no dispatched head, and a row already corrected.</li>
+</ul>
+<p><strong>Write paths.</strong> <code>reckon/ledger.py</code>, <code>reckon/capabilities.py</code>, <code>reckon/crew/picker/snapshot.py</code>, <code>reckon/crew/picker/outcomes.py</code>, <code>reckon/cli.py</code>, <code>reckon/crew_run_commands.py</code>, <code>tests/test_crew_help_names_its_state.py</code>, and <code>tests/test_a_corrected_review_row_reads_as_unreviewed.py</code>, which is new. A registration the CLI contract tests need in a file outside these paths is added with <code>crew widen</code>, naming the file.</p>
+<p><strong>Negative control.</strong> At the base revision there is no verb and no accessor. A row carrying a <code>review_correction</code> is still read with its stale review, so the new test's reader cases fail by id.</p>
+<p><strong>Done when</strong> all five of these hold:</p>
+<ul>
+<li>A test builds a ledger under a temporary directory with a misattributed review row: a declared head H1 and a recorded head H0. <code>repair-review</code> on it appends one <code>review_correction</code> naming H1 and H0, leaves every recorded field byte-identical, and lands one commit. After that, each reader named above reads the row as unreviewed: the picker's review counts and medians, the outcome reader's review total, and capabilities.</li>
+<li>The verb refuses, writing nothing, a row whose recorded head is its dispatched head, a row with no dispatched head, and a row already corrected.</li>
+<li>The new verb satisfies the CLI-wide contract tests: <code>tests/test_crew_help_names_its_state.py</code>, and <code>tests/test_skill_contracts.py</code>'s every-registered-verb check.</li>
+<li>The negative control is shown: the new test file, run at the base revision with the same command, reports the reader cases as FAILED by id in a log under the run directory.</li>
+<li><code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q -rA</code> over the new test file, the two contract test files, <code>tests/test_ledger.py</code> and <code>tests/test_a_pick_sees_each_review_dimension.py</code> adds no failure against the base. <code>ruff check</code> and <code>ruff format --check</code> report no new finding on the changed files.</li>
+</ul>
+
+    <h2 id="s4">§4 — Re-count across every head spelling, then correct the misattributed rows</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
+<p><strong>Why.</strong> §2's 19 rows are a lower bound, and a correction is a write to every project's committed ledger. The full set is counted first, and the writes are made project by project, by the session that owns each checkout.</p>
+<p><strong>Deliverable, once §3 lands.</strong> The census reads the recorded head through <code>carried_revision_pair</code>, so a row recorded under <code>reviewed_commit</code> or <code>commits_read</code> is counted. It is re-run across every mounted project, and the document gains the full list. <code>repair-review</code> is then applied to reckon's own rows. For every other project, the document lists the exact <code>repair-review</code> command per row, and that project's coordinator is told to run it in its own checkout. No session writes another project's shared checkout.</p>
+<p>The done-when, write paths and negative control are written when §3 lands, and the section is then reviewed before it is built.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -85,6 +106,11 @@
     <div class="r-fu-body"><p>Read-only and independent of §1; §3 waits on it.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-promotes-only-its-own-verdict §2</pre>
     <p class="r-fu-outcome">§2 landed at 65d442151: 19 of 2350 promoted run reviews carry another round's head, a lower bound.</p>
+    </article>
+<article class="r-fu" data-id="f-arpoiov-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-19" data-recommends-skill="/reckon-build a-review-promotes-only-its-own-verdict §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the review-row correction and its single reader</h4>
+    <div class="r-fu-body"><p>§2 counted at least 19 misattributed rows. §3 builds the append-only correction verb and routes every reader of a row's review through one accessor; §4 re-counts and applies it.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-review-promotes-only-its-own-verdict §3</pre>
     </article>
 </section>
 
