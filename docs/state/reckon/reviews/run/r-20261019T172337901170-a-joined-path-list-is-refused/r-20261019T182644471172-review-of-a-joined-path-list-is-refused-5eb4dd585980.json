@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:706",
+    "reckon/crew_run_commands.py:973",
+    "reckon/crew/promotion_scope.py:227",
+    "reckon/crew/promotion_checks.py:462",
+    "reckon/crew/dispatch_sessions.py:383",
+    "reckon/ledger.py:763",
+    "reckon/evidence.py:168"
+  ],
+  "completed_at": "2026-10-19T18:45:16.474Z",
+  "dispatched_at": "2026-10-19T18:29:10Z",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": 99,
+      "severity": "blocking",
+      "text": "test_logs is omitted from _PATH_LIST_KEYS although it is a path list whose entries are read one at a time (reckon/crew/reports.py:_cited_log_paths and _test_log_findings open each entry to read its command and EXIT line), so a joined test_logs is now accepted and read as one entry that cannot be read \u2014 probed at the reviewed head: parse_manifest('test_logs: logs/a.log; logs/b.log') returns ['logs/a.log; logs/b.log'] where the previous revision refused it \u2014 so the per-log command and EXIT checks silently pass, the same fail-open shape this section exists to close; the comment at reports.py:89-99 names only prose fields (artifacts, evidence_inputs, follow_ons, blockers) as the excluded set, but the set difference also drops this path field and commits."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": 99,
+      "severity": "follow-on",
+      "text": "commits is dropped from the refusal too, so a joined commit list parses to one entry \u2014 probed at the reviewed head: parse_manifest('commits: 1a2b3c4; 5d6e7f8') returns ['1a2b3c4; 5d6e7f8'] \u2014 a single citation token that names no commit, which the commit-citation guard reads as a citation while the second sha is never seen."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": 91,
+      "severity": "follow-on",
+      "text": "the comment states the write-scope audit consumes both fields' entries one by one, but orientation_write_paths is consumed as a set against the node's declared write paths at reckon/crew/dispatch_sessions.py:388, where a joined value produces an orientation mismatch rather than a silent scope pass; the rationale for including it is real but the mechanism named is the wrong one."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against f86d1464: 1cf42c29e scopes the refusal to _PATH_LIST_KEYS and rewrites the tests, 5eb4dd58 rewrites the landing fragment to match; both stay inside the declared scope.",
+    "done_when": "tests/test_a_joined_path_list_is_refused.py:74 refuses the measured changed_paths shape naming the field and the separator, :92 the joined orientation_write_paths, :102 and :118 keep the comma and JSON-array forms, and negative_control.log shows 4 failed at EXIT=1.",
+    "goal": "the reviewed commits' goal is to scope the joined-path-list refusal to the fields whose entries the write-scope audit reads; reckon/crew/reports.py:99 declares that set and :772 applies it, meeting the goal for changed_paths.",
+    "manifest": "read; it records seven tests passing, gate_after.log 254 passed, the importer arms at 247 passed each and the negative control at 4 failed, all EXIT=0 except the control at EXIT=1.",
+    "write_paths": "read the manifest's declared write paths; every path in the two commits (reckon/crew/reports.py, tests/test_a_joined_path_list_is_refused.py, the evidence fragment) is inside them."
+  },
+  "justifications": {
+    "durability": "the declared negative control removes the refusal call and four tests redden (negative_control.log, 4 failed, 3 passed, EXIT=1), so the refusal assertions fail on the reinstated comma-only reading; no test covers the test_logs list it no longer refuses.",
+    "evidence": "the gate is recorded, not claimed: gate_after.log (254 passed, EXIT=0), gate_importers_base.log and gate_importers_head.log (247 passed each, EXIT=0), negative_control.log (4 failed, 3 passed, EXIT=1), all under the run directory.",
+    "fit": "the new _PATH_LIST_KEYS set at reckon/crew/reports.py:99 and the reworded _refuse_joined_list_separator at :847 follow the module's surrounding style and carry no plan, ticket or version identifier, though the comment at :89-99 misstates orientation_write_paths' consumer.",
+    "goal_fidelity": "reckon/crew/reports.py:772-773 scopes the refusal to _PATH_LIST_KEYS at reports.py:99, closing the prior review's two follow-ons (prose fields, orientation_write_paths), but the set drops test_logs, a path field whose joined value the parser now accepts.",
+    "reuse": "no owner of a joined-path-list refusal exists; the split owner _coerce_list_field is extended rather than duplicated, while reports.py:139 and reckon/crew/dispatch_launch.py:2789 name the same (*_MANIFEST_LIST_KEYS, 'orientation_write_paths') union the new set is drawn from.",
+    "scope_discipline": "the two commits touch only reckon/crew/reports.py, tests/test_a_joined_path_list_is_refused.py and docs/evidence/fragments/scoring-should-stop-a-promotion/a-joined-path-list-is-refused.html, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T182644471172-review-of-a-joined-path-list-is-refused-5eb4dd585980",
+  "reviewed_base_sha": "f86d14645a83a5d65c02e2d08b609ded677059e2",
+  "reviewed_head_sha": "5eb4dd585980880c2d66daf419803ddcf1ba2066",
+  "reviewed_run_id": "r-20261019T172337901170-a-joined-path-list-is-refused",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T18:48:04.005977+00:00"
+}
