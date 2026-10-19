@@ -19,6 +19,11 @@
         run reads the kind a reviewed run with a passing review would get,
         carrying its tier on the duty, and stays in the list rather than falling
         out of it. A run whose tier requires a review keeps today's reading.
+        The duty's command is composed from the run's own citations rather than
+        taken from the row: <code>_live_item</code> copies the row's next action,
+        and for a scoring row that is the review dispatch the tier rule has just
+        declined to run, so the duty read promotable while naming work nothing
+        would ever do.
       </p>
       <p id="a-tier-none-run-owes-no-review-measure">
         <strong>Measure.</strong> In
@@ -30,11 +35,15 @@
         none</code>; the runtime-source run still reads
         <code>review-missing</code> in the same pass, so the quietening is keyed
         on the tier and not on something the read did to every run. Gate:
-        <code>1 passed</code>, EXIT=0. Negative control — the tier read removed
-        from the duty — fails that test with
-        <code>assert 'review-missing' == 'review-ready'</code>, EXIT=1. Ruff
-        check adds no finding; ruff format adds none beyond the same
-        pre-existing unformatted lines the base revision already reports.
+        <code>10 passed</code> with the obligation fixtures at the repair
+        round's head, EXIT=0. Two negative controls, each reverting one half of
+        the duty: with the tier read removed the test fails
+        <code>assert 'review-missing' == 'review-ready'</code> (EXIT=1), and
+        with the composed command removed it fails on the docs run's
+        <code>next_command</code> naming the review dispatch instead of the
+        promotion (EXIT=1). Ruff check adds no finding; ruff format adds none
+        beyond the same pre-existing unformatted line the base revision already
+        reports.
       </p>
       <p id="a-tier-none-run-owes-no-review-blocker">
         <strong>Fixtures — nine recordings moved, all repaired.</strong> The tier read
@@ -50,6 +59,7 @@
         the obligation-fixture arm is <code>9 passed</code> at base and
         <code>10 passed</code> at the new head (the gate included), both EXIT=0,
         and the 39-file importer arm is <code>219 passed</code> with no failure,
-        against no failure at base.
+        against no failure at base — and again <code>219 passed</code> at the
+        repair round's head, where the duty's command is composed.
       </p>
     </article>
