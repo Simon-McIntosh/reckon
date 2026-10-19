@@ -139,13 +139,22 @@ def _completed_pointer(config_home: Path, repo: Path) -> dict:
 
 
 def _store_review(head_sha: str, findings: list[dict[str, str]]) -> None:
+    # The six scores sum to the recorded total, so the stored total and the
+    # store's derived total are the same number and the fixture measures the
+    # round cap rather than a disagreement between a record and its own parts.
     record = {
         "project": PROJECT,
         "reviewed_run_id": RUN_ID,
         "reviewed_base_sha": head_sha,
         "reviewed_head_sha": head_sha,
         "status": "parsed",
-        "scores": dict.fromkeys(review_module.REVIEW_DIMENSIONS, 15),
+        "scores": dict(
+            zip(
+                review_module.REVIEW_DIMENSIONS,
+                (13, 13, 13, 12, 12, 12),
+                strict=True,
+            )
+        ),
         "total": 75,
         "findings": findings,
     }
