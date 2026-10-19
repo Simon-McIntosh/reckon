@@ -78,6 +78,27 @@ def _review_store_record_paths(record: Mapping[str, Any], project: str) -> list[
     return paths
 
 
+def _is_run_review_node(record: Mapping[str, Any]) -> bool:
+    """Whether a review run reads a run, rather than a plan.
+
+    The question is which subject a review node id was minted from, and the
+    node id grammar owns that answer: ``round_node_source`` recovers the source
+    a round id carries, and only a run review's id carries one under the review
+    prefix — a plan review's id carries its slug under the plan-review prefix
+    instead, so the same call returns nothing for it. Neither predicate that
+    already spells a review-versus-plan distinction answers this question:
+    ``recovery_review_subject._is_review_node`` is true of both kinds, which is
+    what a caller asking whether a run is a review at all needs, and
+    ``review_lifecycle._is_run_review`` asks it of a stored review's subject
+    rather than of a dispatch record, which is the only thing a delivery
+    predicate is handed. So the narrower reading lives here, on the owner of
+    the id grammar, rather than as a second copy of the prefix test.
+    """
+    node = record.get("node") or {}
+    node_id = node.get("id") if isinstance(node, Mapping) else node
+    return bool(round_node_source(str(node_id or ""), REVIEW_NODE_PREFIX))
+
+
 def _declared_head_keyed_record(
     record: Mapping[str, Any], project: str
 ) -> tuple[Path, str] | None:

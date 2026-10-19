@@ -561,6 +561,7 @@ from .recovery_review_delivery import (  # noqa: E402
     _declared_head_keyed_record,
     _delivered_review_record,
     _is_review_run,
+    _is_run_review_node,
 )
 from .recovery_repair_dispatch import (  # noqa: E402
     _sweep_review_tier,
@@ -575,7 +576,6 @@ from .recovery_review_dispatch import (  # noqa: E402
     withdraw_superseded_review,
 )
 from .recovery_review_subject import (  # noqa: E402
-    _is_run_review_node,
     _review_is_complete,
     select_review_for_head,
 )

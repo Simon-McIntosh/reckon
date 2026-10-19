@@ -22,26 +22,6 @@ from reckon.crew.repair import round_node_id
 _INVESTIGATE_ROLE = "investigate"
 
 
-def _node_id(record: Mapping[str, Any]) -> str:
-    """The node id a run was dispatched under, or an empty string."""
-    node = record.get("node") or {}
-    node_id = node.get("id") if isinstance(node, Mapping) else node
-    return str(node_id or "")
-
-
-def _is_run_review_node(record: Mapping[str, Any]) -> bool:
-    """Whether a run was minted as another run's review rather than a plan's.
-
-    ``_is_review_node`` below answers for both kinds, which is the question a
-    caller asking whether a run is a review at all needs. A caller deciding
-    which record a review must deliver needs the narrower one, because only a
-    run review is dispatched to read a revision and so only a run review's
-    record is keyed by one. Both spellings read the same node id, so the
-    distinction has one owner and the two cannot drift.
-    """
-    return _node_id(record).startswith(REVIEW_NODE_PREFIX)
-
-
 def _is_review_node(record: Mapping[str, Any]) -> bool:
     """Whether a run was minted as some run's review.
 
@@ -51,7 +31,9 @@ def _is_review_node(record: Mapping[str, Any]) -> bool:
     second, because either alone leaves a run that composes a review of itself
     and each link of that chain is a real dispatch against a real member.
     """
-    return _node_id(record).startswith((REVIEW_NODE_PREFIX, PLAN_REVIEW_NODE_PREFIX))
+    node = record.get("node") or {}
+    node_id = node.get("id") if isinstance(node, Mapping) else node
+    return str(node_id or "").startswith((REVIEW_NODE_PREFIX, PLAN_REVIEW_NODE_PREFIX))
 
 
 def _review_tree(record: Mapping[str, Any]) -> Path | None:
