@@ -476,6 +476,8 @@ class _FleetChangeWatch:
         return signal
 
     def _fast_pass(self) -> None:
+        from reckon.serve import LOGGER
+
         for tree in self._trees:
             if not self.running:
                 return
@@ -493,6 +495,7 @@ class _FleetChangeWatch:
         the identity just read before the tree is invalidated, so one change
         fires once and the next pass is quiet until something changes again.
         """
+        from reckon.serve import _invalidate_tree_views
 
         signal = self._signal_for(tree)
         index_identity = _persisted_index_identity(tree, signal.project)
@@ -526,6 +529,8 @@ class _FleetChangeWatch:
             self._notify(tree)
 
     def _slow_pass(self) -> None:
+        from reckon.serve import LOGGER
+
         now = time.monotonic()
         for tree in self._trees:
             if not self.running:
@@ -539,6 +544,11 @@ class _FleetChangeWatch:
 
     def _slow_tree(self, tree: Path) -> None:
         """Sweep the covered files' count and newest mtime for one tree."""
+        from reckon.serve import (
+            _STATE_ROOT,
+            _invalidate_tree_views,
+            _walk_discovery_signature,
+        )
 
         signal = self._signal_for(tree)
         signature = _walk_discovery_signature(tree, signal.project, _STATE_ROOT)
@@ -561,6 +571,7 @@ class _FleetChangeWatch:
 
     def _arm_every_tree(self) -> None:
         """Arm one tree at a time, registering each as its watch is built."""
+        from reckon.serve import LOGGER
 
         for tree in self._trees:
             if not self.running:
@@ -577,6 +588,8 @@ class _FleetChangeWatch:
                 self._watches[watch.fd] = watch
 
     def _run(self) -> None:
+        from reckon.serve import _invalidate_tree_views
+
         self._arm_every_tree()
         while self._watches:
             readable, _, _ = select.select([*self._watches, self._stop_reader], [], [])
@@ -1612,6 +1625,7 @@ def _load_git_creation_cache(
     cache_key: tuple[str, str],
 ) -> _GitCreationEntry | None:
     """Load a complete, current-schema persisted map or decline it entirely."""
+    from reckon.serve import LOGGER
 
     if not (Path(cache_key[0]) / ".git").exists():
         return None
@@ -1661,6 +1675,7 @@ def _store_git_creation_cache(
     cache_key: tuple[str, str], entry: _GitCreationEntry
 ) -> None:
     """Atomically persist one validated creation map without affecting service."""
+    from reckon.serve import LOGGER
 
     if not (Path(cache_key[0]) / ".git").exists():
         return
@@ -1698,6 +1713,7 @@ def _run_git(
     answers about the machine rather than about the repository and stay
     ``None`` for every caller, so neither can be mistaken for git's verdict.
     """
+    from reckon.serve import LOGGER
 
     environment = {**os.environ, "LC_ALL": "C"}
     try:
@@ -1870,6 +1886,7 @@ def _git_head(repo_dir: Path) -> str | None:
     error, or an exit saying something else — is not an answer about the tree
     and is never remembered.
     """
+    from reckon.serve import LOGGER
 
     key = str(repo_dir)
     identity = _head_identity(repo_dir)
@@ -1916,6 +1933,8 @@ def _parse_first_committed(output: str) -> dict[str, int]:
 
 def _git_first_committed(repo_dir: Path, docs_dir: Path) -> dict[str, int]:
     """Return {repo-relative-path: unix_ts} for the first commit of each HTML file."""
+    from reckon.serve import LOGGER
+
     try:
         rel_docs = str(docs_dir.relative_to(repo_dir))
     except ValueError:
@@ -1993,6 +2012,7 @@ def _load_git_last_modified_cache(
     cache_key: tuple[str, str],
 ) -> _GitCreationEntry | None:
     """Load a complete, current-schema persisted map or decline it entirely."""
+    from reckon.serve import LOGGER
 
     if not (Path(cache_key[0]) / ".git").exists():
         return None
@@ -2042,6 +2062,7 @@ def _store_git_last_modified_cache(
     cache_key: tuple[str, str], entry: _GitCreationEntry
 ) -> None:
     """Atomically persist one validated last-modified map without affecting service."""
+    from reckon.serve import LOGGER
 
     if not (Path(cache_key[0]) / ".git").exists():
         return
@@ -2078,6 +2099,8 @@ def _parse_last_committed(output: str) -> dict[str, int]:
 
 def _git_last_committed(repo_dir: Path, docs_dir: Path) -> dict[str, int]:
     """Return {repo-relative-path: unix_ts} for the most recent commit touching each file."""
+    from reckon.serve import LOGGER
+
     try:
         rel_docs = str(docs_dir.relative_to(repo_dir))
     except ValueError:
