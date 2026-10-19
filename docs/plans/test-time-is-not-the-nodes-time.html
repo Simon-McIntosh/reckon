@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It changes how a node&#x27;s own time budget is stated and accounted; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;deferred&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;}">
-  <meta name="plan-section-depends-on" content="{&quot;s2&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s3&quot;], &quot;s4&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s2&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;deferred&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s2&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s3&quot;], &quot;s4&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s2&quot;], &quot;s5&quot;: [&quot;test-time-is-not-the-nodes-time#s3&quot;]}">
   <title>Test Time Is Not The Node's Time | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -103,6 +103,29 @@
 <p><strong>Why.</strong> On 2026-10-19, dispatch refused a power_convertor window node budgeted at 120 minutes: "budget 120m exceeds the resolved fence 60m" (<code>reckon/crew/node.py:1294-1298</code>, which reads <code>fences.time_budget</code> through <code>resolved_time_ceiling</code>, <code>reckon/crew/routing.py:473</code>). The shipped ceiling is 60 minutes (<code>reckon/schema/flight-defaults.yaml:198</code>). Every project and every role inherits that value unless its own flight overrides it, as power_convertor now does at 180 minutes (power_convertor commit <code>441252a2</code>). Each numerical node there runs several bounded solver batches plus base and head test passes, and one such pass took 19 minutes. A single shipped figure cannot fit both a 4-minute review and that node.</p>
 <p><strong>Deliverable.</strong> Settled by the decision <code>time-ceiling-shape</code>: either one shipped figure that fits the longest ordinary node, a ceiling for each role, or a ceiling that grows with the compute the node declares. The section is deferred until §1 reports how much of a run's time its gates take and §2's shape is chosen. A gate allowance would itself move part of the time the ceiling now has to hold. Nothing is blocked meanwhile, because a project can raise the ceiling in its own flight.</p>
 <p>The done-when, write paths and negative control are written once the decision is locked. The section is then reviewed before it is built.</p>
+
+    <h2 id="s5">A worker reads its time left without converting a time zone</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> On 2026-10-19 the power_convertor run <code>r-20261019T150700496206-cs1-fast-discharge-playback</code> stopped an hour early on its local-lane model. Its prompt stated "Launched 2026-10-19T15:07:32Z UTC; deadline 2026-10-19T17:07:32Z" and told it to check the time with <code>date -u</code>. Its stream shows that it did, three times: the last at 15:43:33 UTC. Later it wrote "Time fence is breached (deadline 17:07:32Z, now 18:07Z)" with no <code>date</code> call since the one at 15:43. It stopped and wrote a blocked manifest. When challenged it ran <code>date -u; date</code>, which printed <code>16:12:20 UTC</code> and <code>18:12:20 CEST</code>. It then wrote "I misread local CEST timestamps as UTC — real time is 16:12Z, so 55 minutes remain". File modification times and log stamps on this host print in its local zone, two hours ahead of UTC. A worker that compares one of them with a UTC deadline is wrong by the zone offset. Telling it which clock to read did not stop that.</p>
+<p><strong>Deliverable.</strong> The deadline statement gives the worker a command that answers how much time is left, so it never compares two clock readings.</p>
+<ul>
+<li><code>time_fence_statement</code> (<code>reckon/crew/prompts.py:382</code>) adds one shell command that prints the seconds remaining until the deadline, computed from epoch seconds: the deadline instant through <code>date -d … +%s</code>, less <code>date +%s</code>. Epoch seconds carry no zone, so the answer is the same whatever the host's <code>TZ</code>. Where §3's hard stop differs from the deadline, the command prints the seconds to each.</li>
+<li>The statement tells the worker to judge the deadline only by that command, and never by a file time, a log stamp or a <code>date</code> reading, which may print in the host's local zone.</li>
+<li>A resumed attempt's fence is built by the same function (<code>reckon/crew/dispatch_sessions.py:1468</code>), so it carries the command measured from that attempt's own launch.</li>
+</ul>
+<p>Change nothing else. The deadline instant, the hard stop and the rule from §3 stay as §3 states them.</p>
+<p><strong>Write paths.</strong> <code>reckon/crew/prompts.py</code>, the new <code>tests/test_a_deadline_needs_no_time_zone.py</code>, and the node's evidence fragment. <code>tests/test_a_time_fence_names_its_clock.py</code>, <code>tests/test_brief_prompt.py</code> and <code>tests/test_crew_prompts.py</code> are granted only to update an asserted deadline sentence to the new statement. Remove no other assertion.</p>
+<p><strong>Done when</strong> all of these hold:</p>
+<ul>
+<li>The new test builds the statement for a launch of 2026-10-19T15:07:32Z and a 120-minute budget, and extracts the command it states. Run through a shell with <code>TZ=UTC</code> and again with <code>TZ=Europe/Paris</code>, the command prints the same number of seconds to within 2. That number is within 2 of the deadline's epoch seconds less the test's own epoch seconds.</li>
+<li>With a grace multiple of 1.5, the command prints a second figure for the hard stop, 3,600 seconds after the deadline.</li>
+<li>The statement tells the worker to judge the deadline by that command alone, and names file times and log stamps as readings that may be in local time.</li>
+<li>A resumed attempt's fence, from the <code>dispatch_sessions.py</code> path, states the command measured from its own launch.</li>
+<li>Run pytest in the foreground with <code>-rA</code> over these files: the new file, the three granted files, <code>tests/test_every_resume_door_states_its_deadline.py</code>, <code>tests/test_time_fence_follows_the_attempt.py</code>, <code>tests/test_a_deadline_lets_a_named_batch_finish.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code>. It adds no failure against a base arm run at the dispatched base revision. Both arms' logs go in the run directory, and the manifest's <code>baseline_suite</code> names the base log and its failure ids exactly as pytest prints them.</li>
+<li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths, judged by delta against the base blobs.</li>
+</ul>
+<p><strong>Negative control.</strong> Make the command print <code>date</code> rather than an epoch difference, and the two-zone case must fail. Separately, drop the command from the statement, and the extraction case must fail. Apply each mutation alone and run it under pytest with the default short summary.</p>
+<p><strong>After it lands.</strong> Read the next local-lane run that reaches its deadline. Its stream should show the stated command before any deadline judgment.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
