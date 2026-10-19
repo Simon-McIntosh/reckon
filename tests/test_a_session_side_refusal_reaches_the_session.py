@@ -123,11 +123,16 @@ def _row(project: str, run_id: str) -> dict[str, Any]:
 
 
 def test_a_session_side_refusal_names_the_follow_command(repository: Path) -> None:
+    """The published next action is the arming command the rest of the crew uses.
+
+    Asserted against the shared helper rather than against a substring: the
+    surface and the dispatch record have to name one command, and two
+    spellings that agree today are free to drift apart.
+    """
     _write_queued("r-queued-session-refusal", failure=_follower_refusal())
     row = _row(PROJECT, "r-queued-session-refusal")
     assert row["classification"] == "queued"
-    assert "crew follow" in row["next_action"], row["next_action"]
-    assert f"--session {SESSION}" in row["next_action"], row["next_action"]
+    assert row["next_action"] == runs._watch_attach_line(PROJECT, session=SESSION)
 
 
 def test_the_refused_request_appears_in_the_sessions_obligations(
