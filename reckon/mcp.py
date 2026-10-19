@@ -261,9 +261,11 @@ _LOGGER = logging.getLogger("reckon.mcp")
 # interpreter whose answer stands in for the stale image's. That answer is
 # returned whether it succeeded or failed, because a failure the current code
 # gives is the caller's real answer and a reconnect would deliver the same one
-# a turn later. A changed tool signature is the one refusal, naming that tool,
-# because the client holds the schema it connected with. When the stamp has not
-# moved, or the tree is not trusted, the original failure is returned unchanged
+# a turn later. The child runs the tool, not this guard, so the decision is
+# made once, in the server the client is talking to. A changed tool signature
+# is the one refusal, naming that tool, because the client holds the schema it
+# connected with. When the stamp has not moved, or the tree is not trusted, the
+# original failure is returned unchanged
 # — a tree mid-merge must never take a running server down.
 #
 # The moved-checkout decision and its trust check are the served-code owner's,
@@ -320,8 +322,18 @@ try:
         if item.name == name
     )
     out["params"] = sorted(tool.fn_metadata.arg_model.model_fields)
-    result = asyncio.run(reckon_mcp.mcp.call_tool(name, json.loads(payload)))
-    out["answer"] = structured(result)
+    # The tool itself rather than the guard around it: this child is already
+    # the checkout's current code, so a second copy of that decision here would
+    # answer with a refusal of its own instead of the tool's answer.
+    inner = getattr(getattr(tool, "fn", None), "_stale_guard_inner", None)
+    arguments = json.loads(payload)
+    if inner is None:
+        result = structured(asyncio.run(reckon_mcp.mcp.call_tool(name, arguments)))
+    else:
+        result = asyncio.run(inner(**arguments))
+        if not isinstance(result, dict):
+            result = structured(result)
+    out["answer"] = result
 except BaseException as exc:  # noqa: BLE001 - any failure is the child's answer
     reason = f"{type(exc).__name__}: {exc}"
     out["error"] = reason
@@ -414,6 +426,27 @@ def _current_code_signature_changed(name: str, child: Mapping[str, Any]) -> bool
     return tuple(sorted(str(item) for item in params)) != tuple(sorted(registered))
 
 
+#: The code of the refusal this guard composes, and of no tool's own answer.
+_STALE_CODE_ERROR = "stale_server_code"
+
+
+def _current_code_answer(child: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    """The answer the child made, when it made one that is not a refusal.
+
+    A refusal is never the current code's answer: it tells the caller to
+    reconnect, which is the decision this guard owns and a child must not make.
+    A child that answers with one is read as having answered nothing, so the
+    caller keeps the failure it already has rather than a remedy aimed at it.
+    """
+
+    answer = child.get("answer")
+    if not isinstance(answer, Mapping):
+        return None
+    if answer.get("error") == _STALE_CODE_ERROR:
+        return None
+    return answer
+
+
 def _stale_code_response(
     original_error: str | None, *, tool: str | None = None
 ) -> dict[str, Any] | None:
@@ -434,7 +467,7 @@ def _stale_code_response(
     )
     response: dict[str, Any] = {
         "ok": False,
-        "error": "stale_server_code",
+        "error": _STALE_CODE_ERROR,
         "detail": (
             f"this reckon MCP server started {started}; the code it imported has "
             f"changed on disk since then (code stamp {state.running_stamp[:12]} → "
@@ -478,8 +511,8 @@ def _answer_on_current_code(
         return None
     if _current_code_signature_changed(name, child):
         return _stale_code_response(original_error, tool=name)
-    answer = child.get("answer")
-    if not isinstance(answer, Mapping):
+    answer = _current_code_answer(child)
+    if answer is None:
         return None
     _SERVE_ON_CURRENT_CODE.add(name)
     return _served_on_current_code(answer, state.disk_stamp)
@@ -520,8 +553,10 @@ def _refuse_when_stale(tool: Callable[..., Any], *, name: str) -> Callable[..., 
                     refusal = _stale_code_response(_error_text(child), tool=name)
                     if refusal is not None:
                         return refusal
-                elif isinstance(child.get("answer"), Mapping):
-                    return _served_on_current_code(child["answer"], state.disk_stamp)
+                else:
+                    answer = _current_code_answer(child)
+                    if answer is not None:
+                        return _served_on_current_code(answer, state.disk_stamp)
         try:
             result = await tool(**kwargs)
         except Exception as exc:
@@ -548,6 +583,9 @@ def _refuse_when_stale(tool: Callable[..., Any], *, name: str) -> Callable[..., 
     guarded.__doc__ = tool.__doc__
     guarded.__module__ = tool.__module__
     guarded.__signature__ = signature  # type: ignore[attr-defined]
+    #: The tool this guard wraps, so the child that runs a call on the current
+    #: code runs the tool rather than a second copy of the stale decision.
+    guarded._stale_guard_inner = tool  # type: ignore[attr-defined]
     return guarded
 
 
