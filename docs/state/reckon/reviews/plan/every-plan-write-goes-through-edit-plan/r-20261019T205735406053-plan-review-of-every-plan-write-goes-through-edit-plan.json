@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T21:12:53.390Z",
+  "dispatched_at": "2026-10-19T21:02:11Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-plan-write-goes-through-edit-plan.html:260",
+      "id": "anchors_resolve-1",
+      "reason": "",
+      "text": "\u2014 \u00a711's \"Why\" states \"two coordinators reported that \u00a73's guard still forces reconnects under load\" and cites \"power_convertor's sessions saw read_plan, edit_plan, roadmap and crew all answer stale_server_code from mid-afternoon, on a node at load 59\u201375\" with no run id, log path or link, where \u00a71's equivalent report is linked.",
+      "type": "anchors_resolve",
+      "would_change": null
+    }
+  ],
+  "plan_fingerprint": "688a18bc29f29cdde5ab9c1c0508d80cc1de0c6dcf6adf4b3b4f267f13d8087a",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 47,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T205735406053-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "2681fe0b6cced01766abbf29a8fee19ff41115ce",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a711's \"Why\" rests on coordinator reports and a load figure that name no run id, log or link, unlike \u00a71's own linked report.",
+    "done_when": "pass \u2014 \u00a711's done-when names seven measurable cases and a declared negative control for each, one per case, and the seven controls map one-to-one onto the seven cases.",
+    "evidence_paths": "pass \u2014 \u00a711's gate log is the run's own gate log under the node's write paths; no case names a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 \u00a711 names only existing code symbols (`_refuse_when_stale`, `_answer_on_current_code`, `_stale_code_response`, `_SERVE_ON_CURRENT_CODE`, `_CURRENT_CODE_TIMEOUT_S`); no plan labels, stage names, ticket numbers or version tags reach a symbol or comment.",
+    "reasoning": "pass \u2014 \u00a711's stated root cause matches the cited code at every point I checked: `_answer_on_current_code` returns `None` on an unanswered child (`reckon/mcp.py:513-520`) and `_stale_code_response` then replaces the call's own failure (`reckon/mcp.py:571`), with the literal detail \"This call failed on the current code too\" at `reckon/mcp.py:479`; `_SERVE_ON_CURRENT_CODE` sends every later call of a fallen-back tool to a fresh child first (`reckon/mcp.py:552-554`); each child is one `subprocess.run` bounded at `_CURRENT_CODE_TIMEOUT_S = 120.0` (`reckon/mcp.py:345, 383-396`). The mechanism runs on the real code path: all five registered tools (`read_plan`, `edit_plan`, `roadmap`, `audit`, `crew`) are wrapped by `_refuse_when_stale` (`reckon/mcp.py:2838-2874`), and the `crew` write/read split \u00a711 relies on already exists (`_crew_call_kind` in that registration). \u00a73's own deliverable already names \"a child process restarted on a stamp change behind a stable stdio front\" as an allowed means, so \u00a711's choice is consistent with, not contrary to, \u00a73.",
+    "single_goal": "pass \u2014 \u00a711 carries one mechanism (\"the guard stops turning slowness into a reconnect\") reached through the guard in `reckon/mcp.py`; its clauses are facets of that one repair, not two deliverables.",
+    "wiring": "pass \u2014 \u00a711's edge `s11\u2190s9` is declared (`plan-section-depends-on`), s9 is `done`, and the cross-plan ordering \u00a711 relies on is real: `the-crew-surface-is-one-tool-and-a-few-verbs` \u00a75's own followup names `every-plan-write-goes-through-edit-plan#s11` as what it waits on, matching \u00a711's \"waits for this section to land\"."
+  },
+  "section_digests": {
+    "_document": "31bdfc5178be11360f71becc7d4c5086981def76ca15cb377730a617a3fb63ab",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s10": "fd786ebf0d880e15085a2e0ca5423504f73ce4c013e483f5e3cae145e3ad4079",
+    "s11": "19cc30d79534a21675c806c6d7006ea1e8e052fdccf4583b30258f699ee38e45",
+    "s2": "737250903251177035b357be3d656b549480337bc454f97615634dada495e251",
+    "s3": "4150e9281b9c0fe1173e9c23f5582efb0662d22f1d36944861d3033f988d479c",
+    "s4": "e0390ff35ac5e425fa3060cede9882af598c54dc89e0a6069101b3971f8e8367",
+    "s5": "699b049fe374b1219d8b917168575594a5bcb9255bbe13efdbf1d0c928562a86",
+    "s6": "27f4d6436a652181a180df37fa1a640ebff9cb62418e856c86bc907ecda9778f",
+    "s7": "80062db679255aff5087534386e7372545e1cd3414916db8329aec79a1a8388d",
+    "s8": "f9dd6299834b4d039fd1f45b37141d5e265075b4cfd7f341357bea21196f5b35",
+    "s9": "bd2c3090ecc9a89ad8c0b2f7312aae077382dd2709954d9e27f449e984d622a8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T21:15:11.378685+00:00"
+}
