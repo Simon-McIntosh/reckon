@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T02:22:28.009Z",
+  "dispatched_at": "2026-10-19T02:12:08Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-promotes-only-its-own-verdict.html:77",
+      "id": "reasoning-1",
+      "reason": "the verb's refusal must be the complement of \u00a72's prefix rule (\"recorded head begins with the dispatched head\"); as written it targets the wrong rows and, applied by \u00a74, destroys genuine reviews instead of correcting misattributed ones.",
+      "text": "the verb \"refuses a row whose recorded head is the dispatched head\" (equality, repeated in the done-when at line 84), while \u00a72 defines a row as mismatched when its recorded head \"does not begin with\" the dispatched head and its own negative control certifies nova's r-20261018T172216624608-review-of-vertical-pin-45213bf1cd62 \u2014 dispatched head taken from the 12-hex node-id suffix, recorded head `45213bf1cd6216df\u2026` \u2014 as correctly attributed; under equality that row is not refused, so `repair-review` appends a correction to a row whose review is sound and \u00a74 applies it across every mounted ledger",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-promotes-only-its-own-verdict.html:77",
+      "id": "reasoning-2",
+      "reason": "naming the argument (`carried_revision_pair(row[\"review\"])`) is the difference between the verb refusing a correctly-attributed row and correcting it, the same corruption the prefix finding describes.",
+      "text": "the verb is said to read \"the recorded head through `carried_revision_pair`\" without saying the argument is the row's `review` block, but a ledger row carries the head nested (`row[\"review\"][\"reviewed_head_sha\"]`, verified on docs/state/reckon/runs/*.json; the row's top level has no `reviewed_head_sha`), and `carried_revision_pair` reads only the mapping it is handed, so a literal `carried_revision_pair(row)` finds no recorded head and the \"recorded head is the dispatched head\" refusal never fires",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "204ffe072ae3451638648927c04a979906b240ea218c4121b4e830954d2c8853",
+  "plan_slug": "a-review-promotes-only-its-own-verdict",
+  "plan_version": 25,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-19T02:23:31.556353+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-19T02:23:41.276869+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T02:23:31.556353+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T02:23:41.276869+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-review-promotes-only-its-own-verdict.v25.json",
+  "review_run_id": "r-20261019T021057620578-plan-review-of-a-review-promotes-only-its-own-verdict",
+  "reviewed_blob_sha": "f1d92209b1d631d05f96dd72a1fa4c3e6c5fc8ac",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each of the four named readers lands on a real review-block read (capabilities.py:968 `review = run.get(\"review\")`, ledger.py:3702 `block = record.get(\"review\")` in `review_scores`, picker/snapshot.py:377 `review = row.get(\"review\")`, picker/outcomes.py:477 `isinstance(row.get(\"review\"), Mapping)`), `_review_record_subject` is at recovery_review_dispatch.py:133, `carried_revision_pair` and `_commit_landing_writes` resolve, `repair-status`/`repair-completion` sit in crew_run_commands.py as claimed, and every cited test file and write path exists.",
+    "done_when": "pass \u2014 s3 declares a negative control (base revision has no verb or accessor, so the new reader cases fail by id) and its five items are measurable; the defect in the verb's refusal predicate is reported under reasoning.",
+    "evidence_paths": "pass \u2014 s3's gate and negative-control logs go under the run directory, as s1's landed gate did, and s4 defers its paths until it is written.",
+    "naming": "pass \u2014 `repair-review`, `review_correction` and the accessor are named by mechanism; the census document derives its total of 19 rows across six projects correctly (imas-ambix 1, imas-codex 1, imas-efit 1, nova 4, power_convertor 8, reckon 4), so \u00a73's \"What \u00a72 found\" matches its cited evidence.",
+    "reasoning": "a finding \u2014 \u00a73's verb decides which rows to correct with a rule that contradicts the mismatch rule \u00a72 established and certified with its own negative control.",
+    "single_goal": "pass \u2014 the accessor, the verb and the four routed readers are one mechanism (write a correction, read through it), closed by one verdict.",
+    "wiring": "pass \u2014 s3 declares depends-on s2 (done) and s4 declares depends-on s3, both present in plan-section-depends-on; section declarations list s3 implementable and s4 deferred, and followup f-arpoiov-003 recommends \u00a73."
+  },
+  "section_digests": {
+    "_document": "37efc2b77cf3646243e013d967ec9088d667b1d9ea2a5b9eef64b5497466ceb5",
+    "s1": "b5cea03aef396e4aea2b2b9c76f01fd0b684b3da7cce27ab57a3fe3cd364801d",
+    "s2": "7210c28c3600892789bd0cf6bb61f4c9e0443ff586e1b7887eb2255666cb75c1",
+    "s3": "d1c7cd5e7882e9f4db47877961d789a1aa5231ffce1a7334ed9ea33b6a8f93a8",
+    "s4": "a79652450a4ae19f01cfa74304463df3b3b4ef17176c7575f64cbab585c36fff"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T02:23:26.483269+00:00"
+}
