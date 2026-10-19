@@ -28,6 +28,7 @@ import contextlib
 import fcntl
 import hashlib
 import io
+import json
 import os
 import re
 import shutil
@@ -50,6 +51,17 @@ from reckon.crew.obligation_snapshot import FOLLOWER_RELOAD_PROBE_TIMEOUT_SECOND
 # module that defines it can import this one without a cycle.
 IMPORT_PROBE_TIMEOUT = FOLLOWER_RELOAD_PROBE_TIMEOUT_SECONDS
 COMMITTED_TREE_RETENTION = 3
+
+# Whether a published image imports is a fact about the image and the
+# interpreter that would load it, not about the process asking: every follower
+# that reloads onto one image asks the same question of the same bytes at the
+# same moment, and a herd of them would otherwise run the same thirty-second
+# proof together. The first asker records the verdict beside the image, keyed by
+# the interpreter, and every later asker reads it; an exclusive lock in the
+# image's own directory serialises the proofs, so a concurrent asker waits for
+# the first's verdict rather than spending a probe of its own.
+IMPORT_VERDICT_PREFIX = ".import-verdict-"
+IMPORT_PROBE_LOCK = ".import-probe.lock"
 
 # A real code identity is a git object id: a 40-digit tree, or a 64-digit
 # content digest for a package outside Git. This value collides with neither, so
@@ -740,14 +752,92 @@ def tracked_reckon_tree_is_dirty(root: Path) -> tuple[bool, str]:
     return True, ", ".join(entries)
 
 
-def reckon_imports(root: Path) -> tuple[bool, str]:
-    """Whether the checkout's current code loads in a throwaway interpreter.
+def _published_image(root: Path) -> bool:
+    """Whether ``root`` is a published reload image rather than a source tree.
 
-    The reason returned with a refusal is an :class:`ImportProbeTimedOut` when
-    the probe ran out of its bound rather than answering, and a line of the
-    failed import's own output otherwise. Both still refuse: a timeout is not a
-    proof that the image loads, whatever the reader does with the distinction.
+    A published image is named by the content id of the package it holds and
+    carries the completion marker its materialiser writes, so it is immutable:
+    the code it holds cannot change under an asker, and a verdict recorded for
+    it stays true until the image is pruned. A source checkout carries no such
+    marker, so its content can move between one asker and the next and it keeps
+    the per-process proof.
     """
+    if re.fullmatch(r"[0-9a-f]{40}", root.name) is None:
+        return False
+    try:
+        return (root / ".complete").is_file()
+    except OSError:
+        return False
+
+
+def _import_verdict_interpreter_key() -> str:
+    """A short digest naming the interpreter a verdict was proven under.
+
+    Whether a tree imports is a fact about the tree *and* the interpreter that
+    would load it: two interpreters carrying different dependencies answer
+    differently about the same tree, so a verdict is filed under the one that
+    produced it and never reused for another.
+    """
+    text = (
+        f"{os.path.realpath(sys.executable)}\0"
+        f"{sys.version_info.major}.{sys.version_info.minor}"
+    )
+    return hashlib.sha256(text.encode()).hexdigest()[:16]
+
+
+def _import_verdict_path(root: Path) -> Path:
+    return root / f"{IMPORT_VERDICT_PREFIX}{_import_verdict_interpreter_key()}"
+
+
+def _read_import_verdict(path: Path) -> tuple[bool, str] | None:
+    """The verdict a previous asker recorded, or None when none is readable.
+
+    A verdict that cannot be read -- absent, removed by a prune between the
+    listing and the open, or written by another revision of this module -- is no
+    verdict at all, so the asker proves the tree itself rather than treating an
+    unreadable record as a refusal.
+    """
+    try:
+        raw = path.read_text()
+    except OSError:
+        return None
+    try:
+        record = json.loads(raw)
+    except ValueError:
+        return None
+    if not isinstance(record, dict):
+        return None
+    imports = record.get("ok")
+    reason = record.get("reason", "")
+    if not isinstance(imports, bool) or not isinstance(reason, str):
+        return None
+    return imports, reason
+
+
+def _record_import_verdict(root: Path, *, imports: bool, reason: str) -> None:
+    """Publish an image's verdict beside it, by rename.
+
+    The rename makes the record appear whole to a concurrent reader, so no asker
+    ever reads a half-written verdict. A record that cannot be written costs a
+    later asker its probe and nothing else, so the failure is swallowed rather
+    than allowed to end the asker that has just proved the image.
+    """
+    payload = json.dumps({"ok": imports, "reason": reason})
+    try:
+        descriptor, staged = tempfile.mkstemp(prefix=IMPORT_VERDICT_PREFIX, dir=root)
+    except OSError:
+        return
+    try:
+        with os.fdopen(descriptor, "w") as handle:
+            handle.write(payload)
+        os.replace(staged, _import_verdict_path(root))
+    except OSError:
+        with contextlib.suppress(OSError):
+            os.unlink(staged)
+
+
+def _probe_imports(root: Path) -> tuple[bool, str]:
+    """Run the import proof in a throwaway interpreter, recording nothing."""
     try:
         completed = subprocess.run(
             [sys.executable, "-c", _import_probe(), str(root)],
@@ -766,6 +856,62 @@ def reckon_imports(root: Path) -> tuple[bool, str]:
         return True, ""
     lines = (completed.stderr or completed.stdout or "").strip().splitlines()
     return False, (lines[-1] if lines else f"exit {completed.returncode}")
+
+
+def _published_image_imports(root: Path) -> tuple[bool, str]:
+    """Prove a published image once, under its lock, and share the verdict.
+
+    The verdict is read first, so an asker arriving after another has proved the
+    image pays nothing. When none is recorded the asker takes the image's
+    exclusive lock and reads again: a concurrent asker may have recorded the
+    verdict while this one waited, which is what the lock is for -- the second
+    asker reads the first's answer rather than proving the image again. Only
+    then does it run the proof, and it records a pass and an import failure
+    alike. A timeout is never recorded, because it says nothing about the image:
+    the next asker under the lock proves it alone.
+    """
+    verdict_path = _import_verdict_path(root)
+    remembered = _read_import_verdict(verdict_path)
+    if remembered is not None:
+        return remembered
+    try:
+        descriptor = os.open(root / IMPORT_PROBE_LOCK, os.O_CREAT | os.O_RDWR, 0o600)
+    except OSError:
+        # No lock to serialise on -- an image a pruner removed between the read
+        # and this open, or one this process may not write to -- so the proof is
+        # run without one rather than skipped.
+        return _probe_imports(root)
+    try:
+        fcntl.flock(descriptor, fcntl.LOCK_EX)
+        remembered = _read_import_verdict(verdict_path)
+        if remembered is not None:
+            return remembered
+        imports, reason = _probe_imports(root)
+        if isinstance(reason, ImportProbeTimedOut):
+            return imports, reason
+        _record_import_verdict(root, imports=imports, reason=reason)
+        return imports, reason
+    finally:
+        os.close(descriptor)
+
+
+def reckon_imports(root: Path) -> tuple[bool, str]:
+    """Whether the checkout's current code loads in a throwaway interpreter.
+
+    The reason returned with a refusal is an :class:`ImportProbeTimedOut` when
+    the probe ran out of its bound rather than answering, and a line of the
+    failed import's own output otherwise. Both still refuse: a timeout is not a
+    proof that the image loads, whatever the reader does with the distinction.
+
+    A published reload image is proved once, under an exclusive lock in the
+    image's own directory, and the verdict is recorded beside it keyed by the
+    interpreter, so concurrent askers on one image start one probe between them
+    and all read its answer. A source checkout has no immutable tree, so its
+    content can move between askers and it keeps the per-process proof.
+    """
+    if _published_image(root):
+        return _published_image_imports(root)
+    return _probe_imports(root)
 
 
 def moved_checkout_is_trustworthy(root: Path) -> CheckoutTrust:
