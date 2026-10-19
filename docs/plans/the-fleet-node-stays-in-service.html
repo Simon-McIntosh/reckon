@@ -499,7 +499,10 @@
       verdict beside it, published by rename and keyed by the interpreter, and every
       later asker reads that verdict. Proofs of one tree are serialised by an
       exclusive lock in the tree's directory, so a second asker waits for the
-      first's verdict rather than running its own. A pass and an import failure are
+      first's verdict rather than running its own. That wait is bounded by the
+      probe's own 30 s timeout, because a follower's poll runs on its delivery path. A
+      wait that reaches the bound with no verdict is answered as a timeout, which the
+      follower already retries with jitter. A pass and an import failure are
       both recorded. A timeout is never recorded, because it says nothing about the
       code (see <code>ImportProbeTimedOut</code>), so the next asker under the lock
       probes alone. The retry gap gains jitter. A source checkout reloading under a
