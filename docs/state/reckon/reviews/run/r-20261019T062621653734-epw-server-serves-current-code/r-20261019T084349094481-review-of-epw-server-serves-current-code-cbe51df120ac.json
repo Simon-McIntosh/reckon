@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "tests/test_mcp_server_serves_current_code.py:250 `assert second.get('ok') is True` fails if the guard shortens to the reconnect refusal instead of re-running on the current code: the fixture patches _edit_plan so the checkout-ahead module returns ok True where the image returns ok False, so this assertion reddens on exactly the regression the node guards. Proven by the negative control (logs/negative-control.log), which disabled the re-run and produced got {'ok': False, 'error': 'stale_server_code', ...}.",
+      "lines": "tests/test_mcp_server_serves_current_code.py:250-262"
+    },
+    {
+      "failure_condition": "tests/test_mcp_server_serves_current_code.py:261 `assert third.get('served_by') == 'current code'` fails if _SERVE_ON_CURRENT_CODE stops routing later calls to the child and the session falls back to the stale image. The value is produced by the patched checkout module and round-trips through subprocess/serialisation, so it is independent of the server's decision.",
+      "lines": "tests/test_mcp_server_serves_current_code.py:258-264"
+    },
+    {
+      "failure_condition": "tests/test_mcp_server_serves_current_code.py:290-298 asserts error == 'stale_server_code' and tool == 'edit_plan' for a changed parameter list; it reddens if _current_code_signature_changed stops comparing the child's params against _REGISTERED_TOOL_PARAMS, because the child would then answer instead of refusing. The comparison is against the registered list, not against a value the test passed to the guard.",
+      "lines": "tests/test_mcp_server_serves_current_code.py:283-298"
+    },
+    {
+      "failure_condition": "tests/test_one_check_trusts_a_moved_checkout.py:248-256 asserts a clean moved checkout returns the current code's own crew_error carrying SERVED_BY_CODE_STAMP; it reddens if the guard again masks a current-code failure behind the reconnect refusal (the superseded behaviour this case was rewritten from).",
+      "lines": "tests/test_one_check_trusts_a_moved_checkout.py:245-256"
+    },
+    {
+      "failure_condition": "tests/test_mcp_server_serves_current_code.py:270-281 (dirty tree) asserts the untrusted tree keeps the started image (ok False, no served_by marker); it reddens if the guard loads a tree mid-edit, which the shared checkout_trust check forbids.",
+      "lines": "tests/test_mcp_server_serves_current_code.py:266-281"
+    }
+  ],
+  "call_sites": [
+    "reckon/serve.py:3273",
+    "reckon/mcp.py:366",
+    "reckon/mcp.py:461",
+    "reckon/mcp.py:506",
+    "reckon/mcp.py:549"
+  ],
+  "completed_at": "2026-10-19T08:58:53.512Z",
+  "dispatched_at": "2026-10-19T08:46:20Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T062621653734-epw-server-serves-current-code/manifest.md",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when (prompt.txt:95) requires the gate log under the run directory to end EXIT=0, but the recorded after_suite (manifest.md:22) and its log head-gate-full.log end EXIT=1 at 2 failed/79 passed. The two failures (test_every_module_fits_a_worker_window, test_structural_invariants::test_only_the_shared_parser_calls_fromisoformat) also fail in the base arm (base-gate-2.log, 4 failed/71 passed), so the node's added_failure_count is zero and the delta reading holds \u2014 but the literal quantitative measure the done_when states was not achieved, so the gate cannot be cited as passing on its own terms."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T062621653734-epw-server-serves-current-code/logs/head-gate-full.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate log's header names the command, the worktree and the file set but never the revision it ran at, so a reader must take the manifest's cbe51df12 on trust; the base log (base-gate-2.log:1) does name its tree by sha inside the archive command. The manifest contract asks a gate log's first line to name the revision it ran at, and here only the path distinguishes the arm."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit: fad51085f adds the child-interpreter re-run, served_code.py's shared owner and the case (a) test; c89342d7d/1de3d779a/b2e0ad47f make every guarded tool return the current code's own failure and run the tool rather than a second guard; 916ffd6d9 reaches the answer through the sync seam; de864fcbe formats. Six files, all inside the declared scope.",
+    "done_when": "The done_when (prompt.txt:94-95) names a pytest command over three named files plus every importer of reckon.served_code or serve's reload, ending EXIT=0, with cases (a) moved checkout answers on current code, (b) dirty tracked tree keeps the started image, (c) changed tool parameter list returns the reconnect refusal naming that tool, plus a negative control and an evidence fragment on the stdio mechanism; the manifest records the head gate at 2 failed/79 passed EXIT=1, cases (a)-(c) pass in head-gate-1.log (6 passed), and the fragment names the stdio mechanism and why re-exec cannot carry an initialised session.",
+    "goal": "The node goal (prompt.txt:16) is to answer a call that failed on a moved trusted checkout from the current code through the reload owner factored out of reckon/serve.py, so the MCP server stops returning stale_server_code for an unchanged tool signature; the landed mcp.py:505-528 does exactly that and served_code.py:600-748 now owns the shared moved-checkout decision.",
+    "manifest": "The source manifest.md records status complete, nine commits fad51085f..cbe51df12, tests/test_mcp_server_serves_current_code.py passing, the head gate at 2 failed/79 passed with both failures attributed to the base arm, and a negative control at 2 failed/1 passed EXIT=1.",
+    "write_paths": "The initial fence (prompt.txt:70-76) lists six paths; resume-1-advice.txt step 1 adds tests/test_one_check_trusts_a_moved_checkout.py, and git diff --stat a5d5eb6b3..cbe51df12 names exactly those changed paths and no production file outside them."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T084349094481-review-of-epw-server-serves-current-code-cbe51df120ac",
+  "reviewed_base_sha": "a5d5eb6b3e5d4e3fa308c300b5f871b19cc707bd",
+  "reviewed_head_sha": "cbe51df120ac91e3bfdc4462264ab027c3d84830",
+  "reviewed_run_id": "r-20261019T062621653734-epw-server-serves-current-code",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T09:01:21.018076+00:00"
+}
