@@ -19,7 +19,8 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery_classification, recovery_watch, runs
+from reckon.crew import budget_lift, recovery_classification, recovery_watch, runs
+from reckon.crew.dispatch_launch import EXIT_RECORD_NAME
 
 PROJECT = "sweep-on-change"
 FOREIGN_HOST = "a-login-node-that-is-not-this-one"
@@ -232,3 +233,92 @@ def test_a_death_is_delivered_within_one_beat_with_no_file_change(fleet) -> None
     assert {event.get("run_id") for event in transitions} == {
         record["run_id"] for record in fleet["records"]
     }
+
+
+def test_a_lift_written_on_a_quiet_beat_sweeps(
+    fleet, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A lift written while every pointer was still must pull the next sweep.
+
+    The lift fold reads one document for the whole workstation. A gate that
+    stamped only the fleet's own files would leave that document unwatched, and
+    a lift a peer folded on a quiet beat would never reach this project's
+    stream.
+    """
+    lists = _install_list_counter(monkeypatch)
+    marks: list[int] = []
+
+    def on_boundary() -> None:
+        marks.append(len(lists))
+
+    def write_lift() -> None:
+        path = budget_lift.lifts_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"lifts": []}))
+
+    _drive([write_lift, lambda: None, lambda: None], on_boundary=on_boundary)
+
+    assert len(marks) >= 3, marks
+    assert marks[1] - marks[0] == 1, "a lift written on a quiet beat must sweep"
+    assert marks[2] == marks[1], "the beat after the sweep is quiet again"
+
+
+def test_a_run_record_written_on_a_quiet_beat_sweeps(
+    fleet, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A record outside the pointer and its stream must still pull a sweep.
+
+    The snapshot a quiet beat serves was computed from the run directory's own
+    records, the review store's candidates and the tree's head, not only from
+    the pointer, the stream and the manifest. A gate that stamped the three
+    files alone would serve a stale row for a run whose exit record had just
+    landed.
+    """
+    lists = _install_list_counter(monkeypatch)
+    marks: list[int] = []
+
+    def on_boundary() -> None:
+        marks.append(len(lists))
+
+    def write_exit_record() -> None:
+        directory = runs.run_dir(fleet["records"][0]["run_id"])
+        (directory / EXIT_RECORD_NAME).write_text(json.dumps({"status": "exited"}))
+
+    _drive([write_exit_record, lambda: None, lambda: None], on_boundary=on_boundary)
+
+    assert len(marks) >= 3, marks
+    assert marks[1] - marks[0] == 1, "a run record written on a quiet beat must sweep"
+    assert marks[2] == marks[1], "the beat after the sweep is quiet again"
+
+
+def test_the_change_token_stamps_the_crew_home_through_the_shared_reader(
+    fleet, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The gate's stamps come from the repository's one stat reader.
+
+    ``file_stamp`` is what every other reader of a document's movement uses, so
+    a gate with its own copy of that reading is a second implementation of one
+    fact. The test also names the documents the gated sweeps read, because the
+    coverage is what the quiet path's reuse rests on.
+    """
+    from reckon import capabilities
+
+    stamped: list[str] = []
+    real_file_stamp = capabilities.file_stamp
+
+    def counting_file_stamp(path) -> list[int] | None:
+        stamped.append(str(path))
+        return real_file_stamp(path)
+
+    monkeypatch.setattr(capabilities, "file_stamp", counting_file_stamp)
+
+    _drive([lambda: None, lambda: None], on_boundary=lambda: None)
+
+    assert stamped, "the change token must stamp through capabilities.file_stamp"
+    for gated_read in (
+        runs.live_dir(),
+        runs.runs_dir(),
+        runs.handover_dir(),
+        budget_lift.lifts_path(),
+    ):
+        assert str(gated_read) in stamped, f"{gated_read} must be stamped"
