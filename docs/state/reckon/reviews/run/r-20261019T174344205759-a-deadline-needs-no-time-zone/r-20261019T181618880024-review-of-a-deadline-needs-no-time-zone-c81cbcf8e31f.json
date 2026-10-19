@@ -1,0 +1,89 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Runs the command the statement states through bash under TZ=UTC and TZ=Europe/Paris and requires the two stdout strings equal. If the command regressed to a clock reading (echo $(date) rather than the epoch difference) the two readings differ by the zone offset and the assertion reddens; the declared negative control 'command prints date' shows exactly this, 4 failed / 2 passed at EXIT=1, with test_the_stated_command_prints_the_same_seconds_in_two_zones among the failures. Independent of the code under test: two shell executions compared to each other.",
+      "lines": "tests/test_a_deadline_needs_no_time_zone.py:93-104"
+    },
+    {
+      "failure_condition": "Compares the printed seconds against _epoch(DEADLINE) - now(), where DEADLINE is the test's own literal 2026-10-19T17:07:32Z, within 2 s. Reddens if the command prints anything but the deadline's epoch less the current epoch; the same negative control fails it.",
+      "lines": "tests/test_a_deadline_needs_no_time_zone.py:107-120"
+    },
+    {
+      "failure_condition": "Requires the command to print two figures and their difference to be 3600 +/- 2 for a grace multiple of 1.5. Reddens if the hard stop is omitted or equals the deadline; the same negative control fails it.",
+      "lines": "tests/test_a_deadline_needs_no_time_zone.py:123-141"
+    },
+    {
+      "failure_condition": "command == own compares two calls to time_fence_statement, so this equality alone moves with the function and does not redden on a regression inside time_fence_statement. It does redden on a regression in _restate_time_fence's own launch plumbing, which is the property it names; the independent deadline-substring assertions at lines 173-174 (RESUMED_DEADLINE[:-1] present, DEADLINE[:-1] absent) are what the command's content rides on, and the 'command dropped' negative control fails this test at EXIT=1. Named here because the equality's two sides are supplied by the test's one input; it is not the sole guard for the statement itself, which lines 93-104 cover.",
+      "lines": "tests/test_a_deadline_needs_no_time_zone.py:169-176"
+    },
+    {
+      "failure_condition": "Patches reckon.crew.dispatch's resolved_grace_multiple to 2.0 while the raw config key fences.budget_grace_multiple stays 1.5, drives the real dispatch(), and requires the prompt to carry 'hard stop <started+120m>' and not '<started+90m>'. Reinstate the regression (read the raw key again) and the second assertion reddens; that is the exact change the diff made at reckon/crew/dispatch.py:1934. Both sides derive from the code's own launch instant, which no test can know independently, but the 120m/90m pair discriminates the two candidate readings.",
+      "lines": "tests/test_a_deadline_needs_no_time_zone.py:304-310"
+    },
+    {
+      "failure_condition": "assert \"`date -u`\" in prompt now holds only because the rewritten statement names `date -u` as a reading NOT to use ('Never judge the deadline by a file time, a log stamp or a `date -u` or `date` reading'). Its intent was that the fence offers the worker a clock command; that intent is dead, and the assertion is stale rather than duplicating a live guard. Recorded as a finding.",
+      "lines": "tests/test_time_fence_follows_the_attempt.py:185"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/dispatch.py:1919 dispatch() composes the first attempt's prompt",
+    "reckon/crew/dispatch_claims.py:862 _compose_dispatch_prompt -> reckon/crew/prompts.py compose_prompt",
+    "reckon/crew/prompts.py:689 compose_prompt calls time_fence_statement for every dispatch and resume prompt",
+    "reckon/crew/dispatch_sessions.py:1638 _restate_time_fence states the fence for a resumed attempt",
+    "reckon/crew/routing.py:478 resolved_grace_multiple, read by reckon/crew/recovery_stream.py:332 and reckon/crew/dispatch_sessions.py:1641"
+  ],
+  "completed_at": "2026-10-19T18:32:15.793Z",
+  "dispatched_at": "2026-10-19T18:17:58Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "the-time-fence-reads-cleanly",
+      "recorded_at": "2026-10-19T18:34:00.463708+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the base-gate.log header carries the literal command on its '# command:' line, so the base arm is re-runnable from the log; the promotion cites the head log's literal command",
+      "recorded_at": "2026-10-19T18:34:25.647831+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_time_fence_follows_the_attempt.py",
+      "line": "185",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion `assert \"`date -u`\" in prompt` was written to check the fence offers the worker a clock to read. The landed statement no longer offers one \u2014 it prints the seconds left by epoch arithmetic and names `date -u` as a reading not to use \u2014 so the assertion is now green only because that prohibition clause contains the same literal. It guards the opposite of what it says and would redden, with no message, if a later edit dropped the prohibition clause. The file is not in the node's declared write paths (the plan grants only test_a_time_fence_names_its_clock.py, test_brief_prompt.py and test_crew_prompts.py for sentence updates), so the node could not update it and the plan's write scope is what should be widened. Verified by reading the base version (identical at a574c0d0) and the head prompt: both contain the literal, for opposite reasons."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T174344205759-a-deadline-needs-no-time-zone/manifest.md",
+      "line": "baseline_suite.command",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's baseline_suite.command reads 'PYTHONPATH=<base-sUdy> ...' \u2014 an angle-bracket placeholder where the arm contract asks for the literal command that ran with absolute paths. The base-gate.log header carries the literal command on its '# command:' line, so the fact is recoverable and no measurement is lost; the record alone would not be re-runnable from that field."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The landed change is reached at runtime from reckon/crew/dispatch.py:1919 (dispatch() composing the first attempt's prompt), through reckon/crew/dispatch_claims.py:862 _compose_dispatch_prompt into reckon/crew/prompts.py:689 compose_prompt, and from reckon/crew/dispatch_sessions.py:1638 _restate_time_fence for a resumed attempt. resolved_grace_multiple is read by the watchdog at reckon/crew/recovery_stream.py:332. I confirmed config is the dispatch() parameter at reckon/crew/dispatch.py:1024, so the new call site resolves in scope.",
+    "diff": "Read commit by commit: c81cbcf8 is the only commit. It adds _seconds_left_command and _numeric_offset and rewrites the statement body in reckon/crew/prompts.py, narrows _continuation_multiple to a resolved number, switches reckon/crew/dispatch.py's dispatch() call to resolved_grace_multiple(config) and narrows the type on reckon/crew/dispatch_claims.py's _compose_dispatch_prompt, adds the 310-line gate file, updates the docstring and CLOCK_COMMAND in tests/test_a_time_fence_names_its_clock.py, and adds the evidence fragment. 413 insertions, 23 deletions, all inside the declared scope.",
+    "done_when": "The done_when (prompt.txt FENCE - EVIDENCE) names tests/test_a_deadline_needs_no_time_zone.py and six further properties, plus a base-arm delta and a ruff delta. The gate the worker ran is the eight-file pytest command recorded in manifest.md tests:, and each named property has a test in the new file: two-zone equality (line 93), the deadline's epoch less now (line 107), the hard stop 3600 s out (line 123), the judge-only-by-command wording (line 144), the resumed fence's own launch (line 157) and the resolved multiple at 120m vs 90m (line 234). Head log records 1 failed, 77 passed; base log 1 failed, 71 passed, with the same single failure id.",
+    "goal": "The node goal (prompt.txt GOAL) is one command in the deadline statement that prints the seconds left from epoch arithmetic, read through the grace multiple's single owner. reckon/crew/prompts.py:395-414 adds _seconds_left_command/_numeric_offset, and reckon/crew/prompts.py:418-465 states it; reckon/crew/dispatch.py:1934 now passes resolved_grace_multiple(config) and prompts.py no longer parses the raw key. Both halves of the goal are present in the landed diff.",
+    "manifest": "The manifest.md records status complete, one commit c81cbcf8, head and base arms with their log paths and failure ids, both negative-control logs, and a follow_ons entry for the pre-existing test_every_module_fits_a_worker_window failure. Its baseline_suite.command carries the placeholder <base-sUdy> where the contract asks for the literal command; the base log's own '# command:' header does carry the literal absolute-path command, so the fact is recoverable.",
+    "write_paths": "The source prompt.txt fences reckon/crew/prompts.py, reckon/crew/dispatch.py, reckon/crew/dispatch_claims.py, tests/test_a_deadline_needs_no_time_zone.py, tests/test_a_time_fence_names_its_clock.py, tests/test_brief_prompt.py, tests/test_crew_prompts.py and the node's evidence fragment/figures scope. git diff --name-only a574c0d0..c81cbcf8 names six paths and no others."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T181618880024-review-of-a-deadline-needs-no-time-zone-c81cbcf8e31f",
+  "reviewed_base_sha": "a574c0d02341d57067cf8b456d17cba4091039c7",
+  "reviewed_head_sha": "c81cbcf8e31f34bee6422a23a33cc26f8c1e9ca6",
+  "reviewed_run_id": "r-20261019T174344205759-a-deadline-needs-no-time-zone",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T18:32:30.640865+00:00"
+}
