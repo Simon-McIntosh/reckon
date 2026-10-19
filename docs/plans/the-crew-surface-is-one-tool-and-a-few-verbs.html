@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -122,7 +122,8 @@
       <code>--no-commit --gate passed</code> is refused as a missing reason. A run whose manifest carries the receipt in the contracted form
       promotes with no gate flags. The evidence gives the fill rate on the measured manifests before and after the repair. The negative
       control makes the dry run return only its first failure, and the three-guard case then fails.
-      <code>tests/test_every_module_fits_a_worker_window.py</code> passes. Write paths: <code>reckon/crew_run_commands.py</code>,
+      <code>tests/test_every_module_fits_a_worker_window.py</code> adds no failure: it is red at base for
+      <code>reckon/ledger.py</code>, <code>reckon/serve.py</code> and <code>reckon/crew/review.py</code>, which lie outside this fence. Write paths: <code>reckon/crew_run_commands.py</code>,
       <code>reckon/crew/promotion.py</code>, <code>reckon/crew/promotion_records.py</code>, <code>reckon/crew/promotion_gate.py</code>,
       <code>reckon/crew/reports.py</code>, <code>reckon/crew/prompts.py</code>, <code>tests/test_complete_reports_every_refusal.py</code>.</p>
 
@@ -160,7 +161,8 @@
     <p><strong>Done when</strong> <code>tests/test_crew_tool_carries_the_write_verbs.py</code> runs each action through the MCP tool and
       through the CLI on copies of one temporary project, and asserts the two answers are equal. Parity is held by comparing the surfaces.
       The negative control maps one action's argument differently from its CLI counterpart, and that parity case then fails.
-      <code>tests/test_every_module_fits_a_worker_window.py</code> passes. Write paths: <code>reckon/mcp.py</code>,
+      <code>tests/test_every_module_fits_a_worker_window.py</code> adds no failure: it is red at base for
+      <code>reckon/ledger.py</code>, <code>reckon/serve.py</code> and <code>reckon/crew/review.py</code>, which lie outside this fence. Write paths: <code>reckon/mcp.py</code>,
       <code>reckon/_mcp_tools.py</code>, <code>reckon/mcp_crew_actions.py</code>, <code>reckon/crew/obligations.py</code>,
       <code>tests/test_crew_tool_carries_the_write_verbs.py</code>.</p>
 
@@ -187,7 +189,9 @@
       <code>reckon/mcp.py</code>, <code>reckon/mcp_views.py</code>, <code>reckon/crew/tombstones.py</code>, <code>reckon/hooks</code>,
       <code>skills/reckon-build/SKILL.md</code>, <code>skills/reckon-build/references/coordinator-reference.md</code>,
       <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>skills/reckon-review/SKILL.md</code>,
-      <code>reckon/crew/AGENTS.md</code>, <code>tests/test_crew_view_serves_every_view.py</code>.</p>
+      <code>reckon/crew/AGENTS.md</code>, <code>tests/test_crew_help_names_its_state.py</code>,
+      <code>tests/test_crew_view_serves_every_view.py</code>. <code>tests/test_crew_help_names_its_state.py</code> pins the exact leaf set,
+      so it gains a row for <code>crew view</code>, loses the rows of the five tombstoned read verbs, and passes.</p>
 
     <h2 id="s7">§7 — The verb families fold behind flags</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -232,10 +236,10 @@
         plus the three parent verbs this section adds (<code>crew repair</code>, <code>crew budget</code>, <code>crew check</code>), and one
         fewer again when <code>crew merge</code> is tombstoned.</li>
     </ul>
-    <p>The negative control alters one successor's answer, and that case then fails. The two tests that fail at base because
-      <code>check-review</code> and <code>repair-review</code> lack a help-state row and a skill citation pass once those verbs fold. The
-      help-contract tests, <code>tests/test_cited_commands_exist.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code>
-      pass. Write paths: <code>reckon/crew_run_commands.py</code>, <code>reckon/crew_dispatch_commands.py</code>,
+    <p>The negative control alters one successor's answer, and that case then fails. <code>tests/test_crew_help_names_its_state.py</code>
+      pins the exact leaf set, so it gains a state row for each new parent verb, loses the row of each folded name, and passes. The
+      help-contract tests and <code>tests/test_cited_commands_exist.py</code> pass, and <code>tests/test_every_module_fits_a_worker_window.py</code> adds no failure: it is red at base for
+      <code>reckon/ledger.py</code>, <code>reckon/serve.py</code> and <code>reckon/crew/review.py</code>, which lie outside this fence. Write paths: <code>reckon/crew_run_commands.py</code>, <code>reckon/crew_dispatch_commands.py</code>,
       <code>reckon/crew/tombstones.py</code>, <code>reckon/crew/claims.py</code>, <code>reckon/crew/gc.py</code>,
       <code>reckon/crew/prompts.py</code>, <code>reckon/crew/refusals.py</code>, <code>reckon/crew/watch_unit.py</code>,
       <code>reckon/crew/recovery_review_subject.py</code>, <code>reckon/crew/obligations.py</code>,
@@ -245,7 +249,7 @@
       <code>skills/reckon-build/references/conditional-guidance.md</code>, <code>skills/reckon-build/references/lane-routing.md</code>,
       <code>skills/reckon-build/references/outage-recovery.md</code>,
       <code>skills/reckon-build/references/orchestrator-harness/claude-code.md</code>, <code>reckon/crew/AGENTS.md</code>,
-      <code>docs/AGENTS.md</code>, <code>tests/test_crew_families_fold.py</code>.</p>
+      <code>docs/AGENTS.md</code>, <code>tests/test_crew_help_names_its_state.py</code>, <code>tests/test_crew_families_fold.py</code>.</p>
 
     <h2 id="s8">§8 — Every run verb takes one identity grammar</h2>
 <section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
