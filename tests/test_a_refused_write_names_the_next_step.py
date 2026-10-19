@@ -234,7 +234,10 @@ def test_effort_refusal_names_the_quarter_hour(setup):
     )
     assert result["ok"] is False
     assert result["error"] == "op_error"
-    assert "0.25" in result["detail"]
+    # The refusal names the accepted values, not only the value it rejected: the
+    # raw validation detail names 0.25 as well, so that substring alone would
+    # pass with the legal-values sentence removed.
+    assert "accepts a positive multiple of 0.25" in result["detail"]
 
 
 def test_capability_refusal_names_legal_values_and_an_example(setup):
