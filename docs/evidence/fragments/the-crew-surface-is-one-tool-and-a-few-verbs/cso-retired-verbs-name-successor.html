@@ -1,0 +1,72 @@
+<article class="landed-report" data-run-id="r-20261019T054613169905-cso-retired-verbs-name-successor" data-node="cso-retired-verbs-name-successor">
+<h3 id="cso-retired-verbs-name-successor-summary">A retired crew verb is a tombstone that names its successor</h3>
+<p id="cso-retired-verbs-name-successor-change"><strong>Change.</strong>
+<code>reckon/crew/tombstones.py</code> adds a registry of retired crew verbs.
+Each row (<code>Tombstone</code>) names the retired verb, its successor and the
+successor's invocation, and declares that successor as either a CLI token path
+into the live command tree (<code>argv</code>) or a view/action of the crew MCP
+tool (<code>mcp_view</code>/<code>mcp_action</code>). Three rows are seeded:
+<code>review-plan → crew review</code>, <code>obligations →</code> the MCP
+<code>crew(view="obligations")</code> (no CLI twin, by decision), and
+<code>promote → crew complete</code>. Invoking a row writes nothing: it prints
+one JSON document naming the retired verb, the successor, the successor
+invocation with the caller's arguments carried across, and the exit code, then
+exits <code>9</code> — one code the crew group's help documents beside codes 0
+to 8.
+
+The crew group in <code>reckon/crew_dispatch_commands.py</code> becomes
+<code>_CrewGroup</code>, whose <code>get_command</code> resolves a retired name
+to its tombstone only when a caller types it. A tombstone is deliberately absent
+from the group's <code>commands</code> mapping, so no retired name appears in
+<code>crew --help</code> nor in a census that reads the live command tree — the
+fold stays invisible until it is reached for. The command sets
+<code>ignore_unknown_options</code> and no help option, so it captures the
+caller's arguments intact and answers <code>--help</code> with its successor
+rather than a help page.</p>
+<p id="cso-retired-verbs-name-successor-test"><strong>Test.</strong>
+<code>tests/test_a_retired_verb_names_its_successor.py</code> checks five
+properties. Every row exits <code>9</code> (the code the crew group's help
+documents) and its JSON names the retired verb and the successor. No row is a
+listed command of the crew group. <code>crew review-plan --plan p --answer f
+--acted</code> prints the invocation <code>reckon crew review --plan p --answer
+f --acted</code>. Every row's successor resolves — a CLI successor by walking
+the live click tree, an MCP successor by asking the tool (an unknown view
+answers <code>invalid_view</code>, an unknown action <code>invalid_action</code>,
+so any other answer proves recognition). A row whose CLI successor is an
+unregistered verb is reported by name.
+
+<code>tests/test_cited_commands_exist.py</code> gains <code>_retired</code>,
+which walks the command tree and recognises the one shape a tombstone takes (the
+token after <code>crew</code>), and its main check reports a citation naming a
+retired verb with the successor it must be repointed to. A dedicated case shows
+the guard fires on a citation of <code>crew review-plan</code> and stays silent
+on the current corpus.</p>
+<p id="cso-retired-verbs-name-successor-measure"><strong>Measure.</strong> Gate:
+<code>tests/test_a_retired_verb_names_its_successor.py</code>,
+<code>tests/test_cited_commands_exist.py</code>,
+<code>tests/test_crew_help_names_its_state.py</code>, and
+<code>tests/test_skill_contracts.py</code>, run with the main checkout's
+<code>.venv/bin/python -m pytest -p no:cacheprovider</code> in the foreground.
+Base arm at <code>f339f0eda7fb778034e050fea9d96ba35cb28e56</code>
+(<code>test_crew_help_names_its_state.py</code> and
+<code>test_skill_contracts.py</code>, the new files absent): 2 failed, 70 passed,
+<code>EXIT=1</code>. Head arm (all four files): 2 failed, 78 passed,
+<code>EXIT=1</code> — the same two failing ids as the base arm and zero added
+failures. The two failures are outside this node's scope:
+<code>test_every_crew_verb_help_names_its_state_or_condition</code> and
+<code>test_every_registered_crew_verb_is_documented_or_exempt</code> both fail
+because the <code>check-review</code> and <code>repair-review</code> verbs are
+registered without a <code>STATE_PHRASES</code> row or a skill mention, and they
+reproduce identically at the base revision. <code>ruff format --check</code> and
+<code>ruff check</code> pass on every changed path. Logs
+<code>gate-head.log</code>, <code>base-arm.log</code>, and
+<code>negative-control.log</code> under the run directory, each ending in an
+<code>EXIT=</code> line.</p>
+<p id="cso-retired-verbs-name-successor-control"><strong>Negative control.</strong>
+Appending a row whose successor names an unregistered CLI verb
+(<code>argv=("crew", "no-such-verb")</code>) reddens
+<code>test_every_rows_successor_resolves</code> — the failure id the head arm
+does not fail — with <code>negative-control-ghost: successor crew no-such-verb
+names no command</code>: <code>1 failed, 4 passed</code>, <code>EXIT=1</code>.
+Log <code>negative-control.log</code> under the run directory.</p>
+</article>

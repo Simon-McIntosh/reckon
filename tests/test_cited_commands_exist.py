@@ -27,6 +27,7 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from reckon.cli import main
+from reckon.crew.tombstones import TOMBSTONE_BY_NAME, Tombstone
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -199,6 +200,29 @@ def _resolve(chain: list[str]):
     return node, None
 
 
+def _retired(chain: list[str]) -> Tombstone | None:
+    """The tombstone a ``crew <name>`` chain names, or ``None``.
+
+    A retired verb is not a registered subcommand — it is matched only when a
+    caller uses it — so :func:`_resolve` reports it as an unknown command. This
+    walks the same tree and recognises the one shape a tombstone takes: the
+    token after ``crew``. A citation of the retired name is drift that must be
+    repointed, so it is reported with the successor rather than left as a bare
+    unknown command.
+    """
+    node = _tree()
+    prefix: list[str] = []
+    for token in chain:
+        subs = getattr(node, "commands", None)
+        if not subs:
+            break
+        if token not in subs:
+            return TOMBSTONE_BY_NAME.get(token) if prefix == ["crew"] else None
+        node = subs[token]
+        prefix.append(token)
+    return None
+
+
 def _help(path: list[str]) -> str:
     result = CliRunner().invoke(main, [*path, "--help"])
     return result.output
@@ -229,6 +253,13 @@ def test_every_cited_command_and_flag_resolves():
     problems: list[str] = []
 
     for cite in checked:
+        retired = _retired(cite.chain)
+        if retired is not None:
+            problems.append(
+                f"{cite.where}: cites the retired verb `crew {retired.retired}` "
+                f"(successor: {retired.successor})"
+            )
+            continue
         command, bad = _resolve(cite.chain)
         if bad is not None:
             problems.append(
@@ -271,10 +302,30 @@ def test_a_cited_flag_is_matched_as_a_whole_option_token():
     help_text = _help(["crew", "dispatch"])
     real = max(sorted(_FLAG.findall(help_text)), key=len)
     substring = real[:-1]
-    cite = Citation("skills/example/SKILL.md", 1, ["crew", "dispatch"], [substring], False)
+    cite = Citation(
+        "skills/example/SKILL.md", 1, ["crew", "dispatch"], [substring], False
+    )
 
     assert _help_has_flag(help_text, real)
     assert not _help_has_flag(help_text, substring)
     problems = _flag_problems(cite, help_text)
     assert problems, f"{substring} is inside {real} yet was reported as resolving"
     assert substring in problems[0]
+
+
+def test_a_citation_naming_a_tombstone_is_refused_with_its_successor():
+    """A citation of a retired name is drift, reported with its successor.
+
+    A retired verb is not a registered subcommand, so :func:`_resolve` sees it
+    only as an unknown command. :func:`_retired` recognises the token after
+    ``crew`` and names the invocation that replaced it, so a fold that leaves a
+    citation behind is told what to repoint it to.
+    """
+    retired = _retired(["crew", "review-plan", "--plan", "p"])
+    assert retired is not None
+    assert retired.retired == "review-plan"
+    assert retired.successor == "crew review"
+
+    # The guard is silent on the current corpus: no citation reaches a
+    # tombstone, so every folded name still has its citations repointed.
+    assert [c for c in citations() if _retired(c.chain) is not None] == []
