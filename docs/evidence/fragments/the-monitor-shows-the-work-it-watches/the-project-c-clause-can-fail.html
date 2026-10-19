@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s66">
+  <meta name="plan-recorded-at" content="2026-10-19">
+  <meta name="plan-verdict" content="passed">
+  <title>The project-C clause can fail on the newest-transition choice | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-project-c-clause-can-fail-landing" data-node="the-project-c-clause-can-fail" data-reckon="landed" data-when="2026-10-19">
+  <h2>The project-C clause publishes C's producer, so only the newest-transition selection keeps its stale entry out</h2>
+  <p><code>tests/test_a_pane_counts_its_session_across_projects.py</code> drives three projects, the third of which, C, carries the session on an <em>older</em> transition (5 working) and another session on its newest. The clause asserts the session-wide total stays 8 rather than 13, so C's older entry of 5 is never read. C's producer was never published through the obligation snapshot, so <code>_other_project_producer_is_live</code> excluded C whatever <code>_newest_session_event</code> returned — the clause could not fail on the newest-transition selection it names. The fix is one line in the fixture: <code>_publish("C", SESSION)</code> beside the existing publishes of A and B, so C's liveness no longer masks the selection and the only thing that can keep the 5 out is the newest-transition choice.</p>
+  <p><strong>Defect reproduced before repair.</strong> With the base test (C unpublished) and <code>_newest_session_event</code> mutated to return the <em>oldest</em> partition-carrying transition, the test run up to and including the C clause <em>passes</em> — 1 passed, <code>EXIT=0</code> — because the liveness gate, not the selection, excludes C. Log: <code>repro_c_clause_unpublished.log</code>.</p>
+  <p><strong>Gate.</strong> <code>tests/test_a_pane_counts_its_session_across_projects.py</code> passes against the unmodified module: 1 passed, <code>EXIT=0</code> (<code>head_gate.log</code>). <code>ruff check</code> reports <code>All checks passed!</code> on the base and the changed file alike — zero findings added — and <code>ruff format --check</code> reports the file already formatted (<code>ruff.log</code>).</p>
+  <p><strong>Negative control.</strong> With the fix applied and <code>_newest_session_event</code> mutated to return the oldest partition-carrying transition, the C clause fails: the B row renders <code> 13w  2h  3d</code> instead of <code> 8w  2h  3d</code> — 1 failed, <code>EXIT=1</code> (<code>nc_broken.log</code>), exactly the declared figure. In this node's scratch tree (<code>module.__file__</code> = the scratch <code>reckon/crew/recovery_watch.py</code>), the mutation is the only difference from the delivered tree.</p>
+  <p><strong>Scope note.</strong> The production module <code>reckon/crew/recovery_watch.py</code> is unchanged here and belongs to §65; this node changes only the test file. Because the change is test-only, no other test file's result can move, and the importer-cohort delta is not measured on this node.</p>
+</article>
+</body>
+</html>

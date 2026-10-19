@@ -12,7 +12,9 @@ The fixture drives two projects whose events files each carry the per-session
 partition a real producer writes, plus a third whose newest transition carries
 no entry for the session. Each other project's producer is published through the
 obligation snapshot the watcher writes, so the liveness reading the row takes is
-the one a live watcher supplies.
+the one a live watcher supplies. The third project's producer is published too,
+so that what keeps its older session entry out of the total is the
+newest-transition selection rather than the liveness gate.
 """
 
 from __future__ import annotations
@@ -111,14 +113,19 @@ def _withdraw(project: str, session: str) -> None:
 
 def test_a_scoped_pane_sums_the_session_across_every_project(home) -> None:
     # Project A holds this session at 7 working / 2 blocked / 3 unpromoted, B at
-    # 1, and C at 5 for another session whose newest transition leaves this one
-    # out, so C must add nothing.
+    # 1, and C at 5 on an older transition with another session's on the newest,
+    # so C must add nothing.
     _append("A", _row("A", SESSION, _entry(7, 2, 3)))
     _append("B", _row("B", SESSION, _entry(1)))
     _append("C", _row("C", SESSION, _entry(5)))
     _append("C", _row("C", PEER_SESSION, _entry(4)))
     _publish("A", SESSION)
     _publish("B", SESSION)
+    # C's producer is live too, so the liveness reading counts it: the only thing
+    # that can keep C's older entry of 5 out of the total is which transition the
+    # selection returns. Were C left unpublished, the liveness gate would exclude
+    # it whatever the selection chose, and the C clause could not fail on it.
+    _publish("C", SESSION)
 
     b_row = _row("B", SESSION, _entry(1))
     a_row = _row("A", SESSION, _entry(7, 2, 3))
@@ -130,7 +137,8 @@ def test_a_scoped_pane_sums_the_session_across_every_project(home) -> None:
     assert " 8w  2h  3d" in _render(a_row, SESSION), _render(a_row, SESSION)
 
     # C's newest transition carries no entry for this session: its older entry
-    # of 5 must not be read, so the total stays 8 rather than 13.
+    # of 5 must not be read, so the total stays 8 rather than 13. C's producer is
+    # live, so only the newest-transition selection keeps the 5 out.
     scoped_a = recovery._scoped_watch_event(a_row, SESSION)
     assert scoped_a["working"] == 8, scoped_a
     assert scoped_a["blocked"] == 2, scoped_a
