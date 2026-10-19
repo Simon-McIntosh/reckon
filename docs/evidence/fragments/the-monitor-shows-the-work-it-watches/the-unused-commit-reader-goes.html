@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s58">
+  <meta name="plan-recorded-at" content="2026-10-19">
+  <meta name="plan-verdict" content="passed">
+  <title>The unused commit reader goes | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <meta name="plan-links" content="reckon/checkout_trust.py,s58">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-unused-commit-reader-goes-landing" data-node="the-unused-commit-reader-goes" data-reckon="landed" data-when="2026-10-19">
+  <h2>The uncalled <code>committed_head</code> reader is removed</h2>
+  <p>Once identity names the <code>reckon/</code> package content at HEAD rather than the commit, the commit reader <code>committed_head</code> in <code>reckon/checkout_trust.py</code> has no caller: the module's identity path reads <code>committed_reckon_tree</code> instead. A reader with no caller invites a later change to reach for it, and it keys on the commit, which the identity retired. The function is deleted, a 16-line deletion with no other change.</p>
+  <p><strong>Gate.</strong> <code>git grep -nw committed_head -- reckon tests</code> prints the definition at the node's base and nothing at the delivered head. Base: <code>reckon/checkout_trust.py:208:def committed_head(root: Path) -&gt; str | None:</code> (<code>EXIT=0</code>). Head: no output (<code>EXIT=1</code>, git grep's no-match code). The word match excludes the unrelated <code>committed_heads</code> local in <code>reckon/crew/promotion_checks.py</code>. Logs: <code>logs/grep-base.log</code>, <code>logs/grep-head.log</code>.</p>
+  <p><strong>No caller at base.</strong> A whole-repository <code>grep -rnw committed_head --include='*.py'</code> (excluding <code>.venv</code>) matched only the definition; <code>git grep -nw committed_head -- . ':!reckon/checkout_trust.py'</code> matched no code, only prose in a landed evidence archive. The function stays removed.</p>
+  <p><strong>Population.</strong> The 12 test files naming <code>reckon/checkout_trust.py</code> (three import the module; the rest reference its path or symbols) were run at the base and at the delivered head. Base arm in a scratch tree carrying the base revision of <code>checkout_trust.py</code>: 101 passed, <code>EXIT=0</code>. Head arm in the worktree: 101 passed, <code>EXIT=0</code>. <strong>0 added failures</strong> — the two arms are identical. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the changed file (<code>All checks passed!</code>, <code>1 file already formatted</code>). Logs: <code>logs/importer-tests-base.log</code>, <code>logs/importer-tests-head.log</code>, <code>logs/ruff-check.log</code>, <code>logs/ruff-format.log</code>.</p>
+  <p><strong>Falsifiability.</strong> The base grep is the positive control for the head grep: it shows the pattern and both paths find the name when it is present, so the head arm's empty output is an absence measured by an instrument shown to see the string, not a pattern that never matches.</p>
+</article>
+</body>
+</html>

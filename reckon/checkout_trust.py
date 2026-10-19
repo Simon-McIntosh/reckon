@@ -205,22 +205,6 @@ def _open_prune_lease(entry: Path) -> int | None:
         return None
 
 
-def committed_head(root: Path) -> str | None:
-    """Read the source checkout's commit, independent of working-tree edits."""
-    try:
-        result = subprocess.run(
-            ["git", "-C", str(root), "rev-parse", "--verify", "HEAD"],
-            capture_output=True,
-            text=True,
-            timeout=IMPORT_PROBE_TIMEOUT,
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    commit = result.stdout.strip()
-    return commit if result.returncode == 0 and len(commit) == 40 else None
-
-
 def committed_reckon_tree(root: Path) -> str | None:
     """Read the id of the ``reckon/`` tree at the source checkout's HEAD.
 
