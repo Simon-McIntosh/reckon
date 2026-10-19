@@ -247,9 +247,7 @@ def test_a_call_on_a_moved_checkout_answers_on_the_current_code(
     _assert_served_from_the_copy(payload, root)
 
     first, second, third = payload["first"], payload["second"], payload["third"]
-    assert first.get("ok") is False, (
-        f"the running image must fail the call: {first!r}"
-    )
+    assert first.get("ok") is False, f"the running image must fail the call: {first!r}"
     assert second.get("ok") is True, (
         f"a moved checkout must answer on its current code, got {second!r}"
     )

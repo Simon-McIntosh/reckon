@@ -644,6 +644,7 @@ def served_report(
 # one serves code the other refuses. The verdict is derived here, once, from the
 # snapshot the process loaded and the checkout's own code identity.
 
+
 @dataclass(frozen=True)
 class MovedCheckout:
     """Whether the code an image loaded differs from the checkout, and if it loads.

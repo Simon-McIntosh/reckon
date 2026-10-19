@@ -287,7 +287,7 @@ _REGISTERED_TOOL_PARAMS: dict[str, tuple[str, ...]] = {}
 #: server's client holds the session this process initialised; replacing the
 #: image would discard it, so the front stays and the current code runs behind
 #: it. This is the one text both the answer and the signature check share.
-_CURRENT_CODE_RUNNER = r'''
+_CURRENT_CODE_RUNNER = r"""
 import asyncio, json, sys
 
 root, name, payload = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -326,7 +326,7 @@ try:
 except BaseException as exc:  # noqa: BLE001 - any failure is the child's answer
     out["error"] = f"{type(exc).__name__}: {exc}"
 print(json.dumps(out))
-'''
+"""
 
 #: How long one child gets to answer on the current code. It imports the whole
 #: package, so it is generous; a child that runs out is a child that did not
@@ -355,9 +355,7 @@ def _moved_checkout_state() -> served_code.MovedCheckout:
     )
 
 
-def _run_on_current_code(
-    name: str, kwargs: Mapping[str, Any]
-) -> dict[str, Any] | None:
+def _run_on_current_code(name: str, kwargs: Mapping[str, Any]) -> dict[str, Any] | None:
     """Run one tool call against the checkout's current code in a child.
 
     ``None`` means the child made no answer — it failed to start, ran out of its
