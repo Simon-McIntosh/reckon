@@ -36,6 +36,7 @@ from reckon.crew.review import review_path
 from reckon.crew.routing import (
     _boundary_tree_roots,
     _git,
+    _git_blob,
     _repository_tree_snapshot,
     _shadow_patch_retained,
     _shadow_worktree_records,
@@ -1679,11 +1680,18 @@ def _restore_landing_writes(
     are restored from HEAD; a path absent from HEAD (created by this
     promotion) is dropped from the index and, once its entry is gone, from the
     working tree. Recovery is best-effort because the refusal that triggers it
-    (a stuck index or other git failure) can itself block these git calls, and
-    a tracked path whose restore is refused keeps its working-tree write — the
-    retry commits that write, so taking it back would discard the recorded
-    comment. What a refusal does not leave behind is a staged entry the run's
-    own commit never covered.
+    (a stuck index or other git failure) can itself block these git calls.
+
+    A refused whole-path restore is an index-write failure, and the same lock
+    that refused the landing is usually what refused it, so the fallback
+    settles each path without the index: a path HEAD carries is rewritten in
+    the working tree from HEAD's blob, read through plumbing that takes no
+    index lock, and a path HEAD never carried is dropped from the index and
+    unlinked once the entry is gone. A path the fallback cannot restore — the
+    index already stages a change at it, or git cannot read its blob or write
+    its file — keeps its landing write and is named in the refusal, so a
+    caller sees which file to restore before re-promoting. What a refusal
+    never leaves behind is a staged entry the run's own commit did not cover.
 
     The result is a per-path report keyed by the path as written: True for a
     path that no longer carries the landing write — restored from HEAD, or
@@ -1716,17 +1724,17 @@ def _restore_one_landing_write(checkout: Path, path: Path) -> bool:
     """Settle one landing write as far as a held index lock allows.
 
     The whole-path restore is a single index-writing call, so a lock another
-    process holds refuses it and leaves the working-tree write in place. The
-    working tree is left as the attempt wrote it on purpose: the retry commits
-    that write, so a plan file taken back from HEAD would lose the comment the
-    retry is recording. What must not survive is a staged entry, because a
-    peer's next commit could take it without this run ever having committed.
+    process holds refuses it and leaves the working-tree write in place. A
+    tracked path is then returned to its committed content by
+    :func:`_restore_tracked_landing_write`, which rewrites the working-tree
+    file from HEAD's blob without writing the index the lock protects. What
+    must not survive is a staged entry, because a peer's next commit could
+    take it without this run ever having committed.
 
-    A tracked path therefore keeps its write and is reported as surviving. A
-    path HEAD never carried is dropped from the index, and its file is removed
-    only once the entry is confirmed gone: a lock that refuses the drop would
-    otherwise leave the index staging a path no longer on disk, which is a
-    commit of content a reader cannot see in the working tree.
+    A path HEAD never carried is dropped from the index, and its file is
+    removed only once the entry is confirmed gone: a lock that refuses the
+    drop would otherwise leave the index staging a path no longer on disk,
+    which is a commit of content a reader cannot see in the working tree.
     """
     try:
         relative = Path(path).resolve().relative_to(checkout.resolve()).as_posix()
@@ -1734,12 +1742,40 @@ def _restore_one_landing_write(checkout: Path, path: Path) -> bool:
         return False
     committed = _git(checkout, "cat-file", "-e", f"HEAD:{relative}", check=False)
     if committed.returncode == 0:
-        return False
+        return _restore_tracked_landing_write(checkout, path, relative)
     _git(checkout, "rm", "--cached", "--force", "--", str(path), check=False)
     if _path_has_a_staged_change(checkout, path):
         return False
     try:
         Path(path).unlink(missing_ok=True)
+    except OSError:
+        return False
+    return True
+
+
+def _restore_tracked_landing_write(checkout: Path, path: Path, relative: str) -> bool:
+    """Rewrite a tracked path's working tree from HEAD's blob, index untouched.
+
+    The whole-path restore writes the index, so the lock another process holds
+    has refused it; the same content is recovered here by reading HEAD's blob
+    with ``git show``, which reads the object store and takes no index lock,
+    and writing it over the working-tree file. The path then carries its
+    committed content again, with no staged entry this run never committed.
+
+    A path the index already carries a change for is reported unrestored rather
+    than half-restored: clearing that entry needs the lock the fallback is
+    running without, and rewriting only the working tree would leave the index
+    staging content no reader can see. A blob git cannot read, or a file it
+    cannot write, reports the path unrestored too, so the refusal names the
+    file a coordinator must restore before re-promoting.
+    """
+    if _path_has_a_staged_change(checkout, path):
+        return False
+    blob = _git_blob(checkout, "HEAD", relative)
+    if blob is None:
+        return False
+    try:
+        Path(path).write_bytes(blob)
     except OSError:
         return False
     return True
@@ -2025,6 +2061,26 @@ def _resolved_path_key(path: str | Path) -> str:
         return str(path)
 
 
+def _unrestored_landing_writes(rollback: Mapping[str, bool]) -> str:
+    """Name the landing writes a rollback could not return to their committed state.
+
+    The refusal keeps its own message and appends this clause, so a coordinator
+    reading the receipt alone learns which files still carry a landing write and
+    must be restored before re-promoting. An unreadable report names nothing,
+    because a path the rollback did not claim is not one this clause can point
+    a reader at.
+    """
+    unrestored = sorted(
+        str(path) for path, restored in (rollback or {}).items() if not restored
+    )
+    if not unrestored:
+        return ""
+    return (
+        " These landing writes could not be restored and still carry their "
+        "landing content in the working tree: " + ", ".join(unrestored)
+    )
+
+
 def _landing_refusal(message: str, rollback: Mapping[str, bool]) -> CrewError:
     """A refused landing commit that carries its rollback's per-path report.
 
@@ -2194,7 +2250,8 @@ def _commit_landing_writes(
         )
         raise _landing_refusal(
             f"could not stage the landing writes for run {run_id!r} in "
-            f"{checkout}: {staged.stderr.strip() or staged.stdout.strip()}",
+            f"{checkout}: {staged.stderr.strip() or staged.stdout.strip()}"
+            f"{_unrestored_landing_writes(rollback)}",
             rollback,
         )
     subject = subject or f"promote({run_id}): {verdict}"
@@ -2250,7 +2307,8 @@ def _commit_landing_writes(
         )
         raise _landing_refusal(
             f"could not commit the landing writes for run {run_id!r} in "
-            f"{checkout}: {committed.stderr.strip() or committed.stdout.strip()}",
+            f"{checkout}: {committed.stderr.strip() or committed.stdout.strip()}"
+            f"{_unrestored_landing_writes(rollback)}",
             rollback,
         )
     mismatched = _landing_path_mismatches(checkout, targets)

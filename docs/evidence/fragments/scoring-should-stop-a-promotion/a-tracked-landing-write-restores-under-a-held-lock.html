@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="A tracked landing write is restored under a held lock">
+  <meta name="plan-summary" content="A stage refusal under a held .git/index.lock left the plan file's landing comment in the working tree, so the rollback reported {plan file: false} and a re-promotion would have met a half-landed write the run did not make. The rollback's fallback now rewrites a tracked path in the working tree from HEAD's blob, read through the shared _git_blob helper, and names a path it could not restore in the refusal.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-19">
+  <meta name="plan-verdict" content="passed">
+  <title>A tracked landing write is restored under a held lock | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A tracked landing write is restored under a held lock</h1>
+
+    <section id="a-tracked-landing-write-restores-under-a-held-lock-defect">
+      <h2>The defect</h2>
+      <p>The rollback that follows a refused landing restores each path the promotion wrote
+        with <code>git restore --source=HEAD --staged --worktree</code>, a single
+        index-writing call. The lock that refused the landing is still held, so that restore
+        is refused too, and the fallback <code>_restore_one_landing_write</code> could only
+        settle a path <code>HEAD</code> never carried — it dropped an untracked file from the
+        index, and for a tracked path it returned <em>unrestored</em> and left the
+        working-tree write in place. The plan file the landing had written is tracked, so its
+        landing comment survived the rollback.</p>
+      <p>Reproduced at base <code>a346c2e1</code> with a temporary repository
+        (<code>repro_tracked_restore.py</code>, log <code>reproduced at base</code>): a
+        tracked plan file carrying a landing narrative was asked to settle with a real
+        <code>.git/index.lock</code> held. The report was
+        <code>{plan.html: False}</code> and the working tree still carried
+        <code>"landing narrative the refusal left behind\n"</code> against
+        <code>HEAD</code>'s <code>"committed plan\n"</code>.</p>
+    </section>
+
+    <section id="a-tracked-landing-write-restores-under-a-held-lock-change">
+      <h2>The change</h2>
+      <p>In <code>reckon/crew/promotion_scope.py</code>, when the index-dependent restore is
+        refused and <code>HEAD</code> carries the path, the fallback now calls
+        <code>_restore_tracked_landing_write</code>. It reads <code>HEAD</code>'s blob through
+        <code>reckon.crew.routing._git_blob</code>, which reaches the object with
+        <code>git show</code> — a read of the object store that takes no index lock, so it
+        answers while another process holds <code>.git/index.lock</code> — and writes the
+        bytes over the working-tree file. The path carries its committed content again with
+        no staged entry this run never committed.</p>
+      <p>A review scored this node's reuse below its floor: the fallback had grown its own
+        <code>git cat-file blob</code> reader beside <code>_git_blob</code>, which already
+        reads a <code>revision:path</code> and returns <code>None</code> on a non-zero exit,
+        and <code>promotion_scope.py</code> imports from <code>reckon.crew.routing</code>
+        already. Before the second reader was deleted, the rejection of the shared helper was
+        checked rather than assumed: the two reach the object by different commands
+        (<code>show</code> against <code>cat-file</code>), so under a real
+        <code>.git/index.lock</code> <code>git show HEAD:&lt;path&gt;</code> was run and read
+        <code>exit 0</code> with the committed bytes, confirming it is lock-free too. The
+        helper serves this read unchanged — its interface was not widened — and the case
+        that makes the read fail now patches <code>_git_blob</code>.</p>
+      <p>A path the index already carries a change for is reported unrestored rather than
+        half-restored: clearing that entry needs the lock the fallback is running without,
+        and rewriting only the working tree would leave the index staging content no reader
+        can see. A blob git cannot read, or a file it cannot write, reports the path
+        unrestored too — and <code>_unrestored_landing_writes</code> appends those paths to
+        the refusal, so a coordinator reading the receipt sees which file to restore before
+        re-promoting.</p>
+    </section>
+
+    <section id="a-tracked-landing-write-restores-under-a-held-lock-measurement">
+      <h2>Measurement</h2>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Receipt</th></tr></thead>
+        <tbody>
+          <tr><td>Base reproduction</td><td><code>{plan: false}</code>; content unchanged</td><td><code>repro-base.log</code></td></tr>
+          <tr><td>Head reproduction</td><td><code>{plan: true}</code>; content equals HEAD</td><td><code>repro-after.log</code></td></tr>
+          <tr><td>Node cases, head</td><td>2 passed; EXIT=0</td><td><code>focused-node.log</code></td></tr>
+          <tr><td>Node cases plus the repaired rollback test</td><td>14 passed; EXIT=0</td><td><code>focused-node.log</code></td></tr>
+          <tr><td>Declared mutation</td><td>1 failed, 1 passed; EXIT=1</td><td><code>negative-control.log</code></td></tr>
+          <tr><td>Importers, base <code>a346c2e1</code></td><td>1 failed, 165 passed; EXIT=1</td><td><code>baseline-importers.log</code></td></tr>
+          <tr><td>Importers, head</td><td>1 failed, 167 passed; EXIT=1</td><td><code>after-importers.log</code></td></tr>
+        </tbody>
+      </table>
+      <figure>
+        <img src="/reckon/figures/scoring-should-stop-a-promotion/a-tracked-landing-write-restores-under-a-held-lock/rollback-path-under-a-held-lock.svg" alt="Two rows of one rollback path under a held .git/index.lock. Top row, base a346c2e1: the whole-path restore exits 128, the fallback reports the HEAD-tracked path unrestored, and the working tree keeps the landing narrative. Bottom row, this node: the same lock is held and the restore is refused, but the fallback reads HEAD's blob with git show, takes no index lock, and rewrites the working tree, so the report is restored and the content equals HEAD's.">
+        <figcaption>The rollback path under a held <code>.git/index.lock</code>: the base arm on top, this
+          node below. Both refuse the index-writing restore; only the lower one recovers the
+          committed content.</figcaption>
+      </figure>
+      <p id="a-tracked-landing-write-restores-under-a-held-lock-importer-note">Both arms
+        carry the same single failure, a pre-existing dispatch test unrelated to this
+        change, and the head arm adds none: the two arms differ by
+        <strong>two passing tests</strong>, this node's own cases.
+        <code>tests/test_rollback_asks_head.py::test_head_path_survives_unrelated_restore_failure</code>
+        asserted that a HEAD-tracked path whose whole-path restore is refused <em>keeps</em>
+        its landing write in the working tree — the behaviour this node's SPEC supersedes,
+        and the one test that would have been reddened by the change. It sits outside this
+        node's write fence, so the node reported it rather than editing it, and the
+        coordinator granted the extension; the assertion now reads HEAD's content through
+        git and compares against it. Only that assertion changed: the test still requires
+        the whole-path restore to be attempted exactly once, and still requires the tracked
+        file to exist afterwards, because a refused restore must never authorise unlinking the
+        path HEAD carries. Both importer arms were re-run after the reuse change, base from
+        a fresh <code>git archive a346c2e1</code>, and neither the node cases nor the
+        importers add a failure: base reads <code>1 failed, 165 passed</code> and the head
+        <code>1 failed, 167 passed</code>, differing by this node's own two cases, with the
+        same single pre-existing failure on each side. The head arm was run twice and its
+        log holds the second run, taken after the commit so it corresponds to the landed
+        revision exactly; the failure set was identical in both. Ruff adds no finding
+        either: <code>ruff check</code>'s single finding is the same pre-existing
+        <code>PT011</code> on each side, and <code>ruff format --check</code>'s wanted
+        changes on <code>promotion_scope.py</code> are 13 lines, byte-identical between base
+        and head — the file carries a pre-existing backlog, and sweeping it is its own
+        commit. Both suite objects are recorded by the node's manifest
+        (<code>baseline_suite</code>, <code>after_suite</code>). Logs are in the worker's run
+        directory under
+        <code>r-20261019T164023450593-a-tracked-landing-write-restores-under-a-held-lock</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
