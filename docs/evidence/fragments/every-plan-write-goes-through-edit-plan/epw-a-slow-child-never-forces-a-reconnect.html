@@ -1,0 +1,87 @@
+<!-- Evidence anchor: epw-a-slow-child-never-forces-a-reconnect -->
+
+<section data-reckon="evidence" id="epw-a-slow-child-never-forces-a-reconnect-evidence">
+  <h3>§11 — A slow current-code child never forces a reconnect</h3>
+
+  <p id="epw-a-slow-child-never-forces-a-reconnect-mechanism">
+    The guard kept two defects that a loaded node turned into reconnects. An
+    unanswered child made <code>_answer_on_current_code</code> return no answer
+    at all, and the caller then got <code>stale_server_code</code> — a
+    <code>version_conflict</code> or a <code>storage-slow</code> deadline, whose
+    remedy is to re-read and retry, came back as "reconnect", with a detail
+    saying the current code had failed too though it had never run. And every
+    call opened a fresh interpreter that paid the whole import against a
+    <code>_CURRENT_CODE_TIMEOUT_S</code> bound of 120 s, so on a loaded node a
+    session waited and often failed on each call. Both are gone.
+  </p>
+
+  <p id="epw-a-slow-child-never-forces-a-reconnect-child">
+    <strong>One persistent child per code stamp.</strong>
+    <code>reckon/served_code.py</code> gains <code>CurrentCodeServer</code> and
+    <code>ServedChild</code>: the tree's current code runs behind the stdio front
+    in one child, started when the guard first sees a stamp it does not hold, and
+    stopped and replaced when the stamp moves again. The child imports the tree,
+    answers a readiness probe with every tool's parameter names and runs no tool,
+    and then takes one request-tagged JSON line per call. A reader thread is the
+    only reader of its stdout, so a caller bounds its own wait while the pipe
+    stays drained; a reply that arrives after its caller gave up is discarded by
+    id rather than misread. Closing the server's end of the pipe ends the child,
+    which is what its <code>for line in sys.stdin</code> loop does at EOF.
+  </p>
+
+  <p id="epw-a-slow-child-never-forces-a-reconnect-cold">
+    <strong>Cold never waits; warm runs once.</strong> Warming is by the probe
+    and not by a caller's call. While the probe has not answered the child is
+    cold, no call is routed to it, and the running image serves every call — so a
+    cold call never blocks on the child and no tool call is spent warming it.
+    Once warm, a call of a tool that has fallen back runs in the child instead of
+    the image, so it runs once. A routed read the child does not answer falls
+    back to the image. A routed write is never re-run on the image: it returns
+    <code>write_may_have_landed</code>, whose detail names the read to make
+    before retrying. A failed call the current code did not answer keeps its own
+    error code and detail, marked with <code>code_stamp_at_start</code>,
+    <code>code_stamp_now</code> and a <code>current_code_note</code>.
+  </p>
+
+  <p id="epw-a-slow-child-never-forces-a-reconnect-refusal">
+    <strong>The one refusal left.</strong> <code>stale_server_code</code> is
+    returned only for a tool whose probed parameter names disagree with the
+    registered ones, and it names that tool with its reconnect remedy: there the
+    client holds the schema it connected with, so a reconnect is the real remedy.
+  </p>
+
+  <p id="epw-a-slow-child-never-forces-a-reconnect-cases">
+    <strong>The seven cases</strong> in
+    <code>tests/test_a_slow_child_never_forces_a_reconnect.py</code> drive the
+    guard against a temporary tree with a spawn hook that launches a fake child
+    the test can slow, silence or stop: an unanswered child leaves a
+    <code>version_conflict</code> a <code>version_conflict</code> with both
+    stamps and no reconnect field; twenty calls start one child and a further
+    stamp move stops it and starts exactly one more; a cold call is served by the
+    image without waiting and the child's call log is empty; a routed call runs
+    once, in the child, with the image's call count unchanged; a routed write the
+    child does not answer returns the may-have-landed timeout with the image's
+    write count unchanged; a changed signature still refuses; closing the pipe
+    ends the child.
+  </p>
+
+  <p id="epw-a-slow-child-never-forces-a-reconnect-controls">
+    <strong>Each case has a negative control</strong>, kept one log per control
+    under the run's <code>logs/</code>: restoring the refusal on an unanswered
+    child fails the first case, starting a child per call fails the second,
+    making a cold call wait fails the third, running a routed call on the image
+    as well fails the fourth, re-running a timed-out write on the image fails the
+    fifth, ignoring the probe's parameter names fails the sixth, and leaving the
+    child running after the pipe closes fails the seventh. Every control's log
+    ends in a non-zero <code>EXIT=</code> line.
+  </p>
+
+  <p id="epw-a-slow-child-never-forces-a-reconnect-tests">
+    <code>tests/test_mcp_server_serves_current_code.py</code> is updated to the
+    new contract where the section changes it: the two cases whose child reaches
+    no tool and whose child answers nothing at all now assert that the call keeps
+    its own error code, with both stamps and no reconnect, where they previously
+    asserted the refusal. Its driver waits for the persistent child to answer its
+    probe before the answered child can take over a call.
+  </p>
+</section>
