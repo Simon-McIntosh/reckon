@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="391">
+<meta name="plan-version" content="392">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1527,6 +1527,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s59" data-id="c-close-s59" data-who="reckon-build" data-when="2026-10-19T10:40:00Z">
     <div class="r-comment-body"><p>§59 landed: the one-line pane is chosen by a named predicate on the seat's host and the test asserts planted literal stamps; merged as <code>f6b692eea</code>, review 109/120, 0 added over 131 importer files. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#the-foreign-overrun-pane-is-chosen-by-the-seat">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s59" data-id="c-run-r-20261019T080250830060-the-foreign-overrun-pane-is-chosen-by-the-seat" data-who="reckon-build" data-when="2026-10-19T08:57:35.359Z">
+    <div class="r-comment-body"><p>The one-line foreign-overrun pane is chosen by a named predicate on the seat&#x27;s host (reckon/crew_follow_commands.py `_producer_seat_is_foreign`, reading the seat record through module-level `_read_seat_host`) instead of the advice dict&#x27;s shape; the node test plants literal seat and follower stamps and asserts the pane line carries them. Measure: node test 2 passed (EXIT=0); wrong-stamp negative control 2 failed (EXIT=1); a host key added to a local seat&#x27;s advice leaves the local case drawing both lines (EXIT=0) where the pre-change choice collapsed it to one (EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s58" data-id="c-run-r-20261019T092942118904-review-of-the-unused-commit-reader-goes-dbd1689f11c0" data-who="reckon-build" data-when="2026-10-19T09:47:08.659Z">
     <div class="r-comment-body"><p>Reviewed run r-20261019T084606341423-the-unused-commit-reader-goes at base b97740c80e0e90fbc6d0a7d216e7ae988ccb908c / head dbd1689f11c0fd5c93500d82a711fc17b4b805ee: the diff removes the uncalled committed_head from reckon/checkout_trust.py (-16 lines) and adds only the always-permitted landing fragment; all six dimensions scored (goal_fidelity 20, evidence 15, scope_discipline 20, durability 10, fit 20, reuse 20), 0 added failures, two follow-on findings.</p></div>
