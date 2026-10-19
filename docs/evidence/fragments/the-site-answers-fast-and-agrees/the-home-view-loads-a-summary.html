@@ -1,0 +1,52 @@
+<section id="the-home-view-loads-a-summary">
+  <h2>The home view loads a fleet summary</h2>
+  <p>
+    The fleet home now waits for <code>/_projects/index.json</code> before
+    showing counts. Each visible project's plan statuses, progress, activity
+    and active sprint come from that summary. The home no longer substitutes
+    an indexed-document total or paints zeros while the summary is pending.
+    Its recent-activity panel reports project edits and progress from the
+    summary, which needs no inventory rows.
+  </p>
+  <p>
+    The command palette starts the fleet's full <code>/_discover</code>
+    requests on its first open, once per mounted project. The current
+    project's loader also stays off discovery while the home route is open;
+    leaving home resumes its normal derived-state load. A
+    <code>reckon-fleet</code> event for the <code>rollup</code> key rereads
+    the summary, and an older response cannot replace a newer one. Crew
+    schedule bars resolve their plan slug against the current inventory
+    before using its title, sprint, status or link.
+  </p>
+  <p>
+    The browser case withholds the summary, sees a loading state and no
+    status counts, then receives a three-plan summary and renders 50%
+    progress. It sees no discovery request before the palette opens and
+    exactly one request per mounted project afterward. It also publishes
+    a second rollup before the first response finishes; the newer count of
+    three remains visible after a stale count of 99 arrives. A served-page
+    browser case checks the actual state loader: the base requests
+    <code>/_discover/reckon</code> before the palette, while the head does
+    not. Both browser cases ran and passed at the head.
+  </p>
+  <p>
+    The matched SPA population, including surface parity, ran with the
+    same test files in a base extraction and at commit
+    <code>33dc7ff50b8220060f08e95ed4ae05f4a0cb117f</code>. Base:
+    <strong>11 failed, 32 passed, EXIT=1</strong>. Head:
+    <strong>4 failed, 39 passed, EXIT=1</strong>. All four head failures
+    are the same project-visibility browser cases present at base: three
+    topbar geometry widths and first-visit crew-card readiness. The
+    loader regression gate at the head had <strong>19 passed, EXIT=0</strong>.
+    Logs are <code>final-base-spa.log</code>, <code>final-spa.log</code>
+    and <code>loader-regression.log</code> in the run directory.
+  </p>
+  <p>
+    The declared negative control restored the home-triggered fleet
+    discovery fetch. Both home browser tests then failed on a recorded
+    <code>/_discover</code> request before the palette opened:
+    <strong>2 failed, EXIT=1</strong> in
+    <code>negative-control-complete.log</code>. The mutation was removed
+    before the implementation commit.
+  </p>
+</section>
