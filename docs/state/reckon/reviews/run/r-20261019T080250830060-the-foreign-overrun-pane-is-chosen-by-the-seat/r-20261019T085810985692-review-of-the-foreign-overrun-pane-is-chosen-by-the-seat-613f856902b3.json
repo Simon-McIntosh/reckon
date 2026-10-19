@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_follow_commands.py:2306 _producer_code_events (nested in _follow_watch_lines) calls _producer_seat_is_foreign(project) for the pane-line choice",
+    "reckon/crew_follow_commands.py:2196 _producer_stale_event calls _read_seat_host(project)",
+    "reckon/crew_follow_commands.py:846 _producer_seat_is_foreign calls _read_seat_host(project)",
+    "reckon/crew_follow_commands.py:3116 crew_follow -> _follow_watch_lines is the production entry point (_follow_watch_lines drives _producer_code_events at :2404, :2629, :2686)"
+  ],
+  "completed_at": "2026-10-19T09:08:24.397Z",
+  "dispatched_at": "2026-10-19T08:59:41Z",
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "2306",
+      "severity": "follow-on",
+      "text": "the choice `pane_line=not _producer_seat_is_foreign(project)` is behaviour-preserving against the pre-change `pane_line=\"host\" not in advice` on the code as it stands (the local branch of _producer_stale_event carries no 'host' key, so both predicates yield the same pane-line count), so no committed test reddens when the predicate is reverted to the advice-shape test in isolation. The distinguishing scenario -- a host key added to the local advice -- is demonstrated only by the source-mutated control logs control-local-advice-with-host.log (EXIT=0) and control-old-choice-collapses-local.log (EXIT=1), not by a committed test, so the suite alone does not fail if this change regresses. Not blocking: the done_when asked for a control, and the node produced and logged one."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 7e4f955f6f: da42ed0f8 hoists the nested _producer_seat_host closure to module-level _read_seat_host, adds _producer_seat_is_foreign, and swaps the choice at :2306; 613f85690 adds the landing fragment. Three files, all inside the declared write paths.",
+    "done_when": "the done_when names the node test with literal planted stamps, one negative control that renders a wrong stamp and fails, a second control adding a host key to a local seat's advice, EXIT= logs, no added failure across the importers, and clean ruff; head-node-test.log records the node test 2 passed EXIT=0, negative-control-wrong-stamp.log records 2 failed EXIT=1, control-local-advice-with-host.log records 1 passed EXIT=0 with control-old-choice-collapses-local.log recording 1 failed EXIT=1, and importers-head.log records 1 failed/208 passed against importers-base.log 3 failed/206 passed (0 added).",
+    "goal": "the node's goal is to choose the one-line foreign-overrun pane by a named predicate on the seat's host and test it against literal planted stamps; reckon/crew_follow_commands.py:836 _producer_seat_is_foreign(project) reads the seat record via _read_seat_host (:817) and replaces the old `\"host\" not in advice` test at :2306, and tests/test_a_foreign_producer_overrun_is_one_line.py:25-28 plants SEAT_STAMP/FOLLOWER_STAMP and asserts their short forms as literals at :115-116 and :133-134.",
+    "manifest": "read; it records the node test (2 passed, EXIT=0), the negative control (2 failed, EXIT=1), the two controls, the importer arm (head 1 failed/208 passed, base 3 failed/206 passed), names each log's path, and carries a readable baseline_suite and after_suite with failure ids.",
+    "write_paths": "the declared paths are reckon/crew_follow_commands.py, tests/test_a_foreign_producer_overrun_is_one_line.py, the fragment under docs/evidence/fragments/the-monitor-shows-the-work-it-watches/, and the figures directory; the diff against 7e4f955f6 touches exactly the source, the test and the new fragment, all inside them, and no figure path is written."
+  },
+  "justifications": {
+    "durability": "tests/test_a_foreign_producer_overrun_is_one_line.py:123 `assert len(pane) == 2` reddens under the combined regression (advice-shape choice plus a host key on local advice, shown by control-old-choice-collapses-local.log) but not on reverting the predicate alone, so no committed test fails on the isolated regression this change would undergo.",
+    "evidence": "importers-base.log (3 failed, 1 failed repeated at head) and importers-head.log (1 failed, 208 passed) give 0 added failures and the negative control log records a real EXIT=1; the ruff clause rests on the fragment's prose against logs/ruff/, not a clean findings receipt, which is why evidence is not maximal.",
+    "fit": "reckon/crew_follow_commands.py:817 _read_seat_host is a module-level function with a mechanism-naming docstring matching the file's neighbours, and no name carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:2306 chooses the reloading note's pane line by _producer_seat_is_foreign(project) (:836), a named predicate reading the seat record, exactly as the goal states.",
+    "reuse": "the change hoists an existing closure and composes the owners reckon/crew/watch_unit.py:55 _seat_host and :60 _seat_names_a_foreign_host (re-exported at reckon/crew/runs.py:3505); a search of reckon/crew for a project-level seat-host reader found none, so nothing is duplicated.",
+    "scope_discipline": "the three paths in the diff against 7e4f955f6 all sit inside the four declared write paths, and the unused figures path is written to nothing."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T085810985692-review-of-the-foreign-overrun-pane-is-chosen-by-the-seat-613f856902b3",
+  "reviewed_base_sha": "7e4f955f6f4691b2be77d176e84571385aae23f7",
+  "reviewed_head_sha": "613f856902b3ef272d5df414d8cf64fdc057a171",
+  "reviewed_run_id": "r-20261019T080250830060-the-foreign-overrun-pane-is-chosen-by-the-seat",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T09:06:00Z"
+}
