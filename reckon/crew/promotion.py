@@ -1512,6 +1512,27 @@ def _complete_locked(
 
 DISCARD_RECORD_NAME = "discard.json"
 
+# The admission record a queued pointer carries: what dispatch wrote when it
+# held the request (its queue time, session, lane and the allowance it was
+# queued under, with the nested gate reading) and what the admission pass's
+# ``_stamp_failure`` writes when a launch was attempted and refused. A request
+# is usually discarded because it waited too long, so these are the fields a
+# reader needs to see why — and they die with the pointer unless the discard
+# keeps them.
+DISCARD_ADMISSION_KEYS = (
+    "queued_at",
+    "session",
+    "backend",
+    "reason",
+    "hold",
+    "failure",
+    "failure_at",
+    "failure_attempts",
+    "retry_at",
+    "failure_guard",
+    "failure_reported_at",
+)
+
 
 def discard_record_path(run_id: str) -> Path:
     """Path of the marker a discard leaves in one run's directory."""
@@ -1643,20 +1664,32 @@ def _write_discard_record(run_id: str, record: Mapping[str, Any]) -> str | None:
     such directory, so its departure is recorded in the shared discards
     directory keyed by run id instead: the marker must outlive the pointer for a
     restore to read, whether or not a run directory was ever made.
+
+    The pointer's admission record — the queue time, session, lane and hold
+    dispatch wrote, and the failure fields an attempted launch stamped — is
+    copied onto the record wherever it lands. A queued request is normally
+    discarded because it waited too long, and these fields are the only account
+    of why.
     """
     path = discard_record_path(run_id)
     if not path.parent.is_dir():
         path = discard_spool_path(run_id)
-    _write_json(
-        path,
-        {
-            "run_id": run_id,
-            "discarded_at": datetime.now(UTC).isoformat(),
-            "phase": record.get("phase"),
-            "node": record.get("node"),
-            "pointer_path": str(pointer_path(run_id)),
-        },
-    )
+    written = {
+        "run_id": run_id,
+        "discarded_at": datetime.now(UTC).isoformat(),
+        "phase": record.get("phase"),
+        "node": record.get("node"),
+        "pointer_path": str(pointer_path(run_id)),
+    }
+    # The admission record travels with the departure, so a request discarded
+    # for waiting too long can still be read for why. A key the pointer never
+    # carried is left out rather than written as null: an absent field and a
+    # field that was never set are different facts, and a null would erase the
+    # difference.
+    for key in DISCARD_ADMISSION_KEYS:
+        if key in record:
+            written[key] = record[key]
+    _write_json(path, written)
     return str(path)
 
 
