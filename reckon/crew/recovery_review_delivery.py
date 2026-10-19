@@ -78,20 +78,6 @@ def _review_store_record_paths(record: Mapping[str, Any], project: str) -> list[
     return paths
 
 
-def _is_run_review_node(record: Mapping[str, Any]) -> bool:
-    """Whether a review run reads a run, rather than a plan.
-
-    A run review's node id is minted from the run it reads, so it carries
-    ``review-of-``; a plan review's carries ``plan-review-of-`` and keys its
-    record on the plan's blob instead of a head. The two are separated here
-    because only a run review is dispatched to read a revision, and only its
-    delivery is measured against one.
-    """
-    node = record.get("node") or {}
-    node_id = node.get("id") if isinstance(node, Mapping) else node
-    return str(node_id or "").startswith(REVIEW_NODE_PREFIX)
-
-
 def _declared_head_keyed_record(
     record: Mapping[str, Any], project: str
 ) -> tuple[Path, str] | None:
@@ -307,9 +293,14 @@ def _delivered_review_record(
     verdict standing where this run's would be — the defect measured on
     2026-10-18, when a run that never wrote its record was promoted on the
     unsuffixed path an earlier round had left complete. The legacy path and the
-    any-head ``.at-`` glob are therefore no delivery at all, and every reader of
-    review delivery inherits the predicate here rather than gaining a check of
-    its own.
+    any-head ``.at-`` glob are therefore no delivery at all.
+
+    Whether a review has delivered is decided here alone, so every reader that
+    asks the question reads this answer and none of them restates the four
+    conditions. The watcher is the one exception, and it does not decide
+    delivery at all: it adds a refusal that this function cannot express,
+    naming the head when a run review declares no head-keyed path at all —
+    a run this function only sees as having stored nothing.
     """
     declared = _declared_head_keyed_record(record, project)
     if declared is None:
