@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-moves-to-a-new-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -419,6 +419,94 @@
       before this section dispatches.
     </p>
 
+    <h2 id="s10">&sect;10 &mdash; The code identity is read only when HEAD moves</h2>
+    <section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      Every long-running reckon process asks once a second whether reckon's code has
+      moved: the followers, the producers, the MCP server and queue admission all
+      reach <code>source_code_identity</code> (<code>reckon/checkout_trust.py:389</code>)
+      through <code>follower_code_stamp</code>, on the
+      <code>FOLLOWER_FRESHNESS_SECONDS = 1.0</code> cadence
+      (<code>reckon/crew/follower_registration.py:444</code>). Each read runs
+      <code>git ls-tree HEAD reckon skills</code>, the catalogue's own read, and one
+      <code>git mktree</code> per composed tree (<code>_committed_reload_tree</code>,
+      <code>checkout_trust.py:344</code>). Measured on clu-2002 at 20:52 on
+      19 October, a 3.6 s sample saw 73 distinct <code>git mktree</code> processes.
+      <code>git mktree</code> freshens an object that already exists by rewriting
+      its mtime, so the identity tree's loose object
+      (<code>.git/objects/c0/8e3ea7…</code>) had its mtime rewritten twice in three
+      seconds. That is a metadata write to one shared GPFS inode, from every reading
+      process on every node, every second, with no code having moved.
+    </p>
+    <p>
+      The identity is a function of what HEAD names, so it is memoised per source
+      root against a stamp of the files HEAD resolves through: <code>HEAD</code>
+      itself, the ref it names, and <code>packed-refs</code>, located once per root
+      and including a worktree whose <code>.git</code> is a file. The git reads run
+      only when that stamp moves. A read that failed is never memoised, so
+      <code>IDENTITY_UNKNOWN</code> keeps the meaning it was given on 19 October. The
+      content-stamp path for a package outside Git keeps its present behaviour.
+    </p>
+    <p>
+      Done when three things hold. A test reads the identity over many quiet ticks
+      and sees no git spawn after the first. A test exists for each way HEAD moves (a
+      commit, a branch switch, <code>git pack-refs</code>, a detached HEAD), each
+      yielding the new identity on the next read. A failed read leaves the next read
+      to run git. The negative control is a commit that touches nothing under
+      <code>reckon/</code> or <code>skills/</code>: the git reads must run and the
+      identity must not change. A 30 s count on a quiet checkout, taken on the fleet
+      allocation, compares the git processes one follower spawns: the base revision
+      is the positive control, at least one a second, and the change must spawn none.
+      Over the same window the identity object's mtime must not move.
+    </p>
+
+    <h2 id="s11">&sect;11 &mdash; A moved checkout is proved importable once</h2>
+    <section data-reckon="section" data-id="s11" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      When the code identity moves, every long-running reckon process proves the new
+      image loads before re-executing into it. It does so through
+      <code>reckon_imports</code> (<code>checkout_trust.py:707</code>), which compiles
+      and imports all 180 modules of the materialised reload tree in a throwaway
+      interpreter. All of them prove the same immutable tree at the same moment. At
+      20:48 on 19 October, 16 such probes ran at once on clu-2002, blocked in D state
+      on <code>cxiBlockingMutexAcquire</code> and <code>cxiWaitEventWait</code>, and
+      the follower reported <q>the import probe timed out after 30 s</q>. One probe
+      alone on the same node took 11.2 s of wall time and 3.4 s of CPU. In the
+      preceding 24 hours, 152 commits moved <code>reckon/</code>, and each starts such
+      a herd. Each retry is herded again, because the retry gap
+      (<code>crew_follow_commands.py:221</code>) carries no jitter.
+    </p>
+    <p>
+      Whether a tree imports depends on the tree and the interpreter, not on the
+      process asking. The first process to prove a materialised tree records the
+      verdict beside it, published by rename and keyed by the interpreter, and every
+      later asker reads that verdict. Proofs of one tree are serialised by an
+      exclusive lock in the tree's directory, so a second asker waits for the
+      first's verdict rather than running its own. A pass and an import failure are
+      both recorded. A timeout is never recorded, because it says nothing about the
+      code (see <code>ImportProbeTimedOut</code>), so the next asker under the lock
+      probes alone. The retry gap gains jitter. A source checkout reloading under a
+      content stamp has no immutable tree, so it keeps the per-process probe.
+    </p>
+    <p>
+      Done when the following tests pass:
+    </p>
+    <ul>
+      <li>Concurrent askers on one tree start exactly one probe subprocess, and all
+      receive its verdict.</li>
+      <li>A timed-out probe records nothing, and the next asker probes.</li>
+      <li>A recorded failure is returned without probing again.</li>
+      <li>A new tree id is probed afresh.</li>
+      <li>A verdict recorded for another interpreter is not reused.</li>
+    </ul>
+    <p>
+      The measurement runs on the fleet allocation. Sixteen concurrent askers prove a
+      freshly materialised tree. At the base revision, the positive control, sixteen
+      probes run. At the change, one probe runs, and all sixteen answers arrive
+      within 30 s. This section writes <code>checkout_trust.py</code>, as §10 does,
+      so it dispatches after §10 lands.
+    </p>
+
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="g-tfnsis-stop-path" data-section="s2" data-gated-sections="s3" data-status="closed" data-verdict="passed">
@@ -457,7 +545,7 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-tfnsis-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build the-fleet-node-stays-in-service" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Investigate the stop path and producer cost, fix the migrate command, then gate the move</h4>
-    <div class="r-fu-body"><p>§2, §4 and §7 ran as the first wave. §3 waited on the §2 gate, and §9 follows §7's measurement; §3 and §9 have disjoint write scopes and run together. §6 shares <code>fleet_node.py</code> with §4 and runs after it lands. §5 follows §4. §8 is deferred: it runs only if SDCC asks for the node back, and then waits on the move-ready gate.</p></div>
+    <div class="r-fu-body"><p>§2, §4 and §7 ran as the first wave. §3 waited on the §2 gate, and §9 follows §7's measurement; §3 and §9 have disjoint write scopes and run together. §6 shares <code>fleet_node.py</code> with §4 and runs after it lands. §5 follows §4. §8 is deferred: it runs only if SDCC asks for the node back, and then waits on the move-ready gate. §10 and §11 came from a load reading on 19 October. Both write <code>checkout_trust.py</code>, so §10, the steady per-second cost, runs first and §11 follows it.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-node-stays-in-service</pre>
     </article>
 </section>
@@ -548,6 +636,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261019T092422770597-review-of-a-worker-step-carries-a-memory-bound-e84f7b09598d" data-who="reckon-build" data-when="2026-10-19T09:38:23.463Z">
     <div class="r-comment-body"><p>review of r-20261019T064133037110-a-worker-step-carries-a-memory-bound at head e84f7b09598dd118332924964778826bbc42a890 from base 871311cd82f1bcf70282fa3a36eb66eee5737dd8; all 6 dimensions scored parsed (goal_fidelity 18, evidence 18, scope_discipline 18, durability 15, fit 18, reuse 18); added_failure_count 0; two follow-on findings (default-bound value unpinned; no-live-reservation route carries no bound)</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-s10-origin" data-who="reckon-build" data-when="2026-10-19T19:00:00Z">
+    <div class="r-comment-body"><p>§10 and §11 were added from a load reading on clu-2002 at 20:48–20:52 on 19 October. That evening the load average was 60 on 28 CPUs with 26 tasks in D state, and an MCP crew read timed out after 30 s waiting on storage. Two causes were measured: about 20 <code>git mktree</code> spawns a second from the per-second code-identity read, and a 16-way import-probe herd on a single code move. The section prose was hand-edited because no op replaces section prose.</p></div>
 </div>
 </section>
 </main>
