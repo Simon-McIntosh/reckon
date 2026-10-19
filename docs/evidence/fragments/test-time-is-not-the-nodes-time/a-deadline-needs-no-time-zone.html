@@ -1,0 +1,35 @@
+<section id="a-deadline-needs-no-time-zone-landed">
+<h3>A deadline needs no time zone</h3>
+
+<p>The deadline statement now hands the worker one command that answers how much
+time is left, so it never compares two clock readings. <code>time_fence_statement</code>
+in <code>reckon/crew/prompts.py</code> states the command and tells the worker to judge
+the deadline only by it, naming file times and log stamps as readings that may
+print in the host's local zone. The command reads the deadline's epoch through
+<code>date -d … +%s</code> and subtracts the current epoch, so its answer carries no
+zone; where a hard stop differs the command prints the seconds to each.</p>
+
+<p>The first attempt now takes the grace multiple from its single owner:
+<code>dispatch.py</code> passes <code>resolved_grace_multiple(config)</code> — the resolver the
+watchdog and the resumed fence already read — instead of parsing the raw
+<code>fences.budget_grace_multiple</code> a second time in <code>prompts.py</code>, so the first
+attempt's hard stop and the watchdog agree on the instant.</p>
+
+<table id="a-deadline-needs-no-time-zone-measure">
+<thead><tr><th>Measure</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>New gate file</td><td><code>tests/test_a_deadline_needs_no_time_zone.py</code>, 6 passed</td></tr>
+<tr><td>Gate (8 files, head)</td><td>1 failed, 77 passed — the one failure is <code>test_every_module_fits_a_worker_window</code>, pre-existing at base</td></tr>
+<tr><td>Base arm (6 pre-existing files, base revision)</td><td>1 failed, 71 passed — same <code>test_every_module_fits_a_worker_window</code> failure, identical module names and sizes</td></tr>
+<tr><td>Two-zone command (launch 2026-10-19T15:07:32Z, 120m)</td><td>identical figure under <code>TZ=UTC</code> and <code>TZ=Europe/Paris</code>, within 2 of the deadline's epoch less now</td></tr>
+<tr><td>Hard stop at 1.5×</td><td>second figure 3600 s past the first</td></tr>
+<tr><td>Resolved multiple patched to 2.0 (raw key 1.5)</td><td>first-attempt prompt states the hard stop at 120m, not 90m</td></tr>
+<tr><td>Negative control: command prints <code>date</code></td><td><code>negative-control-command-prints-date.log</code>, two-zone case red, EXIT=1</td></tr>
+<tr><td>Negative control: command dropped</td><td><code>negative-control-command-dropped.log</code></td></tr>
+<tr><td>ruff check / format on staged paths</td><td>no new finding against the base blobs</td></tr>
+</tbody>
+</table>
+
+<p>Commits and logs live in the run directory
+<code>r-20261019T174344205759-a-deadline-needs-no-time-zone</code>.</p>
+</section>

@@ -379,56 +379,96 @@ def _utc_instant(moment: datetime) -> str:
     return moment.astimezone(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
-def _continuation_multiple(value: float | str | None) -> float | None:
+def _continuation_multiple(value: float | None) -> float | None:
     """The grace multiple that lets a worker continue past its deadline.
 
     At or below one, and for a value that is not a number, the hard stop is the
     deadline itself and no step is continued past it, so nothing is returned.
+    The multiple arrives already resolved to a number or nothing, so this applies
+    the rule alone and never parses a raw configuration value.
     """
-    try:
-        number = float(value)  # type: ignore[arg-type]
-    except (TypeError, ValueError):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
-    return number if number > 1.0 else None
+    return float(value) if value > 1.0 else None
+
+
+def _seconds_left_command(*, deadline: str, hard_stop: str | None = None) -> str:
+    """One shell command printing the seconds left by epoch arithmetic.
+
+    Each instant is read as epoch seconds with ``date -d … +%s`` and the current
+    epoch subtracted, so the printed figure carries no zone: the same number
+    reads whatever ``TZ`` the host sets. The stated deadline carries this instant
+    in its ``Z`` form, so the command spells the same instant with its numeric
+    offset and the fence names the attempt's deadline once. When a hard stop
+    differs from the deadline the command prints the seconds to each, the
+    deadline's figure first.
+    """
+    deadline_left = f"$(( $(date -d {_numeric_offset(deadline)} +%s) - $(date +%s) ))"
+    if hard_stop is None:
+        return f"echo {deadline_left}"
+    hard_stop_left = f"$(( $(date -d {_numeric_offset(hard_stop)} +%s) - $(date +%s) ))"
+    return f"echo {deadline_left} {hard_stop_left}"
+
+
+def _numeric_offset(instant: str) -> str:
+    """The same instant with its UTC offset spelled numerically rather than as ``Z``."""
+    return instant[:-1] + "+00:00" if instant.endswith("Z") else instant
 
 
 def time_fence_statement(
     *,
     time_budget: str,
     launch_instant: str,
-    grace_multiple: float | str | None = None,
+    grace_multiple: float | None = None,
 ) -> str:
     """State an attempt's launch instant, its deadline, and its hard stop.
 
     The deadline is the launch instant plus the declared budget, rendered in the
-    same ISO-8601 UTC form the attempt record writes, so a worker measures
-    elapsed time from a stated instant rather than estimating it from the work
-    it has done. The hard stop is the deadline when the grace multiple is
-    absent, unusable or at most one; above one it is the launch instant plus the
-    budget times that multiple, and only then may the worker finish a bounded
-    step the manifest named before the deadline.
+    same ISO-8601 UTC form the attempt record writes. The worker is given one
+    command that prints the seconds left from epoch arithmetic, and told to judge
+    the deadline only by that command rather than by a file time, a log stamp or
+    a ``date`` reading, which may print in the host's local zone and leave the
+    two readings hours apart. The hard stop is the deadline when the grace
+    multiple is absent or at most one; above one it is the launch instant plus
+    the budget times that multiple, the command prints its seconds beside the
+    deadline's, and only then may the worker finish a bounded step the manifest
+    named before the deadline.
     """
     launch = parse_iso(launch_instant)
     if launch is None:
         raise ValueError(f"Invalid isoformat string: {launch_instant!r}")
     budget_seconds = parse_duration(time_budget)
     deadline = _utc_instant(launch + timedelta(seconds=budget_seconds))
+    grace = _continuation_multiple(grace_multiple)
+    hard_stop = (
+        _utc_instant(launch + timedelta(seconds=budget_seconds * grace))
+        if grace is not None
+        else None
+    )
+    command = _seconds_left_command(deadline=deadline, hard_stop=hard_stop)
+    figures = (
+        "The first figure is the seconds left to the deadline, the second the "
+        "seconds left to the hard stop."
+        if hard_stop is not None
+        else "The figure it prints is the seconds left to the deadline."
+    )
     statement = (
         f"Launched {launch_instant} UTC; deadline {deadline} — {time_budget} from "
-        "launch. Check the current time with `date -u`, and measure elapsed time "
-        "against that deadline rather than estimating it from the work done."
+        "launch. Judge the deadline only by this one command, which prints the "
+        "seconds left from epoch arithmetic and reads the same whatever the "
+        f"host's TZ is:\n    {command}\n{figures} "
+        "Never judge the deadline by a file time, a log stamp or a `date -u` or "
+        "`date` reading, which may print in the host's local zone."
     )
-    grace = _continuation_multiple(grace_multiple)
     if grace is None:
         return (
-            f"{statement} That deadline is also the hard stop, and no step is "
+            f"{statement}\nThat deadline is also the hard stop, and no step is "
             "continued past it: write the checkpoint at the deadline — the "
             "manifest's status, checkpoint and remaining work current on disk — "
             "and stop and report."
         )
-    hard_stop = _utc_instant(launch + timedelta(seconds=budget_seconds * grace))
     return (
-        f"{statement} Write the checkpoint at the deadline: the manifest's "
+        f"{statement}\nWrite the checkpoint at the deadline: the manifest's "
         "status, checkpoint and remaining work are current on disk before "
         "anything else runs. Continue only through a bounded step the manifest "
         "named before the deadline — one command under its own timeout, or a "

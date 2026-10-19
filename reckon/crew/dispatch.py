@@ -147,6 +147,7 @@ from reckon.crew.routing import (
     resolve_role_override as resolve_role_override,
     resolve_scope_repository as resolve_scope_repository,
     resolve_section_routing as resolve_section_routing,
+    resolved_grace_multiple as resolved_grace_multiple,
     resolved_time_budget as resolved_time_budget,
     resolved_time_ceiling as resolved_time_ceiling,
     shadow_worktree_session as shadow_worktree_session,
@@ -1926,7 +1927,11 @@ def dispatch(
             working_directory=working_directory,
             launch_instant=attempt_started_at,
             needs_help_after_failures=int(fences.get("needs_help_after_failures", 2)),
-            grace_multiple=fences.get("budget_grace_multiple"),
+            # The multiple is read through its single owner, the same resolver
+            # the watchdog and the resumed fence read, so the first attempt's
+            # prompt and the watchdog agree on the instant the hard stop falls on
+            # rather than one parsing the raw configuration and the other not.
+            grace_multiple=resolved_grace_multiple(config),
             peer_scopes=peers,
             run_id=run_id,
             peer_channels={

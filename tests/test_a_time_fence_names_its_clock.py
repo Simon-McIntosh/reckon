@@ -6,8 +6,8 @@ worker to estimate elapsed time from the amount of work it has done. Measured
 fence reached" at 18:46:23Z — fourteen minutes in — with its test file, its
 negative control and its head arm unwritten. The dispatch prompt and every
 resume now carry the attempt's launch instant and deadline in ISO-8601 UTC,
-together with the command that checks them (``date -u``), and a resume
-restates both for the resumed attempt.
+together with the command that prints the seconds left from epoch arithmetic,
+and a resume restates both for the resumed attempt.
 
 These tests render a dispatch prompt and a resume advice for one fixed launch
 instant and budget and assert that both carry the same deadline string, which
@@ -32,7 +32,7 @@ OTHER_LAUNCH = "2026-01-02T03:04:05Z"
 OTHER_BUDGET = "90m"
 OTHER_DEADLINE = "2026-01-02T04:34:05Z"
 
-CLOCK_COMMAND = "`date -u`"
+CLOCK_COMMAND = f"echo $(( $(date -d {FIXED_DEADLINE[:-1]}+00:00 +%s) - $(date +%s) ))"
 
 
 def _node(*, time_budget: str = FIXED_BUDGET) -> TaskNode:
