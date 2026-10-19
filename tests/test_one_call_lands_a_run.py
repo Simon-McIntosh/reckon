@@ -24,7 +24,8 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import _plan_html, cli as cli_module
+from reckon import _plan_html
+from reckon import cli as cli_module
 from reckon.crew import merge
 from reckon.crew.runs import _write_json, pointer_path
 from tests.helpers.git import git as _git
@@ -96,7 +97,7 @@ def landed_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     head = _git(worktree, "rev-parse", "HEAD")
     manifest = tmp_path / "manifests" / f"{run_id}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
-    manifest.write_text(f"node: node-a\nstatus: complete\n", encoding="utf-8")
+    manifest.write_text("node: node-a\nstatus: complete\n", encoding="utf-8")
     gate_log = tmp_path / "gate.log"
     gate_log.write_text("# command: true\nEXIT=0\n", encoding="utf-8")
     _write_json(
@@ -190,9 +191,7 @@ def test_one_call_lands_the_change_pushes_it_and_removes_the_worktree(
     assert report["steps"]["land"]["pushed"] is True
     landed = _git(run["repository"], "rev-parse", "main")
     # The marker the change introduced is on the primary branch.
-    assert MARKER.strip() in _git(
-        run["repository"], "show", f"main:reviewed.txt"
-    )
+    assert MARKER.strip() in _git(run["repository"], "show", "main:reviewed.txt")
     # The remote ref equals the local one, and the worktree has been released.
     assert _git(run["origin"], "rev-parse", "main") == landed
     assert report["steps"]["land"]["remote_head"] == landed
@@ -226,6 +225,7 @@ def test_a_merge_that_drops_the_change_is_refused_and_nothing_is_pushed(
     assert "dropped the reviewed change" in report["steps"]["land"]["error"]
     assert report["steps"]["land"]["resume"].startswith("reckon crew merge")
     assert _git(run["origin"], "rev-parse", "main") == origin_before
+    assert _git(run["repository"], "rev-parse", "main") == branch_before
     assert run["worktree"].is_dir()
 
 

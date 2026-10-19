@@ -45,7 +45,6 @@ def crew_resume_ready(project, dry_run, pretty):
     _emit_crew_result(report, pretty)
 
 
-
 @crew.command(name="merge")
 @click.option(
     "--project",
@@ -98,7 +97,6 @@ def crew_merge(project, head, message, body, candidate, pretty):
     _emit_crew_result(report, pretty)
 
 
-
 @crew.command(name="unwatch")
 @click.option("--project", required=True, help="Project whose watcher to stop.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
@@ -112,7 +110,6 @@ def crew_unwatch(project, pretty):
     except CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(result, pretty)
-
 
 
 @crew.command(name="placement")
@@ -207,7 +204,6 @@ def crew_placement(ensure, replace_job, session, project, pretty):
     )
 
 
-
 @crew.command(name="list")
 @click.option("--project", default=None, help="Return runs for one project only.")
 @click.option("--phase", default=None, help="Return runs in one phase only.")
@@ -298,7 +294,6 @@ def crew_list(project, phase, session, mine, pretty):
     _emit_crew_result(payload, pretty)
 
 
-
 @crew.command(name="directory")
 @click.option("--project", default=None, help="Return coordinators for one project.")
 @click.option("--run", "run_id", default=None, help="Resolve one live run's owner.")
@@ -315,9 +310,7 @@ def crew_directory(project, run_id, node_id, pretty):
     _emit_crew_result(result, pretty)
 
 
-
 _PATH_KINDS = ("config-home", "reports", "runs", "live", "reviews")
-
 
 
 @crew.command(name="path")
@@ -391,7 +384,6 @@ def crew_path(kind, project, run_id):
     click.echo(str(path))
 
 
-
 def _reviewed_head_from_run_records(project: str, reviewed_run_id: str) -> str:
     """The revision a run with no live pointer was reviewed at, from its records.
 
@@ -455,7 +447,6 @@ def _reviewed_head_from_run_records(project: str, reviewed_run_id: str) -> str:
         "refusing to take one from the working directory, which would answer a "
         "review belonging to whatever repository the caller stands in"
     )
-
 
 
 @crew.command(name="dispose")
@@ -667,7 +658,6 @@ def crew_dispose(
         },
         pretty,
     )
-
 
 
 @crew.command(name="check-manifest")
@@ -942,9 +932,7 @@ def supersede_run_review(project: str, run_id: str, reason: str) -> dict[str, An
 WIDENABLE_PHASE = "blocked"
 
 
-
 WIDEN_REFUSING_MANIFEST_STATUSES = frozenset({"complete", "failed"})
-
 
 
 WIDEN_RULE = (
@@ -952,7 +940,6 @@ WIDEN_RULE = (
     "because a live worker is already writing against the boundary a widening "
     "would move"
 )
-
 
 
 def _manifest_reported_status(record: Mapping[str, Any]) -> str:
@@ -988,7 +975,6 @@ def _manifest_reported_status(record: Mapping[str, Any]) -> str:
         return ""
     status = str(delivered.get("status") or "").strip().lower()
     return "" if manifest_status_is_template(status) else status
-
 
 
 def _widen_eligibility(record: Mapping[str, Any]) -> tuple[str, str, str]:
@@ -1035,7 +1021,6 @@ def _widen_eligibility(record: Mapping[str, Any]) -> tuple[str, str, str]:
     return "", reported, ""
 
 
-
 def _widen_running_worker(record: Mapping[str, Any]) -> str:
     """The pid of this run's worker while it is still running, or ``""`` once gone.
 
@@ -1057,14 +1042,12 @@ def _widen_running_worker(record: Mapping[str, Any]) -> str:
     return str(record.get("pid") or "")
 
 
-
 def _widen_refusal(run_id: str, state: str, remedy: str, *, where: str) -> str:
     """Compose the refusal naming the state, where it was read, and the next move."""
     message = (
         f"run {run_id!r} cannot have its fence widened{where}: {state}; {WIDEN_RULE}"
     )
     return f"{message}. {remedy}" if remedy else message
-
 
 
 @crew.command(name="widen")
@@ -1185,7 +1168,6 @@ def crew_widen(run_id, write_paths, pretty):
     )
 
 
-
 @crew.command(name="drain")
 @click.option("--project", required=True, help="Project whose live pointers to drain.")
 @click.option(
@@ -1250,7 +1232,6 @@ def crew_drain(project, session, leaves, pretty):
     )
 
 
-
 @crew.command(name="ack")
 @click.option(
     "--run",
@@ -1291,12 +1272,10 @@ def crew_ack(run_id, reason, until, pretty):
     )
 
 
-
 @crew.group(name="suite")
 def crew_suite():
     """The project's declared suite: run it once, or waive its hold."""
-    return None
-
+    return
 
 
 def _suite_project_root(project: str, checkout_path: Path | None) -> Path:
@@ -1319,7 +1298,6 @@ def _suite_project_root(project: str, checkout_path: Path | None) -> Path:
             "naming the repository its suite runs in"
         )
     return mount
-
 
 
 @crew_suite.command(name="run")
@@ -1377,7 +1355,6 @@ def crew_suite_run(project, checkout_path, pretty):
     )
 
 
-
 @crew_suite.command(name="waive")
 @click.option("--project", required=True, help="Project whose hold is waived.")
 @click.option("--reason", required=True, help="Why the hold is lifted.")
@@ -1398,7 +1375,6 @@ def crew_suite_waive(project, reason, who, checkout_path, pretty):
     root = _suite_project_root(project, checkout_path)
     path = standing_suite.record_waiver(root, project, who=who, why=reason)
     _emit_crew_result({"project": project, "waiver": str(path)}, pretty)
-
 
 
 @crew.command(name="gc")
@@ -1517,7 +1493,6 @@ def crew_gc(
     _emit_crew_result(report, pretty)
 
 
-
 @crew.command(name="resume")
 @click.option("--run", "run_id", required=True, help="Run id to answer.")
 @click.option("--advice", required=True, help="The orchestrator's answer.")
@@ -1631,7 +1606,6 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
     _emit_crew_result(payload, pretty)
 
 
-
 @crew.command(name="redispatch")
 @click.option("--run", "run_id", required=True, help="Run id to move.")
 @click.option("--backend", required=True, help="Destination backend.")
@@ -1720,7 +1694,6 @@ def crew_redispatch(
     _emit_crew_result(moved, pretty)
 
 
-
 @crew.command(name="stop")
 @click.option("--run", "run_id", required=True, help="Run id to stop.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
@@ -1734,7 +1707,6 @@ def crew_stop(run_id, pretty):
     _emit_crew_result(record, pretty)
 
 
-
 @crew.command(name="discard")
 @click.option("--run", "run_id", required=True, help="Run id to discard.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
@@ -1746,7 +1718,6 @@ def crew_discard(run_id, pretty):
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(result, pretty)
-
 
 
 @crew.command(name="repair-status")
@@ -1784,13 +1755,11 @@ def crew_repair_status(run_id, status, reason, pretty):
     _emit_crew_result(result, pretty)
 
 
-
 def _ledger_module():
     """Import the ledger helpers on demand."""
     from reckon import ledger as ledger_module
 
     return ledger_module
-
 
 
 def _refuse_a_flag_as_a_reason(
@@ -2350,7 +2319,10 @@ def _land_a_promoted_run(
     )
     if recorded is not None:
         report["promotion"] = {**promoted, "record": recorded}
-    report["steps"]["release"] = {"ok": bool(release.get("worktree_released")), **release}
+    report["steps"]["release"] = {
+        "ok": bool(release.get("worktree_released")),
+        **release,
+    }
     branch = str(landed.get("branch") or "")
     remote = str(landed.get("remote") or "origin")
     if branch and repository_value:
@@ -2398,7 +2370,6 @@ def _reviewed_head_of(record: Mapping[str, Any]) -> str:
         return promoted_revision
     commits = [str(sha).strip() for sha in (record.get("commits") or ())]
     return next((sha for sha in reversed(commits) if sha), "")
-
 
 
 @crew.command(name="verify-gate")
@@ -2481,7 +2452,6 @@ def crew_verify_gate(
     _emit_crew_result(result, pretty)
 
 
-
 @crew.command(name="recover")
 @click.option("--project", default=None, help="Limit to one project's runs.")
 @click.option(
@@ -2511,11 +2481,9 @@ def crew_recover(project, dispatch_reviews, pretty):
     _emit_crew_result(report, pretty)
 
 
-
 @crew.group(name="member")
 def crew_member():
     """The project's committed team roster."""
-
 
 
 @crew_member.command(name="add")
@@ -2553,7 +2521,6 @@ def crew_member_add(project, member_id, harness, role, session, checkout_path, p
     _emit_crew_result({"project": project, "member": entry}, pretty)
 
 
-
 @crew_member.command(name="list")
 @click.option("--project", required=True, help="Project owning the roster.")
 @click.option(
@@ -2571,7 +2538,6 @@ def crew_member_list(project, checkout_path, pretty):
     except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result({"project": project, "members": roster}, pretty)
-
 
 
 @crew.command(name="ledger")
@@ -2619,7 +2585,6 @@ def crew_ledger(project, view, path, checkout_path, pretty):
     except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result({"project": project, **payload}, pretty)
-
 
 
 @crew.command(name="velocity")
@@ -2682,7 +2647,6 @@ def crew_velocity(project, since, until, fields, limit, cursor, pretty):
         detail = payload.get("detail") or payload.get("message") or str(payload)
         raise click.ClickException(str(detail))
     _emit_crew_result(payload, pretty)
-
 
 
 @crew.command(name="budget-reset")
@@ -2748,7 +2712,6 @@ def crew_budget_reset(group, mark_available, mark_used, by, pretty):
             ),
         }
     _emit_crew_result(result, pretty)
-
 
 
 _LIFT_CLOCKS = ("seven_day", "five_hour")
@@ -3069,7 +3032,6 @@ def crew_split_runs(dry_run, pretty):
     except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(report, pretty)
-
 
 
 @crew.command(name="repair-completion")
