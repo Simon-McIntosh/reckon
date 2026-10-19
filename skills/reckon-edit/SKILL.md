@@ -391,7 +391,7 @@ section carries the result and a link to the evidence. Never a hand edit.
 
 | Op | Required keys | Notes |
 |---|---|---|
-| `set` | `path`, `value` | Plan: `status`, `impl`, `roi`, `effort`, `milestone`, `sprint`, `capability`, `owner`, `summary`, `title`, `type`, `archived`, `read`, `depends_on`, `blocks`, `informs`, `followups.<id>.prompt`. Index: `active_sprint_id`, `sprints.<id>.<field>` |
+| `set` | `path`, `value` | Plan: `status`, `roi`, `effort`, `milestone`, `sprint`, `capability`, `owner`, `summary`, `title`, `type`, `archived`, `read`, `depends_on`, `blocks`, `informs`, `followups.<id>.prompt`. Index: `active_sprint_id`, `sprints.<id>.<field>` |
 | `append` | `target`, `item` | Plan targets: `followups`, `research`, `questions`, `comments`, `decisions` (+ `key`). Index targets: `sprints`, `sprints.<id>.items`, `milestones`, `timeline`, `blockers` |
 | `resolve` | `target`, `id`, `by`, `outcome` or `resolution` | `followups` uses `outcome`; `questions` uses `resolution` |
 | `lock` | `key`, `choice`, `rationale`, `by` | Locks a decision (`data-choice` + by/when). |
@@ -402,6 +402,16 @@ section carries the result and a link to the evidence. Never a hand edit.
 A direct HTML edit of plan state is the exception, not a fourth write path:
 reach for it only when `edit_plan` cannot express the change or is unavailable,
 and announce the reason in your reply under the bypass rule above.
+
+**`impl` has no `set` path.** It derives from the section records and moves when
+a section's declaration moves to `done` — the store refuses a direct write in
+both derivations. A node that lands without closing its section belongs in that
+section's comment, not in `impl`.
+
+**Section effort and risk.** `effort_hours` on an `insert_section` or an
+`append` of a section record is a positive number of quarter hours (`0.25`
+steps, for example `1.25`). A section's `capability.requirements.risk` is one
+of `low`, `moderate`, `elevated`, `critical`.
 
 Copyable landing-beat examples, one per op:
 

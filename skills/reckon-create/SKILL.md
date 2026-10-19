@@ -396,7 +396,11 @@ one-paragraph or one-table file merely because one plan section changed.
 Use the Write tool to create the canonical typed path from the template below.
 Every authored section heading needs an entry in `plan-section-declarations`,
 because a write that adds a heading with no declaration is refused (and a
-declaration naming no heading is refused too).
+declaration naming no heading is refused too). A section typed through
+`insert_section` or an `append` carries `effort_hours` as a positive number of
+quarter hours (`0.25` steps, for example `1.25`), and its
+`capability.requirements.risk` is one of `low`, `moderate`, `elevated`,
+`critical`.
 Then, optionally, use `edit_plan(create=True)` to register initial state
 via the version-safe MCP path (required if other agents may be writing
 concurrently to the same project's index).
@@ -567,7 +571,7 @@ Only author fields that a view downstream consumes:
 | `plan-after` | Soft sequencing → orders the ready set and names the targets it is behind; never blocks |
 | `plan-archived` | `1` hides plan from default inventory (retirements) |
 | `plan-read` | `1` marks a research/doc reviewed |
-| `plan-impl` | Set by `reckon-build` (shipped/total) on each landing — **not** server-computed; unset = 0%. |
+| `plan-impl` | Server-computed. It derives from the section records and moves when a section's declaration moves to `done`; never author it. |
 | `plan-version` | **Server-owned** concurrency counter. Never author. |
 | `plan-modified` | Staleness detection; server-stamped on write. Never author. |
 
@@ -602,9 +606,9 @@ Only author fields that a view downstream consumes:
 | `plan-archived` | (empty) | `1` to hide from inventory |
 | `plan-read` | (empty) | `1` to mark reviewed |
 
-**Do NOT author** (server-owned): `plan-version`, `plan-modified`. (`plan-impl`
-starts at 0 and is advanced by `reckon-build` as sections ship — not
-server-computed.)
+**Do NOT author** (server-owned): `plan-version`, `plan-modified`, `plan-impl`.
+A plan's `impl` derives from the section records and moves when a section's
+declaration moves to `done`; the store refuses a direct write.
 
 `plan-status` is authored on lifecycle transitions (draft → active → shipped).
 Set it to `draft` on initial scaffolding; update it as the plan progresses.

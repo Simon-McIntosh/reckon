@@ -258,7 +258,8 @@ Concretely:
 1. **When work lands on a plan**:
    - `status` updated (`active` → `shipped`/`done` when fully done;
      `active` → `blocked` when stalled; etc.)
-   - `impl` advanced toward 1.0
+   - `impl` moves on its own: it derives from the section records and advances
+     when a section's declaration moves to `done` — never set directly
    - `modified` set to today (server-written on each POST)
    - **The driving followup MUST be resolved** with `resolved_at`,
      `resolved_by`, `outcome` describing what landed

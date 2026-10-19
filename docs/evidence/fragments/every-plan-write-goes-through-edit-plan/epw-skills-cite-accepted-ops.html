@@ -1,0 +1,67 @@
+<!-- Evidence anchor: epw-skills-cite-accepted-ops -->
+
+<section id="epw-skills-cite-accepted-ops-evidence">
+  <h2>The skills describe the ops the store accepts</h2>
+
+  <p id="epw-skills-cite-accepted-ops-cause">
+    Five files still showed a write the store refuses. The census behind this
+    plan found 25 refused attempts to set <code>impl</code>, and the guidance
+    sending readers there survived in the <code>set</code> row of the
+    <code>reckon-edit</code> op-reference table; the meta-field and
+    "Do NOT author" rows of <code>reckon-create</code>, which called
+    <code>plan-impl</code> "not server-computed"; the landing-beat step of
+    <code>sprint-orchestration.md</code> ("the advanced node-based
+    <code>impl</code>"); the landing step of <code>coordinator-reference.md</code>
+    ("the advanced <code>impl</code>"); and the plan-state checklist in
+    <code>AGENTS.md</code> ("<code>impl</code> advanced toward 1.0"). On a plan
+    with section records the store computes <code>impl</code> and refuses the
+    write outright, so each of those was a documented write that cannot land.
+  </p>
+
+  <p id="epw-skills-cite-accepted-ops-fix">
+    Each site now states the derivation instead: <code>impl</code> derives from
+    the section records and moves when a section's declaration moves to
+    <code>done</code>, and it has no <code>set</code> path. The
+    <code>reckon-edit</code> <code>set</code> row drops <code>impl</code> and
+    gains a short "Not settable" note; <code>reckon-create</code> folds
+    <code>plan-impl</code> into its server-owned list; the two
+    <code>reckon-build</code> references state the derivation where they
+    described advancing it. The same five files now also state that section
+    effort is a positive number of quarter hours (<code>0.25</code> steps) and
+    list a section's legal <code>risk</code> values as <code>low</code>,
+    <code>moderate</code>, <code>elevated</code>, <code>critical</code>.
+  </p>
+
+  <p id="epw-skills-cite-accepted-ops-harness">
+    The extract-and-apply harness in <code>tests/test_skill_contracts.py</code>
+    is widened rather than twinned. <code>_documented_op_objects</code> now
+    reads every op object a skill or <code>AGENTS.md</code> shows in a fenced
+    block or an inline code span, carrying the enclosing
+    <code>edit_plan(...)</code> call's <code>doc_type</code> and <code>slug</code>
+    so an example written against a sprint or a review resource is applied to
+    that resource. Each op is applied and the refusal, if any, must not be for
+    its path: <code>_refusal_is_for_path</code> recognises an unsupported path
+    or a computed field, and tolerates a refusal for a missing target the
+    synthesized fixture does not carry. A second test,
+    <code>test_the_op_reference_set_row_documents_supported_paths</code>, parses
+    the <code>reckon-edit</code> op-reference <code>set</code> row into its plan
+    and index paths and applies each — plan paths to a synthesized plan, index
+    paths to the project index — requiring the same.
+  </p>
+
+  <p id="epw-skills-cite-accepted-ops-evidence-tail">
+    The gate ran
+    <code>PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_skill_contracts.py tests/test_mcp_vocabulary_is_complete.py tests/test_cited_commands_exist.py</code>
+    at the node head: 74 passed, 1 failed. The single failure,
+    <code>test_every_registered_crew_verb_is_documented_or_exempt</code>, is
+    present at the base revision and is another node's in-flight work, so the
+    delta against the base is zero added failures. The negative control restores
+    <code>impl</code> to the <code>set</code> row and the widened contract test
+    then fails, naming <code>skills/reckon-edit/SKILL.md</code>. A grep of the
+    five files for an instruction to set or advance <code>impl</code> finds the
+    instruction at the base revision (five sites) and none at the head. Ruff
+    reports the base file's one pre-existing <code>RUF005</code> and its
+    pre-existing format-dirty state; the change adds neither a finding nor a
+    format violation.
+  </p>
+</section>
