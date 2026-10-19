@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="470" viewBox="0 0 940 470" role="img" aria-labelledby="title desc">
+<title id="title">A tracked landing write left behind by a held index lock, and the restore that recovers it</title>
+<desc id="desc">Two rows of one rollback path. In both, another process holds .git/index.lock, so the single index-writing whole-path restore exits 128. Top row, base a346c2e1: the fallback settled a path HEAD carries by reporting it unrestored, so the working tree kept the landing narrative the promotion had written, an edit the run never made for the next promotion to meet. Bottom row, this node: the fallback reads HEAD's blob with git cat-file blob, plumbing that takes no index lock, and writes it over the working-tree file, so the path carries its committed content again and the report is true. A footnote names the cases still reported unrestored and now named in the refusal: a path the index already stages, a blob git cannot read, and a file it cannot write.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/></marker></defs>
+<g font-family="sans-serif" font-size="14" fill="#172033">
+<text x="24" y="30" font-size="18" font-weight="bold">The lock that refuses the landing also refuses the restore</text>
+
+<g fill="#ffffff" stroke="#64748b"><rect x="24" y="52" width="892" height="156" rx="4"/></g>
+<text x="44" y="78" font-weight="bold" fill="#7f1d1d">BASE a346c2e1</text>
+<text x="170" y="78">the tracked write survives the rollback</text>
+
+<g fill="#f1f5f9" stroke="#94a3b8"><rect x="44" y="92" width="228" height="54"/>
+<rect x="300" y="92" width="246" height="54"/></g>
+<g fill="#fee2e2" stroke="#b91c1c"><rect x="574" y="92" width="318" height="54"/></g>
+
+<text x="58" y="114" font-weight="bold" fill="#334155">.git/index.lock held</text>
+<text x="58" y="134" font-size="13" fill="#334155">another process holds it</text>
+
+<g font-family="monospace" font-size="12">
+<text x="314" y="114">git restore --staged</text>
+<text x="314" y="134">--worktree</text>
+</g>
+<text x="452" y="134" font-size="13" font-weight="bold" fill="#7f1d1d">EXIT 128</text>
+
+<text x="588" y="114" font-weight="bold" fill="#7f1d1d">fallback: HEAD carries it</text>
+<text x="588" y="134" font-size="13" fill="#7f1d1d">reported unrestored</text>
+
+<text x="44" y="172">Working tree still reads</text>
+<g font-family="monospace" font-size="13"><text x="236" y="172" fill="#7f1d1d">"landing narrative &#8230;"</text></g>
+<text x="44" y="194" fill="#7f1d1d">an edit the run never made, for the next promotion to meet.</text>
+
+<g fill="#ffffff" stroke="#64748b"><rect x="24" y="228" width="892" height="156" rx="4"/></g>
+<text x="44" y="254" font-weight="bold" fill="#14532d">THIS NODE</text>
+<text x="140" y="254">the tracked write is restored</text>
+
+<g fill="#f1f5f9" stroke="#94a3b8"><rect x="44" y="268" width="228" height="54"/>
+<rect x="300" y="268" width="246" height="54"/></g>
+<g fill="#dcfce7" stroke="#15803d"><rect x="574" y="268" width="318" height="54"/></g>
+
+<text x="58" y="290" font-weight="bold" fill="#334155">.git/index.lock held</text>
+<text x="58" y="310" font-size="13" fill="#334155">the lock stays held</text>
+
+<text x="314" y="290" font-weight="bold" fill="#334155">restore refused</text>
+<text x="314" y="310" font-size="13" fill="#334155">same EXIT 128, same cause</text>
+
+<g font-family="monospace" font-size="12" fill="#14532d">
+<text x="588" y="290">git cat-file blob HEAD:&lt;path&gt;</text>
+</g>
+<text x="588" y="310" font-size="13" fill="#14532d">takes no index lock</text>
+
+<text x="44" y="348" fill="#14532d">Working tree rewritten from that blob;</text>
+<text x="346" y="348" fill="#14532d">report restored;</text>
+<g font-family="monospace" font-size="13" fill="#14532d">
+<text x="500" y="348">content == HEAD</text>
+</g>
+
+<g fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)">
+<path d="M272 119 H298"/><path d="M546 119 H572"/>
+<path d="M272 295 H298"/><path d="M546 295 H572"/>
+</g>
+
+<path d="M24 404 H916" stroke="#94a3b8"/>
+<text x="24" y="430" font-weight="bold">Still reported unrestored, and now named in the refusal:</text>
+<text x="24" y="454">a path the index already stages (clearing that entry needs the held lock), a blob git cannot read, and a file it cannot write.</text>
+</g></svg>
