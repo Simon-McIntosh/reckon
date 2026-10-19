@@ -25,7 +25,7 @@
   <title>Test Time Is Not The Node's Time | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -113,14 +113,16 @@
 <li>The statement tells the worker to judge the deadline only by that command, and never by a file time, a log stamp or a <code>date</code> reading, which may print in the host's local zone.</li>
 <li>A resumed attempt's fence is built by the same function (<code>reckon/crew/dispatch_sessions.py:1468</code>), so it carries the command measured from that attempt's own launch.</li>
 </ul>
+<p><strong>One owner for the multiple, on the first attempt too.</strong> §3's review found that the first attempt still passes the raw <code>fences.budget_grace_multiple</code> (<code>reckon/crew/dispatch.py:1929</code>), which <code>_continuation_multiple</code> in <code>reckon/crew/prompts.py</code> parses a second time. The watchdog and the resumed fence already read <code>resolved_grace_multiple</code>. Here <code>dispatch.py</code> passes <code>resolved_grace_multiple</code>'s value instead, and <code>time_fence_statement</code> takes that resolved number. No code in <code>prompts.py</code> parses the raw value: it keeps only the rule that a multiple at or below 1.0, or none, allows no continuation.</p>
 <p>Change nothing else. The deadline instant, the hard stop and the rule from §3 stay as §3 states them.</p>
-<p><strong>Write paths.</strong> <code>reckon/crew/prompts.py</code>, the new <code>tests/test_a_deadline_needs_no_time_zone.py</code>, and the node's evidence fragment. <code>tests/test_a_time_fence_names_its_clock.py</code>, <code>tests/test_brief_prompt.py</code> and <code>tests/test_crew_prompts.py</code> are granted only to update an asserted deadline sentence to the new statement. Remove no other assertion.</p>
+<p><strong>Write paths.</strong> <code>reckon/crew/prompts.py</code>, <code>reckon/crew/dispatch.py</code>, <code>reckon/crew/dispatch_claims.py</code> (the multiple's type on the way through), the new <code>tests/test_a_deadline_needs_no_time_zone.py</code>, and the node's evidence fragment. <code>tests/test_a_time_fence_names_its_clock.py</code>, <code>tests/test_brief_prompt.py</code> and <code>tests/test_crew_prompts.py</code> are granted only to update an asserted deadline sentence to the new statement. Remove no other assertion.</p>
 <p><strong>Done when</strong> all of these hold:</p>
 <ul>
 <li>The new test builds the statement for a launch of 2026-10-19T15:07:32Z and a 120-minute budget, and extracts the command it states. Run through a shell with <code>TZ=UTC</code> and again with <code>TZ=Europe/Paris</code>, the command prints the same number of seconds to within 2. That number is within 2 of the deadline's epoch seconds less the test's own epoch seconds.</li>
 <li>With a grace multiple of 1.5, the command prints a second figure for the hard stop, 3,600 seconds after the deadline.</li>
 <li>The statement tells the worker to judge the deadline by that command alone, and names file times and log stamps as readings that may be in local time.</li>
 <li>A resumed attempt's fence, from the <code>dispatch_sessions.py</code> path, states the command measured from its own launch.</li>
+<li>With <code>resolved_grace_multiple</code> patched where <code>dispatch.py</code> reads it to return 2.0, a first-attempt prompt states the hard stop at twice the budget from launch, whatever the raw fences value says.</li>
 <li>Run pytest in the foreground with <code>-rA</code> over these files: the new file, the three granted files, <code>tests/test_every_resume_door_states_its_deadline.py</code>, <code>tests/test_time_fence_follows_the_attempt.py</code>, <code>tests/test_a_deadline_lets_a_named_batch_finish.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code>. It adds no failure against a base arm run at the dispatched base revision. Both arms' logs go in the run directory, and the manifest's <code>baseline_suite</code> names the base log and its failure ids exactly as pytest prints them.</li>
 <li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths, judged by delta against the base blobs.</li>
 </ul>
