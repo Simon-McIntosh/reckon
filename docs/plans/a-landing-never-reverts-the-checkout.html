@@ -25,7 +25,7 @@
   <title>A Landing Never Reverts The Checkout | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -155,6 +155,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261018T235652142169-review-of-the-gate-landing-reports-its-check-05bece75834d" data-who="reckon-build" data-when="2026-10-19T00:02:53.014Z">
     <div class="r-comment-body"><p>independent review of run r-20261018T233454426090-the-gate-landing-reports-its-check at reviewed head 05bece75834ddba31dca49504da0dd51ca600194; verdict parsed, six dimensions scored (goal_fidelity 20, evidence 19, scope_discipline 20, durability 18, fit 18, reuse 20), zero added failures, one follow-on finding (promotion_gate.py:993 carries landing_check unconditionally where promotion_release.py:643 guards it).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261018T233454426090-the-gate-landing-reports-its-check" data-who="reckon-build" data-when="2026-10-18T23:55:08.271Z">
+    <div class="r-comment-body"><p>reckon/crew/promotion_gate.py record_gate_rerun_at_integrated_revision now passes its _commit_landing_writes result through _report_landing_check and carries landing_check on the verify-gate receipt, so a staged reversal or post-commit mismatch found while landing a gate re-run reaches stderr and the receipt; one new case fails at the base revision with KeyError: &#x27;landing_check&#x27; (head 29 passed/EXIT=0, base 28 passed/EXIT=0).</p></div>
 </div>
 </section>
 </main>
