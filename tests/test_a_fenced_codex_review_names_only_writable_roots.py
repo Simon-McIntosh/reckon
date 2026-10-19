@@ -1,12 +1,11 @@
 """A fenced codex review is handed only the roots the fence leaves writable.
 
-codex 0.163.0 prepares every root it is told writable — ``--add-dir`` — by
-creating the mount points it needs inside it, and refuses *every* command when
-one of those roots cannot be written. The fence seals the shared delivery
-stores (the reports root and the review store) read-only and re-opens only a
-run's *declared* paths beneath them, so a launch that hands a sealed store to
-the dialect contradicts the fence: on 2026-10-18 five power_convertor reviews
-failed on ``bwrap: Can't mkdir .../crew/reports/.aws: Read-only file system``.
+A codex client prepares every root it is told writable — each ``--add-dir`` —
+by creating the mount points it needs inside it, and refuses every command when
+one of those roots is read-only. The fence seals the shared delivery stores
+(the reports root and the review store) read-only and re-opens only a run's
+*declared* paths beneath them, so a launch that hands a sealed store to the
+dialect contradicts the fence.
 
 One rule — :func:`reckon._worker_fence.fence_writable_roots` — states which
 declared roots stay writable inside the fence. The fence's own grant loop uses
@@ -22,22 +21,19 @@ The properties proved here, through the argv ``launch_plan`` composes:
   for the review-records path beneath the store;
 * every ``--add-dir`` it does carry is a path the fence binds writable or lies
   outside every sealed path;
-* the fence's writable binds equal the ones the pre-change rule composes for
-  the same inputs, read from the revision that introduced the rule;
+* the fence's writable binds for that declared set are exactly the declared
+  roots the stores do not seal, spelled out as literal expectations, so the
+  factoring leaves the fence's binds alone;
 * an unfenced launch with the same set keeps every ``--add-dir``.
 
 The declared negative control restores the unfiltered writable set to the
-dialect; the reports root's ``--add-dir`` assertion must then fail, and the red
-log's first line is the mutation string below, verbatim.
+dialect, and the assertion on the sealed stores' ``--add-dir`` is the one then
+expected to fail.
 """
 
 from __future__ import annotations
 
-import importlib.util
-import subprocess
-import sys
 from pathlib import Path
-from types import ModuleType
 
 import pytest
 
@@ -49,18 +45,6 @@ NEGATIVE_CONTROL_MUTATION = (
     "pass the unfiltered writable set to the dialect again; the new test fails "
     "on the reports root's --add-dir"
 )
-
-FENCE_RULE_SYMBOL = "def fence_writable_roots"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", "-C", str(repository), *arguments],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _paths_after(argv: list[str], flag: str) -> list[str]:
@@ -97,56 +81,6 @@ def _within_any(path: Path, roots: list[str]) -> bool:
     return any(path == Path(root) or path.is_relative_to(root) for root in roots)
 
 
-@pytest.fixture(scope="session")
-def base_fence_module(tmp_path_factory: pytest.TempPathFactory) -> ModuleType:
-    """The fence as it stood before the rule, loaded from the introducing revision.
-
-    ``git log -S`` names the commit that introduced the rule; the revision
-    before it composes the binds this change must leave untouched. Read from
-    history rather than restated, so the base arm moves with the repository
-    instead of being a literal that rots.
-    """
-    repository = Path(__file__).resolve().parents[1]
-    introducing = _git(
-        repository,
-        "log",
-        "-1",
-        "--format=%H",
-        "-S",
-        FENCE_RULE_SYMBOL,
-        "--",
-        "reckon/_worker_fence.py",
-    )
-    revision = f"{introducing}^" if introducing else "HEAD"
-    try:
-        blob = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(repository),
-                "show",
-                f"{revision}:reckon/_worker_fence.py",
-            ],
-            check=True,
-            capture_output=True,
-        ).stdout
-    except subprocess.CalledProcessError as exc:  # pragma: no cover - shallow clone
-        pytest.skip(f"the base revision {revision} is not readable: {exc}")
-    source = blob.decode()
-    if FENCE_RULE_SYMBOL in source:  # pragma: no cover - rule already in the base
-        pytest.skip(
-            f"base revision {revision} already carries the rule; nothing to compare"
-        )
-    staged = tmp_path_factory.mktemp("base-fence") / "_worker_fence_base.py"
-    staged.write_bytes(blob)
-    spec = importlib.util.spec_from_file_location("_worker_fence_base", staged)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["_worker_fence_base"] = module
-    spec.loader.exec_module(module)
-    return module
-
-
 class Fixture:
     """A stand-in operator home, its crew stores, a worktree and a live run."""
 
@@ -165,10 +99,16 @@ class Fixture:
         self.manifest = self.run / "manifest.md"
         self.manifest.write_text("")
 
-        # The declared review-records path: one subject directory under the
-        # review store, which the fence re-binds writable while the store root
-        # itself stays sealed.
-        self.records = review_store_root() / "plan" / "the-reviewed-plan"
+    @property
+    def records(self) -> Path:
+        """The declared review-records path: one subject directory under the store.
+
+        One subject directory under the review store, which the fence re-binds
+        writable while the store root itself stays sealed. Read live rather than
+        captured, because the store root follows ``RECKON_HOME`` and the fixture
+        sets its own home when it isolates.
+        """
+        return review_store_root() / "plan" / "the-reviewed-plan"
 
     def isolate(self, monkeypatch: pytest.MonkeyPatch) -> None:
         for name, value in (
@@ -203,6 +143,10 @@ class Fixture:
             **extra,
         )
 
+    def lock(self) -> Path | None:
+        """The plan-write lock namespace the launch seeds and grants."""
+        return _worker_fence.seed_write_lock_namespace(str(self.home))
+
     def write_roots(self) -> list[str]:
         """The writable set ``launch_plan`` composes the fence with.
 
@@ -210,7 +154,7 @@ class Fixture:
         seeds and grants so a fenced worker can write its own plan.
         """
         roots = [str(path) for path in self.declared_roots()]
-        lock = _worker_fence.seed_write_lock_namespace(str(self.home))
+        lock = self.lock()
         if lock is not None:
             roots.append(str(lock))
         return roots
@@ -259,12 +203,18 @@ def test_every_add_dir_is_bound_writable_or_outside_every_sealed_path(
         )
 
 
-def test_the_fences_binds_are_unchanged_from_the_base(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    base_fence_module: ModuleType,
+def test_the_fences_declared_binds_are_unchanged(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Factoring the rule out of the grant loop leaves the fence's binds alone."""
+    """Factoring the rule out of the grant loop leaves the fence's binds alone.
+
+    The expectation is spelled out rather than read from history: the fence must
+    re-bind writable exactly the declared roots the sealed stores do not cover,
+    plus the two roots the fence adds for itself — the worktree a worker commits
+    in, and the runtime paths a codex launch writes beneath the sealed node temp
+    root. The fence's own additions are named here as groups so a root that
+    joins the declared set, or a bind that moves between the two, fails.
+    """
     fixture = Fixture(tmp_path)
     fixture.isolate(monkeypatch)
     plan = fixture.plan()
@@ -275,15 +225,36 @@ def test_the_fences_binds_are_unchanged_from_the_base(
         "manifest_path": str(fixture.manifest),
         "home": str(fixture.home),
     }
-    head = _worker_fence.fence_argv(["true"], **arguments)
-    base = base_fence_module.fence_argv(["true"], **arguments)
-
-    assert _fence_segment(plan.argv) == _fence_segment(head), (
+    fence = _worker_fence.fence_argv(["true"], **arguments)
+    assert _fence_segment(plan.argv) == _fence_segment(fence), (
         "the launch's fence is not the composition these inputs produce"
     )
-    assert _granted_roots(head) == _granted_roots(base), (
-        "the fence's writable binds moved"
-    )
+
+    expected = {
+        # The fixture's declared roots that neither sealed store covers: the run
+        # directory the manifest lands in, the declared review-records path
+        # beneath the store, and the plan-write lock namespace the launch seeds.
+        fixture.run.resolve(),
+        fixture.records.resolve(),
+        # The fence's own additions: the worktree, and the runtime paths its
+        # launch keeps writable beneath the sealed node temp root.
+        fixture.worktree.resolve(),
+        *[path.resolve() for path in _worker_fence.node_tmp_runtime_paths()],
+    }
+    lock = fixture.lock()
+    if lock is not None:
+        expected.add(lock.resolve())
+
+    granted = {Path(root) for root in _granted_roots(fence)}
+    assert granted == expected, "the fence's writable binds moved"
+
+    # The sealed stores are never re-opened: a bind at or above one would expose
+    # every other project's and run's reports and reviews through the seal.
+    for store in (reports_dir(), review_store_root()):
+        sealed = store.resolve()
+        assert not any(
+            path == sealed or sealed.is_relative_to(path) for path in granted
+        ), f"the fence re-opened the sealed store {sealed}"
 
 
 def test_an_unfenced_launch_keeps_every_add_dir(
