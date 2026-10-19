@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -662,6 +662,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-s10-origin" data-who="reckon-build" data-when="2026-10-19T19:00:00Z">
     <div class="r-comment-body"><p>§10 and §11 were added from a load reading on clu-2002 at 20:48–20:52 on 19 October. That evening the load average was 60 on 28 CPUs with 26 tasks in D state, and an MCP crew read timed out after 30 s waiting on storage. Two causes were measured: about 20 <code>git mktree</code> spawns a second from the per-second code-identity read, and a 16-way import-probe herd on a single code move. The section prose was hand-edited because no op replaces section prose.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261019T204700073796-review-of-the-code-identity-is-read-only-when-head-moves-25f5db63adf2" data-who="reckon-build" data-when="2026-10-19T21:15:23.490Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261019T193630060197 at base 3b652d4b / head 25f5db63a: the identity hold is sound and the gate measures the done-worthy claims, but the four new helpers duplicate the capability reckon/git_dates.py already owns (reuse 3) and the new test reads RECKON_FOLLOWER_SOURCE_ROOT from the ambient environment so all eight tests fail wherever RECKON_FOLLOWER_SOURCE_ROOT is set (hermeticity finding); 0 added failures against the reviewed run&#x27;s own paired cohort arms.</p></div>
 </div>
 </section>
 </main>

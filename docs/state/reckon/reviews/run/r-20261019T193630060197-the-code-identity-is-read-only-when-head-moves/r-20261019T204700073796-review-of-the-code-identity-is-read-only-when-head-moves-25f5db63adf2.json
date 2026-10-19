@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/follower_registration.py:34 follower_code_stamp (the followers, producers, MCP server and queue admission)",
+    "reckon/served_code.py:731",
+    "reckon/crew/obligation_snapshot.py:428",
+    "reckon/mcp.py:269 _SERVER_CODE_STAMP"
+  ],
+  "completed_at": "2026-10-19T21:15:23.490Z",
+  "dispatched_at": "2026-10-19T20:48:22Z",
+  "findings": [
+    {
+      "file": "reckon/checkout_trust.py",
+      "line": 400,
+      "severity": "follow-on",
+      "text": "The helpers _git_directory (400), _git_common_directory (425), _file_fingerprint (445) and head_stamp (458), together with the _identity_hold memo (70), duplicate a capability reckon/git_dates.py already owns rather than extending it: git_dates.py:177 _git_directory, git_dates.py:209 _common_git_directory, git_dates.py:201 _file_identity, git_dates.py:230 _head_identity and git_dates.py:174 _GIT_HEAD_MEMO perform the same work -- locate the git directory (following the gitdir: file of a linked worktree), fingerprint HEAD and the ref it names through the common git directory, and memoise a git-derived value against that fingerprint. checkout_trust.py imports nothing from git_dates, so the addition is a duplicate, not a wrapper or an extension, and any future change to how a worktree's refs are located must be made in two places or the two memos silently diverge."
+    },
+    {
+      "file": "tests/test_the_code_identity_is_read_only_when_head_moves.py",
+      "line": 89,
+      "severity": "follow-on",
+      "text": "The _identity helper (89) calls source_code_identity with no source root, so source_code_identity resolves the root through os.environ.get(\"RECKON_FOLLOWER_SOURCE_ROOT\", ...) when that variable is set, and the source fixture (65) never clears it. Under an environment that sets the variable -- this review node's own shell carries RECKON_FOLLOWER_SOURCE_ROOT=/home/ITER/mcintos/Code/reckon -- all eight tests fail because the identity is read from that checkout instead of the tmp_path fixture, and the git spawns are issued against /home/ITER/mcintos/Code/reckon; with the variable unset the same eight pass. A test that reads state outside the repository under test is banned, and the crew sets this variable for its workers, so the gate is green only where the variable happens to be absent. Remedy: monkeypatch.delenv(\"RECKON_FOLLOWER_SOURCE_ROOT\", raising=False) in the source fixture. Reproduction recorded in review-gate-head.log (8 failed, EXIT=1) beside review-gate-head-nofollow.log (8 passed, EXIT=0)."
+    }
+  ],
+  "notes": "Gate re-run at the landed head from a git-archive extraction under the run scratch: 8 passed with no RECKON_FOLLOWER_SOURCE_ROOT, 8 failed with it set to the main checkout. The recorded gate-mine.log ran at revision 33ad6f4bb, which predates the test refinement in 13f3618f8, so the log does not by itself name the landed test revision; the re-run above covers it.",
+  "project": "reckon",
+  "review_run_id": "r-20261019T204700073796-review-of-the-code-identity-is-read-only-when-head-moves-25f5db63adf2",
+  "reviewed_base_sha": "3b652d4bced9351d34da511fecb2ebcb6376b02c",
+  "reviewed_head_sha": "25f5db63adf2bdafe52f202e3009f025406a1efc",
+  "reviewed_run_id": "r-20261019T193630060197-the-code-identity-is-read-only-when-head-moves",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 3,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T21:16:54.048113+00:00",
+  "total": 91,
+  "verdicts": {
+    "diff": "read commit by commit against the base; six commits, of which 33ad6f4bb is the change and 13f3618f8-isolate is a test-only refinement, the rest evidence prose.",
+    "done_when": "the done_when names four behaviours and a 30 s fleet-allocation count; tests (a)-(h) assert the behaviours and quiet-count.log/quiet-count-rerun.log carry the count, though the base arm measured 0.85-0.88 git spawns a second rather than the 'at least one a second' the done_when names, disclosed in the manifest's done_when_caveat.",
+    "goal": "the node's goal is to hold the code identity until HEAD moves; reckon/checkout_trust.py:488 source_code_identity memoises its reading against head_stamp, so the git reads run only when a file HEAD resolves through moves.",
+    "manifest": "read; it records the gate run (8 passed), the two measurement arms, the declared negative control (negative-control-declared.log, six of eight checks redden) and the paired cohort arms, and its tests line names the literal gate command.",
+    "write_paths": "read the manifest's declared paths; the diff touches only reckon/checkout_trust.py, tests/test_the_code_identity_is_read_only_when_head_moves.py and the evidence fragment, all inside them."
+  }
+}
