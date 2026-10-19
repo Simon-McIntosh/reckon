@@ -685,7 +685,8 @@ def _score_total(scores: Mapping[str, Any], absent: Iterable[str] = ()) -> int |
 
 
 def _derive_landed_total(record: Mapping[str, Any]) -> dict[str, Any]:
-    """Use measured scores for a landed review's total on write and read."""
+    """Use measured scores for a landed review's total on write, and on read
+    for a record that carries no integer total of its own."""
     result = dict(record)
     if result.get("rubric") == CLAIMS_RUBRIC:
         return result
@@ -700,6 +701,12 @@ def _derive_landed_total(record: Mapping[str, Any]) -> dict[str, Any]:
         result.setdefault("reviewer_total", reported)
     result["total"] = total
     return result
+
+
+def _has_integer_total(record: Mapping[str, Any]) -> bool:
+    """Whether the record already carries an integer total to read as its own."""
+    total = record.get("total")
+    return isinstance(total, int) and not isinstance(total, bool)
 
 
 def parse_review(
@@ -3879,7 +3886,9 @@ def read_review(
     )
     if record is None:
         return None
-    return annotate_review_of_run(_derive_landed_total(record), reviewed_run_id)
+    if not _has_integer_total(record):
+        record = _derive_landed_total(record)
+    return annotate_review_of_run(record, reviewed_run_id)
 
 
 def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
