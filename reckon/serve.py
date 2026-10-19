@@ -1134,6 +1134,66 @@ def _crew_plan_details(docs: Path, slug: str) -> tuple[str, float | None]:
     return "", None
 
 
+# A crew row reads only the members out of a project's roster, and members live
+# in the aggregate rather than in any per-run file. The union read validates its
+# index against every run file, which costs a stat per promoted run on a poll
+# that repeats every few seconds and asks a question the run files cannot answer.
+# So the roster each poll last answered with is held against the identity of the
+# aggregate alone: while that one file is unmoved, a poll pays one stat and
+# reads neither a run file nor a byte of the aggregate.
+_ROSTER_CACHE: dict[str, tuple[tuple[int, int, int, int], dict[str, dict]]] = {}
+
+
+def _aggregate_identity(path: Path) -> tuple[int, int, int, int] | None:
+    """The one stat a roster read costs: the aggregate's own identity.
+
+    The same signature :func:`ledger._file_identity` keys the run index on, kept
+    here because that helper is private to the ledger and this read must not
+    reach the ledger for a stat it can take itself.
+    """
+    try:
+        info = path.stat()
+    except OSError:
+        return None
+    return info.st_mtime_ns, info.st_ctime_ns, info.st_size, info.st_ino
+
+
+def _project_roster(project: str, docs: Path) -> dict[str, dict]:
+    """A project's roster members keyed by id, re-read only when it moves.
+
+    An aggregate whose identity cannot be taken — absent, unreadable, or a
+    project name the ledger refuses — is never cached, so the reader's own
+    fallback still runs on every call and a later write is never served stale.
+    """
+    try:
+        aggregate = ledger.ledger_path(project, docs.parent)
+    except (OSError, ledger.LedgerError):
+        identity = None
+        aggregate = None
+    else:
+        identity = _aggregate_identity(aggregate)
+    cached = _ROSTER_CACHE.get(str(aggregate)) if aggregate is not None else None
+    if cached is not None and identity is not None and cached[0] == identity:
+        return cached[1]
+    try:
+        roster, _version = ledger.load(project, docs.parent, headers_only=True)
+    except (OSError, ledger.LedgerError):
+        roster = {"members": []}
+    members = {
+        str(member.get("id") or ""): member
+        for member in roster.get("members", [])
+        if isinstance(member, dict) and member.get("id")
+    }
+    if aggregate is not None:
+        settled = _aggregate_identity(aggregate)
+        # Cached only against the identity taken after the read: an aggregate
+        # that moved while it was read is left uncached, so the next poll
+        # re-reads it rather than pinning the stale answer to the new identity.
+        if settled is not None and settled == identity:
+            _ROSTER_CACHE[str(aggregate)] = (settled, members)
+    return members
+
+
 def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict]:
     """Join mounted live pointers with roster and navigation state."""
     selected = {project} if project else set(mounts)
@@ -1146,16 +1206,7 @@ def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict
     referenced_projects = {str(pointer.get("project") or "") for pointer in pointers}
     roster_by_project: dict[str, dict[str, dict]] = {}
     for name in referenced_projects:
-        docs = mounts[name]
-        try:
-            roster, _version = ledger.load(name, docs.parent, headers_only=True)
-        except (OSError, ledger.LedgerError):
-            roster = {"members": []}
-        roster_by_project[name] = {
-            str(member.get("id") or ""): member
-            for member in roster.get("members", [])
-            if isinstance(member, dict) and member.get("id")
-        }
+        roster_by_project[name] = _project_roster(name, mounts[name])
 
     rows: list[dict] = []
     details_by_plan: dict[tuple[str, str], tuple[str, float | None]] = {}
