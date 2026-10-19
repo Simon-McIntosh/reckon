@@ -20,10 +20,7 @@
       <li>The current code answers — that answer is returned, and the session serves its later calls
         on the current code (<code>_SERVE_ON_CURRENT_CODE</code>) rather than falling back to the
         image.</li>
-      <li>The current code also fails the call — the failure is not the stale image's, so the
-        reconnect refusal is the answer, carrying the original error text. This is what keeps the
-        shared trust check's reader (<code>tests/test_one_check_trusts_a_moved_checkout.py</code>)
-        passing: a read the moved checkout also refuses is still refused.</li>
+      <li>The current code also fails the call — its own failure is returned, carrying the stamp of the current code and the error text under it. A reconnect cannot help when the current code gives the same failure, and returning "reconnect" there keeps the stale image's failure masked, which is half of what this section exists to fix. — <strong>delivered, unverified at the fence</strong>: see the state below.</li>
       <li>The tool's parameter list changed on disk — always refused, naming that tool, because the
         client holds the schema it connected with and no in-process answer can stand for it.</li>
     </ul>
@@ -41,10 +38,21 @@
 
   <section data-reckon="section" data-id="epw-server-serves-current-code-state">
     <h3 id="epw-server-serves-current-code-state-heading">State at hand-off</h3>
-    <p>Cases (b) and (c) of the gate pass; case (a) failed on a defect in the test's own fixture —
-      the simulated "checkout ahead" wrapped <code>edit_plan</code> with <code>(*args, **kwargs)</code>,
-      which changed the tool's inferred parameter list and so tripped the intended signature refusal.
-      The fixture now preserves the signature with <code>functools.wraps</code>, which was not
-      re-run before the time budget expired. No uncommitted work is left in the tree.</p>
+    <p>Five of the gate's six subprocess cases pass: both cases of the new
+      <code>edit_plan</code> file — including <code>test_a_call_on_a_moved_checkout_answers_on_the_current_code</code>,
+      which fails on the running image, is re-run on the checkout, and reads the current code's
+      marked answer with no <code>stale_server_code</code> anywhere — and the dirty-tree and
+      changed-signature cases. The sixth, <code>test_a_clean_moved_checkout_answers_on_the_current_code</code>,
+      still returns the refusal. Its call is <code>crew</code> rather than <code>edit_plan</code>, and its
+      child produced no readable answer at all, so the guard took its fallback path. Two defects were
+      found and fixed on the way here, both in fixtures rather than the mechanism: the simulated
+      checkout-ahead wrapped the registered tool, which made the tool manager classify an async tool
+      as sync and never await the call (case (a) failed on its own fixture, not the guard), and a tool
+      that <em>raises</em> left the child with no answer to print at all — its exception is now the
+      answer it returns. The remaining failure is unadjudicated: the likeliest cause is the child's
+      120-second bound expiring on the <code>crew</code> tool, whose call reaches further than
+      <code>edit_plan</code>'s, and it must be established from the child's own stderr rather than
+      assumed. No uncommitted work is left in the tree; the declared negative control was not run,
+      because its premise is a green head arm and the head arm is not green.</p>
   </section>
 </article>
