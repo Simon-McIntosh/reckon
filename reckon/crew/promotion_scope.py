@@ -2038,26 +2038,26 @@ def _landing_refusal(message: str, rollback: Mapping[str, bool]) -> CrewError:
 
 
 def _ledger_holds_row(project: str, root: str | Path | None, run_id: str) -> bool:
-    """Whether the durable ledger a reader will open carries ``run_id``.
+    """Read this run's file and the aggregate without consulting other runs.
 
-    The row is read back from the same store the append targeted rather than
-    inferred from the append's return: a rollback can have re-read the file
-    since. The read names the aggregate and the per-run files directly, never
-    the derived index, because the index is a disposable cache whose served
-    snapshot can still name a run the rollback has removed: when its refresh is
-    refused — a locked or unwritable index — ``ledger.load`` returns the last
-    published snapshot, so a real rollback would read as a surviving row and
-    the receipt would forbid the re-promotion that recovers it. An unreadable
-    ledger answers present, so a receipt never claims a rollback the reader
-    cannot confirm.
+    A union read can fail on an unrelated damaged run document. Treating that
+    failure as proof that this row survived would forbid the re-promotion that
+    recovers a file the rollback removed. An unreadable aggregate or target
+    file still answers present, so the receipt only claims a provable absence.
     """
     try:
-        data, _version = ledger.load(project, root=root, use_index=False)
-    except (OSError, ValueError, ledger.LedgerError):
+        data, _version = ledger.load_aggregate(project, root=root)
+    except (OSError, ValueError, _store.CorruptEnvelopeError, ledger.LedgerError):
         return True
-    return any(
-        str(item.get("run_id") or "") == run_id for item in data.get("runs", [])
-    )
+    if any(str(item.get("run_id") or "") == run_id for item in data["runs"]):
+        return True
+    try:
+        ledger.run_path(project, run_id, root).stat()
+    except FileNotFoundError:
+        return False
+    except OSError:
+        return True
+    return True
 
 
 def _discard_run_store_row(run_id: str) -> bool:
