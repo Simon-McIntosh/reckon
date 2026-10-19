@@ -374,11 +374,11 @@ def _candidates_scan(
             entry["attempts"].append(attempt)
             if gate == "passed" and attempt == 1:
                 entry["passed_first_attempt"] += 1
-        review = row.get("review")
-        total = review.get("total") if isinstance(review, Mapping) else None
+        review = ledger.review_block(row)
+        total = review.get("total") if review is not None else None
         if isinstance(total, (int, float)) and not isinstance(total, bool):
             entry["reviews"].append(float(total))
-        scores = review.get("scores") if isinstance(review, Mapping) else None
+        scores = review.get("scores") if review is not None else None
         if _fully_scored(scores):
             entry["reviewed"] += 1
             for name in REVIEW_DIMENSIONS:

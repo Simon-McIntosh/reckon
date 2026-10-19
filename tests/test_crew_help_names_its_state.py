@@ -54,6 +54,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
     # mounted project's ledger still holds, which is the state its phrase names.
     ("split-runs",): "aggregate run rows",
     ("stop",): "running spawned worker",
+    ("supersede-review",): "a misattributed row's review",
     ("suite", "run"): "the project's declared suite",
     ("suite", "waive"): "standing-suite hold",
     ("unwatch",): "registered project watcher",

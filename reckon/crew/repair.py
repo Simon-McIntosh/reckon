@@ -328,6 +328,30 @@ def round_node_source(node_id: str, prefix: str) -> str:
     return source
 
 
+def round_node_head_suffix(node_id: str, prefix: str) -> str:
+    """The head a head-keyed round node id mints, or ``""`` when it carries none.
+
+    :func:`round_node_source` strips the ``-<head[:12]>`` suffix
+    :func:`round_node_id` writes, discarding the head a round was dispatched to
+    read. A caller that needs that head back — comparing it against the head a
+    row recorded — reads it here rather than re-parsing the node id, so the
+    grammar stays the writer's own, read back through its inverse. The suffix is
+    recovered only when the id is exactly the prefix, the source, one separator
+    and the writer's digit count, so a hand dispatch under a coordinator's own
+    id carries no head and is left unresolved rather than guessed.
+    """
+    text = str(node_id or "")
+    if not text.startswith(prefix):
+        return ""
+    raw = text[len(prefix) :]
+    source = round_node_source(text, prefix)
+    if len(raw) != len(source) + _ROUND_HEAD_DIGITS + 1 or not raw.startswith(
+        source + "-"
+    ):
+        return ""
+    return raw[len(source) + 1 :]
+
+
 def repair_node_id(
     review: Mapping[str, Any],
     *,

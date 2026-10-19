@@ -965,7 +965,7 @@ def _arm_figures(run: Mapping[str, Any]) -> dict[str, Any]:
     """
 
     agent = run.get("agent")
-    review = run.get("review")
+    review = ledger.review_block(run)
     return {
         "run_id": str(run.get("run_id") or ""),
         "backend": str(run.get("backend") or ""),
