@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms in manifest.md: baseline_suite (revision 8afeb0709f341be7690765c47387ebc69cb4dbe6) reads completed true, exit_status 0, pass_count 21, failure_count 0, failure_ids [], log baseline-suite.log ending '21 passed in 2.62s' EXIT=0; after_suite (revision 4596a01ba67e16cb8211463379d28fd42751c321) reads completed true, exit_status 0, pass_count 44, skip_count 1, failure_count 0, failure_ids [], log after-suite-4596a01ba.log ending '44 passed, 1 skipped in 5.92s' EXIT=0. after minus baseline is the empty set, so added_failure_count=0.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:3088 (_reap_worker_on_its_terminal_manifest -> signal_pending_step_client)",
+    "reckon/crew/dispatch_launch.py:2882 (_reap_worker_on_its_terminal_manifest definition)",
+    "reckon/crew/dispatch_launch.py:3192 (reaper call site)",
+    "reckon/crew/dispatch_launch.py:3313 (reaper call site)",
+    "reckon/crew/dispatch.py:2781 (re-export of _reap_worker_on_its_terminal_manifest)"
+  ],
+  "completed_at": "2026-10-19T06:24:08.618Z",
+  "dispatched_at": "2026-10-19T06:16:55Z",
+  "findings": [
+    {
+      "file": "tests/test_a_stopped_worker_ends_inside_its_step.py",
+      "line": "331",
+      "severity": "follow-on",
+      "text": "follow-on: assert all(target == 303 for target, _ in inner_sent) is a tautology. inner_sent is populated only at line 296, by the test's own signal_step stub, with the literal 303 (inner_sent.append((303, sig))) before any assertion runs; no production code path writes it. The assertion therefore holds for every behaviour of the code under test and can never redden, so it reports a guarantee it does not provide. The target-split guard is the disjointness assertion at line 328, which does compare the code's real os.kill targets against that same 303 and does redden if the client path signals the inner pid."
+    },
+    {
+      "file": "tests/test_a_stopped_worker_ends_inside_its_step.py",
+      "line": "473",
+      "severity": "follow-on",
+      "text": "follow-on: assert receipts[-1][\"target_pid\"] == client_pid compares the sender record against the same client_pid the test writes into worker.json at line 438 and hands to signal_pending_step_client at line 472. The record's target_pid is written by production _write_sender_record from that handed pid, so the assertion echoes its own input and stays true even if the pid named were the wrong-but-in-range target; it adds no independent protection of the signal target over line 469 (assert all(pid != inner_pid for pid, _ in sent)), which does compare against a distinct constant."
+    }
+  ],
+  "incremental_of": "r-20261018T150822949393-a-stopped-worker-ends-inside-its-step.at-04f6ace9a31c14f7755c5727bd371fd329091322.json",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatch_launch.py:3088 is the sole production caller of signal_pending_step_client, reached through _reap_worker_on_its_terminal_manifest (dispatch_launch.py:2882), itself called at dispatch_launch.py:3192 and dispatch_launch.py:3313 and re-exported at reckon/crew/dispatch.py:2781; the changed shutil.which call is exercised on that path with no other runtime entry.",
+    "diff": "read commit by commit against 04f6ace9a: one commit (fix(crew): find scheduler independently of step client) adds import shutil, replaces the argv[0]-derived scheduler at reckon/crew/process_signal.py:480 with shutil.which(\"squeue\") plus a None guard, adds test_pending_step_uses_scheduler_on_path_beside_host_shim, adds three target assertions to the existing test, and rewords the evidence fragment; every changed path is in the declared scope.",
+    "done_when": "prompt.txt:98-104 requires a unit test proving the step stop path plus a live fleet probe reading COMPLETED in sacct; the delta adds tests/test_a_stopped_worker_ends_inside_its_step.py:428 covering the shim-with-no-adjacent-squeue path and the head focused gate is recorded at 44 passed / 1 skipped in after-suite-4596a01ba.log, but the live probe was not rerun at this head and the manifest's own recorded probe step ended FAILED|9:0, not the COMPLETED the measure names.",
+    "goal": "prompt.txt:31 asks the supervisor to stop a step-placed worker by delivering the stop to the step's task and never to the srun client; reckon/crew/process_signal.py:480 now resolves the scheduler with shutil.which(\"squeue\") instead of Path(argv[0]).with_name(\"squeue\"), so a host-shim-launched worker's pending client stop reaches its identity check and its single TERM rather than returning None forever, which is the goal's own stop path.",
+    "manifest": "manifest.md records commits a6808040 through 4596a01ba, the head focused gate, the paired baseline/after arms (21 passed at 8afeb070; 44 passed, 1 skipped at 4596a01ba) with failure_ids empty on both and added_failures=0, and the negative control log scheduler-repair-negative.log (8 failed under reverted source).",
+    "write_paths": "prompt.txt:63-67 grants reckon/crew/dispatch_*launch.py*, reckon/crew/process_signal.py, tests/test_a_stopped_worker_ends_inside_its_step.py and the evidence fragment; git show 4596a01ba --stat changes exactly reckon/crew/process_signal.py, tests/test_a_stopped_worker_ends_inside_its_step.py and docs/evidence/fragments/the-fleet-node-stays-in-service/a-stopped-worker-ends-inside-its-step.html."
+  },
+  "justifications": {
+    "durability": "tests/test_a_stopped_worker_ends_inside_its_step.py:452 asserts command[0] == \"/usr/bin/squeue\" against the shim path and fails if the scheduler is again derived from argv[0], but the guard at line 331 is vacuous and the receipt assertion at line 473 echoes its own input, so two of the added assertions protect nothing.",
+    "evidence": "the delta's focused gate is recorded at 44 passed / 1 skipped in after-suite-4596a01ba.log and the new test reddens under the reverted source, but the done_when's live fleet probe was not rerun at this head and the manifest's recorded probe step 1281970.7012 ended FAILED|9:0 rather than COMPLETED.",
+    "fit": "reckon/crew/process_signal.py:480 follows the module's existing subprocess-and-receipt idiom and the added names (scheduler, the new test) state the mechanism with no plan, ticket or phase identifier.",
+    "goal_fidelity": "reckon/crew/process_signal.py:480 resolves squeue with shutil.which(\"squeue\") and returns None only when it is absent, so the shim-launched pending client stop that the goal depends on now reaches its identity check and its single TERM.",
+    "reuse": "reckon/crew/process_signal.py:480 uses the same shutil.which mechanism as the repository's scheduler-resolution owner at reckon/crew/dispatch_launch.py:1101 rather than forking a lookup, and reuses the module's own subprocess query and sender-record writers.",
+    "scope_discipline": "git show 4596a01ba --stat touches only reckon/crew/process_signal.py, its focused test and the evidence fragment, all inside prompt.txt:63-67, with no capability the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:31 asks the supervisor to stop a step-placed worker by delivering the stop to the step's task and never to the srun client; reckon/crew/process_signal.py:480 now resolves the scheduler with shutil.which(\"squeue\") instead of Path(argv[0]).with_name(\"squeue\"), so a host-shim-launched worker's pending client stop reaches its identity check and its single TERM rather than returning None forever.\nVERDICT done_when: prompt.txt:98-104 requires a unit test plus a live fleet probe reading COMPLETED in sacct; the delta adds tests/test_a_stopped_worker_ends_inside_its_step.py:428 and the head focused gate reads 44 passed, 1 skipped in after-suite-4596a01ba.log, but the live probe was not rerun at this head and the recorded probe step ended FAILED|9:0, not COMPLETED.\nVERDICT write_paths: prompt.txt:63-67 grants the two product modules, the focused test and the fragment; git show 4596a01ba --stat changes exactly reckon/crew/process_signal.py, the focused test and the fragment.\nVERDICT manifest: manifest.md records commits a6808040 through 4596a01ba, the head gate, paired baseline/after arms (21 passed; 44 passed, 1 skipped) with added_failure_count=0 and the negative control log.\nVERDICT diff: read commit by commit against 04f6ace9a; one commit adds import shutil, replaces the argv[0]-derived scheduler with shutil.which(\"squeue\"), adds the host-shim test and three target assertions, and rewords the fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch_launch.py:3088, reckon/crew/dispatch_launch.py:2882, reckon/crew/dispatch_launch.py:3192, reckon/crew/dispatch_launch.py:3313, reckon/crew/dispatch.py:2781\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/process_signal.py:480 resolves squeue with shutil.which(\"squeue\") and returns None only when absent, so the shim-launched pending client stop the goal depends on now reaches its identity check and its single TERM.\nSCORE evidence: 14\nJUSTIFICATION evidence: the head focused gate is recorded at 44 passed / 1 skipped and the new test reddens under reverted source, but the done_when's live probe was not rerun at this head and the recorded probe step ended FAILED|9:0 rather than COMPLETED.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show 4596a01ba --stat touches only reckon/crew/process_signal.py, its focused test and the evidence fragment, all inside prompt.txt:63-67.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_stopped_worker_ends_inside_its_step.py:452 fails if the scheduler is again derived from argv[0], but the assertion at line 331 is vacuous and the receipt assertion at line 473 echoes its own input.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/process_signal.py:480 follows the module's subprocess-and-receipt idiom and the added names state the mechanism with no plan or ticket identifier.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/process_signal.py:480 uses the same shutil.which mechanism as the scheduler-resolution owner at reckon/crew/dispatch_launch.py:1101 rather than forking a lookup.\nFINDING tests/test_a_stopped_worker_ends_inside_its_step.py:331 follow-on: assert all(target == 303 for target, _ in inner_sent) is a tautology because inner_sent is written only by the test's own stub at line 296 with the literal 303, so the assertion can never redden and protects nothing.\nFINDING tests/test_a_stopped_worker_ends_inside_its_step.py:473 follow-on: the sender-receipt assertion compares target_pid against the same client_pid the test handed in, so it echoes its own input and adds no independent protection over the distinct-constant check at line 469.\n",
+  "review_run_id": "r-20261019T061601420607-review-of-a-stopped-worker-ends-inside-its-step-4596a01ba67e",
+  "reviewed_base_sha": "04f6ace9a31c14f7755c5727bd371fd329091322",
+  "reviewed_head_sha": "4596a01ba67e16cb8211463379d28fd42751c321",
+  "reviewed_run_id": "r-20261018T150822949393-a-stopped-worker-ends-inside-its-step",
+  "reviewer_run_id": "r-20261019T061601420607-review-of-a-stopped-worker-ends-inside-its-step-4596a01ba67e",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T06:24:00Z"
+}

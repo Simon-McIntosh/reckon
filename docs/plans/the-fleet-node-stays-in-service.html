@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -504,6 +504,9 @@
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-19T06:30:00Z">
     <div class="r-comment-body"><p>§3 landed (merge <code>a80d85d25</code>). Placed workers are stopped below the sandbox init. Live steps ended <code>FAILED|9:0</code> with no cancellation and the node state unchanged, against two CANCELLED controls. A not-yet-started step's client is signalled once, only when <code>squeue</code> lists no step named after the run. The change adds 24 test cases in 12 functions; the ledger row was promoted with 23, missing the skipped live probe. Review: 105 of 120, no added failures. Follow-ons: two pending-step assertions echo their own inputs (<code>inner_sent</code>, and the receipt's <code>target_pid</code>). <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s3">evidence</a></p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261019T061601420607-review-of-a-stopped-worker-ends-inside-its-step-4596a01ba67e" data-who="reckon-build" data-when="2026-10-19T06:24:08.618Z">
+    <div class="r-comment-body"><p>review of r-20261018T150822949393-a-stopped-worker-ends-inside-its-step at 4596a01ba: the prior review&#x27;s blocking finding is resolved — reckon/crew/process_signal.py:480 now resolves squeue with shutil.which(&quot;squeue&quot;) instead of Path(argv[0]).with_name(&quot;squeue&quot;) — scores goal_fidelity 18, evidence 14, scope_discipline 20, durability 16, fit 19, reuse 18; added_failure_count 0, added_failure_ids []; two follow-on findings on non-independent assertions at tests/test_a_stopped_worker_ends_inside_its_step.py:331 and :473; no blocking finding.</p></div>
+</div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261018T151304298883-a-producer-sweeps-only-on-change" data-who="reckon-build" data-when="2026-10-19T05:58:55Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-fleet-node-stays-in-service/a-producer-sweeps-only-on-change.html</p></div>
 </div>
@@ -520,7 +523,7 @@
     <div class="r-comment-body"><p>Independent review of a-producer-sweeps-only-on-change at head af75c342b87d: scores goal_fidelity 18, evidence 16, scope_discipline 19, durability 17, fit 18, reuse 15 (of 20); base 284c31716; added_failure_count 0; three follow-on findings (a stray closing &lt;/p&gt; in the landing fragment, a duplicated liveness-resume block in _quiet_beat_snapshots, and per-input test gaps for the handover directory, review-store candidates and worktree head). The three blocking findings of the prior review at a6e4fca22 (lift document outside the token, quiet path serving a stored snapshot without re-deriving the reuse key, _stat_stamp duplicating capabilities.file_stamp) are all repaired at this head.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261019T060029100374-review-of-a-producer-sweeps-only-on-change-c433cf0de998" data-who="reckon-build" data-when="2026-10-19T06:11:51.362Z">
-    <div class="r-comment-body"><p>review of r-20261018T151304298883-a-producer-sweeps-only-on-change at head c433cf0de: parsed review, scores goal_fidelity 18, evidence 17, scope_discipline 18, durability 19, fit 18, reuse 12; added_failure_count 0; three follow-on findings (the _quiet_beat_snapshots duplication of _watch_snapshot&#x27;s reuse decision, the review-stop cadence move off the beat to 30 s, and a stale negative-control sentence in the landing fragment); no blocking findings, no blockers.</p></div>
+    <div class="r-comment-body"><p>review of r-20261018T151304298883-a-producer-sweeps-only-on-change at head c433cf0de: parsed review, scores goal_fidelity 18, evidence 17, scope_discipline 18, durability 19, fit 18, reuse 12; added_failure_count 0; three follow-on findings (the _quiet_beat_snapshots duplication of _watch_snapshot's reuse decision, the review-stop cadence move off the beat to 30 s, and a stale negative-control sentence in the landing fragment); no blocking findings, no blockers.</p></div>
 </div>
 </section>
 </main>
