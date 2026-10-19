@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_derivation": "added_failure_count is the after arm minus the base arm from the reviewed run's own gate logs: baseline-suite.log (e18f609b2, 87 passed, 0 failed, EXIT=0) against after-suite.log (325a5df12, 99 passed, 0 failed, EXIT=0). Both arms ran to their summary line (completed true in the manifest's baseline_suite and after_suite), so the delta is zero added failures and the increase of twelve tests is exactly the node's own new checks, as new-tests-head.log records (12 passed, EXIT=0).",
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_follow_commands.py:290",
+    "reckon/crew_follow_commands.py:297",
+    "reckon/crew_follow_commands.py:356",
+    "reckon/crew/follower_registration.py:39"
+  ],
+  "completed_at": "2026-10-19T23:42:25.305Z",
+  "dispatched_at": "2026-10-19T23:30:41Z",
+  "findings": [
+    {
+      "file": "reckon/checkout_trust.py",
+      "line": 83,
+      "severity": "follow-on",
+      "text": "The newly added comment block ends '...would put an image's verdict somewhere the plan's design does not place it', a plan-document reference in source that the naming rule forbids in comments and docstrings. The reason belongs in the plan; the comment should state the mechanism (the two files live inside the image so that removing the image removes them together)."
+    },
+    {
+      "file": "tests/test_a_moved_checkout_is_proved_importable_once.py",
+      "line": 241,
+      "severity": "follow-on",
+      "text": "The assertion's expected reason is the literal the test itself handed to _record_import_verdict at line 230, and the whole test at :222-242 passes unchanged against the pre-change implementation, where the blocking flock at the old reckon/checkout_trust.py:884 acquires only after the writer closes and then reads the recorded verdict. It therefore records the pre-existing read-after-wait behaviour and does not guard the bounded-wait change it was added beside; the discriminating check for that is the held-lock test at :201-219."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_moved_checkout_is_proved_importable_once.py:215-219 reddens if the bounded wait is reverted to the blocking flock at the old reckon/checkout_trust.py:884 (which would hang the waiting asker), but the sibling added test at :222-242 passes unchanged against that revert, so the gained change has one guard, not two.",
+    "evidence": "The gained commits' numbers are each backed by a stored log rather than a claim: new-tests-head.log (12 passed, EXIT=0), sixteen-change.log (probes 1 of 16 askers), negative-control.log (5 failed, EXIT=1) and negative-control-sixteen.log (refused 16, re-executed 0).",
+    "fit": "The addition follows the module's existing flock/json/rename idiom at reckon/checkout_trust.py:936-961 and names its helper _take_import_probe_lock by mechanism, but reckon/checkout_trust.py:83 introduces a plan-document reference the naming rule forbids in source.",
+    "goal_fidelity": "reckon/checkout_trust.py:944 returns ImportProbeTimedOut when _take_import_probe_lock fails at the deadline and :978 routes every tree through the one recogniser, which is exactly what the gained commits claim to deliver.",
+    "reuse": "published_reload_image at reckon/checkout_trust.py:782 is now the single owner of the published-image predicate and :498, :511 and reckon/crew_follow_commands.py:297 all call it; a search of reckon/ for an existing bounded-lock helper found none, the many flock call sites all taking a single non-blocking attempt.",
+    "scope_discipline": "Every path in the 167e407f4..f0b7cc994 diff (reckon/checkout_trust.py, reckon/crew_follow_commands.py, tests/test_a_moved_checkout_is_proved_importable_once.py, docs/evidence/fragments/the-fleet-node-stays-in-service/a-moved-checkout-is-proved-importable-once.html) is a declared write path and carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T232955648173-review-of-a-moved-checkout-is-proved-importable-once-f0b7cc9940d6",
+  "reviewed_base_sha": "167e407f4d0a34bfb5965fbada2ebb6ebbada79f",
+  "reviewed_head_sha": "f0b7cc9940d659bcad71d3b9aeac78d618b2ac06",
+  "reviewed_run_id": "r-20261019T220614190732-a-moved-checkout-is-proved-importable-once",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T23:43:55.053576+00:00",
+  "total": 106,
+  "verdicts": {
+    "diff": "Read commit by commit against 167e407f4: 325a5df12 adds the bounded lock wait and the shared recogniser to reckon/checkout_trust.py, converts the marker test at reckon/crew_follow_commands.py:297, adds two tests and removes the vacuous jitter assertion; f0b7cc994 changes only the evidence fragment \u2014 four files, +137/-16.",
+    "done_when": "The done_when is \u00a711's five test bullets plus the sixteen-asker measurement and the broken-import negative control; all are recorded \u2014 new-tests-head.log (12 passed, EXIT=0 at 325a5df12), sixteen-base.log (16 probes) against sixteen-change.log (1 probe), and negative-control-sixteen.log (16 refusals, 1 probe, 0 re-executions).",
+    "goal": "Read the plan's \u00a711 (the-fleet-node-stays-in-service.html) and the source node's manifest; the gained commits' goal is to bound the import-proof lock wait and make the published-image test one recogniser, and reckon/checkout_trust.py:942-951 does the first and :782/:498/:511 the second.",
+    "manifest": "Read; it records commits 785509df4, 167e407f4, 325a5df12 and f0b7cc994, the paired arms (87/0 and 99/0), and its tests: line at manifest.md:11 now names the node's own new test file, closing the prior review's finding; measurement_module and measurement_cwd are absent although the base arm ran in a /tmp scratch tree, their values being present only in sixteen-base.log's own header.",
+    "write_paths": "The source node declared five paths (manifest.md:3); the gained diff changes four files, reckon/checkout_trust.py, reckon/crew_follow_commands.py, tests/test_a_moved_checkout_is_proved_importable_once.py and the evidence fragment, every one inside that list."
+  }
+}
