@@ -1,0 +1,89 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Making the legacy path count as a delivery again makes _delivered_review_record return the predecessor round and promote_review_run_itself refuse nothing, so the None assertion at 217 and the promoted-is-false assertion at 220 redden; the base arm shows exactly this.",
+      "lines": "test_a_review_promotes_only_its_own_verdict.py:213-235"
+    },
+    {
+      "failure_condition": "Dropping any one of the same_revision (335), review_run_id (338-341) or dispatch-time (342-344) checks lets the mismatched record deliver, so that case's None assertion reddens.",
+      "lines": "test_a_review_promotes_only_its_own_verdict.py:246-262"
+    },
+    {
+      "failure_condition": "Removing the no-head refusal at recovery_review_acceptance.py:320 makes promote_review_run_itself promote on the legacy round, so the promoted-is-false and reason assertions redden.",
+      "lines": "test_a_review_promotes_only_its_own_verdict.py:264-275"
+    },
+    {
+      "failure_condition": "Reading the head from the legacy path or the any-head glob instead of the declared path writes the predecessor head onto the ledger row, so the reviewed_head_sha row assertion at 242 reddens.",
+      "lines": "test_a_review_promotes_only_its_own_verdict.py:238-243"
+    }
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:314",
+    "reckon/crew/recovery_review_acceptance.py:319",
+    "reckon/crew/promotion_checks.py:1152",
+    "reckon/crew/promotion_checks.py:2327",
+    "reckon/crew/recovery_review_delivery.py:367"
+  ],
+  "completed_at": "2026-10-19T01:03:54.064Z",
+  "dispatched_at": "2026-10-19T00:52:00Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-review-promotes-only-its-own-verdict/a-review-delivers-only-its-own-head.html",
+      "line": "20",
+      "severity": "blocking",
+      "text": "blocking: the landing record states the run-versus-plan review distinction 'is read from _is_run_review_node in recovery_review_subject.py', but at the reviewed head that symbol is defined in reckon/crew/recovery_review_delivery.py:81 and is absent from recovery_review_subject.py; a reader following the citation finds nothing, so the artifact that exists to describe the landed code misdirects whoever verifies it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T215115257728-a-review-delivers-only-its-own-head/manifest.md",
+      "line": "tests:",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when's fifth bullet requires 'the manifest names each change with its reason' for the two existing tests that moved their record to the head-keyed path, but the manifest lists the gate files and results without naming either test's change or its reason; the reasons survive only in the evidence fragment and the diff."
+    }
+  ],
+  "item_rounds": {
+    "diff": "Read commit by commit against 820d1f1c3; nine files, 492 insertions and 42 deletions, with production change confined to reckon/crew/recovery_review_delivery.py (the four-condition predicate, _is_run_review_node, _declared_head_keyed_record, _review_dispatch_instant) and reckon/crew/recovery_review_acceptance.py:314-338 (the no-head refusal), the rest being test and fragment updates.",
+    "done_when": "The done-when names the new test file, tests/test_a_review_run_promotes_itself.py, tests/test_a_delivered_review_ends_its_turn.py, tests/test_a_run_review_cannot_remove_a_siblings_record.py, a base-arm negative control and a literal pytest command; tests/test_a_review_promotes_only_its_own_verdict.py:213-275 exercises the predecessor, three mismatch and no-head cases, gate-base-arm.log records exactly those five FAILED by id at 820d1f1c3, and gate-head-arm.log reports 41 passed at 870b8e31e.",
+    "goal": "The node goal is to make a run review count as delivered only by a record of the head its own head-keyed write path names; reckon/crew/recovery_review_delivery.py:302-345 now accepts such a record only when it sits at the declared .at-<head> path, describes that head, names this run when it carries a review_run_id, and postdates this run's dispatch.",
+    "manifest": "Read; it names the seven commits, a seven-file gate at 41 passed, and baseline_suite/after_suite receipts whose failure ids reconcile with gate-base-arm.log (the earlier round's placeholder id at manifest.md:16 is gone); it does not itemise the two existing tests' moved record paths with reasons.",
+    "write_paths": "The dispatch fence grants reckon/crew/recovery_review_delivery.py, reckon/crew/recovery_review_acceptance.py, six test files and the evidence fragment; the diff changes only those nine paths and touches recovery_review_dispatch.py not at all, leaving it byte-identical to base as the manifest's follow-on (a) states."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_promotes_only_its_own_verdict.py:213-275 fails for the predecessor round and each of the three mismatches, and gate-base-arm.log:178-182 shows all five FAILED at the base product code, so the guard is shown to fire under the reverted change.",
+    "evidence": "The seven-file gate and both arm logs exist and reconcile with the done-when, but the manifest does not name each of the two existing tests' changes with its reason as the fifth bullet requires.",
+    "fit": "reckon/crew/recovery_review_delivery.py:81 and :102 reuse the existing _review_record_subject, review_described_head, same_revision, run_record_times and run_id_dispatch_time owners, and the added names are mechanism descriptions free of plan labels.",
+    "goal_fidelity": "reckon/crew/recovery_review_delivery.py:329-345 returns None unless the declared .at-<head> path holds a complete record describing that head after this run's dispatch, so the legacy path and the any-head glob no longer deliver.",
+    "reuse": "Each added definition builds on an owner; _is_run_review_node at recovery_review_delivery.py:81 reads the id grammar through round_node_source rather than re-spelling the prefix test, and the docstring names the two candidate owners it declined and why each does not answer the question.",
+    "scope_discipline": "Every path in the diff (reckon/crew/recovery_review_delivery.py, reckon/crew/recovery_review_acceptance.py, the six named tests, the fragment) is inside the node's declared write paths and nothing outside them is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make a run review count as delivered only by a record of the head its own head-keyed write path names; reckon/crew/recovery_review_delivery.py:302-345 now accepts such a record only when it sits at the declared .at-<head> path, describes that head, names this run when it carries a review_run_id, and postdates this run's dispatch.\nVERDICT done_when: the done-when names the new test file, tests/test_a_review_run_promotes_itself.py, tests/test_a_delivered_review_ends_its_turn.py, tests/test_a_run_review_cannot_remove_a_siblings_record.py, a base-arm negative control and a literal pytest command; tests/test_a_review_promotes_only_its_own_verdict.py:213-275 exercises the predecessor, three mismatch and no-head cases, gate-base-arm.log records exactly those five FAILED by id at 820d1f1c3, and gate-head-arm.log reports 41 passed at 870b8e31e.\nVERDICT write_paths: the dispatch fence grants reckon/crew/recovery_review_delivery.py, reckon/crew/recovery_review_acceptance.py, six test files and the evidence fragment; the diff changes only those nine paths and touches recovery_review_dispatch.py not at all.\nVERDICT manifest: read; it names the seven commits, a seven-file gate at 41 passed, and baseline_suite/after_suite receipts whose failure ids reconcile with gate-base-arm.log, but it does not itemise the two existing tests' moved record paths with reasons.\nVERDICT diff: read commit by commit against 820d1f1c3; nine files, 492 insertions and 42 deletions, with the production change confined to reckon/crew/recovery_review_delivery.py and reckon/crew/recovery_review_acceptance.py:314-338, the rest being test and fragment updates.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:314, reckon/crew/recovery_review_acceptance.py:319, reckon/crew/promotion_checks.py:1152, reckon/crew/promotion_checks.py:2327, reckon/crew/recovery_review_delivery.py:367\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_delivery.py:329-345 returns None unless the declared .at-<head> path holds a complete record describing that head after this run's dispatch, so the legacy path and the any-head glob no longer deliver.\nSCORE evidence: 17\nJUSTIFICATION evidence: the seven-file gate and both arm logs reconcile with the done-when, but the manifest does not name each of the two existing tests' changes with its reason as the fifth bullet requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the node's declared write paths (reckon/crew/recovery_review_delivery.py, reckon/crew/recovery_review_acceptance.py, the six named tests, the fragment) and nothing outside them is touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_review_promotes_only_its_own_verdict.py:213-275 fails for the predecessor round and each of the three mismatches, and gate-base-arm.log:178-182 shows all five FAILED at the base product code, so the guard is shown to fire under the reverted change.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_review_delivery.py:81 and :102 reuse the existing _review_record_subject, review_described_head, same_revision, run_record_times and run_id_dispatch_time owners, and the added names are mechanism descriptions free of plan labels.\nSCORE reuse: 19\nJUSTIFICATION reuse: every added definition builds on an owner; _is_run_review_node at recovery_review_delivery.py:81 reads the id grammar through round_node_source rather than re-spelling the prefix test, and its docstring names the two candidate owners it declined and why.\nFINDING docs/evidence/fragments/a-review-promotes-only-its-own-verdict/a-review-delivers-only-its-own-head.html:20 blocking: the landing record states the run-versus-plan review distinction 'is read from _is_run_review_node in recovery_review_subject.py', but at the reviewed head that symbol is defined in reckon/crew/recovery_review_delivery.py:81 and is absent from recovery_review_subject.py; a reader following the citation finds nothing, so the artifact that exists to describe the landed code misdirects whoever verifies it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T215115257728-a-review-delivers-only-its-own-head/manifest.md:tests follow-on: the done-when's fifth bullet requires 'the manifest names each change with its reason' for the two existing tests that moved their record to the head-keyed path, but the manifest lists the gate files and results without naming either test's change or its reason; the reasons survive only in the evidence fragment and the diff.\n",
+  "review_run_id": "r-20261019T005026090249-review-of-a-review-delivers-only-its-own-head-870b8e31ec4f",
+  "reviewed_base_sha": "820d1f1c3b266f525cc2b5216257cc0047326183",
+  "reviewed_commits": [
+    "b0050ee0fc693cc1835ad82ffc9ddbffa51a93f7",
+    "7857d10099c67452bc84bb0d4da82264eb34a375",
+    "76c6302b2ec6570a4ecaa3a97730f1e67ca47696",
+    "257db0207de0b3c4fce8ac61a5a0d1a8abef34db",
+    "2957d714a9b0f7c81260905ef6336dbfee0abc8e",
+    "e521edb86ebb1e3d2f44beb88968509b94cdb496",
+    "870b8e31ec4f4df6efab99eed0235f7645213ff8"
+  ],
+  "reviewed_head_sha": "870b8e31ec4f4df6efab99eed0235f7645213ff8",
+  "reviewed_run_id": "r-20261018T215115257728-a-review-delivers-only-its-own-head",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T01:11:31.594838+00:00",
+  "total": 112
+}
