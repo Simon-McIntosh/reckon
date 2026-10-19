@@ -1,0 +1,172 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T13:58:22.074Z",
+  "dispatched_at": "2026-10-19T13:42:49Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/scoring-should-stop-a-promotion.html:2604",
+      "id": "reasoning-1",
+      "reason": "a node reading \"Why\" first is told to build the reportless branch that the section itself says production never raises, which is exactly the defect the section was re-planned to remove.",
+      "text": "the \"Why\" paragraph asserts \"A staging failure raised before the commit carries no such report, so the function returns False and the receipt takes the already-written branch without ever reading the row\", but the section's own \"Revised after the first build\" and the incident landing record it cites refute this: `~/.config/reckon/crew/runs/r-20261019T080250830060-the-foreign-overrun-pane-is-chosen-by-the-seat/landing.json` records the 10:38:20Z refusal at step `stage` carrying `rollback: {plan file: false, per-run ledger file: true}` \u2014 a report present, with the ledger file reverted. So the reportless path was never the incident's path.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/scoring-should-stop-a-promotion.html:2604",
+      "id": "reasoning-2",
+      "reason": "the node is dispatched \"exact \u2014 implement as written\", and as written it is told both to build the rejected branch and to selectively keep or drop a branch it cannot find.",
+      "text": "the superseded \"Deliverable\" and \"Done when\" are retained unmarked above the revised pair, so \u00a714 states two contradictory deliverables (reportless read-back; diagnose why `_ledger_holds_row` answered present + restore a tracked write without the index) and two negative controls (\"restores the report-only decision\"; \"restores the read-back that answered present\"); it also instructs \"Keep, change or drop the first build's reportless branch\", presupposing a branch on main that does not exist \u2014 the first build `r-20261019T123112426653` was not promoted (`01d20fd3d promote(...): not-run`), head `7a788fd3a` is not an ancestor of `48142d5c`, and `_ledger_row_was_rolled_back` at `reckon/crew/promotion_scope.py:1986` carries only the report branch.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/scoring-should-stop-a-promotion.html:2604",
+      "id": "done_when-1",
+      "reason": "the diagnosis is the deliverable the revision exists for and the only thing that decides which fix is correct; unmeasured, it can be skipped and the gate still passes.",
+      "text": "the \"Revised done when\" measures the wording, the restoration and the re-promotion, but carries no measure of the revised deliverable's first half (\"First establish, with evidence logged under the run directory, why `_ledger_holds_row` answered present \u2026 a memoised read, the aggregate ledger, or another source\"); \"every log ends in `EXIT=`\" is a format rule, not a measure of the diagnosis, so a node can satisfy the gate without producing the diagnosis the section was re-planned around (\"Then make it read the row the way a later reader will find it\" depends on that answer).",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/scoring-should-stop-a-promotion.html:2604",
+      "id": "single_goal-1",
+      "reason": "two deliverables on one node means neither has its own closing verdict, so the section cannot be closed on one review.",
+      "text": "\"Revised deliverable\" states two independent deliverables \u2014 \"First establish \u2026 why `_ledger_holds_row` answered present\" and \"Second, make a tracked landing write restorable while the index lock is held\" \u2014 with independent verdicts (one is a diagnosis whose target file may fall outside the grant, the other a restore-behaviour change in `promotion_scope.py`).",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/scoring-should-stop-a-promotion.html:2604",
+      "id": "anchors_resolve-1",
+      "reason": "the run id is given in the same sentence, so the reader reaches the file without the section pointer; the pointer is misleading but not load-bearing.",
+      "text": "\"`landing.json` in the \u00a759 run's directory\" cites \u00a759, which this plan does not have (its sections run \u00a71\u2013\u00a714); \u00a759 is a section of `docs/plans/the-monitor-shows-the-work-it-watches.html`, while the file actually resolves under the run's own directory `~/.config/reckon/crew/runs/r-20261019T080250830060-\u2026/landing.json`.",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "cad72905296593f7cf3b16ddee059d9e6ce2ec41a0d5f6087e03f31b7a42aa3a",
+  "plan_slug": "scoring-should-stop-a-promotion",
+  "plan_version": 211,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-19T14:00:37.891396+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-19T14:00:47.504094+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-19T14:00:56.414828+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "",
+      "when": "2026-10-19T14:01:04.801960+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-19T14:01:16.156990+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T14:01:16.156990+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T14:00:56.414828+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T14:00:37.891396+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T14:00:47.504094+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T14:01:04.801960+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-scoring-should-stop-a-promotion.v211.json",
+  "review_run_id": "r-20261019T134202142844-plan-review-of-scoring-should-stop-a-promotion",
+  "reviewed_blob_sha": "e695a00d69fffba69bead3bdd6e14fa3c28de6ea",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \"the \u00a759 run's directory\" names no section of this plan; every other anchor resolves (`reckon/crew/promotion_scope.py`, `reckon/ledger.py`, `reckon/file_memo.py`, head `7a788fd3a`, run `r-20261019T123112426653` all exist: verified at base `48142d5c`).",
+    "done_when": "a finding \u2014 \u00a714 now carries two done-whens and two different negative controls, and the revised one leaves the revised deliverable's first half unmeasured.",
+    "evidence_paths": "pass \u2014 \u00a714 requires every log under the run directory and ending in `EXIT=`, which is a durable path that survives the run.",
+    "naming": "pass \u2014 the section introduces no symbols; the named test file `tests/test_a_failed_staging_reads_its_row_back.py` is mechanism-named with no plan label, stage name or ticket number.",
+    "reasoning": "findings \u2014 the section's stated root cause is refuted by the section's own cited landing record, and its superseded deliverable/done-when are retained beside the revision with no marker.",
+    "single_goal": "a finding \u2014 the \"Revised deliverable\" names two independent deliverables under one node.",
+    "wiring": "pass \u2014 \u00a714 carries `data-links=\"\"` like every other section in this plan, the modules it grants and cites (`reckon/crew/promotion_scope.py`, `reckon/ledger.py`, `reckon/file_memo.py`) resolve, and its escalation rule (\"if the read-back's source lives in `reckon/ledger.py` or `reckon/file_memo.py`, stop blocked\") is a stop-condition, not an undeclared node dependency."
+  },
+  "section_digests": {
+    "_document": "d20f1dcc7fe7316bcafc2f36cc843b371088b586c60d72005c5a045d6fe565cf",
+    "s1": "80bb6f490cd042d9e8a687df7c507b613bebe3f255fe6d6acc39cd1af3fc764e",
+    "s10": "58ce55634b1139deebbacc64374dfc3b9f95a048256fae52ae6bbbd611fe06e1",
+    "s11": "12ca91ff46282400591910a71afc454966a0e7b0db697803af45c408f0538a6d",
+    "s12": "8fc0e32c910c072509963e1cde86a06ef0f38637847779509acf73cfea049ac1",
+    "s13": "4468d3febaa235841362d43149cd5a148b22dc43e3e4a449e7ad5535064cd12b",
+    "s14": "d49b0ea94b5ecdcbced11e5fafa0242be196aaa26b50ce4379e61d1ea9be12ae",
+    "s2": "a5b9af7082beec0446285c38e1363c16558ff8c37672b48d76c4fad4ccd81080",
+    "s2c": "5a7c7c8511a9e1dbc3faface290e2ae70fdda908b18a85ba8f64620edbeda54e",
+    "s2d": "338c41385c9011225386aa9a609c32e76003fd1a6cf6dcb58635c80b47d331ce",
+    "s2e": "ee6560c4da65bc28976152bca3855cbca84be7c1540b6f4c77398968add70550",
+    "s2f": "576cde224cd92bba95eb0b27946230a24ef2446fff19cc0fe636279c704a0dee",
+    "s2g": "11fa9736b2aae90ccde19fe3710f1263c44daa94aa4844aa5fb1b7611ecd6e81",
+    "s2h": "2f7fd9478dc7416b5794b2e20fec7373e94791bec72c397ad0f1df4d7f8f45e9",
+    "s2i": "ed065c467b7652cbb12d681845b9e5193fc90adea484f8079e42384d12495b6d",
+    "s2j": "1769663e0f36bba5566f26d92be1be4afd31143190193436fbbf04a43eab04f1",
+    "s2k": "b6fc2df79162c3ad10da610e5e395ce821e547abe29de1885d84d41c99a4c235",
+    "s3": "9ef758880694a735dd49d88e2b4b01b48aee693a77d3896b3bdd80154e7b2c9a",
+    "s4": "5d67d3bc9b218a16bcb96f699b7124495b1513588f4f43f4ec3f4d405ba4d4f7",
+    "s4b": "d36b747f10c15eb1483ce3b0ec1509e0a1686c6833add3864e91cc58c2379ac2",
+    "s5": "5a862e80db57f1eb9b94f987c151bd5bdf079e76a863d6d06a6e6f5235de9780",
+    "s5b": "8df4ec55ed3f4389206b15ec05b1e195f5f5456485befa9c07c4c7adf2322fc6",
+    "s5c": "c9b831d300f0c91f91adbd39bcfcf5d7c4fe233f5d636a4e21536fecb4bd36ce",
+    "s5d": "727b4b1219350bbc522610128fb2941c897901d031f8a8c5b4da5122751e1cd6",
+    "s5e": "5951f48eb75dff6738971cf54a98fc62a8612b9a8b7bd28f6a091123bb293313",
+    "s5f": "a6ef0c694960ee9ede9f159280853afddb2b3bdd09f3240c727fa1218787dc87",
+    "s5g": "05818b1088a6bf35a2c04bb635269f99c53b36d961c81f0524a36d0c3ec64a87",
+    "s5h": "7e3b60d10c806794b185f1f6bd75809b83e45a3d2d37f37128ceabed5d403e96",
+    "s5i": "c590c4926015c0cfb65faa25a45f32b22be05a55d7e5c577c37cb6532fc1f433",
+    "s5j": "714fbc2c52e98b0a935445988c0e7853221c00e10353af7b8b434b957c9dd0ad",
+    "s6": "efbbec7034e3043c3f08ab60360de4044a8a4ba680cdcd8e4a633994fd59bbd6",
+    "s7": "771dbccd4221eeadbd02945dd919f84c6c4ba28cfad8d2b03b42ddbcef0c1fe8",
+    "s8": "87d06c23a29b8b2827c560b7acea2a33336f873a6d9499845f8f0406ac2aa83a",
+    "s9": "b662fb73af4ef5b1b8896350c0864a2c266c5d1d78b138194c74fda976971741"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T14:00:31.234855+00:00"
+}
