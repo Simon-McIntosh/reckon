@@ -101,6 +101,36 @@ def test_status_counts_use_the_spa_effective_status_rule(repo):
     )
 
 
+def test_progress_is_the_roll_up_over_the_projects_plans(repo):
+    repo_dir, docs_dir = repo
+    calibrated = (
+        '<meta name="docs-project" content="sample">'
+        '<meta name="reckon-type" content="plan">'
+        '<meta name="plan-slug" content="calibrated">'
+        '<meta name="plan-title" content="calibrated">'
+        '<meta name="plan-status" content="active">'
+        '<meta name="plan-impl" content="1.0">'
+        '<meta name="plan-effort-hours" content="2">'
+    )
+    uncalibrated = (
+        '<meta name="docs-project" content="sample">'
+        '<meta name="reckon-type" content="plan">'
+        '<meta name="plan-slug" content="uncalibrated">'
+        '<meta name="plan-title" content="uncalibrated">'
+        '<meta name="plan-status" content="active">'
+        '<meta name="plan-impl" content="0.0">'
+    )
+    (docs_dir / "plans" / "calibrated.html").write_text(calibrated)
+    (docs_dir / "plans" / "uncalibrated.html").write_text(uncalibrated)
+    _commit_all(repo_dir, "seed", _NOW)
+
+    row = compute_project_row(docs_dir, "sample", now=_NOW)
+
+    # One plan is complete and the other has not started, and the plan that
+    # authors no hours weighs the hours the first one states: (2*1 + 2*0) / 4.
+    assert row["progress"] == pytest.approx(0.5)
+
+
 def test_live_counts_this_projects_run_pointers_only(repo, monkeypatch):
     repo_dir, docs_dir = repo
     (docs_dir / "plans" / "solo.html").write_text(_plan_html("solo", "active"))
