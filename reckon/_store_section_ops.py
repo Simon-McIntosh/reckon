@@ -149,12 +149,12 @@ def _validated_record(record: dict, field: str, value: Any) -> dict:
 
 
 def _section_by_id(sections: Any, section_id: str) -> tuple[int, dict] | None:
+    """The index and record of one section, through the store's own lookup."""
+    from reckon._store import _find_by_id
+
     if not isinstance(sections, list):
         return None
-    for index, record in enumerate(sections):
-        if isinstance(record, dict) and str(record.get("id") or "") == section_id:
-            return index, record
-    return None
+    return _find_by_id(sections, section_id)
 
 
 def apply_section_field_set(
@@ -211,15 +211,17 @@ def _preserve_body_edges(original: str, value: str) -> str:
 
 
 def apply_section_field_edits(
-    html_text: str, requests: list[dict[str, str]], *, replace
+    html_text: str, requests: list[dict[str, str]], *, replace_span
 ) -> str:
     """Apply queued authored title/body edits to ``html_text``, in order.
 
-    Each edit is located by the section's own heading, so the preimage is the
-    bytes the document carries rather than a fragment a caller retyped — an
-    entity such as ``&#x27;`` in the stored prose cannot make the match miss.
-    ``replace`` is the store's authored-fragment replacement, passed in so this
-    module and the text editor share one replacement path rather than two.
+    Each edit is located from the section's own heading and record element, so
+    it addresses a span of the document the writer already holds rather than a
+    fragment to search for. That matters for a section with no prose yet: its
+    authored span is a single newline, which occurs throughout the document and
+    cannot be matched exactly once. ``replace_span`` is the store's
+    authored-fragment replacement, passed in so this module and the text editor
+    share one replacement path rather than two.
     """
     from reckon import _plan_html
 
@@ -241,9 +243,10 @@ def apply_section_field_edits(
             replacement = escape(request["value"])
         else:
             replacement = _preserve_body_edges(original, request["value"])
-        html_text = replace(
+        html_text = replace_span(
             html_text,
-            original,
+            start,
+            end,
             replacement,
             selector_name=f"sections.{section_id}.{field}",
         )

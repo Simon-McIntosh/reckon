@@ -1324,8 +1324,11 @@ def _write_state_locked(
             # A section's title and body are authored HTML the state writer
             # leaves alone, so a set of either arrives here as an edit to apply
             # through the one replacement path rather than as a state change.
+            # The span is located from the section's own heading, so the edit
+            # addresses it by position rather than by matching text a
+            # prose-less section does not yet contain.
             source_text = _store_section_ops.apply_section_field_edits(
-                source_text, section_field_edits, replace=_replace_authored_html
+                source_text, section_field_edits, replace_span=_replace_authored_span
             )
     except ValueError as exc:
         raise OpError(str(exc)) from exc
@@ -1489,15 +1492,42 @@ def _replace_authored_html(
 ) -> str:
     """Replace one exact authored fragment without touching structured state."""
 
-    from reckon import _plan_html
-
     occurrences = html_text.count(preimage)
     if occurrences != 1:
         raise ValueError(
             f"{selector_name} must match exactly once; found {occurrences} occurrences"
         )
     start = html_text.index(preimage)
-    end = start + len(preimage)
+    return _replace_authored_span(
+        html_text,
+        start,
+        start + len(preimage),
+        replacement,
+        selector_name=selector_name,
+    )
+
+
+def _replace_authored_span(
+    html_text: str,
+    start: int,
+    end: int,
+    replacement: str,
+    *,
+    selector_name: str,
+) -> str:
+    """Replace the authored bytes at one already-located span.
+
+    A caller that has located the span itself — from the section's own heading
+    and record element — needs no text search, and must not be given one: a
+    section's authored span is empty of prose until something is written there,
+    and an empty span matched as text is a bare newline that occurs throughout
+    the document. The span is still held to every check the text form applies,
+    so this is the same replacement path with a second entry point rather than
+    a second mechanism.
+    """
+
+    from reckon import _plan_html
+
     if any(
         start < protected_end and end > protected_start
         for protected_start, protected_end in _plan_html.structured_section_spans(
