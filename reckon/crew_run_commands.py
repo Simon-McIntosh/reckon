@@ -45,7 +45,6 @@ def crew_resume_ready(project, dry_run, pretty):
     _emit_crew_result(report, pretty)
 
 
-
 @crew.command(name="merge")
 @click.option(
     "--project",
@@ -98,7 +97,6 @@ def crew_merge(project, head, message, body, candidate, pretty):
     _emit_crew_result(report, pretty)
 
 
-
 @crew.command(name="unwatch")
 @click.option("--project", required=True, help="Project whose watcher to stop.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
@@ -112,7 +110,6 @@ def crew_unwatch(project, pretty):
     except CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(result, pretty)
-
 
 
 @crew.command(name="placement")
@@ -207,7 +204,6 @@ def crew_placement(ensure, replace_job, session, project, pretty):
     )
 
 
-
 @crew.command(name="list")
 @click.option("--project", default=None, help="Return runs for one project only.")
 @click.option("--phase", default=None, help="Return runs in one phase only.")
@@ -298,7 +294,6 @@ def crew_list(project, phase, session, mine, pretty):
     _emit_crew_result(payload, pretty)
 
 
-
 @crew.command(name="directory")
 @click.option("--project", default=None, help="Return coordinators for one project.")
 @click.option("--run", "run_id", default=None, help="Resolve one live run's owner.")
@@ -315,9 +310,7 @@ def crew_directory(project, run_id, node_id, pretty):
     _emit_crew_result(result, pretty)
 
 
-
 _PATH_KINDS = ("config-home", "reports", "runs", "live", "reviews")
-
 
 
 @crew.command(name="path")
@@ -391,7 +384,6 @@ def crew_path(kind, project, run_id):
     click.echo(str(path))
 
 
-
 def _reviewed_head_from_run_records(project: str, reviewed_run_id: str) -> str:
     """The revision a run with no live pointer was reviewed at, from its records.
 
@@ -455,7 +447,6 @@ def _reviewed_head_from_run_records(project: str, reviewed_run_id: str) -> str:
         "refusing to take one from the working directory, which would answer a "
         "review belonging to whatever repository the caller stands in"
     )
-
 
 
 @crew.command(name="dispose")
@@ -667,7 +658,6 @@ def crew_dispose(
         },
         pretty,
     )
-
 
 
 @crew.command(name="check-manifest")
@@ -942,9 +932,7 @@ def supersede_run_review(project: str, run_id: str, reason: str) -> dict[str, An
 WIDENABLE_PHASE = "blocked"
 
 
-
 WIDEN_REFUSING_MANIFEST_STATUSES = frozenset({"complete", "failed"})
-
 
 
 WIDEN_RULE = (
@@ -952,7 +940,6 @@ WIDEN_RULE = (
     "because a live worker is already writing against the boundary a widening "
     "would move"
 )
-
 
 
 def _manifest_reported_status(record: Mapping[str, Any]) -> str:
@@ -988,7 +975,6 @@ def _manifest_reported_status(record: Mapping[str, Any]) -> str:
         return ""
     status = str(delivered.get("status") or "").strip().lower()
     return "" if manifest_status_is_template(status) else status
-
 
 
 def _widen_eligibility(record: Mapping[str, Any]) -> tuple[str, str, str]:
@@ -1035,7 +1021,6 @@ def _widen_eligibility(record: Mapping[str, Any]) -> tuple[str, str, str]:
     return "", reported, ""
 
 
-
 def _widen_running_worker(record: Mapping[str, Any]) -> str:
     """The pid of this run's worker while it is still running, or ``""`` once gone.
 
@@ -1057,14 +1042,12 @@ def _widen_running_worker(record: Mapping[str, Any]) -> str:
     return str(record.get("pid") or "")
 
 
-
 def _widen_refusal(run_id: str, state: str, remedy: str, *, where: str) -> str:
     """Compose the refusal naming the state, where it was read, and the next move."""
     message = (
         f"run {run_id!r} cannot have its fence widened{where}: {state}; {WIDEN_RULE}"
     )
     return f"{message}. {remedy}" if remedy else message
-
 
 
 @crew.command(name="widen")
@@ -1185,7 +1168,6 @@ def crew_widen(run_id, write_paths, pretty):
     )
 
 
-
 @crew.command(name="drain")
 @click.option("--project", required=True, help="Project whose live pointers to drain.")
 @click.option(
@@ -1250,7 +1232,6 @@ def crew_drain(project, session, leaves, pretty):
     )
 
 
-
 @crew.command(name="ack")
 @click.option(
     "--run",
@@ -1291,12 +1272,10 @@ def crew_ack(run_id, reason, until, pretty):
     )
 
 
-
 @crew.group(name="suite")
 def crew_suite():
     """The project's declared suite: run it once, or waive its hold."""
-    return None
-
+    return
 
 
 def _suite_project_root(project: str, checkout_path: Path | None) -> Path:
@@ -1319,7 +1298,6 @@ def _suite_project_root(project: str, checkout_path: Path | None) -> Path:
             "naming the repository its suite runs in"
         )
     return mount
-
 
 
 @crew_suite.command(name="run")
@@ -1377,7 +1355,6 @@ def crew_suite_run(project, checkout_path, pretty):
     )
 
 
-
 @crew_suite.command(name="waive")
 @click.option("--project", required=True, help="Project whose hold is waived.")
 @click.option("--reason", required=True, help="Why the hold is lifted.")
@@ -1398,7 +1375,6 @@ def crew_suite_waive(project, reason, who, checkout_path, pretty):
     root = _suite_project_root(project, checkout_path)
     path = standing_suite.record_waiver(root, project, who=who, why=reason)
     _emit_crew_result({"project": project, "waiver": str(path)}, pretty)
-
 
 
 @crew.command(name="gc")
@@ -1517,7 +1493,6 @@ def crew_gc(
     _emit_crew_result(report, pretty)
 
 
-
 @crew.command(name="resume")
 @click.option("--run", "run_id", required=True, help="Run id to answer.")
 @click.option("--advice", required=True, help="The orchestrator's answer.")
@@ -1631,7 +1606,6 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
     _emit_crew_result(payload, pretty)
 
 
-
 @crew.command(name="redispatch")
 @click.option("--run", "run_id", required=True, help="Run id to move.")
 @click.option("--backend", required=True, help="Destination backend.")
@@ -1720,7 +1694,6 @@ def crew_redispatch(
     _emit_crew_result(moved, pretty)
 
 
-
 @crew.command(name="stop")
 @click.option("--run", "run_id", required=True, help="Run id to stop.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
@@ -1734,7 +1707,6 @@ def crew_stop(run_id, pretty):
     _emit_crew_result(record, pretty)
 
 
-
 @crew.command(name="discard")
 @click.option("--run", "run_id", required=True, help="Run id to discard.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
@@ -1746,7 +1718,6 @@ def crew_discard(run_id, pretty):
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(result, pretty)
-
 
 
 @crew.command(name="repair-status")
@@ -1784,13 +1755,11 @@ def crew_repair_status(run_id, status, reason, pretty):
     _emit_crew_result(result, pretty)
 
 
-
 def _ledger_module():
     """Import the ledger helpers on demand."""
     from reckon import ledger as ledger_module
 
     return ledger_module
-
 
 
 def _refuse_a_flag_as_a_reason(
@@ -2033,6 +2002,16 @@ def _refuse_a_flag_as_a_reason(
         "writing nothing: no ledger row, no plan comment, no pointer change."
     ),
 )
+@click.option(
+    "--land",
+    "land",
+    is_flag=True,
+    help=(
+        "After the promotion, merge the run's reviewed head onto the project's "
+        "primary branch, refuse if the merge dropped the change, push it, and "
+        "release the worktree. Refused with --dry-run, which writes nothing."
+    ),
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_complete(
     run_id,
@@ -2060,6 +2039,7 @@ def crew_complete(
     plan_link,
     unplanned_reason,
     dry_run,
+    land,
     pretty,
 ):
     """Promote one finished run into the owning repository's committed ledger.
@@ -2070,7 +2050,19 @@ def crew_complete(
     this is the sole route by which a run is promoted, so the requirement is
     unconditional here even though the underlying ledger call remains
     permissive for internal callers assembling records from other evidence.
+
+    With ``--land`` the promotion is followed by three reported steps: the
+    reviewed head is merged onto the project's primary branch without touching
+    the shared index, the merged tree is refused unless it carries a marker the
+    change introduced and lacks any marker it removed, and the branch is pushed
+    before the worktree is released. A step that fails stops the call and the
+    report names the command that resumes from it.
     """
+    if land and dry_run:
+        raise click.ClickException(
+            "--land merges and pushes, which --dry-run promises not to do; run "
+            "the promotion with --dry-run first, then promote with --land"
+        )
     crew_module, _ = _crew_modules()
     ledger_module = _ledger_module()
     from reckon.crew import review as review_module
@@ -2192,8 +2184,192 @@ def crew_complete(
         raise click.ClickException(detail) from exc
     except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
+    if land:
+        report, exit_code = _land_a_promoted_run(
+            result,
+            run_id=run_id,
+            gate=gate,
+            checkout_path=checkout_path,
+            pointer=pointer,
+        )
+        _emit_crew_result(report, pretty)
+        if exit_code:
+            raise click.exceptions.Exit(exit_code)
+        return
     _emit_crew_result(result, pretty)
 
+
+def _land_a_promoted_run(
+    promoted: Mapping[str, Any],
+    *,
+    run_id: str,
+    gate: str,
+    checkout_path: Path | None,
+    pointer: Mapping[str, Any] | None = None,
+) -> tuple[dict[str, Any], int]:
+    """Merge, verify and push a promoted run's head, then release its worktree.
+
+    Each step reports under ``steps``: the promotion that already happened, the
+    merge that carries the reviewed head onto the primary branch, and the
+    release that follows it. A refused step stops the call — nothing is pushed
+    when the merge dropped the change — and its entry names the command that
+    resumes from there rather than restating what the report already shows.
+    Promotion is reported first because it is the step whose guards run before
+    any code reaches the branch: a run promotion refuses lands nothing.
+
+    The workspace the release reads is carried over from the live pointer
+    captured before the promotion deleted it: the committed ledger row states
+    the run's outcome and its release, not the path of the tree the release has
+    to remove.
+    """
+    import shlex
+
+    from reckon.crew import merge as merge_module
+    from reckon.crew import promotion_release as release_module
+
+    project = str(promoted.get("project") or "")
+    record: dict[str, Any] = dict(promoted.get("record") or {})
+    for key in ("worktree", "repo", "scratch", "pid", "pid_start_time"):
+        if key not in record and key in (pointer or {}):
+            record[key] = pointer[key]
+    report: dict[str, Any] = {
+        "ok": False,
+        "run_id": run_id,
+        "project": project,
+        "steps": {"promote": {"ok": True}},
+        "promotion": promoted,
+    }
+    head = _reviewed_head_of(record)
+    if not head:
+        report["steps"]["land"] = {
+            "ok": False,
+            "error": (
+                "the promoted run records no commit to land, so there is no "
+                "reviewed head to merge"
+            ),
+        }
+        report["worktree_released"] = bool(
+            (promoted.get("release") or {}).get("worktree_released")
+        )
+        return report, 1
+    try:
+        repository = merge_module.project_repository(project)
+    except merge_module.MergeError as exc:
+        report["steps"]["land"] = {"ok": False, "error": str(exc)}
+        return report, 1
+    message = f"land({run_id}): merge the reviewed head onto the primary branch"
+    body = (
+        f"Run {run_id} was promoted, so its reviewed head {head} is merged "
+        "onto the branch and reaches every reader rather than only the "
+        "worktree the change was written in."
+    )
+    resume_merge = shlex.join(
+        [
+            "reckon",
+            "crew",
+            "merge",
+            "--project",
+            project,
+            "--head",
+            head,
+            "--message",
+            message,
+            "--body",
+            body,
+        ]
+    )
+    try:
+        landed = merge_module.land(repository, head=head, message=message, body=body)
+    except merge_module.MergePushOutstandingError as exc:
+        report["steps"]["land"] = {
+            "ok": True,
+            "push_outstanding": True,
+            "resume": resume_merge,
+            **{key: exc.report[key] for key in ("head", "commit", "base")},
+        }
+        report["worktree_released"] = False
+        report["error"] = str(exc)
+        return report, merge_module.PUSH_OUTSTANDING_EXIT
+    except merge_module.MergeError as exc:
+        report["steps"]["land"] = {
+            "ok": False,
+            "error": str(exc),
+            "resume": resume_merge,
+        }
+        report["worktree_released"] = bool(
+            (promoted.get("release") or {}).get("worktree_released")
+        )
+        return report, 1
+    report["steps"]["land"] = {"ok": True, **landed}
+    release = release_module._release_after_promotion(
+        run_id, record, None, gate=str(gate)
+    )
+    repository_value = str(record.get("repo") or "").strip()
+    # The release records its own outcome as a second ledger commit, so the
+    # branch moves again after the push. The remote is left equal to the local
+    # branch rather than behind it. A push that fails here is the same shape as
+    # a landing whose push failed: the work is committed and only the push is
+    # outstanding.
+    release, recorded = release_module._record_release_on_ledger(
+        project=project,
+        root=checkout_path,
+        run_id=run_id,
+        release=release,
+        checkout=Path(repository_value) if repository_value else None,
+    )
+    if recorded is not None:
+        report["promotion"] = {**promoted, "record": recorded}
+    report["steps"]["release"] = {
+        "ok": bool(release.get("worktree_released")),
+        **release,
+    }
+    branch = str(landed.get("branch") or "")
+    remote = str(landed.get("remote") or "origin")
+    if branch and repository_value:
+        try:
+            head_now = merge_module._rev_parse(Path(repository_value), branch)
+            pushed_head = str(landed.get("remote_head") or "")
+        except merge_module.MergeError as exc:  # pragma: no cover - reported, not fatal
+            report["steps"]["release"]["push_error"] = str(exc)
+            head_now = pushed_head = ""
+    else:
+        head_now = pushed_head = ""
+    if head_now and head_now != pushed_head:
+        try:
+            pushed = merge_module._push_and_confirm(
+                Path(repository_value), remote, head_now, branch
+            )
+        except merge_module._PushError as exc:
+            report["steps"]["release"]["push_error"] = str(exc)
+        else:
+            report["steps"]["land"]["remote_head"] = pushed
+            report["steps"]["release"]["release_commit_pushed"] = head_now
+    report["release"] = release
+    if not release.get("worktree_released"):
+        report["steps"]["release"]["resume"] = shlex.join(
+            ["reckon", "crew", "gc", "--project", project, "--apply"]
+        )
+        report["error"] = (
+            "the reviewed head landed and was pushed, but the worktree was "
+            "withheld: " + str(release.get("worktree_withheld") or "no reason given")
+        )
+        return report, 1
+    report["ok"] = True
+    return report, 0
+
+
+def _reviewed_head_of(record: Mapping[str, Any]) -> str:
+    """Return the commit a promoted run's worktree was reviewed at.
+
+    The promoted revision is the head a review read; where the row recorded no
+    revision the run's own commits name it, newest last, so the change that
+    reached the branch is the one the ledger already attributes to the run.
+    """
+    promoted_revision = str(record.get("promoted_revision") or "").strip()
+    if promoted_revision:
+        return promoted_revision
+    commits = [str(sha).strip() for sha in (record.get("commits") or ())]
+    return next((sha for sha in reversed(commits) if sha), "")
 
 
 @crew.command(name="verify-gate")
@@ -2276,7 +2452,6 @@ def crew_verify_gate(
     _emit_crew_result(result, pretty)
 
 
-
 @crew.command(name="recover")
 @click.option("--project", default=None, help="Limit to one project's runs.")
 @click.option(
@@ -2306,11 +2481,9 @@ def crew_recover(project, dispatch_reviews, pretty):
     _emit_crew_result(report, pretty)
 
 
-
 @crew.group(name="member")
 def crew_member():
     """The project's committed team roster."""
-
 
 
 @crew_member.command(name="add")
@@ -2348,7 +2521,6 @@ def crew_member_add(project, member_id, harness, role, session, checkout_path, p
     _emit_crew_result({"project": project, "member": entry}, pretty)
 
 
-
 @crew_member.command(name="list")
 @click.option("--project", required=True, help="Project owning the roster.")
 @click.option(
@@ -2366,7 +2538,6 @@ def crew_member_list(project, checkout_path, pretty):
     except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result({"project": project, "members": roster}, pretty)
-
 
 
 @crew.command(name="ledger")
@@ -2414,7 +2585,6 @@ def crew_ledger(project, view, path, checkout_path, pretty):
     except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result({"project": project, **payload}, pretty)
-
 
 
 @crew.command(name="velocity")
@@ -2477,7 +2647,6 @@ def crew_velocity(project, since, until, fields, limit, cursor, pretty):
         detail = payload.get("detail") or payload.get("message") or str(payload)
         raise click.ClickException(str(detail))
     _emit_crew_result(payload, pretty)
-
 
 
 @crew.command(name="budget-reset")
@@ -2543,7 +2712,6 @@ def crew_budget_reset(group, mark_available, mark_used, by, pretty):
             ),
         }
     _emit_crew_result(result, pretty)
-
 
 
 _LIFT_CLOCKS = ("seven_day", "five_hour")
@@ -2864,7 +3032,6 @@ def crew_split_runs(dry_run, pretty):
     except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(report, pretty)
-
 
 
 @crew.command(name="repair-completion")

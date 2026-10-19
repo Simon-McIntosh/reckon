@@ -35,6 +35,7 @@ import os
 import re
 import subprocess
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 # The repository's own pre-push guard refuses a line-anchored ``co-authored-by``
@@ -198,6 +199,134 @@ def _commit_tree(repo: Path, tree: str, parents: list[str], message: str) -> str
     return commit
 
 
+# A marker is a line the change introduced or removed, taken from the head's
+# diff against the base. A merge resolved to drop the reviewed change — the
+# base side taken throughout — leaves the primary branch without the lines the
+# change added, and the landing is refused there, before the branch moves. Lines
+# shorter than this occur everywhere in a file, so their presence would not show
+# that a change had survived; a marker has to be distinctive to be evidence.
+_MARKER_MIN_LENGTH = 8
+
+
+def _show(repo: Path, revision: str, path: str) -> str | None:
+    """Return the text of ``path`` at ``revision``, or None when it is absent."""
+    result = _run(repo, "show", f"{revision}:{path}")
+    if result.returncode != 0:
+        return None
+    return result.stdout
+
+
+def _marker_lines(text: str) -> list[str]:
+    """Return the distinctive lines of ``text``, in order and without repeats."""
+    markers: list[str] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if len(stripped) >= _MARKER_MIN_LENGTH and stripped not in markers:
+            markers.append(stripped)
+    return markers
+
+
+def _merge_base(repo: Path, left: str, right: str) -> str:
+    """Return the common ancestor of ``left`` and ``right``, or ``left`` itself.
+
+    An unrelated pair has no common ancestor, and a head with no shared history
+    stands as its own base rather than raising: the change is then the whole of
+    it, which is the strongest reading of what a landing must keep.
+    """
+    result = _run(repo, "merge-base", left, right)
+    answer = result.stdout.strip()
+    return answer if result.returncode == 0 and answer else left
+
+
+def _changed_paths(repo: Path, base: str, head: str) -> list[tuple[str, str]]:
+    """Return (status, path) for every path the head changed against the base."""
+    result = _run(repo, "diff", "--name-status", "--no-renames", "-z", base, head)
+    if result.returncode != 0:
+        raise MergeError(
+            "cannot read the head's change: "
+            + (result.stderr.strip() or result.stdout.strip())
+        )
+    fields = [field for field in result.stdout.split("\0") if field]
+    return [
+        (fields[index], fields[index + 1]) for index in range(0, len(fields) - 1, 2)
+    ]
+
+
+def change_markers(repo: Path, base: str, head: str) -> dict[str, dict[str, object]]:
+    """Return the markers a landing must show survived, keyed by changed path.
+
+    The change is read from the merge base of ``base`` and ``head``, not from
+    ``base`` itself: by the time a head is landed the base has usually moved
+    with a promotion's own ledger commits, and a diff against it would attribute
+    those commits to the change — a path the promotion added would read as one
+    the change deleted, and a correct landing would be refused.
+
+    A path the head deleted is recorded as deleted, so the landing is refused if
+    it is present again; every other changed path carries the lines the head
+    introduced. A removed line counts as a marker only when it occurred exactly
+    once in the base copy: a line that appeared twice there is still present in
+    the merged result, so requiring its absence would refuse a landing that
+    behaved correctly.
+    """
+    base = _merge_base(repo, base, head)
+    markers: dict[str, dict[str, object]] = {}
+    for _status, path in _changed_paths(repo, base, head):
+        before = _show(repo, base, path)
+        after = _show(repo, head, path)
+        if after is None:
+            markers[path] = {"deleted": True, "introduced": [], "removed": []}
+            continue
+        base_copy = before or ""
+        markers[path] = {
+            "deleted": False,
+            "introduced": [
+                line for line in _marker_lines(after) if line not in base_copy
+            ],
+            "removed": [
+                line
+                for line in _marker_lines(base_copy)
+                if line not in after and base_copy.count(line) == 1
+            ],
+        }
+    return markers
+
+
+def surviving_change_refusals(
+    repo: Path, revision: str, markers: dict[str, dict[str, object]]
+) -> list[str]:
+    """Return one refusal for each path whose change did not survive ``revision``.
+
+    A seam rather than a branch: the whole decision about whether a merge kept
+    the reviewed change is here, so a caller can present the landing over a
+    dropped resolution and see this one refusal rather than a branch's worth of
+    conflict markers written into the checkout.
+    """
+    refusals: list[str] = []
+    for path, expected in markers.items():
+        content = _show(repo, revision, path)
+        if expected.get("deleted"):
+            if content is not None:
+                refusals.append(
+                    f"{path}: the change deleted it and the merge has it back"
+                )
+            continue
+        if content is None:
+            refusals.append(f"{path}: the change wrote it and the merge dropped it")
+            continue
+        missing = [line for line in expected["introduced"] if line not in content]
+        if missing:
+            refusals.append(
+                f"{path}: the change's {missing[0]!r} did not survive the merge"
+            )
+            continue
+        still_there = [line for line in expected["removed"] if line in content]
+        if still_there:
+            refusals.append(
+                f"{path}: the change removed {still_there[0]!r} and the merge kept it"
+            )
+    return refusals
+
+
 def build_merge_commit(
     repo: Path, base: str, head: str, subject: str, body: str
 ) -> str:
@@ -317,6 +446,7 @@ def land_merge(
     attempts: int = DEFAULT_ATTEMPTS,
     retry_seconds: float = DEFAULT_RETRY_SECONDS,
     sleep=time.sleep,
+    verify: Callable[[Path, str, str, str], None] | None = None,
 ) -> dict:
     """Land ``head`` on the checked-out branch and push it, returning a report.
 
@@ -327,6 +457,14 @@ def land_merge(
     the fast-forward stays a fast-forward. With ``candidate`` the already-built
     merge is landed unchanged, provided its parents are the pinned HEAD and the
     head.
+
+    ``verify`` is the seam a caller judges the merge through before it becomes
+    reachable: it is called with the checkout, the pinned base, the head and the
+    built commit, once per attempt and before the branch moves. A caller that
+    refuses raises :class:`MergeError` from it, and because nothing has moved at
+    that point the refusal has touched neither the branch nor the remote. The
+    call is skipped on the already-landed path below, where the change is on the
+    branch already and no merge is built.
 
     A head already in ``HEAD`` is treated as a landed merge whose push is
     outstanding: it is pushed rather than merged a second time. A push that
@@ -359,6 +497,13 @@ def land_merge(
                     )
             else:
                 commit = build_merge_commit(repo, base, head_sha, message, body)
+
+            # The seam runs before the branch moves, so what a caller refuses
+            # here has touched neither the branch nor the remote. It is inside
+            # the loop because a retry rebuilds the commit against a fresh HEAD
+            # and the new commit is what must be judged.
+            if verify is not None:
+                verify(repo, base, head_sha, commit)
 
             result = _run(repo, "merge", "--ff-only", commit)
             if result.returncode == 0:
@@ -398,4 +543,71 @@ def land_merge(
         raise MergePushOutstandingError(report, exc.detail) from exc
     report["remote_head"] = remote_head
     report["pushed"] = True
+    return report
+
+
+def land(
+    repo: str | Path,
+    *,
+    head: str,
+    message: str = "",
+    body: str = "",
+    candidate: str | None = None,
+    remote: str = "origin",
+    attempts: int = DEFAULT_ATTEMPTS,
+    retry_seconds: float = DEFAULT_RETRY_SECONDS,
+    sleep=time.sleep,
+) -> dict:
+    """Land ``head``, confirm its change survived the merge, and push it.
+
+    The merge is built out of objects exactly as :func:`land_merge` builds it,
+    and one step is added between building it and moving the branch: the merged
+    tree must carry a marker the change introduced and lack any marker it
+    removed. The check reads the tree the merge commit will put on the primary
+    branch, so a resolution that drops the reviewed change is refused there,
+    before the branch moves and before any push is attempted — the checkout is
+    left exactly as it was and the remote is untouched.
+
+    A head already in ``HEAD`` is a landing whose push is outstanding: it is
+    pushed rather than merged a second time, and no marker is re-checked,
+    because the change is already on the branch. The report carries a
+    ``survived`` block naming the changed paths and the markers the check read.
+    """
+    repo = Path(repo)
+    head_sha = _rev_parse(repo, str(head))
+    markers: dict[str, dict[str, object]] = {}
+
+    def _refuse_a_dropped_change(
+        checkout: Path, base: str, merged_head: str, commit: str
+    ) -> None:
+        """Judge the built merge by the tree it will put on the branch."""
+        nonlocal markers
+        markers = change_markers(checkout, base, merged_head)
+        dropped = surviving_change_refusals(checkout, commit, markers)
+        if dropped:
+            raise MergeError(
+                "the merge dropped the reviewed change, so nothing was moved "
+                "or pushed: " + "; ".join(dropped)
+            )
+
+    report = land_merge(
+        repo,
+        head=head_sha,
+        message=message,
+        body=body,
+        candidate=candidate,
+        remote=remote,
+        attempts=attempts,
+        retry_seconds=retry_seconds,
+        sleep=sleep,
+        verify=_refuse_a_dropped_change,
+    )
+    report["survived"] = {
+        "checked": bool(markers),
+        "paths": sorted(markers),
+        "markers": sum(
+            len(expected["introduced"]) + len(expected["removed"])
+            for expected in markers.values()
+        ),
+    }
     return report
