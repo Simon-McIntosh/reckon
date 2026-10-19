@@ -1,0 +1,89 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T14:36:27.081Z",
+  "dispatched_at": "2026-10-19T14:14:33Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/scoring-should-stop-a-promotion.html:2604",
+      "id": "done_when-1",
+      "reason": "the fixture is what makes the guard fire; unless the done-when requires it to reproduce the source that answered present (the aggregate), the first case can be green before the fix and the negative control cannot show the refusal.",
+      "text": "\u00a714's first case names the fixture as writing \"a promotion's per-run ledger file\" and nothing else, but the read-back it means to falsify (`_ledger_holds_row`, `reckon/crew/promotion_scope.py:2055`) answers from the union of the aggregate *and* the per-run document (`ledger.load(..., use_index=False)`, `reckon/ledger.py:1618-1620`), and the plan's own candidate list names \"the aggregate ledger\" as a possible source of the incident's present answer. If the fixture populates only the per-run document, the rollback removes it and the *unfixed* read-back answers absent, so the assertion \u2014 \"the refusal then carries the re-promote wording\" \u2014 holds before any change: the case is green on unfixed code and measures nothing, and the negative control (\"restores the read-back that answered present\") then asserts a base state the fixture never produced. If instead the fixture must also carry an aggregate row, the done-when does not say so, and the node has to guess which source makes the control fire.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b55488deb0e35d9565ab61e7afd3d87432b106c68368a0cb2fd075ce3099cd37",
+  "plan_slug": "scoring-should-stop-a-promotion",
+  "plan_version": 215,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-19T14:37:36.135577+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T14:37:36.135577+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-scoring-should-stop-a-promotion.v215.json",
+  "review_run_id": "r-20261019T140540357361-plan-review-of-scoring-should-stop-a-promotion",
+  "reviewed_blob_sha": "e057d670d28fe429106010e45e62beae7d91efdb",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/promotion_scope.py`, `reckon/ledger.py`, `reckon/file_memo.py`, the incident's `landing.json` and the cited symbols all resolve; the two extensionless evidence hrefs belong to \u00a76's gate, outside these units.",
+    "done_when": "a finding \u2014 \u00a714's first case writes only the per-run ledger document and then has the rollback remove it, but the read-back it is meant to falsify reads the union of the aggregate *and* the per-run document.",
+    "evidence_paths": "pass \u2014 both done-whens write their logs under the run directory (the durable run store), not a session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 `_ledger_holds_row`, `_restore_one_landing_write`, `diagnosis.md` and the two test filenames describe mechanism, and carry no plan label, ticket number or version tag.",
+    "reasoning": "pass \u2014 \u00a714 does not assert a root cause it cannot support (it names the symptom and lists the candidate sources the node must discriminate), the `_restore_landing_writes` \u2192 `_restore_one_landing_write` chain \u00a715 describes matches the code at `reckon/crew/promotion_scope.py:1698-1745`, and both mechanisms run on the real promoting path (`row_present` is passed at `reckon/crew/promotion.py:821` and `:1393`).",
+    "single_goal": "pass \u2014 \u00a714 now states one deliverable (\"the read-back answers as a later reader will\", plan.html:2604) with the diagnosis as its first step, and \u00a715 states one (a tracked landing write restored under a held lock, plan.html:2608).",
+    "wiring": "pass \u2014 \u00a715 declares its ordering on \u00a714 (\"Build it after \u00a714, since both write `reckon/crew/promotion_scope.py`\", plan.html:2608), which is the only dependency the two units carry, and the document's `plan-informs` target (`background-agent-fitness-and-dispatch-scope`) exists as `docs/plans/background-agent-fitness-and-dispatch-scope.html`."
+  },
+  "section_digests": {
+    "_document": "bca55e399adb09da5c0532f9151925a44311544eb45f6536c0f288177e993594",
+    "s1": "80bb6f490cd042d9e8a687df7c507b613bebe3f255fe6d6acc39cd1af3fc764e",
+    "s10": "58ce55634b1139deebbacc64374dfc3b9f95a048256fae52ae6bbbd611fe06e1",
+    "s11": "12ca91ff46282400591910a71afc454966a0e7b0db697803af45c408f0538a6d",
+    "s12": "8fc0e32c910c072509963e1cde86a06ef0f38637847779509acf73cfea049ac1",
+    "s13": "4468d3febaa235841362d43149cd5a148b22dc43e3e4a449e7ad5535064cd12b",
+    "s14": "978e4b5dadae38593730ec2d28210d47c9298d7c2105ad2be523629e3ff2b3b6",
+    "s15": "7a11fb4b460534ba2b61fb9a1d429b8896301fd2f8e60e7d7895b668590066ac",
+    "s2": "a5b9af7082beec0446285c38e1363c16558ff8c37672b48d76c4fad4ccd81080",
+    "s2c": "5a7c7c8511a9e1dbc3faface290e2ae70fdda908b18a85ba8f64620edbeda54e",
+    "s2d": "338c41385c9011225386aa9a609c32e76003fd1a6cf6dcb58635c80b47d331ce",
+    "s2e": "ee6560c4da65bc28976152bca3855cbca84be7c1540b6f4c77398968add70550",
+    "s2f": "576cde224cd92bba95eb0b27946230a24ef2446fff19cc0fe636279c704a0dee",
+    "s2g": "11fa9736b2aae90ccde19fe3710f1263c44daa94aa4844aa5fb1b7611ecd6e81",
+    "s2h": "2f7fd9478dc7416b5794b2e20fec7373e94791bec72c397ad0f1df4d7f8f45e9",
+    "s2i": "ed065c467b7652cbb12d681845b9e5193fc90adea484f8079e42384d12495b6d",
+    "s2j": "1769663e0f36bba5566f26d92be1be4afd31143190193436fbbf04a43eab04f1",
+    "s2k": "b6fc2df79162c3ad10da610e5e395ce821e547abe29de1885d84d41c99a4c235",
+    "s3": "9ef758880694a735dd49d88e2b4b01b48aee693a77d3896b3bdd80154e7b2c9a",
+    "s4": "5d67d3bc9b218a16bcb96f699b7124495b1513588f4f43f4ec3f4d405ba4d4f7",
+    "s4b": "d36b747f10c15eb1483ce3b0ec1509e0a1686c6833add3864e91cc58c2379ac2",
+    "s5": "5a862e80db57f1eb9b94f987c151bd5bdf079e76a863d6d06a6e6f5235de9780",
+    "s5b": "8df4ec55ed3f4389206b15ec05b1e195f5f5456485befa9c07c4c7adf2322fc6",
+    "s5c": "c9b831d300f0c91f91adbd39bcfcf5d7c4fe233f5d636a4e21536fecb4bd36ce",
+    "s5d": "727b4b1219350bbc522610128fb2941c897901d031f8a8c5b4da5122751e1cd6",
+    "s5e": "5951f48eb75dff6738971cf54a98fc62a8612b9a8b7bd28f6a091123bb293313",
+    "s5f": "a6ef0c694960ee9ede9f159280853afddb2b3bdd09f3240c727fa1218787dc87",
+    "s5g": "05818b1088a6bf35a2c04bb635269f99c53b36d961c81f0524a36d0c3ec64a87",
+    "s5h": "7e3b60d10c806794b185f1f6bd75809b83e45a3d2d37f37128ceabed5d403e96",
+    "s5i": "c590c4926015c0cfb65faa25a45f32b22be05a55d7e5c577c37cb6532fc1f433",
+    "s5j": "714fbc2c52e98b0a935445988c0e7853221c00e10353af7b8b434b957c9dd0ad",
+    "s6": "efbbec7034e3043c3f08ab60360de4044a8a4ba680cdcd8e4a633994fd59bbd6",
+    "s7": "771dbccd4221eeadbd02945dd919f84c6c4ba28cfad8d2b03b42ddbcef0c1fe8",
+    "s8": "87d06c23a29b8b2827c560b7acea2a33336f873a6d9499845f8f0406ac2aa83a",
+    "s9": "b662fb73af4ef5b1b8896350c0864a2c266c5d1d78b138194c74fda976971741"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T14:37:31.452119+00:00"
+}
