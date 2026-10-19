@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="172">
+<meta name="plan-version" content="173">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -692,6 +692,9 @@
 </div>
 <div class="r-comment" data-section="s22" data-id="c-s22-silent-skip" data-who="reckon-build" data-when="2026-10-18T03:20:00Z">
     <div class="r-comment-body"><p>A second instance, and a quieter one. On 2026-10-18 review run <code>r-20261018T025636431736</code> delivered a 96/120 record for measurement run <code>r-20261018T020037545719</code>. That record also lacked <code>reviewed_run_id</code>. This time promotion did not refuse. It committed the review run's own ledger file and a plan comment (<code>5818bd0d9</code>), but filed nothing under <code>docs/state/reckon/reviews/run/r-20261018T020037545719-…/</code>. <code>crew dispose</code> on the reviewed run then answered "no stored review", and the obligation sweep still listed the run as review-missing after both runs had promoted. So a subjectless record can be refused or silently dropped, depending on the path. The node building this section covers both: no promotion of a review run may succeed while its record goes unfiled.</p></div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261019T145622046439-review-of-a-stored-review-carries-its-total-b3ea84199f72" data-who="reckon-build" data-when="2026-10-19T15:25:12.240Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261019T124040554227-a-stored-review-carries-its-total at base 3a95ee39c74a48a022b3a3f7d9a899d442a39f17 and head b3ea84199f724585488a787f27785848c3f4c9ec; the store derives a landed record&#x27;s total from its six scores on write and on read for a record with no integer total. Scores goal_fidelity 19, evidence 16, scope_discipline 15, durability 19, fit 19, reuse 20 (total 108); one follow-on finding (an out-of-scope test edit); added_failure_count 0 against the reviewed run&#x27;s own base/after suite arms.</p></div>
 </div>
 </section>
 </main>

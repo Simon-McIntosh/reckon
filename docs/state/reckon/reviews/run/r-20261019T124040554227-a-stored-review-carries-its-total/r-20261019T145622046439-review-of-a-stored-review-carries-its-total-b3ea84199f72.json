@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:930 store_review writes a carried review",
+    "reckon/crew/recovery_review_subject.py:139 and :142 select_review_for_head reads through read_review",
+    "reckon/crew/recovery_review_subject.py:985 newest_review_for_headless_run reads through read_review",
+    "reckon/crew/obligations.py:881 reads a stored review through read_review",
+    "reckon/crew/repair.py:582 reads a stored review through read_review",
+    "reckon/crew/recovery_classification.py:618 _review_is_complete on the record select_review_for_head returned"
+  ],
+  "completed_at": "2026-10-19T15:25:12.240Z",
+  "dispatched_at": "2026-10-19T14:57:28Z",
+  "findings": [
+    {
+      "file": "tests/test_review_counts_added_failures.py",
+      "line": "159",
+      "severity": "follow-on",
+      "text": "follow-on: the diff edits tests/test_review_counts_added_failures.py:159 and :174 to keep two existing tests valid under the new read-time derivation, but that file is outside the brief's declared write paths (reckon/crew/review.py, reckon/crew/recovery_review_subject.py, tests/test_a_stored_review_carries_its_total.py and the fragment); the edit is correct and necessary, yet the node should have requested a scope extension before touching it."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T124040554227-a-stored-review-carries-its-total/after-suite.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T124040554227-a-stored-review-carries-its-total/baseline-suite.log"
+  },
+  "justifications": {
+    "durability": "tests/test_a_stored_review_carries_its_total.py:33 asserts a literal total of 108 for six 18s and :102 writes a raw JSON record without a total and asserts it reads complete; negative-control.log removes the derivation and both cases fail (5 failed, 1 passed, EXIT=1), which is the regression each assertion guards.",
+    "evidence": "after-suite.log ends '2 failed, 1037 passed ... EXIT=1' and baseline-suite.log ends '3 failed, 1036 passed ... EXIT=1', the head's two failures a strict subset of the base's three, with the six done_when cases covered at tests/test_a_stored_review_carries_its_total.py:33-124; the after arm ran at ff2155a57, one commit short of the reviewed head b3ea84199, which only adds the docs fragment.",
+    "fit": "reckon/crew/review.py:677 _score_total and :687 _derive_landed_total follow the surrounding helper style and reuse the module's REVIEW_DIMENSIONS and CLAIMS_RUBRIC constants with no plan or ticket identifier in any name.",
+    "goal_fidelity": "reckon/crew/review.py:2531 store_review calls _derive_landed_total on every landed write and :3889 read_review calls it for a record with no integer total, so the total now comes from the six scores rather than the reviewer.",
+    "reuse": "the capability search over reckon/ for a six-score summation found only review.py's own parse_review inline sum, which _score_total now replaces; no second owner of the derivation exists, and the store-time and read-time helpers extend the module that owns the store.",
+    "scope_discipline": "git diff 3a95ee39..b3ea84199 changes docs fragment, reckon/crew/review.py and tests/test_a_stored_review_carries_its_total.py inside the declared paths, plus tests/test_review_counts_added_failures.py:159,174 which is outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make the review store derive a landed record's total from its six scores; reckon/crew/review.py:687 _derive_landed_total sets the total from _score_total on every landed write and on read for a record with no integer total, so the store no longer takes the reviewer's figure.\nVERDICT done_when: the measure names six cases and a base/after importer-suite pair; tests/test_a_stored_review_carries_its_total.py:33-124 covers the six, and after-suite.log '2 failed, 1037 passed' against baseline-suite.log '3 failed, 1036 passed' records the arms.\nVERDICT write_paths: the brief grants reckon/crew/review.py, reckon/crew/recovery_review_subject.py, tests/test_a_stored_review_carries_its_total.py and the fragment; the diff changes those plus tests/test_review_counts_added_failures.py:159,174, which is not in the grant.\nVERDICT manifest: read; it records status complete, the four commits, baseline 3 failed/1036 passed, after 2 failed/1037 passed, focused 14 passed, and negative control 5 failed/1 passed, each log ending EXIT=.\nVERDICT diff: read commit by commit; 2af932d50 adds the derivation and its test, 34da256ce adjusts the at-cap test, ff2155a57 narrows the read-time derivation to a record with no total, b3ea84199 lands the fragment.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:930 store_review writes a carried review, reckon/crew/recovery_review_subject.py:139 and :142 select_review_for_head reads through read_review, reckon/crew/recovery_review_subject.py:985 newest_review_for_headless_run reads through read_review, reckon/crew/obligations.py:881 reads a stored review through read_review, reckon/crew/repair.py:582 reads a stored review through read_review, reckon/crew/recovery_classification.py:618 _review_is_complete on the record select_review_for_head returned\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:2531 store_review calls _derive_landed_total on every landed write and :3889 read_review calls it for a record with no integer total, so the total now comes from the six scores rather than the reviewer.\nSCORE evidence: 16\nJUSTIFICATION evidence: after-suite.log ends '2 failed, 1037 passed ... EXIT=1' and baseline-suite.log ends '3 failed, 1036 passed ... EXIT=1', the head's two failures a strict subset of the base's three, with the six done_when cases covered at tests/test_a_stored_review_carries_its_total.py:33-124; the after arm ran at ff2155a57, one commit short of the reviewed head b3ea84199, which only adds the docs fragment.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: git diff 3a95ee39..b3ea84199 changes docs fragment, reckon/crew/review.py and tests/test_a_stored_review_carries_its_total.py inside the declared paths, plus tests/test_review_counts_added_failures.py:159,174 which is outside them.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_stored_review_carries_its_total.py:33 asserts a literal total of 108 for six 18s and :102 writes a raw JSON record without a total and asserts it reads complete; negative-control.log removes the derivation and both cases fail (5 failed, 1 passed, EXIT=1).\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/review.py:677 _score_total and :687 _derive_landed_total follow the surrounding helper style and reuse REVIEW_DIMENSIONS and CLAIMS_RUBRIC with no plan or ticket identifier in any name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search over reckon/ found only review.py's own parse_review inline sum, which _score_total now replaces; no second owner of the derivation exists.\nFINDING tests/test_review_counts_added_failures.py:159 follow-on: the diff edits tests/test_review_counts_added_failures.py:159 and :174 to keep two existing tests valid under the new read-time derivation, but that file is outside the brief's declared write paths; the edit is correct and necessary, yet the node should have requested a scope extension before touching it.\n",
+  "review_run_id": "r-20261019T145622046439-review-of-a-stored-review-carries-its-total-b3ea84199f72",
+  "reviewed_base_sha": "3a95ee39c74a48a022b3a3f7d9a899d442a39f17",
+  "reviewed_head_sha": "b3ea84199f724585488a787f27785848c3f4c9ec",
+  "reviewed_run_id": "r-20261019T124040554227-a-stored-review-carries-its-total",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T15:05:00+00:00",
+  "total": 108
+}
