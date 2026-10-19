@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T10:21:49.476Z",
+  "dispatched_at": "2026-10-19T10:13:54Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html:265",
+      "id": "wiring-1",
+      "reason": "two sections ordered \u00a716-then-\u00a75 as declared cannot both be satisfied as written, so \u00a75's write set needs `reckon/change_streams.py` (or \u00a716 must leave `_FleetChangeWatch` in `serve.py`), and without it the \u00a75 node either edits the wrong file or blocks.",
+      "text": "\u00a716 moves `_FleetChangeWatch` out of `reckon/serve.py` into the new `reckon/change_streams.py`, but \u00a75 (whose deliverable at line 137 changes that class's body \u2014 \"`_FleetChangeWatch` \u2026 also calls spawn-on-change for the project whose inputs moved\") is ordered after \u00a716 by the map and declares its write paths at line 141 as `reckon/serve.py`, `reckon/compliance.py`, `docs/ui/velocity.jsx`, `docs/ui/state-loader.js` and the test files, with `reckon/change_streams.py` absent; \u00a716's only compatibility promise covers names other files *import* from `serve.py`, not an in-module edit of a moved definition, so the \u00a75 node is fenced out of the file it must change",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1607fadd87bc8da4e6a4f832a9a83aa555f5550d17a9ede9a0842b14c672ff3b",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 43,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T101310066532-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "05b93823d3c125c0cc5a2a4815b2d6edddca118a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 commit 1631b4d87, `tests/test_every_module_fits_a_worker_window.py`, `scripts/check_pure_move.py`, `every-module-fits-a-worker-window#s8` and all twenty census test files resolve, and the snapshot's declarations match the live plan.",
+    "done_when": "pass \u2014 \u00a716's done-when is a token bound (`serve.py` at most 45,000 by the named test's estimator) with a declared negative control that returns a repointed patch to `serve` and makes that test fail.",
+    "evidence_paths": "pass \u2014 \u00a716 writes under the run directory and measures with the committed test's own estimator, naming no scratchpad or node-local path.",
+    "naming": "pass \u2014 `reckon/git_dates.py` and `reckon/change_streams.py` name the concern they hold and carry no stage, ticket or version tag.",
+    "reasoning": "pass \u2014 the cited measurement reproduces exactly (`reckon/serve.py` 53,952 estimated tokens, `reckon/crew/review.py` 51,584, `reckon/ledger.py` 51,393, test red at 1631b4d87), the named move set sheds about 10,400 tokens to land under the bound, and the pure-move method plus `scripts/check_pure_move.py` is the method \u00a78 of the cited plan defines.",
+    "single_goal": "pass \u2014 \u00a716 carries the one goal of bringing `reckon/serve.py` under the worker-window bound; both extractions are closed by the same measure.",
+    "wiring": "a finding \u2014 \u00a716 relocates `_FleetChangeWatch` into a new module that \u00a75, ordered after it, must edit, and \u00a75's write paths do not name that module."
+  },
+  "section_digests": {
+    "_document": "16d4c01278e4d835bd6aef8170eee8ab98fb304a4302985dbe4539fa0b5c4fb1",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "b9aa035553d395057dad26d5353e7b79c6bdec033a1ab82eb1042718d03592cd",
+    "s12": "3086e0ba68e51ca085e7178c914c92d64248be41088440dfa18abf077d5819ee",
+    "s13": "fa208e7c5f148ec329458a9824c867762bc66c986ccb7bc85745b08640484173",
+    "s14": "7f21ec58ce9adf4ba663f205fe60555a585a263354e7954c7dd99543a0d56139",
+    "s15": "884c8ab0e973894007385f537b51e29ef55bf2de18ef2cf6a25966e656f62bf2",
+    "s16": "68b4e68d648fe76ecff74c05d2cdfb995f2e13890befafc25046869d469abcac",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s3": "50f2ca1f3b1277d5f4b2d70a240688387a89a3136ad2d6aee26f0b3f324b1afc",
+    "s4": "a1ad15bdafaed28134c2565ad8374bc91928064852c10da6661f2499ca286149",
+    "s5": "da4f276387318740d6c58d98c1f99ec30a2c4cae490a7b5140dcb8fc1abfe0a8",
+    "s6": "fdb08d5e7b8272372c8ced83ee14c031730239025c2a13ccb211329d7951673e",
+    "s7": "90073ced7051cfae8f66fd6b78f99e6ace90b008ffc6c9e5559d87a2e5c31704",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T10:24:19.678732+00:00"
+}
