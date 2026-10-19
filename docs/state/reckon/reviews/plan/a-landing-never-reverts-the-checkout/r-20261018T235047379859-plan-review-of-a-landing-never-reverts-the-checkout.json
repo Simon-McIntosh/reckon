@@ -1,0 +1,79 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T23:57:04.297Z",
+  "dispatched_at": "2026-10-18T23:51:27Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-never-reverts-the-checkout.html:92",
+      "id": "reasoning-1",
+      "reason": "a node implementing \u00a73 would build its source fix on an unconfirmed cause and skip the snapshot-restoring path \u00a73's own deferred branch 3 said would \"get the same guard\", so \u00a73's scope rests on a certainty its evidence does not support.",
+      "text": "\u00a73 asserts the rollback reverted nova's paths \"only because a second promotion of the same review run ran beside the first\" and that this \"is the interleaving \u00a71 reproduced\", but \u00a71's own record (docs/research/what-turned-a-landing-back.html) calls it \"the leading candidate; the reproduction models it\" and states candidate (3) \u2014 \"another path, in reckon or outside it, that restores files from a snapshot\" \u2014 is \"Not separable from (1) by any record I can read\"; \u00a73 then forecloses the only guard that would cover (3) (\"The rollback needs no new condition\")",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-reverts-the-checkout.html:92",
+      "id": "anchors_resolve-1",
+      "reason": "the function name resolves on its own and the mechanism the sentence supports is unaffected, so only the pointer is wrong.",
+      "text": "the citation `reckon/crew/recovery_review_acceptance.py:322` is offered as the point where both promotions \"reach `complete` through `promote_review_run_itself`\", but line 322 is `),` (the close of the \"stored is None\" refusal tuple) and the `promotion_module.complete(` call sits at line 331, nine lines below",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "56ba6818c59a7907b66f8ae7b475b8f1c4fc14303fc74bda28b13e5628e90c2a",
+  "plan_slug": "a-landing-never-reverts-the-checkout",
+  "plan_version": 27,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-18T23:58:57.516559+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-18T23:59:04.833696+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T23:59:04.833696+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-18T23:58:57.516559+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-landing-never-reverts-the-checkout.v27.json",
+  "review_run_id": "r-20261018T235047379859-plan-review-of-a-landing-never-reverts-the-checkout",
+  "reviewed_blob_sha": "4f79852aff73139efc2c022db4d5bac1edaffcbd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a73 cites `reckon/crew/recovery_review_acceptance.py:322` for `complete` being reached through `promote_review_run_itself`, but line 322 is a bare `),` closing the \"stored is None\" refusal dict, and the `promotion_module.complete(` call is at line 331.",
+    "done_when": "pass \u2014 \u00a73's five done-when items are measurable and item 4 names a declared negative control (the new test's cross-host case fails by id at base).",
+    "evidence_paths": "pass \u2014 \u00a73's only recorded artifact, the base-revision FAILED-by-id log, lands under the crew run directory, a durable path.",
+    "naming": "pass \u2014 \u00a73 introduces no plan labels or ticket numbers; `HostLease` is existing and the new test file is named for its behaviour.",
+    "reasoning": "a finding \u2014 \u00a73's stated root cause (\"only because a second promotion of the same review run ran beside the first\") is stronger than the evidence it cites, which names the second promotion a leading candidate that \u00a71 explicitly cannot separate from a snapshot-restoring path.",
+    "single_goal": "pass \u2014 \u00a73 has one deliverable (a promotion holds a run-wide lease), and its tests, refusal cases and gate all serve it.",
+    "wiring": "pass \u2014 `plan-section-depends-on` carries `s3 -> ...#s1`, which matches \u00a73's \"deferred until \u00a71 names the mechanism\"; the earlier \u00a72-edge concern is moot because \u00a73's chosen fix is the run lease, not \u00a72's check."
+  },
+  "section_digests": {
+    "_document": "479ad99e4e7ec690c76f853bbaa2d01eaa1b8f0a44a8f6ce0f762821bdb2dd5c",
+    "s1": "ee9b8c30fd2d5b2dfb1dc7d01e8045c3f8d91294fd8bfd32b710f64690ad3daf",
+    "s2": "23098dde0aefcf0425da2867612f3318289f1d02963bc3243cc25d95d0ac066b",
+    "s3": "1d132d1d13b2b4ad91e0a85ff5b5f7ada8e53563742a812cbe9abdd2aa5fddc8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T23:58:54.187157+00:00"
+}
