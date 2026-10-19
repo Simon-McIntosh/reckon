@@ -20,19 +20,19 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It changes when a review run counts as delivered and how a misattributed review row is found and corrected; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-review-promotes-only-its-own-verdict#s2&quot;]}">
   <title>A Review Promotes Only Its Own Verdict | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
 <body>
   <main class="plan-doc">
     <h2 id="s1">§1 — A review run is delivered only by a record of the head it was dispatched to read</h2>
-<section data-reckon="section" data-id="s1" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> On 2026-10-18 nova's coordinator measured a review run promoted with a verdict it never gave. Review run <code>r-20261018T192200408612-review-of-tcv-liuqe-known-answer-0a451acfdb02</code> was dispatched to review <code>r-20261018T134957600545-tcv-liuqe-known-answer</code> at head <code>0a451acfdb02d4b05a5d8f77c7a711943f0d4cce</code>. Its worker wrote a complete manifest claiming both records stored, then exited before running the step that writes them. The reviewed run's <code>review-records/</code> directory holds no <code>.at-0a451acf…</code> record. Its unsuffixed <code>r-20261018T134957600545-tcv-liuqe-known-answer.json</code> is a copy of the round at <code>fbc3788e</code>, written at 20:30:37 local by an earlier review. At 21:45 the watcher promoted the run anyway, in nova commit <code>e99d2b385</code> with <code>promoted_by: review-self</code>. The ledger row <code>docs/state/nova/runs/r-20261018T192200408612-review-of-tcv-liuqe-known-answer-0a451acfdb02.json</code> records <code>review.reviewed_head_sha</code> <code>fbc3788e…</code> and <code>review.total</code> 91, another round's head and score. The review's own verdict was 96 at <code>0a451acf</code> and is unwritten.</p>
 <p>The cause, as read from the code on 2026-10-18. <code>_delivered_review_record</code> (<code>reckon/crew/recovery_review_delivery.py:236</code>) returns the first path among the review's write paths whose record parses complete (<code>_read_complete_review</code>, line 222). It never asks which head the record read, which review run wrote it, or whether it was written after this review was dispatched. The legacy unsuffixed path is one of those write paths, and any earlier round leaves a complete record there. When no write path parses, the fallback reads the store by the reviewed run (lines 251 to 261): the legacy path first, then every <code>.at-*</code> record of any head. That one predicate decides delivery for every reader: the watcher's self-promotion (<code>promote_review_run_itself</code>, <code>reckon/crew/recovery_review_acceptance.py:314</code>), promotion's review checks (<code>reckon/crew/promotion_checks.py:1152</code>), the round a promoting review commits (<code>promotion_checks.py:2327</code>, which files it under the promoting run's id), and <code>review_delivered</code> (<code>recovery_review_delivery.py:265</code>).</p>
 <p>The dispatched head is on the review run. The bad row's <code>node_definition.write_paths</code> declares the head-keyed path <code>…/review-records/r-20261018T134957600545-tcv-liuqe-known-answer.at-0a451acfdb02d4b05a5d8f77c7a711943f0d4cce.json</code> beside the legacy one, and <code>_review_subject</code> (<code>reckon/crew/recovery_review_dispatch.py:153</code>) already reads a head from such a path. The predicate never compares a record against it.</p>
@@ -74,10 +74,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-arpoiov-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-review-promotes-only-its-own-verdict §1" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arpoiov-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-review-promotes-only-its-own-verdict §1" data-resolved-at="2026-10-19T01:54:26+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Deliver a review only by a record of its dispatched head</h4>
     <div class="r-fu-body"><p>Filed at nova's coordinator's request after a review run was promoted with a predecessor round's verdict.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-promotes-only-its-own-verdict §1</pre>
+    <p class="r-fu-outcome">§1 landed at c3e988abd: delivery requires a record of the dispatched head, written by this review after its dispatch.</p>
     </article>
 <article class="r-fu" data-id="f-arpoiov-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-review-promotes-only-its-own-verdict §2" data-resolved-at="2026-10-19T00:25:42+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Count the review rows that carry another round&#x27;s verdict</h4>
@@ -113,7 +114,10 @@
     <div class="r-comment-body"><p>Independent review of r-20261018T215115257728-a-review-delivers-only-its-own-head at head 4d49a7084289e7a7c866d8c06dd040188dd4ffeb scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 18, reuse 18; one follow-on finding on the node-id-prefix reach of the head-naming refusal; zero added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261018T215115257728-a-review-delivers-only-its-own-head" data-who="reckon-build" data-when="2026-10-19T01:26:23Z">
-    <div class="r-comment-body"><p>A run review is delivered only by its own record of the head it read: `_delivered_review_record` accepts a record only at the head-keyed path the review&#x27;s dispatch declared, describing that head (compared with `review_described_head` and `same_revision`), naming this review run when it carries a `review_run_id`, and written after this run&#x27;s dispatch instant — the legacy path and the any-head glob no longer count — while a run review declaring no head-keyed path is refused by `promote_review_run_itself` with a reason naming the missing head.</p></div>
+    <div class="r-comment-body"><p>A run review is delivered only by its own record of the head it read: `_delivered_review_record` accepts a record only at the head-keyed path the review's dispatch declared, describing that head (compared with `review_described_head` and `same_revision`), naming this review run when it carries a `review_run_id`, and written after this run's dispatch instant — the legacy path and the any-head glob no longer count — while a run review declaring no head-keyed path is refused by `promote_review_run_itself` with a reason naming the missing head.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-close-s1" data-who="reckon-build" data-when="2026-10-19T01:53:31Z">
+    <div class="r-comment-body"><p>§1 landed at <code>c3e988abd</code>. A run review now counts as delivered only by a record of the head its dispatch declared, written by this review after its dispatch, so a predecessor round's record no longer promotes it. §3 corrects the rows already promoted this way, starting from §2's count. <a href="/reckon/evidence/archive/a-review-promotes-only-its-own-verdict-landed.html#s1">evidence</a></p></div>
 </div>
 </section>
 </main>
