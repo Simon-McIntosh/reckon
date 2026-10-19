@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import crew
+from reckon import _worker_fence, crew
 
 CONFIG = {
     "default_backend": "worker",
@@ -166,7 +166,11 @@ def test_investigation_delivers_to_a_temporary_reports_directory(
         for index, argument in enumerate(plan.argv)
         if argument == "--add-dir"
     }
-    assert str(crew.reports_dir()) in add_dirs
+    # The launch is fenced, so the fence's own rule decides which roots the
+    # dialect may be told writable: the reports root is sealed read-only, and a
+    # fenced codex launch is handed only the roots the fence keeps writable.
+    assert plan.argv[0] == _worker_fence.FENCE_BINARY
+    assert str(crew.reports_dir()) not in add_dirs
     assert str(crew.reports_dir()) in record["sandbox_write_roots"]
     assert str(crew.run_dir(record["run_id"])) in record["sandbox_write_roots"]
     live_after = {
