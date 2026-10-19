@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="33">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -298,6 +298,20 @@
       <code>probe-&lt;name&gt;</code> by name and removes both its layouts. It never
       uses a focus-relative zellij action.
     </p>
+    <p>
+      A dispatched node cannot take these steps. Dispatch confines a node's writes
+      to repository roots and delivery roots (<code>_require_write_paths_in_authority</code>,
+      <code>reckon/crew/dispatch_admission.py:1773</code>). The layout and the
+      rehearsal ledger live under the operator's home, in
+      <code>~/.config/zellij/layouts/</code> and
+      <code>~/.local/state/fleet/migration/rehearsals/</code>. Comment
+      <code>c-s5-authority</code> records the refusal. So §5 runs one of two ways,
+      and the choice is the lead's. In the first, the operator takes the steps
+      above from a plain ssh shell on the fleet node, with the fleet socket
+      directory exported, and a worker then writes only the evidence fragment from
+      the ledger. In the second, a reckon change first lets a node declare those
+      two fleet-state paths. §5 is not dispatched until that choice is made.
+    </p>
 
     <h2 id="s6">&sect;6 &mdash; A worker step carries a memory bound</h2>
     <section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
@@ -506,7 +520,10 @@
       The measurement runs on the fleet allocation. Sixteen concurrent askers prove a
       freshly materialised tree. At the base revision, the positive control, sixteen
       probes run. At the change, one probe runs, and all sixteen answers arrive
-      within 30 s. This section writes <code>checkout_trust.py</code>, as §10 does,
+      within 30 s. The negative control is a materialised tree carrying a module that
+      fails to import. Sixteen concurrent askers must all refuse the reload, from
+      one probe and the failure verdict it records, and none may re-execute into
+      the tree. This section writes <code>checkout_trust.py</code>, as §10 does,
       so it dispatches after §10 lands.
     </p>
 
@@ -515,7 +532,7 @@
 <div class="r-gate" data-id="g-tfnsis-stop-path" data-section="s2" data-gated-sections="s3" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">The signalled process and the step&#x27;s ending are named with a code citation, and both drain steps are attributed or declared unattributable</h4>
     <p class="r-gate-required-evidence">The §2 evidence fragment under docs/evidence/fragments/the-fleet-node-stays-in-service/.</p>
-    <a class="r-gate-evidence" href="the §2 fragment docs/evidence/fragments/the-fleet-node-stays-in-service/name-how-a-stopped-worker-step-ends.html (commit 66610d127) names the srun client as the signalled pid with code citations and attributes both drain steps by exact stderr step markers; the claims review reproduced 3 of 3">Evidence</a>
+    <a class="r-gate-evidence" href="/reckon/evidence/fragments/the-fleet-node-stays-in-service/name-how-a-stopped-worker-step-ends.html">Evidence</a>
 </div>
 <div class="r-gate" data-id="g-tfnsis-move-ready" data-section="s5" data-gated-sections="s8" data-status="open" data-verdict="">
     <h4 class="r-gate-measure">A stopped worker&#x27;s step ends without cancellation (not CANCELLED, signal field 0) on the fleet allocation, and a migrate rehearsal passes at the head carrying the second-move fix</h4>
