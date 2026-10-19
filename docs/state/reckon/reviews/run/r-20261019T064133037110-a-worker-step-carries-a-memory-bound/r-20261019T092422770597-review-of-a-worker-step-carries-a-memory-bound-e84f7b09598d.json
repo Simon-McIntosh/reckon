@@ -1,0 +1,37 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-19T09:38:23.463Z",
+  "dispatched_at": "2026-10-19T09:27:12Z",
+  "findings": [
+    {
+      "file": "tests/test_a_worker_step_carries_a_memory_bound.py",
+      "line": "89",
+      "severity": "follow-on",
+      "text": "follow-on: the default-bound assertion builds its expected token from placement.DEFAULT_STEP_MEMORY_GB, the same constant the code under test reads at reckon/crew/placement.py:443, so both sides move together and the assertion stays green if the default leaves 24 GB; it does redden if step_prefix stops emitting --mem at all, so only the value is unpinned here. The value is pinned independently by tests/test_fleet_node.py:480 and :492, which hardcode \"--mem=24G\" against the composed argv."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "1171",
+      "severity": "follow-on",
+      "text": "follow-on: the branch taken when no reservation is live builds prefix = [os.path.abspath(found), *options] without placement.step_prefix, so a worker placed on that route carries no --mem bound and the goal's 'every fleet worker step' does not hold there. The node names this in its own follow_ons; the route runs outside the shared allocation, so it is not clearly a fleet worker step and the node's measure does not cover it."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that every fleet worker step is placed with an explicit memory bound through placement.step_prefix, 24 GB by default and 48 GB at most inside the fleet allocation; reckon/crew/placement.py:426-443 inserts --mem on every step whose options carry none, and reckon/crew/dispatch_launch.py:1125-1151 routes a >48 GB declaration to a job of its own, so both clauses are implemented.\nVERDICT done_when: the done-when names (a) a placed argv carrying --mem=24G by default, (b) a bound declared through dispatch --set, (c) a >48 GB declaration routed to its own job on a *_debug partition, (d) fleet_node.placement_argv folded into step_prefix, (e) a probe step whose cgroup memory.max equals its bound and the focused tests run in place; tests/test_a_worker_step_carries_a_memory_bound.py:85-131,142-158,179-202 assert (a)-(d), logs/probe-memory-max.log records the memory.max for --mem=1G, and logs/focused-gate.log records 134 passed 1 skipped EXIT=0 in place at 5616af29 on 98dci4-clu-2002 job 1281970, so the gate asserts each named clause.\nVERDICT write_paths: read the run's recorded orientation_write_paths (reckon/crew/placement.py, fleet_node.py, fleet_migrate.py, dispatch_launch.py, summary.py, project_setup_commands.py, tests/test_fleet_node.py, tests/test_fleet_migrate_cutover.py, tests/test_a_worker_step_carries_a_memory_bound.py, the evidence fragment and the figures directory); every path in the diff is inside that set, including reckon/crew/summary.py and tests/test_fleet_migrate_cutover.py.\nVERDICT manifest: read; it records commits 79f34399..e84f7b09, the focused gate in place at 5616af29 as \"134 passed, 1 skipped\" EXIT=0 on job 1281970, both arms complete at 120 passed 1 skipped with 0 added failures, both prior review findings acted, and its own follow_ons naming the unpinned default and the no-live-reservation route.\nVERDICT diff: read commit by commit against 871311cd; ten commits and nine files, 931 insertions and 72 deletions, with the over-ceiling route's stdin handling corrected at 5616af29 so the plan's stdin_text is left on the launch.\nCALL_SITES: reckon/crew/dispatch_launch.py:1126 declared_memory_gb, reckon/crew/dispatch_launch.py:1140 own_job_prefix, reckon/crew/dispatch_launch.py:1147 debug_job_time_limit, reckon/crew/dispatch_launch.py:1151 without_slurm_job_identity, reckon/crew/dispatch_launch.py:1166 step_prefix, reckon/crew/fleet_node.py:368 placement_argv calls step_prefix, reckon/project_setup_commands.py:275 placement_argv, reckon/crew/fleet_migrate.py:238,546,579,1004,1104,1191 placement_argv, reckon/crew/summary.py:315 option_values, reckon/crew/summary.py:368 declared_memory_bytes\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/placement.py:443 bounds every step_prefix call and dispatch_launch.py:1126-1151 routes a >48 GB declaration to its own debug job, but dispatch_launch.py:1171 builds the no-live-reservation prefix without step_prefix so that route carries no bound.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/focused-gate.log records 134 passed 1 skipped EXIT=0 in place at the head, logs/probe-memory-max.log shows the step memory.max equal to its --mem=1G bound, and logs/own-job-live-check.log and own-job-stdin-check.log show the over-ceiling route as a job of its own on all_debug.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff 871311cd..e84f7b09 is inside the run's recorded orientation_write_paths, including reckon/crew/summary.py and tests/test_fleet_migrate_cutover.py.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_worker_step_carries_a_memory_bound.py:85-104 redden if step_prefix stops emitting --mem and the negative control log is red, but the default-bound assertion at line 89 reads the same constant the code uses so a value drift passes.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/placement.py:303-524 names each helper by the mechanism it performs, follows the module's existing RESERVATION_* constant idiom, and carries no plan or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/summary.py:315 and :368 now call placement.option_values and placement.declared_memory_bytes and fleet_node.parse_memory_gb at fleet_node.py:277 delegates to placement.memory_figure_bytes, so the added definitions extend the placement owner rather than duplicating it.\nFINDING tests/test_a_worker_step_carries_a_memory_bound.py:89 follow-on: the default-bound assertion compares against placement.DEFAULT_STEP_MEMORY_GB, the same constant the code reads at placement.py:443, so both sides move together and a change to the default value does not redden it; only emission removal is guarded, and the value is pinned independently at tests/test_fleet_node.py:480 and :492.\nFINDING reckon/crew/dispatch_launch.py:1171 follow-on: the no-live-reservation branch builds prefix = [os.path.abspath(found), *options] without step_prefix, so a worker placed when no reservation is live carries no --mem bound, which the goal's 'every fleet worker step' does not hold for on that route.\n",
+  "review_run_id": "r-20261019T092422770597-review-of-a-worker-step-carries-a-memory-bound-e84f7b09598d",
+  "reviewed_base_sha": "871311cd82f1bcf70282fa3a36eb66eee5737dd8",
+  "reviewed_head_sha": "e84f7b09598dd118332924964778826bbc42a890",
+  "reviewed_run_id": "r-20261019T064133037110-a-worker-step-carries-a-memory-bound",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T09:38:56.623944+00:00"
+}
