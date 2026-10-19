@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: token_gate.log (HEAD arm) shows tests/test_every_module_fits_a_worker_window.py red naming only reckon/crew/review.py and reckon/ledger.py, while module_sizes.log records both at 51,584 and 51,666 identically at base, so that failure predates the change; module_sizes.log also records reckon/serve.py at 54,746 at base (its own base failure, removed by the move). The 24 census files (logs/*.log) are all EXIT=0 at HEAD and the manifest records none failing at base, so the move adds no failing test id.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/serve.py:1166",
+    "reckon/serve.py:2622",
+    "reckon/serve.py:3870",
+    "reckon/change_streams.py:385",
+    "reckon/mcp_discovery.py:30"
+  ],
+  "completed_at": "2026-10-19T13:46:00.387Z",
+  "dispatched_at": "2026-10-19T13:20:49Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "50",
+      "text": "blocking: the move leaves `import select` (reckon/serve.py:50) and `import struct` (reckon/serve.py:53) unused in serve.py - their only consumers were the inotify change-stream code now in reckon/change_streams.py, and `grep -n '\\bselect\\b\\|\\bstruct\\b' reckon/serve.py` at HEAD returns only the two import lines. ruff at HEAD reports 19 findings on the changed files against 17 at base; these two F401s are the difference, so the done_when's 'ruff check ... add no findings on the changed Python files' is unmet and the worker's own ruff_changed.log already showed them without repairing them."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T120757963495-serve-fits-a-worker-window-again/manifest.md",
+      "line": "1",
+      "text": "follow-on: the reviewed manifest's baseline_suite and after_suite carry prose ('not run as a whole; the token test is red at base naming ...') where the manifest contract requires JSON with revision, command, exit_status, log_path or log_digest, completed, failure_count and failure_ids, so a consumer cannot parse added_failure_count or added_failure_ids from the reviewed run's own record; the value was recovered here from module_sizes.log and token_gate.log instead."
+    },
+    {
+      "file": "docs/figures/the-site-answers-fast-and-agrees/serve-fits-a-worker-window-again/module_budget.py",
+      "line": "1",
+      "text": "follow-on: the source node's landing contract stated that its done-when names no artifact so the node writes no figure, yet this node added module_budget.py and module_budget.svg (199 lines); the figure sits inside the granted docs/figures write path and is embedded by the landing fragment, so it does not hold the node, but it is a deviation from the stated contract."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/serve.py:1166 (_served_index_rows calls _git_first_committed/_git_last_committed), reckon/serve.py:2622 (Handler builds _ProjectChangeWatch), reckon/serve.py:3870 (start_fleet_change_watch builds _FleetChangeWatch), reckon/change_streams.py:385 (_FleetChangeWatch reads _invalidate_tree_views back through reckon.serve), reckon/mcp_discovery.py:30 (imports discover_plans, edge_row from reckon.serve).",
+    "diff": "read all four commits against base 0c97cdab9: reckon/serve.py gains only 51 lines, all imports (reckon/serve.py:50 select and :53 struct now unused), the two new modules hold the moved statements unchanged, and the test changes are repointed patch targets with no new assertions.",
+    "done_when": "the done_when names tests/test_every_module_fits_a_worker_window.py (token_gate.log shows it red naming only review.py and ledger.py, serve.py absent), scripts/check_pure_move.py ('problems': [], EXIT=0), the census of test files (24 logs/, all EXIT=0) and the negative control (negative_control_cross_node.log EXIT=1); its ruff clause is not met.",
+    "goal": "the node goal is to move the per-path git-date readers and the change watches out of reckon/serve.py into reckon/git_dates.py and reckon/change_streams.py as a pure move; the four commits 71b6cab12, 0346ee64f, ac42ba306 and 2006e2ee2 carry the two concerns into the two new modules and leave serve.py importing every moved name.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T120757963495-serve-fits-a-worker-window-again/manifest.md; status complete, four commits, tests naming token_gate.log, module_sizes.log, check_pure_move.log and logs/*.log; its baseline_suite and after_suite are prose rather than the JSON the contract requires.",
+    "write_paths": "read the FENCE - SCOPE list; every path in git diff --stat 0c97cdab9..2006e2ee2 (reckon/serve.py, reckon/git_dates.py, reckon/change_streams.py, seven test files, the evidence fragment, the figures directory) is inside it."
+  },
+  "justifications": {
+    "durability": "the goal is guarded by the pre-existing token ratchet tests/test_every_module_fits_a_worker_window.py, which fails naming reckon/serve.py if the move is reverted (module_sizes.log: base 54,746 > the 50,000 bound), and the repoints are guarded because reverting one reddens its case (negative_control_cross_node.log EXIT=1); the node added no new assertion of its own and nothing guards the 45,000 target.",
+    "evidence": "the done_when's ruff clause is not met: ruff at HEAD reports 19 findings on the changed files against 17 at base, and the two added F401s (reckon/serve.py:50 import select, :53 import struct) are the move's own residue, so the evidence fence's 'ruff check and ruff format --check add no findings on the changed Python files' is false; the 45,000 target is measured (module_sizes.log 44,178) but enforced by no test, only the 50,000 ratchet.",
+    "fit": "the two new modules carry capability names (git_dates, change_streams) with no plan, sprint or version label, the re-export block is commented '# noqa: F401 - the import surface of this module', and the moved statements are unchanged; the two unused imports left in reckon/serve.py:50 and :53 are the fit defect.",
+    "goal_fidelity": "the goal is to move the per-path git-date readers and the change watches out of reckon/serve.py into reckon/git_dates.py and reckon/change_streams.py as a pure move; git show --stat 0c97cdab9..2006e2ee2 lands reckon/git_dates.py (+564) and reckon/change_streams.py (+518) with reckon/serve.py cut by 1,082 lines, and an independent line-set check confirms every line of the two new modules appears verbatim in the base serve.py except their headers and the function-level back-references.",
+    "reuse": "the change is a pure move, so every moved definition remains the owner of its capability and none is forked; a search of reckon/ for a second git-date reader (a memoised HEAD plus per-path first/last-committed maps) and a second inotify change watch found none, and the new modules reuse metadata_index._persisted_cache_path rather than adding a cache-path implementation.",
+    "scope_discipline": "every path in the diff is a declared write path, but the diff carries a figure and its script (docs/figures/the-site-answers-fast-and-agrees/serve-fits-a-worker-window-again/module_budget.py + module_budget.svg) that the dispatch's landing contract said this node writes no figure for, and it leaves two dead imports behind."
+  },
+  "node": "review-of-serve-fits-a-worker-window-again-2006e2ee2c20",
+  "node:reviewed": "serve-fits-a-worker-window-again",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to move the per-path git-date readers and the change watches out of reckon/serve.py into reckon/git_dates.py and reckon/change_streams.py as a pure move; the four commits 71b6cab12, 0346ee64f, ac42ba306 and 2006e2ee2 carry the two concerns into the two new modules and leave serve.py importing every moved name.\nVERDICT done_when: the done_when names tests/test_every_module_fits_a_worker_window.py (token_gate.log shows it red naming only review.py and ledger.py, serve.py absent), scripts/check_pure_move.py ('problems': [], EXIT=0), the census of test files (24 logs/, all EXIT=0) and the negative control (negative_control_cross_node.log EXIT=1); its ruff clause is not met.\nVERDICT write_paths: read the FENCE - SCOPE list; every path in git diff --stat 0c97cdab9..2006e2ee2 (reckon/serve.py, reckon/git_dates.py, reckon/change_streams.py, seven test files, the evidence fragment, the figures directory) is inside it.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T120757963495-serve-fits-a-worker-window-again/manifest.md; status complete, four commits, tests naming token_gate.log, module_sizes.log, check_pure_move.log and logs/*.log; its baseline_suite and after_suite are prose rather than the JSON the contract requires.\nVERDICT diff: read all four commits against base 0c97cdab9: reckon/serve.py gains only 51 lines, all imports (reckon/serve.py:50 select and :53 struct now unused), the two new modules hold the moved statements unchanged, and the test changes are repointed patch targets with no new assertions.\nCALL_SITES: reckon/serve.py:1166, reckon/serve.py:2622, reckon/serve.py:3870, reckon/change_streams.py:385, reckon/mcp_discovery.py:30\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: git show --stat 0c97cdab9..2006e2ee2 lands reckon/git_dates.py (+564) and reckon/change_streams.py (+518) with reckon/serve.py cut by 1,082 lines, and an independent line-set check confirms every line of the two new modules appears verbatim in the base serve.py except their headers and the function-level back-references.\nSCORE evidence: 13\nJUSTIFICATION evidence: ruff at HEAD reports 19 findings on the changed files against 17 at base and the two added F401s (reckon/serve.py:50 import select, :53 import struct) are the move's own residue, so the evidence fence's 'ruff check ... add no findings' is false, and the 45,000 target is measured (module_sizes.log 44,178) but enforced by no test.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every path in the diff is a declared write path, but the diff carries a figure and its script (docs/figures/the-site-answers-fast-and-agrees/serve-fits-a-worker-window-again/module_budget.py + .svg) the dispatch's landing contract said this node writes no figure for, and it leaves two dead imports behind.\nSCORE durability: 16\nJUSTIFICATION durability: the pre-existing token ratchet tests/test_every_module_fits_a_worker_window.py fails naming reckon/serve.py if the move is reverted (module_sizes.log base 54,746 > 50,000), and reverting a repoint reddens its case (negative_control_cross_node.log EXIT=1), but the node added no new assertion and nothing guards the 45,000 target.\nSCORE fit: 17\nJUSTIFICATION fit: the new modules carry capability names (git_dates, change_streams) with no plan, sprint or version label and the moved statements are unchanged, but the two unused imports left in reckon/serve.py:50 and :53 are the fit defect.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change is a pure move, so every moved definition remains the owner of its capability and none is forked; a search of reckon/ for a second git-date reader or a second inotify change watch found none, and the new modules reuse metadata_index._persisted_cache_path rather than adding a cache-path implementation.\nFINDING reckon/serve.py:50 blocking: the move leaves `import select` (reckon/serve.py:50) and `import struct` (reckon/serve.py:53) unused in serve.py, whose only consumers were the inotify change-stream code now in reckon/change_streams.py; ruff at HEAD reports 19 findings on the changed files against 17 at base, these two F401s being the difference, so the done_when's 'ruff check ... add no findings on the changed Python files' is unmet.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T120757963495-serve-fits-a-worker-window-again/manifest.md:1 follow-on: baseline_suite and after_suite carry prose where the manifest contract requires JSON with revision, command, exit_status, log_path or log_digest, completed, failure_count and failure_ids, so added_failure_count/added_failure_ids cannot be parsed from the reviewed run's own record.\nFINDING docs/figures/the-site-answers-fast-and-agrees/serve-fits-a-worker-window-again/module_budget.py:1 follow-on: the source node's landing contract said its done-when names no artifact so it writes no figure, yet the node added module_budget.py and module_budget.svg; it lies inside the granted figures write path and is embedded by the fragment, so it does not hold the node.",
+  "review_run_id": "r-20261019T131917430912-review-of-serve-fits-a-worker-window-again-2006e2ee2c20",
+  "reviewed_base_sha": "0c97cdab9031d04f41ed74b9203898d0f8527fa7",
+  "reviewed_head_sha": "2006e2ee2c20e15d0da90235a69f3b70a82d555e",
+  "reviewed_run_id": "r-20261019T120757963495-serve-fits-a-worker-window-again",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T13:40:00+00:00",
+  "total": 101
+}
