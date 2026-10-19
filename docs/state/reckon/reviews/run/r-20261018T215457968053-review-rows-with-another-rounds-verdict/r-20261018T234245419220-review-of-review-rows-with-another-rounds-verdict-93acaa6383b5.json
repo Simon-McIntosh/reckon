@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-19T00:01:12.361Z",
+  "dispatched_at": "2026-10-18T23:44:03Z",
+  "findings": [
+    {
+      "file": "scripts/review_rows_with_another_rounds_verdict.py",
+      "line": 84,
+      "severity": "follow-on",
+      "text": "`_recorded_head` reads the row's head from the single key `review.reviewed_head_sha`, while the repository's owner for the head a review carries, `carried_revision_pair` (reckon/crew/review.py:348), resolves it across the three head spellings `reviewed_head_sha`, `reviewed_commit` and `commits_read` (reckon/crew/review.py:280). A review row recording its head under an alternate spelling would be read as carrying no verdict and dropped from the population rather than counted; the census therefore narrows the owner's grammar. Measured against the reckon ledger (3033 review rows) the alternate spelling does not occur, so no row is dropped today, which is why this is a follow-on; a positive control confirms the owner does see an alternate-spelling head (carried_revision_pair on {\"reviewed_commit\": \"deadbeef...\"} returns carried=True), so the zero is a reading, not a blind spot in the check."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read all four commits against base b731c734 commit by commit (1ec00adbf adds the census and doc, da8439c10 reworks the node-id reader and mounts reader and adds the unclassifiable control, 56f417adf updates the doc and fragment to the re-read figures, 93acaa638 corrects one transcribed dispatched head); +693 lines across exactly the three declared paths, no product module or test touched.",
+    "done_when": "read the done_when and checked each clause against docs/research/review-rows-with-another-rounds-verdict.html at 93acaa638: per-project counts (s2), all 19 mismatched rows listed by id with both heads, total, promoted_by and landing commit (s3), the stated revision da8439c10 and time 2026-10-18T22:56:34Z (s1), the known positive listed and the known negative counted-not-listed (s5, both re-verified in nova's live ledger), the script and command named (s1, s6); every value in s2/s3 reconciles with census-output.log at the cited revision, and a comparison check with a demonstrated control (head-transcription-check.log) confirms it.",
+    "goal": "read the node goal ('count, across every mounted project's committed ledger, the promoted run reviews whose recorded reviewed head is not the head they were dispatched to read') and the landed script at scripts/review_rows_with_another_rounds_verdict.py:161-200 does exactly that; its recorded run (census-output.log) counts 2350 promoted run reviews, 19 mismatched, 0 unclassifiable across 11 mounted ledgers.",
+    "manifest": "read the reviewed run's manifest.md; it states status complete, commits 1ec00adbf503, da8439c10b90, 56f417adf405 and 93acaa6383b5, changed_paths equal to the three committed paths, and the gate PYTHONPATH=$PWD .venv/bin/python scripts/review_rows_with_another_rounds_verdict.py --json -> exit 0 with totals reviews=2350 mismatched=19 unclassifiable=0, plus the --control exit-0 unclassifiable run and the head-transcription check.",
+    "write_paths": "read the node's declared write paths (docs/research/review-rows-with-another-rounds-verdict.html, scripts/review_rows_with_another_rounds_verdict.py, the a-review-promotes-only-its-own-verdict landing fragment, and the docs/figures node directory) and every path in the four commits against base b731c734 is inside them; the figures directory was provisioned but left unused."
+  },
+  "justifications": {
+    "durability": "no test file was added (out of the node's declared scope) and no committed assertion reddens if _classify's mismatched branch regresses; the run's own guards are the --control unclassifiable check and the run-directory comparison check, neither of which lives in the suite.",
+    "evidence": "docs/research/review-rows-with-another-rounds-verdict.html s2 reconciles exactly with the recorded JSON at census-output.log (2350/19/0 across 11 projects) and the 19 s3 rows match the log's mismatch list, including the head value the earlier round miscopied and this round corrected to c813459c51cf233a0195991d9a04f3414c3dd93c (head-transcription-check.log, PASS, with a control firing on the pre-fix document).",
+    "fit": "the script follows the surrounding scripts/ idiom (module docstring, private helpers, one documented entry point) at scripts/review_rows_with_another_rounds_verdict.py:1-42 and introduces no name the naming rules forbid.",
+    "goal_fidelity": "scripts/review_rows_with_another_rounds_verdict.py:161-200 walks every mounted project's runs directory and counts role==review rows whose recorded reviewed_head_sha does not begin with the dispatched head, which is the goal verbatim; the recorded run counts 2350/19/0.",
+    "reuse": "the rework reads the node-id head suffix through reckon/crew/repair.py:310 round_node_source, the record-path head through reckon/crew/recovery_review_dispatch.py:133 _review_record_subject and the mounted projects through reckon/flight.py:484 mounted_project_docs, extending those owners rather than re-deriving them; the one residual narrowing is _recorded_head reading a single head spelling where reckon/crew/review.py:348 carried_revision_pair owns the head a review carries (see FINDING).",
+    "scope_discipline": "the four commits change exactly the three files named in the manifest's changed_paths, all inside the declared write paths, and touch no product source, test or shared plan state."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261018T234245419220-review-of-review-rows-with-another-rounds-verdict-93acaa6383b5",
+  "reviewed_base_sha": "b731c734bb583babbf0e3c34468075eecb47e4cf",
+  "reviewed_head_sha": "93acaa6383b5d90cffb24640109bcfe45c097580",
+  "reviewed_run_id": "r-20261018T215457968053-review-rows-with-another-rounds-verdict",
+  "scores": {
+    "durability": 12,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T00:11:03.221567+00:00"
+}
