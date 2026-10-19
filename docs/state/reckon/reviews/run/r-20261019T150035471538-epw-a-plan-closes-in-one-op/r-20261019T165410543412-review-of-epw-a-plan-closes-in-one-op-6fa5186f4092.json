@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:1259",
+    "reckon/_store.py:3347",
+    "reckon/serve.py:3532"
+  ],
+  "completed_at": "2026-10-19T17:02:19.285Z",
+  "dispatched_at": "2026-10-19T16:54:47Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "3647",
+      "severity": "follow-on",
+      "text": "follow-on: the exemption the increment adds -- `not (closing_outcome and _chain_closed(closing_outcome))` -- is not covered by any assertion that fails when it is removed; the only close test carrying a chain-closing outcome (tests/test_a_plan_closes_in_one_op.py:138) also carries a followup whose resolved outcome is already chain-closing, so continuation_present :3443 is satisfied without the exemption, and removing the clause reddens no test in tests/test_a_plan_closes_in_one_op.py or tests/test_continuation.py."
+    },
+    {
+      "file": "tests/test_a_plan_closes_in_one_op.py",
+      "line": "266",
+      "severity": "follow-on",
+      "text": "follow-on: test_the_close_guard_list_carries_the_hiding_followup calls validate_landing_patch directly, so it pins the bottom function but not that the close op routes through it; the sibling test at :238 is refused by the append op (reckon/_store.py:2936) before the close's list is consulted, so if the close re-forked its own list lacking the hiding guard no test would redden and the unification this increment exists to prove would be unguarded."
+    },
+    {
+      "file": "tests/test_a_plan_closes_in_one_op.py",
+      "line": "240",
+      "severity": "follow-on",
+      "text": "follow-on: the comment on test_a_close_batch_that_appends_a_hiding_followup_is_refused reads as though the assertion shows the close consults guard (d), but the refusal it observes is raised by the append op at reckon/_store.py:2936, not the close guard; the sibling docstring at :271-276 states the real path, so the comment overstates what this assertion demonstrates."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/mcp_edit_plan.py:1259 (apply_ops called from _edit_plan), reckon/_store.py:3347 (the _OP_DISPATCH entry the batch loop reaches for close) and reckon/serve.py:3532 (the HTTP merge-patch writer that calls validate_landing_patch directly).",
+    "diff": "read the three commits against base 225b9927f: 907faba5 deletes _raise_close_guards and gives validate_landing_patch report_all/closing_outcome/before_status, da29d1798 drives test_only_commit... continuation through close, and 6fa5186f adds the guard-list scope note to the landing fragment -- four files, +145/-41.",
+    "done_when": "the done_when names the eight-file pytest gate with zero added failures against the base arm; the manifest records after_suite at 6fa5186f (166 passed, failure_ids [test_every_module_fits_a_worker_window]) and baseline-arm.log shows that same id red at fecbdc82, so added_failure_count is 0.",
+    "goal": "the node's goal is an edit_plan close op that sets a terminal status, resolves every open followup with its outcome and reports every failing transition guard together; the increment at reckon/_store.py:3333-3344 makes the close consult the one shared guard list (validate_landing_patch) in report_all mode, so a guard added there reaches both writers.",
+    "manifest": "read; status complete, commits list ends at 6fa5186f, the tests line names the literal gate command, test_logs points at after-suite.log and baseline-arm.log, and baseline_suite/after_suite/negative_control_log are present with revisions, commands, exit_status and failure_ids.",
+    "write_paths": "the manifest declares eleven paths; the increment's four changed paths -- docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-a-plan-closes-in-one-op.html, reckon/_store.py, tests/test_a_plan_closes_in_one_op.py, tests/test_continuation.py -- are all inside them, and no declared path is exceeded."
+  },
+  "justifications": {
+    "durability": "tests/test_a_plan_closes_in_one_op.py:293 fails if the hiding-followup guard leaves the shared list and tests/test_continuation.py:290 fails if the continuation rule is removed, restoring the assertion the prior review found disarmed -- but the new closing_outcome exemption at reckon/_store.py:3647 has no assertion that reddens when it is removed.",
+    "evidence": "the gate is recorded rather than claimed: after-suite.log at revision 6fa5186f (166 passed, 1 pre-existing failure, EXIT=1), baseline-arm.log proving that one failure pre-exists at fecbdc82, and negative-control.log red at EXIT=1 with the aggregate-report assertion failing.",
+    "fit": "reckon/_store.py:3587 keeps validate_landing_patch as the single owner with a keyword-only mode flag, its docstring states the mechanism, and no symbol or comment carries a plan or ticket identifier.",
+    "goal_fidelity": "reckon/_store.py:3333-3344 routes the close through validate_landing_patch in report_all mode with closing_outcome and before_status, so all five section-6 guards come from one owner and the close's own outcome satisfies the continuation without a placeholder followup.",
+    "reuse": "reckon/_store.py:3333 now calls validate_landing_patch (:3587), extending the owner of the guard selection rather than keeping the second copy _raise_close_guards that the prior review flagged as a fork.",
+    "scope_discipline": "git diff 225b9927f..6fa5186f lists exactly four paths (reckon/_store.py, tests/test_a_plan_closes_in_one_op.py, tests/test_continuation.py, the landing fragment), every one inside the manifest's declared write paths, with no plan or index state written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is an edit_plan close op that sets a terminal status, resolves every open followup with its outcome and reports every failing transition guard together; the increment at reckon/_store.py:3333-3344 makes the close consult the one shared guard list (validate_landing_patch) in report_all mode, so a guard added there reaches both writers.\nVERDICT done_when: the done_when names the eight-file pytest gate with zero added failures against the base arm; the manifest records after_suite at 6fa5186f (166 passed, failure_ids [test_every_module_fits_a_worker_window]) and baseline-arm.log shows that same id red at fecbdc82, so added_failure_count is 0.\nVERDICT write_paths: the manifest declares eleven paths; the increment's four changed paths -- docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-a-plan-closes-in-one-op.html, reckon/_store.py, tests/test_a_plan_closes_in_one_op.py, tests/test_continuation.py -- are all inside them, and no declared path is exceeded.\nVERDICT manifest: read; status complete, commits list ends at 6fa5186f, the tests line names the literal gate command, test_logs points at after-suite.log and baseline-arm.log, and baseline_suite/after_suite/negative_control_log are present with revisions, commands, exit_status and failure_ids.\nVERDICT diff: read the three commits against base 225b9927f: 907faba5 deletes _raise_close_guards and gives validate_landing_patch report_all/closing_outcome/before_status, da29d1798 drives test_only_plans_owe_a_continuation through close, and 6fa5186f adds the guard-list scope note to the landing fragment -- four files, +145/-41.\nCALL_SITES: reckon/mcp_edit_plan.py:1259, reckon/_store.py:3347, reckon/serve.py:3532\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_store.py:3333-3344 routes the close through validate_landing_patch in report_all mode with closing_outcome and before_status, so all five section-6 guards come from one owner and the close's own outcome satisfies the continuation without a placeholder followup.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate is recorded rather than claimed: after-suite.log at revision 6fa5186f (166 passed, 1 pre-existing failure, EXIT=1), baseline-arm.log proving that one failure pre-exists at fecbdc82, and negative-control.log red at EXIT=1 with the aggregate-report assertion failing.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 225b9927f..6fa5186f lists exactly four paths (reckon/_store.py, tests/test_a_plan_closes_in_one_op.py, tests/test_continuation.py, the landing fragment), every one inside the manifest's declared write paths, with no plan or index state written.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_plan_closes_in_one_op.py:293 fails if the hiding-followup guard leaves the shared list and tests/test_continuation.py:290 fails if the continuation rule is removed, restoring the assertion the prior review found disarmed -- but the new closing_outcome exemption at reckon/_store.py:3647 has no assertion that reddens when it is removed.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_store.py:3587 keeps validate_landing_patch as the single owner with a keyword-only mode flag, its docstring states the mechanism, and no symbol or comment carries a plan or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/_store.py:3333 now calls validate_landing_patch (:3587), extending the owner of the guard selection rather than keeping the second copy _raise_close_guards that the prior review flagged as a fork.\nFINDING reckon/_store.py:3647 follow-on: the exemption the increment adds -- `not (closing_outcome and _chain_closed(closing_outcome))` -- is not covered by any assertion that fails when it is removed; the only close test carrying a chain-closing outcome (tests/test_a_plan_closes_in_one_op.py:138) also carries a followup whose resolved outcome is already chain-closing, so continuation_present :3443 is satisfied without the exemption, and removing the clause reddens no test in tests/test_a_plan_closes_in_one_op.py or tests/test_continuation.py.\nFINDING tests/test_a_plan_closes_in_one_op.py:266 follow-on: test_the_close_guard_list_carries_the_hiding_followup calls validate_landing_patch directly, so it pins the bottom function but not that the close op routes through it; the sibling test at :238 is refused by the append op (reckon/_store.py:2936) before the close's list is consulted, so if the close re-forked its own list lacking the hiding guard no test would redden and the unification this increment exists to prove would be unguarded.\nFINDING tests/test_a_plan_closes_in_one_op.py:240 follow-on: the comment on test_a_close_batch_that_appends_a_hiding_followup_is_refused reads as though the assertion shows the close consults guard (d), but the refusal it observes is raised by the append op at reckon/_store.py:2936, not the close guard; the sibling docstring at :271-276 states the real path, so the comment overstates what this assertion demonstrates.\n",
+  "review_run_id": "r-20261019T165410543412-review-of-epw-a-plan-closes-in-one-op-6fa5186f4092",
+  "reviewed_base_sha": "225b9927f2a3b6b02de14371bcbba57953c8c4f0",
+  "reviewed_head_sha": "6fa5186f40921292c523b839cf5bd89774911797",
+  "reviewed_run_id": "r-20261019T150035471538-epw-a-plan-closes-in-one-op",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T16:58:00Z",
+  "total": 107
+}
