@@ -1,6 +1,8 @@
 import json
 import os
+import shutil
 import signal
+import subprocess
 import sys
 
 from reckon._store import _config_home
@@ -345,14 +347,17 @@ def _signal_one(
     reason: str = "",
     run_dir: str | Path | None = None,
     project: str | None = None,
+    allow_group: bool = True,
 ) -> bool:
-    """Deliver one signal, never to a group the target does not lead."""
+    """Deliver one signal, using a group only when permitted and led by the target."""
     try:
         group = os.getpgid(pid)
     except (ProcessLookupError, PermissionError):
         return False
     target_is_own_group_leader = group == pid and group > 1
-    signalled_as_group = target_is_own_group_leader and group != os.getpgid(0)
+    signalled_as_group = (
+        allow_group and target_is_own_group_leader and group != os.getpgid(0)
+    )
     if run_dir is not None:
         _write_sender_record(
             run_dir,
@@ -391,6 +396,255 @@ def _signal_one(
             project=project,
         )
     return True
+
+
+def _process_comm(pid: int) -> str | None:
+    try:
+        return (Path("/proc") / str(pid) / "comm").read_text().strip()
+    except OSError:
+        return None
+
+
+def _step_argv(run_dir: str | Path | None) -> list[str]:
+    """The placed launch argv, including before its worker record is written."""
+    worker = _worker_record(run_dir)
+    argv = worker.get("argv") if worker else None
+    if not isinstance(argv, list) and run_dir is not None:
+        try:
+            spec = json.loads((Path(run_dir) / "supervisor.json").read_text())
+            argv = spec.get("plan", {}).get("argv")
+        except (OSError, ValueError, AttributeError):
+            pass
+    return [str(word) for word in argv] if isinstance(argv, list) else []
+
+
+def _run_uses_step(run_dir: str | Path | None) -> bool:
+    argv = _step_argv(run_dir)
+    return bool(
+        argv
+        and Path(argv[0]).name == "srun"
+        and any(word.startswith("--jobid=") for word in argv)
+    )
+
+
+def _step_worker_identity(run_dir: str | Path | None) -> tuple[str, int, str] | None:
+    """The live step task recorded by a placed worker, or None until it starts."""
+    argv = _step_argv(run_dir)
+    if not _run_uses_step(run_dir):
+        return None
+    job_ids = [
+        str(arg).removeprefix("--jobid=")
+        for arg in argv
+        if str(arg).startswith("--jobid=")
+    ]
+    if len(job_ids) != 1 or not job_ids[0].isdigit():
+        return None
+    try:
+        job, step, task_pid, start_tick = (
+            (Path(run_dir) / "step-task.txt").read_text().split()
+        )
+        if (
+            job == job_ids[0]
+            and step.isdigit()
+            and task_pid.isdigit()
+            and start_tick.isdigit()
+        ):
+            return f"{job}.{step}", int(task_pid), start_tick
+    except (OSError, ValueError, TypeError):
+        pass
+    return None
+
+
+def _step_worker_client(run_dir: str | Path | None) -> int | None:
+    worker = _worker_record(run_dir)
+    if worker and _run_uses_step(run_dir):
+        return _recorded_worker_pid(run_dir)
+    return None
+
+
+def signal_pending_step_client(pid: int, run_dir: str | Path) -> str | None:
+    """End a pending srun only when Slurm confirms its named step is absent."""
+    argv = _step_argv(run_dir)
+    if not _run_uses_step(run_dir) or (Path(run_dir) / "step-task.txt").exists():
+        return None
+    jobs = [
+        word.removeprefix("--jobid=") for word in argv if word.startswith("--jobid=")
+    ]
+    names = [
+        word.removeprefix("--job-name=")
+        for word in argv
+        if word.startswith("--job-name=")
+    ]
+    if len(jobs) != 1 or not jobs[0].isdigit() or names != [Path(run_dir).name]:
+        return None
+    scheduler = shutil.which("squeue")
+    if scheduler is None:
+        return None
+    try:
+        answer = subprocess.run(
+            [
+                scheduler,
+                "--steps",
+                "--jobs",
+                jobs[0],
+                "--noheader",
+                "--format=%i %j",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if answer.returncode != 0:
+        return None
+    steps = [line.split(maxsplit=1) for line in answer.stdout.splitlines()]
+    if not steps or any(
+        len(parts) != 2 or not parts[0].startswith(jobs[0] + ".") for parts in steps
+    ):
+        return None
+    named = next(
+        (step for step, name in steps if name == names[0] or names[0].startswith(name)),
+        None,
+    )
+    if named:
+        _write_sender_record(
+            run_dir,
+            target_pid=pid,
+            reason="stop-before-step-unverified",
+            sig=signal.SIGTERM,
+            outcome="refused",
+            detail=f"scheduler lists step {named} named {names[0]!r}",
+        )
+        return "refused"
+    worker = _worker_record(run_dir)
+    if (Path(run_dir) / "step-task.txt").exists():
+        return None
+    if (
+        not worker
+        or worker.get("pid") != pid
+        or not worker.get("pid_start_time")
+        or _process_comm(pid) != "srun"
+        or _process_start_time(pid) != str(worker["pid_start_time"])
+    ):
+        _write_sender_record(
+            run_dir,
+            target_pid=pid,
+            reason="stop-before-step-started",
+            sig=signal.SIGTERM,
+            outcome="refused",
+            detail="client identity differs",
+        )
+        return "refused"
+    return (
+        "delivered"
+        if _signal_one(
+            pid,
+            signal.SIGTERM,
+            reason="stop-before-step-started",
+            run_dir=run_dir,
+            allow_group=False,
+        )
+        else None
+    )
+
+
+def _cgroup_names_step(cgroup: str, required: tuple[str, str]) -> bool:
+    """Recognise the job and step components in v1 or v2 cgroup paths."""
+    return any(
+        all(part in path.split("/") for part in required)
+        for line in cgroup.splitlines()
+        if (path := line.partition(":")[2].partition(":")[2])
+    )
+
+
+def _signal_step_task(
+    run_dir: str | Path,
+    step: str,
+    task_pid: int,
+    start_tick: str,
+    sig: int,
+    reason: str,
+    project: str | None,
+) -> list[int]:
+    """Signal only the sandboxed processes beneath a verified step task."""
+    try:
+        cgroup = (Path("/proc") / str(task_pid) / "cgroup").read_text()
+        job, step_number = step.split(".", 1)
+        required = (f"job_{job}", f"step_{step_number}")
+        in_step = _cgroup_names_step(cgroup, required)
+        actual_start = _process_start_time(task_pid)
+        if not in_step or actual_start != start_tick:
+            _write_sender_record(
+                run_dir,
+                target_pid=task_pid,
+                reason=reason,
+                sig=sig,
+                outcome="refused",
+                detail=(
+                    f"task identity differs for step {step}: "
+                    f"cgroup={cgroup.strip()!r}, "
+                    f"start={actual_start!r}, expected_start={start_tick!r}"
+                ),
+                project=project,
+            )
+            return []
+        delivered: list[int] = []
+        for inner_pid in _running_descendants(task_pid):
+            if inner_pid == task_pid:
+                continue
+            try:
+                if _process_comm(inner_pid) == "bwrap":
+                    continue
+                inner_cgroup = (Path("/proc") / str(inner_pid) / "cgroup").read_text()
+                inner_start = _process_start_time(inner_pid)
+                inside = _cgroup_names_step(inner_cgroup, required)
+                if (
+                    not inside
+                    or inner_start is None
+                    or int(inner_start) < int(start_tick)
+                ):
+                    continue
+                _write_sender_record(
+                    run_dir,
+                    target_pid=inner_pid,
+                    reason=reason,
+                    sig=sig,
+                    project=project,
+                )
+                os.kill(inner_pid, sig)
+                _write_sender_record(
+                    run_dir,
+                    target_pid=inner_pid,
+                    reason=reason,
+                    sig=sig,
+                    outcome="delivered",
+                    project=project,
+                )
+                delivered.append(inner_pid)
+            except (OSError, ValueError) as exc:
+                _write_sender_record(
+                    run_dir,
+                    target_pid=inner_pid,
+                    reason=reason,
+                    sig=sig,
+                    outcome="failed",
+                    detail=str(exc),
+                    project=project,
+                )
+        return delivered
+    except OSError as exc:
+        _write_sender_record(
+            run_dir,
+            target_pid=task_pid,
+            reason=reason,
+            sig=sig,
+            outcome="failed",
+            detail=str(exc),
+            project=project,
+        )
+        return []
 
 
 def signal_worker(
@@ -455,11 +709,34 @@ def signal_worker(
     )
     own_pid = os.getpid()
     ended: list[int] = []
+    step_placed = _run_uses_step(run_dir)
+    client_pid = _step_worker_client(run_dir) if step_placed else None
+    client_tree = set(_running_descendants(client_pid)) if client_pid else set()
+    identity = _step_worker_identity(run_dir) if client_pid is not None else None
+    task_tree = set(_running_descendants(identity[1])) if identity else set()
     for target in targets:
-        if target == own_pid:
+        if target == own_pid or target in client_tree or target in task_tree:
             continue
-        if _signal_one(target, sig, reason=reason, run_dir=run_dir, project=project):
+        # Before worker.json exists, the spec still identifies a placed run.
+        # Its supervisor may share a group with srun, so only its PID is safe.
+        if step_placed and target != pid:
+            continue
+        if step_placed and _process_comm(target) in (None, "srun", "bwrap"):
+            continue
+        if _signal_one(
+            target,
+            sig,
+            reason=reason,
+            run_dir=run_dir,
+            project=project,
+            allow_group=not step_placed,
+        ):
             ended.append(target)
+    if identity is not None and run_dir is not None:
+        step, task_pid, start_tick = identity
+        ended.extend(
+            _signal_step_task(run_dir, step, task_pid, start_tick, sig, reason, project)
+        )
     return ended
 
 
