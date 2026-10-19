@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-moves-to-a-new-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -262,7 +262,7 @@
     </p>
 
     <h2 id="s5">&sect;5 &mdash; A rehearsal at the current head</h2>
-    <section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="deferred" data-links=""></section>
     <p>
       The previous move needed a hand-written <code>cutover-one.py</code> because the
       cutover relay was broken on the night. Since then, §16 of the previous plan
@@ -565,7 +565,7 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-tfnsis-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build the-fleet-node-stays-in-service" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Investigate the stop path and producer cost, fix the migrate command, then gate the move</h4>
-    <div class="r-fu-body"><p>§2, §4 and §7 ran as the first wave. §3 waited on the §2 gate, and §9 follows §7's measurement; §3 and §9 have disjoint write scopes and run together. §6 shares <code>fleet_node.py</code> with §4 and runs after it lands. §5 follows §4. §8 is deferred: it runs only if SDCC asks for the node back, and then waits on the move-ready gate. §10 and §11 came from a load reading on 19 October. Both write <code>checkout_trust.py</code>, so §10, the steady per-second cost, runs first and §11 follows it.</p></div>
+    <div class="r-fu-body"><p>§2, §4 and §7 ran as the first wave. §3 waited on the §2 gate, and §9 follows §7's measurement; §3 and §9 have disjoint write scopes and run together. §6 shares <code>fleet_node.py</code> with §4 and runs after it lands. §5 is deferred until the lead chooses its route: run from an ssh shell on the fleet node, or after a reckon change that grants a node the fleet state paths. A dispatched node cannot write them (see c-s5-authority). §8 is deferred: it runs only if SDCC asks for the node back, and then waits on the move-ready gate. §10 and §11 came from a load reading on 19 October. Both write <code>checkout_trust.py</code>, so §10, the steady per-second cost, runs first and §11 follows it.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-node-stays-in-service</pre>
     </article>
 </section>
@@ -599,6 +599,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-s5-authority" data-who="reckon-build" data-when="2026-10-19T03:50:00Z">
     <div class="r-comment-body"><p>§5 dispatch refused at launch (2026-10-19 05:47). Dispatch confines a node's write paths to registered repositories and reckon's delivery directories (<code>reckon/crew/dispatch_admission.py:1773</code>), with no override. The rehearsal must write <code>~/.config/zellij/layouts/</code>, where the supervisor reads layouts by name, and <code>~/.local/state/fleet/migration/rehearsals/</code>, where <code>_rehearse</code> keeps its ledger. So no worker can be authorised to run it. The same command passed <code>--dry-run</code> with all eight properties and no warning, so the dry-run does not apply this check. The node needs either an operator run of <code>reckon fleet-node migrate --rehearse --session probe-current-head</code> from a plain shell on the fleet node, with a worker writing only the evidence fragment, or a reckon change that lets a node be granted fleet state paths. No move is planned, so §5 is not urgent.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-deferred" data-who="reckon-build" data-when="2026-10-19T19:55:00Z">
+    <div class="r-comment-body"><p>§5 is declared deferred, not implementable. A dispatched node cannot write the layout or the rehearsal ledger (see c-s5-authority), and the route is the lead's choice: run it from an ssh shell on the fleet node, or first make a reckon change granting a node those paths. Acts on the wiring finding of the content review at plan version 33.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261019T044951548662-review-of-a-stopped-worker-ends-inside-its-step-2d3edd6c2d75" data-who="reckon-build" data-when="2026-10-19T05:08:46.290Z">
     <div class="r-comment-body"><p>Reviewed r-20261018T150822949393 delta a6808040..2d3edd6c (fix(crew): refuse unverified step client stops): scores goal_fidelity 17, evidence 16, scope_discipline 18, durability 18, fit 18, reuse 20; three follow-on findings (plan section 3's scheduler-confirmed pending-step client signal removed with no replacement; two non-independent test assertions); added_failure_count 0 over the reviewed head's green focused gate (36 passed, 1 skipped at 2d3edd6c).</p></div>
