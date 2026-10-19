@@ -1,0 +1,101 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T14:37:36.997Z",
+  "dispatched_at": "2026-10-19T14:22:32Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:77",
+      "id": "reasoning-1",
+      "reason": "the rule removes the stop without removing the penalty the plan's own \u00a71 question 1 asks about (\"does anything stop, cut short or penalise a run when it passes its deadline?\"), so a worker obeying \u00a73 is still recorded as an overrun and Jev keeps seeing the node as one.",
+      "text": "\u00a73 permits a worker to keep running past its deadline (launch plus budget times `fences.budget_grace_multiple`) to finish a named bounded step, but the run is still classified `budget_overrun` by `_budget_timing`/`_apply_budget_watchdog` (`reckon/crew/recovery_stream.py:236`, which sets `budget_overrun` from elapsed > budget regardless of watchdog enforcement) and surfaced through the picker's budget metrics (`reckon/crew/query.py:65-68`)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:24",
+      "id": "wiring-1",
+      "reason": "\u00a73 is implementable and \u00a72 deferred, so \u00a72 can be built without \u00a73's hard stop in place and neither section declares how the two deadlines compose.",
+      "text": "the `plan-section-depends-on` entry for s2 is `[s1]` only, but \u00a72's gate-verb shape (line 65) states the deadline as launch plus budget plus gate time by rewriting `time_fence_statement`, the same function and prompt sentences \u00a73 rewrites",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:72",
+      "id": "anchors_resolve-1",
+      "reason": "the section's whole motivation rests on counts no reader can check, and the precedent in this plan is to name the queried set beside the number.",
+      "text": "the Why attributes \"163 of its 337 worker ledger rows as resumes\" and \"19 of 755 recent worker manifests that name a deadline stop\" to an unnamed session with no run id, ledger query or manifest set a reader can open, the same defect an earlier review raised against \u00a71's 75-of-104 cutoff and the author fixed by recording ids",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "26e6302d34367d882145cc80381f9f48adeeddf2f343ba5ba77df82ee183aea9",
+  "plan_slug": "test-time-is-not-the-nodes-time",
+  "plan_version": 13,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "nothing that reads an overrun penalises it: budget_overrun is the token verdict (recovery_stream.py:236), a wall overrun sets ceiling_overrun and budget_overrun_seconds, and their only readers are the overrun-cause label (recovery_stream.py:165) and the crew runs view (crew_run_commands.py:269-278); the picker package reads no overrun field (grep over reckon/crew/picker/ returns nothing), and the opt-in watchdog acts at budget times the grace multiple, the same instant as the hard stop. A run that finishes a named step past its deadline did take longer than its budget, so recording that is a true sizing fact, not a penalty",
+      "when": "2026-10-19T14:39:54.671416+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-19T14:40:02.520117+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-19T14:40:11.660454+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T14:40:11.660454+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "nothing that reads an overrun penalises it: budget_overrun is the token verdict (recovery_stream.py:236), a wall overrun sets ceiling_overrun and budget_overrun_seconds, and their only readers are the overrun-cause label (recovery_stream.py:165) and the crew runs view (crew_run_commands.py:269-278); the picker package reads no overrun field (grep over reckon/crew/picker/ returns nothing), and the opt-in watchdog acts at budget times the grace multiple, the same instant as the hard stop. A run that finishes a named step past its deadline did take longer than its budget, so recording that is a true sizing fact, not a penalty",
+      "when": "2026-10-19T14:39:54.671416+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T14:40:02.520117+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-test-time-is-not-the-nodes-time.v13.json",
+  "review_run_id": "r-20261019T141958548717-plan-review-of-test-time-is-not-the-nodes-time",
+  "reviewed_blob_sha": "b69df112ad107e8bfda5d2db2d3384d591e5f118",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the two counts that motivate s3 (\"163 of 337 worker ledger rows as resumes\", \"19 of 755 recent worker manifests\") name no run, log, manifest set or query a reader can open.",
+    "done_when": "pass \u2014 each implementable node's done-when names a declared negative control (s3 mutates `compose_prompt` and the resumed-attempt call; \u00a71's scanners are checked against known positives).",
+    "evidence_paths": "pass \u2014 s3's gate arms write under the run directory, and its cited anchors (`prompts.py`, `recovery_stream.py`, `dispatch_sessions.py`, `worker-protocol.md`) are repository paths, not scratchpads.",
+    "naming": "pass \u2014 `tests/test_a_deadline_lets_a_named_batch_finish.py` and the restated rule carry no plan label, stage name, ticket number or version tag, and no changelog prose.",
+    "reasoning": "a finding \u2014 s3 lets a worker run past its deadline to the hard stop, but nothing in the section addresses the `budget_overrun` accounting that still records and penalises exactly that run.",
+    "single_goal": "pass \u2014 s3 carries one deliverable, the one deadline rule restated at every place a worker is told it.",
+    "wiring": "a finding \u2014 s3 is declared implementable and depends on nothing, but \u00a72's only declared dependency is s1 even though \u00a72's gate-verb shape rewrites the same `time_fence_statement` and stop instruction that \u00a73 rewrites."
+  },
+  "section_digests": {
+    "_document": "854b9c6a2d9d713b72aae68242f962cf0b223a20d300b4ab11d368bf994f1b41",
+    "s1": "5443573e7cf722b64bf218a379dec5f696e91939a0447babf3cbfeb8a303075b",
+    "s2": "e1683f33056739230ebe8f8cc40375d3a6cce727983bbbca1379cf0b80c058f6",
+    "s3": "6e7789fbd72d61f2ea9489129bdff2282d3d03cdecd36c735c3600bb858fe1c0",
+    "s4": "3ecba0ba9644607d22d9c2d91dfb3f22042d163919f276abb7f2bfa201173b0a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T14:39:50.923576+00:00"
+}
