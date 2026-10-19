@@ -215,6 +215,9 @@ from reckon.crew_dispatch_commands import (
     crew_observe as crew_observe,
 )
 from reckon.crew_dispatch_commands import (
+    crew_pick as crew_pick,
+)
+from reckon.crew_dispatch_commands import (
     crew_review as crew_review,
 )
 from reckon.crew_dispatch_commands import (
