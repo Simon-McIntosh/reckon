@@ -1,0 +1,33 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T15:54:24.978Z",
+  "dispatched_at": "2026-10-19T15:41:39Z",
+  "findings": [],
+  "plan_fingerprint": "28286e23c7a959a9c7012ddf4f028776035df2974f0b7bd1fe6cdc402161bfa6",
+  "plan_slug": "test-time-is-not-the-nodes-time",
+  "plan_version": 17,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T154053503180-plan-review-of-test-time-is-not-the-nodes-time",
+  "reviewed_blob_sha": "0cd9dd0da7e0c044213f21f009f18e7b1aa950bf",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every \u00a73 anchor was opened and resolves: `reckon/schema/flight-defaults.yaml:201` (`enforce_budget_watchdog: false`, with `budget_grace_multiple: 1.5` at :202), `reckon/crew/prompts.py:635` (\"Exceeding it means stop and report, never push on\"), `:701` (\"the time budget is spent with the measure still unmet\"), `:382` (`time_fence_statement` def), `reckon/crew/recovery_stream.py:320` (`_apply_budget_watchdog`) and `:333` (its `budget_grace_multiple` read), `reckon/crew/routing.py:473` (`resolved_time_ceiling`), `reckon/crew/dispatch.py:1918`/`:1928`, `reckon/crew/dispatch_sessions.py:1468`, and both `worker-protocol.md` restatements at lines 66 and 346; the power_convertor ledger's 338-row denominator was independently reproduced (334 implement + 3 investigate + 1 test top-level rows at the cited commit).",
+    "done_when": "pass \u2014 the \u00a73 done-when (lines 84-97) is measurable (a named pytest invocation, a ruff delta against base blobs, a specific watchdog boundary of 91-not-89 minutes) and carries a declared, falsifiable negative control (line 98) that names two mutations and the case each must break.",
+    "evidence_paths": "pass \u2014 the gate's two arm logs and the manifest are the run directory's own record (`baseline_suite`/`after_suite`), the house path for the gate receipt, and \u00a71's separate document/figures live under `docs/research/` and `docs/figures/`; no session scratchpad or node-local temp path is named.",
+    "naming": "pass \u2014 \u00a73 introduces no plan labels, stage names, ticket numbers or version tags; the new symbols it names (`resolved_grace_multiple`, `test_a_deadline_lets_a_named_batch_finish.py`) and its section heading describe the mechanism, and its comments state the rule rather than a tracker entry.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence and the mechanism runs on the real path: the watchdog's own read of `fences.budget_grace_multiple` (`recovery_stream.py:333`) fires only when `elapsed > budget_seconds * grace`, and `_budget_timing` measures both from the attempt's own `attempt_started_at`/`attempt_budget_seconds` (`recovery_stream.py:265-275`), so the prompt's hard stop (launch + budget \u00d7 multiple) and the watchdog act on one instant and one owner; every caller the change relies on is named and reachable \u2014 `time_fence_statement` from `compose_prompt` (`prompts.py:607`) and the resumed path (`dispatch_sessions.py:1468`), the multiple's read from the fences block at `dispatch.py:1928` carried through `_compose_dispatch_prompt` (`dispatch_claims.py:862`, `compose_prompt` at `:891`) exactly as `needs_help_after_failures` is today, and the resumed fence's call site (`dispatch_sessions.py:1198`) has the resolved `config` in scope (`fence_config=config`, `:1215`) to supply the multiple.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable: one deadline rule stated identically at every place a worker is told it (the prompt fence, the stop list, and the two worker-protocol.md restatements).",
+    "wiring": "pass \u2014 \u00a73 declares no `depends-on`, and the s2 entry in `plan-section-depends-on` now lists `test-time-is-not-the-nodes-time#s3` (line 24), which correctly wires \u00a72's gate-allowance/gate-verb shapes onto the \u00a73 deadline rule they build on."
+  },
+  "section_digests": {
+    "_document": "854b9c6a2d9d713b72aae68242f962cf0b223a20d300b4ab11d368bf994f1b41",
+    "s1": "db87e9dc091adc1afc070dc0aef99a3806a457e6dc5e0e2a813fea5769fe65b4",
+    "s2": "5a0fb3df892e6e7a0e3ffe65cb4d4d3141028f5087a91a448c204ff9d28a8d4a",
+    "s3": "cd3dc051b230ab35b56efe7d9ffb4d36e13bf85c4bec1cee0d8ae02e8371178a",
+    "s4": "3ecba0ba9644607d22d9c2d91dfb3f22042d163919f276abb7f2bfa201173b0a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T15:57:50.534083+00:00"
+}
