@@ -1,0 +1,106 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms: gate-base.log at 0fa62dca44a63a65382c140c82a003dd7a660e02 reports `1 failed, 159 passed` with the single FAILED id tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window; gate-head.log at 0274b1227df3acf495023b12695d143ed6c129ab reports `1 failed, 163 passed` with the same single id. Set difference of the FAILED lines is empty, so no failure is added.",
+  "assertion_analysis": [
+    "tests/test_crew_families_fold.py:483-484 assert the printed successor and invocation against a flag map the test owns independently of the registry; reinstating the old successor_invocation (reckon/crew/tombstones.py:184, which dropped row.flags) reddens :484.",
+    "tests/test_crew_families_fold.py:504 compares each folded flag's payload to a fixture the fragment records as captured from the retired verbs at the same base revision before the fold; deleting a key from _budget_lifts_payload reddens only the lift-list case, which is the declared negative control.",
+    "tests/test_crew_families_fold.py:520-527 reddens if any reckon/ module keeps a string literal naming a retired name; adding back `crew preflight` in reckon/crew/refusals.py would trip it."
+  ],
+  "base_log_revision": "0fa62dca44a63a65382c140c82a003dd7a660e02",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:30 (a retired name resolves through tombstone_command)",
+    "reckon/crew_run_commands.py:3212 (crew_budget)",
+    "reckon/cli.py:440 (crew_budget re-export)",
+    "reckon/crew/refusals.py:19,21,34,44 (DISPATCH_REFUSAL_REMEDIES, consumed when a dispatch refusal is formatted)"
+  ],
+  "completed_at": "2026-10-19T22:24:20.259Z",
+  "dispatched_at": "2026-10-19T22:03:57Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T202350268699-cso-budget-family-folds/manifest.md",
+      "line": "15",
+      "severity": "blocking",
+      "text": "blocking: negative_control_log is absent even though the node's write paths include four test files and the run declares the mutation 'alter one crew budget flag's answer'; the run's own `crew check-manifest` reports ok:false on this field, so promotion of this node is refused until a negative-control log path or a negative_control_waiver line is recorded."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T202350268699-cso-budget-family-folds/gate-head.log",
+      "line": "1",
+      "severity": "blocking",
+      "text": "blocking: the head log's header names only the revision and tree and carries no command near its head, so check-manifest flags it and the gate composed from this log cannot be re-executed from the log itself."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T202350268699-cso-budget-family-folds/gate-base.log",
+      "line": "2",
+      "severity": "blocking",
+      "text": "blocking: the recorded base command is 'PYTHONPATH=$PWD .../python -m pytest -q -p no:cacheprovider <the nine base files; the new fold test is absent at base>', whose angle-bracket placeholder describes the check rather than naming nine runnable files, so check-manifest reports the log names no re-executable command."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "216",
+      "severity": "follow-on",
+      "text": "follow-on: the diff removes the `crew_pick as crew_pick` re-export alongside the required crew_preflight one; pick is still a registered leaf (tests/test_crew_help_names_its_state.py:44 keeps its row) and nothing in the goal implies its removal, so reckon.cli.crew_pick silently disappears."
+    },
+    {
+      "file": "tests/test_crew_families_fold.py",
+      "line": "485",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares TOMBSTONE_BY_NAME[retired].retired against the same key it was fetched by, so it is a tautology that cannot redden and counts as no coverage of the registry."
+    },
+    {
+      "file": "tests/test_crew_families_fold.py",
+      "line": "46",
+      "severity": "follow-on",
+      "text": "follow-on: BASE_LEAF_COUNT = 48 freezes the live surface size, so any later node that registers or retires an unrelated crew verb reddens this fold test and the failure reads as this node's regression."
+    }
+  ],
+  "head_log_revision": "0274b1227df3acf495023b12695d143ed6c129ab",
+  "item_verdicts": {
+    "diff": "Read commit by commit from 0fa62dca44a63a65382c140c82a003dd7a660e02 to 0274b1227df3acf495023b12695d143ed6c129ab: the fold itself, the new Tombstone.flags field, three extracted payload helpers and _budget_check_report, the four-check gate test, and the repointed CLI/skill-contract tests and documents.",
+    "done_when": "The done_when names the ten-file pytest gate and requires zero added failures against a base arm, tombstone answers, fixture-matching flag answers, no reckon/ string literal naming a tombstoned verb and a leaf count of at most 48-4+1; the gate ran at both arms, tests/test_crew_families_fold.py holds the four checks, and I re-ran that file at the head (4 passed in 4.87s).",
+    "goal": "The goal is to fold budget-lift, budget-lifts, budget-reset and preflight into one crew budget verb taking --lift/--list/--reset/--check, tombstoning each old name and moving every caller; reckon/crew_run_commands.py:3212 defines crew_budget dispatching by flag, and reckon/crew/tombstones.py:105,113,120,129 register all four retired names with their successor flag.",
+    "manifest": "Read; it names the five commits, the fifteen changed paths, the corrected base arm and the surviving module-size failure, but it omits negative_control_log although the node wrote checks, and its own `reckon crew check-manifest --run r-20261019T202350268699-cso-budget-family-folds` returns ok:false with three findings.",
+    "write_paths": "The fence lists fourteen rows and the resume advice adds tests/test_crew_budget_lift_cli.py and tests/test_skill_contracts.py, sixteen paths in all; every one of the fifteen files in the diff is inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_families_fold.py:484 reddens if the tombstone stops carrying its successor flag and :504 reddens if a folded flag's payload changes, but :485 cannot fail at all and :46 freezes the leaf count.",
+    "evidence": "Both arms are logged with a revision header and an EXIT= trailer and the delta is zero added failures, but `reckon crew check-manifest --run r-20261019T202350268699-cso-budget-family-folds` returns ok:false with three findings on this run's own recording.",
+    "fit": "reckon/crew_run_commands.py:3264 mirrors crew_gate's per-command 'name exactly one' guard at reckon/crew_dispatch_commands.py:60 and every added symbol is named by mechanism, not by plan label.",
+    "goal_fidelity": "reckon/crew_run_commands.py:3212 gives one verb selected by --lift/--list/--reset/--check over the four actions and reckon/crew/tombstones.py:138 routes each retired name to its successor, so the fold the goal states is complete.",
+    "reuse": "Tombstone.flags at reckon/crew/tombstones.py:71 extends the registry that already owns successor invocation rather than forking it, and no shared one-of-flags helper exists to reuse (crew_gate at reckon/crew_dispatch_commands.py:60 inlines its own).",
+    "scope_discipline": "Every file in `git diff --name-only 0fa62dca44a63a65382c140c82a003dd7a660e02 0274b1227df3acf495023b12695d143ed6c129ab` lies inside the declared write paths; only reckon/cli.py:216 carries an unrelated drop."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal folds four budget verbs into one `crew budget` selected by --lift/--list/--reset/--check with each retired name tombstoned; reckon/crew_run_commands.py:3212 and reckon/crew/tombstones.py:105-134 implement that fold.\nVERDICT done_when: the done_when names the ten-file pytest gate and requires zero added failures plus the four gate assertions and a leaf count of at most 48-4+1; all are met and I re-ran tests/test_crew_families_fold.py at the head (4 passed).\nVERDICT write_paths: the fourteen fence rows plus the two resume-added test files are the scope; all fifteen diff paths are inside them.\nVERDICT manifest: read; it omits negative_control_log and its own `crew check-manifest` audit returns ok:false with three findings.\nVERDICT diff: read commit by commit from 0fa62dca44a63a65382c140c82a003dd7a660e02 to 0274b1227df3acf495023b12695d143ed6c129ab; the change is the fold, the new Tombstone flags field, three payload helpers, _budget_check_report, one gate test and repointed tests and documents.\nCALL_SITES: reckon/crew_dispatch_commands.py:30, reckon/crew_run_commands.py:3212, reckon/cli.py:440, reckon/crew/refusals.py:19,21,34,44\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:3212 gives one verb selected by four action flags over the old bodies and reckon/crew/tombstones.py:138 routes each retired name to its successor.\nSCORE evidence: 13\nJUSTIFICATION evidence: both arms are logged with a revision header and EXIT= trailer and the delta is zero added failures, but the run's own check-manifest returns ok:false.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every file in git diff --name-only 0fa62dca44a63a65382c140c82a003dd7a660e02..HEAD lies inside the declared write paths; only reckon/cli.py:216 carries an unrelated drop.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_crew_families_fold.py:484 and :504 fail under the regressions they name, but :485 is a tautology and :46 freezes the leaf count.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew_run_commands.py:3264 mirrors crew_gate's per-command guard at reckon/crew_dispatch_commands.py:60 and adds no plan-labelled name.\nSCORE reuse: 19\nJUSTIFICATION reuse: Tombstone.flags at reckon/crew/tombstones.py:71 extends the registry that owns successor invocation and no shared one-of-flags helper exists to duplicate.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T202350268699-cso-budget-family-folds/manifest.md:15 blocking: negative_control_log is absent although the node wrote checks, so the run's own check-manifest reports ok:false.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T202350268699-cso-budget-family-folds/gate-head.log:1 blocking: the head log carries no command near its head, so check-manifest flags it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T202350268699-cso-budget-family-folds/gate-base.log:2 blocking: the recorded base command contains an angle-bracket placeholder describing the nine files rather than naming them.\nFINDING reckon/cli.py:216 follow-on: the unrelated crew_pick re-export was dropped with the required crew_preflight one.\nFINDING tests/test_crew_families_fold.py:485 follow-on: the assertion is a tautology over the dict key it looks up by.\nFINDING tests/test_crew_families_fold.py:46 follow-on: BASE_LEAF_COUNT freezes the live surface size, so an unrelated later verb reddens this node's test.",
+  "review_run_id": "r-20261019T220254082188-review-of-cso-budget-family-folds-0274b1227df3",
+  "reviewed_base_sha": "0fa62dca44a63a65382c140c82a003dd7a660e02",
+  "reviewed_commits": [
+    "8e048039245b230d2b53df2d957e9ecc5324942a",
+    "f7a8cbcfc9d0e69f0f96180a206543f2d2e9830d",
+    "3d3c60232601e47feb6ed3da9d3743dbf3c76faa",
+    "cfeb758c39c7348277ba3adeb8a8f2a869e11821",
+    "0274b1227df3acf495023b12695d143ed6c129ab"
+  ],
+  "reviewed_head_sha": "0274b1227df3acf495023b12695d143ed6c129ab",
+  "reviewed_run_id": "r-20261019T202350268699-cso-budget-family-folds",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "self_comparison_assertions": [
+    {
+      "file": "tests/test_crew_families_fold.py",
+      "line": 485,
+      "text": "TOMBSTONE_BY_NAME[retired].retired == retired: the dict is built as {row.retired: row for row in TOMBSTONES} at reckon/crew/tombstones.py:138, so the lookup key is the very attribute compared; it holds whatever the registry contains and cannot fail."
+    }
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T22:16:33Z",
+  "total": 100
+}

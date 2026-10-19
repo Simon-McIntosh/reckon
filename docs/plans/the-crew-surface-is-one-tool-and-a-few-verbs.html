@@ -26,8 +26,8 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="29">
-<meta name="plan-modified" content="2026-10-19">
+<meta name="plan-version" content="30">
+<meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
   <main class="plan-doc">
@@ -418,6 +418,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-s9-review-deferred" data-who="reckon-build" data-when="2026-10-19T21:35:00Z">
     <div class="r-comment-body"><p>Review <code>r-20261019T210516735057</code> found three defects in §9, deferred to its revision before dispatch:</p><ul><li><strong>wiring-1.</strong> To compare the views the MCP tool's schema advertises, the filter node must change the <code>view</code> Literal in <code>reckon/_mcp_tools.py</code>, which lists nine views where the dispatcher serves eighteen, and the view list in <code>skills/reckon-build/SKILL.md</code> that <code>test_ship_views_match_the_typed_mcp_surface</code> checks. Both join the filter node's fence, and §9 waits on §5, which owns <code>_mcp_tools.py</code>.</li><li><strong>done_when-1.</strong> <code>cso-list-callers-move-to-crew-view</code> gets a negative control of its own: leave one caller unmoved, and its fixture case fails.</li><li><strong>reasoning-1.</strong> The serial reason is restated. The mover node follows the filter node because its <code>--phase</code> and <code>--mine</code> fixtures need the filter node's flags, not because the two share a file.</li></ul></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261019T220254082188-review-of-cso-budget-family-folds-0274b1227df3" data-who="reckon-build" data-when="2026-10-19T22:24:20.259Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261019T202350268699-cso-budget-family-folds at 0274b1227df3acf495023b12695d143ed6c129ab against base 0fa62dca44a63a65382c140c82a003dd7a660e02: the budget fold is complete and its gate is green at both arms with zero added failures, but the run&#x27;s own manifest and gate logs fail its own `crew check-manifest` audit (ok:false, three findings), so the node cannot promote until the negative_control_log and the two gate-log command headers are repaired.</p></div>
 </div>
 </section>
 </main>
