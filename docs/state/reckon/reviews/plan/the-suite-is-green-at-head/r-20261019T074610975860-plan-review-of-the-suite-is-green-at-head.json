@@ -1,0 +1,82 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T08:26:03.584Z",
+  "dispatched_at": "2026-10-19T08:08:51Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-suite-is-green-at-head/r-20261019T074610975860-plan-review-of-the-suite-is-green-at-head/plan.html:732",
+      "id": "reasoning-1",
+      "reason": "a coordinator following f-tsigah-025 would dispatch a node against \u00a725, and that node's named repair is already in the tree, so the node can only no-op or spend its budget re-deriving that the work is done; the plan should mark \u00a725 done and resolve its followup.",
+      "text": "\u00a725's Why asserts `_bound_server_log` \"stages a copy of the over-bound log as `<predecessor>.tmp` with `shutil.copyfile` before publishing it \u2026 The census reads that as a staged write that does not go through the owner\", and its Deliverable instructs the node to make `_bound_server_log` publish the predecessor through `write_atomically`. That change is already present at the plan's own base revision: `reckon/serve.py:744-748` defines `stage_live` and calls `write_atomically(predecessor, stage_live, binary=True)`, and the function docstring already reads \"The predecessor is published through the shared atomic writer\". It is not a worktree artifact \u2014 `git log -S \"write_atomically(predecessor\" -- reckon/serve.py` returns one commit, `3d1ce97c6` \"fix(serve): publish the rotated log's predecessor through the shared atomic writer\" (2026-10-18 22:52), and `git merge-base --is-ancestor 3d1ce97c6 HEAD` succeeds against 7e4f955f6. \u00a725's own done-when is likewise already met: `tests/test_staged_write_inventory.py` and `tests/test_request_duration_and_log_bound.py` both pass at head (54 passed, EXIT=0).",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6fc8813cfb4e2eabcd52b2a8fb54930a02fce1e82a37bb12c350dac6b6c0330b",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 412,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-19T08:33:58.473480+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T08:33:58.473480+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-suite-is-green-at-head.v412.json",
+  "review_run_id": "r-20261019T074610975860-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "d58a4c01e936838183670218dc10e17a86f29c09",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the code writes resolve (`reckon/_store.py:480 write_atomically`, `reckon/serve.py:719 _bound_server_log`, `tests/test_request_duration_and_log_bound.py`, `tests/test_follower_hands_off_to_host.py:432`, `tests/test_scoring_dispatches_its_review.py`); the cited run dirs `r-20261018T200318180119-a-foreign-producer-overrun-is-one-line` (holding `handoff-base-*.log` at `rev=de943e8e3`, `host=98dci4-clu-3143`) and `r-20261018T231435440175-reload-carries-skills-population-at-merge` exist; and the in-plan cross-reference \"the same kind of finding \u00a77 settled for `_bound_run_file`\" resolves (plan \u00a77 discusses `_bound_run_file`).",
+    "done_when": "pass \u2014 `s25` (`test_every_staged_write_reaches_the_owner` passes with no entry added, plus `tests/test_request_duration\u2026` and a restore-the-defect control), `s26` (5/5 alone on a compute node plus the fleet node, control removes the synthesised dependency) and `s27` (5/5 alone at head, control restores the reproducing cause) each name a measurable gate and a declared negative control that can fail.",
+    "evidence_paths": "pass \u2014 the three sections write logs \"under the run directory\" (the durable `~/.config/reckon/crew/runs/<run>` tree) and require `rev=`, `host=`, the literal command and a trailing `EXIT=`; the scratch checkouts they name are disposable trees, not evidence.",
+    "naming": "pass \u2014 the new sections introduce no symbols; the identifiers they name (`_bound_server_log`, `write_atomically`) are existing code names carrying no plan label, stage name or ticket number, and the prose carries no changelog phrasing.",
+    "reasoning": "a finding \u2014 \u00a725 states as a deliverable yet to be performed what the repository already does at the reviewed base revision.",
+    "single_goal": "pass \u2014 `s25` publishes one predecessor through the owner, `s26` makes one handoff test host-independent, `s27` makes one dispatch path's standing red test pass.",
+    "wiring": "pass \u2014 each of the three new sections (`s25`, `s26`, `s27`) is declared `implementable` and has a matching open followup (`f-tsigah-025`, `f-tsigah-026`, `f-tsigah-027`) whose `<pre class=\"r-fu-prompt\">` invokes that section; the sections carry no `depends-on`/`informs`/`gates` edges (`data-links=\"\"`), which is this plan's uniform convention across all 27 sections. The only stale invocation is the still-open `f-tsigah-repair-wave-at-95ff28824` recommending a `done` section (\u00a74), already raised and declined in the prior review and unchanged here."
+  },
+  "section_digests": {
+    "_document": "fa20b7bec9cf55baa18f0eeee5e6b2fdf2522dce8cc1babdbbaeee9021adc697",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "f84dc4d4bef37307ff05d71bd4f7071e9208e789832e7cb00be82c37bcfde97e",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s17": "01fe3ab4eb2f9f616654a729cf8bef4dcf5b530d4d0c1be3bdfa73999d0ad263",
+    "s18": "15b626822483dd850c2006c1d4255b8386f22ef780237614005178a5b3c15d70",
+    "s19": "94946283d6a94fe284a3f00a5c60fbfdf125cd16b7f43e5e0abdb96b6305cf3b",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s20": "1eef46ce597367c7d533df3c2bbd6d180313a446b7ad270289b1ed3f26857a8c",
+    "s21": "1ed74dec466eb1b0eee98d9d29bba0029e9ecfc126fc5ee67c90c833f03724dd",
+    "s22": "c3a55e73e65fd250ba61d6c2e9966ce88a3f63d70531153347e865c64bbb779d",
+    "s23": "58c7c8fb57b77f817bf210d5bb02d2c42f9794894e0e82f24746c06eaae9b603",
+    "s24": "bd305a35e661a1e1921c208e88472c7ccf105925bb86ba5650b5eb9312d9a1bd",
+    "s25": "f6fbb1de53e5726883a68cf7037c0179700c8dedb668dbde1317135cc5c4cb92",
+    "s26": "23ea594e91a1c5608efd3fe59772eae122fb954566c852bdaabf65bc0f960438",
+    "s27": "96a3a73ebe2e74d468e6b9a4349507255e4fcc03aca1b366d60fccd64d59c9ce",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "072f7ace5c2d253a6d4972213a2093233d6f768bd4d1394f2b9eaf1471ff4119",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T08:33:47.465831+00:00"
+}
