@@ -40,6 +40,7 @@ from reckon.crew.runs import (
     update_watch_registration,
     watch_lease_renewed_at,
     watch_lock_path,
+    watch_stream_path,
 )
 from reckon.crew.ticker import NEEDS_ACTION, Ticker, _agent_label
 from reckon.crew.watch_unit import seat_names_a_live_foreign_producer
@@ -2059,14 +2060,6 @@ def _notional_cost(
     )
 
 
-# A follower scoped to one session relays one project's stream, but the session
-# may work in several projects at once, each with its own watcher and its own
-# events file beside this one under the watch directory. Counting the session's
-# work across all of them is what stops the pane's figures from jumping whenever
-# consecutive rows come from different projects.
-WATCH_EVENTS_SUFFIX = ".events"
-
-
 # This process's own code identity, read once. The read shells out to Git over
 # the whole checkout, and a running image does not change under itself, so a
 # follower that judged every row's peers afresh would pay that cost per row.
@@ -2117,6 +2110,12 @@ def _other_project_producer_is_live(project: str, session: str, stamp: str) -> b
 def _session_counts_in_other_projects(project: str, session: str) -> dict[str, int]:
     """The session's totals in every watched project but this row's own.
 
+    A follower scoped to one session relays one project's stream, but the
+    session may work in several projects at once, each with its own watcher and
+    its own events file beside this one under the watch directory. Counting the
+    session's work across all of them is what stops the pane's figures from
+    jumping whenever consecutive rows come from different projects.
+
     Sums the session's entry from the newest transition carrying the partition
     in each other project's events file under the watch directory, counted only
     while that project's producer is live. A project whose newest such
@@ -2127,14 +2126,14 @@ def _session_counts_in_other_projects(project: str, session: str) -> dict[str, i
     """
     if not project or not session:
         return {}
-    own = watch_lock_path(project).with_suffix(WATCH_EVENTS_SUFFIX)
+    own = watch_stream_path(project)
     total = {"working": 0, "blocked": 0, "unpromoted": 0}
     waiting_seen = False
     waiting = 0
     stamp: str | None = None
     watch_dir = own.parent
     try:
-        candidates = sorted(watch_dir.glob(f"*{WATCH_EVENTS_SUFFIX}"))
+        candidates = sorted(watch_dir.glob(f"*{own.suffix}"))
     except OSError:
         return {}
     for path in candidates:
