@@ -33,6 +33,9 @@ PLAN = "promotion-keeps-every-round-target"
 SUBJECT = "r-20261006T110000000000-reviewed-subject"
 REVIEW = "r-20261006T120000000000-promoting-review"
 HEAD_ONE = "2e05df7191c5413efcfb9f3cc40b5f18b1f7a0bc"
+# The head this review run is dispatched to read, which its head-keyed record
+# path spells and the round it delivers describes.
+DISPATCHED_HEAD = "c" * 40
 BASE = "a" * 40
 DISPATCH_TS = "2026-10-06T11:00:00Z"
 COMPLETION_TS = "2026-10-06T11:30:00Z"
@@ -172,7 +175,10 @@ def test_a_promotion_commits_an_unnamed_round_under_its_legacy_id(
     _write_run_record(
         repository, SUBJECT, dispatched=DISPATCH_TS, completed=COMPLETION_TS
     )
-    delivered_path = _store(_complete_run_review(None, review_run_id=None))
+    delivered_path = _store(
+        _complete_run_review(DISPATCHED_HEAD, review_run_id=None),
+        head=DISPATCHED_HEAD,
+    )
     # Another round of the same subject at another head, also naming no review
     # run of its own: it is not the round this run delivered, so its own bytes
     # key it.

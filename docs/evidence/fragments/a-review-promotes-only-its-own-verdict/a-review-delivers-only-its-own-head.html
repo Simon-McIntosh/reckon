@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-promotes-only-its-own-verdict">
+  <meta name="plan-evidence-for" content="reckon:a-review-promotes-only-its-own-verdict">
+  <meta name="plan-verifies" content="reckon:a-review-promotes-only-its-own-verdict#s1">
+  <meta name="plan-recorded-at" content="2026-10-18">
+  <meta name="plan-verdict" content="passed">
+  <title>A review delivers only its own head | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-review-delivers-only-its-own-head-landing" data-node="a-review-delivers-only-its-own-head" data-reckon="landed" data-when="2026-10-18">
+  <h2>A run review is delivered only by its own record of the head it read</h2>
+  <p><code>_delivered_review_record</code> accepts a record as a run review's delivery only when all four hold: the record sits at the head-keyed path the review's dispatch declared, the head it describes is that head, compared with <code>review_described_head</code> and <code>same_revision</code>; its <code>review_run_id</code>, when it carries one, names this review run; and its mtime is after this node's dispatch instant, read with <code>run_record_times</code> and falling back to the stamp the run id encodes. The legacy unsuffixed path and the any-head glob no longer count at all. A run review declaring no head-keyed path is refused by <code>promote_review_run_itself</code> with a reason naming the missing head; plan reviews are untouched. Delivery is decided in that one function, so every reader that asks whether a review has delivered reads this answer rather than restating the conditions; the watcher adds one refusal this function cannot express, that of naming an unnamed head. The run-versus-plan review distinction is read from <code>_is_run_review_node</code> in <code>reckon/crew/recovery_review_delivery.py</code>, which resolves it through <code>round_node_source</code> — the owner of the node-id grammar that mints a round's id — rather than by re-spelling the prefix test; the broader <code>_is_review_node</code> in <code>reckon/crew/recovery_review_subject.py</code> stays the answer for a caller asking whether a run is a review of either kind.</p>
+  <p>The new <code>tests/test_a_review_promotes_only_its_own_verdict.py</code> fixes the four refusals and the delivery they guard: a predecessor round's complete record at the legacy path is no delivery, and the run's own record at the head-keyed path both reads as delivered and promotes on its ledger row with <code>reviewed_head_sha</code> equal to the dispatched head and the round's total; a record at the head-keyed path describing another head, naming another review run, or written before dispatch is no delivery; and a review declaring only the legacy path is refused naming the head. Six further test files move the round they deliver to the head-keyed path of the head its review is dispatched to read, each keeping what it asserts: a delivered review ending its turn, a review run promoting itself, a run review carrying no run id of its own, a review run's outcome defaulting to its stored review, and a promotion committing an unnamed round under its derived legacy id. Gate over the seven files: <strong>41 passed</strong> at head; the same seven against the base product code <code>820d1f1c3</code> gives <strong>36 passed, 5 failed</strong>, the five being exactly the new file's negative-control cases, so no test passes at base and fails at head. Negative control: at the base revision of <code>reckon/crew/recovery_review_delivery.py</code>, which accepts the predecessor round's complete record at the legacy path, the new test's predecessor-round, three mismatch and no-head cases fail by id, <strong>5 failed</strong>, EXIT=1. A sweep of all sixty-seven test files touching stored review records, run at both arms, finds <strong>zero</strong> further added failures; the single remaining head failure fails at base too. <code>ruff check</code> and <code>ruff format --check</code> report no new finding on the nine changed Python paths.</p>
+</article>
+</body>
+</html>

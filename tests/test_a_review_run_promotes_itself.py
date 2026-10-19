@@ -39,6 +39,8 @@ PLAN = "review-self-target"
 REVIEWED_RUN_ID = "r-20261012T120000000001-reviewed-run"
 REVIEW_RUN_ID = "r-20261012T130000000000-review-of-reviewed-run"
 REVIEW_NODE_ID = f"review-of-{REVIEWED_RUN_ID}"
+REVIEWED_BASE = "b" * 40
+REVIEWED_HEAD = "a" * 40
 
 
 def _write_resource(path: Path, state: dict) -> None:
@@ -97,8 +99,10 @@ def repository(isolated_reckon_home: Path, tmp_path: Path) -> Path:
 
 
 def _record_path() -> Path:
-    """The review-store path the reviewer was dispatched to write."""
-    return review_module.review_path(PROJECT, REVIEWED_RUN_ID)
+    """The head-keyed review-store path the reviewer was dispatched to write."""
+    return review_module.review_path(
+        PROJECT, REVIEWED_RUN_ID, reviewed_head_sha=REVIEWED_HEAD
+    )
 
 
 def _store_review_record() -> Path:
@@ -108,6 +112,8 @@ def _store_review_record() -> Path:
         "project": PROJECT,
         "reviewed_run_id": REVIEWED_RUN_ID,
         "review_run_id": REVIEW_RUN_ID,
+        "reviewed_base_sha": REVIEWED_BASE,
+        "reviewed_head_sha": REVIEWED_HEAD,
         "scores": dict.fromkeys(review_module.REVIEW_DIMENSIONS, 20),
         "total": 20 * len(review_module.REVIEW_DIMENSIONS),
         "findings": [],

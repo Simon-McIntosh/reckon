@@ -28,7 +28,11 @@ from reckon.crew.recovery import watch_ticker
 
 PROJECT = "sample"
 REVIEWED_RUN = "source-run"
-REVIEW_RUN = "reviewer-run"
+# The review run id encodes its dispatch instant, which is what a delivered
+# record is dated against before it counts.
+REVIEW_RUN = "r-20260101T000000000000-reviewer-run"
+BASE = "b" * 40
+HEAD = "a" * 40
 GRACE = 300.0
 # The two writes that make a review delivered are dated apart, so a grace
 # measured from the record instead of the later manifest changes the outcome.
@@ -65,9 +69,16 @@ def _parsed_review() -> dict:
             "project": PROJECT,
             "reviewed_run_id": REVIEWED_RUN,
             "review_run_id": REVIEW_RUN,
+            "reviewed_base_sha": BASE,
+            "reviewed_head_sha": HEAD,
         }
     )
     return record
+
+
+def _record_path() -> Path:
+    """The head-keyed store path the reviewer's dispatch named."""
+    return review.review_path(PROJECT, REVIEWED_RUN, reviewed_head_sha=HEAD)
 
 
 def _write_stream(home: Path, mtime: float) -> Path:
@@ -110,7 +121,7 @@ def _reviewer(
     """
     record_time = time.time() - 3600.0
     delivered_at = record_time + WRITE_GAP
-    record_path = review.review_path(PROJECT, REVIEWED_RUN)
+    record_path = _record_path()
     if delivered:
         review.store_review(_parsed_review())
         os.utime(record_path, (record_time, record_time))
@@ -192,7 +203,7 @@ def test_a_delivered_review_still_streaming_is_stopped(home: Path) -> None:
     ended = stored["ended_after_delivery"]
     assert ended["grace_seconds"] == GRACE
     assert ended["stopped_at"]
-    assert ended["record_path"] == str(review.review_path(PROJECT, REVIEWED_RUN))
+    assert ended["record_path"] == str(_record_path())
     assert ended["manifest_path"] == pointer["manifest_path"]
 
 
@@ -205,7 +216,7 @@ def test_review_delivered_answers_the_delivered_facts(home: Path) -> None:
     facts = recovery.review_delivered(pointer)
 
     assert facts is not None
-    assert facts["record_path"] == str(review.review_path(PROJECT, REVIEWED_RUN))
+    assert facts["record_path"] == str(_record_path())
     assert facts["manifest_path"] == pointer["manifest_path"]
     assert writes["manifest_mtime"] > writes["record_mtime"]
     assert facts["record_mtime"] == writes["record_mtime"]
@@ -292,7 +303,15 @@ def test_a_template_manifest_status_is_refused_by_the_template_guard(
         consulted.append((str(value), caller))
         return declared(value)
 
-    (monkeypatch.setattr(recovery_review_delivery, "manifest_status_is_template", spy), monkeypatch.setattr(recovery_stream, "manifest_status_is_template", spy), monkeypatch.setattr(recovery_classification, "manifest_status_is_template", spy))
+    (
+        monkeypatch.setattr(
+            recovery_review_delivery, "manifest_status_is_template", spy
+        ),
+        monkeypatch.setattr(recovery_stream, "manifest_status_is_template", spy),
+        monkeypatch.setattr(
+            recovery_classification, "manifest_status_is_template", spy
+        ),
+    )
     pointer = _reviewer(
         home, delivered=True, stream_offset=3 * 86400.0, manifest_status=template
     )

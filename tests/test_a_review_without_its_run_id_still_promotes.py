@@ -35,6 +35,9 @@ REVIEW = "r-20261006T120000000000-promoting-review"
 OTHER_REVIEW = "r-20261006T115000000000-earlier-review"
 HEAD_ONE = "2e05df7191c5413efcfb9f3cc40b5f18b1f7a0bc"
 HEAD_TWO = "775001135fd133d170a379fcf690336ce649cd11"
+# The head this review run is dispatched to read, which its head-keyed record
+# path spells and the round it delivers describes.
+DISPATCHED_HEAD = "c" * 40
 BASE = "a" * 40
 DISPATCH_TS = "2026-10-06T11:00:00Z"
 COMPLETION_TS = "2026-10-06T11:30:00Z"
@@ -170,9 +173,12 @@ def test_a_review_without_its_run_id_lands_under_the_promoting_run_id(
     repository: Path, tmp_path: Path
 ) -> None:
     _write_run_record(repository, SUBJECT)
-    # The round this run delivered, stored where the dispatch told it to write,
-    # carrying no review run id of its own.
-    delivered_path = _store(_complete_run_review(None, review_run_id=None))
+    # The round this run delivered, stored at the head-keyed path the dispatch
+    # told it to write, carrying no review run id of its own.
+    delivered_path = _store(
+        _complete_run_review(DISPATCHED_HEAD, review_run_id=None),
+        head=DISPATCHED_HEAD,
+    )
     # A round carrying its own id is committed beside it.
     _store(_complete_run_review(HEAD_TWO, review_run_id=OTHER_REVIEW), head=HEAD_TWO)
     _review_pointer(repository, tmp_path, run_id=REVIEW, declared=[str(delivered_path)])
@@ -199,7 +205,10 @@ def test_an_unnamed_round_lands_under_its_derived_legacy_id(
     repository: Path, tmp_path: Path
 ) -> None:
     _write_run_record(repository, SUBJECT)
-    delivered_path = _store(_complete_run_review(None, review_run_id=None))
+    delivered_path = _store(
+        _complete_run_review(DISPATCHED_HEAD, review_run_id=None),
+        head=DISPATCHED_HEAD,
+    )
     # Another round of the same subject, also carrying no id: it is not the
     # round this run delivered, so it has no run id of its own to be keyed by.
     # Its own bytes key it, and it is committed under the derived legacy id
