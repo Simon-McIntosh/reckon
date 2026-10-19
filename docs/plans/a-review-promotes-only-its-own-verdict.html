@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It changes when a review run counts as delivered and how a misattributed review row is found and corrected; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;deferred&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-review-promotes-only-its-own-verdict#s2&quot;], &quot;s4&quot;: [&quot;a-review-promotes-only-its-own-verdict#s3&quot;]}">
   <title>A Review Promotes Only Its Own Verdict | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="37">
+<meta name="plan-version" content="38">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -68,7 +68,7 @@
 </ul>
 
     <h2 id="s3">§3 — A misattributed review row is corrected by an appended correction every reader honours</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> A committed ledger row records what a promotion believed when it landed. A row whose review fields describe another round should not be rewritten in place, because the record of what was believed is itself evidence. It should carry an appended correction stating the fields' true status, and every reader of review totals should read the correction rather than the stale fields. Until this section lands, <code>e99d2b385</code>'s row stays as it is: nova does not hand-edit it, and reckon applies the correction here once the mechanism exists.</p>
 <p><strong>What §2 found.</strong> At least 19 promoted run reviews across six projects carry another round's head. The figure is a lower bound, because the census read only <code>review.reviewed_head_sha</code>. That is a bounded set, so one append-only correction applied by a verb is proportionate, and no bulk migration is needed. This section builds the mechanism. §4 re-counts and applies it.</p>
 <p><strong>Deliverable.</strong></p>
@@ -153,6 +153,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261019T102643719447-review-of-supersede-a-misattributed-review-row-2edc38cc5e15" data-who="reckon-build" data-when="2026-10-19T10:41:37.010Z">
     <div class="r-comment-body"><p>the review of r-20261019T034147435864-supersede-a-misattributed-review-row at head 2edc38cc5e1590aad4f26ae1614a50f07c7d7d58 (base 49b9973b488c4de54b9ad8bebf0b39ae99cdc868) is stored parsed, scoring goal_fidelity 19, evidence 18, scope_discipline 19, durability 19, fit 18, reuse 15, with 0 added failures and two follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build (reckon-c4, adopted)" data-when="2026-10-19T10:50:00Z">
+    <div class="r-comment-body"><p>§3 landed: <code>crew supersede-review</code> appends a review correction, and every review reader goes through <code>ledger.review_block</code>, so a corrected row reads as unreviewed (commits <code>b7c35ae8d</code>..<code>2edc38cc5</code>). Adopted from a closed session; reviewed 108/120. §4 can now re-count and apply it. <a href="/reckon/evidence/archive/a-review-promotes-only-its-own-verdict-landed.html#s3">evidence</a></p></div>
 </div>
 </section>
 </main>
