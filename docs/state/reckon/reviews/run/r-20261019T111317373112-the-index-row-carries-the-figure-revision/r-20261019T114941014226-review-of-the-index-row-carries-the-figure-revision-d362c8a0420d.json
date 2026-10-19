@@ -1,0 +1,39 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_metadata_index_survives_restart.py::test_the_index_endpoint_serves_only_row_fields"
+  ],
+  "completed_at": "2026-10-19T11:56:06.974Z",
+  "dispatched_at": "2026-10-19T11:50:40Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T111317373112-the-index-row-carries-the-figure-revision/manifest.md",
+      "line": 18,
+      "severity": "follow-on",
+      "text": "follow-on: the recorded after_suite arm carries revision c4f005bb5c74164cf7b692a57c123ccb58ee2871, not the reviewed head d362c8a0420da2ea2c1ac1a676a5efb0bcf80a6f, so the record's own added-failure figure is taken against a superseded revision. The single added failure it reports (tests/test_metadata_index_survives_restart.py::test_the_index_endpoint_serves_only_row_fields) is cleared at head: the pin fix at d362c8a04 is covered by logs/gate-pin.log (18 passed EXIT=0). Non-blocking; the head arm is missing rather than wrong."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T111317373112-the-index-row-carries-the-figure-revision/logs/ruff-clean.log",
+      "line": 1,
+      "severity": "follow-on",
+      "text": "follow-on: the ruff arm runs on reckon/metadata_index.py, reckon/file_memo.py and tests/test_a_figure_revision_is_fetched_once.py only, so the changed Python file reckon/serve.py has no recorded lint delta although the done_when requires one on the changed Python files. The delta is in fact zero on the added lines (the head file carries 17 pre-existing findings, none on the change), so the measure holds but the log does not demonstrate it."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the node's goal is to carry each figure's revision on the index row the page paints from; reckon/metadata_index.py:1001 puts `revision` on every figure row and reckon/serve.py:2134 (_served_index_rows) serves those rows from /_index/<project>, with docs/ui/shell-plans.jsx:229 and docs/ui/plan.jsx:427 building the first-paint URLs from it.\nVERDICT done_when: the done_when names three cases and a negative control; tests/test_a_figure_revision_is_fetched_once.py carries all three (first-paint row then immutable figure and thumbnail at 148-171, predating entry rebuilt at 174-211, non-renderable thumbnail one header at 214-228), logs/gate-pin.log records 18 passed EXIT=0 and logs/negative-control.log 2 failed EXIT=1.\nVERDICT write_paths: read the source prompt's fence and the manifest's paths; every path in the diff is inside them, the one file beyond the original fence (tests/test_metadata_index_survives_restart.py) written under the coordinator extension recorded in the run's resume-1-advice.txt.\nVERDICT manifest: read; status complete, commits c4f005bb5 and d362c8a04 recorded with changed paths, and the gate, negative-control and population arms named with log paths and EXIT= lines.\nVERDICT diff: read commit by commit over 784c52439..d362c8a04, two commits and six files; c4f005bb5 adds file_revision to reckon/file_memo.py and calls it from metadata_index and serve, deletes serve._file_revision, and makes _send defer to a caller's Cache-Control; d362c8a04 adds `revision` to the served-row pin.\nCALL_SITES: reckon/serve.py:2134 _served_index_rows (the /_index/<project> route at reckon/serve.py:4115), reckon/serve.py:Handler._send_file, reckon/serve.py:Handler._serve_thumbnail, reckon/metadata_index.py:975 _figure_row (row builder at metadata_index.py:707), docs/ui/shell-plans.jsx:229 artifactImageSrc, docs/ui/plan.jsx:427 readerFigureSource\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/metadata_index.py:1001 carries the revision on the figure row served by /_index, and docs/ui/shell-plans.jsx:229 consumes it for the first-paint URL, so the goal's deliverable is reached end to end.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/gate-pin.log ends 18 passed EXIT=0 and logs/negative-control.log 2 failed EXIT=1, but the recorded after_suite arm ran at c4f005bb5 rather than the reviewed head d362c8a04 and the ruff arm at logs/ruff-clean.log omits reckon/serve.py, a changed Python file.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff lies inside the fence declared in the source prompt, the one exception tests/test_metadata_index_survives_restart.py being written under the explicit coordinator extension in resume-1-advice.txt.\nSCORE durability: 18\nJUSTIFICATION durability: the added assertions compute the token independently via os.stat in _revision_of at tests/test_a_figure_revision_is_fetched_once.py:41 and the armed control reddens the first-paint and predating-entry cases, so restoring a dropped revision fails the gate.\nSCORE fit: 18\nJUSTIFICATION fit: file_revision at reckon/file_memo.py:283 follows that module's stat-identity idiom beside file_signature, and _row_is_complete's figure branch at reckon/metadata_index.py:466 extends the existing completeness rule with a mechanism comment.\nSCORE reuse: 19\nJUSTIFICATION reuse: the land moves the token to one owner, reckon/file_memo.py:file_revision, that the index (metadata_index.py:1001) and both routes (serve.py:3362, serve.py:3437) call, deleting serve._file_revision rather than forking it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T111317373112-the-index-row-carries-the-figure-revision/manifest.md:18 follow-on: the after_suite arm is recorded at c4f005bb5, not the reviewed head d362c8a04, so the record's own added-failure figure is against a superseded revision; the pin failure it reports is cleared at head by gate-pin.log (18 passed EXIT=0).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T111317373112-the-index-row-carries-the-figure-revision/logs/ruff-clean.log:1 follow-on: the ruff arm names only metadata_index.py, file_memo.py and tests/test_a_figure_revision_is_fetched_once.py, so the changed Python file reckon/serve.py has no recorded lint delta although the done_when requires one.",
+  "review_run_id": "r-20261019T114941014226-review-of-the-index-row-carries-the-figure-revision-d362c8a0420d",
+  "reviewed_base_sha": "784c52439e359fd62a80b31b4ba92528a0b18ea9",
+  "reviewed_head_sha": "d362c8a0420da2ea2c1ac1a676a5efb0bcf80a6f",
+  "reviewed_run_id": "r-20261019T111317373112-the-index-row-carries-the-figure-revision",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T11:57:08.045270+00:00"
+}
