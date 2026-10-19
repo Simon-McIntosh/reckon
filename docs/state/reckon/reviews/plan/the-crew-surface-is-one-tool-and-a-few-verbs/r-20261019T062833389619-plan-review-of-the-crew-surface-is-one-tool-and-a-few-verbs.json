@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T06:35:43.005Z",
+  "dispatched_at": "2026-10-19T06:29:13Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:209",
+      "id": "reasoning-1",
+      "reason": "the node that folds the verbs would leave five command-emitting sites pointing at names it has just tombstoned, so the plan must either add those modules to \u00a77's write paths (and a \u00a75\u2192\u00a77 or \u00a77\u2192\u00a75 ordering, since obligations.py is shared) or widen the citation guard to scan emitted command strings.",
+      "text": "\u00a77 says \"Every citation of a folded name in reckon's skills, references and agent files moves to its new form in the same node\", but a folded verb is also emitted from Python source outside those three locations and outside \u00a77's write paths: `reckon/crew/prompts.py:561,563` emits `reckon crew check-manifest --run <id>`, `reckon/crew/refusals.py:19-45` emits `reckon crew preflight` and `reckon crew resume-ready`, `reckon/crew/watch_unit.py:940` emits `reckon crew unwatch --project`, `reckon/crew/recovery_review_subject.py:416` names `crew check-review --record`, and `reckon/crew/obligations.py:202` emits `reckon crew repair-review --run <id>` \u2014 none of prompts.py, refusals.py, watch_unit.py, recovery_review_subject.py or obligations.py is in \u00a77's write paths, and \u00a72's citation guard `tests/test_cited_commands_exist.py` \"refuses a skill or reference citation\", so it cannot reach a string assembled inside a Python module; after the fold these sites tell a worker or coordinator to run a tombstoned verb, and obligations.py is a live cross-node boundary because \u00a75 (which runs concurrently with \u00a77, both after \u00a76) declares it and repoints only its eight action verbs, not `repair-review`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:210",
+      "id": "done_when-1",
+      "reason": "the gate as written cannot pass for the two deleted rows, so the plan must state explicitly whether they receive tombstones or are exempted from the clause, which changes both the node's actions and its done-when.",
+      "text": "\u00a77's done-when asserts \"Every old invocation in the table prints its successor through its tombstone\", but the same section instructs that \"`repair-completion` and `split-runs` are deleted once the node shows their migrations have no input left\" (\u00a77 mechanism, :206) and \u00a71's table gives their successor as \"deleted once their migrations have no input left\", not a successor invocation, so the two rows have no successor for the tombstone clause to exercise \u2014 a node obeying the delete instruction fails the gate clause, and a node satisfying the gate clause by tombstoning them breaks the delete instruction",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1acf834b07dc831744d0d2fac85125d61e4a7c0cc6fe1964228d183ac53a0678",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 4,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-19T06:37:38.153008+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-19T06:37:52.958227+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T06:37:52.958227+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T06:37:38.153008+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-crew-surface-is-one-tool-and-a-few-verbs.v4.json",
+  "review_run_id": "r-20261019T062833389619-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "b8307c76be4f839497d0c41858258bcc663c99ae",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every path \u00a77 cites resolves (`reckon/crew/claims.py` with `narrow_claim` at :90 and `release_claim` at :128, `reckon/crew/gc.py`, `reckon/crew_run_commands.py`, `reckon/crew_dispatch_commands.py`, all nine skill/reference/agent files, `docs/AGENTS.md`, `reckon/crew/AGENTS.md`); `reckon/crew/tombstones.py` resolves within the plan as \u00a72's deliverable; \u00a77 carries no href needing `.html` resolution.",
+    "done_when": "a finding \u2014 the tombstone clause of \u00a77's done-when cannot be satisfied by the same section's instruction to delete `repair-completion` and `split-runs`.",
+    "evidence_paths": "pass \u2014 \u00a77 writes its fixtures and gate log under the repository test file `tests/test_crew_families_fold.py` and the node's own evidence, naming no scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 `tests/test_crew_families_fold.py` and the folded flag names are mechanism-named, and \u00a77 carries no plan label, stage name, ticket number or changelog prose into a symbol or comment.",
+    "reasoning": "a finding \u2014 the citation sweep \u00a77 relies on is scoped to skills, references and agent files, but the folded names are also emitted from Python modules \u00a77 neither names nor holds as write paths, so the sweep is incomplete and its gate cannot see them.",
+    "single_goal": "pass \u2014 \u00a77 carries one deliverable, folding the verb families behind flags, and every bullet is an instance of it; the claim-owner wiring for `widen`/`complete --accept-path` is the implementation of that fold for the `--reopen` family, not a second deliverable.",
+    "wiring": "pass \u2014 \u00a77's depends-on reaches s6, which reaches s2 (the tombstone registry it writes) and s4 (the merge-landing evidence its `crew merge` row waits on), and the three parent verbs it names (`crew repair`, `crew budget`, `crew check`) do not exist in the live tree, so \"adds three parent verbs\" is accurate."
+  },
+  "section_digests": {
+    "_document": "26fd28404590af02aa2ebae125b81f4f7629f614fb6c2a72ea68b2d0d1aff496",
+    "s1": "df3ca327aa989333473f3456bef3fcb4304fc54d8ab37eb334a92448b8837aaa",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "046c6ca210de727c41d8414a2ea42383717384c5a44aef78e262b9cf98763118",
+    "s4": "2feb22a10d53f02161e33412c6f491a2718ee9b88ffede06e39b7fc15799f5d1",
+    "s5": "530c6781675c3f9dccecf9f7e556fb74664afde36da3623d64a3b3c65e1e5267",
+    "s6": "9a81b03299612971ddf0ab0fbbfd90bae473369248b753fc1a02640f8a80bdd2",
+    "s7": "c58c414fd28fd05d60b96bc30aa87d0d031377e4d44adea463960139d88b2c07",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T06:37:29.577293+00:00"
+}
