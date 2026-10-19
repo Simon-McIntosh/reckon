@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-promotes-only-its-own-verdict-landed">
+  <meta name="plan-title" content="A Review Promotes Only Its Own Verdict — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Review Promotes Only Its Own Verdict: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-review-promotes-only-its-own-verdict">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Review Promotes Only Its Own Verdict — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Review Promotes Only Its Own Verdict — landed record</h1>
+  <p>Closure synthesis for A Review Promotes Only Its Own Verdict: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s2">
+    <h2>§2 — the promoted review rows that carry another round&#x27;s verdict</h2>
+    <p>Run <code>r-20261018T215457968053-review-rows-with-another-rounds-verdict</code>, merged at <code>65d442151</code> (head <code>93acaa638</code>). It delivered <code>docs/research/review-rows-with-another-rounds-verdict.html</code> and <code>scripts/review_rows_with_another_rounds_verdict.py</code>.</p><p><strong>Count.</strong> At 2026-10-18T22:56Z there were 2350 promoted run reviews across 11 mounted projects. 19 record a reviewed head that is not the head they were dispatched to read, and none is unclassifiable: power_convertor 8, nova 4, reckon 4, and imas-ambix, imas-codex and imas-efit 1 each. Of the 19, 8 were promoted by the watcher's self-promotion and the rest by coordinators, which go through the same delivery predicate. One more mismatched row was promoted between the census's two reads, so the defect was still producing rows until §1 lands.</p><p><strong>Controls.</strong> nova's <code>r-20261018T192200408612-review-of-tcv-liuqe-known-answer-0a451acfdb02</code> is listed as mismatched. nova's <code>r-20261018T172216624608-review-of-vertical-pin-45213bf1cd62</code> is counted and not listed. A synthetic row with no head source lands in the unclassifiable list. All 203 transcribed values match the census log.</p><p><strong>Limit.</strong> The census reads a row's head from <code>review.reviewed_head_sha</code> only. A row recording it under <code>reviewed_commit</code> or <code>commits_read</code> is excluded, not misclassified, so 19 is a lower bound. §3 re-counts through <code>carried_revision_pair</code> (<code>reckon/crew/review.py</code>) before sizing its correction.</p><p>Reviews: first round reuse 5 and durability 7, repaired; then a miscopied head, repaired; final round 12 to 20.</p>
+  </section>
+
+</main>
+</body>
+</html>

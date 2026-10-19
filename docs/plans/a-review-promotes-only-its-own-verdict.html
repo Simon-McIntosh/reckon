@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It changes when a review run counts as delivered and how a misattributed review row is found and corrected; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-review-promotes-only-its-own-verdict#s2&quot;]}">
   <title>A Review Promotes Only Its Own Verdict | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -55,7 +55,7 @@
 </ul>
 
     <h2 id="s2">§2 — Count the promoted review rows that carry another round's verdict</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> The predicate §1 fixes has decided delivery for every review run, so <code>e99d2b385</code> may not be the only row whose review fields describe another round. A row like that feeds a wrong score to every reader of review totals, including the picker's per-dimension medians. Before deciding how such rows are corrected, count them.</p>
 <p><strong>Deliverable.</strong> A read-only census that writes <code>docs/research/review-rows-with-another-rounds-verdict.html</code> and the script that computes it, <code>scripts/review_rows_with_another_rounds_verdict.py</code>. It reads the committed ledgers of every mounted project. For each promoted run review, it takes the dispatched head from the strongest source the row carries: a declared <code>.at-</code> write path, then the hex suffix of the node id. It reads a head from a declared path by importing <code>_review_record_subject</code> (<code>reckon/crew/recovery_review_dispatch.py:133</code>), not by parsing the name again. The script lives under <code>scripts/</code>, outside the package, and defines only private helpers and its entry point, so it adds no public definition and has none to retire. It compares that head with the row's <code>review.reviewed_head_sha</code>. A row whose recorded head does not begin with the dispatched head is listed by run id, with both heads, the recorded total, its <code>promoted_by</code>, and the project's commit that landed it. A row with no dispatched head from any source is counted as unclassifiable and listed separately.</p>
 <p>It changes no product code.</p>
@@ -79,10 +79,11 @@
     <div class="r-fu-body"><p>Filed at nova's coordinator's request after a review run was promoted with a predecessor round's verdict.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-promotes-only-its-own-verdict §1</pre>
     </article>
-<article class="r-fu" data-id="f-arpoiov-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-review-promotes-only-its-own-verdict §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arpoiov-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-review-promotes-only-its-own-verdict §2" data-resolved-at="2026-10-19T00:25:42+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Count the review rows that carry another round&#x27;s verdict</h4>
     <div class="r-fu-body"><p>Read-only and independent of §1; §3 waits on it.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-promotes-only-its-own-verdict §2</pre>
+    <p class="r-fu-outcome">§2 landed at 65d442151: 19 of 2350 promoted run reviews carry another round's head, a lower bound.</p>
     </article>
 </section>
 
@@ -99,8 +100,11 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261018T215457968053-review-rows-with-another-rounds-verdict" data-who="reckon-build" data-when="2026-10-18T23:39:36Z">
     <div class="r-comment-body"><p>promoted-review census at 2026-10-18T22:56:34Z, revision da8439c10: 2350 promoted run reviews, 19 mismatched, 0 unclassifiable across 11 mounted ledgers; document at docs/research/review-rows-with-another-rounds-verdict.html (committed 56f417adf, one transcribed head corrected at 93acaa638) and script scripts/review_rows_with_another_rounds_verdict.py (committed da8439c10)</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-19T00:25:15Z">
+    <div class="r-comment-body"><p>§2 landed at <code>65d442151</code>: 19 of 2350 promoted run reviews across 11 projects carry another round's head, a lower bound because only one head spelling is read. §3 re-counts through <code>carried_revision_pair</code> before sizing its correction. <a href="/reckon/evidence/archive/a-review-promotes-only-its-own-verdict-landed.html#s2">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261019T000500800070-review-of-a-review-delivers-only-its-own-head-257db0207de0" data-who="reckon-build" data-when="2026-10-19T00:16:41.736Z">
-    <div class="r-comment-body"><p>Independent review of r-20261018T215115257728-a-review-delivers-only-its-own-head at 257db0207 (base 820d1f1c) returns parsed; scores goal_fidelity 19, evidence 14, scope_discipline 18, durability 18, fit 18, reuse 18; one blocking finding — the reviewed run&#x27;s manifest.md:16 records a baseline_suite failure id (test_a_review_declaring_only_the_PlACEHOLDER) that disagrees with its own gate-base-arm.log:145.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261018T215115257728-a-review-delivers-only-its-own-head at 257db0207 (base 820d1f1c) returns parsed; scores goal_fidelity 19, evidence 14, scope_discipline 18, durability 18, fit 18, reuse 18; one blocking finding — the reviewed run's manifest.md:16 records a baseline_suite failure id (test_a_review_declaring_only_the_PlACEHOLDER) that disagrees with its own gate-base-arm.log:145.</p></div>
 </div>
 </section>
 </main>
