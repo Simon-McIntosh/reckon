@@ -8,11 +8,14 @@ import os
 import re
 import shlex
 import shutil
+import socket
 import subprocess
+import threading
 import time
 from collections.abc import (
     Callable,
     Iterable,
+    Iterator,
     Mapping,
     Sequence,
 )
@@ -70,6 +73,10 @@ from reckon.crew.dispatch import (
     resolve_project_repository,
     tree_size_bytes,
     worker_scratch_root,
+)
+from reckon.crew.host_lease import (
+    LEASE_RENEW_SECONDS,
+    HostLease,
 )
 from reckon.crew.node import (
     NEGATIVE_CONTROL_FIELD,
@@ -140,6 +147,85 @@ from reckon.evidence import (
 )
 
 
+# A promotion writes the run's stores and then commits the landing, so two
+# promotions of one run that run at once can interleave their stage, commit and
+# rollback steps and leave a landed path staged back. The run's pointer lock is
+# a node-local ``flock``, which cannot see a promotion of the same run on
+# another host. The lease below is the claim that spans hosts: it is named for
+# the run and claimed by an atomic link in the fleet home every host shares.
+def _promotion_lease_name(run_id: str) -> str:
+    return f"promotion-{run_id}"
+
+
+def _promotion_lease_identity() -> tuple[str, int, str]:
+    """The host, pid and job a promotion's claim names as its holder."""
+    return (
+        socket.gethostname().split(".")[0],
+        os.getpid(),
+        os.environ.get("SLURM_JOB_ID", ""),
+    )
+
+
+def _promotion_lease_held(run_id: str, holder: Any) -> str:
+    if holder is None:
+        return (
+            f"run {run_id} is already being promoted elsewhere; refusing to "
+            "promote it a second time"
+        )
+    return (
+        f"run {run_id} is already being promoted by host {holder.host} "
+        f"pid {holder.pid} job {holder.job or 'unstated'}; refusing to promote "
+        "it a second time"
+    )
+
+
+class _PromotionLeaseRenewer:
+    """Keep a held lease fresh while the promotion runs, then stop."""
+
+    def __init__(self, lease: HostLease) -> None:
+        self._lease = lease
+        self._stop = threading.Event()
+        self._thread = threading.Thread(
+            target=self._renew, name="promotion-lease-renew", daemon=True
+        )
+
+    def _renew(self) -> None:
+        while not self._stop.wait(LEASE_RENEW_SECONDS):
+            if not self._lease.renew():
+                return
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        self._thread.join(timeout=LEASE_RENEW_SECONDS * 2)
+
+
+@contextmanager
+def _promotion_host_lease(run_id: str) -> Iterator[HostLease]:
+    """Hold the run's cross-host claim for the whole promotion, or refuse.
+
+    The claim is taken before the promotion's first write and released after
+    its landing or rollback, and it is renewed while the promotion runs so a
+    slow landing on a congested shared filesystem is not taken over mid-landing.
+    A lease a foreign holder still renews refuses the promotion at once without
+    writing; a lease past its stale window is taken over, so a holder that
+    stopped renewing never blocks the run forever.
+    """
+    host, pid, job = _promotion_lease_identity()
+    lease = HostLease(crew_home(), _promotion_lease_name(run_id), host, pid, job)
+    if not lease.claim():
+        raise CrewError(_promotion_lease_held(run_id, lease.holder()))
+    renewer = _PromotionLeaseRenewer(lease)
+    renewer.start()
+    try:
+        yield lease
+    finally:
+        renewer.stop()
+        lease.release()
+
+
 def complete(
     run_id: str,
     *,
@@ -194,7 +280,10 @@ def complete(
     # pointer lock the picker itself must take — so the row carries the pick's
     # answer instead of reading as one the picker never gave.
     _await_in_flight_shadow_pick(run_id)
-    with _pointer_lock(run_id):
+    # The node-local pointer lock serialises a run's read-modify-write here; the
+    # host lease, taken inside it, excludes a promotion of the same run on
+    # another host for the whole span, before either store is written.
+    with _pointer_lock(run_id), _promotion_host_lease(run_id):
         record = _read_pointer_or_rebuild(run_id, root=root)
         # A dispatch whose launch was refused leaves a run that names no
         # project: the refusal removed the pointer or never let it carry a

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-landing-never-reverts-the-checkout">
+  <meta name="plan-title" content="One promotion of a run at a time">
+  <meta name="plan-summary" content="promotion.complete takes a cross-host HostLease named for the run before its first write and releases it after its landing or rollback, refusing a second promotion that finds it freshly held and naming the holder's host, pid and job, and taking over a stale lease; a test shows the cross-host case with two real processes, the stale take-over and a sweep's refused self-promotion naming the holder.">
+  <meta name="plan-evidence-for" content="a-landing-never-reverts-the-checkout">
+  <meta name="plan-recorded-at" content="2026-10-19">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>One promotion of a run at a time | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>One promotion of a run at a time</h1>
+
+    <section id="one-promotion-of-a-run-at-a-time-anchor">
+      <h2>What changed</h2>
+      <p><code>reckon/crew/promotion.py</code> <code>complete</code> now holds the
+        run for the whole of its promotion behind a cross-host <code>HostLease</code>
+        (<code>reckon/crew/host_lease.py</code>). The lease is named for the run
+        (<code>promotion-&lt;run_id&gt;</code>) and lives in the fleet home every host
+        shares; it is claimed by the atomic link <code>HostLease.claim</code> already
+        provides, and it names its holder's host, pid and job. No new lock mechanism
+        is written.</p>
+      <p>The claim is taken by a context manager
+        (<code>_promotion_host_lease</code>) that <code>complete</code> enters
+        inside its existing node-local pointer lock, before any store is written,
+        and leaves after its landing or rollback. While the promotion runs a
+        daemon thread renews the lease every <code>LEASE_RENEW_SECONDS</code>, so a
+        slow landing on a congested shared filesystem is not taken over
+        mid-landing. A promotion that finds the lease freshly held by another holder
+        raises a <code>CrewError</code> at once without writing, naming the
+        holder's host, pid and job; a lease past its stale window is taken over, and
+        that promotion proceeds. The node-local pointer lock stays for the
+        pointer's own read-modify-write.</p>
+      <p>A sweep inherits the claim because <code>promote_review_run_itself</code>
+        reaches <code>complete</code>; its existing <code>(CrewError, OSError)</code>
+        handling turns the held refusal into a refused self-promotion whose
+        <code>reason</code> names the holder, rather than an error.
+        <code>reckon/crew/host_lease.py</code> is unchanged — the lease type it
+        already defines is what the promotion now uses.</p>
+    </section>
+
+    <section id="one-promotion-of-a-run-at-a-time-gate-anchor">
+      <h2>Gate</h2>
+      <p>Command:
+        <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q -rA
+        tests/test_one_promotion_of_a_run_at_a_time.py
+        tests/test_a_review_run_promotes_itself.py
+        tests/test_failed_landing_leaves_nothing_behind.py
+        tests/test_rollback_asks_head.py
+        tests/test_a_landing_checks_what_it_left.py</code>
+        at the node worktree head: <strong>29 passed, 0 failed, EXIT=0</strong>
+        (<code>head-suite.log</code>). The same five files' four pre-existing files
+        at the base revision <code>473572f9</code>, in a scratch tree under
+        <code>$TMPDIR</code> with the new test file copied in, give <strong>27
+        passed, 2 failed</strong> for the five-file set and <strong>26 passed, 0
+        failed, EXIT=0</strong> for the four pre-existing files alone
+        (<code>base-existing-files.log</code>) — zero added failures.</p>
+      <p>The three new cases cover the cross-host case, the stale take-over and the
+        refused self-promotion. The cross-host case promotes one run twice at once:
+        two real processes take a lock path of their own, so the node-local flock
+        does not exclude them as it would not across hosts, and a barrier releases
+        both into the promotion body together. Exactly one lands, the other refuses
+        naming the holder's host, pid and job, the run is promoted once, and every
+        written path reads equal in HEAD, the index and the working tree
+        (<code>git status --porcelain</code> empty).</p>
+      <p>Negative control: the new test file at the base revision
+        <code>473572f9</code> in a scratch tree under <code>$TMPDIR</code>, whose
+        header records the imported module as that tree's
+        <code>reckon/crew/promotion.py</code> — <strong>2 failed, 1 passed,
+        EXIT=1</strong> (<code>negative-control.log</code>), the two being
+        <code>test_a_second_promotion_from_another_host_refuses_without_writing</code>
+        and
+        <code>test_a_sweep_self_promotion_names_the_holder_that_refused_it</code>.
+        At the base revision the only per-run claim is the node-local flock, so the
+        second promotion proceeds and writes — the log shows the second process'
+        ledger row written and then rolled back — and the cross-host case fails by
+        id. The stale take-over case passes at both revisions, because it asserts
+        only that a promotion lands.</p>
+      <p><code>ruff check</code> and <code>ruff format --check</code> add no finding
+        on the changed files: the two <code>check</code> findings and the
+        unformatted region in <code>reckon/crew/promotion.py</code> are present at
+        the base revision unchanged by delta, and the new test file is clean.</p>
+    </section>
+  </main>
+</body>
+</html>
