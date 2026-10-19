@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "baseline_suite failure_ids = [tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window]; after_suite failure_ids = the same single id; the delta is 0 added failures.",
+  "assertion_analysis": [
+    "tests/test_crew_families_fold.py:485-487 compare the registry row's successor, argv and flags against the test-owned FOLDED_INTO_BUDGET mapping, so a row naming the wrong verb or flag reddens; reinstating the pre-repair line TOMBSTONE_BY_NAME[retired].retired == retired would be the tautology they replaced.",
+    "tests/test_crew_families_fold.py:545 asserts every folded name is still in TOMBSTONE_BY_NAME, which reddens if a registry row is deleted.",
+    "tests/test_crew_families_fold.py:566 reduces to len(retired) == len(FOLDED_INTO_BUDGET), implied by :545, and therefore cannot fail on its own."
+  ],
+  "base_log_revision": "0fa62dca44a63a65382c140c82a003dd7a660e02",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:218",
+    "reckon/crew_dispatch_commands.py:816"
+  ],
+  "completed_at": "2026-10-19T23:05:49.869Z",
+  "dispatched_at": "2026-10-19T22:52:39Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_families_fold.py",
+      "line": 566,
+      "severity": "follow-on",
+      "text": "follow-on: `assert len(leaves) == derived_base - len(FOLDED_INTO_BUDGET) + 1` with derived_base = len(leaves) + len(retired) - 1 reduces to len(retired) == len(FOLDED_INTO_BUDGET), already implied by the set-equality assertion at :545, so this line is an algebraic identity that can never be the failing assertion; the commit message's claim that a missing registry row fails here is inaccurate (it fails at :545)."
+    }
+  ],
+  "head_log_revision": "84409ad3bc2405da6ffeafda2e79718fd15e6f83",
+  "item_verdicts": {
+    "diff": "Read from 0274b1227df3acf495023b12695d143ed6c129ab to 84409ad3bc2405da6ffeafda2e79718fd15e6f83; two commits, two files, +43/-10.",
+    "done_when": "The done_when names the ten-file pytest run at the head with zero added failures against the base arm and logs whose first line names the revision and whose last line is EXIT=; the manifest records both arms and reports zero added failures (gate-head.log rev 84409ad3bc2405da6ffeafda2e79718fd15e6f83 EXIT=1; gate-base.log rev 0fa62dca44a63a65382c140c82a003dd7a660e02 EXIT=1).",
+    "goal": "The node goal is to fold budget-lift, budget-lifts, budget-reset and preflight into one crew budget verb with --lift/--list/--reset/--check, tombstoning each old name and moving every caller; the gained commits serve it by restoring the crew_pick re-export the fold dropped at reckon/cli.py:218, a verb the goal never implied removing.",
+    "manifest": "Read at the run directory; status complete, names both gained commits and reports 1 failed, 163 passed at head against 1 failed, 159 passed at base.",
+    "write_paths": "The fence lists fourteen rows and the manifest adds two test files; the two files the gained commits touch, reckon/cli.py and tests/test_crew_families_fold.py, are inside the fence declared at prompt.txt:72 and :74."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_families_fold.py:485 now reddens if a registry row names the wrong successor, but :566 is an algebraic identity that cannot fail on its own.",
+    "evidence": "the gate was re-run at the new head and gate-head.log:1 names rev 84409ad3bc2405da6ffeafda2e79718fd15e6f83 with EXIT=1 on its last line, matching after_suite.",
+    "fit": "the added symbols in tests/test_crew_families_fold.py:544-566 are named by mechanism, matching the file's existing idiom.",
+    "goal_fidelity": "reckon/cli.py:218 restores the crew_pick re-export the fold dropped, a name the goal's 'moving every caller' never implied removing.",
+    "reuse": "no capability is forked; the change re-adds one import line at reckon/cli.py:218 and reuses TOMBSTONE_BY_NAME and the live click group.",
+    "scope_discipline": "the diff touches only reckon/cli.py and tests/test_crew_families_fold.py, both inside the fence the manifest declares."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to fold budget-lift/budget-lifts/budget-reset/preflight into one crew budget verb with --lift/--list/--reset/--check and move every caller, and the gained commits serve it by restoring the crew_pick re-export the fold dropped at reckon/cli.py:218, a verb the goal never implied removing.\nVERDICT done_when: the done_when names the ten-file pytest run at the node head with zero added failures against the base arm and logs whose first line names the revision and whose last line is EXIT=; the manifest records both arms and reports zero added failures.\nVERDICT write_paths: the fence lists fourteen rows and the manifest adds two test files; the two files the gained commits touch, reckon/cli.py and tests/test_crew_families_fold.py, are both inside that set.\nVERDICT manifest: read at the run directory; it is status complete, names both gained commits, and reports 1 failed, 163 passed at head against 1 failed, 159 passed at base.\nVERDICT diff: read from 0274b1227df3acf495023b12695d143ed6c129ab to 84409ad3bc2405da6ffeafda2e79718fd15e6f83; two commits, two files, +43/-10, a restored re-export block and a hardened pair of gate assertions.\nCALL_SITES: reckon/cli.py:218 (crew_pick re-export, the gained production line), reckon/crew_dispatch_commands.py:816 (crew_pick definition it re-exports)\nSCORE goal_fidelity: 18\nSCORE evidence: 16\nSCORE scope_discipline: 20\nSCORE durability: 15\nSCORE fit: 19\nSCORE reuse: 20\nFINDING tests/test_crew_families_fold.py:566 follow-on: the census assertion is an algebraic identity reducible to an identity already implied at :545 and can never fail on its own.",
+  "review_run_id": "r-20261019T225140383425-review-of-cso-budget-family-folds-84409ad3bc24",
+  "reviewed_base_sha": "0274b1227df3acf495023b12695d143ed6c129ab",
+  "reviewed_commits": [
+    "a84db5771134c8abcc04e7a7c5b10de439c20055",
+    "84409ad3bc2405da6ffeafda2e79718fd15e6f83"
+  ],
+  "reviewed_head_sha": "84409ad3bc2405da6ffeafda2e79718fd15e6f83",
+  "reviewed_run_id": "r-20261019T202350268699-cso-budget-family-folds",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [
+    {
+      "file": "tests/test_crew_families_fold.py",
+      "line": 566,
+      "text": "assert len(leaves) == derived_base - len(FOLDED_INTO_BUDGET) + 1 where derived_base = len(leaves) + len(retired) - 1; it reduces to len(retired) == len(FOLDED_INTO_BUDGET), an identity already implied by the set-equality assertion at :545."
+    }
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T23:05:00Z",
+  "total": 108
+}
