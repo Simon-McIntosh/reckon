@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"     content="reckon">
+  <meta name="reckon-type"      content="evidence">
+  <meta name="plan-slug"        content="a-deadline-lets-a-named-batch-finish">
+  <meta name="plan-title"       content="A deadline lets a worker finish a bounded step it named">
+  <meta name="plan-summary"     content="One deadline rule at every surface: checkpoint at the deadline, finish only a bounded step the manifest named, by the hard stop; the watchdog and the prompt read one grace multiple.">
+  <meta name="plan-evidence-for" content="test-time-is-not-the-nodes-time">
+  <meta name="plan-verifies"    content="test-time-is-not-the-nodes-time#s3">
+  <title>A deadline lets a worker finish a bounded step it named | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="a-deadline-lets-a-named-batch-finish-rule">The rule, stated once</h2>
+    <p>At the deadline a worker writes the checkpoint — the manifest's <code>status</code>, <code>checkpoint</code> and remaining work current on disk — and may continue only through a bounded step the manifest named before the deadline: one command under its own timeout, or a stated number of them. It finishes that step by the hard stop, updates the manifest and ends the turn. It starts no new work, fresh fix or unnamed step past the deadline. The hard stop is the launch instant plus the budget times <code>fences.budget_grace_multiple</code>; when that multiple is missing, invalid or at most 1.0 the hard stop is the deadline and no continuation is offered.</p>
+    <p>The sentence "Exceeding it means stop and report, never push on." is gone from every composed prompt, and the stop list now names the hard stop and unnamed remaining work in place of "the time budget is spent". <code>time_fence_statement</code> states the deadline, the hard stop and the continuation rule beside them; <code>compose_prompt</code> carries a <code>grace_multiple</code> keyword from the same fences block as <code>needs_help_after_failures</code>; a resumed or lane-changed attempt restates the hard stop from its own launch through <code>_restate_time_fence</code>.</p>
+
+    <h2 id="a-deadline-lets-a-named-batch-finish-one-owner">One owner for the multiple</h2>
+    <p><code>resolved_grace_multiple</code> in <code>reckon/crew/routing.py</code> returns the configured number, <code>1.0</code> when the key is absent, and nothing when the value is not numeric. The prompt and the opt-in watchdog both read it, so the instant they act on cannot drift: <code>_apply_budget_watchdog</code> calls it in place of its own <code>fences.get("budget_grace_multiple", 1.0)</code> read. A non-numeric value leaves the watchdog inert and the prompt offering no continuation, exactly as an invalid value did before.</p>
+    <table class="r-table">
+      <thead><tr><th>Surface</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>reckon/crew/prompts.py</code></td><td><code>time_fence_statement</code> gains <code>grace_multiple</code> and states the hard stop and the continuation rule; <code>compose_prompt</code> carries the keyword and its FENCE — TIME body and IF-YOU-GET-STUCK stop list restate the rule</td></tr>
+        <tr><td><code>reckon/crew/routing.py</code></td><td>new <code>resolved_grace_multiple</code></td></tr>
+        <tr><td><code>reckon/crew/recovery_stream.py</code></td><td>the watchdog reads the multiple through <code>resolved_grace_multiple</code></td></tr>
+        <tr><td><code>reckon/crew/dispatch.py</code>, <code>dispatch_claims.py</code></td><td>the first-attempt prompt passes the multiple from the fences block</td></tr>
+        <tr><td><code>reckon/crew/dispatch_sessions.py</code></td><td><code>_restate_time_fence</code> resolves the multiple from config and restates the hard stop for the resumed attempt</td></tr>
+        <tr><td><code>skills/reckon-build/references/worker-protocol.md</code></td><td>the fence table row and the stop list carry the same rule</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="a-deadline-lets-a-named-batch-finish-measure">Measure</h2>
+    <p>The new <code>tests/test_a_deadline_lets_a_named_batch_finish.py</code> composes a worker prompt through <code>compose_prompt</code> with a 60-minute budget, a stated launch instant and a multiple of 1.5, and asserts the deadline at launch plus 60 minutes and the hard stop at launch plus 90; that the fence names the checkpoint and the bounded step; that "never push on" is gone; that the stop list names the hard stop and unnamed remaining work; that a resumed attempt states the same hard stop from its own launch; that 1.0, absent and non-numeric offer no continuation; and that the enforced watchdog signals a 60-minute run at 91 minutes elapsed and not at 89.</p>
+    <p>Both arms ran the same nine existing files plus the new one in the foreground with <code>-rA</code>. Base arm at <code>a346c2e14</code> (clean extraction): <strong>2 failed, 157 passed</strong>. Head arm: <strong>1 failed, 168 passed</strong>. Delta: no failure added, and one pre-existing failure repaired. The remaining head failure is <code>test_every_module_fits_a_worker_window</code> on <code>reckon/crew/review.py</code> and <code>reckon/ledger.py</code>, unchanged from the base arm and outside this node's write scope. <code>ruff check</code> and <code>ruff format --check</code> are level with the base over the same staged paths (12 findings each; the same four files unformatted).</p>
+
+    <h2 id="a-deadline-lets-a-named-batch-finish-negative-control">Negative control</h2>
+    <p>Two mutations, each applied alone. Restoring "Exceeding it means stop and report, never push on." in <code>compose_prompt</code> turns <code>test_the_prompt_never_says_never_push_on</code> red. Passing no multiple at the resumed-attempt call turns <code>test_a_resumed_fence_states_the_hard_stop_from_its_own_launch</code> red on the hard stop. Both logs carry <code>EXIT=1</code> with the failing id named.</p>
+
+    <h2 id="a-deadline-lets-a-named-batch-finish-followon">Follow-on</h2>
+    <p><code>test_brief_prompt.py::test_a_plan_prompt_is_byte_identical_to_that_snapshot</code> was already red at the base revision: its golden prompt had drifted from the composer at the <code>tests:</code> and <code>test_logs:</code> manifest lines, an unrelated maintenance lag. The goldens were brought back into exact agreement with the composer, so the file is green at this head. <code>test_every_module_fits_a_worker_window</code> remains red at base and head on <code>reckon/crew/review.py</code> (51584 estimated tokens) and <code>reckon/ledger.py</code> (51666), both over the 50000 bound and not allowlisted; those files are owned by concurrent nodes.</p>
+
+  </main>
+</body>
+</html>

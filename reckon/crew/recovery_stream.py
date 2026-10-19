@@ -18,7 +18,7 @@ from reckon.crew.reports import (
     TERMINAL_MANIFEST_STATUSES,
     manifest_status_is_template,
 )
-from reckon.crew.routing import _signal_process_group
+from reckon.crew.routing import _signal_process_group, resolved_grace_multiple
 from reckon.crew.runs import (
     _utc_now,
 )
@@ -329,9 +329,8 @@ def _apply_budget_watchdog(
         return
     budget_seconds = timing["budget_seconds"]
     elapsed_seconds = timing["elapsed_seconds"]
-    try:
-        grace = float(fences.get("budget_grace_multiple", 1.0))
-    except (TypeError, ValueError):
+    grace = resolved_grace_multiple(config)
+    if grace is None:
         return
     if (
         budget_seconds is None

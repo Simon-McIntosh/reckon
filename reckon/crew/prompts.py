@@ -379,22 +379,63 @@ def _utc_instant(moment: datetime) -> str:
     return moment.astimezone(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
-def time_fence_statement(*, time_budget: str, launch_instant: str) -> str:
-    """State an attempt's launch instant, its deadline, and the clock to check.
+def _continuation_multiple(value: float | str | None) -> float | None:
+    """The grace multiple that lets a worker continue past its deadline.
+
+    At or below one, and for a value that is not a number, the hard stop is the
+    deadline itself and no step is continued past it, so nothing is returned.
+    """
+    try:
+        number = float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+    return number if number > 1.0 else None
+
+
+def time_fence_statement(
+    *,
+    time_budget: str,
+    launch_instant: str,
+    grace_multiple: float | str | None = None,
+) -> str:
+    """State an attempt's launch instant, its deadline, and its hard stop.
 
     The deadline is the launch instant plus the declared budget, rendered in the
     same ISO-8601 UTC form the attempt record writes, so a worker measures
     elapsed time from a stated instant rather than estimating it from the work
-    it has done.
+    it has done. The hard stop is the deadline when the grace multiple is
+    absent, unusable or at most one; above one it is the launch instant plus the
+    budget times that multiple, and only then may the worker finish a bounded
+    step the manifest named before the deadline.
     """
     launch = parse_iso(launch_instant)
     if launch is None:
         raise ValueError(f"Invalid isoformat string: {launch_instant!r}")
-    deadline = _utc_instant(launch + timedelta(seconds=parse_duration(time_budget)))
-    return (
+    budget_seconds = parse_duration(time_budget)
+    deadline = _utc_instant(launch + timedelta(seconds=budget_seconds))
+    statement = (
         f"Launched {launch_instant} UTC; deadline {deadline} — {time_budget} from "
         "launch. Check the current time with `date -u`, and measure elapsed time "
         "against that deadline rather than estimating it from the work done."
+    )
+    grace = _continuation_multiple(grace_multiple)
+    if grace is None:
+        return (
+            f"{statement} That deadline is also the hard stop, and no step is "
+            "continued past it: write the checkpoint at the deadline — the "
+            "manifest's status, checkpoint and remaining work current on disk — "
+            "and stop and report."
+        )
+    hard_stop = _utc_instant(launch + timedelta(seconds=budget_seconds * grace))
+    return (
+        f"{statement} Write the checkpoint at the deadline: the manifest's "
+        "status, checkpoint and remaining work are current on disk before "
+        "anything else runs. Continue only through a bounded step the manifest "
+        "named before the deadline — one command under its own timeout, or a "
+        "stated number of them: a declared gate, its base arm or a named solver "
+        f"batch. Finish it by the hard stop {hard_stop} — {time_budget} times "
+        f"{grace:g} from launch — then update the manifest and end the turn. "
+        "Never start new work, a fresh fix or an unnamed step past the deadline."
     )
 
 
@@ -408,6 +449,7 @@ def compose_prompt(
     time_budget: str,
     launch_instant: str = "",
     needs_help_after_failures: int,
+    grace_multiple: float | str | None = None,
     peer_scopes: Mapping[str, Iterable[str]] | None = None,
     run_id: str = "",
     peer_channels: Mapping[str, Mapping[str, str]] | None = None,
@@ -604,7 +646,11 @@ RUNTIME FILESYSTEM
     # caller that names no launch instant (a direct composition with no attempt
     # behind it) keeps the bare duration.
     time_fence = (
-        time_fence_statement(time_budget=time_budget, launch_instant=launch_instant)
+        time_fence_statement(
+            time_budget=time_budget,
+            launch_instant=launch_instant,
+            grace_multiple=grace_multiple,
+        )
         if launch_instant
         else str(time_budget)
     )
@@ -632,7 +678,7 @@ PEER CHANNEL — knowledge only; write scopes never transfer. Run {run_id}; endp
   Reads block on filesystem events; expiry writes NEEDS-HELP to the manifest.
 
 FENCE — TIME
-  {time_fence}. Exceeding it means stop and report, never push on. Your process ends when this turn ends: never wait across a backgrounded command. Write your manifest with what you know now before starting one, and update it afterward if a later turn arrives — that is keyed to starting the wait, not to finishing the work. A run that ends mid-wait is resumable, so if you run out of turns, leave a record naming exactly what you were waiting for — set status: waiting and fill the wait_condition, wait_probe, wait_terminal and resume_brief keys in the manifest block so a resume sweep can wake you. Declaration is for a wait you hold: the wait block states something you are actually waiting on, never a note about where you are. A resumed worker whose wait is met has nothing left to wait on: record where work stands under the checkpoint key and continue, rather than writing the wait block again. So does any worker recording progress at any point, not only a resumed one.
+  {time_fence}. Your process ends when this turn ends: never wait across a backgrounded command. Write your manifest with what you know now before starting one, and update it afterward if a later turn arrives — that is keyed to starting the wait, not to finishing the work. A run that ends mid-wait is resumable, so if you run out of turns, leave a record naming exactly what you were waiting for — set status: waiting and fill the wait_condition, wait_probe, wait_terminal and resume_brief keys in the manifest block so a resume sweep can wake you. Declaration is for a wait you hold: the wait block states something you are actually waiting on, never a note about where you are. A resumed worker whose wait is met has nothing left to wait on: record where work stands under the checkpoint key and continue, rather than writing the wait block again. So does any worker recording progress at any point, not only a resumed one.
 
 FENCE — EVIDENCE (this measure is the done-when; state it quantitatively)
   {node.done_when}{evidence_role_note}
@@ -698,6 +744,7 @@ your own probe, measurement script or helper without reaching code under test.
 Record the cause before excluding it. A missing or unclear attribution counts;
 a failure in code under test counts. A decision the plan does not settle is required;
 the necessary change exceeds your write scope; the evidence cannot be produced
-with the tools or data available; the time budget is spent with the measure
-still unmet. Asking costs one turn; thrashing costs the node.
+with the tools or data available; the hard stop is reached with the measure
+still unmet, or the deadline has passed with remaining work that is not a named
+bounded step. Asking costs one turn; thrashing costs the node.
 """

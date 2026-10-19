@@ -475,6 +475,24 @@ def resolved_time_ceiling(config: Mapping[str, Any]) -> str:
     return str((config.get("fences") or {}).get("time_budget") or "")
 
 
+def resolved_grace_multiple(config: Mapping[str, Any] | None) -> float | None:
+    """Return the grace multiple past a budget, or nothing when unusable.
+
+    The multiple is the ratio between an attempt's deadline and the hard stop
+    the watchdog enforces. An absent key resolves to ``1.0`` — the hard stop is
+    the deadline — and a non-numeric value resolves to nothing, which leaves
+    the watchdog inert and the prompt offering no continuation. Both readers
+    call this one owner, so the instant they agree on cannot drift.
+    """
+    value = ((config or {}).get("fences") or {}).get("budget_grace_multiple")
+    if value is None:
+        return 1.0
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 # ── Dispatch ────────────────────────────────────────────────────────────────
 
 
