@@ -2131,9 +2131,12 @@ def _session_counts_in_other_projects(project: str, session: str) -> dict[str, i
     waiting_seen = False
     waiting = 0
     stamp: str | None = None
-    watch_dir = own.parent
+    # Imported here: reckon/crew/query.py reaches this module through
+    # reckon/crew/recovery.py, so a top-level import would close a cycle.
+    from reckon.crew.query import watch_event_paths
+
     try:
-        candidates = sorted(watch_dir.glob(f"*{own.suffix}"))
+        candidates = watch_event_paths()
     except OSError:
         return {}
     for path in candidates:
