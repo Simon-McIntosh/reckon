@@ -23,7 +23,7 @@ from urllib.parse import quote
 
 import pytest
 
-from reckon import mcp, serve, velocity
+from reckon import mcp, route_results, serve, velocity
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -195,6 +195,33 @@ def test_the_default_window_is_the_last_fourteen_days(served):
     end = velocity.stamp(payload["window"]["end"])
     assert start is not None and end is not None
     assert end - start == pytest.approx(14 * DAY, abs=5 * 60)
+
+
+def test_the_served_route_answers_a_cold_fleet_request_from_its_store(
+    served, monkeypatch
+):
+    monkeypatch.setattr(route_results, "_REFRESH_ENABLED", True)
+    monkeypatch.setattr(route_results, "_start_refresh", lambda _key: True)
+    _, address = served
+
+    status, pending = _get(address, "/crew/velocity?project=*")
+    assert status == 202
+    key = route_results.velocity_key("*", None, None, None, None, None)
+    assert pending["key"] == ":".join(key)
+
+    route_results._store_refresh_result(
+        key,
+        {
+            "ok": True,
+            "window": {"end": velocity.iso(time.time())},
+            "by_project": [{"marker": "stored"}],
+            "by_lane": [],
+            "by_day": [],
+        },
+    )
+    status, payload = _get(address, "/crew/velocity?project=*")
+    assert status == 200
+    assert payload["by_project"][0]["marker"] == "stored"
 
 
 def test_the_spa_loads_velocity_before_shell():
