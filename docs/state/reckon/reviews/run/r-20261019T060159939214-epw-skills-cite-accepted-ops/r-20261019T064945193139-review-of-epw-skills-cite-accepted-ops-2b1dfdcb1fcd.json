@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "No op object is extracted from under skills/, so the floor assert reddens naming the empty source. The two sides are independent (the extracted corpus path vs the skills root). The negative control at negative-control.log demonstrates the red arm: pointing _documented_op_corpus at an empty corpus makes this test fail (EXIT=1), so it fails under the very regression it guards (an extractor/corpus that yields nothing).",
+      "lines": "tests/test_skill_contracts.py:2221 (test_every_documented_op_object_is_supported_by_the_store, the floor assert)"
+    },
+    {
+      "failure_condition": "A documented op object names a path the store refuses as unsupported or as a computed field, so no candidate resource clears _refusal_is_for_path and pytest.fail fires. The op is read from the file (independent source) and the refusal comes from the store, so the two sides are independent. This reads 33 objects today, so the floor is met non-vacuously.",
+      "lines": "tests/test_skill_contracts.py:2208 (test_every_documented_op_object_is_supported_by_the_store body)"
+    },
+    {
+      "failure_condition": "The store refuses a path the op-reference `set` row lists, so _refusal_is_for_path(result) is True and the assertion reddens. The value written is _set_row_value(path), chosen so a refusal is for the earlier set-row regression rather than the value; the sides are independent (a value the test supplies vs the store's own refusal detail). The negative control recorded at 5f0a050 (restoring `impl` to the set row) reddens this test naming skills/reckon-edit/SKILL.md and the computed-field refusal.",
+      "lines": "tests/test_skill_contracts.py:2266 (test_the_op_reference_set_row_documents_supported_paths)"
+    }
+  ],
+  "call_sites": [],
+  "completed_at": "2026-10-19T06:57:29.205Z",
+  "dispatched_at": "2026-10-19T06:50:26Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T060159939214-epw-skills-cite-accepted-ops/gate.log",
+      "line": "26",
+      "severity": "follow-on",
+      "text": "follow-on: the node-head gate ends EXIT=1, not the EXIT=0 the source done_when requires. The one failing id (test_every_registered_crew_verb_is_documented_or_exempt) is verifiably pre-existing: baseline.log:25 fails on the same id at the base revision (72 passed / 1 failed), so the delta is 0 added failures against a red base and the residual belongs to the concurrent cso-retired-verbs-name-successor node (skills/reckon-build/SKILL.md), outside this node's fence. The evidence dimension scores below a clean gate because the done_when's literal EXIT=0 clause was not achieved, not because the delta is adverse."
+    },
+    {
+      "file": "AGENTS.md",
+      "line": "261",
+      "severity": "follow-on",
+      "text": "follow-on: the corrected prose is asserted by no durable test. The widened harness reads documented op objects and the op-reference `set` row; it does not read prose, and no test reads AGENTS.md's plan-state checklist. A regression restoring the removed wording ('impl advanced toward 1.0') in AGENTS.md:261, skills/reckon-create/SKILL.md:574/609, or the two reckon-build reference beats would not redden any assertion. Only the reckon-edit set-row correction is durably guarded (by the negative-controlled test at line 2266); the same gap covers skills/reckon-build/references/sprint-orchestration.md:532 and coordinator-reference.md:205. The gate log's impl grep (impl-grep.log, BASE_GREP_EXIT=0 as a positive control, HEAD_GREP_EXIT=1) is a one-shot run, not a test."
+    },
+    {
+      "file": "AGENTS.md",
+      "line": "261",
+      "severity": "follow-on",
+      "text": "follow-on: the plan asks, 'In the same files, state that section effort is in quarter hours, and list the legal values of section risk'. Four of the five named files carry the quarter-hour effort and the low/moderate/elevated/critical risk list (skills/reckon-edit/SKILL.md, skills/reckon-create/SKILL.md, sprint-orchestration.md, coordinator-reference.md); AGENTS.md carries only the impl correction and states neither. Under a literal reading of 'the same files' the checklist omits the two facts; the node's scope covers it, so this is a small, non-blocking completeness gap."
+    },
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the ruff clause of the done_when ('ruff format --check and ruff check pass on every changed Python path') is unmet \u2014 tests/test_skill_contracts.py still carries a pre-existing RUF005 at line 1152 and a pre-existing 72-line format diff, both recorded as a zero delta in the manifest. Clearing them is a whole-file sweep the repository routes to its own style(lint) commit, so it is a separate node, not this one's."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against the base: three commits \u2014 5f0a050 (prose corrections plus the initial harness), d0bdc859 (consolidate _apply_documented_op into _apply_example and add the op-sweep floor), 2b1dfdcb (evidence fragment) \u2014 touching AGENTS.md, four skill/reference markdown files, tests/test_skill_contracts.py and one evidence fragment; the non-test hunks are the impl/effort/risk prose and the test hunks add two sweep tests with helpers.",
+    "done_when": "The done_when at the run's prompt.txt FENCE-EVIDENCE names the three-file pytest gate ending EXIT=0, the widened harness, the impl grep, the negative control and ruff; the recorded gate.log:26 ends EXIT=1 against a done_when that requires EXIT=0, and the ruff clause does not exit 0 on the changed Python path, both recorded honestly in the manifest as a zero delta rather than claimed as clean.",
+    "goal": "The node goal is to correct the impl guidance in the skills and AGENTS.md, held by the widened extract-and-apply harness in tests/test_skill_contracts.py; the landed commits rewrite the impl instruction at all five named sites (skills/reckon-edit/SKILL.md:394 set row, skills/reckon-create/SKILL.md:574 and :609, skills/reckon-build/references/sprint-orchestration.md:532, skills/reckon-build/references/coordinator-reference.md:205, AGENTS.md:261) and the refusal each site now describes is real \u2014 reckon/_store.py:2555 raises 'impl is computed from the section records' and :2566 'not authorable', and the quoted risk values match reckon/capability.py:21 RISK_LEVELS; the widened harness reads 33 op objects, all under skills/.",
+    "manifest": "Read the source manifest.md; it states the gate ran 74 passed / 1 failed (test_every_registered_crew_verb_is_documented_or_exempt, present at base), names its logs on disk, records the negative control (empty_corpus floor) with its own red log ending EXIT=1, and reports the ruff delta as 0 added findings / unchanged format diff.",
+    "write_paths": "The source prompt.txt FENCE-SCOPE fences eight paths; git diff --name-only 027fe76881b2ec37a02cd16acae9840b1bd76705 2b1dfdcb1fcdbc601bb0f43c41c4843578002852 names seven (the six product paths plus the evidence fragment), every one of them inside the fence, and none outside it."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T064945193139-review-of-epw-skills-cite-accepted-ops-2b1dfdcb1fcd",
+  "reviewed_base_sha": "027fe76881b2ec37a02cd16acae9840b1bd76705",
+  "reviewed_head_sha": "2b1dfdcb1fcdbc601bb0f43c41c4843578002852",
+  "reviewed_run_id": "r-20261019T060159939214-epw-skills-cite-accepted-ops",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T06:59:07.203310+00:00"
+}
