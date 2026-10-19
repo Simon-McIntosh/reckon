@@ -130,9 +130,7 @@ def _isolated_harness_env(
     have exited. Only what the case sets is kept, matching ``_follower_env``.
     """
     for key in [
-        key
-        for key in os.environ
-        if key.startswith(("RECKON_", "CLAUDE_", "CODEX_"))
+        key for key in os.environ if key.startswith(("RECKON_", "CLAUDE_", "CODEX_"))
     ]:
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("RECKON_HOME", str(home))
