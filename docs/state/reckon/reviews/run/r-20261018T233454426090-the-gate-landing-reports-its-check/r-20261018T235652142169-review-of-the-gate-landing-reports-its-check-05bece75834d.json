@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T233454426090-the-gate-landing-reports-its-check/gate-head-landing-tests.log",
+  "assertion_analysis": [
+    {
+      "failure_condition": "The gate re-run receipt is returned without the landing_check key (the base behaviour), so result[\"landing_check\"] raises KeyError; this is the negative control's observed failure.",
+      "lines": "306"
+    },
+    {
+      "failure_condition": "The landing check reports a reversal set other than the single staged path created.txt, i.e. the pre-staging reversal detection has regressed or the receipt carries no reversals.",
+      "lines": "307"
+    },
+    {
+      "failure_condition": "The reported reversal commit differs from first_commit, which the test reads independently via _head(repository) after the first landing, so the reported commit must name the earlier landing's commit.",
+      "lines": "308"
+    },
+    {
+      "failure_condition": "The reversal is not printed to stderr, i.e. _report_landing_check is not called on the gate landing result, so capsys err is empty.",
+      "lines": "309"
+    }
+  ],
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T233454426090-the-gate-landing-reports-its-check/gate-base-landing-tests.log",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2020"
+  ],
+  "completed_at": "2026-10-19T00:02:53.014Z",
+  "dispatched_at": "2026-10-18T23:58:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_gate.py",
+      "line": "993",
+      "severity": "follow-on",
+      "text": "follow-on: the gate receipt carries landing_check unconditionally, so a no-write or no-check landing emits landing_check:{} where the sibling release site (reckon/crew/promotion_release.py:643) adds the key only when the check is non-empty; the divergence is cosmetic and does not change the emitted receipt meaningfully."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site",
+    "diff": "Read f9b4a036 (source + test) and 05bece758 (fragment) against base 386f11d5; the source change is +6 lines, the test adds one case, and the fragment is new, with nothing outside the declared scope.",
+    "done_when": "The done_when requires the gate landing to pass _commit_landing_writes through _report_landing_check, a new test that fails at base by id, the release assertion to read the persisted file, and no new ruff finding; all four hold.",
+    "goal": "The goal is to make the integrated-gate landing report its landing check to stderr and its receipt as the promotion and release landings do; reckon/crew/promotion_gate.py:973 and :993 do exactly that.",
+    "manifest": "manifest.md records commits f9b4a036/05bece758, three changed paths, head 29 passed/EXIT=0 and base 28 passed/EXIT=0, negative control 1 failed/EXIT=1, and its evidence_inputs note that the release-assertion clause was already at base.",
+    "write_paths": "The manifest declares promotion_gate.py, the test file, the fragment and a figures dir; git diff --name-only base..head lists exactly the first three, all inside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_checks_what_it_left.py:306 fails with KeyError: 'landing_check' at the base revision and :309 fails if the stderr print is lost, though only the staged-reversal branch is exercised at the gate site.",
+    "evidence": "gate-head-landing-tests.log records 29 passed/EXIT=0 and gate-base-landing-tests.log 28 passed/EXIT=0, with negative-control-base-gate-landing-check.log recording 1 failed/7 passed/EXIT=1 on the new id.",
+    "fit": "reckon/crew/promotion_gate.py:993 names the key landing_check as promotion_release.py:635 does, but sets it unconditionally where the release site guards with `if landing_check:` (:643).",
+    "goal_fidelity": "reckon/crew/promotion_gate.py:973 passes the gate landing through _report_landing_check and :993 carries the returned check as landing_check on the receipt the verify-gate command emits, matching promotion.py:751,1360 and promotion_release.py:635.",
+    "reuse": "The change adds no definition: promotion_gate.py:1010 imports the existing owner _report_landing_check at reckon/crew/promotion_scope.py:2100 and extends its use to the third landing site.",
+    "scope_discipline": "The base..head diff touches only reckon/crew/promotion_gate.py, tests/test_a_landing_checks_what_it_left.py and the fragment, all inside the declared write paths, +125/-0 with no unrelated change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make the integrated-gate landing report its landing check to stderr and its receipt as the promotion and release landings do; reckon/crew/promotion_gate.py:973 passes the landing through _report_landing_check and :993 carries the result as landing_check on the receipt.\nVERDICT done_when: the done_when requires the gate landing to pass _commit_landing_writes through _report_landing_check, a new test failing at base by id, the release assertion to read the persisted file, and no new ruff finding; gate-head-landing-tests.log (29 passed/EXIT=0), gate-base-landing-tests.log (28 passed/EXIT=0) and negative-control-base-gate-landing-check.log (1 failed/EXIT=1) record all four.\nVERDICT write_paths: the manifest declares promote paths including promotion_gate.py, the test file and the fragment; git diff --name-only 386f11d5..05bece758 lists exactly those three, all inside the grant.\nVERDICT manifest: manifest.md names commits f9b4a036 and 05bece758, three changed paths, head 29 passed/EXIT=0, base 28 passed/EXIT=0 and negative control 1 failed/EXIT=1, and its evidence_inputs note that the release-assertion clause already landed at base is confirmed by 0cf848795 being an ancestor of the base.\nVERDICT diff: read f9b4a036 (source +40-line test case) and 05bece758 (new fragment) against base 386f11d5; the source change is +6 lines at promotion_gate.py:973,993 and nothing lands outside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:2020\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_gate.py:973 passes the gate landing through _report_landing_check and :993 carries the check on the receipt the verify-gate command emits, matching promotion.py:751,1360 and promotion_release.py:635.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head-landing-tests.log records 29 passed/EXIT=0 and gate-base-landing-tests.log 28 passed/EXIT=0, with negative-control-base-gate-landing-check.log recording 1 failed/7 passed/EXIT=1 on the new id.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the base..head diff touches only reckon/crew/promotion_gate.py, tests/test_a_landing_checks_what_it_left.py and the fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_landing_checks_what_it_left.py:306 fails with KeyError: 'landing_check' at the base revision and :309 fails if the stderr print is lost, though only the staged-reversal branch is exercised at the gate site.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion_gate.py:993 names the key landing_check as promotion_release.py:635 does, but sets it unconditionally where the release site guards with `if landing_check:` at :643.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; promotion_gate.py:1010 imports the existing owner _report_landing_check at reckon/crew/promotion_scope.py:2100 and extends its use to the third landing site.\nFINDING reckon/crew/promotion_gate.py:993 follow-on: the gate receipt carries landing_check unconditionally, so a no-write or no-check landing emits landing_check:{} where the sibling release site at promotion_release.py:643 adds the key only when the check is non-empty.\n",
+  "review_run_id": "r-20261018T235652142169-review-of-the-gate-landing-reports-its-check-05bece75834d",
+  "reviewed_base_sha": "386f11d5e4306e7be19b0d62316a4dc433da5282",
+  "reviewed_commits": [
+    "f9b4a03628d65c2df38de8b944962f5c91be9fdf",
+    "05bece75834ddba31dca49504da0dd51ca600194"
+  ],
+  "reviewed_head_sha": "05bece75834ddba31dca49504da0dd51ca600194",
+  "reviewed_run_id": "r-20261018T233454426090-the-gate-landing-reports-its-check",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T00:05:01.576531+00:00",
+  "total": 115
+}

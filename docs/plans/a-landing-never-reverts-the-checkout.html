@@ -25,7 +25,7 @@
   <title>A Landing Never Reverts The Checkout | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -152,6 +152,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-land-s2-1" data-who="reckon-build" data-when="2026-10-18T23:22:59Z">
     <div class="r-comment-body"><p>§2's node landed at <code>1c9c9ce43</code> (run <code>r-20261018T213033460177-a-landing-checks-what-it-left</code>, head <code>b904bf13</code>, 28 passed, 7 tests added). Every landing now checks for a staged reversal before staging and for a HEAD, index and working-tree mismatch after committing. Each refusal, rollback and success is appended to <code>landing.json</code>, and the release outcome commits through <code>_commit_landing_writes</code>. The section stays open until the integrated-gate landing (<code>promotion_gate.py:960</code>) also reports its check, a follow-up node folded from the re-review.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261018T235652142169-review-of-the-gate-landing-reports-its-check-05bece75834d" data-who="reckon-build" data-when="2026-10-19T00:02:53.014Z">
+    <div class="r-comment-body"><p>independent review of run r-20261018T233454426090-the-gate-landing-reports-its-check at reviewed head 05bece75834ddba31dca49504da0dd51ca600194; verdict parsed, six dimensions scored (goal_fidelity 20, evidence 19, scope_discipline 20, durability 18, fit 18, reuse 20), zero added failures, one follow-on finding (promotion_gate.py:993 carries landing_check unconditionally where promotion_release.py:643 guards it).</p></div>
 </div>
 </section>
 </main>
