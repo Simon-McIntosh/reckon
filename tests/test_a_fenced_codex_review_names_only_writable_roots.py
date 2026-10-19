@@ -68,7 +68,9 @@ def _paths_after(argv: list[str], flag: str) -> list[str]:
 
 
 def _bind_pairs(argv: list[str], flag: str) -> list[list[str]]:
-    return [argv[index + 1 : index + 3] for index, token in enumerate(argv) if token == flag]
+    return [
+        argv[index + 1 : index + 3] for index, token in enumerate(argv) if token == flag
+    ]
 
 
 def _fence_segment(argv: list[str]) -> list[str]:
@@ -78,7 +80,11 @@ def _fence_segment(argv: list[str]) -> list[str]:
 
 def _granted_roots(fence: list[str]) -> list[str]:
     """The roots the fence re-binds writable, as ``--bind <root> <root>``."""
-    return [source for source, destination in _bind_pairs(fence, "--bind") if source == destination]
+    return [
+        source
+        for source, destination in _bind_pairs(fence, "--bind")
+        if source == destination
+    ]
 
 
 def _sealed_destinations(fence: list[str]) -> list[str]:
@@ -102,13 +108,25 @@ def base_fence_module(tmp_path_factory: pytest.TempPathFactory) -> ModuleType:
     """
     repository = Path(__file__).resolve().parents[1]
     introducing = _git(
-        repository, "log", "-1", "--format=%H", "-S", FENCE_RULE_SYMBOL, "--",
+        repository,
+        "log",
+        "-1",
+        "--format=%H",
+        "-S",
+        FENCE_RULE_SYMBOL,
+        "--",
         "reckon/_worker_fence.py",
     )
     revision = f"{introducing}^" if introducing else "HEAD"
     try:
         blob = subprocess.run(
-            ["git", "-C", str(repository), "show", f"{revision}:reckon/_worker_fence.py"],
+            [
+                "git",
+                "-C",
+                str(repository),
+                "show",
+                f"{revision}:reckon/_worker_fence.py",
+            ],
             check=True,
             capture_output=True,
         ).stdout
@@ -116,7 +134,9 @@ def base_fence_module(tmp_path_factory: pytest.TempPathFactory) -> ModuleType:
         pytest.skip(f"the base revision {revision} is not readable: {exc}")
     source = blob.decode()
     if FENCE_RULE_SYMBOL in source:  # pragma: no cover - rule already in the base
-        pytest.skip(f"base revision {revision} already carries the rule; nothing to compare")
+        pytest.skip(
+            f"base revision {revision} already carries the rule; nothing to compare"
+        )
     staged = tmp_path_factory.mktemp("base-fence") / "_worker_fence_base.py"
     staged.write_bytes(blob)
     spec = importlib.util.spec_from_file_location("_worker_fence_base", staged)
@@ -208,8 +228,12 @@ def test_a_fenced_codex_review_is_handed_only_the_fences_writable_roots(
     reports = reports_dir().resolve()
     store = review_store_root().resolve()
 
-    assert reports not in add_dirs, f"the sealed reports root was named writable: {add_dirs}"
-    assert store not in add_dirs, f"the sealed review store was named writable: {add_dirs}"
+    assert reports not in add_dirs, (
+        f"the sealed reports root was named writable: {add_dirs}"
+    )
+    assert store not in add_dirs, (
+        f"the sealed review store was named writable: {add_dirs}"
+    )
     assert fixture.records.resolve() in add_dirs, (
         "a declared path beneath the review store must stay writable"
     )
@@ -245,19 +269,21 @@ def test_the_fences_binds_are_unchanged_from_the_base(
     fixture.isolate(monkeypatch)
     plan = fixture.plan()
 
-    arguments = dict(
-        writable_directories=fixture.write_roots(),
-        worktree=str(fixture.worktree),
-        manifest_path=str(fixture.manifest),
-        home=str(fixture.home),
-    )
+    arguments = {
+        "writable_directories": fixture.write_roots(),
+        "worktree": str(fixture.worktree),
+        "manifest_path": str(fixture.manifest),
+        "home": str(fixture.home),
+    }
     head = _worker_fence.fence_argv(["true"], **arguments)
     base = base_fence_module.fence_argv(["true"], **arguments)
 
     assert _fence_segment(plan.argv) == _fence_segment(head), (
         "the launch's fence is not the composition these inputs produce"
     )
-    assert _granted_roots(head) == _granted_roots(base), "the fence's writable binds moved"
+    assert _granted_roots(head) == _granted_roots(base), (
+        "the fence's writable binds moved"
+    )
 
 
 def test_an_unfenced_launch_keeps_every_add_dir(
