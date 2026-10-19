@@ -1793,6 +1793,33 @@ def _ledger_module():
 
 
 
+def _refuse_a_flag_as_a_reason(
+    ctx: click.Context, param: click.Parameter, value: str
+) -> str:
+    """Refuse a reason-taking flag whose value is the next flag.
+
+    A flag that takes a free-text reason is written ``--no-commit --gate
+    passed`` the moment an operator omits the reason, and the parser then hands
+    the next flag over as the reason: the promotion proceeds with ``--gate``
+    recorded as the justification for a commitless landing, and the gate it
+    meant to state is never read. The value is refused rather than parsed
+    around, because a reason is prose and prose never opens with two dashes —
+    so a value that does is the missing reason, whatever the operator typed it
+    for. Refused in the option's own callback, which runs before the parser
+    reaches whatever the swallowed flag was followed by, so the operator reads
+    the omission rather than a complaint about the trailing word.
+    """
+    del ctx
+    text = str(value or "").strip()
+    if text.startswith("--"):
+        raise click.BadParameter(
+            f"{param.opts[0]} requires a reason, but it was given {text!r} — the "
+            f"reason is missing, and {text} was read as its value. Repeat the "
+            f"call with {param.opts[0]} '<why>' before {text}"
+        )
+    return value
+
+
 @crew.command(name="complete")
 @click.option("--run", "run_id", required=True, help="Run id to promote.")
 @click.option(
@@ -1832,6 +1859,7 @@ def _ledger_module():
 )
 @click.option(
     "--no-commit",
+    callback=_refuse_a_flag_as_a_reason,
     default="",
     help="Declare deliberately that a passing node produced no commit, and why. "
     "Recorded on the ledger row, so a commitless promotion is distinguishable "
@@ -1889,12 +1917,14 @@ def _ledger_module():
 )
 @click.option(
     "--waive-suite-delta",
+    callback=_refuse_a_flag_as_a_reason,
     default="",
     metavar="REASON",
     help="Promote despite added suite failures and record the reason and delta.",
 )
 @click.option(
     "--waive-boundary-refusal",
+    callback=_refuse_a_flag_as_a_reason,
     default="",
     metavar="REASON",
     help=(
@@ -1905,6 +1935,7 @@ def _ledger_module():
 )
 @click.option(
     "--waive-resume-path",
+    callback=_refuse_a_flag_as_a_reason,
     default="",
     metavar="REASON",
     help=(
@@ -1915,6 +1946,7 @@ def _ledger_module():
 )
 @click.option(
     "--waive-unreviewed-promotion",
+    callback=_refuse_a_flag_as_a_reason,
     default="",
     metavar="REASON",
     help=(
@@ -1925,6 +1957,7 @@ def _ledger_module():
 )
 @click.option(
     "--waive-negative-control",
+    callback=_refuse_a_flag_as_a_reason,
     default=None,
     metavar="REASON",
     help=(
@@ -1947,6 +1980,7 @@ def _ledger_module():
 )
 @click.option(
     "--no-impl-change",
+    callback=_refuse_a_flag_as_a_reason,
     default="",
     metavar="REASON",
     help=(
@@ -1959,6 +1993,7 @@ def _ledger_module():
 )
 @click.option(
     "--waive-live-run",
+    callback=_refuse_a_flag_as_a_reason,
     default="",
     metavar="REASON",
     help=(
@@ -1988,6 +2023,16 @@ def _ledger_module():
         "the value lands on the ledger row as unplanned_reason."
     ),
 )
+@click.option(
+    "--dry-run",
+    "dry_run",
+    is_flag=True,
+    help=(
+        "Evaluate every guard this promotion would apply and report all of "
+        "their refusals together with the one invocation that would pass, "
+        "writing nothing: no ledger row, no plan comment, no pointer change."
+    ),
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_complete(
     run_id,
@@ -2014,6 +2059,7 @@ def crew_complete(
     waive_live_run,
     plan_link,
     unplanned_reason,
+    dry_run,
     pretty,
 ):
     """Promote one finished run into the owning repository's committed ledger.
@@ -2068,6 +2114,37 @@ def crew_complete(
         "log_path": gate_log_path,
         "log_digest": gate_log_digest,
     }
+    if dry_run:
+        from reckon.crew import promotion as promotion_module
+
+        _emit_crew_result(
+            promotion_module.complete_dry_run(
+                run_id,
+                gate=gate,
+                failure_classification=failure_classification or "",
+                commits=commits,
+                outcome=outcome,
+                no_commit=no_commit,
+                tests_added=tests_added,
+                scope_changed=scope_changed,
+                completed_at=completed_at,
+                root=checkout_path,
+                gate_check=gate_check,
+                require_gate_check=True,
+                suite_delta_waiver=waive_suite_delta,
+                boundary_waiver=waive_boundary_refusal,
+                resume_waiver=waive_resume_path,
+                review_waiver=waive_unreviewed_promotion,
+                negative_control_waiver=waive_negative_control,
+                accepted_paths=dict(accepted_paths),
+                no_impl_change=no_impl_change,
+                live_run_waiver=waive_live_run,
+                plan_link=plan_link,
+                unplanned_reason=unplanned_reason,
+            ),
+            pretty,
+        )
+        return
     try:
         result = crew_module.complete(
             run_id,

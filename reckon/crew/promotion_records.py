@@ -220,6 +220,30 @@ def _manifest_relative_path(value: Any, *, manifest_path: str) -> Path:
     return path
 
 
+_GATE_LOG_COMMAND_PREFIX = "# command:"
+
+
+def _command_from_gate_log(log_text: str) -> str:
+    """The command a gate log's own header names, or the empty string.
+
+    The fleet's gate logs open with header lines that make the file
+    self-describing, and one of them states the exact text the shell was
+    handed. Reading it back is how a run whose manifest describes its suite in
+    prose still promotes on the command that actually ran. Only the header
+    block is read, so a ``# command:`` line the measured output happens to
+    print below it is not mistaken for the header, and a recovered text that is
+    itself prose is refused rather than filled.
+    """
+    for line in str(log_text or "").splitlines()[:10]:
+        if not line.startswith(_GATE_LOG_COMMAND_PREFIX):
+            continue
+        candidate = line[len(_GATE_LOG_COMMAND_PREFIX) :].strip()
+        if candidate and not _gate_command_prose(candidate):
+            return candidate
+        return ""
+    return ""
+
+
 def _default_gate_evidence_from_manifest(
     record: Mapping[str, Any],
     *,
@@ -249,10 +273,6 @@ def _default_gate_evidence_from_manifest(
     if manifest is None:
         return resolved_gate, resolved_commits
     manifest_path = str(record.get("manifest_path") or "")
-    if not str(resolved_gate.get("command") or "").strip():
-        command = str(manifest.get("tests") or "").strip()
-        if command:
-            resolved_gate["command"] = command
     if not str(resolved_gate.get("log_path") or "").strip():
         logs = [
             str(entry).strip()
@@ -263,15 +283,33 @@ def _default_gate_evidence_from_manifest(
             resolved_gate["log_path"] = str(
                 _manifest_relative_path(logs[0], manifest_path=manifest_path)
             )
+    log_path = str(resolved_gate.get("log_path") or "").strip()
+    log_text = ""
+    if log_path:
+        try:
+            log_text = Path(log_path).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            log_text = ""
+    declared_command = str(manifest.get("tests") or "").strip()
+    if not str(resolved_gate.get("command") or "").strip():
+        if declared_command and not _gate_command_prose(declared_command):
+            resolved_gate["command"] = declared_command
+    # A worker that writes a description of its suite on the `tests:` line
+    # rather than the command cannot have that text re-run at the integrated
+    # head. The cited log's own header names the command that actually ran, so
+    # the fill recovers it from there: the run then promotes on the evidence
+    # already on disk rather than on the operator retyping the command, which
+    # is the remedy the seven-day measurement of promoted manifests names. The
+    # declared text is kept as the fallback only when the log names no command,
+    # so a run with no recoverable evidence still reaches the ordinary refusal.
+    if not str(resolved_gate.get("command") or "").strip():
+        recovered = _command_from_gate_log(log_text)
+        if recovered:
+            resolved_gate["command"] = recovered
+        elif declared_command:
+            resolved_gate["command"] = declared_command
     if resolved_gate.get("exit_status") is None:
-        log_path = str(resolved_gate.get("log_path") or "").strip()
-        recorded = None
-        if log_path:
-            try:
-                log_text = Path(log_path).read_text(encoding="utf-8", errors="replace")
-            except OSError:
-                log_text = ""
-            recorded = _recorded_exit_status(log_text)
+        recorded = _recorded_exit_status(log_text) if log_text else None
         if recorded is not None:
             resolved_gate["exit_status"] = recorded
     if not resolved_commits and not str(no_commit_reason).strip():
@@ -300,6 +338,7 @@ def _evaluate_suite_delta(
     record: Mapping[str, Any],
     *,
     waiver_reason: str,
+    dry_run: bool = False,
 ) -> dict[str, Any] | None:
     """Validate an armed run's paired suite evidence and calculate its delta.
 
@@ -314,6 +353,15 @@ def _evaluate_suite_delta(
     suite_command = str(record.get("suite_command") or "").strip()
     if not suite_command:
         return None
+
+    def _record_refusal(refusal: Mapping[str, Any]) -> None:
+        # A dry run reaches the same refusal and writes none of it: the pointer
+        # is the state a later promotion reads, so a dry run must not move it.
+        if dry_run:
+            return
+        updated = dict(record)
+        updated["suite_delta_refusal"] = refusal
+        _write_json(pointer_path(run_id), updated)
     manifest_present, fresh = _manifest_freshness(record)
     manifest: dict[str, Any] = {}
     if manifest_present and fresh:
@@ -375,9 +423,7 @@ def _evaluate_suite_delta(
             "missing_fields": missing,
             "added_failure_ids": [],
         }
-        updated = dict(record)
-        updated["suite_delta_refusal"] = refusal
-        _write_json(pointer_path(run_id), updated)
+        _record_refusal(refusal)
         raise ledger.SuiteDeltaError(
             "armed promotion requires complete baseline and after suite evidence; "
             "missing " + ", ".join(missing),
@@ -411,9 +457,7 @@ def _evaluate_suite_delta(
                 "added_failure_ids": added,
                 "failure_attribution": attribution,
             }
-            updated = dict(record)
-            updated["suite_delta_refusal"] = refusal
-            _write_json(pointer_path(run_id), updated)
+            _record_refusal(refusal)
             raise ledger.SuiteDeltaError(
                 "test-role promotion requires a candidate commit for every "
                 "added suite failure; missing " + ", ".join(missing_attribution),
@@ -431,9 +475,7 @@ def _evaluate_suite_delta(
             "added_failure_ids": added,
             "failure_attribution": attribution,
         }
-        updated = dict(record)
-        updated["suite_delta_refusal"] = refusal
-        _write_json(pointer_path(run_id), updated)
+        _record_refusal(refusal)
         raise ledger.SuiteDeltaError(
             "armed promotion added suite failures: " + ", ".join(added),
             added_failure_ids=added,
@@ -701,6 +743,9 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
 
 from reckon.crew.promotion_checks import (
     _fresh_manifest,
+)
+from reckon.crew.reports import (
+    _gate_command_prose,
 )
 from reckon.crew.promotion_evidence import (
     _ATTEMPT_RECORD_NAME,

@@ -252,6 +252,7 @@ def complete(
     live_run_waiver: str = "",
     plan_link: str = "",
     unplanned_reason: str = "",
+    dry_run: bool = False,
     promoted_by: str = "",
 ) -> dict[str, Any]:
     """Promote a run, or finish cleanup when its record already landed.
@@ -556,7 +557,18 @@ def complete(
             run_id,
             record,
             waiver_reason=suite_delta_waiver,
+            dry_run=dry_run,
         )
+        if dry_run:
+            return _dry_run_report(
+                run_id,
+                record,
+                verdict=verdict,
+                gate_check=gate_check,
+                refusals=(),
+                no_commit=no_commit,
+                no_impl_change=no_impl_change,
+            )
         result = _complete_locked(
             run_id,
             record=record,
@@ -601,6 +613,146 @@ def complete(
 # to the live pointer within its own bound. A promotion that lands inside that
 # window would otherwise record no picker_selection, and the row would read as
 # one the picker never answered rather than one whose pick had not finished.
+_DRY_RUN_REASON_FLAGS = (
+    "--no-impl-change",
+    "--waive-unreviewed-promotion",
+    "--waive-suite-delta",
+    "--waive-boundary-refusal",
+    "--waive-resume-path",
+    "--waive-negative-control",
+    "--waive-live-run",
+    "--no-commit",
+)
+_DRY_RUN_REASON_PLACEHOLDER = "recorded by the dry run"
+
+
+def _dry_run_invocation(
+    run_id: str,
+    *,
+    verdict: str,
+    gate_check: Mapping[str, Any] | None,
+    refusals: Sequence[str],
+) -> str:
+    """The one command that would promote this run, given the state it is in.
+
+    The refusals are the run's state: each names the flag that resolves it, so
+    the invocation is assembled from the remedies the refusals themselves
+    state rather than from a second reading of the record that could drift from
+    them. A gate-check refusal names no flag — the check is what is missing —
+    so the arm for it offers the check that the passing verdict already fixes:
+    the exit status of a passing gate is zero, and the command and log are the
+    ones the promotion resolved, offered back only where they are absent. The
+    reason values are concrete text rather than placeholders, so the emitted
+    line can be run as it stands.
+    """
+    parts = ["reckon", "crew", "complete", "--run", run_id, "--gate", str(verdict)]
+    text = "\n".join(refusals)
+    if str(verdict).strip().lower() == "failed":
+        parts += [
+            "--failure-classification",
+            "pre-existing",
+            "--outcome",
+            shlex.quote("state the failure in one line"),
+        ]
+    check = gate_check if isinstance(gate_check, Mapping) else {}
+    if "the check that produced it" in text:
+        if not str(check.get("command") or "").strip():
+            parts += ["--gate-command", shlex.quote("<the gate command that ran>")]
+        if not str(check.get("log_path") or "").strip():
+            parts += ["--gate-log-path", shlex.quote("<the captured log path>")]
+        if check.get("exit_status") is None:
+            parts += [
+                "--gate-exit-status",
+                "0" if str(verdict).strip().lower() == "passed" else "<exit status>",
+            ]
+    for flag in _DRY_RUN_REASON_FLAGS:
+        if flag in text:
+            parts += [flag, shlex.quote(_DRY_RUN_REASON_PLACEHOLDER)]
+    if "--accept-path" in text:
+        parts += ["--accept-path", "<path>", shlex.quote(_DRY_RUN_REASON_PLACEHOLDER)]
+    return " ".join(parts)
+
+
+def _dry_run_report(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    verdict: str,
+    gate_check: Mapping[str, Any] | None,
+    refusals: Sequence[BaseException],
+    no_commit: str = "",
+    no_impl_change: str = "",
+) -> dict[str, Any]:
+    """Report every refusal a promotion would raise, without writing any of it.
+
+    A refusal is gathered rather than raised, so an operator fixing a run by
+    trial learns every way it falls short from one call. ``refusals`` is empty
+    for a run that would promote, and ``invocation`` names the one command that
+    would pass for the state the run is in — which for a run with nothing to
+    fix is the command that was just evaluated.
+    """
+    messages = [str(refusal) for refusal in refusals]
+    invocation = _dry_run_invocation(
+        run_id,
+        verdict=verdict,
+        gate_check=gate_check,
+        refusals=messages,
+    )
+    return {
+        "ok": not messages,
+        "dry_run": True,
+        "run_id": run_id,
+        "project": str(record.get("project") or ""),
+        "gate": str(verdict),
+        "would_promote": not messages,
+        "refusal_count": len(messages),
+        "refusals": messages,
+        "invocation": invocation,
+    }
+
+
+def complete_dry_run(run_id: str, **kwargs: Any) -> dict[str, Any]:
+    """Evaluate a promotion's every guard and report them, writing nothing.
+
+    The guards are the promotion's own, run in the order it runs them, so a run
+    the dry run reports as promotable promotes for real on the same evidence.
+    Every refusal is carried back rather than raised, because the value of the
+    dry run is the whole list.
+    """
+    gate = str(kwargs.get("gate") or "")
+    root = kwargs.get("root")
+    try:
+        return complete(run_id, dry_run=True, **kwargs)
+    except _PromotionRefusalError as refusal:
+        refusals: Sequence[BaseException] = list(refusal.refusals)
+    except (CrewError, ledger.LedgerError) as refusal:
+        refusals = [refusal]
+    try:
+        record = _read_pointer_or_rebuild(run_id, root=root)
+    except CrewError:
+        record = {}
+    # The invocation is built from the check the fill resolved, not from the
+    # operator's flags alone: a run whose manifest already carries the command
+    # and the log needs neither of them offered back, and offering them would
+    # name a check the run had already supplied.
+    filled_check, _filled_commits = _default_gate_evidence_from_manifest(
+        record,
+        verdict=gate,
+        gate_check=kwargs.get("gate_check"),
+        commits=kwargs.get("commits") or (),
+        no_commit_reason=str(kwargs.get("no_commit") or ""),
+    )
+    return _dry_run_report(
+        run_id,
+        record,
+        verdict=gate,
+        gate_check=filled_check,
+        refusals=refusals,
+        no_commit=str(kwargs.get("no_commit") or ""),
+        no_impl_change=str(kwargs.get("no_impl_change") or ""),
+    )
+
+
 _SHADOW_PICK_SPEC_NAME = "shadow-picker.json"
 _SHADOW_PICK_WAIT_SECONDS = 5.0
 _SHADOW_PICK_POLL_SECONDS = 0.1
