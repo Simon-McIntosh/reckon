@@ -1,0 +1,141 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T15:00:37.894Z",
+  "dispatched_at": "2026-10-19T14:50:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:48",
+      "id": "reuse_search-1",
+      "reason": "a subsystem specified without the prior-art search it skipped will be built as a parallel copy, and citing these owners would change what \u00a71 writes.",
+      "text": "\u00a71 specifies the timing scan step by step (gate duration from the runner's own \"in N s\" summary, test-command tool calls read from the stream, per-lane median of a per-run fraction) without naming any of the three mechanisms that already do those steps: `_GATE_LOG_DURATION` and `_recorded_gate_seconds` (reckon/crew/promotion_gate.py:44, :508), `stream_tool_calls` (reckon/shadow_reads.py:66) with `transcript_tool_blocks` (reckon/velocity.py:1718), and `run_time_profile` (reckon/crew/run_time_profile.py:339)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion_gate.py:508",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must extend these owners (or say why they cannot carry a gate-share figure) rather than stand a parallel script beside each, and naming the owners is what makes the finding actionable.",
+      "text": "\u00a71 proposes to read each gate's own reported duration from its log, but `_recorded_gate_seconds` (reckon/crew/promotion_gate.py:508) already reads a run's cited gate log and extracts that duration via `_GATE_LOG_DURATION` (reckon/crew/promotion_gate.py:44); the per-lane median-of-a-per-run-fraction \u00a71 asks for is already the shape of `run_time_profile` (reckon/crew/run_time_profile.py:339), which reports median wall time per backend and role over the trailing-window ledger with the missing-is-None-never-zero discipline \u00a71 needs; and \u00a71's stream tool-call extraction is already owned by `stream_tool_calls` (reckon/shadow_reads.py:66, both backend dialects) and `transcript_tool_blocks` (reckon/velocity.py:1718)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_stream.py:333",
+      "id": "duplicate_owner-2",
+      "reason": "a deadline restated in two modules drifts the moment either changes, and the plan should name a single helper for the hard-stop instant so the prompt and the watchdog cannot disagree.",
+      "text": "\u00a73 states the hard stop as \"the launch instant plus the budget times `fences.budget_grace_multiple`\" and has `time_fence_statement` (reckon/crew/prompts.py:382) re-derive that instant, but `_apply_budget_watchdog` (reckon/crew/recovery_stream.py:333) already computes the same `budget_seconds * grace` threshold that stops the worker, so the one rule has two computations with no shared owner",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:45",
+      "id": "thin_wrapper-1",
+      "reason": "the plan should either extend the existing owners or justify, in its own text, why a parallel script is the right shape.",
+      "text": "the new scripts/gate_share_of_run_time.py is a thin read-only layer over the ledger reader (`read_records`, reckon/ledger.py), the stream readers and the gate-log duration parser, and the plan gives no reason those existing mechanisms cannot be extended to carry a gate-share figure",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:65",
+      "id": "interface_budget-1",
+      "reason": "a section that grows the CLI or a public signature must account for the added surface in its own text, and \u00a72's gate verb in particular sits beside the gate-log and budget machinery it would duplicate.",
+      "text": "\u00a72 proposes a new `reckon crew gate run -- <command>` CLI verb (cli_options 376) and \u00a73 adds a `budget_grace_multiple` parameter to `time_fence_statement` and `compose_prompt` (public_definitions 1869); neither section names what it retires or merges, or states why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6e5fbde990f03401835b784919ca07d6cec854f83208eb673dd2050f3fb8b648",
+  "plan_slug": "test-time-is-not-the-nodes-time",
+  "plan_version": 14,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-19T15:02:44.783127+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-19T15:03:02.247125+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-2",
+      "reason": "",
+      "when": "2026-10-19T15:03:21.977101+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "thin_wrapper-1",
+      "reason": "",
+      "when": "2026-10-19T15:03:44.364744+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "",
+      "when": "2026-10-19T15:04:02.869485+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T15:03:02.247125+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T15:03:21.977101+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T15:04:02.869485+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T15:02:44.783127+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T15:03:44.364744+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-test-time-is-not-the-nodes-time.v14.json",
+  "review_run_id": "r-20261019T144907724846-plan-review-of-test-time-is-not-the-nodes-time",
+  "reviewed_blob_sha": "d6776b1b06b520b5613bc422535352409956ec7e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the implementable work (\u00a73) is one prompt statement plus one test file; the plan does not spread its complexity across a spread of small wrappers, and the \u00a71 script is a single artefact rather than a family.",
+    "duplicate_owner": "a finding \u2014 the plan re-implements the gate-log duration parser, the stream tool-call extractor and the per-lane run wall-time profile owned by promotion_gate.py, shadow_reads.py and run_time_profile.py, and re-derives the hard-stop instant recovery_stream.py already computes.",
+    "interface_budget": "a finding \u2014 public_definitions 1869, cli_options 376, mcp_views 34, refusal_families 23; \u00a72 proposes a new `reckon crew gate run` CLI verb (cli_options) and \u00a73 widens `time_fence_statement`/`compose_prompt` (public_definitions), neither naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a71 adds scripts/gate_share_of_run_time.py without citing the mechanisms that already parse a gate log's runner duration (reckon/crew/promotion_gate.py:44 and :508), extract stream tool calls (reckon/shadow_reads.py:66), or profile per-lane run wall time (reckon/crew/run_time_profile.py:339).",
+    "thin_wrapper": "a finding \u2014 \u00a71 layers a new script over the existing ledger, stream and gate-log readers without saying why those readers cannot be extended."
+  },
+  "section_digests": {
+    "_document": "854b9c6a2d9d713b72aae68242f962cf0b223a20d300b4ab11d368bf994f1b41",
+    "s1": "5443573e7cf722b64bf218a379dec5f696e91939a0447babf3cbfeb8a303075b",
+    "s2": "e1683f33056739230ebe8f8cc40375d3a6cce727983bbbca1379cf0b80c058f6",
+    "s3": "19efc7ccdade121b67fc4d365fd78eee8f0d7abdbd0941694363de6ba0204ccc",
+    "s4": "3ecba0ba9644607d22d9c2d91dfb3f22042d163919f276abb7f2bfa201173b0a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T15:02:34.765144+00:00"
+}
