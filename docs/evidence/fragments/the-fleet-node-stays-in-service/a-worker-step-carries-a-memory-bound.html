@@ -80,28 +80,33 @@
   its OOM event in the step's <code>memory.events</code> and not the job's —
   produced the red log
   <code>logs/negative-control-step-oom.log</code> (<code>EXIT=1</code>, failing
-  id <code>test_a_step_past_its_bound_records_oom_in_the_step</code>). On this
-  host the step's <code>memory.max</code> is set to the bound but the step's
-  <code>memory.swap.max</code> is <code>max</code>, so an allocation past the
-  bound swaps rather than being OOM-killed: the check's step-level OOM
-  assertion does not hold, and the job's OOM counter is unchanged. The
-  configuration the routing relies on — <code>memory.max</code> equal to the
-  bound — is present and verified; the OOM-kill behaviour the declared string
-  names needs <code>memory.swap.max</code> constrained, which a step cannot
-  set from inside (<code>Permission denied</code>).</p>
+  id <code>test_a_step_past_its_bound_records_oom_in_the_step</code>). The
+  node carries only 4 GB of swap, so a step past its bound swaps a few GB
+  before the kernel OOM-kills inside its own cgroup; the shared node's swap is
+  never filled to force that kill. What is observable without filling it is
+  the part the routing depends on: the pressure is recorded in the
+  <em>step's</em> <code>memory.events</code> <code>max</code> counter
+  (<code>6576</code>) while the job's OOM counter is unchanged. The check is an
+  <strong>opt-in live check</strong> — it reads the node's cgroup files and
+  needs a real placed step, so it is not part of the default gate and is not
+  run by the focused suite.</p>
 
-  <p id="a-worker-step-carries-a-memory-bound-followon"><strong>Follow-on (outside this
-  node's write scope).</strong> Folding <code>placement_argv</code> into
-  <code>step_prefix</code> inserts <code>--mem</code> at argv index 4.<br>
-  <code>tests/test_fleet_migrate_cutover.py::test_cutover_sends_request_through_its_step_argv</code>
-  hard-codes the previous shape (<code>argv[3:]</code>, <code>argv[7]</code>,
-  <code>argv[8]</code>, <code>relays[0][:8]</code>) and now fails. That file is
-  outside this node's fenced write scope and was not edited.</p>
+  <p id="a-worker-step-carries-a-memory-bound-declaring"><strong>Declaring a larger
+  bound.</strong> The bound is a scheduler option, so a node that needs more
+  states it in the backend's placement through the dispatch <code>--set</code>
+  override, which replaces the whole options list:</p>
+  <pre id="a-worker-step-carries-a-memory-bound-set-syntax"><code>reckon crew dispatch --project &lt;project&gt; --node &lt;node&gt; \
+  --set 'backends.&lt;backend&gt;.placement.options=["--ntasks=1","--mem=48G"]'</code></pre>
+  <p>The shipped options are <code>["--ntasks=1"]</code>, so they are repeated
+  beside the new bound. A declaration at or below the 48 GB ceiling stays a
+  step of the held allocation; a larger one is submitted as its own batch job
+  on the backend partition's <code>_debug</code> sibling.</p>
 
   <p id="a-worker-step-carries-a-memory-bound-paths"><strong>Changed paths.</strong>
   <code>reckon/crew/placement.py</code>, <code>reckon/crew/fleet_node.py</code>,
   <code>reckon/crew/dispatch_launch.py</code>,
   <code>tests/test_fleet_node.py</code>,
+  <code>tests/test_fleet_migrate_cutover.py</code>,
   <code>tests/test_a_worker_step_carries_a_memory_bound.py</code>.</p>
 </section>
 </body>
