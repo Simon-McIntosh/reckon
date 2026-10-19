@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="346">
+<meta name="plan-version" content="347">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -1040,7 +1040,10 @@
     <div class="r-comment-body"><p>Baseline for §38's before-and-after timing. Taken at 2026-10-18 13:39:47Z on srv-1006 (load average 4.19), before any fix and before the-fleet-node-stays-in-service §9 lowers producer load: five <code>/crew</code> requests took 1.357, 1.603, 1.853, 1.482 and 1.845 s, median 1.60 s.</p></div>
 </div>
 <div class="r-comment" data-section="s38" data-id="c-run-r-20261019T053736243036-review-of-a-crew-poll-reads-the-roster-without-run-files-fdf865bdcafa" data-who="reckon-build" data-when="2026-10-19T05:51:29.333Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261019T044913095520-a-crew-poll-reads-the-roster-without-run-files at base 8d42ef7f87a70ae5f914f856085900a67cc22c54 and head fdf865bdcafabd3a8074597214ff3e3983095a98: a parsed record scoring all six dimensions (goal_fidelity 19, evidence 14, scope_discipline 19, durability 18, fit 19, reuse 5; total 94), added_failure_count 0, three follow-on findings, no blocking finding; the record is stored at the reviewed run&#x27;s review-records directory and never in a worktree.</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20261019T044913095520-a-crew-poll-reads-the-roster-without-run-files at base 8d42ef7f87a70ae5f914f856085900a67cc22c54 and head fdf865bdcafabd3a8074597214ff3e3983095a98: a parsed record scoring all six dimensions (goal_fidelity 19, evidence 14, scope_discipline 19, durability 18, fit 19, reuse 5; total 94), added_failure_count 0, three follow-on findings, no blocking finding; the record is stored at the reviewed run's review-records directory and never in a worktree.</p></div>
+</div>
+<div class="r-comment" data-section="s38" data-id="c-run-r-20261019T044913095520-a-crew-poll-reads-the-roster-without-run-files" data-who="reckon-build" data-when="2026-10-19T05:32:30.532Z">
+    <div class="r-comment-body"><p>The crew roster read behind /crew and /crew/&lt;project&gt; now holds each project&#x27;s members against one stat of its aggregate (mtime_ns/ctime_ns/size/ino), so a poll over an unmoved aggregate stats 0 run files where the base revision stats one per run file (200 of 200 in the test) and reads 0 aggregate bytes; a member change moves the identity and the next poll returns it. Evidence: docs/evidence/fragments/a-read-answers-inside-its-deadline/a-crew-poll-reads-the-roster-without-run-files.html</p></div>
 </div>
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261018T134939499444-review-of-the-read-only-region-refuses-a-mutation-bec8362b1531" data-who="reckon-build" data-when="2026-10-18T14:13:08.759Z">
     <div class="r-comment-body"><p>Independent review of r-20261018T123636631280 stored at review-records/r-20261018T123636631280-the-read-only-region-refuses-a-mutation.json (base 2d4ebe93e, head bec8362b1): 109 of 120, all six dimensions scored, no blocking finding; four follow-on findings — the guard covers only dict/list so a memoised tuple leaks a mutable inner dict, deepcopy of a handed-out view now raises, the test docstring cites plan-section labels, and the head gate log names the base revision.</p></div>
