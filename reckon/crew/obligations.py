@@ -495,6 +495,27 @@ def _names_worktree(record: Mapping[str, Any], worktree: Path) -> bool:
     return record_names_worktree(record, worktree)
 
 
+def _ledger_read_root(project: str, repository: Path) -> Path | None:
+    """The root a ledger read should pass so one derivation builds one index.
+
+    ``repository`` is the checkout that owns the project, resolved from the mount
+    registry. A read without a root reaches the same ledger through the
+    config-home state directory, which is symlinked into that checkout, and the
+    other ledger readers inside a derivation — the utilisation reader among them
+    — take that default route. Passing the checkout's own root here would name
+    the same file under a second key, and the derivation's run index would then
+    be built once for each spelling. So the default root is used whenever it
+    names the ledger ``repository`` names; a checkout whose state is not the
+    registered one still gets its own root and its own index.
+    """
+    if (
+        ledger.ledger_path(project, None).resolve()
+        == ledger.ledger_path(project, repository).resolve()
+    ):
+        return None
+    return repository
+
+
 def _run_namings(
     project: str, repository: Path
 ) -> tuple[dict[str, tuple[str, Path | None]], list[dict[str, Any]]] | None:
@@ -523,7 +544,7 @@ def _run_namings(
 
     namings: dict[str, tuple[str, Path | None]] = {}
     try:
-        rows = ledger.runs(project, root=repository)
+        rows = ledger.runs(project, root=_ledger_read_root(project, repository))
     except Exception:  # noqa: BLE001 — a screen must never fail the derivation
         return None
     for row in rows:
