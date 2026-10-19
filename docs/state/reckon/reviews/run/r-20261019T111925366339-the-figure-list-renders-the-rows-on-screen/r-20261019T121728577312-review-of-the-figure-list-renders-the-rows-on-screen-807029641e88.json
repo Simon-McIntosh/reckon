@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T111925366339-the-figure-list-renders-the-rows-on-screen/spa-population-head-focused.log",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Removing the window (mounting every row) makes mountedAtTop 1000 against MAX_MOUNTED_ROWS 150, exactly the declared mutation; the negative control log shows assert 1000 <= 0 -> 1000 <= 150 failing.",
+      "lines": "264-266"
+    },
+    {
+      "failure_condition": "Dropping the spacers, or keying the window to the wrong offsets, stops the last row being mounted after a jump to the end, so lastRendered stops equal lastSlug (figures/0999.png).",
+      "lines": "268"
+    },
+    {
+      "failure_condition": "A regression that reintroduces a main-thread task above 200 ms during load or scroll leaves a duration in loadLongTasks/scrollLongTasks and makes the missed list non-empty; the detector is proved live first, so the empty list is a measurement and not a dead observer.",
+      "lines": "258-259,270-274"
+    }
+  ],
+  "base_log_revision": "aecf325bec3f0220798b8854d0694080ceb686ca",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T111925366339-the-figure-list-renders-the-rows-on-screen/spa-population-base.log",
+  "call_site_count": 1,
+  "call_sites": [
+    "docs/ui/shell.jsx:28"
+  ],
+  "completed_at": "2026-10-19T12:44:25.602Z",
+  "dispatched_at": "2026-10-19T12:18:19Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T111925366339-the-figure-list-renders-the-rows-on-screen/spa-population-head-focused.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the log header names revision 8dfd65525 and the bare pytest command, while the manifest's after_suite records revision 807029641 and a command carrying -p no:cacheprovider --basetemp=...bt-head2, so the revision and command a reader resolves from after_suite do not match the log it cites; the log's own trailing correction line explains the header names the pre-commit HEAD while the tree ran the scoped content, but the manifest field itself still carries the mismatch."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T111925366339-the-figure-list-renders-the-rows-on-screen/manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: after_suite covers five SPA test files while baseline_suite covers ten, so the added-failure comparison is asserted over a strict subset at head and an added failure in test_spa_rendered_semantics.py, test_spa_composition.py, test_spa_live_arrival.py, test_spa_document_checks.py, test_spa_artifact_routes.py or test_spa_reading_mode.py would be invisible to this pair; the done_when assigns the full SPA population to the coordinator at merge, so the node's own arm being narrower is a recorded gap rather than a defect in the landed change."
+    }
+  ],
+  "head_log_revision": "807029641e88e17a32c9d76cbc0970055faa2d35",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s): docs/ui/shell.jsx:28 binds window.ReckonShell.plans.ArtifactIndex, the component the diff changed.",
+    "diff": "Commit 8dfd65525 adds artifactRowOffsets and artifactRowWindow plus the ArtifactIndex window state, effect and spacers in docs/ui/shell-plans.jsx; commit 807029641 scopes windowsRows to showsImages (the image-reader kinds) and adds tests/test_the_figure_list_renders_the_rows_on_screen.py and the evidence fragment; three files, 408 insertions, all inside the declared write paths.",
+    "done_when": "The source brief requires a browser test over at least 1,000 figures, at most 150 mounted rows, no long task above 200 ms, and the last figure's row after scrolling; tests/test_the_figure_list_renders_the_rows_on_screen.py:264-274 asserts exactly those against a live Playwright shell, with gate.log recording 1 passed EXIT=0 and negative-control.log recording 1 failed EXIT=1.",
+    "goal": "The source node's goal is to render only the figure-list rows within and near the viewport while keeping the full list's scroll height; docs/ui/shell-plans.jsx:284 and :432-442 mount a computed row window with spacers sized from the offset model so the feed keeps the full list's scroll height.",
+    "manifest": "Read the source run's manifest.md; it names commits 8dfd65525 and 807029641, the three changed paths, the four declared write paths, a readable negative control (1000 <= 150 fails, EXIT=1) and readable baseline_suite/after_suite receipts, with the after_suite revision and command not matching the log it cites.",
+    "write_paths": "The source prompt grants docs/ui/shell-plans.jsx, tests/test_the_figure_list_renders_the_rows_on_screen.py, the evidence fragment and the figure directory; the diff changes only the first three, all inside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_the_figure_list_renders_the_rows_on_screen.py:264-266 fails at assert 1000 <= 150 when the window is replaced by the whole list, and line 268 fails if the spacers are dropped so the last row is unreachable; the negative-control log records the first of those with EXIT=1.",
+    "evidence": "gate.log records 1 passed EXIT=0 for the browser gate at the reviewed content and negative-control.log records 1 failed EXIT=1, but the after_suite arm runs five SPA files against baseline_suite's ten and its recorded revision and command disagree with the log it cites (spa-population-head-focused.log:1-2).",
+    "fit": "docs/ui/shell-plans.jsx:344-390 adds its hooks and helpers beside the existing hooks in the same component and uses the file's window.ReckonShell idiom, with no plan or ticket identifier in any added name.",
+    "goal_fidelity": "docs/ui/shell-plans.jsx:350 sets windowsRows from showsImages and lines 531-590 mount only the computed window with top and bottom spacers, so the figure list mounts a small window while keeping the full scroll height.",
+    "reuse": "A capability search over docs, reckon, tests and skills for row windowing (overscan, virtualization, rowWindow, IntersectionObserver/ResizeObserver-driven list mounting) found none; the only scroll owners are the scroll-spy at docs/ui/plan.jsx:594 and a canvas ResizeObserver at docs/ui/graph.jsx:931, neither of which windows a row list.",
+    "scope_discipline": "Every path in the aecf325be..807029641 diff (docs/ui/shell-plans.jsx, the new test, the evidence fragment) is inside the four declared write paths; the figure directory was declared but not needed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is to render only the figure-list rows within and near the viewport while keeping the full list's scroll height; docs/ui/shell-plans.jsx:284 and :432-442 mount a computed row window with spacers sized from the offset model so the feed keeps the full list's scroll height.\nVERDICT done_when: The source brief requires a browser test over at least 1,000 figures, at most 150 mounted rows, no long task above 200 ms, and the last figure's row after scrolling; tests/test_the_figure_list_renders_the_rows_on_screen.py:264-274 asserts exactly those against a live Playwright shell, with gate.log recording 1 passed EXIT=0 and negative-control.log recording 1 failed EXIT=1.\nVERDICT write_paths: The source prompt grants docs/ui/shell-plans.jsx, tests/test_the_figure_list_renders_the_rows_on_screen.py, the evidence fragment and the figure directory; the diff changes only the first three, all inside the grant.\nVERDICT manifest: Read the source run's manifest.md; it names commits 8dfd65525 and 807029641, the three changed paths, the four declared write paths, a readable negative control (1000 <= 150 fails, EXIT=1) and readable baseline_suite/after_suite receipts, with the after_suite revision and command not matching the log it cites.\nVERDICT diff: Commit 8dfd65525 adds artifactRowOffsets and artifactRowWindow plus the ArtifactIndex window state, effect and spacers in docs/ui/shell-plans.jsx; commit 807029641 scopes windowsRows to showsImages (the image-reader kinds) and adds tests/test_the_figure_list_renders_the_rows_on_screen.py and the evidence fragment; three files, 408 insertions, all inside the declared write paths.\nCALL_SITES: docs/ui/shell.jsx:28\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/ui/shell-plans.jsx:350 sets windowsRows from showsImages and lines 531-590 mount only the computed window with top and bottom spacers, so the figure list mounts a small window while keeping the full scroll height.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate.log records 1 passed EXIT=0 for the browser gate at the reviewed content and negative-control.log records 1 failed EXIT=1, but the after_suite arm runs five SPA files against baseline_suite's ten and its recorded revision and command disagree with the log it cites (spa-population-head-focused.log:1-2).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: Every path in the aecf325be..807029641 diff (docs/ui/shell-plans.jsx, the new test, the evidence fragment) is inside the four declared write paths; the figure directory was declared but not needed.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_figure_list_renders_the_rows_on_screen.py:264-266 fails at assert 1000 <= 150 when the window is replaced by the whole list, and line 268 fails if the spacers are dropped so the last row is unreachable; the negative-control log records the first of those with EXIT=1.\nSCORE fit: 19\nJUSTIFICATION fit: docs/ui/shell-plans.jsx:344-390 adds its hooks and helpers beside the existing hooks in the same component and uses the file's window.ReckonShell idiom, with no plan or ticket identifier in any added name.\nSCORE reuse: 20\nJUSTIFICATION reuse: A capability search over docs, reckon, tests and skills for row windowing (overshoot, virtualization, rowWindow, scroll-observer-driven list mounting) found none; the only scroll owners are the scroll-spy at docs/ui/plan.jsx:594 and a canvas ResizeObserver at docs/ui/graph.jsx:931, neither of which windows a row list.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T111925366339-the-figure-list-renders-the-rows-on-screen/spa-population-head-focused.log:1 follow-on: the log header names revision 8dfd65525 and the bare pytest command, while the manifest's after_suite records revision 807029641 and a command carrying -p no:cacheprovider --basetemp=...bt-head2, so the revision and command a reader resolves from after_suite do not match the log it cites; the log's own trailing correction line explains the header names the pre-commit HEAD while the tree ran the scoped content, but the manifest field itself still carries the mismatch.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T111925366339-the-figure-list-renders-the-rows-on-screen/manifest.md:20 follow-on: after_suite covers five SPA test files while baseline_suite covers ten, so the added-failure comparison is asserted over a strict subset at head and an added failure in test_spa_rendered_semantics.py, test_spa_composition.py, test_spa_live_arrival.py, test_spa_document_checks.py, test_spa_artifact_routes.py or test_spa_reading_mode.py would be invisible to this pair; the done_when assigns the full SPA population to the coordinator at merge, so the node's own arm being narrower is a recorded gap rather than a defect in the landed change.\n",
+  "review_run_id": "r-20261019T121728577312-review-of-the-figure-list-renders-the-rows-on-screen-807029641e88",
+  "reviewed_base_sha": "aecf325bec3f0220798b8854d0694080ceb686ca",
+  "reviewed_commits": [
+    "8dfd65525155c89948dec6a3deb91b556e2a46d4",
+    "807029641e88e17a32c9d76cbc0970055faa2d35"
+  ],
+  "reviewed_head_sha": "807029641e88e17a32c9d76cbc0970055faa2d35",
+  "reviewed_run_id": "r-20261019T111925366339-the-figure-list-renders-the-rows-on-screen",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T12:49:34.234496+00:00",
+  "total": 111
+}
