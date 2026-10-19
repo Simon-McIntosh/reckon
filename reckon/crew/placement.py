@@ -24,9 +24,10 @@ import fcntl
 import getpass
 import json
 import os
+import re
 import subprocess
 import time
-from collections.abc import Callable, Iterable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -54,6 +55,30 @@ RESERVATION_SCHEDULER = "salloc"
 RESERVATION_STEP_SCHEDULER = "srun"
 RESERVATION_NO_SHELL_OPTION = "--no-shell"
 RESERVATION_JOB_NAME = "reckon-reservation"
+
+# The memory a worker step carries by default, and the ceiling above which a
+# step leaves the fleet allocation for a node of its own. The allocation holds
+# 96 GB shared by every session and worker, so an undeclared step bounded to a
+# small share keeps the OOM killer from reaching the sessions when one grows.
+# A step named past the ceiling cannot sit beside them at all: it is placed as
+# a job of its own, where a whole node serves it, instead of taking the
+# allocation to the limit. The default is overridable per environment.
+DEFAULT_STEP_MEMORY_GB = 24
+STEP_MEMORY_CEILING_GB = 48
+STEP_MEMORY_ENV = "RECKON_STEP_MEMORY"
+
+# A step too large for the allocation is placed on a debug partition, so the
+# work is sized for a debug queue rather than a production one. Such a partition
+# is a one-hour window with no default: there the scheduler's own maximum is an
+# hour and omitting the limit leaves the job pending forever, so a step placed
+# on one always states a limit and never states more than the window allows.
+DEBUG_PARTITION_SUFFIX = "_debug"
+DEBUG_JOB_TIME_CEILING = "01:00:00"
+
+# A step client inherits the allocation's identity from its environment, and
+# that inheritance is the only thing that would make it a step of the fleet job
+# rather than a job of its own. These are the variables it must not inherit.
+SLURM_JOB_ENVIRONMENT_ROOTS = ("SLURM_JOB", "SLURM_STEP")
 
 # The roster cap and the axis it is measured on. Twenty-five is the concurrency
 # the serve was observed delivering throughput for; the binding quantity is
@@ -230,6 +255,174 @@ def reservation_options(
     ]
 
 
+def step_memory_gb(
+    declared: int | None = None, environ: Mapping[str, str] | None = None
+) -> int:
+    """Whole gigabytes a worker step is bounded to.
+
+    A declared value wins; then the environment override; then the default. The
+    value is a whole number of gigabytes because that is the unit both the
+    scheduler option and the reservation's own memory are stated in. A declared
+    or environment value that cannot be read as a whole number falls back rather
+    than raising, so a malformed override never leaves a step unbounded.
+    """
+    if declared is not None:
+        return int(declared)
+    env = os.environ if environ is None else environ
+    raw = str(env.get(STEP_MEMORY_ENV) or "").strip()
+    if raw:
+        try:
+            return int(raw.rstrip("Gg"))
+        except ValueError:
+            pass
+    return DEFAULT_STEP_MEMORY_GB
+
+
+def step_memory_option(memory_gb: int) -> str:
+    """The scheduler option that bounds a step to ``memory_gb`` gigabytes."""
+    return f"--mem={int(memory_gb)}G"
+
+
+def step_memory_above_ceiling(memory_gb: int) -> bool:
+    """Whether a step of this size must leave the fleet allocation."""
+    return int(memory_gb) > STEP_MEMORY_CEILING_GB
+
+
+_MEMORY_UNIT_BYTES: dict[str, int] = {
+    "": 1024**2,
+    "K": 1024,
+    "M": 1024**2,
+    "G": 1024**3,
+    "T": 1024**4,
+}
+
+_MEMORY_OPTION_NAMES = ("--mem", "--mem-per-cpu")
+_CPU_OPTION_NAMES = ("--cpus-per-task", "-c")
+
+
+def option_values(
+    options: Sequence[str], names: Sequence[str]
+) -> list[tuple[str, str]]:
+    """Every ``names`` option stated among ``options``, paired with its value.
+
+    A scheduler resource request is a plain option string written either
+    ``--name=value`` or ``--name value``, so both spellings are read. Anything
+    else is not this option and is skipped, so a placement's unrelated flags
+    never parse as a request.
+
+    This is the one reader of a placement's declared resources; an admission
+    summary that priced a share and a launch that placed no step for it were
+    reading two spellings of one declaration and disagreeing about the second.
+    """
+    found: list[tuple[str, str]] = []
+    tokens = [str(option) for option in options or ()]
+    for index, token in enumerate(tokens):
+        for name in names:
+            if token.startswith(f"{name}="):
+                found.append((name, token[len(name) + 1 :].strip()))
+            elif token == name and index + 1 < len(tokens):
+                found.append((name, tokens[index + 1].strip()))
+    return [(name, value) for name, value in found if value]
+
+
+def memory_figure_bytes(text: str) -> int | None:
+    """A scheduler memory figure in bytes, or None for anything else.
+
+    A figure is a bare number of mebibytes or a number with a KiB/MiB/GiB/TiB
+    suffix. An unreadable figure is None rather than zero: zero would read as a
+    bound of nothing, and a bound of nothing places no step at all.
+
+    This is the one reader of a scheduler memory figure in either direction — a
+    bound a placement states, and a size the scheduler reports back — so the two
+    can never disagree about what ``96G`` or a bare ``98304`` means. A caller
+    that publishes the answer in another unit converts from here rather than
+    parsing the string a second time.
+    """
+    match = re.fullmatch(r"\s*(\d+)\s*([KMGTkmgt]?)[Bb]?\s*", str(text))
+    if not match:
+        return None
+    return int(match.group(1)) * _MEMORY_UNIT_BYTES[match.group(2).upper()]
+
+
+def declared_task_count(options: Sequence[str]) -> int | None:
+    """The task count a placement declares, or None when it declares none."""
+    for _name, value in option_values(options, _CPU_OPTION_NAMES):
+        try:
+            count = int(value)
+        except ValueError:
+            return None
+        return None if count < 1 else count
+    return None
+
+
+def declared_memory_bytes(options: Sequence[str]) -> int | None:
+    """The whole bound a placement declares, in bytes, or None.
+
+    ``--mem`` states the step's total directly. ``--mem-per-cpu`` states it per
+    task, so it is read as its product with the task count the placement
+    declares beside it; a per-task figure with no task count is a bound whose
+    total is unknown, and None is returned rather than a figure that would
+    price the step as a single task.
+
+    None means no whole bound was read — either no bound was declared at all,
+    or the one declared cannot be totalled. A caller that must tell those apart
+    asks :func:`unresolved_memory_declaration`, which names the option that
+    could not be totalled.
+    """
+    declared = option_values(options, _MEMORY_OPTION_NAMES)
+    for name, value in declared:
+        if name == "--mem":
+            return memory_figure_bytes(value)
+    per_task = [
+        memory_figure_bytes(value)
+        for name, value in declared
+        if name == "--mem-per-cpu"
+    ]
+    if not per_task or per_task[0] is None:
+        return None
+    count = declared_task_count(options)
+    return None if count is None else per_task[0] * count
+
+
+def unresolved_memory_declaration(options: Sequence[str]) -> str | None:
+    """A declared bound whose total cannot be read, or None.
+
+    ``--mem-per-cpu`` is refused rather than approximated: without a task count
+    beside it nothing says how much memory the step may actually take. A
+    refusal is the safe answer because the alternative — pricing the step as
+    one task — understates it by the task count, which is the direction that
+    overfills the allocation.
+    """
+    count = declared_task_count(options)
+    for name, value in option_values(options, _MEMORY_OPTION_NAMES):
+        if (
+            name == "--mem-per-cpu"
+            and memory_figure_bytes(value) is not None
+            and count is None
+        ):
+            return f"--mem-per-cpu={value}"
+    return None
+
+
+def declared_memory_gb(options: Sequence[str]) -> int | None:
+    """The bound a placement declares, rounded up to whole gigabytes, or None.
+
+    A placement declares a step's memory the way it declares any other resource
+    request, as a scheduler option string, so the value is read back from the
+    options rather than from a key of its own. A figure below a whole gigabyte
+    counts as a gigabyte so that a bound is never read as smaller than it is.
+    """
+    total = declared_memory_bytes(options)
+    if total is None:
+        return None
+    return -(-total // (1024**3))
+
+
+def debug_partition(partition: str = RESERVATION_PARTITION) -> str:
+    """The debug partition a step too large for the allocation is placed on."""
+    return f"{partition}{DEBUG_PARTITION_SUFFIX}"
+
+
 def step_prefix(job_id: str, options: list[str]) -> list[str]:
     """The options that place a step inside a held allocation.
 
@@ -237,8 +430,109 @@ def step_prefix(job_id: str, options: list[str]) -> list[str]:
     quota to queue behind, and the job id is resolved from the published
     reservation rather than taken on the command line, so every session's
     workers land in the one allocation.
+
+    Every step is bounded with ``--mem`` so that an undeclared worker cannot
+    grow to the allocation's limit, where the scheduler's OOM killer would pick
+    the largest process anywhere in the job. The default bound is stated here,
+    in the one owner of a step's options; a caller that already states a bound
+    keeps it, in whichever spelling it was written and whether it is a total or
+    a per-task figure, so no step is given two conflicting memory requests.
     """
-    return ["--overlap", f"--jobid={job_id}", *options]
+    placed = list(options)
+    if not option_values(placed, _MEMORY_OPTION_NAMES):
+        placed = [step_memory_option(step_memory_gb()), *placed]
+    return ["--overlap", f"--jobid={job_id}", *placed]
+
+
+def own_job_prefix(
+    command: Sequence[str],
+    *,
+    memory_gb: int,
+    partition: str = RESERVATION_PARTITION,
+    time_limit: str = DEBUG_JOB_TIME_CEILING,
+    job_name: str | None = None,
+) -> list[str]:
+    """The scheduler options that run a step as a job of its own.
+
+    A step sized past the allocation's ceiling is placed on a debug partition
+    rather than inside the allocation, where a whole node serves it. The command
+    is carried as arguments rather than as a wrapped script, so the standard
+    streams the caller composed stay the ones that run and the worker's output
+    reaches the supervisor's pipe as it does for a step of the allocation.
+
+    These are options only and never the scheduler's own name: the caller has
+    already resolved that executable and prepends it, so the invocation names
+    the client exactly once.
+    """
+    argv = [
+        f"--partition={debug_partition(partition)}",
+        step_memory_option(memory_gb),
+        f"--time={time_limit}",
+    ]
+    if job_name:
+        argv.append(f"--job-name={job_name}")
+
+    argv.extend(str(item) for item in command)
+    return argv
+
+
+def debug_job_time_limit(
+    time_budget: str | None, *, ceiling: str = DEBUG_JOB_TIME_CEILING
+) -> str:
+    """The time limit a step of its own is submitted under, capped at the ceiling.
+
+    A debug partition here is a one-hour window: the scheduler's own maximum is
+    an hour and its default is none, so an omitted limit leaves the job pending
+    rather than bounding it. A declared budget is honoured up to that window and
+    stated as the window when it asks for more, because asking for more on such
+    a partition pends the submission instead of shortening the fence. A budget
+    that cannot be read is treated as the window rather than as no limit.
+    """
+    ceiling_seconds = _duration_seconds(ceiling)
+    stated = _duration_seconds(time_budget) if time_budget else None
+    seconds = ceiling_seconds if stated is None else min(stated, ceiling_seconds)
+    hours, remainder = divmod(seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+
+def _duration_seconds(value: str) -> int | None:
+    """A budget written as an ``h/m/s`` suffix pair, in seconds, or None.
+
+    The scheduler states its own limits as ``HH:MM:SS``; a budget may also be
+    written as the number-and-suffix form a dispatch declares. Both are read so
+    the smaller of the two can be taken, and anything else is None.
+    """
+    text = str(value).strip()
+    clock = re.fullmatch(r"(\d+):([0-5]\d)(?::([0-5]\d))?", text)
+    if clock:
+        hours, minutes, secs = clock.group(1), clock.group(2), clock.group(3) or "0"
+        return int(hours) * 3600 + int(minutes) * 60 + int(secs)
+    suffix = re.fullmatch(r"(\d+)([hms])", text, re.IGNORECASE)
+    if not suffix:
+        return None
+    return int(suffix.group(1)) * {"h": 3600, "m": 60, "s": 1}[suffix.group(2).lower()]
+
+
+def without_slurm_job_identity(
+    environment: Mapping[str, str] | None,
+) -> dict[str, str]:
+    """A copy of ``environment`` without the allocation's job or step identity.
+
+    A step client inherits the held allocation from its environment, and that
+    inheritance is the whole reason a client started inside the allocation runs
+    as a step of it: with the identity gone the client asks for an allocation of
+    its own. Without this the job the caller placed for a step too large for the
+    allocation would be that same allocation's step, on the wrong partition and
+    against the wrong bound.
+    """
+    kept: dict[str, str] = {}
+    for key, value in (environment or {}).items():
+        name = str(key)
+        if name.upper().startswith(SLURM_JOB_ENVIRONMENT_ROOTS):
+            continue
+        kept[key] = value
+    return kept
 
 
 def _reservation_query_placement() -> dict[str, Any]:

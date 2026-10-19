@@ -96,10 +96,6 @@ _SQUEUE_FORMAT = "%i|%j|%T|%M|%R|%b|%k|%L"
 # with.
 _SHAPE_FORMAT = "%P|%C|%m"
 
-# Megabytes per scheduler memory unit. A unit-less value is read as the
-# megabytes the scheduler defaults to, so the parse never guesses upward.
-_MEMORY_UNIT_MB = {"": 1, "M": 1, "G": 1024, "T": 1024 * 1024}
-
 
 class FleetNodeError(RuntimeError):
     """A scheduler call about the fleet node failed."""
@@ -267,21 +263,19 @@ def parse_memory_gb(memory: str) -> int | None:
     A per-node or per-cpu suffix (``96Gn``) is dropped before the unit is read.
     None means the value could not be read, which the caller treats as no shape
     rather than as a zero-memory allocation.
+
+    The figure itself is read by the one parser of a scheduler memory string,
+    :func:`reckon.crew.placement.memory_figure_bytes`; this function only states
+    the answer in the unit its caller publishes, whole gigabytes, so a figure
+    below one floors to zero.
     """
+    from reckon.crew import placement
+
     raw = memory.strip().upper()
     while raw and raw[-1] in "NC":
         raw = raw[:-1]
-    digits = ""
-    for char in raw:
-        if not char.isdigit():
-            break
-        digits += char
-    if not digits:
-        return None
-    factor = _MEMORY_UNIT_MB.get(raw[len(digits) :])
-    if factor is None:
-        return None
-    return int(digits) * factor // 1024
+    total = placement.memory_figure_bytes(raw)
+    return None if total is None else total // (1024**3)
 
 
 def allocation_shape(
@@ -362,8 +356,17 @@ def placement_argv(job: Mapping[str, str], command: Sequence[str]) -> list[str]:
     The command becomes an overlapping step of the allocation rather than an
     allocation of its own, so it lands on the allocation's node and shares its
     control group. The job id comes from the row the allocation was found by.
+
+    The step's options are composed by :func:`reckon.crew.placement.step_prefix`,
+    the one owner of a step's options, so the memory bound a step carries is
+    stated once and this prefix is not given one of its own.
     """
-    return ["srun", "--overlap", f"--jobid={job.get('jobid', '').strip()}", *command]
+    from reckon.crew import placement
+
+    return [
+        placement.RESERVATION_STEP_SCHEDULER,
+        *placement.step_prefix(job.get("jobid", "").strip(), list(command)),
+    ]
 
 
 def node_state(node: str) -> str | None:

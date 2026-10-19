@@ -268,6 +268,23 @@ def test_cutover_requires_written_ready_response(actions: Actions):
     )
 
 
+def _placement_prefix(argv: list[str]) -> list[str]:
+    """The options the placement layer states before the relayed command.
+
+    The placement prefix is owned by the placement layer and grows as it
+    states more of a step's request, so the commanded program is located by
+    the interpreter that starts it rather than by a fixed offset. A step that
+    named no placement at all would put the interpreter first and yield an
+    empty prefix, which the assertions below reject.
+    """
+    return argv[: argv.index(sys.executable)]
+
+
+def _relayed(argv: list[str]) -> list[str]:
+    """The command a placed step runs, with the placement prefix removed."""
+    return argv[argv.index(sys.executable) :]
+
+
 def test_cutover_sends_request_through_its_step_argv(
     actions: Actions, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
@@ -281,15 +298,16 @@ def test_cutover_sends_request_through_its_step_argv(
 
     def relay(argv: list[str]) -> subprocess.CompletedProcess[str]:
         relays.append(argv)
+        command = _relayed(argv)
         result = subprocess.run(
-            argv[3:],
+            command,
             capture_output=True,
             text=True,
             check=False,
             env={**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[1])},
         )
-        if result.returncode == 0 and argv[7] == "ready":
-            (actions.path.parents[1] / f"ready-{argv[8]}.json").write_text(
+        if result.returncode == 0 and command[4] == "ready":
+            (actions.path.parents[1] / f"ready-{command[5]}.json").write_text(
                 json.dumps({"job_id": "5678", "node": "new-node", "standby": False})
             )
         return result
@@ -303,21 +321,22 @@ def test_cutover_sends_request_through_its_step_argv(
         assert lines[1] == b"session first-fleet migrate-first-fleet"
     finally:
         os.close(reader)
-    assert relays[0][:8] == [
-        "srun",
-        "--overlap",
-        "--jobid=5678",
+    for relay in relays:
+        # The placement layer states the reservation step and its bound; the
+        # relayed program follows it.
+        assert _placement_prefix(relay)[:3] == ["srun", "--overlap", "--jobid=5678"]
+        assert any(item.startswith("--mem=") for item in _placement_prefix(relay))
+    # The readiness token is generated per move, so only the command it carries
+    # is asserted here.
+    assert _relayed(relays[0])[:5] == [
         sys.executable,
         "-m",
         "reckon.crew.fleet_migrate",
         "request",
         "ready",
     ]
-    assert relays[1:] == [
+    assert [_relayed(relay) for relay in relays[1:]] == [
         [
-            "srun",
-            "--overlap",
-            "--jobid=5678",
             sys.executable,
             "-m",
             "reckon.crew.fleet_migrate",

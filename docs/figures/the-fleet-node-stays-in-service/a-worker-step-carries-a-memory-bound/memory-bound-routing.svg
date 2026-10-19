@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="440" viewBox="0 0 1400 440" role="img" aria-labelledby="title desc">
+  <title id="title">Where a worker step runs, by the memory bound its placement declares</title>
+  <desc id="desc">A backend placement states the step's memory as a scheduler option, defaulting to 24 GB when it states none. At or below the 48 GB ceiling the step runs inside the held allocation with srun --overlap --jobid, carrying the one bound the placement made. Above the ceiling the step is placed as a job of its own: srun with the allocation's job and step variables removed from the environment, on the partition's _debug sibling, with the bound as --mem and a time limit capped at the one-hour window. Measured: a 49 GB declaration ran as job 1289800 on all_debug, its output on stdout, and it did not appear among the steps of the holding job 1281970.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#333" stroke-width="1.6"/></marker>
+    <marker id="arrow-subject" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#4a6f8a" stroke-width="1.8"/></marker>
+  </defs>
+
+  <g fill="none" stroke="#929292" stroke-width="1.6">
+    <rect x="40" y="150" width="300" height="104" rx="4"/>
+    <rect x="640" y="52" width="360" height="104" rx="4"/>
+  </g>
+
+  <g fill="none" stroke="#4a6f8a" stroke-width="1.8">
+    <rect x="640" y="256" width="560" height="122" rx="4"/>
+  </g>
+
+  <path d="M340 202 H480 V104 H630" fill="none" stroke="#929292" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <path d="M340 202 H480 V317 H630" fill="none" stroke="#4a6f8a" stroke-width="1.8" marker-end="url(#arrow-subject)"/>
+
+  <g font-family="system-ui, sans-serif" fill="#222" text-anchor="middle">
+    <text x="190" y="186" font-size="23">Declared bound</text>
+    <text x="190" y="214" font-size="17">placement.options</text>
+    <text x="190" y="238" font-size="17">--mem=24G by default</text>
+
+    <text x="820" y="86" font-size="23" fill="#6f6f6f">Step in the held allocation</text>
+    <text x="820" y="114" font-size="17" fill="#6f6f6f">srun --overlap --jobid=1281970</text>
+    <text x="820" y="138" font-size="17" fill="#6f6f6f">one bound: --mem=24G or declared</text>
+
+    <text x="920" y="288" font-size="23" fill="#33556b">Job of its own</text>
+    <text x="920" y="316" font-size="17">srun --partition=&lt;partition&gt;_debug --mem=&lt;bound&gt;</text>
+    <text x="920" y="340" font-size="17">--time=&lt;budget&gt; capped at 01:00:00 --job-name=&lt;run&gt;</text>
+    <text x="920" y="364" font-size="17">the allocation's SLURM_JOB*/SLURM_STEP* removed</text>
+  </g>
+
+  <g font-family="system-ui, sans-serif" font-size="17">
+    <text x="500" y="96" fill="#6f6f6f">at or below 48 GB</text>
+    <text x="500" y="309" fill="#4a6f8a">above 48 GB</text>
+  </g>
+
+  <text x="40" y="412" font-family="system-ui, sans-serif" font-size="15" fill="#555">Measured: a 49 GB declaration ran as job 1289800 on all_debug, its stdout returned to the caller, and it was not a step of job 1281970.</text>
+</svg>

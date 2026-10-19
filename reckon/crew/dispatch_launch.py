@@ -1076,6 +1076,7 @@ def apply_backend_placement(
     project: str | None = None,
     *,
     run_id: str | None = None,
+    time_budget: str | None = None,
 ) -> _backends.LaunchPlan:
     """Prefix an already-resolved launch with its backend's declared placement.
 
@@ -1109,6 +1110,46 @@ def apply_backend_placement(
     from reckon.crew import placement as placement_module
 
     options = [str(item) for item in placement.get("options") or ()]
+    # A step whose declared memory is past the allocation's ceiling cannot sit
+    # beside the sessions, so it is placed as a job of its own on a debug
+    # partition rather than inside the shared reservation. The declaration is
+    # read from the placement's own options, so no second key carries it, and a
+    # placement naming none stays in the allocation at the default bound.
+    unresolved = placement_module.unresolved_memory_declaration(options)
+    if unresolved is not None:
+        raise LaunchResolutionError(
+            f"the placement declares {unresolved}, whose total cannot be read: "
+            "a per-task figure is multiplied by the placement's own task count, "
+            "so state --cpus-per-task beside it or declare the step's whole "
+            "bound with --mem — nothing has been launched"
+        )
+    declared = placement_module.declared_memory_gb(options)
+    if declared is not None and placement_module.step_memory_above_ceiling(declared):
+        # The step client is the one already resolved above, asked for an
+        # allocation of its own: with the held allocation's identity removed
+        # from the environment it is no longer a step of the fleet job, so its
+        # partition and its bound are the ones stated here. Its standard
+        # streams are the plan's, so a worker placed this way reports as any
+        # other does rather than into a batch output file — and the prompt the
+        # dialect writes to stdin is left on the plan, because srun forwards
+        # stdin to its one task exactly as a step of the allocation does.
+        return dataclasses.replace(
+            plan,
+            argv=[
+                os.path.abspath(found),
+                *placement_module.own_job_prefix(
+                    plan.argv,
+                    memory_gb=declared,
+                    partition=str(
+                        placement.get("partition")
+                        or placement_module.RESERVATION_PARTITION
+                    ),
+                    time_limit=placement_module.debug_job_time_limit(time_budget),
+                    job_name=run_id or None,
+                ),
+            ],
+            environment=placement_module.without_slurm_job_identity(plan.environment),
+        )
     # The one shared reservation, which any project's dispatch resolves: a
     # worker placed into it runs where it was sized to and is counted against
     # the roster that admits it.
@@ -1203,7 +1244,22 @@ def resolve_backend_placement(
         backend,
         project,
         run_id=str(payload.get("run_id") or "") if payload else None,
+        time_budget=_declared_time_budget(payload),
     )
+
+
+def _declared_time_budget(payload: Mapping[str, Any] | None) -> str | None:
+    """The budget the run's own record carries, when a dispatch supplied one.
+
+    A worker placed as a job of its own is submitted under the run's budget
+    rather than an invented one, and the budget is read from the record the
+    dispatch already keeps rather than from a second declaration.
+    """
+    if not payload:
+        return None
+    node = payload.get("node")
+    declared = node.get("time_budget") if isinstance(node, Mapping) else None
+    return str(declared) if declared else None
 
 
 # How long a declared job-id probe is given to answer, and how many times it is
