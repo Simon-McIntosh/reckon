@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T19:23:07.607Z",
+  "dispatched_at": "2026-10-19T19:04:02Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-fleet-node-stays-in-service.html:285",
+      "id": "reasoning-1",
+      "reason": "the section must name the operator-run path (`--rehearse` from a plain shell on the fleet node, with the worker writing only the fragment) or the reckon change that grants a node the fleet state paths, or the node is undeliverable exactly as written.",
+      "text": "\u00a75 tells the node to write `~/.config/zellij/layouts/probe-<name>.kdl` itself (\"the node first writes a layout \u2026 with two tabs\"), but `reckon/crew/dispatch_admission.py:1773` (`_require_write_paths_in_authority`) admits only resolved repository roots or `delivery_roots()` and offers no override, and the plan's own comment `c-s5-authority` (line 581) records that this exact command was refused at launch for writing `~/.config/zellij/layouts/` and `~/.local/state/fleet/migration/rehearsals/`; as written, a coordinator dispatching \u00a75 hands the worker a step it is fenced out of, and the section's done-when (\"that new rehearsal ledger, created after dispatch\") would never be reached",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-fleet-node-stays-in-service.html:515",
+      "id": "anchors_resolve-1",
+      "reason": "the plan's only link to that gate's evidence is dead, so a reader cannot open the artifact the gate's `passed` verdict rests on, and the pointer must be reduced to the artifact path.",
+      "text": "the `r-gate-evidence` anchor for the passed gate `g-tfnsis-stop-path` has `href=\"the \u00a72 fragment docs/evidence/fragments/\u2026/name-how-a-stopped-worker-step-ends.html (commit 66610d127) names the srun client \u2026 reproduced 3 of 3\"`, i.e. the human-readable Evidence sentence was written into the `href` attribute; resolving it as `<path>.html` cannot help because the value is prose with spaces, not a path",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-fleet-node-stays-in-service.html:475",
+      "id": "reasoning-2",
+      "reason": "the frequency claim is the section's motivation, and a count of identity-moving commits on the first-parent history (the snapshot's own measurement should be taken over HEAD movement, not over repository commit count) changes how urgent the node is and what a reader believes about probe herd frequency.",
+      "text": "\u00a711 argues the herd is frequent from \"in the preceding 24 hours, 152 commits moved `reckon/`\", but the identity a follower reads is fixed by what HEAD names, so commits on worker branches that never reach main's HEAD do not move it and do not start a herd; the figure overstates how often the condition this section fixes actually occurs",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-fleet-node-stays-in-service.html:492",
+      "id": "done_when-1",
+      "reason": "a measure whose only control is the base arm shows the change does work but not that its guard can fire, and the honest control is a tree whose recorded verdict is an import failure, which the asker must return rather than re-probe (the section's own bullet already needs this case named as the control).",
+      "text": "\u00a711's done-when lists five tests and a measurement, and its only control is the base-revision positive control (\"sixteen probes run\"); no negative control is declared, so the node never shows that a recorded verdict can carry a failure, or that the one-proof guard can be made to produce the wrong answer it exists to prevent",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6a90ad46fdd8d3cd8095ca7e275d73227db7e5552e1a78fed8672d15cdd6ff8d",
+  "plan_slug": "the-fleet-node-stays-in-service",
+  "plan_version": 31,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T190214103729-plan-review-of-the-fleet-node-stays-in-service",
+  "reviewed_blob_sha": "66b5561215778a492cccdecbe3c64b0d3a913822",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the evidence link on the passed gate `g-tfnsis-stop-path` carries a prose sentence in its `href` instead of a path, so the one pointer a reader has to that gate's evidence does not resolve (extensionless resolution as `<path>.html` does not rescue a string of prose).",
+    "done_when": "a finding \u2014 \u00a711's done-when names a positive control (the base-revision sixteen-probe arm) but declares no negative control, and the only falsifying arms it lists are guard tests, so nothing in the node shows the recorded-verdict path carrying a bad verdict.",
+    "evidence_paths": "pass \u2014 the changed sections record into the plan's fragment directory (`docs/evidence/fragments/the-fleet-node-stays-in-service/`) and take measurements on the fleet allocation; no path names a session scratchpad or a node-local temporary.",
+    "naming": "pass \u2014 \u00a75, \u00a710 and \u00a711 name mechanisms (`source_code_identity`, `_committed_reload_tree`, `reckon_imports`, `ImportProbeTimedOut`, `IDENTITY_UNKNOWN`) and carry no plan labels, stage names or ticket numbers into code or comments; the run ids and commit shas that appear are plan prose, which owns them.",
+    "reasoning": "a finding \u2014 \u00a75's stated mechanism (the node writes the probe layout itself, then asks the supervisor to start the session) cannot run on the real code path, because dispatch confines a node's write paths to repositories and delivery roots with no override and the layout lives under the operator's home; the plan's own comment `c-s5-authority` records exactly this refusal and \u00a75 has not been reconciled with it. A second, smaller finding: \u00a711's \"152 commits moved `reckon/`\" counts commits that never move the identity a follower reads at HEAD.",
+    "single_goal": "pass \u2014 \u00a75 (a rehearsal at the head), \u00a710 (identity read only on HEAD movement) and \u00a711 (one import proof per tree) each carry one deliverable and one verdict.",
+    "wiring": "pass \u2014 the driving followup `f-tfnsis-001` orders \u00a710 before \u00a711 and \u00a75 after \u00a74, and both declared gates (`g-tfnsis-stop-path` s2\u2192s3, `g-tfnsis-move-ready` s5\u2192s8) name sections that exist."
+  },
+  "section_digests": {
+    "_document": "972be8e5fd8407ce4663d7ccca49702e1f8f2ecf75e7f92f09e70fcb066707b3",
+    "s1": "6e04065e334dfddf94228e26ccc5040265b76da7397e5f58cf73c7d37f623504",
+    "s10": "c539e5905cb53e6787632e997cf365eaac45733be5302985d423b16c58f35bba",
+    "s11": "4e3688783cee9936ae5f892b33f87facc52e84fc546d73838a7076faa40e9ffa",
+    "s2": "6155f820ac9515ec6066931aa10a1e66fdcff1b4184ba4014c19c572b1e6dfe6",
+    "s3": "5d0267647607a9ea2291a47d2f1faa4d8070d76e274abc94d1d1487ab7d3f1ea",
+    "s4": "9bf0fe68b8db66abd6daa8fdd98af93ada5d71be048a240fee7b2d68906b8b32",
+    "s5": "a058f3fc577115e36a2d0916c15224f53a50832cd595bd7c536faa1b5f6505a2",
+    "s6": "6869c09a477eaafc5a4780340f667b673175561e4bca9b0640c8af759c878f77",
+    "s7": "3a45b0d0d40cbd44ec6f8209f8a125004c44cc3cdccfb33e97882ef8331f7d70",
+    "s8": "e112e1202f352739982d9a42da2469ddd34f8ab2e4c217d172c90ed776b7a354",
+    "s9": "1ce7342558f8dc5f1587a8a947ef2a1b639355d9f39e517ee72d8e930177a2ba"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T19:33:35.391802+00:00"
+}
