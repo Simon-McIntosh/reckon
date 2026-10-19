@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="the-crew-surface-is-one-tool-and-a-few-verbs">
   <meta name="plan-title" content="The Crew Surface Is One Tool And A Few Verbs">
-  <meta name="plan-summary" content="80 CLI leaves and 398 options cost coordinators a refusal per guard; the crew MCP tool carries the coordinator's verbs and the CLI folds into flags.">
+  <meta name="plan-summary" content="80 CLI leaves and 398 options cost coordinators a refusal per guard; the crew MCP tool carries the coordinator&#x27;s verbs and the CLI folds into flags.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="12.0">
@@ -26,6 +26,8 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
   <main class="plan-doc">
@@ -59,7 +61,7 @@
       <tbody>
         <tr><td><code>crew review-plan</code>, <code>obligations</code>, <code>promote</code></td><td>275</td><td>tombstones naming <code>crew review --plan</code>, the MCP <code>obligations</code> view, <code>crew complete</code></td><td>§2</td></tr>
         <tr><td><code>crew complete</code> gate flags</td><td>3,754</td><td>read from the manifest; flags override; <code>--dry-run</code> lists every refusal</td><td>§3</td></tr>
-        <tr><td><code>crew merge</code>, then push and release</td><td>127</td><td><code>crew complete --land</code></td><td>§4</td></tr>
+        <tr><td><code>crew merge</code>, then push and release</td><td>127</td><td><code>crew complete --land</code></td><td>§4, §7</td></tr>
         <tr><td>coordinator write verbs over Bash</td><td>—</td><td><code>crew(action=complete|land|dispose|ack|answer|widen|stop|discard)</code></td><td>§5</td></tr>
         <tr><td><code>crew list</code>, <code>ledger</code>, <code>directory</code>, <code>drain</code>, <code>velocity</code></td><td>342</td><td><code>crew view &lt;name&gt;</code></td><td>§6</td></tr>
         <tr><td><code>crew repair-status</code>, <code>repair-review</code></td><td>140</td><td><code>crew repair --status|--review</code></td><td>§7</td></tr>
@@ -89,10 +91,13 @@
     <p><strong>Done when</strong> <code>tests/test_a_retired_verb_names_its_successor.py</code> checks four things. Each row exits with the
       documented code and prints its successor. No row appears in <code>reckon crew --help</code>.
       <code>reckon crew review-plan --plan p --answer f --acted</code> prints <code>reckon crew review --plan p --answer f --acted</code>.
-      Every row's successor verb resolves in the live command tree. The negative control adds a row whose successor names a verb the CLI does
-      not have, and the test then fails naming it. The help-contract tests that read the crew group's help pass unchanged. Write paths:
-      <code>reckon/crew/tombstones.py</code>, <code>reckon/crew_dispatch_commands.py</code>,
-      <code>tests/test_a_retired_verb_names_its_successor.py</code>.</p>
+      Every row's successor resolves: a CLI successor in the live command tree, and an MCP successor among the views and actions the
+      <code>crew</code> tool accepts. The negative control adds a row whose successor names a verb the CLI does not have, and the test then
+      fails naming it. <code>tests/test_cited_commands_exist.py</code> also refuses a skill or reference citation that resolves to a
+      tombstone, naming the citation and its successor, so every later fold must repoint the citations of the names it retires. The
+      help-contract tests that read the crew group's help pass unchanged. Write paths: <code>reckon/crew/tombstones.py</code>,
+      <code>reckon/crew_dispatch_commands.py</code>, <code>tests/test_a_retired_verb_names_its_successor.py</code>,
+      <code>tests/test_cited_commands_exist.py</code>.</p>
 
     <h2 id="s3">§3 — <code>crew complete</code> reads the manifest's gate receipt, and its dry run lists every refusal</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -135,14 +140,14 @@
       <li>Push, honouring <code>GIT_SSH_COMMAND</code>.</li>
       <li>Release the worktree through <code>gc</code>'s own removal.</li>
     </ol>
-    <p>Before removing anything, the node reads the ledger for <code>crew merge</code> landings of heads that no run produced. If none landed
-      in the last thirty days, <code>crew merge</code> becomes a tombstone naming <code>crew complete --land</code>. Otherwise it stays as the
-      form for a head with no run, and the evidence records the count.</p>
+    <p>Before removing anything, the node reads the ledger for <code>crew merge</code> landings of heads that no run produced. The evidence
+      records how many landed in the last thirty days. §7 tombstones <code>crew merge</code>, naming <code>crew complete --land</code>, when
+      that count is zero, and otherwise leaves it as the form for a head with no run. This node registers no tombstone.</p>
     <p><strong>Done when</strong> <code>tests/test_one_call_lands_a_run.py</code> builds a temporary repository with a bare remote and a
       finished run, and calls <code>complete --land</code> on it. The primary branch then carries the change's marker, the remote ref equals
       the local one, and the worktree is gone. The negative control resolves the merge so that the change is dropped; the marker check
       refuses, and nothing is pushed. Write paths: <code>reckon/crew_run_commands.py</code>, <code>reckon/crew/landing.py</code>,
-      <code>reckon/crew/merge.py</code>, <code>reckon/crew/tombstones.py</code>, <code>tests/test_one_call_lands_a_run.py</code>.</p>
+      <code>reckon/crew/merge.py</code>, <code>tests/test_one_call_lands_a_run.py</code>.</p>
 
     <h2 id="s5">§5 — The crew MCP tool carries the coordinator's write verbs</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -177,9 +182,13 @@
     </ul>
     <p><strong>Done when</strong> <code>tests/test_crew_view_serves_every_view.py</code> checks that, for each view, <code>crew view</code>
       prints what the MCP tool returns for the same arguments, and that each tombstoned verb exits with §2's code. The census of callers is
-      in the evidence. The negative control registers a view on the MCP tool only, and the parity case then fails naming it. Write paths:
-      <code>reckon/crew_run_commands.py</code>, <code>reckon/crew_view_command.py</code>, <code>reckon/crew/tombstones.py</code>,
-      <code>reckon/hooks</code>, <code>tests/test_crew_view_serves_every_view.py</code>.</p>
+      in the evidence. Every citation of the five verbs in reckon's skills and agent files is repointed to <code>crew view</code>, and
+      <code>tests/test_cited_commands_exist.py</code> passes, which it cannot while a citation names a tombstone. The negative control
+      registers a view on the MCP tool only, and the parity case then fails naming it. Write paths: <code>reckon/crew_run_commands.py</code>,
+      <code>reckon/crew_view_command.py</code>, <code>reckon/crew/tombstones.py</code>, <code>reckon/hooks</code>,
+      <code>skills/reckon-build/SKILL.md</code>, <code>skills/reckon-build/references/coordinator-reference.md</code>,
+      <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>skills/reckon-review/SKILL.md</code>,
+      <code>reckon/crew/AGENTS.md</code>, <code>tests/test_crew_view_serves_every_view.py</code>.</p>
 
     <h2 id="s7">§7 — The verb families fold behind flags</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -196,15 +205,21 @@
       <li><code>crew watch --stop</code>.</li>
     </ul>
     <p>Each removed name gets a tombstone row. <code>repair-completion</code> and <code>split-runs</code> are deleted once the node shows
-      their migrations have no input left on any mounted project. The verbs that <code>skills/reckon-build</code> cites move to the new forms
-      in the same node.</p>
+      their migrations have no input left on any mounted project. <code>crew merge</code> is tombstoned, naming
+      <code>crew complete --land</code>, when §4's evidence counts no merge of a head that no run produced in the last thirty days. Every
+      citation of a folded name in reckon's skills, references and agent files moves to its new form in the same node.</p>
     <p><strong>Done when</strong> <code>tests/test_crew_families_fold.py</code> checks three things. Every old invocation in the table prints
       its successor through its tombstone. Each successor gives the same answer the old verb gave at the node's base; the node captures those
       answers as fixtures before changing anything. The visible leaf count read from the command tree, tombstones excluded, is at most the base count minus the folded
-      names. The negative control alters one successor's answer, and that case then fails. The help-contract tests and
-      <code>tests/test_every_module_fits_a_worker_window.py</code> pass. Write paths: <code>reckon/crew_run_commands.py</code>,
-      <code>reckon/crew_dispatch_commands.py</code>, <code>reckon/crew/tombstones.py</code>, <code>skills/reckon-build/SKILL.md</code>,
-      <code>skills/reckon-build/references/coordinator-reference.md</code>, <code>tests/test_crew_families_fold.py</code>.</p>
+      names. The negative control alters one successor's answer, and that case then fails. The help-contract tests,
+      <code>tests/test_cited_commands_exist.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code> pass. Write paths:
+      <code>reckon/crew_run_commands.py</code>, <code>reckon/crew_dispatch_commands.py</code>, <code>reckon/crew/tombstones.py</code>,
+      <code>skills/reckon-build/SKILL.md</code>, <code>skills/reckon-build/references/coordinator-reference.md</code>,
+      <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>skills/reckon-build/references/worker-verification.md</code>,
+      <code>skills/reckon-build/references/conditional-guidance.md</code>, <code>skills/reckon-build/references/lane-routing.md</code>,
+      <code>skills/reckon-build/references/outage-recovery.md</code>,
+      <code>skills/reckon-build/references/orchestrator-harness/claude-code.md</code>, <code>reckon/crew/AGENTS.md</code>,
+      <code>docs/AGENTS.md</code>, <code>tests/test_crew_families_fold.py</code>.</p>
 
     <h2 id="s8">§8 — Every run verb takes one identity grammar</h2>
 <section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -223,38 +238,38 @@
       <code>reckon/crew/plan_review.py</code>, <code>tests/test_run_verbs_share_one_identity_grammar.py</code>.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="coordinator-surface" data-choice="mcp" data-by="Simon McIntosh" data-when="2026-10-19">
-        <p class="r-dec-q">Where does the coordinator's consolidated surface live?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="mcp">the MCP tools, kept on current code; the CLI is the worker and hook transport</button>
-          <button class="r-opt" data-value="generated-twins">one declaration per op, generating both an MCP action and a CLI verb</button>
-          <button class="r-opt" data-value="cli">hand-written CLI verbs</button>
-        </p>
-        <p class="r-dec-rat">Locked by the lead on 2026-10-19 after the coordinator reports: centralise in MCP once the server serves current
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="coordinator-surface" data-choice="mcp" data-by="Simon McIntosh" data-when="2026-10-19">
+    <p class="r-dec-q">Where does the coordinator&#x27;s consolidated surface live?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="mcp">the MCP tools, kept on current code; the CLI is the worker and hook transport</button>
+      <button class="r-opt" data-value="generated-twins">one declaration per op, generating both an MCP action and a CLI verb</button>
+      <button class="r-opt" data-value="cli">hand-written CLI verbs</button>
+      </p>
+    <p class="r-dec-rat">Locked by the lead on 2026-10-19 after the coordinator reports: centralise in MCP once the server serves current
           code, rather than maintain a second surface for every coordinator verb.</p>
-      </div>
-      <div class="r-dec" data-key="folded-verb-fate" data-choice="tombstone" data-by="Simon McIntosh" data-when="2026-10-19">
-        <p class="r-dec-q">What happens to a CLI name that is retired or folded into another verb's flag?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="tombstone">a hidden tombstone that prints the successor invocation and exits non-zero</button>
-          <button class="r-opt" data-value="alias">a hidden alias that keeps working</button>
-          <button class="r-opt" data-value="remove">removed outright</button>
-        </p>
-        <p class="r-dec-rat">Locked by the lead on 2026-10-19. Long-lived sessions carry skill text loaded before a retirement; a tombstone
+    </div>
+<div class="r-dec" data-key="folded-verb-fate" data-choice="tombstone" data-by="Simon McIntosh" data-when="2026-10-19">
+    <p class="r-dec-q">What happens to a CLI name that is retired or folded into another verb&#x27;s flag?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="tombstone">a hidden tombstone that prints the successor invocation and exits non-zero</button>
+      <button class="r-opt" data-value="alias">a hidden alias that keeps working</button>
+      <button class="r-opt" data-value="remove">removed outright</button>
+      </p>
+    <p class="r-dec-rat">Locked by the lead on 2026-10-19. Long-lived sessions carry skill text loaded before a retirement; a tombstone
           corrects them in one turn without keeping the old surface alive.</p>
-      </div>
-    </section>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-cso-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-10-19" data-recommends-skill="/reckon-build the-crew-surface-is-one-tool-and-a-few-verbs">
-        <h4 class="r-fu-title">Land the tombstones and the manifest-reading complete first; §2 and §3 run in parallel</h4>
-        <div class="r-fu-body"><p>§2 and §3 share no write path. §4, §6, §7 and §8 then run in order, because each writes
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-cso-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-10-19" data-recommends-skill="/reckon-build the-crew-surface-is-one-tool-and-a-few-verbs" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the tombstones and the manifest-reading complete first; §2 and §3 run in parallel</h4>
+    <div class="r-fu-body"><p>§2 and §3 share no write path. §4, §6, §7 and §8 then run in order, because each writes
           <code>reckon/crew_run_commands.py</code>. §5 waits on §4 and on the server serving current code.</p></div>
-        <pre class="r-fu-prompt">/reckon-build the-crew-surface-is-one-tool-and-a-few-verbs</pre>
-      </article>
-    </section>
+    <pre class="r-fu-prompt">/reckon-build the-crew-surface-is-one-tool-and-a-few-verbs</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>

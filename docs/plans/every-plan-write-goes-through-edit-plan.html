@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Coordinators hand-edit plans when the MCP image is stale or an op is missing; the server serves current code and edit_plan writes every field they touch.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="10.0">
+  <meta name="plan-effort-hours" content="11.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
@@ -22,10 +22,12 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-informs" content="the-crew-surface-is-one-tool-and-a-few-verbs">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-plan-write-goes-through-edit-plan#s2&quot;, &quot;every-plan-write-goes-through-edit-plan#s3&quot;], &quot;s5&quot;: [&quot;every-plan-write-goes-through-edit-plan#s4&quot;], &quot;s6&quot;: [&quot;every-plan-write-goes-through-edit-plan#s5&quot;], &quot;s7&quot;: [&quot;every-plan-write-goes-through-edit-plan#s6&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="3">
+<meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
   <main class="plan-doc">
@@ -64,11 +66,14 @@
       section effort is in quarter hours, and list the legal values of section risk.</p>
     <p>Add <code>tests/test_skills_cite_ops_the_store_accepts.py</code>. It extracts every <code>edit_plan</code> op object written in a code
       span or fenced block under <code>skills/</code> and in <code>AGENTS.md</code>, in either the <code>{op:'set', path:'…'}</code> or the JSON
-      spelling. It asserts each op verb is a key of the op vocabulary in <code>reckon/mcp.py</code>. It applies each <code>set</code> path to a
-      temporary plan through the store's op application and asserts the store does not refuse it as an unsupported path or a computed
+      spelling, and every path listed in the <code>set</code> row of the op-reference table in <code>skills/reckon-edit/SKILL.md</code>, which
+      is a table cell rather than an op object. It asserts each op verb is a key of the op vocabulary in <code>reckon/mcp.py</code>. It applies
+      each <code>set</code> path to a temporary plan through the store's op application and asserts the store does not refuse it as an unsupported path or a computed
       field. Parity is held by this comparison of the surfaces, not by a literal on either side.</p>
     <p><strong>Done when</strong> the test passes at the node's head, and the gate log shows it ran. The negative control restores
-      <code>impl</code> to the <code>reckon-edit</code> set row, and the test then fails naming that file and line. Write paths:
+      <code>impl</code> to the <code>reckon-edit</code> set row, and the test then fails naming that file and line. The prose instructions in
+      <code>AGENTS.md</code> and the two references are not op objects, so the gate log also carries a grep of the five files for an
+      instruction to set or advance <code>impl</code>, which finds none. Write paths:
       <code>skills/reckon-edit/SKILL.md</code>, <code>skills/reckon-create/SKILL.md</code>,
       <code>skills/reckon-build/references/sprint-orchestration.md</code>,
       <code>skills/reckon-build/references/coordinator-reference.md</code>, <code>AGENTS.md</code>,
@@ -149,27 +154,21 @@
       <code>reckon/_plan_html.py</code>, <code>reckon/mcp.py</code>, <code>skills/reckon-edit/SKILL.md</code>,
       <code>tests/test_edit_plan_sets_followup_dependency_and_gate_fields.py</code>.</p>
 
-    <h2 id="s6">§6 — A plan closes, and a deferred section waits, without a placeholder followup</h2>
+    <h2 id="s6">§6 — A plan closes in one write, without a placeholder followup</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> 17 refusals said a landing left no continuation, and 27 that a followup hid work. Coordinators get past both
       by appending a followup already resolved "done — no followup", which one called gaming the guard. Closing a plan therefore takes
-      several writes whose order is learned from refusals. When the only remaining work is a deferred section waiting on an open decision,
-      no followup is accepted at all.</p>
-    <p><strong>Deliverable.</strong> Two changes, the second waiting on the decision <code>deferred-continuation</code> below.</p>
-    <ul>
-      <li><code>{op:'close', status, outcome, by[, superseded_by]}</code> is one write. It sets a terminal status and resolves every open
-        followup with the outcome. It checks the existing guards together and reports every one that fails: a section still implementable
-        (named), or the evidence record that a terminal status needs (named by path). No guard is removed.</li>
-      <li>The continuation guard accepts a deferred section as a plan's continuation when an open decision names it in its sections, or an
-        open gate holds it. A plan waiting on the lead then needs no followup.</li>
-    </ul>
-    <p><code>skills/reckon-edit/SKILL.md</code> and <code>skills/reckon-build/SKILL.md</code> describe <code>close</code> and drop the
+      several writes whose order is learned from refusals. A plan whose only remaining work waits on the lead is §8's case, which the
+      decision <code>deferred-continuation</code> holds; this section needs no decision.</p>
+    <p><strong>Deliverable.</strong> <code>{op:'close', status, outcome, by[, superseded_by]}</code> is one write. It sets a terminal status
+      and resolves every open followup with the outcome. It checks the existing guards together and reports every one that fails: a section
+      still implementable (named), or the evidence record that a terminal status needs (named by path). No guard is removed.
+      <code>skills/reckon-edit/SKILL.md</code> and <code>skills/reckon-build/SKILL.md</code> describe <code>close</code> and drop the
       resolved-placeholder recipe.</p>
-    <p><strong>Done when</strong> <code>tests/test_a_plan_closes_in_one_op.py</code> passes three cases. A plan whose sections are done and
-      whose evidence record exists closes in one version step, with every followup resolved. A plan with an implementable section is refused,
-      naming that section and every other failing guard in the same answer. A plan whose only remaining section is deferred under an open
-      decision lands with no new followup. The negative control locks that decision, and the landing is then refused for want of a
-      continuation. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>, <code>reckon/mcp.py</code>,
+    <p><strong>Done when</strong> <code>tests/test_a_plan_closes_in_one_op.py</code> passes two cases. A plan whose sections are done and
+      whose evidence record exists closes in one version step, with every followup resolved and no placeholder followup appended. A plan with
+      an implementable section and no evidence record is refused, naming that section and the missing record in the same answer. The
+      negative control reports only the first failing guard, and the second case then fails for the guard it omits. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>, <code>reckon/mcp.py</code>,
       <code>skills/reckon-edit/SKILL.md</code>, <code>skills/reckon-build/SKILL.md</code>,
       <code>tests/test_a_plan_closes_in_one_op.py</code>.</p>
 
@@ -191,46 +190,55 @@
       <li>An optional <code>request_id</code> makes a retry of a write that landed late return its landed version with <code>ok</code>.</li>
       <li>A refusal on an enumerated field names its legal values, and a capability refusal carries a valid example.</li>
     </ul>
-    <p><strong>Done when</strong> <code>tests/test_a_refused_write_names_the_next_step.py</code> covers the four changes through
-      <code>edit_plan</code>. The negative control reuses one <code>request_id</code> for a write with different ops, and that write is refused
-      as a reused id rather than answered with the earlier write's version. Write paths: <code>reckon/mcp_edit_plan.py</code>,
+    <p><strong>Done when</strong> <code>tests/test_a_refused_write_names_the_next_step.py</code> covers each change that reproduced at
+      the base, through <code>edit_plan</code>, with its own negative control. Without the current version, the conflict case fails. Reporting
+      only the first refused op fails the batch case. Reusing one <code>request_id</code> for a write with different ops is refused as a
+      reused id, not answered with the earlier write's version. Dropping the legal values from an enumerated-field refusal fails that case.
+      A change that already holds at the base (the conflict payload may: <code>_conflict_response</code> in <code>reckon/_mcp_tools.py</code>
+      returns <code>current_version</code>) is recorded in the evidence with the passing base test, and gets no code. Write paths: <code>reckon/mcp_edit_plan.py</code>,
       <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>,
       <code>tests/test_a_refused_write_names_the_next_step.py</code>.</p>
 
+    <h2 id="s8">§8 — A deferred section held by a decision or a gate is a plan&#x27;s continuation</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> When the only remaining work is a deferred section waiting on an open decision, the continuation guard accepts no followup at all: a followup naming the section is refused as hiding work, and none at all is refused as leaving no continuation. Five reports met this with no legal way through, and the placeholder they used instead is the one §6 retires.</p>
+    <p><strong>Deliverable.</strong> Once the lead locks <code>deferred-continuation</code> as <code>accept</code>, the continuation guard accepts a deferred section as a plan's continuation when an open decision names it among its sections, or an open gate holds it. A plan waiting on the lead then needs no followup. If the decision is locked as <code>require-followup</code>, the hides-work guard instead accepts a followup whose prompt names that deferred section.</p>
+    <p><strong>Done when</strong> <code>tests/test_a_waiting_plan_needs_no_placeholder.py</code> lands a plan whose only remaining section is deferred under an open decision, and the landing succeeds with no new followup. The negative control locks that decision, and the same landing is then refused for want of a continuation. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>, <code>skills/reckon-edit/SKILL.md</code>, <code>tests/test_a_waiting_plan_needs_no_placeholder.py</code>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="stale-image-remedy" data-choice="self-reload" data-by="Simon McIntosh" data-when="2026-10-19">
-        <p class="r-dec-q">When the MCP image is older than the checkout, what keeps a coordinator's plan write from blocking?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="self-reload">the server serves current code itself</button>
-          <button class="r-opt" data-value="cli-twin">a CLI twin of edit_plan on current code</button>
-          <button class="r-opt" data-value="both">both</button>
-        </p>
-        <p class="r-dec-rat">The lead centralised the surface in MCP on 2026-10-19. A server that serves current code removes the reconnect
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="stale-image-remedy" data-choice="self-reload" data-by="Simon McIntosh" data-when="2026-10-19">
+    <p class="r-dec-q">When the MCP image is older than the checkout, what keeps a coordinator&#x27;s plan write from blocking?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="self-reload">the server serves current code itself</button>
+      <button class="r-opt" data-value="cli-twin">a CLI twin of edit_plan on current code</button>
+      <button class="r-opt" data-value="both">both</button>
+      </p>
+    <p class="r-dec-rat">The lead centralised the surface in MCP on 2026-10-19. A server that serves current code removes the reconnect
           for every tool at once, and a CLI twin would add verbs while the crew CLI is being narrowed.</p>
-      </div>
-      <div class="r-dec" data-key="deferred-continuation" data-choice="" data-by="" data-when="" data-sections="s6" data-recommended="accept" data-recommended-by="reckon-c4 surface review">
-        <p class="r-dec-q">May a deferred section held by an open decision or an open gate stand as a plan's continuation, so that no followup
+    </div>
+<div class="r-dec" data-key="deferred-continuation" data-choice="" data-by="" data-when="" data-sections="s8" data-recommended="accept" data-recommended-by="reckon-c4 surface review">
+    <p class="r-dec-q">May a deferred section held by an open decision or an open gate stand as a plan&#x27;s continuation, so that no followup
           is needed?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="accept">accept it: the decision or gate is the continuation</button>
-          <button class="r-opt" data-value="require-followup">keep requiring a followup, and let one name a deferred section</button>
-        </p>
-        <p class="r-dec-ctx">Recommended: accept. The decision or gate already records what the section waits on and who must act, and a
+    <p class="r-dec-ctx">Recommended: accept. The decision or gate already records what the section waits on and who must act, and a
           followup naming it adds a second copy that drifts. Five reports met this guard with no legal way through.</p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="accept">accept it: the decision or gate is the continuation</button>
+      <button class="r-opt" data-value="require-followup">keep requiring a followup, and let one name a deferred section</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-epw-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-10-19" data-recommends-skill="/reckon-build every-plan-write-goes-through-edit-plan">
-        <h4 class="r-fu-title">Correct the skills and make the server serve current code; §2 and §3 run in parallel</h4>
-        <div class="r-fu-body"><p>§2 and §3 share no write path and can be dispatched together. §4 to §7 run in order after them, because
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-epw-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-10-19" data-recommends-skill="/reckon-build every-plan-write-goes-through-edit-plan" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Correct the skills and make the server serve current code; §2 and §3 run in parallel</h4>
+    <div class="r-fu-body"><p>§2 and §3 share no write path and can be dispatched together. §4 to §7 run in order after them, because
           each writes <code>reckon/_store.py</code>.</p></div>
-        <pre class="r-fu-prompt">/reckon-build every-plan-write-goes-through-edit-plan</pre>
-      </article>
-    </section>
+    <pre class="r-fu-prompt">/reckon-build every-plan-write-goes-through-edit-plan</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>
