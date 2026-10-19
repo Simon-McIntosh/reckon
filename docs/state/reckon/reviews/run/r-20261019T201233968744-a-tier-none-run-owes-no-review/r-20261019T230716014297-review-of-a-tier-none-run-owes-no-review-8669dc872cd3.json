@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest's baseline_suite and after_suite both carry failure_count 0 and failure_ids []; the base arm's exit_status 1 is 10 pytest-timeout errors in reckon/run_store.py, not failures, and the head arm at 9d7be346 is 219 passed EXIT=0 over the same 39-file population, so the delta is 0 added failures.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/obligations.py:1001",
+    "reckon/crew/obligation_snapshot.py:970",
+    "reckon/mcp_views.py:3818",
+    "reckon/hooks/coordinator_obligations.py:188",
+    "reckon/crew/runs.py:1346"
+  ],
+  "completed_at": "2026-10-19T23:21:03.966Z",
+  "dispatched_at": "2026-10-19T23:08:20Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "414",
+      "text": "follow-on: _promotion_command duplicates the promotion-command composition owned by reckon/crew/recovery_classification.py:774-782 (the '--gate <verdict>' plus '--commit <sha>' loop and the '--no-commit <why>' fallback), so the two copies of the same command shape can drift; the addition neither calls nor extends the owning branch. A shared helper in recovery_classification would keep the tier-none duty and the classifier's promotable action naming one command."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T201233968744-a-tier-none-run-owes-no-review/manifest.md",
+      "line": "12",
+      "text": "follow-on: the manifest records no ruff receipt for the done_when clause 'ruff check and ruff format --check add no findings'; tests: names only the pytest gate and test_logs lists no ruff log. Read at head the delta is zero (ruff check clean on all nine changed paths; ruff format flags only the pre-existing reckon/crew/obligations.py:189 and tests/test_obligations_snapshot_is_published.py, unchanged from base), so nothing is wrong with the code, but the clause is unrecorded in the node's own evidence."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_tier_none_run_owes_no_review.py:195 asserts docs_item[\"next_command\"].startswith(f\"reckon crew complete --run {DOCS_RUN}\"); logs/negative-control-repair.log shows that reverting item[\"next_command\"] = _promotion_command(row) (reckon/crew/obligations.py:504) makes the assertion fail with 'reckon crew dispatch ...' supplied instead, so the guard reddens on the regression it was added for.",
+    "evidence": "tests/test_a_tier_none_run_owes_no_review.py:189 asserts the tier-none run reads review-ready with review_tier none at :190 and :203 asserts the runtime-source run still reads review-missing in the same pass, and the negative control at logs/negative-control.log reddens :189 with EXIT=1 under the removed tier read, while logs/base-importers.log and logs/after-importers-repair-round.log record one 39-file population at 209 passed/10 pre-existing errors and 219 passed.",
+    "fit": "reckon/crew/obligations.py:414 follows the module's Mapping-in/dict-out helper idiom and its docstring states the mechanism, and neither the new symbol nor its comments carry a plan, ticket or phase label.",
+    "goal_fidelity": "reckon/crew/obligations.py:503 sets item[\"review_tier\"]=none and the kind review-ready for a tier-none run through _review_tier_for_duty, which is exactly the goal of making a tier-none run carry the promotable kind rather than review-missing.",
+    "reuse": "_promotion_command (reckon/crew/obligations.py:414) re-composes the promotion command the repository already owns inline at reckon/crew/recovery_classification.py:774-782 without extending that owner.",
+    "scope_discipline": "every path in the diff base..head (reckon/crew/obligations.py, tests/test_a_tier_none_run_owes_no_review.py, the landing fragment, and seven repaired test files) is inside a write grant: the four original paths plus the seven test files granted in resume-1/resume-2 advice and named in the repair round's scope."
+  },
+  "node": "review-of-a-tier-none-run-owes-no-review-8669dc872cd3",
+  "node:reviewed": "a-tier-none-run-owes-no-review",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make a run whose review tier is none carry the promotable obligation kind rather than review-missing; reckon/crew/obligations.py:503 returns kind review-ready with review_tier none for a tier-none run in _review_duty_item.\nVERDICT done_when: the measure asks a temporary-crew-home test to find the tier-none run's obligation present and promotable while a runtime-source run still reads review-missing, plus a tier-removed negative control, importer arms with no added failure, and clean ruff; tests/test_a_tier_none_run_owes_no_review.py:189/:203 assert both run readings in one pass and the control at logs/negative-control.log reddens the kind assertion with EXIT=1, the two importer arms are recorded as baseline_suite/after_suite with 0 failed, and the ruff clause is verified clean on delta though the manifest records no ruff log.\nVERDICT write_paths: the diff base..head touches reckon/crew/obligations.py, tests/test_a_tier_none_run_owes_no_review.py, the landing fragment, and seven further test files, all inside the four original grants plus the seven granted to the node in resume-1/resume-2 advice and named in the repair round's scope.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T201233968744-a-tier-none-run-owes-no-review/manifest.md; status complete, nine commits 529204b6..8669dc872, the round's gate 10 passed EXIT=0 at logs/gate-repair.log, two negative controls EXIT=1, and the 39-file importer arm 219 passed at logs/after-importers-repair-round.log against 209 passed with 10 pre-existing pytest-timeout errors at base.\nVERDICT diff: read commit by commit against 83d5a0ce8: obligations.py adds _review_tier_for_duty and _promotion_command and a tier-none branch in _review_duty_item, one new gate test file, the fixture repairs across seven test files, and the landing fragment.\nCALL_SITES: reckon/crew/obligations.py:1001, reckon/crew/obligation_snapshot.py:970, reckon/mcp_views.py:3818, reckon/hooks/coordinator_obligations.py:188, reckon/crew/runs.py:1346\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:503 sets item[\"review_tier\"]=none and the kind review-ready for a tier-none run through _review_tier_for_duty, which is exactly the goal of making a tier-none run carry the promotable kind rather than review-missing.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_a_tier_none_run_owes_no_review.py:189 asserts the tier-none run reads review-ready with review_tier none at :190 and :203 asserts the runtime-source run still reads review-missing in the same pass, and logs/negative-control.log reddens :189 with EXIT=1 under the removed tier read while logs/base-importers.log and logs/after-importers-repair-round.log record one 39-file population at 209 passed/10 pre-existing errors and 219 passed; the manifest records no ruff receipt, which I verified clean on delta myself.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff 83d5a0ce8 8669dc872 is inside a write grant, the four original plus the seven test files granted in resume-1/resume-2 advice and named in the repair round's scope.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_tier_none_run_owes_no_review.py:195 asserts the tier-none run's next_command starts with 'reckon crew complete --run r-docs-only', and logs/negative-control-repair.log shows the assertion failing with the review dispatch supplied when item[\"next_command\"] = _promotion_command(row) at reckon/crew/obligations.py:504 is reverted, so it reddens on the regression.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/obligations.py:414 follows the module's Mapping-in/dict-out helper idiom and its docstring states the mechanism, and no new symbol or comment carries a plan, ticket or phase label.\nSCORE reuse: 5\nJUSTIFICATION reuse: _promotion_command (reckon/crew/obligations.py:414) re-composes the promotion command the repository already owns at reckon/crew/recovery_classification.py:774-782 without extending that owner.\nFINDING reckon/crew/obligations.py:414 follow-on: _promotion_command duplicates the promotion-command composition owned by reckon/crew/recovery_classification.py:774-782 (the '--gate <verdict>' plus '--commit <sha>' loop and the '--no-commit <why>' fallback), so the two copies of the same command shape can drift; a shared helper would keep the tier-none duty and the classifier's promotable action naming one command.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T201233968744-a-tier-none-run-owes-no-review/manifest.md:12 follow-on: the manifest records no ruff receipt for the done_when clause 'ruff check and ruff format --check add no findings'; at head the delta is zero, so the code is clean but the clause is unrecorded in the node's own evidence.",
+  "review_run_id": "r-20261019T230716014297-review-of-a-tier-none-run-owes-no-review-8669dc872cd3",
+  "reviewed_base_sha": "83d5a0ce8eca1c7a37a4322873735b1ed86362c7",
+  "reviewed_head_sha": "8669dc872cd3c22686b9c46190a5a3473ca0c24a",
+  "reviewed_run_id": "r-20261019T201233968744-a-tier-none-run-owes-no-review",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T23:35:00+00:00",
+  "total": 96
+}
