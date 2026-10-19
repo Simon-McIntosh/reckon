@@ -1,0 +1,126 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T05:53:05.075Z",
+  "dispatched_at": "2026-10-19T05:44:59Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:171",
+      "id": "reasoning-1",
+      "reason": "the node must add coordinator-reference.md and AGENTS.md (or move these two edits to \u00a72, which already writes both) or its stated migration is only partly done and its delivery is judged complete at the wrong scope.",
+      "text": "\u00a76 states \"every reckon caller that sets one moves to `close` in the same node\", yet `skills/reckon-build/references/coordinator-reference.md:1103` (\"Do not set `status` to `shipped` or `done`\u2026\") and `AGENTS.md:258` (\"`status` updated (`active` \u2192 `shipped`/`done`\u2026)\") both instruct setting a terminal status and are absent from \u00a76's declared write paths (`reckon/_store.py`, `reckon/_store_section_ops.py`, `reckon/mcp.py`, `skills/reckon-edit/SKILL.md`, `skills/reckon-build/SKILL.md`, tests) \u2014 so a node dispatched on those paths leaves the two instructions intact and a coordinator following them meets the new refusal with no path to `close`, the exact \"caller that does not move\" defect \u00a76 claims to retire.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:24",
+      "id": "wiring-1",
+      "reason": "once the lead locks `deferred-continuation`, \u00a78 becomes dispatchable with no edge holding it behind \u00a77, so roadmap can rank it ready and run it concurrently on the same files the ordered chain writes.",
+      "text": "`plan-section-depends-on` orders \u00a74\u2190\u00a72,\u00a73; \u00a75\u2190\u00a74; \u00a76\u2190\u00a75; \u00a77\u2190\u00a76, but declares no edge for \u00a78, though \u00a78's write paths include `reckon/_store.py`, `reckon/_store_section_ops.py` and `skills/reckon-edit/SKILL.md`, files \u00a72, \u00a75, \u00a76 and \u00a77 also write, and the driving followup orders only \"\u00a74 to \u00a77\".",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:135",
+      "id": "single_goal-1",
+      "reason": "it must be split or, as \u00a77 was answered, each surface given its own verdict and negative control before a reviewer can close it on evidence.",
+      "text": "\u00a75's title and deliverable carry four independent surfaces \u2014 `followups.<id>.title`/`.body`, `section_depends_on.<sid>`, `gates.<id>.measure`/`.required_evidence`, and the null-removes-a-key rule over four key kinds \u2014 with one test file and one done-when, so the node cannot be reviewed or closed on one verdict and its gate proves none of the four singly.",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:154",
+      "id": "done_when-1",
+      "reason": "without a control the followup-text refusal (a resolved followup is a record and is refused) and the open-gate check can pass on code that never fires them, so the section's own measure rests on a suite that may be green on the unfixed handler.",
+      "text": "\u00a75's done-when names two negative controls (a null `section_declarations.<id>` while its heading exists, a ref outside the grammar) for four surfaced paths, leaving the `followups.<id>.title`/`.body` path and the `gates.<id>.measure`/`.required_evidence` path with no declared control.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "44c9098e58c2480aaa463a730cc7c7d5a8b67e076395f580792a94f476856430",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 4,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-19T05:56:27.918934+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-19T05:56:34.362874+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "",
+      "when": "2026-10-19T05:56:39.964886+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-19T05:56:46.862348+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:56:46.862348+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:56:27.918934+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:56:39.964886+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:56:34.362874+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-plan-write-goes-through-edit-plan.v4.json",
+  "review_run_id": "r-20261019T054420918740-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "d1b3d5f3a08954189ff23068db472392603cafcd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each cited symbol resolves: `_CodeReload`/`_served_code_report` (reckon/serve.py:1468,1432), `take_snapshot`/`served_report`/`drift` (reckon/served_code.py:106,627,599), `_refuse_when_stale` (reckon/mcp.py:317), `_documented_examples`/`_apply_experiment`\u2192`_apply_example` (tests/test_skill_contracts.py:1825,1881), `_conflict_response` returning `current_version` (reckon/mcp_deadlines.py:862,880), commit `d8ff471c9`, and the \u00a714/\u00a715 anchors of an-mcp-failure-names-its-cause; the s1 href resolves under docs/research as `<path>.html`. `reckon/_store_section_ops.py` is named as a file to create, not cited as existing.",
+    "done_when": "a finding \u2014 \u00a75's done-when declares negative controls for only two of the four settable surfaces the section introduces, so the followup-text and gate-measure paths can pass without their refusal firing.",
+    "evidence_paths": "pass \u2014 the changed units name their gate logs and the terminal evidence record on durable repository paths, never a session scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 the new test filenames and symbols describe the mechanism, and no plan label, ticket number or version tag reaches code or a symbol.",
+    "reasoning": "a finding \u2014 \u00a76 asserts every reckon caller that sets a terminal status moves to `close` in the same node, but two instructions telling a caller to set one sit outside \u00a76's write paths and survive the section.",
+    "single_goal": "a finding \u2014 \u00a75 carries four independent deliverables (followup title/body, `section_depends_on`, gate measure/required_evidence, and null-removal) under one gate and one verdict.",
+    "wiring": "a finding \u2014 \u00a78 declares no `depends-on` edge although it writes `reckon/_store.py` and `skills/reckon-edit/SKILL.md`, files the ordered \u00a74\u2013\u00a77 chain also writes."
+  },
+  "section_digests": {
+    "_document": "fe4a479ee96126b12c62c0412b79792f0a50e08659c72cafd18db1e0bd618c9a",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s2": "737250903251177035b357be3d656b549480337bc454f97615634dada495e251",
+    "s3": "4150e9281b9c0fe1173e9c23f5582efb0662d22f1d36944861d3033f988d479c",
+    "s4": "e0390ff35ac5e425fa3060cede9882af598c54dc89e0a6069101b3971f8e8367",
+    "s5": "649c6334e646fc46392026275ec3b1ef1432ae60c674cdd3f85a9d72edadead7",
+    "s6": "0ff6c54e2f2053d6ac22fdab1be24e7e390407642d636af5fa5367e6fd347702",
+    "s7": "80062db679255aff5087534386e7372545e1cd3414916db8329aec79a1a8388d",
+    "s8": "f9dd6299834b4d039fd1f45b37141d5e265075b4cfd7f341357bea21196f5b35"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T05:56:25.189522+00:00"
+}
