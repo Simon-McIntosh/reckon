@@ -1,6 +1,7 @@
 # ruff: noqa: I001
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,14 +21,18 @@ from reckon._store import (
     VersionConflict,
     _docs_dir_for_project,
     _mounts_path,
+    _receipt_scope_key,
     _resolve_html_file,
     append_to_list,
     apply_ops,
+    collect_refused_ops,
     list_followups_across,
     list_questions_across,
     new_plan_html,
     patch_plan,
     read_plan,
+    read_write_receipts,
+    record_write_receipt,
     replace_plan_text,
     replace_plan_text_batch,
     resolve_in_list,
@@ -71,6 +76,10 @@ from reckon.mcp_discovery import (
     _inventory_row,
     _unwired_plan_refusal,
 )
+
+
+#: Sentinel for a path that does not resolve, distinct from a stored ``None``.
+_ABSENT = object()
 
 
 def _patch_plan(
@@ -922,6 +931,125 @@ def _pending_limit_warning(
     )
 
 
+def _value_at_path(data: dict[str, Any], path: str) -> Any:
+    """The current value a ``set`` op's path addresses, or ``_ABSENT``.
+
+    Resolves the same address forms the store's set handler accepts: a list of
+    records keyed by ``id`` (sections, followups, gates), a mapping (decisions,
+    a section's declarations), or a top-level scalar. Anything unresolved is
+    reported as absent rather than guessed.
+    """
+    parts = [p for p in str(path).split(".") if p]
+    if not parts:
+        return _ABSENT
+    head = parts[0]
+    listed_heads = {"sections", "followups", "gates", "questions", "research"}
+    if len(parts) >= 3 and head in listed_heads:
+        listed = data.get(head)
+        if not isinstance(listed, list):
+            return _ABSENT
+        record = next(
+            (
+                item
+                for item in listed
+                if isinstance(item, dict) and str(item.get("id")) == parts[1]
+            ),
+            None,
+        )
+        if record is None:
+            return _ABSENT
+        return record.get(parts[2], _ABSENT)
+    if len(parts) == 2 and head in {"decisions", "section_declarations"}:
+        mapping = data.get(head)
+        if not isinstance(mapping, dict):
+            return _ABSENT
+        return mapping.get(parts[1], _ABSENT)
+    current: Any = data
+    for part in parts:
+        if isinstance(current, dict) and part in current:
+            current = current[part]
+        else:
+            return _ABSENT
+    return current
+
+
+def _changed_targets(
+    data: dict[str, Any], ops: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """The targets a caller's ops address, with the value each holds now.
+
+    A version conflict means the document moved since the caller read it, so the
+    answer names every target the refused write would touch beside its current
+    value: the caller re-reads only what it did not expect to move, instead of
+    re-reading the whole plan.
+    """
+    targets: list[dict[str, Any]] = []
+    for index, op in enumerate(ops or []):
+        if not isinstance(op, dict) or op.get("op") != "set":
+            continue
+        path = op.get("path")
+        if not isinstance(path, str) or not path:
+            continue
+        current = _value_at_path(data, path)
+        entry: dict[str, Any] = {"index": index, "path": path}
+        if current is not _ABSENT:
+            entry["current"] = current
+        targets.append(entry)
+    return targets
+
+
+def _attach_changed_targets(
+    response: dict[str, Any],
+    data: dict[str, Any],
+    ops: list[dict[str, Any]] | None,
+) -> dict[str, Any]:
+    """Add the addressed targets to a version-conflict response, in place."""
+    if response.get("error") != "version_conflict":
+        return response
+    targets = _changed_targets(data, list(ops or []))
+    if targets:
+        response["changed_targets"] = targets
+    return response
+
+
+def _ops_digest(
+    mode: str,
+    ops: list[dict[str, Any]] | None,
+    *,
+    old_html: str | None,
+    new_html: str | None,
+    replacements: list[dict[str, str]] | None,
+) -> str:
+    """A stable digest of one write's request, so a reused id is detectable."""
+    material = json.dumps(
+        {
+            "mode": mode,
+            "ops": ops or [],
+            "old_html": old_html,
+            "new_html": new_html,
+            "replacements": replacements or [],
+        },
+        sort_keys=True,
+        default=str,
+    )
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()
+
+
+def _replayed_response(
+    project: str, slug: str, doc_type: str | None, version: int
+) -> dict[str, Any]:
+    """The success a retried request id returns for the write that landed."""
+    result = _edit_success_response(
+        project=project, slug=slug, doc_type=doc_type, new_version=version
+    )
+    result["replayed"] = True
+    result["message"] = (
+        f"A write for request_id already landed at version {version}; "
+        "this is its recorded result."
+    )
+    return result
+
+
 def _edit_plan(
     project: str,
     slug: str,
@@ -934,6 +1062,7 @@ def _edit_plan(
     old_html: str | None = None,
     new_html: str | None = None,
     replacements: list[dict[str, str]] | None = None,
+    request_id: str | None = None,
 ) -> dict[str, Any]:
     """Edit structured state or authored prose with version protection.
 
@@ -991,6 +1120,36 @@ def _edit_plan(
         if scoped_refusal is not None:
             return scoped_refusal
         checkout_path = scoped_root
+    # A request id makes a retry idempotent: the same id with the same request
+    # returns the version an earlier attempt reached, so a write whose reply was
+    # lost to a deadline does not read as a fresh conflict. The same id with a
+    # different request is a caller error and is refused, never answered with
+    # the earlier write's version.
+    receipt_scope = None
+    request_digest = None
+    if request_id:
+        receipt_scope = _receipt_scope_key(project, slug, doc_type, checkout_path)
+        request_digest = _ops_digest(
+            mode,
+            ops,
+            old_html=old_html,
+            new_html=new_html,
+            replacements=replacements,
+        )
+        recorded = read_write_receipts(project, receipt_scope).get(request_id)
+        if recorded is not None:
+            if recorded.get("digest") != request_digest:
+                return {
+                    "ok": False,
+                    "error": "reused_request_id",
+                    "detail": (
+                        f"request_id {request_id!r} already answered a write with "
+                        "different ops; use a fresh request_id for a new write"
+                    ),
+                    "request_id": request_id,
+                    "landed_version": recorded.get("version"),
+                }
+            return _replayed_response(project, slug, doc_type, recorded.get("version"))
     if mode == "text":
         if create:
             return {
@@ -1242,18 +1401,23 @@ def _edit_plan(
     if expected_version != cur_version:
         if created_file is not None:
             created_file.unlink(missing_ok=True)
-        return _conflict_response(
-            VersionConflict(expected_version, cur_version, cur_data),
-            project=project,
-            slug=slug,
-            doc_type=selected_type,
-            operation="create" if create else "edit",
+        return _attach_changed_targets(
+            _conflict_response(
+                VersionConflict(expected_version, cur_version, cur_data),
+                project=project,
+                slug=slug,
+                doc_type=selected_type,
+                operation="create" if create else "edit",
+            ),
+            cur_data,
+            ops,
         )
 
     # ── apply ops to a working copy ──
     import copy
 
     working = copy.deepcopy(cur_data)
+    pre_ops = copy.deepcopy(cur_data)
     state_ops, standalone_declaration = _extract_standalone_declaration(ops)
     try:
         warnings = apply_ops(working, state_ops, is_index)
@@ -1262,7 +1426,16 @@ def _edit_plan(
         # contract clause "on failure → no write" holds and a retry is unblocked.
         if created_file is not None:
             created_file.unlink(missing_ok=True)
-        return _op_error_response(e)
+        # Report every op of the batch the store would refuse, each with its
+        # index, so a caller learns all of them in one answer. The first refused
+        # op's index rides on the OpError the store raised.
+        response = _op_error_response(e)
+        refusals = collect_refused_ops(pre_ops, state_ops, is_index)
+        if refusals:
+            response["refused_ops"] = refusals
+        if getattr(e, "op_index", None) is not None:
+            response["refused_op_index"] = e.op_index
+        return response
 
     retire_preimages = [
         str(op["preimage"]) for op in ops if op.get("op") == "retire_prose"
@@ -1318,12 +1491,16 @@ def _edit_plan(
             retire_preimages=retire_preimages,
         )
     except VersionConflict as e:
-        return _conflict_response(
-            e,
-            project=project,
-            slug=slug,
-            doc_type=selected_type,
-            operation="create" if create else "edit",
+        return _attach_changed_targets(
+            _conflict_response(
+                e,
+                project=project,
+                slug=slug,
+                doc_type=selected_type,
+                operation="create" if create else "edit",
+            ),
+            e.current_data,
+            ops,
         )
     except LegacyIndexReadOnly as e:
         return {
@@ -1363,6 +1540,14 @@ def _edit_plan(
         result["created"] = True
         if pending_limit_warning is not None:
             result["warning"] = pending_limit_warning
+    if request_id and receipt_scope is not None and request_digest is not None:
+        record_write_receipt(
+            project,
+            receipt_scope,
+            request_id,
+            version=new_version,
+            digest=request_digest,
+        )
     return result
 
 
@@ -1448,6 +1633,7 @@ def _edit_plan_tool(
     create: bool = False,
     checkout_path: str | None = None,
     doc_type: str | None = None,
+    request_id: str | None = None,
 ) -> dict[str, Any]:
     """Edit one Reckon resource through a version-safe state or text mode.
 
@@ -1458,6 +1644,12 @@ def _edit_plan_tool(
     write; a refused pair refuses the whole batch, naming the pair's index.
     Read the same resource first and pass its version as ``expected_version``;
     worktree callers must reuse the same ``checkout_path`` on both calls.
+
+    ``request_id`` makes a retry idempotent: the same id with the same request
+    returns the version the first attempt reached with ``ok`` and
+    ``replayed=true``, so a write whose reply was lost to a deadline does not
+    read as a fresh conflict. The same id with different ops is refused as a
+    reused id rather than answered with the earlier write's version.
 
     Creating a plan at or beyond the project's declared pending-plan limit
     still succeeds; the success response carries a ``warning`` naming the limit,
@@ -1477,6 +1669,7 @@ def _edit_plan_tool(
         old_html=old_html,
         new_html=new_html,
         replacements=replacements,
+        request_id=request_id,
     )
     # A plan write reports the review it owes; a doc write and an index write
     # do not, so the note is attached only to a plan.

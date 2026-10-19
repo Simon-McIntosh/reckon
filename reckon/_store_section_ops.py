@@ -150,7 +150,9 @@ def _validated_record(record: dict, field: str, value: Any) -> dict:
 
     Validation runs through the same ``SectionRecord`` an ``insert_section``
     builds a record from, so a field the schema refuses is refused here in the
-    same words, and the record the writer renders stays one shape.
+    same words, and the record the writer renders stays one shape. A refusal on
+    an enumerated field states that field's legal values, so the caller does not
+    have to learn them one refusal at a time.
     """
     from pydantic import ValidationError
 
@@ -164,7 +166,58 @@ def _validated_record(record: dict, field: str, value: Any) -> dict:
             by_alias=True, exclude_none=True
         )
     except ValidationError as exc:
-        raise _op_error(_section_contract_refusal(str(exc))) from exc
+        detail = _section_contract_refusal(str(exc))
+        raise _op_error(f"{_enumerated_field_legal_values(field)}. {detail}") from exc
+
+
+def _capability_example() -> dict[str, Any]:
+    """One valid capability request, shown in a refusal so a caller can adapt it."""
+    from reckon.capability import (
+        CAPABILITY_SCHEMA_VERSION,
+        REASONING_LEVELS,
+        RISK_LEVELS,
+        VERIFICATION_LEVELS,
+    )
+
+    return {
+        "version": CAPABILITY_SCHEMA_VERSION,
+        "class": "general",
+        "requirements": {
+            "reasoning": REASONING_LEVELS[0],
+            "verification": VERIFICATION_LEVELS[-1],
+            "risk": RISK_LEVELS[0],
+        },
+    }
+
+
+def _enumerated_field_legal_values(field: str) -> str:
+    """Name the legal values of an enumerated section field, with an example.
+
+    A section's ``effort_hours`` is a quarter-hour multiple and its
+    ``capability`` a shaped request; a caller meeting either refusal is told the
+    accepted values rather than only that its value was wrong.
+    """
+    if field == "effort_hours":
+        return "sections.<id>.effort_hours accepts a positive multiple of 0.25"
+    if field == "capability":
+        from reckon.capability import (
+            CAPABILITY_CLASSES,
+            REQUIREMENT_LEVELS,
+        )
+
+        levels = "; ".join(
+            f"{key} one of {list(values)}" for key, values in REQUIREMENT_LEVELS.items()
+        )
+        return (
+            "sections.<id>.capability accepts class one of "
+            f"{list(CAPABILITY_CLASSES)} and requirements with {levels}; "
+            f"a valid example is {json.dumps(_capability_example())}"
+        )
+    if field == "links":
+        return (
+            "sections.<id>.links accepts plan refs of the form [project:]slug[#section]"
+        )
+    return f"sections.<id>.{field} was refused"
 
 
 def apply_section_field_set(

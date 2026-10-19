@@ -245,6 +245,59 @@ def state_path(project: str, slug: str, root: str | Path | None = None) -> Path:
     return _state_root() / project / f"{slug}.json"
 
 
+# ── Write receipts (idempotent retries) ─────────────────────────────────────
+
+#: Receipt records keyed by an opaque request id, so a write that landed but
+#: whose reply was lost can be answered with the version it reached instead of
+#: reading as a fresh conflict.
+_RECEIPTS_DIRNAME = "_receipts"
+
+
+def _receipt_scope_key(
+    project: str, slug: str, doc_type: str | None, root: str | Path | None
+) -> str:
+    """Opaque scope key for one write target, stable across processes.
+
+    The scope is the addressed resource plus the checkout it resolves in, so a
+    receipt written through one worktree is not read back for another's write
+    to a same-named plan.
+    """
+    resolved_root = str(Path(root).expanduser().resolve()) if root is not None else ""
+    material = "\x00".join([project, slug, doc_type or "", resolved_root])
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()[:32]
+
+
+def _receipts_file(project: str, scope_key: str) -> Path:
+    return _state_root() / _RECEIPTS_DIRNAME / project / f"{scope_key}.json"
+
+
+def read_write_receipts(project: str, scope_key: str) -> dict[str, Any]:
+    """The recorded receipts for one write scope, keyed by request id."""
+    path = _receipts_file(project, scope_key)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def record_write_receipt(
+    project: str,
+    scope_key: str,
+    request_id: str,
+    *,
+    version: int,
+    digest: str,
+) -> None:
+    """Record the version a request id reached, keyed by the ops it carried."""
+    path = _receipts_file(project, scope_key)
+    receipts = read_write_receipts(project, scope_key)
+    receipts[request_id] = {"version": version, "digest": digest}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = json.dumps(receipts, sort_keys=True)
+    write_atomically(path, lambda handle: handle.write(payload))
+
+
 # ── Slug routing ────────────────────────────────────────────────────────────
 
 #: Slugs that remain JSON-backed (project-level config, not per-plan state)
@@ -3723,6 +3776,56 @@ def _validate_continuation(working: dict, ops: list[dict]) -> None:
     raise OpError(CONTINUATION_REQUIRED)
 
 
+def _apply_one_op(
+    working: dict, op: Any, index: int, is_index: bool, warnings: list[str]
+) -> None:
+    """Dispatch one op, tagging any refusal with the index that produced it.
+
+    The index rides on the raised :class:`OpError` so a caller can name which
+    op of a batch was refused without re-deriving the position from the message.
+    """
+    if not isinstance(op, dict):
+        raise OpError(f"op #{index} is not an object")
+    verb = op.get("op")
+    handler = _OP_DISPATCH.get(verb)
+    if handler is None:
+        raise OpError(f"op #{index}: unknown verb {verb!r}")
+    try:
+        handler(working, op, is_index, warnings)
+    except OpError as exc:
+        if getattr(exc, "op_index", None) is None:
+            exc.op_index = index
+        raise
+
+
+def collect_refused_ops(
+    working: dict, ops: list[dict], is_index: bool, html_text: str | None = None
+) -> list[dict[str, Any]]:
+    """Every op in ``ops`` the store would refuse, each with its index and reason.
+
+    Applies the ops one at a time against a rolling copy so one bad op does not
+    hide the rest: a refused op is recorded and skipped, and the ops around it
+    still apply, so a caller learns each refusal in one answer rather than one
+    per round trip. Only the per-op handlers run — the whole-batch guards in
+    :func:`apply_ops` judge the batch, not one op, and are not consulted here.
+    """
+    from copy import deepcopy
+
+    if not isinstance(ops, list):
+        return [{"index": None, "reason": "ops must be a list"}]
+    refusals: list[dict[str, Any]] = []
+    trial = deepcopy(working)
+    _begin_write_effects(trial)
+    for n, op in enumerate(ops):
+        snapshot = deepcopy(trial)
+        try:
+            _apply_one_op(trial, op, n, is_index, [])
+        except OpError as exc:
+            refusals.append({"index": n, "reason": str(exc)})
+            trial = snapshot
+    return refusals
+
+
 def apply_ops(
     working: dict, ops: list[dict], is_index: bool, html_text: str | None = None
 ) -> list[str]:
@@ -3745,13 +3848,7 @@ def apply_ops(
     warnings: list[str] = []
     _begin_write_effects(working)
     for n, op in enumerate(ops):
-        if not isinstance(op, dict):
-            raise OpError(f"op #{n} is not an object")
-        verb = op.get("op")
-        handler = _OP_DISPATCH.get(verb)
-        if handler is None:
-            raise OpError(f"op #{n}: unknown verb {verb!r}")
-        handler(working, op, is_index, warnings)
+        _apply_one_op(working, op, n, is_index, warnings)
     if not is_index and str(working.get("type", "plan") or "plan") == "plan":
         landing = any(
             op.get("op") == "set"
