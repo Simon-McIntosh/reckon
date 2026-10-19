@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import fcntl
+import functools
 import json
 import math
 import os
@@ -14,7 +15,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
 from reckon._timestamps import parse_utc
-from reckon.crew import metering, quota_weight, runs
+from reckon.crew import metering, obligation_snapshot, quota_weight, runs
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS
 from reckon.crew.node import (
     DEFAULT_WATCH_STALL_WINDOW,
@@ -2058,49 +2059,201 @@ def _notional_cost(
     )
 
 
+# A follower scoped to one session relays one project's stream, but the session
+# may work in several projects at once, each with its own watcher and its own
+# events file beside this one under the watch directory. Counting the session's
+# work across all of them is what stops the pane's figures from jumping whenever
+# consecutive rows come from different projects.
+WATCH_EVENTS_SUFFIX = ".events"
+
+
+# This process's own code identity, read once. The read shells out to Git over
+# the whole checkout, and a running image does not change under itself, so a
+# follower that judged every row's peers afresh would pay that cost per row.
+@functools.lru_cache(maxsize=1)
+def _running_code_stamp() -> str:
+    """The code identity this process is running, read once and kept."""
+    return obligation_snapshot.source_code_stamp()
+
+
+def _newest_session_event(path: Path) -> Mapping[str, Any] | None:
+    """The newest transition in one events file that carries the partition.
+
+    The file is walked from its tail by the owner of that read,
+    ``runs._iter_stream_lines_backwards``, so a row's cost does not grow with the
+    file's history and the backwards walk has one implementation. A half-written
+    last record is not valid JSON and is skipped, as ``parse_stream_line`` reads
+    such a line as legacy and it carries no partition. Returns ``None`` when no
+    readable record carries the partition.
+    """
+    for line in runs._iter_stream_lines_backwards(path):
+        event = runs.parse_stream_line(line)
+        if event is None:
+            continue
+        if isinstance(event.get("session_counts"), Mapping):
+            return event
+    return None
+
+
+def _other_project_producer_is_live(project: str, session: str, stamp: str) -> bool:
+    """Whether another project's producer is live enough to contribute a figure.
+
+    A stopped watcher leaves its last transition behind in its events file, so
+    reading that file alone would keep adding that project's stale figure to
+    every row forever. The reading is the obligation snapshot's own, reused
+    rather than re-derived: an absent producer -- no live local process and no
+    live seat on another host -- contributes nothing, while a producer holding
+    the seat on another host, one running code other than this checkout, and a
+    quiet but live one all still count. Only the ``no-producer`` verdict
+    excludes, so no time bound is added here.
+    """
+    document = obligation_snapshot.read_snapshot(project, session)
+    reading, _host = obligation_snapshot.freshness_reading(
+        document, project=project, current_stamp=stamp
+    )
+    return reading != obligation_snapshot.NO_PRODUCER
+
+
+def _session_counts_in_other_projects(project: str, session: str) -> dict[str, int]:
+    """The session's totals in every watched project but this row's own.
+
+    Sums the session's entry from the newest transition carrying the partition
+    in each other project's events file under the watch directory, counted only
+    while that project's producer is live. A project whose newest such
+    transition carries no entry for the session adds nothing, as does one whose
+    file cannot be read or whose watcher has stopped. ``waiting`` joins the
+    total only when some project actually reported a waiting run, so a zero
+    never stands in for an unmeasured figure.
+    """
+    if not project or not session:
+        return {}
+    own = watch_lock_path(project).with_suffix(WATCH_EVENTS_SUFFIX)
+    total = {"working": 0, "blocked": 0, "unpromoted": 0}
+    waiting_seen = False
+    waiting = 0
+    stamp: str | None = None
+    watch_dir = own.parent
+    try:
+        candidates = sorted(watch_dir.glob(f"*{WATCH_EVENTS_SUFFIX}"))
+    except OSError:
+        return {}
+    for path in candidates:
+        if path == own:
+            continue
+        event = _newest_session_event(path)
+        if event is None:
+            continue
+        sessions = event.get("session_counts")
+        entry = sessions.get(session) if isinstance(sessions, Mapping) else None
+        if not isinstance(entry, Mapping):
+            continue
+        # The project a record names is what the liveness reading is taken
+        # against, so a record that cannot name its project is not counted.
+        other = str(event.get("project") or "")
+        if not other:
+            continue
+        if stamp is None:
+            stamp = _running_code_stamp()
+        if not _other_project_producer_is_live(other, session, stamp):
+            continue
+        for key in total:
+            total[key] += int(entry.get(key) or 0)
+        if "waiting" in entry:
+            waiting_seen = True
+            waiting += int(entry.get("waiting") or 0)
+    if waiting_seen:
+        total["waiting"] = waiting
+    return total
+
+
+def _live_project_session_counts(project: str, session: str) -> dict[str, int]:
+    """Re-select one project's live fleet for a session, for a legacy event.
+
+    An event written before the per-session figures existed carries none, so the
+    population is rebuilt from the live pointers at render time using the
+    ownership persisted on each pointer. A legacy pointer with no recorded owner
+    stays counted, matching the dispatch fence.
+    """
+    if not project:
+        return {}
+    stall_seconds = parse_duration(DEFAULT_WATCH_STALL_WINDOW)
+    moment = _utc_seconds()
+    pointers = runs._list_live_records(project=project)
+    current = {
+        str(pointer.get("run_id") or ""): _watch_snapshot(
+            pointer, moment=moment, stall_seconds=stall_seconds
+        )
+        for pointer in pointers
+        if pointer.get("run_id")
+    }
+    return _fleet_counts(current, session=session)
+
+
 def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any]:
-    """A transition's figures over the runs one session owns.
+    """A transition's figures over the runs one session owns, in every project.
 
     The watcher seat is project-global, so every transition carries the whole
     fleet's totals beside ``session_counts``, the same partition the fold took
-    per owning session at that transition. The session's own entry is read, or
-    the unowned entry for a session that owns no run, so the row describes the
-    fleet the transition left: a row drawn later still counts the run it
-    announces in the state it announces.
+    per owning session at that transition. The row's own project's figures are
+    its session's entry, or the unowned entry for a session that owns no run in
+    it, so the row describes the fleet the transition left.
 
-    An event written before the per-session figures existed carries none, and
-    only then is the population re-selected from the live pointers at render
-    time, using the ownership persisted on each pointer. A legacy pointer with
-    no recorded owner stays counted, matching the dispatch fence.
+    A session may work in several projects at once, each watched by its own
+    events file. The session's entry from the newest transition carrying the
+    partition in each other project's file is added -- while that project's
+    producer is live -- so the rendered figures describe the session's work
+    everywhere rather than whichever project the row happens to come from. A
+    project whose newest such transition carries no entry for the session adds
+    nothing, and neither does a project whose watcher has stopped. A follower
+    with no session is one project's pane and keeps that project's counts.
+
+    ``working``/``blocked``/``unpromoted`` (and ``waiting``) carry the
+    session-wide figures the pane renders; the same row's own-project figures
+    travel beside them under ``project_*``, so a consumer of either reading
+    loses nothing.
     """
     sessions = event.get("session_counts")
     if isinstance(sessions, Mapping):
-        counts = sessions.get(session)
-        if not isinstance(counts, Mapping):
-            counts = sessions.get("")
-        if not isinstance(counts, Mapping):
-            counts = {}
+        own = sessions.get(session)
+        if not isinstance(own, Mapping):
+            own = sessions.get("")
+        if not isinstance(own, Mapping):
+            own = {}
     else:
         project = str(event.get("project") or "")
-        stall_seconds = parse_duration(DEFAULT_WATCH_STALL_WINDOW)
-        moment = _utc_seconds()
-        pointers = runs._list_live_records(project=project) if project else ()
-        current = {
-            str(pointer.get("run_id") or ""): _watch_snapshot(
-                pointer, moment=moment, stall_seconds=stall_seconds
-            )
-            for pointer in pointers
-            if pointer.get("run_id")
-        }
-        counts = _fleet_counts(current, session=session)
+        own = _live_project_session_counts(project, session) if project else {}
+
+    project_counts = {
+        "working": int(own.get("working") or 0),
+        "blocked": int(own.get("blocked") or 0),
+        "unpromoted": int(own.get("unpromoted") or 0),
+    }
+    if "waiting" in own:
+        project_counts["waiting"] = int(own.get("waiting") or 0)
+
+    total = dict(project_counts)
+    if session:
+        elsewhere = _session_counts_in_other_projects(
+            str(event.get("project") or ""), session
+        )
+        for key in ("working", "blocked", "unpromoted"):
+            total[key] = total.get(key, 0) + elsewhere.get(key, 0)
+        if "waiting" in elsewhere:
+            total["waiting"] = total.get("waiting", 0) + elsewhere["waiting"]
+
     scoped = dict(event)
-    scoped["working"] = int(counts.get("working") or 0)
-    scoped["blocked"] = int(counts.get("blocked") or 0)
-    scoped["unpromoted"] = int(counts.get("unpromoted") or 0)
+    scoped["working"] = total.get("working", 0)
+    scoped["blocked"] = total.get("blocked", 0)
+    scoped["unpromoted"] = total.get("unpromoted", 0)
+    scoped["project_working"] = project_counts.get("working", 0)
+    scoped["project_blocked"] = project_counts.get("blocked", 0)
+    scoped["project_unpromoted"] = project_counts.get("unpromoted", 0)
+    if "waiting" in project_counts:
+        scoped["project_waiting"] = project_counts["waiting"]
     previous = scoped.get("from_state")
     state = scoped.get("to_state")
-    if "waiting" in counts or previous in WAITING_STATES or state in WAITING_STATES:
-        scoped["waiting"] = int(counts.get("waiting") or 0)
+    if "waiting" in total or previous in WAITING_STATES or state in WAITING_STATES:
+        scoped["waiting"] = int(total.get("waiting") or 0)
     elif "waiting" in scoped:
         del scoped["waiting"]
     return scoped
