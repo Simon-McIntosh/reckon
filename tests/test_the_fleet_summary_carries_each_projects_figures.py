@@ -17,7 +17,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -100,7 +100,10 @@ def fleet_fixture(
 ) -> dict[str, Path]:
     """A two-project fleet: alpha imputes hours, beta carries a sprint."""
 
-    committed = datetime.now(UTC) - timedelta(days=3)
+    # A naive local stamp: git parses it as local and the activity series reads
+    # it back in local time, so the day it lands on is the one asserted below
+    # rather than one shifted by the host's zone.
+    committed = datetime.now() - timedelta(days=3)
 
     alpha_docs = _seed_repo(
         tmp_path / "alpha",
@@ -184,7 +187,14 @@ def fleet_fixture(
     monkeypatch.setattr(serve, "_STATE_ROOT", state_root)
     monkeypatch.setattr(crew_module, "list_live", lambda **_kwargs: [])
     serve._DISC_CACHE.clear()
-    return {"mounts": mounts, "state_root": state_root}
+    return {"mounts": mounts, "state_root": state_root, "commit_day": committed.date()}
+
+
+def _activity_index(commit_day) -> int:
+    """The 30-day series slot a commit on ``commit_day`` lands in."""
+
+    window_start = datetime.now().date() - timedelta(days=29)
+    return (commit_day - window_start).days
 
 
 def _served_summary() -> dict[str, dict]:
@@ -212,9 +222,11 @@ def test_each_project_row_carries_counts_progress_activity_and_sprint(fleet) -> 
     # The roll-up: effort-weighted, with the plan that authors no hours weighing
     # the mean of the hours the others state. Unweighted it would read 1/3.
     assert alpha["progress"] == pytest.approx(_ALPHA_WEIGHTED, abs=1e-9)
-    # Activity: one commit three days ago lands in the 30-day series.
+    # Activity: the seeding commit lands in the 30-day series, at the slot its
+    # own date derives rather than at a literal index.
     assert len(alpha["activity30"]) == 30
-    assert alpha["activity30"][-3] == 1
+    assert alpha["activity30"][_activity_index(fleet["commit_day"])] == 1
+    assert sum(alpha["activity30"]) == 1
     # No sprint state for alpha, so the field is null rather than absent.
     assert alpha["active_sprint"] is None
 
@@ -228,7 +240,7 @@ def test_each_project_row_carries_counts_progress_activity_and_sprint(fleet) -> 
     )
     assert beta["progress"] == pytest.approx(_BETA_PROGRESS, abs=1e-9)
     assert len(beta["activity30"]) == 30
-    assert beta["activity30"][-3] == 1
+    assert beta["activity30"][_activity_index(fleet["commit_day"])] == 1
     assert beta["active_sprint"] == {"id": "current", "theme": "Present work"}
 
 
