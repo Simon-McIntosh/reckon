@@ -63,6 +63,26 @@ COMMITTED_TREE_RETENTION = 3
 IMPORT_VERDICT_PREFIX = ".import-verdict-"
 IMPORT_PROBE_LOCK = ".import-probe.lock"
 
+# A waiter on an image's proof polls for the lock in short steps and gives up at
+# a deadline of its own. A follower asks this question on its delivery path, so
+# an unbounded wait would stop it streaming for as long as a proof runs, and one
+# timed-out proof would then be paid by every waiter in turn -- sixteen waiters,
+# sixteen probes, exactly the herd this serialisation exists to prevent. The
+# deadline is the probe's own bound, so a waiter never waits longer than the one
+# proof it is waiting on.
+IMPORT_PROBE_LOCK_POLL_SECONDS = 0.05
+
+# Both the verdict and the lock live inside the image directory, which
+# :func:`_images_ranked_for_pruning` orders by directory mtime. Writing either
+# moves that mtime, so an old image that is merely being proved can rank with
+# the fresh ones. The effect is bounded and can only retain an image: pruning
+# decides what it must keep from the in-use and completion markers, never from
+# the directory mtime, so the cost of the coupling is at worst one more image
+# kept on disk than the directory mtime alone would have chosen. The alternative
+# -- filing these two files outside the image -- would strand them when the
+# image is pruned and would put an image's verdict somewhere the plan's design
+# does not place it.
+
 # A real code identity is a git object id: a 40-digit tree, or a 64-digit
 # content digest for a package outside Git. This value collides with neither, so
 # it is the reading the identity computation yields when a read it depends on did
@@ -226,6 +246,15 @@ def _images_ranked_for_pruning(cache: Path) -> list[Path]:
     """
     ranked: list[tuple[int, Path]] = []
     for entry in cache.iterdir():
+        # The marker alone is the test, rather than
+        # :func:`published_reload_image`, because this listing must see every
+        # published entry in the cache and the recogniser additionally requires
+        # the content-id name. The recogniser's files -- the proof's verdict and
+        # its lock -- are written inside the image, so ranking an image by this
+        # directory's mtime can be moved by a proof that is being run. Pruning
+        # decides what it must keep from the in-use and completion markers
+        # rather than from this mtime, so the coupling can only rank an image as
+        # fresher than it is, and never cause an image in use to be removed.
         if not (entry / ".complete").is_file():
             continue
         try:
@@ -466,9 +495,7 @@ def running_code_identity(package_dir: Path) -> str:
     if re.fullmatch(r"[0-9a-f]{40}", carried):
         return carried
     image_root = package_dir.parent
-    if (image_root / ".complete").is_file() and re.fullmatch(
-        r"[0-9a-f]{40}", image_root.name
-    ):
+    if published_reload_image(image_root):
         return image_root.name
     return source_code_identity(package_dir)
 
@@ -481,7 +508,7 @@ def _committed_tree_cache() -> Path:
 
 def pin_matches_materialized_tree(descriptor: int, root: Path) -> bool:
     """A carried lease must still name the published image's lock inode."""
-    if not root.is_dir() or not (root / ".complete").is_file():
+    if not root.is_dir() or not published_reload_image(root):
         return False
     try:
         held = os.fstat(descriptor)
@@ -752,7 +779,7 @@ def tracked_reckon_tree_is_dirty(root: Path) -> tuple[bool, str]:
     return True, ", ".join(entries)
 
 
-def _published_image(root: Path) -> bool:
+def published_reload_image(root: Path) -> bool:
     """Whether ``root`` is a published reload image rather than a source tree.
 
     A published image is named by the content id of the package it holds and
@@ -761,6 +788,11 @@ def _published_image(root: Path) -> bool:
     it stays true until the image is pruned. A source checkout carries no such
     marker, so its content can move between one asker and the next and it keeps
     the per-process proof.
+
+    This is the single recogniser for the distinction: every caller that needs
+    to know whether a process is running from, or about to import, a published
+    image asks here rather than testing for the completion marker itself, so a
+    change to what publication means moves one predicate rather than several.
     """
     if re.fullmatch(r"[0-9a-f]{40}", root.name) is None:
         return False
@@ -858,8 +890,27 @@ def _probe_imports(root: Path) -> tuple[bool, str]:
     return False, (lines[-1] if lines else f"exit {completed.returncode}")
 
 
+def _take_import_probe_lock(descriptor: int, deadline: float) -> bool:
+    """Take the image's lock, or report that it was still held at ``deadline``.
+
+    The lock is asked for without blocking and in a loop rather than by one
+    blocking call, so the wait has an end. The asker ahead is bounded by
+    :data:`IMPORT_PROBE_TIMEOUT` of its own, so a waiter that gives up at that
+    same bound waits no longer than one proof can take.
+    """
+    while True:
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(IMPORT_PROBE_LOCK_POLL_SECONDS)
+            continue
+        return True
+
+
 def _published_image_imports(root: Path) -> tuple[bool, str]:
-    """Prove a published image once, under its lock, and share the verdict.
+    """Prove a published image once, under its wait-bounded lock, and share it.
 
     The verdict is read first, so an asker arriving after another has proved the
     image pays nothing. When none is recorded the asker takes the image's
@@ -869,6 +920,13 @@ def _published_image_imports(root: Path) -> tuple[bool, str]:
     then does it run the proof, and it records a pass and an import failure
     alike. A timeout is never recorded, because it says nothing about the image:
     the next asker under the lock proves it alone.
+
+    The wait for the lock is bounded by :data:`IMPORT_PROBE_TIMEOUT`. A waiter
+    that reaches its deadline reads the verdict one last time -- a proof that
+    answered while this one waited is exactly what the lock is for -- and, with
+    none, refuses with a timeout naming the wait rather than proving the image
+    on a follower's delivery path. The caller then takes the ordinary jittered
+    timeout retry, instead of every waiter proving in turn.
     """
     verdict_path = _import_verdict_path(root)
     remembered = _read_import_verdict(verdict_path)
@@ -881,8 +939,16 @@ def _published_image_imports(root: Path) -> tuple[bool, str]:
         # and this open, or one this process may not write to -- so the proof is
         # run without one rather than skipped.
         return _probe_imports(root)
+    deadline = time.monotonic() + IMPORT_PROBE_TIMEOUT
     try:
-        fcntl.flock(descriptor, fcntl.LOCK_EX)
+        if not _take_import_probe_lock(descriptor, deadline):
+            remembered = _read_import_verdict(verdict_path)
+            if remembered is None:
+                return False, ImportProbeTimedOut(
+                    "the import proof lock was still held after "
+                    f"{IMPORT_PROBE_TIMEOUT:g} s"
+                )
+            return remembered
         remembered = _read_import_verdict(verdict_path)
         if remembered is not None:
             return remembered
@@ -909,7 +975,7 @@ def reckon_imports(root: Path) -> tuple[bool, str]:
     and all read its answer. A source checkout has no immutable tree, so its
     content can move between askers and it keeps the per-process proof.
     """
-    if _published_image(root):
+    if published_reload_image(root):
         return _published_image_imports(root)
     return _probe_imports(root)
 

@@ -294,7 +294,9 @@ class _FollowerReloader:
                     self.image_pin = candidate_pin
             except (OSError, ValueError):
                 self.image_pin = None
-        if self.image_pin is None and (self.import_root / ".complete").is_file():
+        if self.image_pin is None and checkout_trust.published_reload_image(
+            self.import_root
+        ):
             self.image_pin = checkout_trust.pin_materialized_tree(self.import_root)
         self.replacement_pin: int | None = None
         self.source_root = Path(

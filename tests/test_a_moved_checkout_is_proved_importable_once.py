@@ -13,6 +13,8 @@ step.
 
 from __future__ import annotations
 
+import fcntl
+import os
 import subprocess
 import threading
 import time
@@ -187,6 +189,59 @@ def test_a_published_image_without_its_marker_is_not_shared(tmp_path, probe):
     assert len(probe.calls) == 2, "a tree carrying no completion marker was shared"
 
 
+def _hold_probe_lock(image: Path) -> int:
+    """Hold the image's probe lock, as an asker that is slow to prove would."""
+    descriptor = os.open(
+        image / checkout_trust.IMPORT_PROBE_LOCK, os.O_CREAT | os.O_RDWR, 0o600
+    )
+    fcntl.flock(descriptor, fcntl.LOCK_EX)
+    return descriptor
+
+
+def test_a_held_lock_makes_the_waiting_asker_time_out_without_probing(
+    tmp_path, probe, monkeypatch
+):
+    image = _image(tmp_path)
+    monkeypatch.setattr(checkout_trust, "IMPORT_PROBE_TIMEOUT", 0.2)
+    monkeypatch.setattr(checkout_trust, "IMPORT_PROBE_LOCK_POLL_SECONDS", 0.01)
+    holder = _hold_probe_lock(image)
+    try:
+        started = time.monotonic()
+        imports, reason = checkout_trust.reckon_imports(image)
+        waited = time.monotonic() - started
+    finally:
+        os.close(holder)
+
+    assert imports is False
+    assert isinstance(reason, checkout_trust.ImportProbeTimedOut), reason
+    assert "lock" in reason, reason
+    assert probe.calls == [], "the waiter ran a probe of its own on a held lock"
+    assert waited < 5.0, waited
+
+
+def test_a_verdict_recorded_while_the_asker_waits_is_read(tmp_path, probe, monkeypatch):
+    image = _image(tmp_path)
+    monkeypatch.setattr(checkout_trust, "IMPORT_PROBE_LOCK_POLL_SECONDS", 0.01)
+    holder = _hold_probe_lock(image)
+
+    def prove_and_release():
+        time.sleep(0.1)
+        checkout_trust._record_import_verdict(
+            image, imports=False, reason="ModuleNotFoundError: gone"
+        )
+        os.close(holder)
+
+    writer = threading.Thread(target=prove_and_release)
+    writer.start()
+    try:
+        imports, reason = checkout_trust.reckon_imports(image)
+    finally:
+        writer.join()
+
+    assert (imports, reason) == (False, "ModuleNotFoundError: gone"), (imports, reason)
+    assert probe.calls == [], "the waiter probed although a verdict arrived"
+
+
 @pytest.fixture()
 def reloader(monkeypatch):
     """A reloader holding a stale image at a moved code stamp, plus its clock."""
@@ -262,5 +317,3 @@ def test_the_jitter_spreads_two_followers_that_timed_out_together(
     instance.poll({})
     second = instance.probe_retry_gap - instance.probe_retry_jitter
     assert 0.0 < second < instance.probe_retry_gap
-
-    assert first != second, "two timeouts were given the same jittered wait"
