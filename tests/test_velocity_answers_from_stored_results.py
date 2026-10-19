@@ -78,7 +78,7 @@ def test_cold_fleet_child_stores_the_result_it_computed(served):
             break
         time.sleep(0.1)
     assert stored is not None, "the child did not store a velocity answer"
-    assert stored[0]["ok"] is True
+    assert stored[0]["window"]["end"]
     status, body, headers = served.get("/crew/velocity?project=*&fields=plans")
     assert status == 200
     assert body["window"] == stored[0]["window"]
@@ -110,6 +110,8 @@ def test_stale_default_answer_is_served_while_refresh_starts(served, monkeypatch
         {
             "ok": True,
             "by_project": [{"marker": "prior"}],
+            "by_lane": [],
+            "by_day": [],
             "window": {"end": old_end},
         },
     )
@@ -151,28 +153,67 @@ def test_default_window_uses_one_key_per_scope_and_selects_requested_blocks(serv
     assert selected["plans"]["marker"] == "stored"
 
 
-def test_default_refresh_computes_every_optional_block_once(served, monkeypatch):
+def test_default_refresh_keeps_the_full_result_for_block_selection(served, monkeypatch):
     seen = []
 
-    def view(project, **kwargs):
-        seen.append((project, kwargs))
+    def report(checkouts, *, start, end):
+        seen.append((checkouts, start, end))
         return {
-            "ok": True,
-            "window": {"end": kwargs["until"]},
+            "window": {"start": start, "end": end},
+            "by_project": [],
+            "by_lane": [],
+            "by_day": [],
             "plans": {"marker": "child"},
         }
 
-    monkeypatch.setattr(velocity, "view", view)
+    monkeypatch.setattr(velocity, "report", report)
     key = route_results.velocity_key(PROJECT, None, None, None, None, None)
     result = route_results._compute_refresh(key)
     route_results._store_refresh_result(key, result)
 
-    assert seen[0][0] == PROJECT
-    assert set(seen[0][1]["fields"].split(",")) == velocity.OPTIONAL_BLOCKS
-    assert seen[0][1]["limit"] is None
+    assert seen[0][0] == {PROJECT: str(served.mounts[PROJECT].parent)}
     status, body, _ = served.get(f"/crew/velocity?project={PROJECT}&fields=plans")
     assert status == 200
     assert body["plans"]["marker"] == "child"
+
+
+def test_default_window_cursor_reaches_cells_beyond_the_first_page(served, monkeypatch):
+    from reckon.mcp_views import paginate
+
+    cells = [{"ordinal": number} for number in range(53)]
+
+    def report(_checkouts, *, start, end):
+        return {
+            "window": {"start": start, "end": end},
+            "by_project": [],
+            "by_lane": [],
+            "by_day": [],
+            "by_project_day_lane": cells,
+        }
+
+    monkeypatch.setattr(velocity, "report", report)
+    key = route_results.velocity_key(PROJECT, None, None, None, None, None)
+    stored = route_results._compute_refresh(key)
+    if os.environ.get("RECKON_VELOCITY_DOUBLE_PAGE"):
+        stored["by_project_day_lane"], _ = paginate(
+            stored["by_project_day_lane"], cursor=None, limit=None
+        )
+    route_results._store_refresh_result(key, stored)
+
+    url = f"/crew/velocity?project={PROJECT}&fields=by_project_day_lane&limit=20"
+    reached = []
+    cursor = None
+    while True:
+        status, body, _ = served.get(
+            url + (f"&cursor={quote(cursor)}" if cursor else "")
+        )
+        assert status == 200
+        assert body["pagination"]["total"] == len(cells)
+        reached.extend(body["by_project_day_lane"])
+        cursor = body["pagination"]["next_cursor"]
+        if cursor is None:
+            break
+    assert [row["ordinal"] for row in reached] == list(range(len(cells)))
 
 
 def test_only_one_velocity_child_runs_for_a_scope(served, monkeypatch):

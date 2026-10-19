@@ -178,56 +178,21 @@ def velocity_key(
 
 
 def velocity_default_response(
-    stored: object, fields: str | None, limit: int | None, cursor: str | None
+    project: str,
+    stored: object,
+    fields: str | None,
+    limit: int | None,
+    cursor: str | None,
 ) -> dict:
-    """Select the requested blocks from one full default-window result."""
+    """Select a caller's blocks from the unpaged stored default report."""
 
     from reckon import velocity
-    from reckon.mcp_views import ViewRequestError, error_response, paginate
 
-    requested = list(
-        dict.fromkeys(
-            part.strip() for part in (fields or "").split(",") if part.strip()
-        )
-    )
-    unknown = sorted(set(requested) - velocity.OPTIONAL_BLOCKS)
-    if unknown:
-        return {
-            "ok": False,
-            "error": "crew_error",
-            "detail": (
-                "unknown velocity fields "
-                + ", ".join(repr(name) for name in unknown)
-                + "; optional fields are "
-                + ", ".join(sorted(velocity.OPTIONAL_BLOCKS))
-            ),
-        }
-    if not isinstance(stored, dict) or not stored.get("ok"):
+    if not isinstance(stored, dict) or stored.get("ok") is False:
         return stored
-    base = (
-        "ok",
-        "view",
-        "project",
-        "window",
-        "by_project",
-        "by_lane",
-        "by_day",
-        "by_project_day_lane_count",
+    return velocity.select_view_blocks(
+        project, stored, fields=fields, limit=limit, cursor=cursor
     )
-    response = {name: stored[name] for name in base if name in stored}
-    for name in requested:
-        if name == "by_project_day_lane":
-            try:
-                page, pagination = paginate(
-                    stored.get(name, []), cursor=cursor, limit=limit
-                )
-            except ViewRequestError as exc:
-                return error_response(exc.code, exc.message, hint=exc.hint)
-            response[name] = page
-            response["pagination"] = pagination
-        elif name in stored:
-            response[name] = stored[name]
-    return response
 
 
 def velocity_result(key: tuple[str, ...]) -> tuple[object, float] | None:
@@ -283,13 +248,16 @@ def _compute_refresh(key: tuple[str, ...]) -> object:
             from reckon.serve import _velocity_default_window
 
             since, until = _velocity_default_window()
-            fields = ",".join(sorted(velocity.OPTIONAL_BLOCKS))
-            limit, cursor = None, None
-        else:
-            since, until = key[3], key[4] or None
-            fields = key[5] or None
-            limit = int(key[6]) if key[6] else None
-            cursor = key[7] or None
+            checkouts = (
+                {name: str(Path(docs).parent) for name, docs in mounts.items()}
+                if project == "*"
+                else {project: str(Path(mounts[project]).parent)}
+            )
+            return velocity.report(checkouts, start=since, end=until)
+        since, until = key[3], key[4] or None
+        fields = key[5] or None
+        limit = int(key[6]) if key[6] else None
+        cursor = key[7] or None
         checkout = str(Path(mounts[project]).parent) if project != "*" else None
         return velocity.view(
             project,

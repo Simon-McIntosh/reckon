@@ -2798,7 +2798,7 @@ class Handler(BaseHTTPRequestHandler):
         headers["X-Result-Age"] = f"{age:.3f}"
         if key[2] == "default":
             payload = route_results.velocity_default_response(
-                payload, named("fields"), limit, named("cursor")
+                project, payload, named("fields"), limit, named("cursor")
             )
         if not payload.get("ok"):
             # The view refuses a missing or unparseable start by name, so the
