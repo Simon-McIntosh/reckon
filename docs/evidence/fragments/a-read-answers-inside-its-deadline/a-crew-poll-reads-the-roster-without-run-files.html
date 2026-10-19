@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-title" content="A crew poll reads the roster without a stat of every run file">
+  <meta name="plan-summary" content="The roster read behind /crew and /crew/<project> holds each project's members against one stat of the aggregate, so a poll over an unmoved aggregate stats no per-run file and reads none of the aggregate's bytes, and a member added or removed moves the identity and is returned by the next poll.">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s38">
+  <meta name="plan-recorded-at" content="2026-10-19">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,serve,roster,latency,ledger">
+  <title>A crew poll reads the roster without a stat of every run file — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-crew-poll-reads-the-roster-without-run-files" data-reckon="landed" data-when="2026-10-19">
+  <h2>A crew poll reads the roster without a stat of every run file</h2>
+  <p>The crew row a poll builds reads one thing out of a project's ledger — its <code>members</code> — and members live in the aggregate, never in a per-run file. The read went through the union <code>ledger.load(..., headers_only=True)</code>, which validates its index against every file under <code>docs/state/&lt;project&gt;/runs/</code> before answering a question those files cannot answer. <code>_crew_rows</code> in <code>reckon/serve.py</code> now reads each referenced project's roster through <code>_project_roster</code>, which keys the members it last answered with on the identity of the aggregate alone — <code>st_mtime_ns</code>, <code>st_ctime_ns</code>, <code>st_size</code>, <code>st_ino</code>, the same signature the ledger keys its own run index on. While that identity is unmoved the poll returns the held members after one stat and reads neither a run file nor a byte of the aggregate. A member added to or removed from the aggregate moves its identity, and the next poll re-reads it. An aggregate whose identity cannot be taken — absent, unreadable, or a project name the ledger refuses — is never cached, so the previous fallback still runs on every call and no later write is served stale; an identity taken after the read that differs from the one taken before it is not cached either, so an aggregate that moved mid-read is re-read rather than pinned.</p>
+  <p>The gate is <code>tests/test_a_crew_poll_reads_the_roster_without_run_files.py</code>. It builds a temporary project with 200 valid run documents under <code>runs/</code>, one roster member in its aggregate and one live pointer naming the project, then wraps <code>Path.stat</code> and <code>Path.read_text</code> and counts the stats whose path lies under the project's <code>runs/</code> and the bytes read back from the aggregate. The warming call is the instrument's positive control: it must show the cost an absence is being claimed for, and reports <code>stats &gt;= 200</code> and <code>aggregate_bytes &gt; 0</code>. The second call over the unchanged aggregate reports <strong>0 stats</strong> and <strong>0 aggregate bytes</strong>, where the base revision reports 200 stats — one per run file. Rewriting the aggregate's member then makes the next call return the change.</p>
+  <p>At the base revision the same test fails on the stat assertion alone: <code>assert 200 == 0</code>, <code>EXIT=1</code> (<code>logs/base-arm.log</code>). At the delivered revision the gate passes, <code>EXIT=0</code> (<code>logs/head-arm.log</code>). The declared mutation routes the roster read back through <code>ledger.load(..., headers_only=True)</code> on every call; the second-call count returns to 200, the test fails (<code>assert 200 == 0</code>, <code>EXIT=1</code>) and the log is <code>logs/negative-control.log</code>. <code>ruff check</code> and <code>ruff format --check</code> report 17 findings on <code>reckon/serve.py</code> at both the base and the delivered revision — the delta is zero — and none at all on the new test file. Every log ends in an <code>EXIT=</code> line.</p>
+  <p>The paired arm over the surface the change can reach — the seven test files that build a crew row, read the crew holds or request the <code>/crew</code> route — reports <strong>no added failure</strong>: 203 passed at the delivered revision against 202 passed at the base revision, the one extra pass being this node's own new test, both arms <code>EXIT=0</code>. Every log ends in an <code>EXIT=</code> line.</p>
+  <p>Two parts of the section's <em>Done when</em> are not this node's to close. The five-request timing of the served <code>/crew</code> route on srv-1006 beside <code>c-crew-before-timing</code> (median 1.60&nbsp;s at 2026-10-18 13:39:47Z) is taken after the change reaches the running process, which is a merge step this node does not perform. The full importer population — every test file importing <code>reckon/serve.py</code> or <code>reckon/ledger.py</code>, 318 files — was started on this node's own allocation and reached 26 percent in twenty minutes before the node's time fence expired; the node carried a load average of 53 on 8 CPUs from peer runs in the same allocation. Both are recorded under <em>follow-ons</em>, with the exact command. This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+</article>
+</body>
+</html>
