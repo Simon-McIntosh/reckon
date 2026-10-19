@@ -25,7 +25,7 @@
   <title>The Site Answers Fast and Agrees With Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="78">
+<meta name="plan-version" content="79">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -293,7 +293,7 @@
     <div class="r-comment-body"><p>Content review <code>r-20261019T064532892649</code>, finding <code>reasoning-1</code>, settled in §5. A changed fleet rollup reaches readers as one <code>fleet</code> event on every open <code>/_changes/&lt;project&gt;</code> stream, forwarded by <code>watchProjectStateChanges</code>. When §6 is built, its home view re-reads the fleet summary on that event rather than polling it.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261019T231005177306-review-of-the-fleet-summary-carries-each-projects-figures-058515877c36" data-who="reckon-build" data-when="2026-10-19T23:24:39.077Z">
-    <div class="r-comment-body"><p>independent review of r-20261019T222615045241-the-fleet-summary-carries-each-projects-figures at base 42303f85afa8e5e5e38f6396c5aee89eebf362c8 and head 058515877c36ca6d46588d622b1a6be017a714e9; all six dimensions scored (goal_fidelity 18, evidence 16, scope_discipline 20, durability 17, fit 18, reuse 18; total 107), three follow-on findings, no blocking finding; the record is stored under the reviewed run&#x27;s review-records/ at .json and .at-058515877c36ca6d46588d622b1a6be017a714e9.json</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261019T222615045241-the-fleet-summary-carries-each-projects-figures at base 42303f85afa8e5e5e38f6396c5aee89eebf362c8 and head 058515877c36ca6d46588d622b1a6be017a714e9; all six dimensions scored (goal_fidelity 18, evidence 16, scope_discipline 20, durability 17, fit 18, reuse 18; total 107), three follow-on findings, no blocking finding; the record is stored under the reviewed run's review-records/ at .json and .at-058515877c36ca6d46588d622b1a6be017a714e9.json</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-review-done-when-1" data-who="reckon-build" data-when="2026-10-18T13:12:00Z">
     <div class="r-comment-body"><p>Content review <code>r-20261018T125413022258</code>, finding <code>done_when-1</code>: §11's hard gate has no negative control. Before §11 is dispatched, its done-when gains one. The same probe runs against a temporary <code>reckon serve</code> on another port, started from a worktree at the plan's base revision, and the gate must fail there. That shows the probe can tell a fast, consistent site from a slow or empty one.</p></div>
@@ -351,6 +351,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-design-duplicate-owner-2-s7" data-who="reckon-build" data-when="2026-10-18T13:30:00Z">
     <div class="r-comment-body"><p>Design review <code>r-20261018T131121570570</code>, finding <code>duplicate_owner-2</code>: see the comment on §6. The roll-up has one owner beside §2's function, and §7 consumes it rather than implementing its own in <code>reckon/roadmap.py</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-bar-slug-key" data-who="reckon-build" data-when="2026-10-20T01:30:00Z">
+    <div class="r-comment-body"><p>Carry into §7, which writes <code>reckon/roadmap.py</code>: the schedule bar now states its plan's slug twice, under <code>plan</code> and <code>slug</code> (review of §6's server node, finding 2). Drop one key, keep the one the SPA's bar readers resolve against the inventory, and update those readers and the schedule payload test in the same node.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-design-interface-budget-1" data-who="reckon-build" data-when="2026-10-18T13:30:00Z">
     <div class="r-comment-body"><p>Design review <code>r-20261018T131121570570</code>, finding <code>interface_budget-1</code>: §3 adds <code>impl</code> to every <code>/_index</code> row without saying what it retires. Before §3 is dispatched, it states whether the loader's merge of discovery-time progress goes away once the index carries the figure, or why nothing can be retired.</p></div>
