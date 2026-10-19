@@ -79,7 +79,7 @@ directory is read-only): <strong>1 failed, 88 passed</strong>, <code>EXIT=1</cod
 — <code>test_every_module_fits_a_worker_window</code>, which is red for
 <code>reckon/crew/review.py</code> (51584 tokens) and <code>reckon/ledger.py</code>
 (51666 tokens) at the base revision and is not this node's work. Head arm:
-<strong>2 failed, 92 passed</strong> — the same module-window failure, plus
+<strong>2 failed, 90 passed</strong> — the same module-window failure, plus
 <code>test_ship_cli_instructions_match_registered_commands_and_flags</code>,
 which fails because naming <code>reckon crew view</code> in the build skill's
 command block is required by its sibling check
@@ -95,8 +95,11 @@ none. Logs <code>gate-head.log</code>, <code>base-arm.log</code> and
 <p id="cso-read-verbs-become-crew-view-control"><strong>Negative control.</strong>
 Registering a view on the MCP crew tool only — appending a name to
 <code>CREW_TOOL_VIEWS</code> in <code>reckon/mcp.py</code> and touching nothing
-else — reddens the parity case, which fails naming the registered view. Log
-<code>negative-control.log</code> under the run directory.</p>
+else — reddens the parity case: <code>1 failed, 2 passed</code>, with
+<code>the crew tool serves these views and the crew view dispatcher does not:
+['tool-only-view']</code>. Log <code>negative-control.log</code> under the run
+directory, and <code>reckon/mcp.py</code> restored from a copy taken before the
+mutation, so the mutation survives only as the log.</p>
 <p id="cso-read-verbs-become-crew-view-followons"><strong>Not tombstoned.</strong>
 No tombstone row was added by this node. The five verbs' callers are listed
 above; retiring any one of them needs a caller migrated outside this fence
