@@ -383,7 +383,9 @@ def test_null_declaration_while_its_heading_exists_is_refused(setup):
         0,
     )
     assert result["ok"] is False, result
-    assert "s1" in (result.get("detail") or "")
+    # The path is named, so the refusal is this handler's own and not the
+    # coverage guard's backstop for the same state.
+    assert "section_declarations.s1" in (result.get("detail") or "")
     assert path.read_text(encoding="utf-8") == before
     assert _read(docs_dir)[1]["section_declarations"]["s1"] == "implementable"
 
