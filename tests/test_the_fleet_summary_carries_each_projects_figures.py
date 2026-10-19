@@ -101,7 +101,7 @@ def fleet_fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, 
     # A naive local stamp: git parses it as local and the activity series reads
     # it back in local time, so the day it lands on is the one asserted below
     # rather than one shifted by the host's zone.
-    committed = datetime.now() - timedelta(days=3)
+    committed = datetime.now() - timedelta(days=3)  # noqa: DTZ005 — naive local, pairs with the git stamp below
 
     alpha_docs = _seed_repo(
         tmp_path / "alpha",
@@ -191,7 +191,7 @@ def fleet_fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, 
 def _activity_index(commit_day) -> int:
     """The 30-day series slot a commit on ``commit_day`` lands in."""
 
-    window_start = datetime.now().date() - timedelta(days=29)
+    window_start = datetime.now().date() - timedelta(days=29)  # noqa: DTZ005 — the series the row derives is local
     return (commit_day - window_start).days
 
 
