@@ -3,12 +3,14 @@
 A long-running reckon process asks once a second whether its code has moved,
 and the read runs ``git ls-tree`` twice and one ``git mktree`` per composed
 tree. ``git mktree`` freshens an object that already exists by rewriting its
-mtime, so a reader asking about an unmoved checkout rewrites one shared inode
-every second from every node. The reading is held against a fingerprint of the
-files ``HEAD`` resolves through, so the git reads run only when one of them
-moves: a commit, a branch switch, a detach and ``git pack-refs`` each rewrite
-one of them, and a commit touching nothing the identity names still moves the
-fingerprint while leaving the identity itself unchanged.
+mtime, so a reader asking about an unmoved checkout rewrites one shared in-place
+object every second from every node. The reading is held against
+``git_dates._head_identity``, the spawn-free reading of ``HEAD`` and the ref it
+names that :mod:`reckon.change_streams` already uses, so the git reads run only
+when that reading moves: a commit, a branch switch and a detach each move it,
+``git pack-refs`` moves it by removing the loose ref, and a commit touching
+nothing the identity names still moves it while leaving the identity itself
+unchanged.
 
 Every git invocation the identity path makes is counted as it is spawned, so
 "no git spawn" is measured rather than asserted. The identity is read through
@@ -24,7 +26,19 @@ from pathlib import Path
 
 import pytest
 
-from reckon import checkout_trust
+from reckon import checkout_trust, git_dates
+
+
+@pytest.fixture(autouse=True)
+def _no_ambient_source_root(monkeypatch) -> None:
+    """The production call shape resolves its root from the environment.
+
+    A ``RECKON_FOLLOWER_SOURCE_ROOT`` in the ambient environment answers every
+    read here from that root, so the checks would exercise a checkout the
+    fixture never made. It is cleared for every test rather than left to
+    whatever the session that runs the gate happens to have exported.
+    """
+    monkeypatch.delenv("RECKON_FOLLOWER_SOURCE_ROOT", raising=False)
 
 
 @pytest.fixture()
@@ -174,7 +188,7 @@ def test_a_worktree_is_stamped_through_its_gitdir(source, tmp_path, spawns) -> N
     linked = tmp_path / "linked"
     _git(source, "worktree", "add", "-q", str(linked), "-b", "linked")
     assert (linked / ".git").is_file()
-    assert checkout_trust.head_stamp(linked) is not None
+    assert git_dates._head_identity(linked) is not None
 
     first = checkout_trust.source_code_identity(linked / "reckon")
     assert first == _fresh_read(linked)

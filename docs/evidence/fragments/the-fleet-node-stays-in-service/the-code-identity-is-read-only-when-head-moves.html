@@ -64,7 +64,27 @@
   </table>
   <p>Every git invocation is counted as the module spawns it, and the spawn assertion is
   taken immediately around the identity read so the assertion measures the read and not
-  the commit that precedes it.</p>
+  the commit that precedes it. The suite clears <code>RECKON_FOLLOWER_SOURCE_ROOT</code> for
+  every check, because the production call shape resolves its root from that variable and an
+  ambient value would answer every read from a checkout the fixture never made; the gate is
+  run twice, once with the variable unset and once set to this worktree, and passes 8 passed
+  in both.</p>
+
+  <h3 id="the-code-identity-is-read-only-when-head-moves-reuse">Why no new reader, and why packed-refs needs no watch of its own</h3>
+  <p><code>reckon/git_dates.py</code> already reads <code>HEAD</code> and the ref it names as
+  files without spawning git, and <code>reckon/change_streams.py</code> already holds its
+  stream against that reading. The hold uses it directly
+  (<code>source_code_identity</code> reads <code>git_dates._head_identity</code>), so the four
+  helpers written for this change &mdash; a git-directory resolver, a <code>commondir</code>
+  follower, a file fingerprint and a head fingerprint &mdash; are deleted rather than kept
+  beside the ones that already did the same work.</p>
+  <p><code>_head_identity</code> does not watch <code>packed-refs</code>, and a commit that
+  moves a branch moves the identity anyway: a commit writes the loose ref, changing its
+  mtime, inode and size, and the ref's <em>presence</em> is part of the identity, so
+  <code>git pack-refs</code> &mdash; which deletes that loose ref into the packed file &mdash;
+  moves the identity as well. A packed-ref that later moves without a new commit changes no
+  commit id, so there is nothing to re-read. The <code>git pack-refs</code> check covers this
+  and passes.</p>
 
   <h3 id="the-code-identity-is-read-only-when-head-moves-scope">Scope of the hold</h3>
   <p>The hold covers the checkout this process runs from: the root resolved when no other
@@ -94,10 +114,11 @@
   <p>Declared mutation applied to a scratch extraction of the head revision:
   <em>a commit touching nothing under</em> <code>reckon/</code> <em>or</em> <code>skills/</code>
   <em>moves the stamp, so the git reads run, and the identity is unchanged.</em> The
-  mutation removes the ref <code>HEAD</code> names from the fingerprint, so such a commit
-  moves no stamp. Six of the eight checks fail under it (<code>6 failed, 2 passed</code>,
-  <code>EXIT=1</code>), including the declared-property check, and none of them fails at
-  the head revision.</p>
+  mutation drops the ref <code>HEAD</code> names out of
+  <code>git_dates._head_identity</code> in the scratch copy, where the hold now reads it, so
+  such a commit moves no stamp. Six of the eight checks fail under it
+  (<code>6 failed, 2 passed</code>, <code>EXIT=1</code>), including the declared-property
+  check and the <code>pack-refs</code> check, and none of them fails at the head revision.</p>
 </section>
 </body>
 </html>
