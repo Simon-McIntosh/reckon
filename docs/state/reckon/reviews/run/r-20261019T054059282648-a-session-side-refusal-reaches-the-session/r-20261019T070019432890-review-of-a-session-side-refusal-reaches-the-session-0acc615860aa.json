@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "absent_items_note": "",
+  "added_failure_count": 10,
+  "added_failure_ids": [
+    "tests/test_held_worktree_records_match_each_record_once.py::test_the_held_trees_equal_the_whole_ledger_derivation",
+    "tests/test_held_worktree_records_match_each_record_once.py::test_a_record_that_names_no_tree_holds_none",
+    "tests/test_held_worktree_records_match_each_record_once.py::test_the_fixture_is_large_enough_to_expose_a_product",
+    "tests/test_held_worktree_records_match_each_record_once.py::test_each_record_is_filed_once_not_compared_per_tree",
+    "tests/test_held_worktree_records_match_each_record_once.py::test_the_index_agrees_with_the_naming_rule_for_every_pair",
+    "tests/test_the_held_worktree_read_is_bounded.py::test_one_derivation_reads_only_the_documents_that_can_change_it",
+    "tests/test_the_held_worktree_read_is_bounded.py::test_the_head_derivation_equals_the_whole_ledger",
+    "tests/test_the_held_worktree_read_is_bounded.py::test_a_refused_namings_reader_leaves_every_run_a_candidate",
+    "tests/test_the_held_worktree_read_is_bounded.py::test_a_damaged_aggregate_leaves_the_run_documents_readable",
+    "tests/test_the_held_worktree_read_is_bounded.py::test_a_run_retaining_a_tree_after_the_index_is_published_is_read"
+  ],
+  "added_failures_note": "derived by differencing the reviewed run's own arms: baseline_suite (suite-base.log, rev 6a4cc82) reads '644 passed, 22 warnings in 346.52s' with zero FAILED/ERROR lines and failure_ids []; after_suite (suite-head.log, rev 2705a7479) reads '634 passed, 22 warnings, 10 errors in 515.85s' and lists the 10 ERROR ids above, so the delta is 10. All 10 are setup errors inside the module-scoped held-worktree fixtures under -n 8 and are attributed 'scaffolding' in the manifest's failure_attribution; held-modules-head.log re-runs both modules alone and records 11 passed EXIT=0, so none is attributable to this change. Nothing in the changed modules' own importer set fails.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:280",
+    "reckon/crew/recovery_watch.py:1228",
+    "reckon/mcp_views.py:1905",
+    "reckon/crew/obligations.py:961",
+    "reckon/mcp.py:1888"
+  ],
+  "completed_at": "2026-10-19T07:09:33.387Z",
+  "dispatched_at": "2026-10-19T07:01:06Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:280 (crew list projects each classified row's next_action), reckon/crew/recovery_watch.py:1228 (the live view projects next_action), reckon/mcp_views.py:1905 (the MCP live view), reckon/crew/obligations.py:961 (the obligations view reads the carried session_refusal) and reckon/mcp.py:1888 (the crew obligations MCP view).",
+    "diff": "read 6a4cc82..0acc61586 commit by commit: d9aa92530 adds the queued branch, _queued_failure_remedy, the harness fixture and the fragment; 153c4f99b moves the command onto the shared _watch_attach_line helper behind an inline spelling and retargets the assertion at :135; 0acc61586 corrects one fragment line to name that helper.",
+    "done_when": "the done-when names two queued pointers for one session, one with a recorded _FollowerAdmissionUnmet failure and one with only a lane hold, and a negative control that drops the failure; tests/test_a_session_side_refusal_reaches_the_session.py writes both (105-122, 85-89) and asserts the split at :125, :138, :153 and :164, gate-head.log records 4 passed EXIT=0, and gate-negative-control.log records 3 failed EXIT=1.",
+    "goal": "the node goal is to show a queued request's session-side admission refusal as its next action in the live view and list it as an obligation the session owes; reckon/crew/recovery_classification.py:638-641 resolves the queued row's next_action to the follow command only when _queued_failure_remedy finds a non-lane-hold failure naming the refusal's session, and reckon/crew/obligations.py:961-964 lists that row as a queued-awaiting-session duty.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T054059282648-a-session-side-refusal-reaches-the-session/manifest.md; status complete, commits d9aa92530, 153c4f99b, 0acc61586, tests 'tests/test_a_session_side_refusal_reaches_the_session.py -> 4 passed, EXIT=0', and it records the head suite arm as 634 passed / 10 errors with each attributed to a module-scoped fixture timeout under -n 8.",
+    "write_paths": "the manifest declares five write paths; git diff --stat 6a4cc82..0acc61586 changes exactly four of them (the two modules, the new test file and the evidence fragment) and no path outside the set."
+  },
+  "justifications": {
+    "durability": "gate-repair-negative-control.log reinstates the inline spellings the repair removed and tests/test_a_session_side_refusal_reaches_the_session.py:135 reddens on the helper-versus-inline divergence, while gate-negative-control.log shows :135 reddens again when the classification drops the failure; the assertion compares production output against _watch_attach_line, the shared owner, so it guards routing through that helper and not the helper's own correctness, and test_a_lane_hold_keeps_the_waiting_reading at :157 fails by an independent route if _is_lane_hold stops catching the lane's message.",
+    "evidence": "gate-head.log (rev 2705a7479, the pre-refactor near-head) records the named test 4 passed EXIT=0, gate-repair.log (rev 153c4f99b) repeats 4 passed EXIT=0, and the two negative controls are recorded (gate-negative-control.log 3 failed EXIT=1; gate-repair-negative-control.log 1 failed EXIT=1), but the broad 86-file arm in suite-head.log ran at 2705a7479, before the repair refactor 153c4f99b changed recovery_classification.py, so the landed head's importer coverage rests on the seven-file focused arm in repair-focus-head.log (153 passed EXIT=0) rather than on the broad arm.",
+    "fit": "reckon/crew/recovery_classification.py:89 follows the remedy-dict idiom the module already sets for _resume_remedy and _manifest_is_the_predecessor_attempts_report, the duty kind at reckon/crew/obligations.py:77 is named by mechanism rather than by any plan label, and the three commits carry conventional subjects with bodies.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:638-641 sets the queued row's next_action and detail from _queued_failure_remedy when the recorded failure names the session, and reckon/crew/obligations.py:961-964 files that same row as a queued-awaiting-session duty, which are exactly the live and obligations surfaces the goal names.",
+    "reuse": "_watch_attach_line at reckon/crew/watch_unit.py:945 is the repository's owner for composing a session's follow command, and the repair made reckon/crew/recovery_classification.py:131-135 delegate to it via a lazy import instead of spelling the command a third time, so the addition extends the owner; the duplicate inline spellings that survive at reckon/hooks/coordinator_obligations.py:823 are untouched by this diff and outside its declared scope.",
+    "scope_discipline": "the four files in git diff --stat 6a4cc82..0acc61586 \u2014 reckon/crew/obligations.py, reckon/crew/recovery_classification.py, tests/test_a_session_side_refusal_reaches_the_session.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-session-side-refusal-reaches-the-session.html \u2014 all lie inside the five write paths the dispatch declared, and no other path is touched."
+  },
+  "node": "review-of-a-session-side-refusal-reaches-the-session-0acc615860aa",
+  "node:reviewed": "a-session-side-refusal-reaches-the-session",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to show a queued request's session-side admission refusal as its next action in the live view and list it as an obligation the session owes; reckon/crew/recovery_classification.py:638-641 resolves the queued row's next_action to the follow command only when _queued_failure_remedy finds a non-lane-hold failure naming the refusal's session, and reckon/crew/obligations.py:961-964 lists that row as a queued-awaiting-session duty.\nVERDICT done_when: the done-when names two queued pointers for one session, one with a recorded _FollowerAdmissionUnmet failure and one with only a lane hold, plus a negative control that drops the failure; tests/test_a_session_side_refusal_reaches_the_session.py writes both and asserts the split at :125, :138, :153 and :164, gate-head.log records 4 passed EXIT=0, and gate-negative-control.log records 3 failed EXIT=1.\nVERDICT write_paths: the manifest declares five write paths; git diff --stat 6a4cc82..0acc61586 changes exactly four of them (the two modules, the test file and the evidence fragment) and no path outside the set.\nVERDICT manifest: read; status complete, commits d9aa92530, 153c4f99b, 0acc61586, tests '4 passed, EXIT=0', and it records the head suite arm as 634 passed / 10 errors with each attributed to a module-scoped fixture timeout.\nVERDICT diff: read 6a4cc82..0acc61586 commit by commit; d9aa92530 adds the queued branch and _queued_failure_remedy, 153c4f99b moves the command onto the shared _watch_attach_line helper and retargets the assertion, 0acc61586 corrects one fragment line, all inside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:280, reckon/crew/recovery_watch.py:1228, reckon/mcp_views.py:1905, reckon/crew/obligations.py:961, reckon/mcp.py:1888\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:638-641 sets the queued row's next_action and detail from _queued_failure_remedy when the recorded failure names the session, and reckon/crew/obligations.py:961-964 files that same row as a queued-awaiting-session duty, which are exactly the live and obligations surfaces the goal names.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log (rev 2705a7479) records the named test 4 passed EXIT=0 and the two negative controls are recorded, but the broad 86-file arm in suite-head.log ran at 2705a7479, before 153c4f99b changed recovery_classification.py, so the landed head's importer coverage rests on the seven-file focused arm in repair-focus-head.log (153 passed EXIT=0).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the four files in git diff --stat 6a4cc82..0acc61586 all lie inside the five write paths the dispatch declared, and no other path is touched.\nSCORE durability: 19\nJUSTIFICATION durability: gate-repair-negative-control.log reinstates the inline spelling and tests/test_a_session_side_refusal_reaches_the_session.py:135 reddens on the helper-versus-inline divergence, gate-negative-control.log reddens it again when the failure is dropped from the classification, and :157 fails by an independent route if _is_lane_hold stops catching the lane's message.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_classification.py:89 follows the remedy-dict idiom the module sets for _resume_remedy, the duty kind at reckon/crew/obligations.py:77 is named by mechanism, and the commits carry conventional subjects with bodies.\nSCORE reuse: 19\nJUSTIFICATION reuse: _watch_attach_line at reckon/crew/watch_unit.py:945 owns composing a session's follow command and reckon/crew/recovery_classification.py:131-135 now delegates to it rather than spelling it a third time, so the addition extends the owner; the surviving duplicate at reckon/hooks/coordinator_obligations.py:823 is untouched by this diff.",
+  "review_run_id": "r-20261019T070019432890-review-of-a-session-side-refusal-reaches-the-session-0acc615860aa",
+  "reviewed_base_sha": "6a4cc82aabca26dbacd527507de07cd4736b102e",
+  "reviewed_head_sha": "0acc615860aabc9393abe48aed9fc4d2eb0ff4c3",
+  "reviewed_run_id": "r-20261019T054059282648-a-session-side-refusal-reaches-the-session",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T07:20:00+00:00",
+  "total": 111
+}
