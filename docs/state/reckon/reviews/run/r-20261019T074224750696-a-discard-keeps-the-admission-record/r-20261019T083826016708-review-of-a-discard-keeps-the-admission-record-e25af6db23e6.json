@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "assert written[key] == record[key] compares the record read back from disk (the code's output) against the literal input dict; removing the copy loop from _write_discard_record makes written[key] absent, so the preceding 'key in written' assertion reddens first. Independent of the value under test and confirmed red by the negative control log.",
+      "lines": "tests/test_a_discard_keeps_the_admission_record.py:102-116"
+    },
+    {
+      "failure_condition": "on the run-directory arm, written['hold'] raises KeyError once the copy loop is dropped, which the negative control records as 'KeyError: hold'. Guards the second landing location.",
+      "lines": "tests/test_a_discard_keeps_the_admission_record.py:126-128"
+    },
+    {
+      "failure_condition": "test_a_discarded_request_still_reads_as_discarded asserts discard_recorded False before and True after; it cannot redden on the copy change itself and instead guards that keeping the fields did not alter the discard verdict.",
+      "lines": "tests/test_a_discard_keeps_the_admission_record.py:134-140"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew_run_commands.py:1583 crew discard -> promotion.discard -> _write_discard_record",
+    "reckon/crew/recovery_review_dispatch.py:266-269 reads and rewrites the discard marker's reason",
+    "reckon/crew/recovery_watch.py:1532,1551 discard_recorded",
+    "reckon/crew/queue_admission.py:759-761 discard_recorded in the admission pass",
+    "reckon/crew/gc.py:1048-1049 discard_record_existence for scratch disposition"
+  ],
+  "completed_at": "2026-10-19T08:56:05.592Z",
+  "dispatched_at": "2026-10-19T08:40:57Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-discard-keeps-the-admission-record.html",
+      "line": "6",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment states promotion.py carries 3 findings and 31 format-diff lines at both base and head, but the log it cites (ruff-head.log) reports 'Found 2 errors' on promotion.py (S110 and BLE001 at promotion.py:1387). A measure figure that does not reconcile with its own log is a reader hazard, though the substantive claim (the change adds no finding) still holds from the same log."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "1691",
+      "severity": "follow-on",
+      "text": "follow-on: the key reason now reaches the discard marker with two provenance paths \u2014 the pointer's lane-allowance reason copied here at promotion.py:1691 when the pointer carried it, and the discard reason that recovery_review_dispatch.py:269 writes during a review supersede. A reader of the marker cannot tell the two apart by key alone. This is inherent to the spec section that names reason among the kept fields rather than a defect in this change, but the collision is now reachable and worth recording."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against e8c804a: two commits, three files, all inside scope. 96b4e1960 adds DISCARD_ADMISSION_KEYS and the copy loop to promotion.py plus the test; e25af6db2 adds the landing fragment.",
+    "done_when": "the done_when names a temporary-crew-home discard test with three cases and the negative control; tests/test_a_discard_keeps_the_admission_record.py carries exactly those three cases and the manifest records the gate 3 passed EXIT=0 and the control 2 failed/1 passed EXIT=1.",
+    "goal": "the node's goal is to keep a discarded queued pointer's admission and failure fields in the discard record it already writes; reckon/crew/promotion.py:1682-1692 copies each DISCARD_ADMISSION_KEYS entry the pointer carries onto the existing marker, wherever the marker lands.",
+    "manifest": "read; it records the focused gate (3 passed EXIT=0), the negative control (2 failed, 1 passed, EXIT=1, first case failing), the promotion-importer population (7 failed/644 passed, the same 7 ids at base = 0 added), and names each log's path.",
+    "write_paths": "the declared paths are reckon/crew/promotion.py, tests/test_a_discard_keeps_the_admission_record.py, the fragment under docs/evidence/fragments/ and the figures directory; every path in the diff is inside them and the unused figure path is written to nothing."
+  },
+  "justifications": {
+    "durability": "the negative control at gate-negative-control.log shows test_a_queued_discard_keeps_the_admission_record_in_the_spool reddening with 'the discard record dropped queued_at' when the copy loop is removed, so the assertion fails on the regression it guards.",
+    "evidence": "the focused gate tests/test_a_discard_keeps_the_admission_record.py ran 3 passed EXIT=0 and the negative control 2 failed/1 passed EXIT=1 (gate-head.log, gate-negative-control.log), with added failures 0 across base and after suites; the ruff clause rests on the fragment's prose, not a recorded base arm.",
+    "fit": "DISCARD_ADMISSION_KEYS sits beside the existing DISCARD_RECORD_NAME at reckon/crew/promotion.py:1513 and the module-private constant plus docstring follow the surrounding style.",
+    "goal_fidelity": "reckon/crew/promotion.py:1689-1691 copies each DISCARD_ADMISSION_KEYS entry the pointer carries onto the marker, so the discarded queued request's admission and failure fields survive exactly as the goal states.",
+    "reuse": "the change extends the owner _write_discard_record (reckon/crew/promotion.py:1664) in place; a search of reckon/crew for an existing admission-key copy mechanism found none, and DISCARD_RECORD_NAME is the only prior constant there.",
+    "scope_discipline": "the diff against e8c804a touches only reckon/crew/promotion.py, tests/test_a_discard_keeps_the_admission_record.py and the landing fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T083826016708-review-of-a-discard-keeps-the-admission-record-e25af6db23e6",
+  "reviewed_base_sha": "e8c804a989c27707e0663cbe1dfc454c97e01d69",
+  "reviewed_head_sha": "e25af6db23e6f96095354504fe6d0bdb0f76388a",
+  "reviewed_run_id": "r-20261019T074224750696-a-discard-keeps-the-admission-record",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T09:03:31.778511+00:00"
+}
