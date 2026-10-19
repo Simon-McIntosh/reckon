@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import fcntl
+import functools
 import json
 import math
 import os
@@ -14,7 +15,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
 from reckon._timestamps import parse_utc
-from reckon.crew import metering, quota_weight, runs
+from reckon.crew import metering, obligation_snapshot, quota_weight, runs
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS
 from reckon.crew.node import (
     DEFAULT_WATCH_STALL_WINDOW,
@@ -2065,67 +2066,64 @@ def _notional_cost(
 # consecutive rows come from different projects.
 WATCH_EVENTS_SUFFIX = ".events"
 
-# An events file's newest transition carrying the per-session partition is found
-# by reading from the tail in chunks, so a row's cost does not grow with the
-# file's history.
-_SESSION_COUNTS_TAIL_CHUNK = 64 * 1024
+
+# This process's own code identity, read once. The read shells out to Git over
+# the whole checkout, and a running image does not change under itself, so a
+# follower that judged every row's peers afresh would pay that cost per row.
+@functools.lru_cache(maxsize=1)
+def _running_code_stamp() -> str:
+    """The code identity this process is running, read once and kept."""
+    return obligation_snapshot.source_code_stamp()
 
 
-def _newest_session_counts(path: Path) -> Mapping[str, Any] | None:
-    """The per-session partition from the newest transition in one events file.
+def _newest_session_event(path: Path) -> Mapping[str, Any] | None:
+    """The newest transition in one events file that carries the partition.
 
-    The file is read from its tail in chunks, never in full, so a row's cost
-    does not grow with the events file's history. A half-written last record is
-    not valid JSON and is skipped, matching the stream parser, which reads such
-    a line as legacy and carries no partition. Returns ``None`` when the file
-    holds no readable record carrying the partition.
+    The file is walked from its tail by the owner of that read,
+    ``runs._iter_stream_lines_backwards``, so a row's cost does not grow with the
+    file's history and the backwards walk has one implementation. A half-written
+    last record is not valid JSON and is skipped, as ``parse_stream_line`` reads
+    such a line as legacy and it carries no partition. Returns ``None`` when no
+    readable record carries the partition.
     """
-    try:
-        end = path.stat().st_size
-    except OSError:
-        return None
-    if end <= 0:
-        return None
-    buffer = b""
-    try:
-        with path.open("rb") as stream:
-            while end > 0:
-                start = max(0, end - _SESSION_COUNTS_TAIL_CHUNK)
-                stream.seek(start)
-                buffer = stream.read(end - start) + buffer
-                end = start
-                lines = buffer.split(b"\n")
-                if end > 0:
-                    # The leading bytes may begin mid-line: keep them for the
-                    # next chunk and examine only the complete lines after.
-                    buffer = lines[0]
-                    complete = lines[1:]
-                else:
-                    buffer = b""
-                    complete = lines
-                for raw in reversed(complete):
-                    if not raw.strip():
-                        continue
-                    event = runs.parse_stream_line(raw.decode("utf-8", "replace"))
-                    if event is None:
-                        continue
-                    sessions = event.get("session_counts")
-                    if isinstance(sessions, Mapping):
-                        return sessions
-    except OSError:
-        return None
+    for line in runs._iter_stream_lines_backwards(path):
+        event = runs.parse_stream_line(line)
+        if event is None:
+            continue
+        if isinstance(event.get("session_counts"), Mapping):
+            return event
     return None
+
+
+def _other_project_producer_is_live(project: str, session: str, stamp: str) -> bool:
+    """Whether another project's producer is live enough to contribute a figure.
+
+    A stopped watcher leaves its last transition behind in its events file, so
+    reading that file alone would keep adding that project's stale figure to
+    every row forever. The reading is the obligation snapshot's own, reused
+    rather than re-derived: an absent producer -- no live local process and no
+    live seat on another host -- contributes nothing, while a producer holding
+    the seat on another host, one running code other than this checkout, and a
+    quiet but live one all still count. Only the ``no-producer`` verdict
+    excludes, so no time bound is added here.
+    """
+    document = obligation_snapshot.read_snapshot(project, session)
+    reading, _host = obligation_snapshot.freshness_reading(
+        document, project=project, current_stamp=stamp
+    )
+    return reading != obligation_snapshot.NO_PRODUCER
 
 
 def _session_counts_in_other_projects(project: str, session: str) -> dict[str, int]:
     """The session's totals in every watched project but this row's own.
 
     Sums the session's entry from the newest transition carrying the partition
-    in each other project's events file under the watch directory. A project
-    whose newest such transition carries no entry for the session adds nothing,
-    as does one whose file cannot be read. ``waiting`` joins the total only when
-    some project actually reported a waiting run, so a zero never stands in for
-    an unmeasured figure.
+    in each other project's events file under the watch directory, counted only
+    while that project's producer is live. A project whose newest such
+    transition carries no entry for the session adds nothing, as does one whose
+    file cannot be read or whose watcher has stopped. ``waiting`` joins the
+    total only when some project actually reported a waiting run, so a zero
+    never stands in for an unmeasured figure.
     """
     if not project or not session:
         return {}
@@ -2133,6 +2131,7 @@ def _session_counts_in_other_projects(project: str, session: str) -> dict[str, i
     total = {"working": 0, "blocked": 0, "unpromoted": 0}
     waiting_seen = False
     waiting = 0
+    stamp: str | None = None
     watch_dir = own.parent
     try:
         candidates = sorted(watch_dir.glob(f"*{WATCH_EVENTS_SUFFIX}"))
@@ -2141,11 +2140,21 @@ def _session_counts_in_other_projects(project: str, session: str) -> dict[str, i
     for path in candidates:
         if path == own:
             continue
-        sessions = _newest_session_counts(path)
-        if not isinstance(sessions, Mapping):
+        event = _newest_session_event(path)
+        if event is None:
             continue
-        entry = sessions.get(session)
+        sessions = event.get("session_counts")
+        entry = sessions.get(session) if isinstance(sessions, Mapping) else None
         if not isinstance(entry, Mapping):
+            continue
+        # The project a record names is what the liveness reading is taken
+        # against, so a record that cannot name its project is not counted.
+        other = str(event.get("project") or "")
+        if not other:
+            continue
+        if stamp is None:
+            stamp = _running_code_stamp()
+        if not _other_project_producer_is_live(other, session, stamp):
             continue
         for key in total:
             total[key] += int(entry.get(key) or 0)
@@ -2191,11 +2200,12 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
 
     A session may work in several projects at once, each watched by its own
     events file. The session's entry from the newest transition carrying the
-    partition in each other project's file is added, so the rendered figures
-    describe the session's work everywhere rather than whichever project the
-    row happens to come from. A project whose newest such transition carries no
-    entry for the session adds nothing. A follower with no session is one
-    project's pane and keeps that project's counts.
+    partition in each other project's file is added -- while that project's
+    producer is live -- so the rendered figures describe the session's work
+    everywhere rather than whichever project the row happens to come from. A
+    project whose newest such transition carries no entry for the session adds
+    nothing, and neither does a project whose watcher has stopped. A follower
+    with no session is one project's pane and keeps that project's counts.
 
     ``working``/``blocked``/``unpromoted`` (and ``waiting``) carry the
     session-wide figures the pane renders; the same row's own-project figures
