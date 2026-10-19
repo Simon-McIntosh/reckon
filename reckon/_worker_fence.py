@@ -1282,6 +1282,33 @@ def shared_store_seal_roots() -> list[Path]:
     ]
 
 
+def fence_writable_roots(
+    writable_directories: Iterable[str | Path],
+) -> list[Path]:
+    """Return the declared roots that stay writable inside the fence.
+
+    A declared root at or above a shared delivery store is skipped by
+    :func:`fence_argv`'s grant loop rather than re-opening the whole store
+    through the seal; a root *beneath* one is the run's own declared path and
+    stays writable. The backend's own sandbox is composed around this same set
+    before the fence wraps the launch, and codex prepares each root it is told
+    writable — so it has to be handed only what the fence actually keeps
+    writable, or a root the fence holds read-only refuses the whole launch; see
+    :func:`shared_store_seal_roots`.
+
+    Each root is resolved the way the grant loop resolves it, so the two agree
+    on which store a root falls under even through a symlinked ancestry.
+    """
+    sealed = shared_store_seal_roots()
+    roots: list[Path] = []
+    for directory in writable_directories:
+        target = resolved_destination(directory)
+        if any(seal == target or seal.is_relative_to(target) for seal in sealed):
+            continue
+        roots.append(target)
+    return roots
+
+
 def fence_argv(
     argv: Sequence[str],
     *,
@@ -1479,21 +1506,25 @@ def fence_argv(
         if not target.exists():
             roots.append(target.parent)
 
-    shared_seals = [*store_seals, *([scratch_seal] if scratch_seal else [])]
     granted: set[str] = set()
-    for root in roots:
-        target = resolved_destination(root)
+    # The handed roots minus the sealed delivery stores, resolved the way this
+    # loop resolves them, so the rule that decides which roots the fence binds
+    # writable is the same one the dialect is handed and an argv's ``--add-dir``
+    # agrees with a bind emitted here; see :func:`fence_writable_roots`.
+    for target in fence_writable_roots(roots):
         key = str(target)
         if key in granted or not _within_any(target, sealed):
             continue
         # A grant is the last word on its own path, so a handed root at or
-        # above a shared seal would re-open it whole — the seal is only ever
-        # reached through a root beneath it. The scratch root carries this
-        # before the node tmp is sealed too: dispatch hands the ambient
+        # above the worker scratch root would re-open it whole — the seal is
+        # only ever reached through a root beneath it. The scratch root carries
+        # this before the node tmp is sealed too: dispatch hands the ambient
         # ``TMPDIR`` (:func:`reckon._backends.delivery_write_roots`) as well as
         # the run's own scratch directory, and where the crew home itself sits
         # under that temp root the ambient root is an ancestor of both stores.
-        if any(seal == target or seal.is_relative_to(target) for seal in shared_seals):
+        if scratch_seal is not None and (
+            scratch_seal == target or scratch_seal.is_relative_to(target)
+        ):
             continue
         # A root that is not there holds nothing to re-open, and a bind whose
         # source is absent refuses the launch outright, so it composes no
