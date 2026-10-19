@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T02:43:03.321Z",
+  "dispatched_at": "2026-10-19T02:30:39Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-promotes-only-its-own-verdict.html:77",
+      "id": "reasoning-1",
+      "reason": "the plan must name a non-colliding verb or state that the existing `repair-review` is extended, or \u00a74's \"the exact `repair-review` command per row\" is ambiguous and the implementing node deviates from an exact spec.",
+      "text": "\u00a73 names its new verb `reckon crew repair-review`, but that command already exists at `reckon/crew_run_commands.py:760` (added at `128b1c4dc`, before \u00a73 was authored) with a different signature (`--run --record --set --reason`) and a different purpose (repair a review's status or missing subject identity), and it is the command `reckon/crew/obligations.py:202` emits as a `next_command`; a second `@crew.command(name=\"repair-review\")` on the same group silently overwrites the first in click, so a node implementing \u00a73 exactly either shadows the existing verb and breaks a live caller or must deviate from an exact spec",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-promotes-only-its-own-verdict.html:77",
+      "id": "reasoning-2",
+      "reason": "\u00a73 asserts its refusal is \"the complement of \u00a72's rule\" and \u00a74 instructs a coordinator to run the verb per listed row, so a listed row the verb refuses makes \u00a74's stated action impossible and falsifies \u00a73's complement claim and the same_revision reasoning on line 84; the fix is to give the verb \u00a72's node-id fallback or to exclude those rows in \u00a72/\u00a74.",
+      "text": "\u00a73's verb reads the dispatched head only from the row's declared `.at-` write path and refuses \"a row with no dispatched head\", but \u00a72 (line 60) defines the dispatched head as taken from a declared `.at-` path *or* the hex suffix of the node id, and \u00a72's own known-correct row (line 66) is classified through the node-id suffix; a row whose only dispatched-head source is its node id (no `.at-` path) and whose recorded head does not begin with it is therefore listed by \u00a72 as mismatched yet refused by \u00a73",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a61a889f410e350ffafb9e66c29227c04c8c147a6eb4e96ee3bd2b05183a948a",
+  "plan_slug": "a-review-promotes-only-its-own-verdict",
+  "plan_version": 28,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-19T02:44:32.886994+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-19T02:45:06.149855+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T02:44:32.886994+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T02:45:06.149855+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-review-promotes-only-its-own-verdict.v28.json",
+  "review_run_id": "r-20261019T022929558996-plan-review-of-a-review-promotes-only-its-own-verdict",
+  "reviewed_blob_sha": "3acb7fde727825f3f59caa5001834def011e6db9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every \u00a73 anchor resolves: `_review_record_subject` at `reckon/crew/recovery_review_dispatch.py:133`, `carried_revision_pair` in `reckon/crew/review.py` (at :348), `same_revision` at `reckon/crew/recovery_review_subject.py:102`, the four reader lines `reckon/capabilities.py:968`, `reckon/ledger.py:3702`, `reckon/crew/picker/snapshot.py:377`, `reckon/crew/picker/outcomes.py:477`, the `repair-status`/`repair-completion` verbs, and the four cited test files all exist; no extensionless href is asserted against.",
+    "done_when": "pass \u2014 \u00a73's five done-when items are measurable and the section carries a base-revision negative control (lines 80, 86) that names the reader cases as FAILED by id; a corrected row read with its stale review reddens the base arm on the real reader path.",
+    "evidence_paths": "pass \u2014 \u00a73's gate and negative-control logs go \"under the run directory\", a durable crew path, not a session scratchpad or node-local `/tmp`.",
+    "naming": "pass \u2014 \u00a73 carries no plan labels, stage names or ticket numbers into symbols; `repair-review`, `review_correction` and `_review_record_subject` name mechanisms.",
+    "reasoning": "a finding \u2014 \u00a73's verb names a command that already exists, and its dispatched-head source is narrower than \u00a72's, so the two \u00a73 mechanisms below do not hold under the plan's own definitions.",
+    "single_goal": "pass \u2014 \u00a73 ships one deliverable, the append-only review-row correction (its accessor and its verb are one mechanism), reviewable on one verdict.",
+    "wiring": "pass \u2014 \u00a73 declares `depends-on` on `a-review-promotes-only-its-*#s2` (meta `plan-section-depends-on`), \u00a74 declares `depends-on` on \u00a73, and both landed predecessors (\u00a71 at `c3e988abd`, \u00a72 at `65d442151`) resolve; no relationship points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "37efc2b77cf3646243e013d967ec9088d667b1d9ea2a5b9eef64b5497466ceb5",
+    "s1": "b5cea03aef396e4aea2b2b9c76f01fd0b684b3da7cce27ab57a3fe3cd364801d",
+    "s2": "7210c28c3600892789bd0cf6bb61f4c9e0443ff586e1b7887eb2255666cb75c1",
+    "s3": "00f1d857e9dea841cddcc0e63f6b606b8490ad1a316273b73da2ad64b7a3be25",
+    "s4": "a79652450a4ae19f01cfa74304463df3b3b4ef17176c7575f64cbab585c36fff"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T02:44:13.015490+00:00"
+}
