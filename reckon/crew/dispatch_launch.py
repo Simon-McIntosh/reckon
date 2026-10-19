@@ -47,6 +47,7 @@ from reckon.crew.routing import (
     _repository_tree_snapshot,
     signal_worker,
 )
+from reckon.crew.process_signal import _run_uses_step, signal_pending_step_client
 from reckon.crew.runs import (
     _mutate_pointer,
     _pointer_lock,
@@ -62,7 +63,6 @@ from reckon.crew.runs import (
     scheduler_job_state,
     scheduler_kill_class,
 )
-
 
 
 # Every worker this process has launched but not yet waited on. The waiting is
@@ -1063,6 +1063,13 @@ def resolve_launch_executable(
     return dataclasses.replace(plan, argv=argv)
 
 
+_STEP_TASK_WRAPPER = (
+    "start=$(awk '{print $22}' \"/proc/$$/stat\"); "
+    'printf "%s %s %s %s\\n" "$SLURM_JOB_ID" "$SLURM_STEP_ID" "$$" "$start" '
+    '> "$RECKON_STEP_RECORD"; exec "$@"'
+)
+
+
 def apply_backend_placement(
     plan: _backends.LaunchPlan,
     backend: Mapping[str, Any],
@@ -1104,7 +1111,8 @@ def apply_backend_placement(
     # worker placed into it runs where it was sized to and is counted against
     # the roster that admits it.
     reservation = placement_module.read_reservation(project)
-    if reservation and placement_module.reservation_alive(reservation):
+    step_placed = bool(reservation and placement_module.reservation_alive(reservation))
+    if step_placed:
         # The reservation is held and its job id is published, so this worker
         # runs inside it as an overlapping step rather than as an allocation of
         # its own. The id is resolved from the shared state rather than taken on
@@ -1116,6 +1124,18 @@ def apply_backend_placement(
         ]
     else:
         prefix = [os.path.abspath(found), *options]
+    if step_placed:
+        # The shell is the step task until it execs the sandbox. Its pid and
+        # Slurm identity are written before the worker starts, so a stop can
+        # address the task while the local srun client remains alive.
+        task = [
+            "/bin/sh",
+            "-c",
+            _STEP_TASK_WRAPPER,
+            "sh",
+            *plan.argv,
+        ]
+        return dataclasses.replace(plan, argv=[*prefix, *task])
     return dataclasses.replace(plan, argv=[*prefix, *plan.argv])
 
 
@@ -1221,10 +1241,7 @@ def placement_job_id(
             for token in str(completed.stdout or "").split():
                 if token.isdigit():
                     return token, "recorded"
-            last = (
-                "probe answered no identifier "
-                f"(exit {completed.returncode})"
-            )
+            last = f"probe answered no identifier (exit {completed.returncode})"
         if attempt + 1 < _PLACEMENT_PROBE_ATTEMPTS:
             time.sleep(1.0)
     return None, last or "probe answered no identifier"
@@ -2254,6 +2271,13 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
         claude_headers=str(plan.get("dialect") or "") == "claude",
     )
     argv = [str(word) for word in plan["argv"]]
+    step_placed = Path(argv[0]).name == "srun" and any(
+        word.startswith("--jobid=") for word in argv[1:]
+    )
+    if step_placed:
+        step_record = Path(str(spec["run_directory"])) / "step-task.txt"
+        step_record.unlink(missing_ok=True)
+        environment["RECKON_STEP_RECORD"] = str(step_record)
 
     def attempt() -> subprocess.Popen:
         with (
@@ -2586,6 +2610,7 @@ TERMINAL_MANIFEST_GRACE_DEFAULT = 300.0
 # enough to notice a delivery against a multi-minute grace without reading the
 # manifest across the whole life of every worker.
 _WORKER_MANIFEST_POLL_SECONDS = 3.0
+_STEP_START_SETTLE_SECONDS = 30.0
 # How long a worker gets to end on the grace signal before the supervisor
 # escalates to SIGKILL, so a worker ignoring SIGTERM cannot hold the slot.
 _WORKER_GRACE_KILL_SECONDS = 10.0
@@ -2782,6 +2807,69 @@ def _record_ended(accumulator: list[int] | None, ended: list[int]) -> None:
             accumulator.append(pid)
 
 
+STEP_WAIT_CEILING_SECONDS = 600.0
+STEP_WAIT_RECORD_NAME = "step-wait.json"
+
+
+def _record_step_wait(run_directory: Path, client_pid: int) -> None:
+    """Preserve the step's live processes and wait channels without ending it."""
+    from reckon.crew.process_signal import _running_descendants, _step_worker_identity
+
+    identity = _step_worker_identity(run_directory)
+    step = identity[0] if identity else None
+    task_pid = identity[1] if identity else None
+    pids = [client_pid]
+    if identity and _process_start_time(task_pid) == identity[2]:
+        pids.extend(_running_descendants(task_pid))
+    listing = ""
+    listing_error = ""
+    if step:
+        try:
+            result = subprocess.run(
+                ["scontrol", "listpids", step],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=10,
+            )
+            listing = result.stdout
+            listing_error = result.stderr.strip()
+            for line in listing.splitlines():
+                first = line.split()[:1]
+                if first and first[0].isdigit():
+                    pids.append(int(first[0]))
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            listing_error = str(exc)
+    processes = []
+    for process_pid in dict.fromkeys(pids):
+        proc = Path("/proc") / str(process_pid)
+        try:
+            stat = (proc / "stat").read_text()
+            fields = stat.rpartition(")")[2].split()
+            processes.append(
+                {
+                    "pid": process_pid,
+                    "comm": (proc / "comm").read_text().strip(),
+                    "state": fields[0],
+                    "ppid": int(fields[1]),
+                    "wchan": (proc / "wchan").read_text().strip(),
+                }
+            )
+        except (OSError, IndexError, ValueError):
+            continue
+    _supervisor_write(
+        run_directory / STEP_WAIT_RECORD_NAME,
+        {
+            "observed_at": _utc_now(),
+            "step": step,
+            "client_pid": client_pid,
+            "task_pid": task_pid,
+            "processes": processes,
+            "listpids_error": listing_error,
+        },
+    )
+
+
 def _reap_worker_on_its_terminal_manifest(
     pid: int,
     *,
@@ -2815,13 +2903,12 @@ def _reap_worker_on_its_terminal_manifest(
     never signalled on, at the ceiling or before it. Returns the wait status, or
     ``None`` when the child was already reaped elsewhere.
 
-    A recorded stop bounds the wait as well. ``crew stop`` delivers its signal
-    to the worker's whole process group, so the worker has already been asked to
-    end; the supervisor gives it ``stop_grace_seconds`` to do so, then kills it.
-    Without this the supervisor would block on ``waitpid`` for as long as the
-    worker lives, so a worker that ignores the stop would hold the supervisor,
-    and its slot, past any bound. A stop does not wait on a manifest: it ends
-    the run outright.
+    A recorded stop asks the run's processes to end, then escalates after
+    ``stop_grace_seconds``. For a step-placed worker the signals reach only
+    processes beneath bwrap; the task and srun client remain alive until the
+    sandbox exits. The supervisor has no deadline on that wait. Once it has
+    waited ten minutes after delivery it records the step's processes and wait
+    channels, then keeps waiting.
 
     The manifest is stat'd each poll; its status and wholeness are read only
     when its mtime has advanced past the attempt's baseline and changed since
@@ -2838,6 +2925,10 @@ def _reap_worker_on_its_terminal_manifest(
     signalled_at: float | None = None
     stop_deadline: float | None = None
     stop_killed = False
+    pending_step_since: float | None = None
+    pending_client_signalled = False
+    wait_started_at: float | None = None
+    long_wait_recorded = False
     while True:
         try:
             waited_pid, status = os.waitpid(pid, os.WNOHANG)
@@ -2850,28 +2941,30 @@ def _reap_worker_on_its_terminal_manifest(
             stop_requested is not None
             and stop_deadline is None
             and not stop_killed
+            and not pending_client_signalled
             and stop_requested.is_set()
         ):
-            # A stop ends the run: the group signal has already reached the
-            # worker, and re-signalling it here names the sender in the run's
-            # worker record. The grace covers only the flush between receiving
-            # the stop and exiting. The reach ends the worker's own children
-            # too, so a stop leaves nothing of the run working.
-            _record_ended(
-                ended_pids,
-                signal_worker(
-                    pid,
-                    signal.SIGTERM,
-                    reason="run-stop",
-                    run_dir=run_directory,
-                    run_id=run_directory.name,
-                    reach_run=True,
-                ),
+            # A stop reaches the run's worker and its children. A placed
+            # worker keeps its task and client alive while those processes end.
+            delivered = signal_worker(
+                pid,
+                signal.SIGTERM,
+                reason="run-stop",
+                run_dir=run_directory,
+                run_id=run_directory.name,
+                reach_run=True,
             )
-            stop_deadline = now + stop_grace_seconds
+            _record_ended(ended_pids, delivered)
+            if _run_uses_step(run_directory) and not (
+                run_directory / "step-task.txt"
+            ).exists():
+                pending_step_since = now if pending_step_since is None else pending_step_since
+            if delivered:
+                stop_deadline = now + stop_grace_seconds
+                wait_started_at = now
         if stop_deadline is not None and now >= stop_deadline:
-            # The worker outlived the stop grace. SIGKILL cannot be ignored, so
-            # the supervisor ends it rather than waiting on it further.
+            # The worker outlived the stop grace. SIGKILL reaches the same
+            # inner processes; the client is still waited on afterward.
             _record_ended(
                 ended_pids,
                 signal_worker(
@@ -2933,20 +3026,34 @@ def _reap_worker_on_its_terminal_manifest(
             # on as before rather than ended on a withdrawn or half-written
             # delivery's clock.
             deadline = None
-        if deadline is not None and signalled_at is None and now >= deadline:
-            _record_ended(
-                ended_pids,
-                signal_worker(
-                    pid,
-                    signal.SIGTERM,
-                    reason="worker-lingered-after-terminal-manifest",
-                    run_dir=run_directory,
-                    run_id=run_directory.name,
-                    reach_run=True,
-                ),
+        if (
+            deadline is not None
+            and signalled_at is None
+            and not pending_client_signalled
+            and now >= deadline
+        ):
+            delivered = signal_worker(
+                pid,
+                signal.SIGTERM,
+                reason="worker-lingered-after-terminal-manifest",
+                run_dir=run_directory,
+                run_id=run_directory.name,
+                reach_run=True,
             )
-            signalled_at = now
-        elif signalled_at is not None and now - signalled_at >= _WORKER_GRACE_KILL_SECONDS:
+            _record_ended(ended_pids, delivered)
+            if _run_uses_step(run_directory) and not (
+                run_directory / "step-task.txt"
+            ).exists():
+                pending_step_since = now if pending_step_since is None else pending_step_since
+            if delivered:
+                signalled_at = now
+                if wait_started_at is None:
+                    wait_started_at = now
+        elif (
+            signalled_at is not None
+            and not pending_client_signalled
+            and now - signalled_at >= _WORKER_GRACE_KILL_SECONDS
+        ):
             # The worker ignored the grace signal. SIGKILL cannot be ignored,
             # and the record names this second, harder signal.
             _record_ended(
@@ -2961,6 +3068,29 @@ def _reap_worker_on_its_terminal_manifest(
                 ),
             )
             signalled_at = now
+        if (run_directory / "step-task.txt").exists():
+            pending_step_since = None
+        elif (
+            pending_step_since is not None
+            and not pending_client_signalled
+            and now - pending_step_since >= _STEP_START_SETTLE_SECONDS
+            and signal_pending_step_client(
+                pid, run_directory, reason="stop-before-step-started"
+            )
+        ):
+            pending_client_signalled = True
+            stop_killed = True
+            signalled_at = now
+            _record_ended(ended_pids, [pid])
+            if wait_started_at is None:
+                wait_started_at = now
+        if (
+            wait_started_at is not None
+            and not long_wait_recorded
+            and now - wait_started_at >= STEP_WAIT_CEILING_SECONDS
+        ):
+            _record_step_wait(run_directory, pid)
+            long_wait_recorded = True
         time.sleep(_WORKER_MANIFEST_POLL_SECONDS)
 
 

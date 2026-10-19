@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-stopped-worker-ends-inside-its-step">
+  <meta name="plan-title" content="A stopped worker leaves its Slurm step to exit">
+  <meta name="plan-summary" content="The supervisor signals only processes beneath bwrap; the step ends after inner escalation without Slurm cancellation">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-node-stays-in-service">
+  <meta name="plan-verifies" content="reckon:the-fleet-node-stays-in-service#s3">
+  <meta name="plan-recorded-at" content="2026-10-19">
+  <meta name="plan-verdict" content="passed">
+  <title>A stopped worker leaves its Slurm step to exit — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<section id="a-stopped-worker-ends-inside-its-step">
+  <h2>A stopped worker leaves its Slurm step to exit</h2>
+  <p><strong>Result.</strong> The per-run supervisor verifies the task PID using its
+  recorded kernel start tick and the task's Slurm cgroup, then signals only
+  descendants below the sandbox's <code>bwrap</code> processes. It leaves the
+  <code>srun</code> client, its local subtree, the task, and every <code>bwrap</code>
+  processes unsignalled. After a 55 s stop grace, SIGKILL reached the two inner
+  processes. The final step ended after 60.05 s as <code>FAILED|9:0</code>: the signal
+  field is zero, and Slurm did not cancel the step.</p>
+
+  <table>
+    <thead><tr><th>Probe</th><th>Signal recipients</th><th>Slurm result</th></tr></thead>
+    <tbody>
+      <tr><td>Saved client control, <code>1281970.6508</code></td><td><code>srun</code> client</td><td><code>CANCELLED by 39486</code></td></tr>
+      <tr><td>Saved task control, <code>1281970.6958</code></td><td>Outer <code>bwrap</code> task</td><td><code>CANCELLED|0:15</code> in 3.02 s</td></tr>
+      <tr><td>Inner stop, <code>1281970.6964</code></td><td>Inner PIDs <code>2804055</code> and <code>2804060</code>, TERM then KILL</td><td><code>FAILED|9:0</code> in 60.04 s</td></tr>
+      <tr><td>Final inner stop, <code>1281970.6972</code></td><td>Inner PIDs <code>2861709</code> and <code>2861710</code>, TERM then KILL</td><td><code>FAILED|9:0</code> in 60.05 s</td></tr>
+    </tbody>
+  </table>
+
+  <p>Each live probe's worker and child both ignored SIGTERM and slept for 120 s,
+  longer than the 55 s grace. The task tree contained two <code>bwrap</code> PIDs
+  (<code>2804052</code>, <code>2804054</code>) above the inner pair. Its local
+  <code>srun</code> tree contained <code>2804032</code> and <code>2804033</code>.
+  The final probe had protected bwrap PIDs <code>2861706</code> and
+  <code>2861708</code>, inner PIDs <code>2861709</code> and <code>2861710</code>,
+  and local srun PIDs <code>2861691</code> and <code>2861692</code>.
+  The sender receipts have delivered TERM and KILL entries for exactly the inner
+  pair, and no signal entry for any protected PID. Each supervisor exit record
+  names only its inner pair. These receipts, the roughly 60 s duration,
+  and the step's zero signal field show the task stayed alive while the sandbox
+  reaped its descendants.</p>
+
+  <p>A pending <code>srun --overlap</code> request has no step task to signal.
+  The supervisor now waits 30 s from its first stop attempt without a step
+  record, then signals the recorded client PID once, with the sender reason
+  <code>stop-before-step-started</code>. A record appearing during that window
+  keeps the stop on the inner processes. Four unit cases cover both outcomes
+  for run-stop and terminal-manifest stopping; the focused gate passed 34 tests
+  with one allocation-only skip. The inner allocation probes were not rerun:
+  their signal path did not change.</p>
+
+  <p>The node read <code>draining — Kill task failed</code> before and after the
+  probes; its state did not change. Both allocation probes passed separately.
+  After ten minutes of a still-live client, the supervisor now records the
+  step's processes and wait channels in <code>step-wait.json</code> and continues
+  waiting. A direct diagnostic check wrote one process and its wait channel.</p>
+
+  <p>Receipts: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T150822949393-a-stopped-worker-ends-inside-its-step/probe-inner-one.log</code>
+  and <code>probe-inner-two.log</code>, their adjacent <code>senders.jsonl</code>
+  and <code>exit.json</code> records, <code>pending-step-focused.log</code>,
+  <code>diagnostic-probe.log</code>, and the
+  saved <code>negative-control.log</code> and <code>probe-head-one.log</code> for the
+  two cancellation controls.</p>
+</section>
+</body>
+</html>
