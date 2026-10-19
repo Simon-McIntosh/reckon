@@ -763,59 +763,80 @@ _STATE_STAMPS = frozenset(["version", "modified"])
 #: are derived from are compared already.
 _DERIVED_STATE_FIELDS = frozenset(["todos"])
 
-# Authored HTML insertions are write effects, not plan state. ``apply_ops`` and
-# ``write_plan`` run in the same request context, while ContextVar keeps
-# concurrent requests isolated. Holding the working dict by identity also means
-# an effect can only be consumed by the exact validated object that produced it.
-_SECTION_INSERTIONS: ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None] = (
-    ContextVar("reckon_section_insertions", default=None)
-)
+# Authored HTML insertions, evidence-record appends and authored section-field
+# edits are write effects, not plan state: each is HTML the state writer leaves
+# alone, produced by an op and applied by the write that follows it. ``apply_ops``
+# and ``write_plan`` run in the same request context, while ContextVar keeps
+# concurrent requests isolated. Holding the working dict by identity also means an
+# effect can only be consumed by the exact validated object that produced it.
+#
+# Each kind keeps its own collection rather than sharing a list. An evidence
+# append's destination is the plan's cumulative landing record rather than its own
+# HTML, so an evidence beat must never force a plan-file write; an insertion and a
+# section-field edit are both authored HTML, but one adds a section and the other
+# rewrites a span inside one, so the write applies them differently.
+_WRITE_EFFECT_KINDS = ("section_insertions", "evidence_appends", "section_field_edits")
 
-#: Evidence appends are the same kind of write effect, but their destination is
-#: the plan's cumulative landing record rather than its own HTML. Kept in its own
-#: collection so an evidence beat never forces a plan-file write.
-_EVIDENCE_APPENDS: ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None] = (
-    ContextVar("reckon_evidence_appends", default=None)
-)
+_WRITE_EFFECTS: dict[str, ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None]] = {
+    kind: ContextVar(f"reckon_{kind}", default=None) for kind in _WRITE_EFFECT_KINDS
+}
+
 
 def _begin_write_effects(working: dict[str, Any]) -> None:
     """Start empty out-of-band effect collections for one op batch."""
-    _SECTION_INSERTIONS.set((working, []))
-    _EVIDENCE_APPENDS.set((working, []))
+    for pending in _WRITE_EFFECTS.values():
+        pending.set((working, []))
 
 
-def _queue_section_insertion(working: dict[str, Any], request: dict[str, str]) -> None:
-    """Attach one insertion to the current batch without changing plan state."""
-    pending = _SECTION_INSERTIONS.get()
+def _queue_write_effect(
+    kind: str, working: dict[str, Any], request: dict[str, str]
+) -> None:
+    """Attach one effect of ``kind`` to the current batch."""
+    pending = _WRITE_EFFECTS[kind].get()
     if pending is None or pending[0] is not working:
-        raise OpError("insert_section has no active write-effect collection")
+        raise OpError(f"{kind} has no active write-effect collection")
     pending[1].append(request)
 
 
-def _consume_section_insertions(data: dict[str, Any]) -> list[dict[str, str]]:
-    """Return effects produced by this exact state object, then clear them."""
-    pending = _SECTION_INSERTIONS.get()
+def _consume_write_effects(kind: str, data: dict[str, Any]) -> list[dict[str, str]]:
+    """Return effects of ``kind`` produced by this exact state object, then clear."""
+    pending = _WRITE_EFFECTS[kind].get()
     if pending is None or pending[0] is not data:
         return []
-    _SECTION_INSERTIONS.set(None)
+    _WRITE_EFFECTS[kind].set(None)
     return list(pending[1])
 
 
-def _queue_evidence_append(working: dict[str, Any], request: dict[str, str]) -> None:
-    """Attach one evidence-record append to the current batch."""
-    pending = _EVIDENCE_APPENDS.get()
-    if pending is None or pending[0] is not working:
-        raise OpError("append_evidence has no active write-effect collection")
-    pending[1].append(request)
+def _forged_plan_structure(body: str) -> str | None:
+    """Name what a body would forge, or ``None`` when it is authored prose alone.
+
+    Three sites write an authored body into plan HTML — inserting a section,
+    appending evidence, and setting the body of a section that already exists —
+    and all three must refuse the same fragments, because
+    ``_plan_html.read_state`` reads any of them back as the plan's own
+    structure: a heading adds a section, a ``section[data-reckon]`` element adds
+    structured state, and a ``plan-*`` meta adds plan metadata. One predicate
+    keeps the three from drifting apart.
+    """
+    from bs4 import BeautifulSoup
+
+    from reckon import _plan_html
+
+    if _plan_html.plan_headings(body):
+        return "another h2"
+    soup = BeautifulSoup(body, "html.parser")
+    if soup.select_one(f"section[{_plan_html.RECKON_ATTRIBUTE}]") is not None:
+        return "structured plan state"
+    if soup.select_one('meta[name^="plan-"]') is not None:
+        return "plan metadata"
+    return None
 
 
-def _consume_evidence_appends(data: dict[str, Any]) -> list[dict[str, str]]:
-    """Return evidence appends produced by this exact state object, then clear."""
-    pending = _EVIDENCE_APPENDS.get()
-    if pending is None or pending[0] is not data:
-        return []
-    _EVIDENCE_APPENDS.set(None)
-    return list(pending[1])
+def _refuse_forged_body_structure(body: str, *, subject: str) -> None:
+    """Refuse a body that forges plan structure, naming the ``subject`` it was written for."""
+    forged = _forged_plan_structure(body)
+    if forged is not None:
+        raise OpError(f"{subject} must not contain {forged}")
 
 
 def _insert_authored_section(html_text: str, request: dict[str, str]) -> str:
@@ -833,13 +854,7 @@ def _insert_authored_section(html_text: str, request: dict[str, str]) -> str:
     if soup.find(id=section_id) is not None:
         raise OpError(f"section id {section_id!r} already exists")
 
-    body_soup = BeautifulSoup(body, "html.parser")
-    if _plan_html.plan_headings(body):
-        raise OpError("insert_section body must not contain another h2")
-    if body_soup.select_one(f"section[{_plan_html.RECKON_ATTRIBUTE}]") is not None:
-        raise OpError("insert_section body must not contain structured plan state")
-    if body_soup.select_one('meta[name^="plan-"]') is not None:
-        raise OpError("insert_section body must not contain plan metadata")
+    _refuse_forged_body_structure(body, subject="insert_section body")
 
     boundary = None
     for start, end in _plan_html.structured_section_spans(html_text):
@@ -966,18 +981,8 @@ def _evidence_section_html(request: dict[str, str]) -> str:
     """One anchored section element carrying an append's authored content."""
     from html import escape
 
-    from bs4 import BeautifulSoup
-
-    from reckon import _plan_html
-
     body = request["body"]
-    body_soup = BeautifulSoup(body, "html.parser")
-    if _plan_html.plan_headings(body):
-        raise OpError("append_evidence body must not contain another h2")
-    if body_soup.select_one(f"section[{_plan_html.RECKON_ATTRIBUTE}]") is not None:
-        raise OpError("append_evidence body must not contain structured state")
-    if body_soup.select_one('meta[name^="plan-"]') is not None:
-        raise OpError("append_evidence body must not contain plan metadata")
+    _refuse_forged_body_structure(body, subject="append_evidence body")
 
     anchor = escape(request["anchor"], quote=True)
     parts = [f'  <section id="{anchor}">', f"    <h2>{escape(request['title'])}</h2>"]
@@ -1088,7 +1093,7 @@ def _apply_append_evidence(
         "body": body,
     }
     _evidence_section_html(request)  # refuse a malformed body before any write
-    _queue_evidence_append(working, request)
+    _queue_write_effect("evidence_appends", working, request)
 
 
 def _plan_write_target(
@@ -1252,8 +1257,11 @@ def _write_state_locked(
 
     # Consume against the exact op-working object before a commutative comment
     # merge can replace ``data`` with a fresh mapping.
-    section_insertions = _consume_section_insertions(data)
-    evidence_appends = _consume_evidence_appends(data)
+    from reckon import _store_section_ops
+
+    section_insertions = _consume_write_effects("section_insertions", data)
+    evidence_appends = _consume_write_effects("evidence_appends", data)
+    section_field_edits = _consume_write_effects("section_field_edits", data)
 
     if expected_version != cur_version:
         merged_comments = _comment_append_onto_current(data, cur_state)
@@ -1317,6 +1325,16 @@ def _write_state_locked(
             )
         for request in section_insertions:
             source_text = _insert_authored_section(source_text, request)
+        if section_field_edits:
+            # A section's title and body are authored HTML the state writer
+            # leaves alone, so a set of either arrives here as an edit to apply
+            # through the one replacement path rather than as a state change.
+            # The span is located from the section's own heading, so the edit
+            # addresses it by position rather than by matching text a
+            # prose-less section does not yet contain.
+            source_text = _store_section_ops.apply_section_field_edits(
+                source_text, section_field_edits, replace_span=_replace_authored_span
+            )
     except ValueError as exc:
         raise OpError(str(exc)) from exc
     if evidence_appends:
@@ -1479,15 +1497,42 @@ def _replace_authored_html(
 ) -> str:
     """Replace one exact authored fragment without touching structured state."""
 
-    from reckon import _plan_html
-
     occurrences = html_text.count(preimage)
     if occurrences != 1:
         raise ValueError(
             f"{selector_name} must match exactly once; found {occurrences} occurrences"
         )
     start = html_text.index(preimage)
-    end = start + len(preimage)
+    return _replace_authored_span(
+        html_text,
+        start,
+        start + len(preimage),
+        replacement,
+        selector_name=selector_name,
+    )
+
+
+def _replace_authored_span(
+    html_text: str,
+    start: int,
+    end: int,
+    replacement: str,
+    *,
+    selector_name: str,
+) -> str:
+    """Replace the authored bytes at one already-located span.
+
+    A caller that has located the span itself — from the section's own heading
+    and record element — needs no text search, and must not be given one: a
+    section's authored span is empty of prose until something is written there,
+    and an empty span matched as text is a bare newline that occurs throughout
+    the document. The span is still held to every check the text form applies,
+    so this is the same replacement path with a second entry point rather than
+    a second mechanism.
+    """
+
+    from reckon import _plan_html
+
     if any(
         start < protected_end and end > protected_start
         for protected_start, protected_end in _plan_html.structured_section_spans(
@@ -2481,6 +2526,11 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
         raise OpError(f"unsupported index set path {path!r}")
 
     # ── plan set ──
+    if head == "sections" and len(parts) >= 2:
+        from reckon import _store_section_ops
+
+        _store_section_ops.apply_section_field_set(working, parts, value, warnings)
+        return
     if head == "section_declarations" and len(parts) == 2:
         from reckon._schema import SECTION_DECLARATION_ENUM
 
@@ -3103,7 +3153,8 @@ def _require_authored_section_fields(section: dict) -> None:
 def _queue_authored_section(working: dict, section: dict) -> None:
     """Queue one validated authored h2 block for the atomic HTML write."""
     _require_authored_section_fields(section)
-    _queue_section_insertion(
+    _queue_write_effect(
+        "section_insertions",
         working,
         {
             "id": section["id"],

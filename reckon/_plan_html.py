@@ -968,6 +968,44 @@ def authored_section_headings(html_text: str) -> list:
     return sections
 
 
+def section_field_spans(
+    html_text: str, section_id: str
+) -> tuple[tuple[int, int], tuple[int, int]] | None:
+    """The authored spans one plan section's title and body occupy.
+
+    ``title`` is the h2's inner text — between its open and close tags — so a
+    rewrite keeps the heading's own id. ``body`` is the authored HTML between the
+    section's record element and the next h2 or structured section, so a rewrite
+    touches prose and never the record the state writer renders. Returns ``None``
+    when the document carries no authored heading for the identity.
+    """
+    records = _structural_spans(html_text)
+    heading = next(
+        (
+            record.heading
+            for record in records
+            if record.heading is not None
+            and record.heading.level == 2
+            and record.heading.identity == section_id
+            and not record.heading.machinery
+        ),
+        None,
+    )
+    if heading is None:
+        return None
+    body_start = heading.heading_span[1]
+    for element in records:
+        if (
+            element.tag == "section"
+            and element.kind == "section"
+            and section_record_id(element.attributes) == section_id
+            and heading.heading_span[1] <= element.start < heading.span[1]
+        ):
+            body_start = element.end
+            break
+    return heading.inner_span, (body_start, heading.span[1])
+
+
 def open_sections(state) -> list[str]:
     """Section ids the plan still holds open: implementable or deferred.
 
