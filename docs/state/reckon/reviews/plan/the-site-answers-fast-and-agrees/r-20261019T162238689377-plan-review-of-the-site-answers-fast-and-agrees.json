@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T16:32:11.767Z",
+  "dispatched_at": "2026-10-19T16:23:51Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-site-answers-fast-and-agrees.html:136",
+      "id": "reasoning-1",
+      "reason": "a worker implementing exactly one of the two named producers leaves the other path's trigger silently unbuilt, and the plan gives no rule that decides which owner is correct.",
+      "text": "\u00a7136 says \"`Handler._send_project_changes` \u2026 the change it observes spawns the refresh\" while \u00a7137 says \"`_FleetChangeWatch` \u2026 also calls spawn-on-change for the project whose inputs moved\"; both are named as the producer of one project's discovery refresh, contradicting the design review's rule that \u00a75 name the caller that spawns each refresh",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-site-answers-fast-and-agrees.html:139",
+      "id": "done_when-1",
+      "reason": "the VelocityView re-request is the newly added behaviour, and with no control declared the section does not require the test to show its own guard firing, so the case can be satisfied by a test that renders the computing state without ever asserting the re-request path fails.",
+      "text": "every other case in \u00a75's done-when carries an explicit negative control (\"Each case carries its own negative control\", \"its negative control keys the rollup per project\", \"Their negative control publishes only per-project events\"), but the VelocityView case that closes the paragraph names none",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5f554d049dd108050e67fa2ddc09eaa146bdc49ce7a2aafa32c3f07de8be75f5",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 66,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T162238689377-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "4422fad9a733babbaa916235b79edbe5811eb46a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `Handler._serve_velocity` (reckon/serve.py:2702), `_send_project_changes` (:2613), `_start_check_refresh`/`_spawn_check_refresh` (:2187/:2183), `collect_projects(load_mounts())` (:2858), `docs/ui/velocity.jsx`, `docs/ui/state-loader.js`, `tests/test_spa_crew_cards.py` and the 605.8 s figure all resolve; the 7\u201317 s rollup figure was answered by an earlier review and stands.",
+    "done_when": "a finding \u2014 the VelocityView case is the only case in \u00a75's done-when that names no declared negative control, and it is the case that exercises the newly added client behaviour.",
+    "evidence_paths": "pass \u2014 \u00a75's gate logs sit under the run directory and end in EXIT=, its live measure is a named srv-1006 watch, and its cited \u00a78 evidence is a durable landed record at docs/evidence/archive/the-site-answers-fast-and-agrees-landed.html.",
+    "naming": "pass \u2014 \u00a75's changed text carries no plan labels, stage names or ticket numbers.",
+    "reasoning": "a finding \u2014 \u00a75 names two independent producers for the same project-discovery refresh (\u00a7136 `Handler._send_project_changes` and \u00a7137 `_FleetChangeWatch`), so the caller the plan relies on is stated twice for one job.",
+    "single_goal": "pass \u2014 \u00a75 has one deliverable, generalise the check-refresh machinery to four routes so a request answers from the last computed result; the client re-request is the transport half of the same goal.",
+    "wiring": "pass \u2014 \u00a75's `depends-on` is [s3, s8]; s8 is present and is the section whose all-project velocity the \u00a75 done-when measures, and `reckon/change_streams.py`, which \u00a75's write paths name, exists because \u00a716 has landed."
+  },
+  "section_digests": {
+    "_document": "16d4c01278e4d835bd6aef8170eee8ab98fb304a4302985dbe4539fa0b5c4fb1",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "b9aa035553d395057dad26d5353e7b79c6bdec033a1ab82eb1042718d03592cd",
+    "s12": "3086e0ba68e51ca085e7178c914c92d64248be41088440dfa18abf077d5819ee",
+    "s13": "fa208e7c5f148ec329458a9824c867762bc66c986ccb7bc85745b08640484173",
+    "s14": "7f21ec58ce9adf4ba663f205fe60555a585a263354e7954c7dd99543a0d56139",
+    "s15": "884c8ab0e973894007385f537b51e29ef55bf2de18ef2cf6a25966e656f62bf2",
+    "s16": "68b4e68d648fe76ecff74c05d2cdfb995f2e13890befafc25046869d469abcac",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s3": "50f2ca1f3b1277d5f4b2d70a240688387a89a3136ad2d6aee26f0b3f324b1afc",
+    "s4": "a1ad15bdafaed28134c2565ad8374bc91928064852c10da6661f2499ca286149",
+    "s5": "4bb19d1e76b23a3ca0d2269933f5cff6e3dea144bd3efec4cd74720cfa2808f1",
+    "s6": "fdb08d5e7b8272372c8ced83ee14c031730239025c2a13ccb211329d7951673e",
+    "s7": "90073ced7051cfae8f66fd6b78f99e6ace90b008ffc6c9e5559d87a2e5c31704",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T16:34:21.106152+00:00"
+}
