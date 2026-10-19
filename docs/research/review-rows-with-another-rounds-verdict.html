@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="doc">
+  <meta name="plan-slug" content="review-rows-with-another-rounds-verdict">
+  <meta name="plan-title" content="Promoted review rows carrying another round's verdict">
+  <meta name="plan-summary" content="A read-only census of every mounted project's committed ledger counting the promoted run reviews whose recorded reviewed head is not the head they were dispatched to read, with each mismatched and unclassifiable row listed by id and every figure read at a stated revision and time.">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <title>Promoted review rows carrying another round's verdict | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — What this census records</h2>
+    <p>
+      A review run is delivered when its record names the head it was dispatched
+      to read, and a promotion files that record under the review run's id. When
+      the delivery predicate accepts a predecessor round's record instead, the
+      promoted ledger row carries another round's <code>reviewed_head_sha</code>
+      and score, and every reader of review totals — including the picker's
+      per-dimension medians — inherits the wrong number. This document counts how
+      many rows are like that.
+    </p>
+    <p>
+      The census reads every mounted project's committed ledger
+      (<code>&lt;repo&gt;/docs/state/&lt;project&gt;/runs/&lt;run id&gt;.json</code>).
+      A <strong>promoted run review</strong> here is a ledger row whose
+      <code>role</code> is <code>review</code> and which carries a recorded
+      verdict — a non-empty <code>review.reviewed_head_sha</code>. A review row
+      with no recorded head carries no verdict to misattribute, so it cannot
+      carry another round's, and is outside this population.
+    </p>
+    <p>
+      For each such row the <strong>dispatched head</strong> is taken from the
+      strongest source the row carries: first a declared
+      <code>.at-&lt;head&gt;</code> write path (read through
+      <code>_review_record_subject</code>, the predicate the delivery code itself
+      uses, so the name is parsed once and not again), and failing that the head
+      suffix the review's node id mints — a trailing twelve hexadecimal digits,
+      the spelling <code>round_node_id</code> writes, read back through its own
+      inverse <code>round_node_source</code> so one grammar is parsed by the pair
+      that enforces it. A row whose recorded head
+      <em>does not begin with</em> the dispatched head is <strong>mismatched</strong>.
+      A row carrying no dispatched head from any source is
+      <strong>unclassifiable</strong>.
+    </p>
+    <p>
+      Source: <code>scripts/review_rows_with_another_rounds_verdict.py</code>.
+      Command, run from the repository root:
+    </p>
+    <pre>PYTHONPATH=$PWD .venv/bin/python scripts/review_rows_with_another_rounds_verdict.py</pre>
+    <p>
+      The census was read at <strong>2026-10-18T22:56:34Z</strong> in the
+      worktree at revision <code>da8439c10b905153b12ceaf7c34639619ce6dfed</code>.
+      Each project's ledger was read at that project's own <code>HEAD</code> given
+      in §2. The ledger is live on several projects, so a later run will move
+      these numbers; the figures below are the ones that run produced. An earlier
+      read at 22:10:35Z found the same eighteen mismatched rows and no others,
+      with 2339 promoted run reviews; the eleven reviews promoted in between
+      include one more mismatched row (§3, <code>r-20261018T224415876954…</code>),
+      so the mismatch count tracks the live ledger rather than the instrument.
+    </p>
+
+    <h2 id="s2">§2 — Portfolio totals</h2>
+    <p>
+      Eleven mounted projects hold a committed run ledger. The other seven mounts
+      hold no <code>state/&lt;project&gt;/runs/</code> directory and contribute
+      nothing.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Project</th><th>Ledger read at (HEAD)</th>
+          <th>Promoted run reviews</th><th>Mismatched</th><th>Unclassifiable</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>RabbitPy</td><td><code>f4555c5ee551</code></td><td>32</td><td>0</td><td>0</td></tr>
+        <tr><td>hanney</td><td><code>a12570b3d62e</code></td><td>1</td><td>0</td><td>0</td></tr>
+        <tr><td>imas-ambix</td><td><code>d2583489554b</code></td><td>147</td><td>1</td><td>0</td></tr>
+        <tr><td>imas-codex</td><td><code>28e258690a2a</code></td><td>514</td><td>1</td><td>0</td></tr>
+        <tr><td>imas-efit</td><td><code>37131b826a5b</code></td><td>204</td><td>1</td><td>0</td></tr>
+        <tr><td>imas-ink</td><td><code>f06392bc960c</code></td><td>6</td><td>0</td><td>0</td></tr>
+        <tr><td>imas-standard-names</td><td><code>579216b3a99b</code></td><td>12</td><td>0</td><td>0</td></tr>
+        <tr><td>iter_uda</td><td><code>daf8e69e478c</code></td><td>4</td><td>0</td><td>0</td></tr>
+        <tr><td>nova</td><td><code>24f2a837a921</code></td><td>177</td><td>4</td><td>0</td></tr>
+        <tr><td>power_convertor</td><td><code>90ecb7857d5e</code></td><td>441</td><td>8</td><td>0</td></tr>
+        <tr><td>reckon</td><td><code>bb7181ac3e1b</code></td><td>812</td><td>4</td><td>0</td></tr>
+        <tr><td><strong>Total</strong></td><td></td><td><strong>2350</strong></td><td><strong>19</strong></td><td><strong>0</strong></td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s3">§3 — Mismatched rows</h2>
+    <p>
+      Nineteen promoted run reviews carry a recorded head that does not begin with
+      the head they were dispatched to read. The dispatched head and the recorded
+      head are the strongest-source head and the row's
+      <code>review.reviewed_head_sha</code>; the total is the row's
+      <code>review.total</code>; <code>promoted_by</code> is the row's own field
+      (empty where the row carries none); the landing commit is the project commit
+      that last landed the row's ledger file.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Project</th><th>Run id</th><th>Dispatched head</th>
+          <th>Recorded head</th><th>Total</th><th>promoted_by</th><th>Landed</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>imas-ambix</td>
+          <td><code>r-20261008T024659555021-review-of-jtfm-maps-repo-dir</code></td>
+          <td><code>b9321a2c7dc823bebc51b5eb8cd8e1e219ea1da7</code></td>
+          <td><code>c0c6760941d216c9f6728e94dc291c8f83dd265a</code></td>
+          <td>112</td><td></td><td><code>8d76d207</code></td>
+        </tr>
+        <tr>
+          <td>imas-codex</td>
+          <td><code>r-20261006T201152869415-review-of-candidate-judgment</code></td>
+          <td><code>358dc44a1c8d37c1513ac6c29d2f415f54a8b8db</code></td>
+          <td><code>be469845a0e051345a584093c5311919b8864115</code></td>
+          <td>114</td><td></td><td><code>66d422327</code></td>
+        </tr>
+        <tr>
+          <td>imas-efit</td>
+          <td><code>r-20261014T044034079432-review-of-west-reeb-private-revert-continuity-906c75f9a2fe</code></td>
+          <td><code>906c75f9a2fed70a954a6bc3588797f297eb22ae</code></td>
+          <td><code>a45559890c67ae319779ca0d41831223b5dcf483</code></td>
+          <td>82</td><td></td><td><code>f1aca53a3</code></td>
+        </tr>
+        <tr>
+          <td>nova</td>
+          <td><code>r-20261011T205333945418-review-of-cfs-read-ten-thousand</code></td>
+          <td><code>29b5b4e29efffd7c30ce21222223334affe10927</code></td>
+          <td><code>7502036b8b5e35d75a350493011663ddf7cdf906</code></td>
+          <td>102</td><td></td><td><code>b7570032a</code></td>
+        </tr>
+        <tr>
+          <td>nova</td>
+          <td><code>r-20261011T230223261654-review-of-cfs-read-ten-thousand</code></td>
+          <td><code>c813459c51cf233a0195991d9a04f3414c3dd93c</code></td>
+          <td><code>7502036b8b5e35d75a350493011663ddf7cdf906</code></td>
+          <td>102</td><td></td><td><code>48a4557a0</code></td>
+        </tr>
+        <tr>
+          <td>nova</td>
+          <td><code>r-20261015T064025224339-review-of-sub-millisecond-design-2647eb9be06b</code></td>
+          <td><code>2647eb9be06b608d5c5a665a90fa2203c003c13e</code></td>
+          <td><code>a182c0a27ad042ec19866515c118d881280c74cd</code></td>
+          <td>107</td><td></td><td><code>25bc0e70f</code></td>
+        </tr>
+        <tr>
+          <td>nova</td>
+          <td><code>r-20261018T192200408612-review-of-tcv-liuqe-known-answer-0a451acfdb02</code></td>
+          <td><code>0a451acfdb02d4b05a5d8f77c7a711943f0d4cce</code></td>
+          <td><code>fbc3788e228330e9547deaeb10ea3c12d03cea25</code></td>
+          <td>91</td><td><code>review-self</code></td><td><code>2489bcf5e</code></td>
+        </tr>
+        <tr>
+          <td>power_convertor</td>
+          <td><code>r-20261013T201609332471-review-of-sddd-vs1-report-f0aee95b1e08</code></td>
+          <td><code>f0aee95b1e088624938a6d01b4c602f2014eae8f</code></td>
+          <td><code>4b265e4c90e67f25a2477880522a1d6a4d9b284e</code></td>
+          <td>74</td><td><code>review-self</code></td><td><code>0e843ccc</code></td>
+        </tr>
+        <tr>
+          <td>power_convertor</td>
+          <td><code>r-20261015T061751227056-review-of-kit-pf-transient-study-c35353c41735</code></td>
+          <td><code>c35353c417351a79d082ca0cbc34e76a0d2a0a6b</code></td>
+          <td><code>b43d02d4a1de0bc5b6c20f69d9910db66c1255c9</code></td>
+          <td>88</td><td><code>review-self</code></td><td><code>9810f76f</code></td>
+        </tr>
+        <tr>
+          <td>power_convertor</td>
+          <td><code>r-20261016T120944311750-review-of-pf-frequency-response-prediction-ec371bdc3654</code></td>
+          <td><code>ec371bdc3654597c0f202932746ff9340c1a8e0a</code></td>
+          <td><code>796863e3e1d25bffc66bae25970593b520ebfb43</code></td>
+          <td>85</td><td></td><td><code>8f575a65</code></td>
+        </tr>
+        <tr>
+          <td>power_convertor</td>
+          <td><code>r-20261017T152910561948-review-of-pf-lines-through-winding-6ea05c5588f4</code></td>
+          <td><code>6ea05c5588f41c1d10cfc80e8ce300ebe5ad032b</code></td>
+          <td><code>1823590fe702777a74887f595c2c04086d6c6313</code></td>
+          <td>102</td><td></td><td><code>2bb801b3</code></td>
+        </tr>
+        <tr>
+          <td>power_convertor</td>
+          <td><code>r-20261018T162642624868-review-of-fast-discharge-pf-cs-4831f1dd8eec</code></td>
+          <td><code>4831f1dd8eec03ecdd6daa563c8faa1f8ae59b9b</code></td>
+          <td><code>1535df367b6a9ff090c281309c41598d581b0359</code></td>
+          <td>61</td><td><code>review-self</code></td><td><code>ce36db4c</code></td>
+        </tr>
+        <tr>
+          <td>power_convertor</td>
+          <td><code>r-20261018T165702028901-review-of-fast-discharge-pf-cs-4831f1dd8eec</code></td>
+          <td><code>4831f1dd8eec03ecdd6daa563c8faa1f8ae59b9b</code></td>
+          <td><code>1535df367b6a9ff090c281309c41598d581b0359</code></td>
+          <td>61</td><td></td><td><code>5bd1c01f</code></td>
+        </tr>
+        <tr>
+          <td>power_convertor</td>
+          <td><code>r-20261018T171035809679-review-of-fast-discharge-pf-cs-4831f1dd8eec</code></td>
+          <td><code>4831f1dd8eec03ecdd6daa563c8faa1f8ae59b9b</code></td>
+          <td><code>1535df367b6a9ff090c281309c41598d581b0359</code></td>
+          <td>61</td><td></td><td><code>f5e3cf83</code></td>
+        </tr>
+        <tr>
+          <td>power_convertor</td>
+          <td><code>r-20261018T224415876954-review-of-fast-discharge-tf-f9eef8d2048d</code></td>
+          <td><code>f9eef8d2048dd52db3879a4708bc5225dcb3d4f9</code></td>
+          <td><code>212fd602469ff15ac30508c749a3bbf71ac59b72</code></td>
+          <td>93</td><td></td><td><code>76401005</code></td>
+        </tr>
+        <tr>
+          <td>reckon</td>
+          <td><code>r-20261006T174733709447-review-of-host-reviews-import-into-the-committed-tree</code></td>
+          <td><code>75d67bdde1ab37747cc421ebf7f07e31872a2cbf</code></td>
+          <td><code>c569291ff26b21c2e9b89285ec155e807a407517</code></td>
+          <td>115</td><td></td><td><code>ea21b40c0</code></td>
+        </tr>
+        <tr>
+          <td>reckon</td>
+          <td><code>r-20261007T083914036867-review-of-skills-name-session-host-delivery</code></td>
+          <td><code>47630d8eb85d700d88e3ec14803095dccbd5a974</code></td>
+          <td><code>d29492dbff7cb418b08ef29364ad71ff6666688c</code></td>
+          <td>107</td><td></td><td><code>0eab5b79b</code></td>
+        </tr>
+        <tr>
+          <td>reckon</td>
+          <td><code>r-20261016T044300425098-review-of-the-audit-shares-the-scan-5d8abfaf54cd</code></td>
+          <td><code>5d8abfaf54cda07525e12164313d3dc1061cfbb2</code></td>
+          <td><code>366b779831f5d320221107d96a0109c96a432d29</code></td>
+          <td>112</td><td><code>review-self</code></td><td><code>2857f0742</code></td>
+        </tr>
+        <tr>
+          <td>reckon</td>
+          <td><code>r-20261016T214210579854-review-of-a-fresh-process-reuses-the-plan-parse-746dce455e8e</code></td>
+          <td><code>746dce455e8e8e133aca418918d106924a424bc2</code></td>
+          <td><code>73155abc596156d03e1d7d9e3886f693747bd024</code></td>
+          <td>103</td><td><code>review-self</code></td><td><code>e5dfde369</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="s4">§4 — Unclassifiable rows</h2>
+    <p>
+      None. Every one of the 2350 promoted run reviews carried a dispatched head
+      from a declared <code>.at-</code> write path or from the head suffix of its
+      node id, so all 2350 are classified. That zero rests on a path shown to
+      fire, not on a branch no input ever reached: the third control in §5 drives
+      a row with no dispatched head from either source through the same
+      classifier and shows it landing here.
+    </p>
+
+    <h2 id="s5">§5 — Controls</h2>
+    <p>
+      The census was shown to see a known positive and to pass a known negative,
+      so a run that found nothing reads as the ledger's state and not as a broken
+      instrument.
+    </p>
+    <ul>
+      <li>
+        <strong>Known positive — listed as mismatched.</strong> nova's
+        <code>r-20261018T192200408612-review-of-tcv-liuqe-known-answer-0a451acfdb02</code>
+        appears in §3: dispatched head <code>0a451acfdb02d4b05a5d8f77c7a711943f0d4cce</code>
+        (read from its declared
+        <code>.at-0a451acfdb02…</code> path), recorded head
+        <code>fbc3788e228330e9547deaeb10ea3c12d03cea25</code>, total 91,
+        <code>promoted_by: review-self</code>. The recorded head is a predecessor
+        round's, so the row carries another round's verdict — the defect this
+        census exists to count.
+      </li>
+      <li>
+        <strong>Known negative — counted, not listed.</strong> nova's
+        <code>r-20261018T172216624608-review-of-vertical-pin-45213bf1cd62</code>
+        has recorded head <code>45213bf1cd6216df72a450af58038e088407d39e</code>,
+        which begins with its dispatched head <code>45213bf1cd62…</code>. It is
+        counted among nova's 177 promoted run reviews and does not appear in §3.
+      </li>
+      <li>
+        <strong>Unclassifiable path — shown to fire.</strong> A synthetic promoted
+        run-review row is written under a temporary runs directory (never a real
+        ledger) with a recorded verdict but no dispatched head from either source:
+        a write-path list holding only a legacy path with no <code>.at-</code>
+        segment, and a node id (<code>review-of-synthetic-row</code>) carrying no
+        head suffix. Pushed through the same classification function the census
+        calls, it lands in the unclassifiable list:
+        <code>reviews=1 mismatched=0 unclassifiable=1</code>, the single
+        unclassifiable row being the synthetic one. Command:
+        <code>… review_rows_with_another_rounds_verdict.py --control</code>, exit
+        0. Log: <code>unclassifiable-control.log</code> in the run directory. The
+        portfolio's zero unclassifiable rows is therefore a reading about the
+        ledger, not an artefact of a branch that never runs.
+      </li>
+    </ul>
+
+    <h2 id="s6">§6 — Reproduce</h2>
+    <p>
+      Both figures above and the first two controls come from one read-only run of
+      <code>scripts/review_rows_with_another_rounds_verdict.py</code>. Run it with:
+    </p>
+    <pre>PYTHONPATH=$PWD .venv/bin/python scripts/review_rows_with_another_rounds_verdict.py --json</pre>
+    <p>
+      The third control is its own run, which writes a synthetic ledger row under
+      a temporary directory and removes it afterwards:
+    </p>
+    <pre>PYTHONPATH=$PWD .venv/bin/python scripts/review_rows_with_another_rounds_verdict.py --control</pre>
+    <p>
+      The script resolves the mounted projects through
+      <code>reckon.flight.mounted_project_docs</code>, walks each project's
+      <code>docs/state/&lt;project&gt;/runs/</code> directory, and writes nothing.
+      It reads the node-id head suffix through
+      <code>reckon.crew.repair.round_node_source</code> and the record-path head
+      through <code>reckon.crew.recovery_review_dispatch._review_record_subject</code>,
+      the same two owners the product uses, so it adds no second spelling of
+      either grammar. It defines only private helpers and its entry point, so it
+      adds no public definition to the package.
+    </p>
+  </main>
+</body>
+</html>
