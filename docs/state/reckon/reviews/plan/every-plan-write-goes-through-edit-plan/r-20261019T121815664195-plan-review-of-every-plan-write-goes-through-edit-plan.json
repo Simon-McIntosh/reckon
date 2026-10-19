@@ -1,0 +1,85 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T12:40:33.111Z",
+  "dispatched_at": "2026-10-19T12:19:06Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:198",
+      "id": "done_when-1",
+      "reason": "read literally the node finds dozens of hits outside its write paths and, by the paragraph's own rule, stops as blocked on files the refusal does not affect, so one clause naming the op path as the scope is what lets the node complete.",
+      "text": "the instruction \"the node greps `tests/` and `reckon/` at its base for every write of a terminal plan status\" carries no scope, while 64 test files under `tests/` carry a terminal plan status literal (`grep -rln '\"status\": *\"(shipped|done|superseded|abandoned|archived|historical|reference)\"|status=\"(shipped|done)\"' tests/ | wc -l` \u2192 64 against the five the next line names); only five of those write it *through the op path* (`{\"op\":\"set\",\"path\":\"status\",\"value\":\"done\"}`: `tests/test_terminal_status_needs_every_section_ticked.py:30`, `tests/test_every_section_has_a_declaration.py:278`, `tests/test_closure_gates.py:128`, `tests/test_continuation.py:216`, `tests/test_edit_plan.py`), the other 59 being fixture writes like `tests/test_project_state_cache.py:76` `_write_plan(replacement, \"alpha\", \"shipped\")` that the refusal cannot reach",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:175",
+      "id": "reasoning-1",
+      "reason": "a node that reads the unqualified guard list and runs all five for every status `close` accepts would newly refuse a `superseded`/`archived` close whose sections are not ticked, turning a pass-through path into a refusal that \u00a76's \"No guard is removed\" does not anticipate.",
+      "text": "the five guards are listed as the ones a terminal transition fires, but `validate_landing_patch` gates two of them on `_LANDED_STATUSES`: `_require_every_section_ticked` (`reckon/_store.py:3479-3481`) and the continuation check (`reckon/_store.py:3490-3492`) fire only for `shipped`/`done`, while the transition-verdict and evidence guards (`reckon/_store.py:3483-3488`) fire for every value of `TERMINAL_STATUSES` \u2014 a set that also holds `superseded`, `abandoned`, `archived`, `historical` and `reference` (`reckon/lifecycle.py:9-19`)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "09d38fb7e5b8677eace408e4dd8c6a853078f541ffaf162619376c13f2e6657e",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 22,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-19T12:42:05.497413+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-19T12:42:27.144305+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T12:42:05.497413+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T12:42:27.144305+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-plan-write-goes-through-edit-plan.v22.json",
+  "review_run_id": "r-20261019T121815664195-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "3deef3e97fb69229c429367983b54a10a1955d6b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `TERMINAL_STATUSES` (`reckon/lifecycle.py:9`), `_require_transition_verdict` (`reckon/_store.py:3514`), `_refuse_appended_hiding_followups` (`reckon/_store.py:3341`), `continuation_present`/`CONTINUATION_REQUIRED` (`reckon/_store.py:3310`/`:3253`) and the three recipe files (`coordinator-reference.md:1017`, `sprint-orchestration.md:550`, `AGENTS.md:267`) all resolve, as do the five test files the done-when lists as the base's hits.",
+    "done_when": "a finding \u2014 the base-grep paragraph at `docs/plans/every-plan-write-goes-through-edit-plan.html:198` names no scope for \"every write of a terminal plan status\", and its own claim that \"the base already shows\" five files is false under the literal reading.",
+    "evidence_paths": "pass \u2014 \u00a76 sends its evidence to the gate log and the landing record, and names no scratchpad or node-local path for either the log or the grep output.",
+    "naming": "pass \u2014 `close`, `size` and the guard names it cites carry no plan label, stage name or ticket number, and the added prose states the mechanism rather than a changelog.",
+    "reasoning": "a finding \u2014 the guard list at `docs/plans/every-plan-write-goes-through-edit-plan.html:175-182` presents five guards as the ones \"a terminal transition fires\" without noting that two of them fire only for a landed status.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable, that a plan closes in one write, with the `set`-refusal and the caller/recipe updates as its consequences rather than as separate measures.",
+    "wiring": "pass \u2014 \u00a76 sits at `s6\u2190s5` with `s7\u2190s6` and `s9\u2190s6`, and every file it writes (`reckon/_store.py`, `reckon/mcp.py`, `AGENTS.md`, the two references) is already held behind an earlier section that writes the same file, so the two new edges serialize the shared write rather than leaving it orphaned."
+  },
+  "section_digests": {
+    "_document": "aea24b8be36466854f5f5e1fec63f708605f2a200a01ed0c8f89462e621467e8",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s2": "737250903251177035b357be3d656b549480337bc454f97615634dada495e251",
+    "s3": "4150e9281b9c0fe1173e9c23f5582efb0662d22f1d36944861d3033f988d479c",
+    "s4": "e0390ff35ac5e425fa3060cede9882af598c54dc89e0a6069101b3971f8e8367",
+    "s5": "699b049fe374b1219d8b917168575594a5bcb9255bbe13efdbf1d0c928562a86",
+    "s6": "17a33995fc74c63be6d46af1b9b761ab754fc00078bcaba43ea05eb7892bc15a",
+    "s7": "80062db679255aff5087534386e7372545e1cd3414916db8329aec79a1a8388d",
+    "s8": "f9dd6299834b4d039fd1f45b37141d5e265075b4cfd7f341357bea21196f5b35",
+    "s9": "bd2c3090ecc9a89ad8c0b2f7312aae077382dd2709954d9e27f449e984d622a8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T12:41:57.383782+00:00"
+}
