@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-moves-to-a-new-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -375,7 +375,7 @@
     </p>
 
     <h2 id="s9">&sect;9 &mdash; A watch producer sweeps only when the crew home changes</h2>
-    <section data-reckon="section" data-id="s9" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s9" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       §7 measured that one producer cycle, in <code>watch_ticker</code>
       (<code>reckon/crew/recovery_watch.py</code>), sweeps the whole fleet every
@@ -500,6 +500,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261018T151304298883-a-producer-sweeps-only-on-change" data-who="reckon-build" data-when="2026-10-19T05:58:55Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-fleet-node-stays-in-service/a-producer-sweeps-only-on-change.html</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-19T06:20:00Z">
+    <div class="r-comment-body"><p>§9 landed (merge <code>1229f38d6</code>). A quiet producer cycle costs 30–80 openat, 44–85 stat and no git spawn, against the base's 1,211, 868 and 1.9 in the same fleet-scale harness. Every gated input has a test that fails without it. Review: 102 of 120, no added failures. Follow-ons: take the obligations thread's git spawn off the beat; share the duplicated liveness-resume block; a directory-stamp token. <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s9">evidence</a></p></div>
 </div>
 </section>
 </main>
