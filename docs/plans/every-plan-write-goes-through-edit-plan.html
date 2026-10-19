@@ -26,7 +26,7 @@
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="52">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -297,7 +297,7 @@
     <h2 id="s12">§12 — A current-code child that keeps dying is backed off</h2>
 <section data-reckon="section" data-id="s12" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> The review of §11 at <code>110f69ed1</code> found that the liveness branch replaces a dead current-code child with no attempt budget, backoff or record of the failures. A child that dies right after each spawn therefore starts one fresh interpreter per guarded call. That is the per-call import cost §11 removed, and it happens silently, because the spawn sends the child's stderr to <code>DEVNULL</code>. A checkout that does not import is already refused by <code>may_load</code>, so the case left is a child that imports and then dies.</p>
-    <p><strong>Deliverable.</strong> After a bounded number of consecutive child deaths within one code stamp, <code>CurrentCodeServer</code> stops respawning until the stamp moves, and the running image serves every call meanwhile. The child's stderr goes to a bounded file, so the last death's cause can be read, and an answer served by the image while the child is backed off says so.</p>
+    <p><strong>Deliverable.</strong> After a bounded number of consecutive child deaths within one code stamp, <code>CurrentCodeServer</code> stops respawning until the stamp moves, and the running image serves every call meanwhile. The child's stderr goes to a bounded file, so the last death's cause can be read. The answer a caller sees is unchanged. It is composed in <code>reckon/mcp.py</code>, which this section does not write, and a backed-off child leaves the caller's answer to the running image, as §11 does for a cold child.</p>
     <p><strong>Done when</strong> <code>tests/test_a_dying_child_is_backed_off.py</code> uses a child that exits right after every spawn. A run of twenty calls starts no more children than the bound, every call is answered by the image, and the last death's stderr is readable at the named path. A stamp move resets the count, and the next call starts a fresh child. The negative control removes the bound, and the spawn-count case then fails. <code>tests/test_a_slow_child_never_forces_a_reconnect.py</code> adds no failure, and nor does <code>tests/test_every_module_fits_a_worker_window.py</code>. Write paths: <code>reckon/served_code.py</code>, <code>tests/test_a_dying_child_is_backed_off.py</code>.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
