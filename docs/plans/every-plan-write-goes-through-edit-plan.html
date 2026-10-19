@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-informs" content="the-crew-surface-is-one-tool-and-a-few-verbs">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-plan-write-goes-through-edit-plan#s2&quot;, &quot;every-plan-write-goes-through-edit-plan#s3&quot;], &quot;s5&quot;: [&quot;every-plan-write-goes-through-edit-plan#s4&quot;], &quot;s6&quot;: [&quot;every-plan-write-goes-through-edit-plan#s5&quot;], &quot;s7&quot;: [&quot;every-plan-write-goes-through-edit-plan#s6&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-plan-write-goes-through-edit-plan#s2&quot;, &quot;every-plan-write-goes-through-edit-plan#s3&quot;], &quot;s5&quot;: [&quot;every-plan-write-goes-through-edit-plan#s4&quot;], &quot;s6&quot;: [&quot;every-plan-write-goes-through-edit-plan#s5&quot;], &quot;s7&quot;: [&quot;every-plan-write-goes-through-edit-plan#s6&quot;], &quot;s8&quot;: [&quot;every-plan-write-goes-through-edit-plan#s7&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -151,11 +151,17 @@
         keeps its size.</li>
     </ul>
     <p>The <code>reckon-edit</code> op table names each one.</p>
-    <p><strong>Done when</strong> <code>tests/test_edit_plan_sets_followup_dependency_and_gate_fields.py</code> exercises each path
-      through <code>edit_plan</code> on a temporary project. After the dependency write, the roadmap's own <code>section_depends_on</code>
-      reading returns the edge, which proves the consumer and not only the meta. Two negative controls: a null
-      <code>section_declarations.&lt;id&gt;</code> while its heading exists is refused, because it would leave an undeclared heading; and a ref
-      outside the grammar is refused. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>,
+    <p><strong>Done when</strong> <code>tests/test_edit_plan_sets_followup_dependency_and_gate_fields.py</code> gives each of the four
+      surfaces its own case and its own negative control, through <code>edit_plan</code> on a temporary project:</p>
+    <ul>
+      <li>Followup text: an open followup's title and body change, and the same write on a resolved followup is refused.</li>
+      <li>Section dependencies: after the write, the roadmap's own <code>section_depends_on</code> reading returns the edge, which proves the
+        consumer and not only the meta; a ref outside the grammar is refused.</li>
+      <li>Gate fields: an open gate's measure changes, and the same write on a passed or failed gate is refused.</li>
+      <li>Null removal: each of the four key kinds is removed, and a null <code>section_declarations.&lt;id&gt;</code> while its heading
+        exists is refused, because it would leave an undeclared heading.</li>
+    </ul>
+    <p>The evidence gives each surface its own verdict, so the section closes on all four or records which did not land. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>,
       <code>reckon/_plan_html.py</code>, <code>reckon/mcp.py</code>, <code>skills/reckon-edit/SKILL.md</code>,
       <code>tests/test_edit_plan_sets_followup_dependency_and_gate_fields.py</code>.</p>
 
@@ -170,7 +176,9 @@
       still implementable (named), or the evidence record that a terminal status needs (named by path). No guard is removed.</p>
     <p>The op retires two surfaces, so the vocabulary does not grow net. A <code>set</code> of <code>status</code> to a terminal value
       (shipped, done, superseded, abandoned) is refused, naming <code>close</code>, and every reckon caller that sets one moves to
-      <code>close</code> in the same node. The resolved-placeholder recipe goes too: <code>skills/reckon-edit/SKILL.md</code> and
+      <code>close</code> in the same node, including the instructions in
+      <code>skills/reckon-build/references/coordinator-reference.md</code> and the plan-state checklist in <code>AGENTS.md</code>. The
+      resolved-placeholder recipe goes too: <code>skills/reckon-edit/SKILL.md</code> and
       <code>skills/reckon-build/SKILL.md</code> describe <code>close</code> and drop it.</p>
     <p><strong>Done when</strong> <code>tests/test_a_plan_closes_in_one_op.py</code> passes three cases. A plan whose sections are done and
       whose evidence record exists closes in one version step, with every followup resolved and no placeholder followup appended. A plan with
@@ -178,6 +186,7 @@
       <code>set status shipped</code> is refused naming <code>close</code>. The negative control reports only the first failing guard, and the
       second case then fails for the guard it omits. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>,
       <code>reckon/mcp.py</code>, <code>skills/reckon-edit/SKILL.md</code>, <code>skills/reckon-build/SKILL.md</code>,
+      <code>skills/reckon-build/references/coordinator-reference.md</code>, <code>AGENTS.md</code>,
       <code>tests/test_a_plan_closes_in_one_op.py</code>.</p>
 
     <h2 id="s7">§7 — A refused or late write names the next step</h2>

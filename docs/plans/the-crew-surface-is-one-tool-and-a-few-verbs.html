@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-informs" content="consumers-read-reckon-through-verbs">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s3&quot;], &quot;s5&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;, &quot;every-plan-write-goes-through-edit-plan#s3&quot;], &quot;s6&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s2&quot;, &quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;], &quot;s7&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;], &quot;s8&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s7&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s3&quot;], &quot;s5&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;, &quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;, &quot;every-plan-write-goes-through-edit-plan#s3&quot;], &quot;s6&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s2&quot;, &quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;], &quot;s7&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;], &quot;s8&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s7&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -210,7 +210,8 @@
     <p><strong>Done when</strong> <code>tests/test_crew_families_fold.py</code> checks three things. Every old invocation in the table prints
       its successor through its tombstone. Each successor gives the same answer the old verb gave at the node's base; the node captures those
       answers as fixtures before changing anything. The visible leaf count read from the command tree, tombstones excluded, is at most the base count minus the folded
-      names. The negative control alters one successor's answer, and that case then fails. The help-contract tests,
+      names plus the three parent verbs this section adds (<code>crew repair</code>, <code>crew budget</code>, <code>crew check</code>), and
+      one fewer again when <code>crew merge</code> is tombstoned. The negative control alters one successor's answer, and that case then fails. The help-contract tests,
       <code>tests/test_cited_commands_exist.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code> pass. Write paths:
       <code>reckon/crew_run_commands.py</code>, <code>reckon/crew_dispatch_commands.py</code>, <code>reckon/crew/tombstones.py</code>,
       <code>reckon/crew/claims.py</code>, <code>reckon/crew/gc.py</code>,
