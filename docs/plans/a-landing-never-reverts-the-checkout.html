@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-landing-never-reverts-the-checkout">
   <meta name="plan-title" content="A Landing Never Reverts The Checkout">
   <meta name="plan-summary" content="A promotion committed its landing, then nova&#x27;s checkout held a staged reversal of it; find what turned it back, check every landing, record every rollback.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.0">
   <meta name="plan-capability-version" content="1.0">
@@ -25,7 +25,7 @@
   <title>A Landing Never Reverts The Checkout | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="35">
+<meta name="plan-version" content="36">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -128,6 +128,12 @@
     <pre class="r-fu-prompt">/reckon-build a-landing-never-reverts-the-checkout §3</pre>
     <p class="r-fu-outcome">§3 landed (head 3d2f768ad): a promotion holds a cross-host HostLease on its run, so a second promotion from any host refuses without writing.</p>
     </article>
+<article class="r-fu" data-id="f-alnrtc-004" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-19" data-recommends-skill="/reckon-build a-landing-never-reverts-the-checkout" data-resolved-at="2026-10-19T03:06:36Z" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Plan complete</h4>
+    <div class="r-fu-body"><p>All three sections have landed. §1 named the cause, §2 makes every landing check and record what it left, and §3 claims a promoting run across hosts (merged at a3f2c40be).</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-landing-never-reverts-the-checkout</pre>
+    <p class="r-fu-outcome">done — no followup. The cause is named, every landing checks and records what it left, and a run is promoted by one holder at a time across hosts.</p>
+    </article>
 </section>
 
 <section data-reckon="comments" id="comments" class="r-comments">
@@ -171,7 +177,7 @@
     <div class="r-comment-body"><p>§3 landed, head <code>3d2f768ad</code>. A promotion now holds a cross-host <code>HostLease</code> on its run for its whole span, so a second promotion from any host refuses without writing and names the holder. At base, the second promotion's row was written and rolled back, as in nova's incident. <a href="/reckon/evidence/archive/a-landing-never-reverts-the-checkout-landed.html#s3">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261019T020114916771-one-promotion-of-a-run-at-a-time" data-who="reckon-build" data-when="2026-10-19T02:36:26.475Z">
-    <div class="r-comment-body"><p>promotion.complete takes a cross-host HostLease (reckon/crew/host_lease.py) named for the run before its first write, renews it while it runs and releases it after its landing or rollback, refusing a second promotion that finds it freshly held without writing and naming the holder&#x27;s host, pid and job, and taking over a stale lease; the measure is 3 new tests, head 29 passed/0 failed EXIT=0 over the five named files against a 26 passed/0 failed EXIT=0 baseline (0 added failures), with the cross-host and refused-self-promotion cases failing by id at the base revision.</p></div>
+    <div class="r-comment-body"><p>promotion.complete takes a cross-host HostLease (reckon/crew/host_lease.py) named for the run before its first write, renews it while it runs and releases it after its landing or rollback, refusing a second promotion that finds it freshly held without writing and naming the holder's host, pid and job, and taking over a stale lease; the measure is 3 new tests, head 29 passed/0 failed EXIT=0 over the five named files against a 26 passed/0 failed EXIT=0 baseline (0 added failures), with the cross-host and refused-self-promotion cases failing by id at the base revision.</p></div>
 </div>
 </section>
 </main>
