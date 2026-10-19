@@ -453,6 +453,12 @@ class _FollowerReloader:
         # it. A tree id is a 40-digit git object, which is what a reload tree is
         # named by; a content stamp is 64 and is handled by the dirty-tree path.
         current_stamp = runs.follower_code_stamp()
+        if current_stamp == checkout_trust.IDENTITY_UNKNOWN:
+            # A read the identity depends on did not answer, so this tick holds
+            # no new identity to act on: keep the current image and the recorded
+            # stamp rather than materialising a tree from a partial read, and let
+            # the next tick re-read.
+            return
         current_head = (
             current_stamp
             if committed_image and re.fullmatch(r"[0-9a-f]{40}", current_stamp)
