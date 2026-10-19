@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Reverting the lease (promotion.complete writing without _promotion_host_lease) makes both racing processes land, so len(landed)==1 and len(refused)==1 fail; this is the condition the negative-control.log demonstrates at base, where the cross-host case fails by id. The pid/job naming assertions at lines 309-310 are independent: the winner's pid is its own os.getpid() printed by the driver, while the refusal text is read by the loser from the lease file the winner wrote.",
+      "lines": "tests/test_one_promotion_of_a_run_at_a_time.py:304-319"
+    },
+    {
+      "failure_condition": "Removing the lease from complete lets promote_review_run_itself promote, so report[\"promoted\"] is no longer False at line 357 and a ledger row appears at line 362; this is the second case the negative control fails by id. The holder names asserted at lines 358-360 are supplied by the test's own _held_lease call, but flow through the code's read of the lease file rather than echoing a parameter, so they are independent of the code's internals.",
+      "lines": "tests/test_one_promotion_of_a_run_at_a_time.py:346-362"
+    },
+    {
+      "failure_condition": "This case passes at both revisions (the negative control reports 1 passed at base), so it guards nothing the change introduced; it would only redden if a stale lease were refused (the _promote call raising CrewError), a behaviour the change must preserve but does not create.",
+      "lines": "tests/test_one_promotion_of_a_run_at_a_time.py:325-340"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew_run_commands.py:1910",
+    "reckon/crew/recovery_review_acceptance.py:213",
+    "reckon/crew/recovery_review_acceptance.py:348"
+  ],
+  "completed_at": "2026-10-19T02:50:51.322Z",
+  "dispatched_at": "2026-10-19T02:39:44Z",
+  "findings": [
+    {
+      "file": "tests/test_one_promotion_of_a_run_at_a_time.py",
+      "line": "337",
+      "severity": "follow-on",
+      "text": "follow-on: assert promoted[\"run_id\"] == REVIEW_RUN_ID compares the value the test itself handed to _promote (REVIEW_RUN_ID, the promotion's input) against the code's echo of it; both sides move together, so the line is true whatever the code does and would survive any regression of the lease. The test's real guard is the absence of a CrewError from _promote, which the surrounding ledger assertion at line 338 exercises; the echoed run_id adds no coverage."
+    },
+    {
+      "file": "tests/test_one_promotion_of_a_run_at_a_time.py",
+      "line": "315",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when asks the cross-host case to show 'exactly one commit', but line 315 asserts only int(rev-list --count HEAD) > before (at least one). Two promotions at the base revision both commit, so this assertion does not distinguish one commit from two and cannot redden on the exact defect the done_when names; the strict count is only implied by the len(landed)==1 assertion at line 304, which does redden."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "The single commit 3d2f768adde1788a8589be8f373691277b7bb2ca changes three files against base 473572f9bff57e97d77abbc4b52e6d9c68853a3e: promotion.py adds _promotion_lease_name/_promotion_lease_identity/_promotion_lease_held/_PromotionLeaseRenewer/_promotion_host_lease and enters the lease in complete; the new test file adds three cases; the evidence fragment records the change and its gate.",
+    "done_when": "The done_when asks the new test file to show the cross-host case (separate node-local lock path, barrier-ordered), the stale take-over and a sweep's refused self-promotion naming the holder, with the named landing/review tests adding no base failure and ruff adding no finding; tests/test_one_promotion_of_a_run_at_a_time.py:255-362 carries all three cases and the manifest records the 29-passed head arm against a 26-passed base with a 2-failed/1-passed negative control, though the sweep's reason names the holder via the same text asserted at lines 358-360.",
+    "goal": "The node goal is to make a promotion hold a cross-host HostLease on its run for its whole span so a second promotion of the same run from any host refuses without writing; reckon/crew/promotion.py:206-224 defines _promotion_host_lease and promotion.py:286 enters it inside the existing node-local pointer lock, so the change does exactly that.",
+    "manifest": "The source manifest.md reads complete and records the head arm 29 passed/0 failed EXIT=0, baseline 26 passed/0 failed EXIT=0, negative control 2 failed/1 passed EXIT=1, plus baseline_suite and after_suite JSON naming gates/base-existing-files.log and gates/head-suite.log; each log's first line names its revision, tree, module.__file__ and command, and the counts reconcile with the manifest.",
+    "manifest_gate_logs": "Read gates/head-suite.log (29 passed, EXIT=0), gates/base-existing-files.log (26 passed, EXIT=0) and gates/negative-control.log (2 failed, 1 passed, EXIT=1); the added_failure_count derived by reckon.crew.review.added_failures_from_gate_logs over the two suite logs is (0, []).",
+    "write_paths": "The declared write paths are reckon/crew/promotion.py, reckon/crew/host_lease.py, reckon/crew/recovery_review_acceptance.py, tests/test_one_promotion_of_a_run_at_a_time.py and the two docs/evidence fragment paths; git diff --stat 473572f9..3d2f768a changes only promotion.py, the test file and the fragment, and host_lease.py and recovery_review_acceptance.py are unchanged as the node states."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T023808401484-review-of-one-promotion-of-a-run-at-a-time-3d2f768adde1",
+  "reviewed_at": "2026-10-19",
+  "reviewed_base_sha": "473572f9bff57e97d77abbc4b52e6d9c68853a3e",
+  "reviewed_head_sha": "3d2f768adde1788a8589be8f373691277b7bb2ca",
+  "reviewed_run_id": "r-20261019T020114916771-one-promotion-of-a-run-at-a-time",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T02:55:31.651727+00:00",
+  "total": 112
+}
