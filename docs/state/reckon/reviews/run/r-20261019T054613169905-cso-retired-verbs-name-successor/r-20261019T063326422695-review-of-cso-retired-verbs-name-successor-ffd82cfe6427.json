@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Taken from the reviewed run's own gate logs. baseline_suite (base-arm.log, rev f339f0eda) 2 failed / 70 passed, EXIT=1, ids test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition and test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt. after_suite (gate-head.log, rev ffd82cfe) 2 failed / 80 passed, EXIT=1, the same two ids. Head failures are a subset of base failures, so added_failure_count is 0 and added_failure_ids is empty. The two ids concern the check-review and repair-review verbs registered in reckon/crew_run_commands.py, untouched by this diff, so they pre-exist at the run's base f339f0eda and are outside this node.",
+  "base_log_revision": "f339f0eda7fb778034e050fea9d96ba35cb28e56",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:_CrewGroup.get_command",
+    "reckon/cli.py"
+  ],
+  "completed_at": "2026-10-19T06:41:24.786Z",
+  "dispatched_at": "2026-10-19T06:34:08Z",
+  "findings": [
+    {
+      "file": "tests/test_a_retired_verb_names_its_successor.py",
+      "line": "47",
+      "severity": "follow-on",
+      "text": "_crew_exit_codes() reads only reckon/crew_*.py and reckon/crew/**/*.py, so the collision guard's claim ('the code must belong to no crew command') is broader than its mechanism: a crew command that raised a literal code from another module (reckon/cli.py, reckon/cli_entry.py) would not be seen. Verified by a repo-wide scan that no code 10 is raised anywhere in reckon/, so the guard is sound at this head and this is a coverage gap rather than a live collision."
+    }
+  ],
+  "head_log_revision": "ffd82cfe64275e2963153471622c3d218cc2ae33",
+  "item_verdicts": {
+    "diff": "Read commit by commit against base d855eaa5d; the single gained commit ffd82cfe64 sets TOMBSTONE_EXIT_CODE to 10, removes retired_names(), updates the crew group help docstring and the evidence fragment, and adds the exit-code collision test, the literal successor pins and the temporary-document citation case.",
+    "done_when": "The done_when names tests/test_a_retired_verb_names_its_successor.py, tests/test_cited_commands_exist.py, tests/test_crew_help_names_its_state.py and tests/test_skill_contracts.py; the head gate (gate-head.log) runs all four and records 2 failed / 80 passed, EXIT=1, against a base arm with the identical two failing ids, so the measure reads as zero added failures rather than the literal EXIT=0 the done_when states.",
+    "goal": "The node goal is to register hidden tombstone commands that print the successor invocation for the retired crew verbs review-plan, obligations and promote; the gained commit keeps that promise branchable by moving TOMBSTONE_EXIT_CODE from 9 to 10 at reckon/crew/tombstones.py:34 and removing the dead retired_names() helper, so the goal still holds at the reviewed head.",
+    "manifest": "Read; it records commits d855eaa5d and ffd82cfe64, the base/head gate counts, negative_control_log at logs/negative-control.log, the two retired-review findings, and follow_ons naming the two pre-existing failures as another node's; the recorded numbers match the three log files on disk.",
+    "write_paths": "The manifest declares six write paths (reckon/crew/tombstones.py, reckon/crew_dispatch_commands.py, the two test files, the evidence fragment, and the docs/figures/ directory); `git diff --name-only d855eaa5d ffd82cfe64` returns exactly the five files the gained commit touched, all inside that scope."
+  },
+  "justifications": {
+    "durability": "The gained test at tests/test_a_retired_verb_names_its_successor.py:161 fails if any crew command raises the retirement code and the negative control (code back to 9) reddens it at EXIT=1; the added literal pins at :146-:148 and the temporary-document case at tests/test_cited_commands_exist.py:346 each redden on the branch they negate.",
+    "evidence": "gate-head.log records the four-file head command and 2 failed / 80 passed EXIT=1 and base-arm.log records the base arm at f339f0eda with the identical two failing ids, so the result is recorded and the delta is zero; the done_when's literal EXIT=0 is unmet only because of the two pre-existing out-of-scope failures.",
+    "fit": "reckon/crew/tombstones.py:34 keeps the surrounding module idiom (module-level constant, frozen-dataclass registry) and the crew group docstring at reckon/crew_dispatch_commands.py:45 lists the codes coherently, with no plan label or version in any added name.",
+    "goal_fidelity": "reckon/crew/tombstones.py:34 raises the tombstone code to 10 and reckon/crew_dispatch_commands.py:45 documents it beside 9, so a caller can still branch on a code no crew command raises, which is the promise the goal's output makes.",
+    "reuse": "Searched reckon/ and reckon/crew/ for a live owner of an exit-code enumeration or a retired-name registry and found none, so the scan helper at tests/test_a_retired_verb_names_its_successor.py:38 does not fork a capability the repository owns.",
+    "scope_discipline": "`git diff --name-only d855eaa5d ffd82cfe64` lists only reckon/crew/tombstones.py, reckon/crew_dispatch_commands.py, the two test files and the evidence fragment, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to register hidden tombstone commands naming each retired crew verb's successor; the gained commit keeps that promise branchable by moving TOMBSTONE_EXIT_CODE from 9 to 10 at reckon/crew/tombstones.py:34 and dropping the dead retired_names() helper.\nVERDICT done_when: the done_when names the four test files; the head gate (gate-head.log) records 2 failed / 80 passed EXIT=1 and the base arm the identical two ids, so the measure reads as zero added failures rather than the literal EXIT=0.\nVERDICT write_paths: read the manifest's declared paths; `git diff --name-only d855eaa5d ffd82cfe64` returns exactly the five files the gained commit touched, all inside the declared scope.\nVERDICT manifest: read; it records commit ffd82cfe64, the base/head gate counts, negative-control.log, and follow_ons naming the two pre-existing failures as another node's.\nVERDICT diff: read commit by commit against base d855eaa5d; the single commit ffd82cfe64 sets the exit code to 10, removes retired_names(), updates the crew help docstring and fragment, and adds the collision test, the literal pins and the temporary-document citation case.\nCALL_SITES: reckon/crew_dispatch_commands.py:_CrewGroup.get_command, reckon/cli.py\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/tombstones.py:34 raises the tombstone code to 10 and reckon/crew_dispatch_commands.py:45 documents it beside 9, so a caller can still branch on a code no crew command raises.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log records the four-file head command and 2 failed / 80 passed EXIT=1 and base-arm.log records the base arm at f339f0eda with the identical two failing ids, so the result is recorded and the delta is zero; the done_when's literal EXIT=0 is unmet only because of the two pre-existing out-of-scope failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --name-only d855eaa5d ffd82cfe64` lists only the five declared files, all inside the manifest's write scope.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_retired_verb_names_its_successor.py:161 fails if any crew command raises the retirement code and the negative control (code back to 9) reddens it at EXIT=1; the added literal pins at :146-:148 and the temporary-document case at tests/test_cited_commands_exist.py:346 each negate the branch they guard.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/tombstones.py:34 keeps the surrounding module idiom and the crew group docstring at reckon/crew_dispatch_commands.py:45 lists the codes coherently, with no plan label or version in any added name.\nSCORE reuse: 19\nJUSTIFICATION reuse: no live owner of an exit-code enumeration or a retired-name registry exists in reckon/, so the scan helper at tests/test_a_retired_verb_names_its_successor.py:38 does not fork a capability the repository owns.\nFINDING tests/test_a_retired_verb_names_its_successor.py:47 follow-on: the collision scan reads only reckon/crew_*.py and reckon/crew/**/*.py, so a crew command raising a literal code from another module would not be seen; verified no code 10 exists repo-wide today.\n",
+  "review_run_id": "r-20261019T063326422695-review-of-cso-retired-verbs-name-successor-ffd82cfe6427",
+  "reviewed_base_sha": "d855eaa5d4285c183906588d741ce9a64e7d3197",
+  "reviewed_head_sha": "ffd82cfe64275e2963153471622c3d218cc2ae33",
+  "reviewed_run_id": "r-20261019T054613169905-cso-retired-verbs-name-successor",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T06:45:00+00:00",
+  "total": 111
+}
