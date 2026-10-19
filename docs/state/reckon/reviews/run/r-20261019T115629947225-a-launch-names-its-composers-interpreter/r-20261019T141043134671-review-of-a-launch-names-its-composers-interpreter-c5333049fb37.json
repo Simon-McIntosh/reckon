@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "assert composed[SHIM_PYTHON_ENV] == sys.executable fails if _persisted_worker_environment stops writing RECKON_SHIM_PYTHON; the right-hand side is the interpreter running the test, independent of anything the test hands the code, and the declared negative control reddens it with KeyError('RECKON_SHIM_PYTHON') in negative-control.log.",
+      "lines": "tests/test_a_launch_names_its_composers_interpreter.py:134"
+    },
+    {
+      "failure_condition": "assert kept[SHIM_PYTHON_ENV] == chosen fails if the composer overwrites a value the caller already supplied; chosen is the value passed in, but the guarded defect (an unconditional assignment to sys.executable) is exactly an overwrite of the pass-through, so the assertion reddens on the regression even though both sides name the same literal.",
+      "lines": "tests/test_a_launch_names_its_composers_interpreter.py:142"
+    },
+    {
+      "failure_condition": "assert STUB_MARKER not in result.stderr fails if the shim resolves the stub python3.12 rather than the composing interpreter; the marker is emitted only by the planted stub, an independent artefact of the run, and negative-control.log shows it reddening with 'STUB-PYTHON3.12-RAN'.",
+      "lines": "tests/test_a_launch_names_its_composers_interpreter.py:180"
+    },
+    {
+      "failure_condition": "assert result.returncode == 0 and 'TOOL=srun' in result.stdout fail if the shim dies before reaching its main or forwards nothing; TOOL=srun is printed by the planted fake srun, independent of the composed environment.",
+      "lines": "tests/test_a_launch_names_its_composers_interpreter.py:181-182"
+    },
+    {
+      "failure_condition": "the widened set-equality assertions fail if _persisted_worker_environment stops adding RECKON_SHIM_PYTHON, since each compares the produced key set to a literal set naming it; both sides are not the same value, and the base arm without the production change (44 passed, 7 files) shows the file is exercised.",
+      "lines": "tests/test_worker_path_carries_shims.py:211,220,291"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/dispatch.py:2351 _persisted_worker_environment (directive environment, in-allocation dispatch)",
+    "reckon/crew/dispatch_launch.py:1941 _persisted_worker_environment (the launch spec's persisted environment)",
+    "reckon/host_shims/srun:22 reads $RECKON_SHIM_PYTHON first among candidate interpreters",
+    "reckon/host_shims/sbatch:22 reads $RECKON_SHIM_PYTHON",
+    "reckon/host_shims/salloc:22 reads $RECKON_SHIM_PYTHON",
+    "reckon/worker_shims/git:21 reads $RECKON_SHIM_PYTHON"
+  ],
+  "completed_at": "2026-10-19T14:37:58.604Z",
+  "dispatched_at": "2026-10-19T14:12:47Z",
+  "findings": [
+    {
+      "file": "r-20261019T115629947225-a-launch-names-its-composers-interpreter/manifest.md",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when's clause 'the test files importing reckon/crew/dispatch_launch.py show no added failure against base' is not evidenced against that population \u2014 28 test files import the module and the recorded baseline_suite/after_suite are the 8-file launch-environment subset (44 and 46 passed, 0 failures), while the importer arm in head-importers.log ended EXIT=124 before its summary with failing ids and the base arm in base-importers.log shows its own two failures. The manifest carries this under follow_ons and the coordinator deferred the population to merge, so it does not hold the node, but the clause is currently unmet."
+    },
+    {
+      "file": "r-20261019T115629947225-a-launch-names-its-composers-interpreter/manifest.md",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's orientation_write_paths line lists four paths and omits tests/test_worker_path_carries_shims.py, which the diff edits and changed_paths records; the grant is documented only in the coordinator's resume advice and status-repair.json, so a reader checking the orientation line alone sees an out-of-scope edit."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against b32f13f8: b94d926fd adds the production setting and the new test file plus the widened key-set assertions in tests/test_worker_path_carries_shims.py; c9ab1cdfa and c6716adc8 add and extend the evidence fragment; c5333049f replaces the literal with an owner import at reckon/crew/dispatch_launch.py:662, fixes the new file's ruff findings, and rewrites the fragment's ruff sentence. Four files changed, none a plan file.",
+    "done_when": "The done_when names a composed-environment test (RECKON_SHIM_PYTHON == sys.executable, a caller's value kept), a shim-run test against a python3.12 stub, a negative control that reaches the stub, logs ending in EXIT=, no added importer failure against base, and no ruff findings; the manifest records the two focused tests (head-focused.log 2 passed EXIT=0), the negative control (negative-control.log EXIT=1, STUB-PYTHON3.12-RAN), the ruff delta (ruff-delta.log, 0 added findings), and the launch-environment subset (44 base / 46 head, 0 failures), but its recorded suite is that 8-file subset rather than the importer population the clause names, so one clause is only partly evidenced (see finding one).",
+    "goal": "The node goal is 'Set RECKON_SHIM_PYTHON in a composed launch environment to the composing process's own interpreter unless already set'; the landed change at reckon/crew/dispatch_launch.py:662-665 sets persisted[_SHIM_PYTHON_ENV] = sys.executable only when the persisted mapping carries no value, inside _persisted_worker_environment, and the four shims (reckon/host_shims/srun:22, sbatch:22, salloc:22, reckon/worker_shims/git:21) read that variable first among their candidates, so the goal is met.",
+    "manifest": "Read the manifest at the reviewed run directory: status complete, four commits b94d926fda c9ab1cdfa9 c6716adc83 c5333049fb, baseline_suite 44 passed / 0 failures and after_suite 46 passed / 0 failures, negative_control_log recorded as a bare path, landed at c5333049f, and the importer population carried under follow_ons rather than retry_failures.",
+    "write_paths": "Section 62 names reckon/crew/dispatch_launch.py and tests/test_a_launch_names_its_composers_interpreter.py; the dispatch fence adds the evidence fragment and the figures directory; the landed diff edits exactly those plus tests/test_worker_path_carries_shims.py, which is in neither list but was granted after the fact by the coordinator (run manifest.md:21; resume-1-advice.txt item 2; status-repair.json), so every path is either declared or granted."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T141043134671-review-of-a-launch-names-its-composers-interpreter-c5333049fb37",
+  "reviewed_base_sha": "b32f13f8b194a7d4e830aa7500d81e371f27ac7c",
+  "reviewed_head_sha": "c5333049fb37404bd880fae6a0ff959906a18d8c",
+  "reviewed_run_id": "r-20261019T115629947225-a-launch-names-its-composers-interpreter",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T14:47:30.881056+00:00"
+}
