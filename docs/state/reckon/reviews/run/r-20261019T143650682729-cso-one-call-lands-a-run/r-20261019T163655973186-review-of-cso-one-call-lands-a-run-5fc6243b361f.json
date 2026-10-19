@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2187 crew_complete reaches _land_a_promoted_run under --land",
+    "reckon/crew_run_commands.py:2282 _land_a_promoted_run calls merge_module.land",
+    "reckon/crew/merge.py:532 land"
+  ],
+  "completed_at": "2026-10-19T16:48:28.774Z",
+  "dispatched_at": "2026-10-19T16:37:36Z",
+  "findings": [
+    {
+      "file": "reckon/crew/merge.py",
+      "line": "532 follow-on",
+      "severity": "land duplicates the whole landing loop of the existing owner land_merge (reckon/crew/merge.py:437) \u2014 the pinned-HEAD build, the index.lock retry, the --ff-only move and the push/read-back are copied rather than the owner being extended with a verify seam, so a later fix to that loop must be made twice.",
+      "text": "land duplicates the whole landing loop of the existing owner land_merge (reckon/crew/merge.py:437) \u2014 the pinned-HEAD build, the index.lock retry, the --ff-only move and the push/read-back are copied rather than the owner being extended with a verify seam, so a later fix to that loop must be made twice."
+    },
+    {
+      "file": "reckon/crew/merge.py",
+      "line": "568 follow-on",
+      "severity": "the reviewed head recorded is 5fc6243b3 but the gate arm that promotion reads ran at ce73c6384, one commit earlier, so the recorded head's own revision is not the one the gate measured; the intervening commit is docs-only, so the result stands, but the revision pair does not match the gate.",
+      "text": "the reviewed head recorded is 5fc6243b3 but the gate arm that promotion reads ran at ce73c6384, one commit earlier, so the recorded head's own revision is not the one the gate measured; the intervening commit is docs-only, so the result stands, but the revision pair does not match the gate."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T143650682729-cso-one-call-lands-a-run/gate-arm-head.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T143650682729-cso-one-call-lands-a-run/gate-arm-base.log"
+  },
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit from 1eb8d8dc6 to 5fc6243b3; f3f485f83 adds --land, _land_a_promoted_run, _reviewed_head_of and merge.land plus change_markers/surviving_change_refusals, 42c548d7c reformats crew_run_commands.py, ce73c6384 drops a self-contradicting assertion, and 5fc6243b3 adds the evidence fragment.",
+    "done_when": "the done-when names tests/test_one_call_lands_a_run.py building a temporary repository with a bare remote and a finished run whose marker reaches the primary branch, the remote ref equalling the local one, the worktree gone, and a dropped-merge negative control refused with nothing pushed; that file asserts exactly those at tests/test_one_call_lands_a_run.py:157-168 and the negative control is logged.",
+    "goal": "the node goal asks for a crew complete --land flag that merges the reviewed head through a land function beside land_merge, checks the change's markers survived, pushes and releases the worktree; reckon/crew_run_commands.py:2006 adds --land and :2187-2200 calls _land_a_promoted_run, which lands through reckon/crew/merge.py:532 land and releases through promotion_release._release_after_promotion.",
+    "manifest": "read; it records commits f3f485f83, 42c548d7c, ce73c6384, 5fc6243b3, baseline_suite and after_suite one-line JSON with failure_ids, the negative-control log path, and the landing-ledger-count log; its gate claim reconciles with gate-arm-base.log and gate-arm-head.log.",
+    "write_paths": "the declared paths are reckon/crew_run_commands.py, reckon/crew/merge.py, reckon/crew/promotion_release.py, tests/test_one_call_lands_a_run.py and the evidence fragment; git diff 1eb8d8dc6..5fc6243b3 touches exactly four of them and nothing outside."
+  },
+  "justifications": {
+    "durability": "tests/test_one_call_lands_a_run.py:157-168 asserts MARKER stripped appears in main:reviewed.txt and the remote ref equals the local one, which reddens when a merge drops the change, and negative-control.log shows that guard firing with the refused landing named.",
+    "evidence": "gate-arm-base.log ends '1 failed, 121 passed . . . EXIT=1' at 1eb8d8dc6 and gate-arm-head.log ends '1 failed, 124 passed . . . EXIT=1' at ce73c6384 with the same single pre-existing failure, so the arm adds no failure, but the head arm ran at ce73c6384 rather than the reviewed head 5fc6243b3.",
+    "fit": "reckon/crew/merge.py:254-292 follows the module's object-building idiom beside land_merge at :437, and no added name carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew_run_commands.py:2006-2064 adds --land, :2187-2200 promotes and then lands, and reckon/crew/merge.py:532 land carries the marker check between building the merge and the fast-forward, which is the goal's one new step.",
+    "reuse": "a capability search for a marker-survival check found no existing owner, but reckon/crew/merge.py:532 land copies the merge-build, index.lock retry, --ff-only and push loop of the existing owner land_merge at :437 rather than extending or wrapping it.",
+    "scope_discipline": "git diff 1eb8d8dc6..5fc6243b3 changes only reckon/crew/merge.py, reckon/crew_run_commands.py, tests/test_one_call_lands_a_run.py and the declared evidence fragment; the crew_run_commands.py reformat in 42c548d7c stays inside the declared path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal asks for a crew complete --land flag that merges the reviewed head through a land function beside land_merge, checks the change's markers survived, pushes and releases the worktree; reckon/crew_run_commands.py:2006 adds --land and :2187-2200 calls _land_a_promoted_run, which lands through reckon/crew/merge.py:532 land and releases through promotion_release._release_after_promotion.\nVERDICT done_when: the done-when names tests/test_one_call_lands_a_run.py building a temporary repository with a bare remote and a finished run whose marker reaches the primary branch, the remote ref equalling the local one, the worktree gone, and a dropped-merge negative control refused with nothing pushed; that file asserts exactly those at tests/test_one_call_lands_a_run.py:157-168 and the negative control is logged.\nVERDICT write_paths: the declared paths are reckon/crew_run_commands.py, reckon/crew/merge.py, reckon/crew/promotion_release.py, tests/test_one_call_lands_a_run.py and the evidence fragment; git diff 1eb8d8dc6..5fc6243b3 touches exactly four of them and nothing outside.\nVERDICT manifest: read; it records commits f3f485f83, 42c548d7c, ce73c6384, 5fc6243b3, baseline_suite and after_suite one-line JSON with failure_ids, the negative-control log path, and the landing-ledger-count log; its gate claim reconciles with gate-arm-base.log and gate-arm-head.log.\nVERDICT diff: read commit by commit from 1eb8d8dc6 to 5fc6243b3; f3f485f83 adds --land, _land_a_promoted_run, _reviewed_head_of and merge.land plus change_markers/surviving_change_refusals, 42c548d7c reformats crew_run_commands.py, ce73c6384 drops a self-contradicting assertion, and 5fc6243b3 adds the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:2187 crew_complete reaches _land_a_promoted_run under --land, reckon/crew_run_commands.py:2282 _land_a_promoted_run calls merge_module.land, reckon/crew/merge.py:532 land\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:2006-2064 adds --land, :2187-2200 promotes and then lands, and reckon/crew/merge.py:532 land carries the marker check between building the merge and the fast-forward, which is the goal's one new step.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-arm-base.log ends '1 failed, 121 passed . . . EXIT=1' at 1eb8d8dc6 and gate-arm-head.log ends '1 failed, 124 passed . . . EXIT=1' at ce73c6384 with the same single pre-existing failure, so the arm adds no failure, but the head arm ran at ce73c6384 rather than the reviewed head 5fc6243b3.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff 1eb8d8dc6..5fc6243b3 changes only reckon/crew/merge.py, reckon/crew_run_commands.py, tests/test_one_call_lands_a_run.py and the declared evidence fragment; the crew_run_commands.py reformat in 42c548d7c stays inside the declared path.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_one_call_lands_a_run.py:157-168 asserts MARKER stripped appears in main:reviewed.txt and the remote ref equals the local one, which reddens when a merge drops the change, and negative-control.log shows that guard firing with the refused landing named.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/merge.py:254-292 follows the module's object-building idiom beside land_merge at :437, and no added name carries a plan, sprint or ticket identifier.\nSCORE reuse: 5\nJUSTIFICATION reuse: a capability search for a marker-survival check found no existing owner, but reckon/crew/merge.py:532 land copies the merge-build, index.lock retry, --ff-only and push loop of the existing owner land_merge at :437 rather than extending or wrapping it.\nFINDING reckon/crew/merge.py:532 follow-on: land duplicates the whole landing loop of the existing owner land_merge (reckon/crew/merge.py:437) \u2014 the pinned-HEAD build, the index.lock retry, the --ff-only move and the push/read-back are copied rather than the owner being extended with a verify seam, so a later fix to that loop must be made twice.\nFINDING reckon/crew/merge.py:568 follow-on: the reviewed head recorded is 5fc6243b3 but the gate arm that promotion reads ran at ce73c6384, one commit earlier, so the recorded head's own revision is not the one the gate measured; the intervening commit is docs-only, so the result stands, but the revision pair does not match the gate.\n",
+  "review_run_id": "r-20261019T163655973186-review-of-cso-one-call-lands-a-run-5fc6243b361f",
+  "reviewed_base_sha": "1eb8d8dc65178127695c57ca210ea4edcca8d7ab",
+  "reviewed_head_sha": "5fc6243b361f8c924cef46ef13a788e485c5c8a7",
+  "reviewed_run_id": "r-20261019T143650682729-cso-one-call-lands-a-run",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T16:46:20.355572+00:00",
+  "total": 92
+}
