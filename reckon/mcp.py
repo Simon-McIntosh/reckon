@@ -314,7 +314,7 @@ def structured(result):
     return {"unstructured": repr(result)}
 
 
-out = {"params": []}
+out = {"params": [], "reached": False}
 try:
     tool = next(
         item
@@ -322,6 +322,10 @@ try:
         if item.name == name
     )
     out["params"] = sorted(tool.fn_metadata.arg_model.model_fields)
+    #: A failure raised after this point is the tool's own answer. One raised
+    #: before it is the child's — the moved code serves no such tool, or the
+    #: child died on the way — and answers for no code the caller can retry on.
+    out["reached"] = True
     # The tool itself rather than the guard around it: this child is already
     # the checkout's current code, so a second copy of that decision here would
     # answer with a refusal of its own instead of the tool's answer.
@@ -437,8 +441,14 @@ def _current_code_answer(child: Mapping[str, Any]) -> Mapping[str, Any] | None:
     reconnect, which is the decision this guard owns and a child must not make.
     A child that answers with one is read as having answered nothing, so the
     caller keeps the failure it already has rather than a remedy aimed at it.
+    Neither is a failure the child raised before it reached the tool — the moved
+    code serves no such tool, or the child died on the way — because that answer
+    belongs to no code the caller could retry on, and returning it marked with
+    the checkout's stamp would credit the current code with a call it never ran.
     """
 
+    if child.get("reached") is not True:
+        return None
     answer = child.get("answer")
     if not isinstance(answer, Mapping):
         return None

@@ -70,6 +70,15 @@ async def edit_plan():
     return structured(blocks)
 
 
+async def crew():
+    """A call the running image fails: no project names a crew read view."""
+    try:
+        blocks = await reckon_mcp.mcp.call_tool("crew", {"view": "summary"})
+    except Exception as exc:
+        return {"ok": False, "error": "tool_error", "detail": f"{type(exc).__name__}: {exc}"}
+    return structured(blocks)
+
+
 # The change a checkout ahead of the running image carries. ``answers`` makes
 # edit_plan return an answer the running image never could; ``signature``
 # changes the tool's parameter list, which no in-process answer can cover.
@@ -95,10 +104,75 @@ async def _edit_plan_tool(*args, added_parameter=None, **kwargs):  # noqa: F811
     return await _edit_plan_tool_before_the_change(*args, **kwargs)
 """
 
+# The crew tool's equivalents. ``crew_answers`` fails the call the way the
+# current code fails it, so the answer the caller gets is a failure too. The
+# other two take the child away from the tool's answer without changing the
+# registered parameters: one leaves no crew tool to reach, the other leaves no
+# answer at all.
+_CREW_ANSWERS = """
+
+# The checkout ahead of the running image serves a crew tool of its own, so the
+# call fails the way the current code fails it. The tool is re-registered: the
+# registration above captured the body it was built with, so rebinding the name
+# alone would leave that body answering. functools.wraps keeps the published
+# parameters, which the registered tool's schema still has to match.
+import functools
+
+_crew_before_the_change = _crew
+
+
+@functools.wraps(_crew_before_the_change)
+def _crew(*args, **kwargs):  # noqa: F811
+    return {
+        "ok": False,
+        "error": "crew_view_refused",
+        "detail": "the current code refused this view",
+    }
+
+
+mcp.remove_tool("crew")
+mcp.tool(name="crew")(_crew)
+"""
+
+_CREW_REMOVED = """
+
+# the checkout ahead of the running image no longer serves the crew tool, so a
+# child that goes looking for it never reaches it
+mcp.remove_tool("crew")
+"""
+
+_CREW_SILENT = """
+
+# The checkout ahead of the running image takes the interpreter down inside the
+# crew call, so the child makes no answer at all. Re-registered as above: the
+# registration captured the body it was built with.
+import functools
+import os
+
+_crew_before_the_change = _crew
+
+
+@functools.wraps(_crew_before_the_change)
+def _crew(*args, **kwargs):  # noqa: F811
+    os._exit(1)
+
+
+mcp.remove_tool("crew")
+mcp.tool(name="crew")(_crew)
+"""
+
+_MOVES = {
+    "answers": ("reckon/mcp_edit_plan.py", _ANSWERS),
+    "signature": ("reckon/mcp_edit_plan.py", _SIGNATURE),
+    "crew_answers": ("reckon/mcp.py", _CREW_ANSWERS),
+    "crew_never": ("reckon/mcp.py", _CREW_REMOVED),
+    "crew_silent": ("reckon/mcp.py", _CREW_SILENT),
+}
+
 
 def move_the_checkout():
-    target = root / "reckon" / "mcp_edit_plan.py"
-    addition = _ANSWERS if mode == "answers" else _SIGNATURE
+    relative, addition = _MOVES[mode]
+    target = root / relative
     target.write_text(target.read_text() + addition)
 
 
@@ -122,14 +196,15 @@ def commit_the_move():
 
 
 async def main():
-    first = await edit_plan()
-    if mode in ("answers", "signature"):
+    call = crew if mode.startswith("crew_") else edit_plan
+    first = await call()
+    if mode == "dirty":
+        move_a_tracked_file()
+    else:
         move_the_checkout()
         commit_the_move()
-    elif mode == "dirty":
-        move_a_tracked_file()
-    second = await edit_plan()
-    third = await edit_plan()
+    second = await call()
+    third = await call()
     print(json.dumps({
         "module": reckon_mcp.__file__,
         "started_at": reckon_mcp._SERVER_STARTED_AT.isoformat(),
@@ -297,3 +372,77 @@ def test_a_changed_tool_signature_returns_the_reconnect_refusal(
     assert "edit_plan" in second["detail"], second["detail"]
     assert "reconnect" in second["detail"].lower()
     assert second.get("served_by") != "current code"
+
+
+def test_a_crew_failure_answers_on_the_current_code_with_its_stamp(
+    tmp_path: Path,
+) -> None:
+    """The crew tool's own failure is the caller's answer, stamped, as edit_plan's is."""
+    root = _committed_checkout(tmp_path)
+    payload = _run_server(tmp_path, root, "crew_answers")
+    _assert_served_from_the_copy(payload, root)
+
+    first, second, third = payload["first"], payload["second"], payload["third"]
+    assert first.get("ok") is False, f"the running image must fail the call: {first!r}"
+    assert first.get("error") == "missing_project", first
+    assert second.get("ok") is False, (
+        f"the current code's failure is the caller's answer: {second!r}"
+    )
+    assert second.get("error") == "crew_view_refused", (
+        f"the answer must be the current code's own failure: {second!r}"
+    )
+    stamp = second.get("served_by_code_stamp")
+    assert isinstance(stamp, str) and stamp, (
+        f"the current code's answer carries its stamp: {second!r}"
+    )
+    assert "stale_server_code" not in json.dumps(second), (
+        "a call the current code answers is never refused"
+    )
+    # Later calls run on the current code too, rather than falling back.
+    assert third.get("error") == "crew_view_refused", third
+    assert third.get("served_by_code_stamp") == stamp, third
+
+
+def test_a_child_that_never_reaches_the_tool_is_not_its_answer(tmp_path: Path) -> None:
+    """A child that reached no tool made no answer, and reports no signature."""
+    root = _committed_checkout(tmp_path)
+    payload = _run_server(tmp_path, root, "crew_never")
+    _assert_served_from_the_copy(payload, root)
+
+    first, second = payload["first"], payload["second"]
+    assert first.get("ok") is False, f"the running image must fail the call: {first!r}"
+    assert second.get("error") == "stale_server_code", (
+        f"a child that never reached the tool made no answer, so the caller keeps "
+        f"the refusal: {second!r}"
+    )
+    assert "tool" not in second, (
+        f"a child that reached no tool reports no changed signature: {second!r}"
+    )
+    assert "changed its parameters" not in second["detail"], second
+    body = json.dumps(second)
+    assert "served_by_code_stamp" not in body, (
+        f"the child's own failure is not the current code's answer: {second!r}"
+    )
+    assert "StopIteration" not in body, second
+
+
+def test_a_child_that_makes_no_answer_gets_the_refusal(tmp_path: Path) -> None:
+    """A child that answers nothing at all owes the reconnect refusal, naming why."""
+    root = _committed_checkout(tmp_path)
+    payload = _run_server(tmp_path, root, "crew_silent")
+    _assert_served_from_the_copy(payload, root)
+
+    first, second = payload["first"], payload["second"]
+    assert first.get("ok") is False, f"the running image must fail the call: {first!r}"
+    assert second.get("error") == "stale_server_code", (
+        f"a child that makes no answer owes the refusal: {second!r}"
+    )
+    assert second.get("server_started_at") == payload["started_at"], (
+        f"the refusal names the image that could not answer: {second!r}"
+    )
+    assert second.get("code_stamp_at_start") != second.get("code_stamp_now"), second
+    assert "reconnect" in second["detail"].lower(), second["detail"]
+    assert second.get("original_error"), (
+        f"the refusal keeps the failed call: {second!r}"
+    )
+    assert "served_by_code_stamp" not in json.dumps(second), second
