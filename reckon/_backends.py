@@ -117,6 +117,7 @@ from reckon._worker_fence import (  # noqa: F401
     fence_argv,
     fence_capability_problem,
     fence_unprotected_paths,
+    fence_writable_roots,
     harness_home,
     observe_codex_login,
     protected_checkouts,
@@ -2186,12 +2187,23 @@ def launch_plan(
             ),
         )
         environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
+    # The dialect composes its own sandbox before the fence wraps the launch,
+    # and codex prepares each root it is told writable — so a fenced run is
+    # handed only the roots the fence actually keeps writable, or a sealed
+    # delivery store refuses the whole launch; see :func:`fence_writable_roots`.
+    # An unfenced run keeps the operator's own sandbox and is handed every root
+    # as before.
+    dialect_roots = (
+        fence_writable_roots(writable_directories)
+        if fence
+        else [Path(path) for path in writable_directories]
+    )
     argv = dialect.argv(
         command=str(backend["command"]),
         backend=backend,
         worktree=worktree_path,
         working_directory=working_directory,
-        writable_directories=tuple(str(path) for path in writable_directories),
+        writable_directories=tuple(str(path) for path in dialect_roots),
         final_message_path=final_path,
         resume_session=resume_session,
         images=tuple(str(image) for image in images),

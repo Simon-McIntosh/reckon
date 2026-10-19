@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="A fenced codex review is told only the roots the fence leaves writable">
+  <meta name="plan-summary" content="One rule, fence_writable_roots, states which declared roots stay writable inside the fence; the fence's grant loop uses it and the fenced dialect is handed only those, so a sealed delivery store is never named writable to codex's own sandbox.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s16">
+  <meta name="plan-commits" content="9e9bd575,ee6bcfd9,a6046b43,3a6d3e48">
+  <meta name="plan-recorded-at" content="2026-10-19">
+  <title>A fenced codex review is told only the roots the fence leaves writable — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-fenced-codex-review-names-only-writable-roots" data-reckon="landed" data-when="2026-10-19">
+  <h2 id="a-fenced-codex-review-names-only-writable-roots-title">A fenced codex review is told only the roots the fence leaves writable</h2>
+  <p id="a-fenced-codex-review-names-only-writable-roots-change">
+    <code>reckon/_worker_fence.py</code> gains <code>fence_writable_roots(writable_directories)</code>:
+    the declared roots minus the sealed delivery stores, each resolved the way the grant loop resolves
+    it. <code>fence_argv</code>'s grant loop now uses it in place of its own inline store test — the
+    scratch-seal skip it also carried is unchanged — so the rule has one owner and the fence's binds
+    do not change. In <code>reckon/_backends.py</code>, <code>launch_plan</code> hands
+    <code>fence_writable_roots(writable_directories)</code> to the dialect for a fenced run and the
+    unfiltered set for an unfenced one. No bind was added and no seal changed. One existing assertion
+    in <code>tests/test_sandbox_delivery.py</code> recorded the pre-change expectation for a fenced
+    launch and moved with it.
+  </p>
+  <p id="a-fenced-codex-review-names-only-writable-roots-measure">
+    <code>tests/test_a_fenced_codex_review_names_only_writable_roots.py</code> is new and passes 4/4.
+    It composes a fenced read-only codex launch whose declared write set holds the reports root, the
+    review store, the run directory and a declared review-records path under the store, and finds the
+    codex argv carries <code>--add-dir</code> for the review-records path and for no sealed store;
+    every <code>--add-dir</code> it does carry is either bound writable by the fence or outside every
+    sealed path; the fence's writable binds are exactly the declared roots the sealed stores do not
+    cover — the run directory, the declared review-records path beneath the store, and the plan-write
+    lock namespace — plus the fence's own additions, spelled out rather than recovered from history, so
+    the case reads no git log and skips no clone; and an unfenced launch keeps every
+    <code>--add-dir</code>. The declared negative control — the unfiltered writable set passed to the
+    dialect again — reddens the run at <code>EXIT=1</code> with the sealed stores'
+    <code>--add-dir</code> named.
+  </p>
+  <p id="a-fenced-codex-review-names-only-writable-roots-gate">
+    The named gate over the eight files adds no failure against the base: base
+    <code>b97740c8</code> 82 passed, <code>EXIT=0</code>; head <code>3a6d3e48</code> 86 passed,
+    <code>EXIT=0</code>. Both arms ran in the foreground with <code>TMPDIR</code> at its default. One
+    existing assertion had to move with the change:
+    <code>tests/test_sandbox_delivery.py::test_investigation_delivers_to_a_temporary_reports_directory</code>
+    asserted <code>str(crew.reports_dir()) in add_dirs</code>, the behaviour this section removes, so it
+    now asserts that the launch is fenced, the sealed reports root is not an <code>--add-dir</code>, and
+    the manifest's own directory is still the plan's cwd — while the recorded
+    <code>sandbox_write_roots</code> keep the reports root, because a fence's write roots and a
+    dialect's writable set are deliberately different sets. The negative control at this head reddens
+    at <code>3 failed, 6 passed</code>, <code>EXIT=1</code>, on the sealed stores' <code>--add-dir</code>.
+  </p>
+</article>
+</body>
+</html>
