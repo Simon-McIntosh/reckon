@@ -6,7 +6,7 @@
   <meta name="docs-project" content="reckon">
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
-  <meta name="plan-section-depends-on" content="{&quot;s35&quot;: [&quot;a-read-answers-inside-its-deadline#s33&quot;], &quot;s34&quot;: [&quot;a-read-answers-inside-its-deadline#s36&quot;], &quot;s36&quot;: [&quot;a-read-answers-inside-its-deadline#s37&quot;], &quot;s37&quot;: [&quot;a-read-answers-inside-its-deadline#s35&quot;], &quot;s38&quot;: [&quot;a-read-answers-inside-its-deadline#s37&quot;], &quot;s41&quot;: [&quot;a-read-answers-inside-its-deadline#s40&quot;], &quot;s42&quot;: [&quot;a-read-answers-inside-its-deadline#s41&quot;, &quot;a-read-answers-inside-its-deadline#s43&quot;, &quot;a-read-answers-inside-its-deadline#s44&quot;], &quot;s44&quot;: [&quot;a-read-answers-inside-its-deadline#s41&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s35&quot;: [&quot;a-read-answers-inside-its-deadline#s33&quot;], &quot;s34&quot;: [&quot;a-read-answers-inside-its-deadline#s36&quot;], &quot;s36&quot;: [&quot;a-read-answers-inside-its-deadline#s37&quot;], &quot;s37&quot;: [&quot;a-read-answers-inside-its-deadline#s35&quot;], &quot;s38&quot;: [&quot;a-read-answers-inside-its-deadline#s37&quot;], &quot;s41&quot;: [&quot;a-read-answers-inside-its-deadline#s40&quot;], &quot;s42&quot;: [&quot;a-read-answers-inside-its-deadline#s41&quot;, &quot;a-read-answers-inside-its-deadline#s43&quot;, &quot;a-read-answers-inside-its-deadline#s44&quot;], &quot;s44&quot;: [&quot;a-read-answers-inside-its-deadline#s41&quot;], &quot;s31&quot;: [&quot;a-read-answers-inside-its-deadline#s38&quot;]}">
   <meta name="plan-title" content="A Read Answers Inside Its Deadline">
   <meta name="plan-summary" content="MCP roadmap and audit timed out at 30 s and warm reads ran 9-20x their shipped targets. Reads take no write lock, walk once, and stop re-parsing.">
   <meta name="plan-status" content="active">
@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="343">
+<meta name="plan-version" content="344">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -1094,7 +1094,7 @@
     <div class="r-comment-body"><p>A review row's head is read from git's files (new `_worktree_head_revision` in recovery_memo, sharing `_named_ref`/`_ref_roots` with `_worktree_head_identity`, whose answers are unchanged), falling back to `git rev-parse HEAD` only when the files cannot resolve one; gate tests/test_a_review_row_reads_its_head_from_files.py 4 passed EXIT=0 with a fleet_state over 6 detached rows spawning 0 rev-parse HEAD calls, negative control restoring the subprocess counting 6 calls over 6 rows (EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s41" data-id="c-run-r-20261018T221133468695-review-row-head-population-at-merge" data-who="reckon-build" data-when="2026-10-18T22:42:15.427Z">
-    <div class="r-comment-body"><p>Merging 38aa5d8bff315daf7fb87cee9005b79f1a1d1196 onto fdef2e363b3d6fc01e1549b6f58f4114d097aa1f as 875558ac4ff9b9b98a4bd032a71bcb2ef856ade5 adds 0 failing test ids over the 45-file importer population: base arm 44 files 314 passed/2 failed, candidate arm 45 files 318 passed/2 failed, the same two ids in both arms, none absent at base except the change&#x27;s own new test file, and the merge candidate&#x27;s own added-failure reader positively controlled at 1 injected id, so the merge is clean on this measure.</p></div>
+    <div class="r-comment-body"><p>Merging 38aa5d8bff315daf7fb87cee9005b79f1a1d1196 onto fdef2e363b3d6fc01e1549b6f58f4114d097aa1f as 875558ac4ff9b9b98a4bd032a71bcb2ef856ade5 adds 0 failing test ids over the 45-file importer population: base arm 44 files 314 passed/2 failed, candidate arm 45 files 318 passed/2 failed, the same two ids in both arms, none absent at base except the change's own new test file, and the merge candidate's own added-failure reader positively controlled at 1 injected id, so the merge is clean on this measure.</p></div>
 </div>
 </section>
 </main>
