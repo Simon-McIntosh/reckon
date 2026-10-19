@@ -1,0 +1,37 @@
+<section id="the-time-fence-reads-cleanly-landed">
+<h3>The time fence reads cleanly, and its tests assert what it says</h3>
+
+<p>The time fence now ends each sentence with exactly one period in both forms it
+is composed in. <code>compose_prompt</code> in <code>reckon/crew/prompts.py</code>
+previously wrote <code>{time_fence}.</code> and then the following sentence, which suits
+the bare-duration form (<code>20m</code>) but leaves a second period on the statement form,
+whose own text already ends with a sentence: a worker read <code>and stop and
+report..</code> or <code>past the deadline..</code>. The bare form now supplies its own
+trailing period and the template adds none, so the bare-duration text stays
+<code>20m.</code> and the brief-prompt golden snapshot is unchanged.</p>
+
+<p>The assertion guarding the fence's clock no longer passes for the wrong reason.
+<code>tests/test_time_fence_follows_the_attempt.py:185</code> asserted that a bare
+<code>`date -u`</code> appeared in the prompt. After the fence was reworded it passed only
+because the warning quotes <code>date -u</code> as a reading not to use, so it would go red
+if the warning were dropped and stayed green if the actual seconds-left command
+disappeared. The assertion now checks for the seconds-left command built from the
+attempt's own deadline (<code>echo $(( $(date -d &lt;deadline, numeric offset&gt; +%s) - $(date
++%s) ))</code>): it fails when the command is dropped and passes whether or not the
+warning is present.</p>
+
+<table id="the-time-fence-reads-cleanly-measure">
+<thead><tr><th>Measure</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>New gate file</td><td><code>tests/test_the_time_fence_reads_cleanly.py</code>, 5 passed — the three composed forms carry no two consecutive periods, and the bare form still reads <code>20m. Your process ends</code></td></tr>
+<tr><td>Gate (8 files, head)</td><td>1 failed, 80 passed — the one failure is <code>test_every_module_fits_a_worker_window</code>, which names <code>reckon/crew/review.py</code> and <code>reckon/ledger.py</code> over the 50000-token bound</td></tr>
+<tr><td>Base arm (7 pre-existing files, base revision <code>3b652d4bc</code>)</td><td>1 failed, 75 passed — same <code>test_every_module_fits_a_worker_window</code> id, same two modules; added failures: none</td></tr>
+<tr><td>Negative control: restored unconditional period</td><td><code>negative-control-restored-period.log</code>, 5 failed, EXIT=1 (the new test's statement-form cases among them)</td></tr>
+<tr><td>Negative control: seconds-left command dropped</td><td><code>negative-control-dropped-command.log</code>, the changed assertion at line 185 fails, EXIT=1</td></tr>
+<tr><td>ruff check / format on staged paths</td><td>no new finding against the base blobs — the one <code>S608</code> on <code>prompts.py:697</code> is pre-existing</td></tr>
+</tbody>
+</table>
+
+<p>Commits and logs live in the run directory
+<code>r-20261019T193541643761-the-time-fence-reads-cleanly</code>.</p>
+</section>
