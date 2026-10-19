@@ -156,7 +156,12 @@ def test_a_null_total_reads_unscored_and_is_not_named_capped(
     crew_home: Path,
 ) -> None:
     """A record with no total has nothing to cap, so no cap may be named."""
-    _write_review(total=None)
+    path = _write_review(total=None)
+    record = json.loads(path.read_text(encoding="utf-8"))
+    absent = review_module.REVIEW_DIMENSIONS[-1]
+    record["scores"].pop(absent)
+    record["absent"] = [absent]
+    path.write_text(json.dumps(record), encoding="utf-8")
     _synthesise_run([A, B], [B, C, D])
 
     review = _selected()

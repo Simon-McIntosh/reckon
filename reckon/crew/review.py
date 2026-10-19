@@ -674,6 +674,34 @@ def review_status_refusal(record: Mapping[str, Any]) -> str | None:
     return None
 
 
+def _score_total(scores: Mapping[str, Any], absent: Iterable[str] = ()) -> int | None:
+    """Sum the six measured dimensions only when every score is present."""
+    if absent:
+        return None
+    values = [scores.get(dimension) for dimension in REVIEW_DIMENSIONS]
+    if any(not isinstance(value, int) or isinstance(value, bool) for value in values):
+        return None
+    return sum(values)
+
+
+def _derive_landed_total(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Use measured scores for a landed review's total on write and read."""
+    result = dict(record)
+    if result.get("rubric") == CLAIMS_RUBRIC:
+        return result
+    scores = result.get("scores")
+    total = (
+        _score_total(scores, result.get("absent") or ())
+        if isinstance(scores, Mapping)
+        else None
+    )
+    reported = result.get("total")
+    if reported is not None and reported != total:
+        result.setdefault("reviewer_total", reported)
+    result["total"] = total
+    return result
+
+
 def parse_review(
     text: str, *, record: Mapping[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -837,7 +865,7 @@ def parse_review(
         total = None
     else:
         status = "parsed"
-        total = sum(scores.values()) if scores and not absent else None
+        total = _score_total(scores, absent)
     item_aggregate = None if absent_items else len(item_verdicts)
     record = {
         "status": status,
@@ -2452,6 +2480,9 @@ def store_review(
     record, so storing it would file a review that every consumer reads as
     absent while it sits on disk.
 
+    A landed record's total is derived from its six scores before writing;
+    a different reviewer-supplied total is kept as ``reviewer_total``.
+
     The added-failure derivation is not applied here. Records are annotated
     when they are read, from the reviewed run's own manifest, so a record may be
     written by a caller with no access to that manifest — a review worker
@@ -2490,6 +2521,7 @@ def store_review(
     if not record.get("timestamp"):
         record = dict(record)
         record["timestamp"] = datetime.now(UTC).isoformat()
+    record = _derive_landed_total(record)
     if base_sha and head_sha:
         path = review_path(
             project,
@@ -3831,6 +3863,7 @@ def read_review(
 
     A record filed under another run id is still returned when its content
     names this run, carrying :data:`MISFILED_KEY`; see :func:`stored_record`.
+    The six-score total is derived even for an older record that omitted it.
     The returned record is annotated with the failures the reviewed run's own
     gate logs added, and its total is capped when those failures were not
     retired by name; see :func:`annotate_review_of_run`. The stored file is not
@@ -3846,7 +3879,7 @@ def read_review(
     )
     if record is None:
         return None
-    return annotate_review_of_run(record, reviewed_run_id)
+    return annotate_review_of_run(_derive_landed_total(record), reviewed_run_id)
 
 
 def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
