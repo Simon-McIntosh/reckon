@@ -13,6 +13,7 @@ from collections.abc import Mapping
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from reckon._plan_html import derive_fleet_impl_imputing_effort
 from reckon.lifecycle import COMPLETED_STATUSES
 
 _ACTIVITY_WINDOW_DAYS = 30
@@ -107,6 +108,14 @@ def _status_counts(inventory: list[dict]) -> dict[str, int]:
     return counts
 
 
+def _progress(inventory: list[dict]) -> float | None:
+    """The project's progress, from the fleet roll-up over its plans."""
+
+    return derive_fleet_impl_imputing_effort(
+        item for item in inventory if _is_actionable_plan(item)
+    )
+
+
 def _last_edited(inventory: list[dict]) -> str:
     stamps = [str(item["edited"]) for item in inventory if item.get("edited")]
     return max(stamps) if stamps else ""
@@ -179,6 +188,7 @@ def compute_project_row(
         "project": project,
         "path": str(docs_dir),
         "plans_count": plans_count,
+        "progress": _progress(inventory),
         "active": counts["active"],
         "blocked": counts["blocked"],
         "pending": counts["pending"],
