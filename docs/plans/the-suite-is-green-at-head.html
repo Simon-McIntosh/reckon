@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="415">
+<meta name="plan-version" content="416">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1943,6 +1943,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s26" data-id="c-close-s26" data-who="reckon-build" data-when="2026-10-19T11:40:00Z">
     <div class="r-comment-body"><p>§26 landed: the in-process handoff case scrubs the suite's own harness identity, so it passes on a compute node instead of streaming to the timeout; merged as <code>9186c2cd8</code>, review 98/120. <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed.html#the-host-handoff-test-runs-the-same-on-a-compute-node">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s26" data-id="c-run-r-20261019T085956924678-the-host-handoff-test-runs-the-same-on-a-compute-node" data-who="reckon-build" data-when="2026-10-19T09:35:34.567Z">
+    <div class="r-comment-body"><p>the host-handoff case no longer reads the ambient harness: the reloaded-follower test ran crew follow in-process and inherited whatever RECKON_/CLAUDE_/CODEX_ identity the suite was launched under, so an ambient CODEX_SESSION_ID made it resolve a codex harness, find no host, and stream to the pytest timeout; a new _isolated_harness_env helper scrubs those variables exactly as _follower_env does for the subprocess cases and the case arms lifetime=8s so a streamer fails naming the missing handoff line; 5 passed / 5 in an exclusive all_debug job on 98dci4-clu-3143 under CODEX_SESSION_ID, 1 passed on the fleet node, negative control red at 15.37s EXIT=1 naming the missing line.</p></div>
 </div>
 </section>
 </main>
