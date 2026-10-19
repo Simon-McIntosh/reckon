@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -333,6 +333,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-19T17:40:00Z">
     <div class="r-comment-body"><p>§4 landed: <code>crew complete --land</code> promotes, merges the reviewed head, checks markers survived, pushes and releases, through <code>land_merge</code>'s loop with a verify seam (commits <code>f3f485f83</code>..<code>b57fb26de</code>). <code>crew merge</code> stays: 66 of 102 recent merges landed a head no run produced. <a href="/reckon/evidence/archive/the-crew-surface-is-one-tool-and-a-few-verbs-landed.html#s4">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261019T143650682729-cso-one-call-lands-a-run" data-who="reckon-build" data-when="2026-10-19T17:24:09Z">
+    <div class="r-comment-body"><p>crew complete --land promotes a finished run and lands it in one call. One landing loop serves both callers: reckon/crew/merge.py&#x27;s land_merge takes a verify callback that runs once per attempt, after the merge is built and before the branch moves, and land is the thin caller that hands its marker check through it, so the pinned-HEAD build, the index.lock retry, the --ff-only move and the push exist once. The loop builds the merge out of objects (merge-tree, then commit-tree) so the shared index and the primary branch are untouched until one --ff-only step. The marker check is the seam: the merged tree must carry a marker the change introduced and lack any marker it removed, and a caller that refuses raises from the loop with nothing moved and nothing pushed. Markers are read from the head&#x27;s diff against the merge base of the branch before the merge, so the promotion&#x27;s own ledger commits are not attributed to the run&#x27;s change. After the push the worktree is released through the existing _release_after_promotion, which turns a withheld tree into a removal: promotion&#x27;s own release runs before the merge and withholds, and the landing&#x27;s second release runs once the head is an ancestor and removes. Each step reports under steps (promote, land, release); a failed step stops the call and names the command that resumes it. No tombstone is registered by this node.</p></div>
 </div>
 </section>
 </main>
