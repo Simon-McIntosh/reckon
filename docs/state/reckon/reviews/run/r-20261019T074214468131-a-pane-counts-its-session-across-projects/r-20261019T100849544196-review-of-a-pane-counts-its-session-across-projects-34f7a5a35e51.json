@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_a_crashed_producer_is_restarted.py::test_deliberate_stop_is_not_restarted[supervisor-term]"
+  ],
+  "added_failures_note": "Derived from the reviewed run's own two arms (baseline_suite importers-base.log at e8c804a98: 8 failed/411 passed; after_suite importers-head.log at a21ac3bd2: 8 failed/411 passed). The arm failure sets differ by one id each: this id is head-only and tests/test_follower_freshness.py::test_failed_reexec_reports_once_and_keeps_the_registration is base-only. The manifest attributes this id as a parallel-run flake under retry_failures and the five-alone logs bear that out (five-alone.log red in 1 of 5 runs at head, five-alone-base.log red at base too), so the change adds no failure in substance; the raw arm delta is recorded here as the one id, not as a zero, because that is what the two gate logs support.",
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3435",
+    "reckon/crew_follow_commands.py:3630",
+    "reckon/crew/recovery.py:424"
+  ],
+  "completed_at": "2026-10-19T10:21:37.234Z",
+  "dispatched_at": "2026-10-19T10:09:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": 2130,
+      "severity": "follow-on",
+      "text": "own = watch_lock_path(project).with_suffix(\".events\") re-derives the events-file path that reckon/crew/run_paths.py:31 already owns as watch_stream_path, and WATCH_EVENTS_SUFFIX at :2067 restates the \".events\" literal, so the same path now has two spellings that can drift."
+    },
+    {
+      "file": "tests/test_a_pane_counts_its_session_across_projects.py",
+      "line": 132,
+      "severity": "follow-on",
+      "text": "the project-C clause asserts the total stays 8 rather than 13 so that C's older entry of 5 is not read, but C's producer is never published (only A and B at :120-121), so _other_project_producer_is_live excludes C whatever _newest_session_event returns; the assertion cannot redden on a regression in the newest-transition selection it names, though that selection is guarded through B's 0 transition at :176-178."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T074214468131-a-pane-counts-its-session-across-projects/logs/head-new-test.log",
+      "line": 1,
+      "severity": "follow-on",
+      "text": "the changed-test gate log's first line names only the command, not the revision and tree a gate log is required to carry, so its 1-passed result cannot be fixed to a commit; every other log in the run names its revision."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T074214468131-a-pane-counts-its-session-across-projects/manifest.md",
+      "line": 11,
+      "severity": "follow-on",
+      "text": "the manifest's tests line records '0 added failures' while its own baseline_suite and after_suite arms differ by one failure id (test_a_crashed_producer_is_restarted.py::test_deliberate_stop_is_not_restarted[supervisor-term]), so the zero rests on the flake attribution recorded in retry_failures rather than on the arm delta the field is derived from."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against e8c804a98; 8398fec58 rewrites _scoped_watch_event and adds the helpers plus the new test, a21ac3bd2 replaces the duplicated tail read with runs._iter_stream_lines_backwards and adds the producer-liveness gate, 47b37818e and 34f7a5a3 add the landing fragment; three paths, all inside the fence.",
+    "done_when": "The done-when is the two-project measure (8w on both a B and an A row, 7w after B's count drops to 0, a project whose newest event has no entry adds nothing, a sessionless follower keeps its project's counts, both figure sets carried on the JSON event) plus a 1w negative control, EXIT= logs, no added importer failure against base, and clean ruff; tests/test_a_pane_counts_its_session_across_projects.py asserts each clause and the manifest records the run, the cohort arms and the two control logs.",
+    "goal": "The goal is that a session-scoped follower's row counters count that session's workers across every project's events file; reckon/crew/recovery_watch.py:2117 adds each other project's newest session-bearing transition and :2061 re-scopes the row, so a row from either project now describes the session's work everywhere.",
+    "manifest": "Read; status complete, commits 8398fec58/47b37818e/a21ac3bd2/34f7a5a3, the changed-test gate (1 passed), machine-readable baseline_suite and after_suite arms, and the negative-control paths; its landing and tests lines carry the '0 added failures' claim while the arms' own delta is one id.",
+    "write_paths": "The declared scope is reckon/crew/recovery_watch.py, tests/test_a_pane_counts_its_session_across_projects.py and the node's landing fragment (plus a granted figures directory); git diff e8c804a98..34f7a5a35 lists exactly the source, the test and the fragment and nothing else."
+  },
+  "justifications": {
+    "durability": "The rendered-figure assertions at tests/test_a_pane_counts_its_session_across_projects.py:129-130 and :162/:178 redden under the two recorded controls, but the project-C clause at :132-137 is confounded by the liveness gate so it cannot fail on the newest-selection regression it names.",
+    "evidence": "The named gate tests/test_a_pane_counts_its_session_across_projects.py measures each done-when clause and its log records 1 passed EXIT=0, but logs/head-new-test.log:1 names no revision or tree and the manifest's '0 added failures' claim is not what its own arms' failure-id sets give.",
+    "fit": "The added symbols carry no plan, sprint or ticket label and their docstrings state the mechanism (reckon/crew/recovery_watch.py:2079-2114), matching the module, but WATCH_EVENTS_SUFFIX at :2067 restates the \".events\" literal reckon/crew/run_paths.py:31 already owns.",
+    "goal_fidelity": "The row's counters now sum the session's entry from every other live project's events file, exactly as the goal states, at reckon/crew/recovery_watch.py:2117 and :2163-2170, with the row's own figures preserved under project_*.",
+    "reuse": "The rewritten _newest_session_event at reckon/crew/recovery_watch.py:2079 now walks each other events file through the owner reckon/crew/runs.py:2093 (_iter_stream_lines_backwards) instead of a private tail read, and _other_project_producer_is_live at :2098 reuses obligation_snapshot.freshness_reading, leaving only one path derivation forked at :2130.",
+    "scope_discipline": "Every path in git diff e8c804a98..34f7a5a35 is one of the node's declared write paths, and the granted figures directory is unused."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: e8c804a989c27707e0663cbe1dfc454c97e01d69\nreviewed_head_sha: 34f7a5a35e515c259ff597cc1e53805004b95ae1\n\nVERDICT goal: the goal is that a session-scoped follower's row counters count that session's workers across every project's events file; reckon/crew/recovery_watch.py:2117 adds each other project's newest session-bearing transition and :2061 re-scopes the row, so a row from either project now describes the session's work everywhere.\nVERDICT done_when: the done-when is the two-project measure (8w on both rows, 7w after B drops to 0, an entry-less project adds nothing, an unscoped follower keeps its project's counts, both figure sets carried) plus a 1w negative control, EXIT= logs, no added importer failure and clean ruff; tests/test_a_pane_counts_its_session_across_projects.py asserts each clause and the manifest records the run, the cohort arms and both control logs.\nVERDICT write_paths: the declared scope is reckon/crew/recovery_watch.py, tests/test_a_pane_counts_its_session_across_projects.py and the node's fragment (plus an unused figures dir); git diff e8c804a98..34f7a5a35 lists exactly those three paths.\nVERDICT manifest: read; status complete, commits 8398fec58/47b37818e/a21ac3bd2/34f7a5a3, the changed-test gate (1 passed), machine-readable baseline_suite/after_suite arms and the negative-control paths.\nVERDICT diff: read commit by commit against e8c804a98; 8398fec58 rewrites _scoped_watch_event and adds the helpers and the test, a21ac3bd2 swaps the duplicated tail read for runs._iter_stream_lines_backwards and adds the liveness gate, 47b37818e and 34f7a5a3 add the fragment; three paths, all inside the fence.\nCALL_SITES: reckon/crew_follow_commands.py:3435, reckon/crew_follow_commands.py:3630, reckon/crew/recovery.py:424\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:2117 and :2163-2170 sum the session's entry from each other live project and preserve the row's own figures under project_*.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_pane_counts_its_session_across_projects.py measures each clause and records 1 passed EXIT=0, but logs/head-new-test.log:1 names no revision and the manifest's zero added-failure claim exceeds what its two arms' failure-id sets give.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff e8c804a98..34f7a5a35 is one of the node's declared write paths and the granted figures directory is unused.\nSCORE durability: 17\nJUSTIFICATION durability: the rendered-figure assertions at tests/test_a_pane_counts_its_session_across_projects.py:129-130 and :162/:178 redden under the two recorded controls, but the project-C clause at :132-137 cannot fail on the newest-selection regression it names.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/recovery_watch.py:2079-2114 follows the module's docstring idiom and carries no plan label, but :2067 restates the \".events\" literal reckon/crew/run_paths.py:31 owns.\nSCORE reuse: 17\nJUSTIFICATION reuse: _newest_session_event at reckon/crew/recovery_watch.py:2079 now extends the owner reckon/crew/runs.py:2093 and _other_project_producer_is_live :2098 reuses obligation_snapshot.freshness_reading, leaving one path derivation forked at :2130.\nFINDING reckon/crew/recovery_watch.py:2130 follow-on: own = watch_lock_path(project).with_suffix(\".events\") re-derives the events-file path reckon/crew/run_paths.py:31 already owns as watch_stream_path, and WATCH_EVENTS_SUFFIX at :2067 restates its \".events\" literal.\nFINDING tests/test_a_pane_counts_its_session_across_projects.py:132 follow-on: the project-C clause cannot redden on a newest-selection regression because C's producer is never published, so the liveness gate masks it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T074214468131-a-pane-counts-its-session-across-projects/logs/head-new-test.log:1 follow-on: the changed-test gate log names no revision or tree, so its result cannot be fixed to a commit.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T074214468131-a-pane-counts-its-session-across-projects/manifest.md:11 follow-on: the manifest records '0 added failures' while its own two arms differ by one failure id, so the zero rests on the flake attribution rather than the arm delta.\n",
+  "review_run_id": "r-20261019T100849544196-review-of-a-pane-counts-its-session-across-projects-34f7a5a35e51",
+  "reviewed_base_sha": "e8c804a989c27707e0663cbe1dfc454c97e01d69",
+  "reviewed_head_sha": "34f7a5a35e515c259ff597cc1e53805004b95ae1",
+  "reviewed_run_id": "r-20261019T074214468131-a-pane-counts-its-session-across-projects",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T10:22:00+00:00"
+}
