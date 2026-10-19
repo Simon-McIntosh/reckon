@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -541,7 +541,10 @@
     <div class="r-comment-body"><p>reckon:the-fleet-node-stays-in-service#s6 independent review of r-20261019T064133037110 at head 0da8545c2: scores goal_fidelity 12, evidence 14, scope_discipline 19, durability 8, fit 14, reuse 4; added_failure_count 0 over the reviewed run's own gate arms (baseline 871311cd8 and head f9f72c6fe, each 120 passed 1 skipped); two blocking findings (dispatch_launch.py:1135 duplicates the batch scheduler token so the over-ceiling route cannot launch; placement.py:291 re-implements summary.py:132's option reader and disagrees on the '--mem 64G' spelling) and five follow-on findings.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261019T080914102040-review-of-a-worker-step-carries-a-memory-bound-1315da566f09" data-who="reckon-build" data-when="2026-10-19T08:29:50.978Z">
-    <div class="r-comment-body"><p>reckon:the-fleet-node-stays-in-service#s6 — independent review of run r-20261019T064133037110-a-worker-step-carries-a-memory-bound at head 1315da56 (base 871311cd) is stored as a parsed record scoring goal_fidelity 15, evidence 13, scope_discipline 12, durability 13, fit 18, reuse 18, added failures 0, with 2 blocking and 4 follow-on findings; the blocking pair is the own-job argv (dispatch_launch.py:1143 prepends the resolved path to an own_job_prefix that already leads with the literal &quot;sbatch&quot;, so the token is read as the batch script) and the stream loss from &quot;sbatch --wait --wrap&quot; (placement.py:467); the reuse finding of the prior review is closed.</p></div>
+    <div class="r-comment-body"><p>reckon:the-fleet-node-stays-in-service#s6 — independent review of run r-20261019T064133037110-a-worker-step-carries-a-memory-bound at head 1315da56 (base 871311cd) is stored as a parsed record scoring goal_fidelity 15, evidence 13, scope_discipline 12, durability 13, fit 18, reuse 18, added failures 0, with 2 blocking and 4 follow-on findings; the blocking pair is the own-job argv (dispatch_launch.py:1143 prepends the resolved path to an own_job_prefix that already leads with the literal "sbatch", so the token is read as the batch script) and the stream loss from "sbatch --wait --wrap" (placement.py:467); the reuse finding of the prior review is closed.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261019T083305739424-review-of-a-worker-step-carries-a-memory-bound-4d02a2224de6" data-who="reckon-build" data-when="2026-10-19T08:57:24.349Z">
+    <div class="r-comment-body"><p>review of run r-20261019T064133037110-a-worker-step-carries-a-memory-bound at head 4d02a2224de61ce91aba348275c816d3c68eae17 (base 871311cd82f1bcf70282fa3a36eb66eee5737dd8): parsed, scores goal_fidelity 15, evidence 17, scope_discipline 13, durability 14, fit 17, reuse 12, added_failure_count 0; one blocking finding (dispatch_launch.py:1150 clears the plan&#x27;s stdin on the over-ceiling route, so a &gt;48 GB worker launches with no prompt) and four follow-ons.</p></div>
 </div>
 </section>
 </main>

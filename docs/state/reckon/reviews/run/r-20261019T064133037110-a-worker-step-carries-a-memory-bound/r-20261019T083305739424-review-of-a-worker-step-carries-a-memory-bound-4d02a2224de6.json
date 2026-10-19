@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-19T08:57:24.349Z",
+  "dispatched_at": "2026-10-19T08:35:37Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "1150",
+      "severity": "blocking",
+      "text": "blocking: dataclasses.replace(..., stdin_text=\"\") clears the plan's stdin on the over-ceiling route. Every dialect inherits stdin_prompt=True (reckon/_backends.py:1021), so _backends.py:2230 puts the worker's prompt on stdin (stdin_text=prompt), and the launch feeds it with input=plan.stdin_text (reckon/crew/resumption.py:567); replacing it with \"\" means a worker declared above 48 GB launches with an empty prompt, so the ceiling route cannot deliver a working worker and the goal's own-job clause is inert in practice. The command is now passed as argv to srun, which forwards the caller's stdin to the task, so the text should be preserved as the normal step branch leaves it. The node's tests cannot catch this because _plan() carries stdin_text=\"\" and the live check ran /bin/echo."
+    },
+    {
+      "file": "tests/test_a_worker_step_carries_a_memory_bound.py",
+      "line": "81",
+      "severity": "follow-on",
+      "text": "follow-on: the default-bound assertion compares argv against f\"--mem={placement.DEFAULT_STEP_MEMORY_GB}G\", the same constant the code under test reads at reckon/crew/placement.py:434-438 (also at :93 and :208), so both sides move together and this assertion stays green if the default leaves 24 GB. It is rescued by tests/test_fleet_node.py:480 and :492, which hardcode \"--mem=24G\" against the composed argv, so the value is independently pinned there; the assertion here should still name an independent 24 GB."
+    },
+    {
+      "file": "tests/test_a_worker_step_carries_a_memory_bound.py",
+      "line": "115",
+      "severity": "follow-on",
+      "text": "follow-on: the ceiling-routing assertions compare against placement.debug_partition() and placement.DEBUG_PARTITION_SUFFIX on both sides (:115-116), so a regression that changed the _debug suffix or the partition name would move the code and the assertion together and never redden; the partition this route lands on is observed only in the live check log, not pinned by a test."
+    },
+    {
+      "file": "reckon/crew/summary.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: reckon/crew/summary.py is outside the node's recorded write_paths (the dispatch fence names placement.py, fleet_node.py, fleet_migrate.py, dispatch_launch.py, project_setup_commands.py and two test files only) and is flagged by check-manifest; the edit was directed by the coordinator's resume advice to make one reader the owner and have summary.py call it, so the record needs its write scope widened rather than the change reverted."
+    },
+    {
+      "file": "reckon/crew/placement.py",
+      "line": "328",
+      "severity": "follow-on",
+      "text": "follow-on: memory_figure_bytes (with _MEMORY_UNIT_BYTES) parses a scheduler memory string to a size, the capability reckon/crew/fleet_node.py:261 parse_memory_gb (with _MEMORY_UNIT_MB) already owns for the same K/M/G/T vocabulary and the same bare-number-means-megabytes rule; they differ only in return unit (bytes vs whole GB) and tolerance, so the parser is duplicated rather than shared. The change does consolidate the other duplicate \u2014 summary.py's _option_values and _as_bytes now call placement.option_values and placement.declared_memory_bytes \u2014 so the net count of parsers is unchanged."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that every fleet worker step is placed with an explicit memory bound through placement.step_prefix, 24 GB by default and 48 GB at most inside the fleet allocation; reckon/crew/placement.py:436-438 states --mem on every step whose options carry none, and reckon/crew/dispatch_launch.py:1127 routes a >48 GB declaration off the allocation, so the goal's two clauses are implemented.\nVERDICT done_when: the done-when names (a) a placed argv carrying --mem=24G by default, (b) a bound declared through dispatch --set, (c) a >48 GB declaration routed to its own job on a *_debug partition, (d) placement_argv folded into step_prefix, (e) a probe step whose cgroup memory.max equals its bound and the focused tests run in place; tests/test_a_worker_step_carries_a_memory_bound.py:76-104,142-177 assert (a)-(d), logs/probe-memory-max.log records step_user_memory.max=1073741824 for --mem=1G, and logs/focused-gate.log records 132 passed 1 skipped EXIT=0 in place on 98dci4-clu-2002 job 1281970, so the gate asserts each named clause.\nVERDICT write_paths: read the dispatch fence (reckon/crew/placement.py, fleet_node.py, fleet_migrate.py, dispatch_launch.py, project_setup_commands.py, tests/test_fleet_node.py, tests/test_a_worker_step_carries_a_memory_bound.py, the evidence fragment and the figures directory); the diff also changes reckon/crew/summary.py and tests/test_fleet_migrate_cutover.py, which are outside the dispatch fence though both were directed by the coordinator's resume advice.\nVERDICT manifest: read; it records commits 79f34399..4d02a222, the focused gate at 808f88ea as \"132 passed, 1 skipped\" with EXIT=0 in place on 98dci4-clu-2002 job 1281970, both arms at \"120 passed, 1 skipped\", added failures 0, both prior review findings acted, and its own scope_discrepancy note about summary.py.\nVERDICT diff: read commit by commit against 871311cd; eight commits and nine files, 849 insertions and 57 deletions against the base, and the over-ceiling route's stdin clearing sits in the last source commit 808f88ea.\nCALL_SITES: reckon/crew/fleet_node.py:374, reckon/crew/dispatch_launch.py:1127, reckon/crew/dispatch_launch.py:1138, reckon/crew/dispatch_launch.py:1145, reckon/crew/dispatch_launch.py:1149, reckon/crew/dispatch_launch.py:1165, reckon/crew/fleet_migrate.py:238, reckon/crew/fleet_migrate.py:546, reckon/crew/fleet_migrate.py:579, reckon/crew/fleet_migrate.py:1004, reckon/crew/fleet_migrate.py:1104, reckon/crew/fleet_migrate.py:1191, reckon/project_setup_commands.py:275, reckon/crew/summary.py:315, reckon/crew/summary.py:368\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/placement.py:436-438 bounds every step and dispatch_launch.py:1127 routes a >48 GB declaration to its own debug job, but the route clears the plan's stdin at dispatch_launch.py:1150, so a worker placed above the ceiling launches with no prompt.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/probe-memory-max.log shows step_user_memory.max=1073741824 for a --mem=1G step, logs/own-job-live-check.log shows job 1289800 of its own on all_debug with stdout returned, and logs/focused-gate.log records 132 passed 1 skipped EXIT=0 in place at 808f88ea, so the gate measures each clause of the done-when.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: the diff changes reckon/crew/summary.py, outside the dispatch fence's write paths.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_fleet_node.py:492 hardcodes \"--mem=24G\" so the default is pinned independently of placement.DEFAULT_STEP_MEMORY_GB, but tests/test_a_worker_step_carries_a_memory_bound.py:81 asserts against that same constant and nothing covers the stdin the over-ceiling route clears at dispatch_launch.py:1150.\nSCORE fit: 17\nJUSTIFICATION fit: placement.py:436 composes through the module's existing RESERVATION_* vocabulary and the added names (STEP_MEMORY_CEILING_GB, own_job_prefix, declared_memory_bytes) state mechanism, with no plan or ticket label in the diff and no added ruff finding against the base.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew/summary.py:315 and :368 now call placement.option_values and placement.declared_memory_bytes, removing the duplicate reader the prior review named, but reckon/crew/placement.py:328 memory_figure_bytes re-implements the scheduler-memory parsing that reckon/crew/fleet_node.py:261 parse_memory_gb already owns.\nFINDING reckon/crew/dispatch_launch.py:1150 blocking: dataclasses.replace(..., stdin_text=\"\") clears the plan's stdin on the over-ceiling route; every dialect inherits stdin_prompt=True (reckon/_backends.py:1021) so the worker's prompt is on stdin (reckon/_backends.py:2230) and fed via input=plan.stdin_text (reckon/crew/resumption.py:567), so a worker declared above 48 GB launches with an empty prompt and the ceiling route cannot deliver a working worker.\nFINDING tests/test_a_worker_step_carries_a_memory_bound.py:81 follow-on: the default-bound assertion compares against placement.DEFAULT_STEP_MEMORY_GB, the same constant the code reads, so the two sides move together and the assertion stays green if the default leaves 24 GB.\nFINDING tests/test_a_worker_step_carries_a_memory_bound.py:115 follow-on: the ceiling-routing partition assertion compares against placement.debug_partition() and placement.DEBUG_PARTITION_SUFFIX on both sides, so a change to either would not redden it.\nFINDING reckon/crew/summary.py:1 follow-on: reckon/crew/summary.py is outside the node's recorded write_paths and is flagged by check-manifest; the change was directed by the coordinator's resume advice, so the record needs its write scope widened rather than the change reverted.\nFINDING reckon/crew/placement.py:328 follow-on: memory_figure_bytes duplicates the scheduler-memory parsing owned by reckon/crew/fleet_node.py:261 parse_memory_gb, differing only in return unit and tolerance.\n",
+  "review_run_id": "r-20261019T083305739424-review-of-a-worker-step-carries-a-memory-bound-4d02a2224de6",
+  "reviewed_base_sha": "871311cd82f1bcf70282fa3a36eb66eee5737dd8",
+  "reviewed_head_sha": "4d02a2224de61ce91aba348275c816d3c68eae17",
+  "reviewed_run_id": "r-20261019T064133037110-a-worker-step-carries-a-memory-bound",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "reuse": 12,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T08:57:25.681593+00:00"
+}
