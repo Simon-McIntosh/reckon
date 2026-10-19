@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It changes how a node&#x27;s own time budget is stated and accounted; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;deferred&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;deferred&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s2&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s3&quot;, &quot;test-time-is-not-the-nodes-time#s5&quot;], &quot;s4&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s2&quot;], &quot;s5&quot;: [&quot;test-time-is-not-the-nodes-time#s3&quot;]}">
   <title>Test Time Is Not The Node's Time | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="26">
+<meta name="plan-version" content="27">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -105,7 +105,7 @@
 <p>The done-when, write paths and negative control are written once the decision is locked. The section is then reviewed before it is built.</p>
 
     <h2 id="s5">A worker reads its time left without converting a time zone</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> On 2026-10-19 the power_convertor run <code>r-20261019T150700496206-cs1-fast-discharge-playback</code> stopped an hour early on its local-lane model. Its prompt stated "Launched 2026-10-19T15:07:32Z UTC; deadline 2026-10-19T17:07:32Z" and told it to check the time with <code>date -u</code>. Its stream shows that it did, three times: the last at 15:43:33 UTC. Later it wrote "Time fence is breached (deadline 17:07:32Z, now 18:07Z)" with no <code>date</code> call since the one at 15:43. It stopped and wrote a blocked manifest. When challenged it ran <code>date -u; date</code>, which printed <code>16:12:20 UTC</code> and <code>18:12:20 CEST</code>. It then wrote "I misread local CEST timestamps as UTC — real time is 16:12Z, so 55 minutes remain". File modification times and log stamps on this host print in its local zone, two hours ahead of UTC. A worker that compares one of them with a UTC deadline is wrong by the zone offset. Telling it which clock to read did not stop that.</p>
 <p><strong>Deliverable.</strong> The deadline statement gives the worker a command that answers how much time is left, so it never compares two clock readings.</p>
 <ul>
