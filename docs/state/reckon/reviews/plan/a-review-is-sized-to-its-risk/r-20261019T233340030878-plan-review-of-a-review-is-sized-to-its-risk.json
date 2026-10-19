@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T23:43:30.963Z",
+  "dispatched_at": "2026-10-19T23:34:25Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html:197",
+      "id": "reasoning-1",
+      "reason": "\u00a712's deliverable and done-when synthesise the folded record in a temporary crew home, so the mechanism is well-founded whether or not that particular fold was ever recorded; the unverified clause weakens only the Why narrative, not any node's work.",
+      "text": "\u00a712's Why asserts \"The coordinator recorded the finding as folded into the run's own node\", but the cited run's two stored review records (`~/.config/reckon/crew/reviews/reckon/r-20261019T201233968744-a-tier-none-run-owes-no-review.at-1571d941\u2026.json` and `.at-8669dc872\u2026.json`) carry no `finding_dispositions` key, and the run's live pointer carries no disposition record, so the fold the section's remedy rests on is not evidenced on disk",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "eccf394681bfc4adaefbf4798f3ff12a09c6a6233c27d0ef59fe62de7ebd892e",
+  "plan_slug": "a-review-is-sized-to-its-risk",
+  "plan_version": 165,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T233340030878-plan-review-of-a-review-is-sized-to-its-risk",
+  "reviewed_blob_sha": "55b52b92958c7f5fd2b3cf35cc3a1636c8696df5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew_run_commands.py` (the widen command and `_widen_eligibility`), `reckon/crew/review_dispositions.py` (the `folded` disposition kind and writers), and `reckon/crew/recovery_classification.py` (the promotion-command composer at 774-782) all resolve; the quoted widen docstring is verbatim; the `plan-commits` and `plan-artifacts` metas resolve.",
+    "done_when": "pass \u2014 \u00a712's done-when names a measurable outcome (the new path in the pointer's write paths, the grant naming the disposition) and three declared negative controls: an exempted-not-folded run refused, a folded-but-live-worker run refused, and a mutation dropping the folded-disposition check under which the first case is refused.",
+    "evidence_paths": "pass \u2014 \u00a712's logs sit under the run directory and end in `EXIT=`, durable paths, not a node-local temp or a session scratchpad.",
+    "naming": "pass \u2014 \u00a712 introduces no plan label, ticket number or version tag; `folded` is an existing disposition kind and `crew widen` an existing verb.",
+    "reasoning": "pass \u2014 the stated root cause matches the code (`WIDEN_REFUSING_MANIFEST_STATUSES = {\"complete\",\"failed\"}` in crew_run_commands.py:1067 and the docstring's \"a finished run has no scope decision outstanding\" are exactly what \u00a712 reports); the mechanism (read the newest review's folded finding, relax the complete-status and phase refusals only for it, keep the live-worker refusal) is capable of producing the done-when; and the caller runs on the real path \u2014 the coordinator's `reckon crew widen` against the run pointer, which is the command \u00a712 changes.",
+    "single_goal": "pass \u2014 \u00a712 carries one deliverable (widen accepts a stopped complete run whose newest review carries a folded finding), and the `--accept-path` mention is context, not a second scope.",
+    "wiring": "pass \u2014 \u00a712 carries `data-links=\"\"` and needs no section edge: it edits `crew widen`'s eligibility in place."
+  },
+  "section_digests": {
+    "_document": "4ab82d9fda1fad251ce5ef63ebbda849c3ec1bf1b417a6cb05414cb8ef1d1a42",
+    "s1": "1bca4570a6dc141df8190260147c4603fdbd4e237bbd0fa1f635f166cdf5637b",
+    "s10": "a07df53b22b91585addeb98d5e88c71b2cd22d03d1da30561685f96e03a0aa2e",
+    "s11": "6bbc86e3fa4868ea28a6bedc4cfe44870bae0e69abb21473626929baf05d9b00",
+    "s12": "1931543f8774db891c6e51b885d5953ddc9f2d3b93d870f9c4f9d4a2156593c4",
+    "s2": "d87e94711b1191be6062f6581f0bf3c2f7793876a327c35be59e3dd37bbe72c8",
+    "s3": "865c2c7d189405d6ba0566cebd8df5e459211cc93a64a9332de51cff756b47ac",
+    "s4": "834dc20a74581e06fc6c6b99a07ea7b628c9c36d7c390cee1b4e599eeec7b070",
+    "s5": "dd9455e66ea742a997a12400b194e02c6557b19217a06db0a58f82d7d82b8fde",
+    "s6": "cb4e838e28a346993a653862da66ac934c2c1b8e7e1aa1d7cb23c7082672067d",
+    "s7": "044f93aa0d0fd0aed5a7b5b535f5b7a2efacfc541ef12f41a04af14289440d7c",
+    "s8": "a12e7aff5d1cfd541706cc743c3d78ed9c0a96dba6af2c4f8b6dbb2309ea9582",
+    "s9": "3cc2a52825983e24d6bcb3f342f8f21cbd91f2144772c41418b9a0362bf5da37"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T23:45:57.816655+00:00"
+}
