@@ -1,0 +1,37 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-19T06:19:37.666Z",
+  "dispatched_at": "2026-10-19T06:09:13Z",
+  "findings": [
+    {
+      "file": "population-job.sbatch",
+      "line": "90",
+      "severity": "follow-on",
+      "text": "follow-on: SUMMARY_RE matches the '=== FAILURES ===' banner and the 'short test summary info' header as well as pytest's final summary line, and run_arm appends EXIT= unconditionally, so a truncated arm log (a run that died mid-suite) would pass the population-job.sbatch:94-95 guards and its partial FAILED set be read by added_failures_from_gate_logs as a complete measured set; both arms here carried the real final summary, so this does not hold the node."
+    },
+    {
+      "file": "population-job.sbatch",
+      "line": "53",
+      "severity": "follow-on",
+      "text": "follow-on: the base-absent set is the single hardcoded name $NEWFILE rather than derived from the base tree, so the brief's 'the same list minus any file absent from the base tree' holds only while exactly one candidate-added file exists; a second such file would be passed to pytest at base and abort the job at population-job.sbatch:94 instead of being subtracted (verified: at f339f0eda exactly one list entry is absent)."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure whether merging the reload-image-carries-catalogue head onto main adds a failing test id over its importer population; report.md records the two-arm measurement (base f339f0eda, candidate 8256bf3be) over the 83-file list, which is that measurement.\nVERDICT done_when: the done_when requires report.md carrying each arm's counts and log path, one exclusive sbatch job, arm logs starting rev=/host/command and ending EXIT= with reckon.__file__ under each arm's checkout, and added ids from added_failures_from_gate_logs; all are present in report.md, gate-base.log:1-4, gate-candidate.log:1-4 and added-ids.txt.\nVERDICT write_paths: the node's declared scope is the report directory .../crew/reports/reckon/the-monitor-shows-the-work-it-watches/reload-carries-catalogue-population-at-merge; its only changed_path is report.md inside it, and its script and logs sit under the run directory its host line grants.\nVERDICT manifest: read in full; it records status complete, both arms' pass/fail counts with log paths, added failing ids none, the absent-at-base file, the pre-existing-failure attribution for tests/test_picker_joins_codex_by_lane.py::test_document_backed_reading_carries_its_own_provenance, and no negative_control_log.\nVERDICT diff: the node committed nothing (git log f339f0eda..HEAD empty, worktree clean), so the product diff is empty and the artefact under review is the measurement itself - report.md plus the job script and arm logs - consistent with its brief stating it changes no product code.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: report.md records both arms over the population (82 files at base, 83 at candidate) in exclusive job 1289644, which is the goal's measurement.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-base.log ending '1 failed, 979 passed, 1 skipped' and gate-candidate.log ending '1 failed, 981 passed, 1 skipped' carry rev=/host/module/cwd/command headers and EXIT=, and added-ids.txt:1 records added_count=0 from reckon/crew/review.py:2172.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the only changed_path is report.md inside the declared report directory, with the job script and logs under the run directory its host line grants; nothing under reckon/ or tests/ changed.\nSCORE durability: 15\nJUSTIFICATION durability: population-job.sbatch:93-96 aborts when an arm log is missing or lacks a summary and derivation-control.log shows the reader reporting an added id, but no persistent test guards the measure and the summary guard at population-job.sbatch:90 matches an intermediate banner.\nSCORE fit: 16\nJUSTIFICATION fit: the script and report follow the established population-measure shape and a names sweep over report.md, population-job.sbatch and manifest.md returns no plan label, ticket reference or attribution.\nSCORE reuse: 20\nJUSTIFICATION reuse: population-job.sbatch:98-115 calls reckon/crew/review.py:2172 added_failures_from_gate_logs rather than re-implementing it, so the landed measure extends the owner it needs and adds no definition of its own.\nFINDING population-job.sbatch:90 follow-on: SUMMARY_RE matches the '=== FAILURES ===' banner and the 'short test summary info' header as well as pytest's final summary line, and run_arm appends EXIT= unconditionally, so a truncated arm log (a run that died mid-suite) would pass the population-job.sbatch:94-95 guards and its partial FAILED set be read by added_failures_from_gate_logs as a complete measured set; both arms here carried the real final summary, so this does not hold the node.\nFINDING population-job.sbatch:53 follow-on: the base-absent set is the single hardcoded name $NEWFILE rather than derived from the base tree, so the brief's 'the same list minus any file absent from the base tree' holds only while exactly one candidate-added file exists; a second such file would be passed to pytest at base and abort the job at population-job.sbatch:94 instead of being subtracted (verified: at f339f0eda exactly one list entry is absent).",
+  "review_run_id": "r-20261019T060829668551-review-of-reload-carries-catalogue-population-at-merge-f339f0eda7fb",
+  "reviewed_base_sha": "f339f0eda7fb778034e050fea9d96ba35cb28e56",
+  "reviewed_head_sha": "f339f0eda7fb778034e050fea9d96ba35cb28e56",
+  "reviewed_run_id": "r-20261019T054523537680-reload-carries-catalogue-population-at-merge",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T06:17:31.505250+00:00"
+}
