@@ -34,19 +34,27 @@
 
   <p id="epw-skills-cite-accepted-ops-harness">
     The extract-and-apply harness in <code>tests/test_skill_contracts.py</code>
-    is widened rather than twinned. <code>_documented_op_objects</code> now
-    reads every op object a skill or <code>AGENTS.md</code> shows in a fenced
-    block or an inline code span, carrying the enclosing
-    <code>edit_plan(...)</code> call's <code>doc_type</code> and <code>slug</code>
-    so an example written against a sprint or a review resource is applied to
-    that resource. Each op is applied and the refusal, if any, must not be for
-    its path: <code>_refusal_is_for_path</code> recognises an unsupported path
-    or a computed field, and tolerates a refusal for a missing target the
-    synthesized fixture does not carry. A second test,
+    is widened rather than twinned, and reaches the store through a single path.
+    <code>_documented_op_objects</code> reads every op object a skill or
+    <code>AGENTS.md</code> shows in a fenced block or an inline code span,
+    carrying the enclosing <code>edit_plan(...)</code> call's
+    <code>doc_type</code> and <code>slug</code> so an example written against a
+    sprint or a review resource is applied to that resource. Each op is applied
+    and the refusal, if any, must not be for its path:
+    <code>_refusal_is_for_path</code> recognises an unsupported path or a
+    computed field, and tolerates a refusal for a missing target the synthesized
+    fixture does not carry. A second test,
     <code>test_the_op_reference_set_row_documents_supported_paths</code>, parses
     the <code>reckon-edit</code> op-reference <code>set</code> row into its plan
     and index paths and applies each — plan paths to a synthesized plan, index
-    paths to the project index — requiring the same.
+    paths to the project index — requiring the same. Both sweeps apply their ops
+    through <code>_apply_example</code> alone, which now takes the resource's
+    <code>slug</code> and <code>doc_type</code>: the duplicated second helper
+    was retired, so a change to how the fixture's version is read lands once.
+    The op-object sweep also carries a positive floor — at least one op object
+    from under <code>skills/</code> — because a sweep over an empty corpus
+    applies nothing and reports green; pointing the extractor at an empty
+    directory now fails the run, naming the empty source.
   </p>
 
   <p id="epw-skills-cite-accepted-ops-evidence-tail">
@@ -55,13 +63,16 @@
     at the node head: 74 passed, 1 failed. The single failure,
     <code>test_every_registered_crew_verb_is_documented_or_exempt</code>, is
     present at the base revision and is another node's in-flight work, so the
-    delta against the base is zero added failures. The negative control restores
-    <code>impl</code> to the <code>set</code> row and the widened contract test
-    then fails, naming <code>skills/reckon-edit/SKILL.md</code>. A grep of the
-    five files for an instruction to set or advance <code>impl</code> finds the
-    instruction at the base revision (five sites) and none at the head. Ruff
-    reports the base file's one pre-existing <code>RUF005</code> and its
-    pre-existing format-dirty state; the change adds neither a finding nor a
-    format violation.
+    delta against the base is zero added failures. Two negative controls hold
+    the harness honest. Restoring <code>impl</code> to the <code>set</code> row
+    makes the widened contract test fail, naming
+    <code>skills/reckon-edit/SKILL.md</code>. Pointing the op-object extractor at
+    an empty directory makes the floor assertion fail, naming the empty source,
+    so the sweep cannot pass vacuously. A grep of the five files for an
+    instruction to set or advance <code>impl</code> finds the instruction at the
+    base revision (five sites) and none at the head. Ruff reports the base
+    file's one pre-existing <code>RUF005</code> and its pre-existing
+    format-dirty state; the change adds neither a finding nor a format
+    violation.
   </p>
 </section>
