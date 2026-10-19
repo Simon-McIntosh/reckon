@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="One rule, fence_writable_roots, states which declared roots stay writable inside the fence; the fence's grant loop uses it and the fenced dialect is handed only those, so a sealed delivery store is never named writable to codex's own sandbox.">
   <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
   <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s16">
-  <meta name="plan-commits" content="9e9bd575,ee6bcfd9">
+  <meta name="plan-commits" content="9e9bd575,ee6bcfd9,a6046b43">
   <meta name="plan-recorded-at" content="2026-10-19">
   <title>A fenced codex review is told only the roots the fence leaves writable — evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -26,7 +26,9 @@
     scratch-seal skip it also carried is unchanged — so the rule has one owner and the fence's binds
     do not change. In <code>reckon/_backends.py</code>, <code>launch_plan</code> hands
     <code>fence_writable_roots(writable_directories)</code> to the dialect for a fenced run and the
-    unfiltered set for an unfenced one. No bind was added and no seal changed.
+    unfiltered set for an unfenced one. No bind was added and no seal changed. One existing assertion
+    in <code>tests/test_sandbox_delivery.py</code> recorded the pre-change expectation for a fenced
+    launch and moved with it.
   </p>
   <p id="a-fenced-codex-review-names-only-writable-roots-measure">
     <code>tests/test_a_fenced_codex_review_names_only_writable_roots.py</code> is new and passes 4/4.
@@ -41,12 +43,17 @@
     <code>--add-dir</code> named.
   </p>
   <p id="a-fenced-codex-review-names-only-writable-roots-gate">
-    The named gate over the eight files adds exactly one failure against the base (base 82 passed,
-    <code>EXIT=0</code>; head 85 passed, 1 failed, <code>EXIT=1</code>):
+    The named gate over the eight files adds no failure against the base: base
+    <code>b97740c8</code> 82 passed, <code>EXIT=0</code>; head <code>a6046b43</code> 86 passed,
+    <code>EXIT=0</code>. Both arms ran in the foreground with <code>TMPDIR</code> at its default. One
+    existing assertion had to move with the change:
     <code>tests/test_sandbox_delivery.py::test_investigation_delivers_to_a_temporary_reports_directory</code>
-    asserts <code>str(crew.reports_dir()) in add_dirs</code>, which is the contradiction this section
-    exists to remove. That file is outside this node's write scope, so the node is blocked on the
-    coordinator rather than editing it; the one-line repair is named in the run's manifest.
+    asserted <code>str(crew.reports_dir()) in add_dirs</code>, the behaviour this section removes, so it
+    now asserts that the launch is fenced, the sealed reports root is not an <code>--add-dir</code>, and
+    the manifest's own directory is still the plan's cwd — while the recorded
+    <code>sandbox_write_roots</code> keep the reports root, because a fence's write roots and a
+    dialect's writable set are deliberately different sets. The negative control at this head reddens
+    at <code>3 failed, 6 passed</code>, <code>EXIT=1</code>, on the sealed stores' <code>--add-dir</code>.
   </p>
 </article>
 </body>
