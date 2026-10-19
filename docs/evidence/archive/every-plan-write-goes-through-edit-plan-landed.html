@@ -79,6 +79,26 @@ each driven through <code>edit_plan</code> on a temporary project in <code>tests
 <p><strong>Review.</strong> At <code>2279eeb0e</code> the independent review scored 18, 18, 20, 19, 18 and 20 with no added failures. Its one follow-on finding, that the fragment's control paragraph named no log paths, is answered by this record.</p>
   </section>
 
+  <section id="s11">
+    <h2>§11 — a slow current-code child never forces a reconnect</h2>
+    <p>Run <code>r-20261019T211637587066-epw-a-slow-child-never-forces-a-reconnect</code>, head <code>110f69ed1</code>. In <code>reckon/served_code.py</code> and <code>reckon/mcp.py</code>, the stale-code guard no longer turns slowness into a reconnect:</p>
+<ul>
+<li>A failed call whose current-code child makes no answer keeps its own result, with both code stamps. A <code>version_conflict</code> stays a <code>version_conflict</code>.</li>
+<li>Current code loads once per code stamp, in one persistent child. The child warms on a readiness probe that runs no tool. Calls go to it only once it is warm, and each routed call runs once.</li>
+<li>A routed write the child does not answer returns a may-have-landed timeout and is never re-run on the image.</li>
+<li>A child that dies is replaced, and the replacement warms the same way.</li>
+<li><code>stale_server_code</code> remains only for a tool whose probed parameters changed.</li>
+</ul>
+<p><strong>Gate.</strong> At <code>409521166</code>, 52 passed and 1 failed (<code>logs/gate-head-3.log</code>). The failure is <code>test_every_module_fits_a_worker_window</code>, the same two offenders as the base arm, so zero failures are added. <code>tests/test_a_slow_child_never_forces_a_reconnect.py</code> holds eight cases, each with a negative control that fails only its own case. The control logs are in <code>~/.config/reckon/crew/runs/r-20261019T211637587066-epw-a-slow-child-never-forces-a-reconnect/logs/</code>, named <code>control-*.log</code>.</p>
+<p><strong>Rounds.</strong></p>
+<ul>
+<li>The first head log stopped after 10 of 52 tests, so the run was resumed for a complete re-run.</li>
+<li>The review at <code>9dbf1cd52</code> (108/120) found that a child dying within one stamp was never replaced. That was repaired at <code>409521166</code>.</li>
+<li>The review at <code>110f69ed1</code> found nothing blocking. Its finding that a child dying on every spawn costs one interpreter per call is planned as §12.</li>
+</ul>
+<p><strong>In effect.</strong> A server started before this landing still runs the old guard, so each MCP session needs one more reconnect to pick it up.</p>
+  </section>
+
 </main>
 </body>
 </html>
