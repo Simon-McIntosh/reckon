@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "tests/test_a_reverted_ledger_row_reads_absent.py:84 asserts 're-promote once the landing failure is resolved' is in the receipt and 'do not re-promote' is not; the two sides are independent (a fixed expectation string against the receipt the code composed). Reinstating the broad ledger.load read-back makes the read back answer present and the receipt emit the already-written wording, so the assertion reddens, as logged at base and in the negative control.",
+      "lines": "tests/test_a_reverted_ledger_row_reads_absent.py:84-85"
+    },
+    {
+      "failure_condition": "tests/test_a_reverted_ledger_row_reads_absent.py:81-82 assert the run's own file is absent and the damaged other document remains, and :94 asserts the re-promotion writes exactly one row; all compare filesystem/ledger state against the test's own actions rather than against a value passed into the code, and a read-back that always answered present would leave the count at zero.",
+      "lines": "tests/test_a_reverted_ledger_row_reads_absent.py:81-94"
+    },
+    {
+      "failure_condition": "tests/test_a_reverted_ledger_row_reads_absent.py:113-115 assert 'is already written' and 'do not re-promote' for a committed row; an implementation that narrowed the read-back too far and answered absent unconditionally would drop both, so this control reddens on over-narrowing.",
+      "lines": "tests/test_a_reverted_ledger_row_reads_absent.py:113-115"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/promotion.py:1043",
+    "reckon/crew/promotion.py:1615"
+  ],
+  "completed_at": "2026-10-19T15:36:14.355Z",
+  "dispatched_at": "2026-10-19T15:25:50Z",
+  "findings": [
+    {
+      "file": "logs/negative-control.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the negative-control log's header names revision 9776b3ec 'with declared mutation', but the tree it ran in (tmp/reckon-ledger-base-qDZh6g) holds the base implementation verbatim \u2014 reckon/crew/promotion_scope.py there still carries the old docstring and ledger.load(..., use_index=False) \u2014 so the log evidences the base behaviour rather than the delivered tree with the read-back reinstated. The declared mutation ('restore the read-back that answered present') is behaviourally the base read-back, so admission holds and the test does redden on the regression; the provenance is what is unproven."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The landed read-back is reached in production by reckon/crew/promotion.py:1043 and reckon/crew/promotion.py:1615, each passing row_present=lambda: _ledger_holds_row(...) into _report_written_ledger_row; no other runtime code reaches it.",
+    "diff": "Read commit by commit against base 4bd6dce4: 9776b3ec6 narrows _ledger_holds_row in reckon/crew/promotion_scope.py and adds tests/test_a_reverted_ledger_row_reads_absent.py; b5f9fe0b9 adds the evidence fragment; three files, all inside the declared scope.",
+    "done_when": "The source prompt.txt FENCE-EVIDENCE names a temporary-repository test that fails with the already-written wording at base and carries the re-promote wording at head, a re-promotion landing one row, a committed row keeping the wording, a negative control restoring the read-back, EXIT= logs, importer baseline_suite/after_suite objects and a clean ruff delta; tests/test_a_reverted_ledger_row_reads_absent.py:53-111 asserts each, and the manifest records the base 1-failed/23-passed and head 24-passed runs, though the negative-control log was produced in the base scratch tree rather than the delivered tree (see finding).",
+    "goal": "The source prompt.txt GOAL line asks to make the promotion receipt's ledger read-back answer absent for a row its rollback removed; reckon/crew/promotion_scope.py:2048-2058 now reads the aggregate alone and stats this run's own file, so an unrelated unreadable run document no longer forces a present answer.",
+    "manifest": "Read; it declares status complete, commits 9776b3ec and b5f9fe0b, records baseline_suite 1 failed/23 passed with the named failure and after_suite 24 passed, and names the base/head/negative-control and ruff logs with EXIT= tails.",
+    "write_paths": "The source prompt.txt fences reckon/crew/promotion_scope.py, tests/test_a_reverted_ledger_row_reads_absent.py, docs/evidence/fragments/scoring-should-stop-a-promotion/a-reverted-ledger-row-reads-absent.html and docs/figures/scoring-should-stop-a-promotion/a-reverted-ledger-row-reads-absent; git diff --stat 4bd6dce4..b5f9fe0b names exactly the first three and no other path."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T152448919068-review-of-a-reverted-ledger-row-reads-absent-b5f9fe0b93c5",
+  "reviewed_base_sha": "4bd6dce4b9a02470408ac3bf50c671a0c38c0363",
+  "reviewed_head_sha": "b5f9fe0b93c5255c8bdd9d5b77abd1cb2f4cb4be",
+  "reviewed_run_id": "r-20261019T144547844196-a-reverted-ledger-row-reads-absent",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T15:37:21.515711+00:00"
+}
