@@ -76,6 +76,18 @@
     ends in a non-zero <code>EXIT=</code> line.
   </p>
 
+  <p id="epw-a-slow-child-never-forces-a-reconnect-gate">
+    <strong>The gate.</strong> At the node head the four targets run
+    <strong>1 failed, 51 passed</strong> and at the base revision the three that
+    exist there run <strong>1 failed, 44 passed</strong>, both exiting 1. The
+    one failure is the same test in both arms,
+    <code>test_every_module_fits_a_worker_window</code>, and it names
+    <code>reckon/crew/review.py</code> and <code>reckon/ledger.py</code> — two
+    modules this node neither touches nor changes. It is present at the base
+    revision before any of this work, so the node's own delta is zero added
+    failures.
+  </p>
+
   <p id="epw-a-slow-child-never-forces-a-reconnect-tests">
     <code>tests/test_mcp_server_serves_current_code.py</code> is updated to the
     new contract where the section changes it: the two cases whose child reaches
