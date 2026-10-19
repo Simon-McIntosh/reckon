@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_crew.py::test_cli_dispatch_arms_a_missing_watcher",
+    "tests/test_producer_takes_new_code.py::test_a_producer_defers_a_reload_onto_unimportable_code_and_keeps_producing"
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-19T11:44:55.783Z",
+  "dispatched_at": "2026-10-19T11:35:52Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-monitor-shows-the-work-it-watches/stack-s26-s56-f16-population-at-merge/report.md",
+      "line": 88,
+      "severity": "follow-on",
+      "text": "the alone-run logs are named per arm and index only (alone-base-1..5, alone-candidate-1..5), so the second added id's runs overwrote the first id's files and the path alone-base-1.log cited in alone-counts.jsonl for tests/test_crew.py::test_cli_dispatch_arms_a_missing_watcher actually holds tests/test_producer_takes_new_code.py's run, leaving the first id's 5/5 claim with no openable log behind it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-monitor-shows-the-work-it-watches/stack-s26-s56-f16-population-at-merge/report.md",
+      "line": 84,
+      "severity": "follow-on",
+      "text": "the provenance sentence reads 'Seven of the ten runs per id live in the run directory; the four single-revision attribution logs are attribution-{m1,m2,m3}-1.log', but all ten alone runs per id are in the run directory and there are three attribution logs (m1, m2, m3), so the counts in the sentence do not match the records it cites."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "no diff exists: the node committed nothing, so base and head are both the worktree revision 79a5268f5baffd6f861f030428982347a3fcd9e9 the run's own orientation_base_sha names, `git log 79a5268f..HEAD` is empty and `git status --porcelain` is clean; the landed deliverable is report.md plus the run-directory logs.",
+    "done_when": "the done_when asks for one exclusive all_debug sbatch job over the 253 listed files at base 11344dd91 and candidate ce6b2f191, each arm log opening with rev=/host/the literal command and ending in a bare EXIT=, with reckon.__file__ under that arm's checkout, the added ids from reckon.crew.review.added_failures_from_gate_logs, and a report naming each arm's counts with its log path; all of that is present and I reproduced the added pair.",
+    "goal": "the node's goal is to measure whether merging the four reviewed heads for monitor \u00a756, suite-green \u00a726 and fence \u00a716 onto main adds a failing test id over their importer population; report.md:12-21 answers it and report.md:76-79 gives each added id an alone count and a verdict.",
+    "manifest": "read the run's manifest.md; status complete, commits none, tests names the sbatch job and all three arms' counts with their log paths, baseline_suite and after_suite each carry their revision, literal command, exit_status, completed true and failure ids, and the recorded added_count=2 matches my own set difference.",
+    "write_paths": "the live run record declares the reports directory as its write path and the brief adds the run directory for scripts and logs; the run's artefacts are report.md in the reports directory plus the arm and control logs, the sbatch scripts, added-ids.json, alone-counts.jsonl, attribution-runs.jsonl and population-summary.txt under the run directory, with no repository file touched."
+  },
+  "justifications": {
+    "durability": "nothing versioned would redden if the measurement were wrong - control.py is a run-directory scratch file no test re-runs, and the alone-run log paths it cites collide between the two added ids (report.md:87-92), so the 5/5 claim for tests/test_crew.py::test_cli_dispatch_arms_a_missing_watcher is not independently openable.",
+    "evidence": "gate-base.log:1-5 and gate-candidate.log:1-5 carry rev= 11344dd91 / ce6b2f191, host=, the literal command, module= under that arm's checkout and cwd=, each ends in a bare EXIT= after its summary line, and my own call to reckon.crew.review.added_failures_from_gate_logs over the two logs returns (2, [the two ids]), matching added-ids.json.",
+    "fit": "control.py:1-10 names its mechanism ('Falsify the added-failure instrument on the recorded arm logs'), the run-directory artefact names are mechanism names (gate-base.log, added-ids.json, alone-counts.jsonl), and no repository symbol is introduced at all.",
+    "goal_fidelity": "report.md:12-21 states the added set over the population the brief names and report.md:76-79 gives each added id an alone count and a verdict, answering the dispatched question rather than a neighbouring one.",
+    "reuse": "the derivation goes through the repository's own owner reckon.crew.review.added_failures_from_gate_logs (reckon/crew/review.py:2172) rather than a hand-diff of FAILED lines, and the node adds no repository definition to fork; the only run-local script, control.py, drives that owner rather than reimplementing it.",
+    "scope_discipline": "the only file in the declared reports directory is report.md and every other artefact sits in the run directory the brief names, with no repository path touched and no commit made."
+  },
+  "node": "review-of-stack-s26-s56-f16-population-at-merge-79a5268f5baf",
+  "node:reviewed": "stack-s26-s56-f16-population-at-merge",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure whether merging the three reviewed heads for monitor \u00a756 (34f7a5a35), suite-green \u00a726 (b94ade6f2) and fence \u00a716 (ea46415f5) onto main adds a failing test id over their importer population; report.md:12-21 answers it (the stack adds no reproducible id) and its two arm rows are the logs I read.\nVERDICT done_when: the done_when asks for one exclusive all_debug sbatch job over the 253 listed files at base 11344dd91 and candidate ce6b2f191, each arm log opening with rev=/host/the literal command and ending in a bare EXIT=, with reckon.__file__ under that arm's checkout, the added ids from reckon.crew.review.added_failures_from_gate_logs, and a report naming each arm's counts with its log path; population.sbatch:1-9 carries --partition=all_debug --exclusive, job 1289996 ran on 98dci4-clu-3141, gate-base.log:1-5 and gate-candidate.log:1-5 carry rev=/host/tree/command/module=/cwd= with module under that arm's own checkout, each ends in EXIT=1 after its summary, and report.md:58-61 gives both counts with both paths.\nVERDICT write_paths: the live run record declares write_paths as the reports directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-monitor-shows-the-work-it-watches/stack-s26-s56-f16-population-at-merge, whose only file is report.md (10943 bytes, 13:31); every other artefact (population.sbatch, gate-base.log, gate-candidate.log, gate-candidate-2.log, added-ids.json, added-ids-2.json, alone-counts.jsonl, attribution-runs.jsonl, control.py, derivation-control.log, population-summary.txt) is under the run directory the brief instructs, and no repository file is touched.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T104911580607-stack-s26-s56-f16-population-at-merge/manifest.md; status complete, commits none - this node changes no product code, tests names the sbatch job and all three arms' counts with their log paths, baseline_suite and after_suite each carry revision, literal command, exit_status 1, completed true and 17/19 failure ids, manifest_check pending, and the recorded added_count=2 matches my own set difference.\nVERDICT diff: no diff exists - the node committed nothing, so reviewed_base_sha and reviewed_head_sha are both the worktree revision 79a5268f5baffd6f861f030428982347a3fcd9e9 that its own orientation_base_sha names, `git log 79a5268f..HEAD` in its worktree is empty and `git status --porcelain` is clean; the landed deliverable is report.md plus the run-directory logs, not a source change.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md:12-21 states the added set over the population the brief names and report.md:76-79 gives each added id an alone count and a verdict, answering the dispatched question rather than a neighbouring one.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-base.log:1-5 and gate-candidate.log:1-5 carry rev= 11344dd91 / ce6b2f191, host=, the literal command, module= under that arm's checkout and cwd=, each ends in a bare EXIT= after its summary line, and my own call to reckon.crew.review.added_failures_from_gate_logs over the two logs returns (2, [the two ids]), matching added-ids.json.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only file in the declared reports directory is report.md and every other artefact sits in the run directory the brief names, with no repository path touched and no commit made.\nSCORE durability: 13\nJUSTIFICATION durability: nothing versioned would redden if the measurement were wrong - control.py is a run-directory scratch file no test re-runs, and the alone-run log paths it cites collide between the two added ids (report.md:87-92), so the 5/5 claim for tests/test_crew.py::test_cli_dispatch_arms_a_missing_watcher is not independently openable.\nSCORE fit: 19\nJUSTIFICATION fit: control.py:1-10 names its mechanism ('Falsify the added-failure instrument on the recorded arm logs'), the run-directory artefact names are mechanism names (gate-base.log, added-ids.json, alone-counts.jsonl), and no repository symbol is introduced at all.\nSCORE reuse: 20\nJUSTIFICATION reuse: the derivation goes through the repository's own owner reckon.crew.review.added_failures_from_gate_logs (reckon/crew/review.py:2172) rather than a hand-diff of FAILED lines, and the node adds no repository definition to fork; the only run-local script, control.py, drives that owner rather than reimplementing it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-monitor-shows-the-work-it-watches/stack-s26-s56-f16-population-at-merge/report.md:88 follow-on: the alone-run logs are named per arm and index only (alone-base-1..5, alone-candidate-1..5), so the second added id's runs overwrote the first id's files and the path alone-base-1.log cited in alone-counts.jsonl for tests/test_crew.py::test_cli_dispatch_arms_a_missing_watcher actually holds tests/test_producer_takes_new_code.py's run, leaving the first id's 5/5 claim with no openable log behind it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-monitor-shows-the-work-it-watches/stack-s26-s56-f16-population-at-merge/report.md:84 follow-on: the provenance sentence reads 'Seven of the ten runs per id live in the run directory; the four single-revision attribution logs are attribution-{m1,m2,m3}-1.log', but all ten alone runs per id are in the run directory and there are three attribution logs (m1, m2, m3), so the counts in the sentence do not match the records it cites.",
+  "review_run_id": "r-20261019T113507774668-review-of-stack-s26-s56-f16-population-at-merge-79a5268f5baf",
+  "reviewed_base_sha": "79a5268f5baffd6f861f030428982347a3fcd9e9",
+  "reviewed_head_sha": "79a5268f5baffd6f861f030428982347a3fcd9e9",
+  "reviewed_run_id": "r-20261019T104911580607-stack-s26-s56-f16-population-at-merge",
+  "scores": {
+    "durability": 13,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T11:42:23+00:00"
+}
