@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log (manifest.md:21-22 are empty), so no base arm exists to take the delta against; the head gate committed-focused.log reports 34 passed, EXIT=0, and the reviewed node's own done_when delegates the full base/head population to the coordinator at merge.",
+  "completed_at": "2026-10-19T21:44:45.464Z",
+  "dispatched_at": "2026-10-19T21:23:37Z",
+  "findings": [
+    {
+      "file": "reckon/route_results.py",
+      "line": 221,
+      "severity": "follow-on",
+      "text": "velocity_default_response re-paginates the stored default-window 'by_project_day_lane' block, which velocity.view (reckon/velocity.py:3319) already capped at DEFAULT_PAGE_SIZE=25 when the refresh child composed it. A default-window request naming that block therefore returns at most 25 cells with pagination.total=25 even when by_project_day_lane_count reports a larger true total, so page 2 is empty and cells past the first page are silently unreachable; before this change the route paged the full cell list on the request path. The stored default result must keep the unpaged cells (or the count) so selection can page them."
+    },
+    {
+      "file": "reckon/route_results.py",
+      "line": 180,
+      "severity": "follow-on",
+      "text": "velocity_default_response duplicates the block selection, the unknown-field refusal string and the cursor pagination that velocity.view already owns at reckon/velocity.py:3288-3339 (near-verbatim, and the kind of textual copy reckon/clones.py runs at promotion). The selection should be extracted out of velocity.view and shared, rather than copied into route_results; the copy is also what introduced the double-pagination above, which the owner does not have."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T205722026681-velocity-answers-from-stored-results/manifest.md",
+      "line": 21,
+      "severity": "follow-on",
+      "text": "The reviewed manifest records no baseline_suite and no after_suite gate log, so the review contract's added_failure_count cannot be derived from the reviewed run's own evidence and is recorded unmeasured rather than as a measured zero. The node's done_when defers the base/head population to the coordinator at merge, so this is a gap in the evidence chain rather than a defect in the landed code; the coordinator must supply the two arms before the added-failure delta is a measured figure."
+    }
+  ],
+  "project": "reckon",
+  "record_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T205722026681-velocity-answers-from-stored-results/review-records/r-20261019T205722026681-velocity-answers-from-stored-results.at-fdca320912108094e608a33f8fd129ef9ead67f4.json",
+  "review_run_id": "r-20261019T212207064046-review-of-velocity-answers-from-stored-results-fdca32091210",
+  "reviewed_base_sha": "ead2057d2936ed3e10851ee8c6e841d4dc8bad93",
+  "reviewed_head_sha": "fdca320912108094e608a33f8fd129ef9ead67f4",
+  "reviewed_run_id": "r-20261019T205722026681-velocity-answers-from-stored-results",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 4,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T21:47:25.208222+00:00",
+  "total": 91
+}
