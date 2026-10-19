@@ -1926,6 +1926,7 @@ def dispatch(
             working_directory=working_directory,
             launch_instant=attempt_started_at,
             needs_help_after_failures=int(fences.get("needs_help_after_failures", 2)),
+            grace_multiple=fences.get("budget_grace_multiple"),
             peer_scopes=peers,
             run_id=run_id,
             peer_channels={

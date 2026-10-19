@@ -43,6 +43,7 @@ from reckon.crew.routing import (
     _signal_process_group,
     resolve_dispatch_authority,
     resolve_dispatch_ledger_root,
+    resolved_grace_multiple,
     signal_worker,
 )
 from reckon.crew.runs import (
@@ -1332,7 +1333,10 @@ def resume_plan(
             backend_name=str(record.get("backend") or ""),
             backend=backend,
             prompt=_restate_time_fence(
-                resumed_prompt, record, attempt_started_at=attempt_started_at
+                resumed_prompt,
+                record,
+                attempt_started_at=attempt_started_at,
+                config=config,
             ),
             worktree=str(record.get("worktree") or "."),
             manifest_path=manifest_path,
@@ -1609,15 +1613,21 @@ def _lane_prompt(
 
 
 def _restate_time_fence(
-    prompt: str, record: Mapping[str, Any], *, attempt_started_at: str
+    prompt: str,
+    record: Mapping[str, Any],
+    *,
+    attempt_started_at: str,
+    config: Mapping[str, Any] | None = None,
 ) -> str:
     """Restate the resumed attempt's own time fence on its launch prompt.
 
     The prompt a resumed attempt launches with — the same-session advice, or a
     fresh-start prompt — was composed for the attempt that already ended, so
     its fence names that attempt's clock. The resumed attempt is given its own
-    launch instant and the deadline the recorded budget puts it under, from the
-    same instant the launch records as this attempt's start.
+    launch instant, the deadline the recorded budget puts it under, and the
+    hard stop the configured grace multiple sets from that same instant, so a
+    resumed attempt states the continuation it is actually allowed rather than
+    inheriting the first attempt's.
     """
     node = record.get("node")
     budget = ""
@@ -1626,7 +1636,9 @@ def _restate_time_fence(
     if not budget:
         return prompt
     statement = time_fence_statement(
-        time_budget=budget, launch_instant=attempt_started_at
+        time_budget=budget,
+        launch_instant=attempt_started_at,
+        grace_multiple=resolved_grace_multiple(config),
     )
     fence = f"FENCE — TIME (resumed attempt)\n  {statement}\n"
     if not prompt.strip():
@@ -1905,7 +1917,10 @@ def change_lane(
     # resume path does the same through resume_plan.
     prompt_path.write_text(
         _restate_time_fence(
-            prompt, record, attempt_started_at=lane_change["changed_at"]
+            prompt,
+            record,
+            attempt_started_at=lane_change["changed_at"],
+            config=config,
         ),
         encoding="utf-8",
     )

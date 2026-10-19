@@ -63,7 +63,7 @@ truth that drifts between workers and between sessions.
 | Fence | Content |
 |---|---|
 | Scope | exclusive write paths; no two concurrent workers share a file |
-| Time | an explicit budget; exceeding it means stop and report, never push on |
+| Time | an explicit budget; at the deadline, write the checkpoint and finish only a bounded step the manifest named, by the hard stop |
 | Evidence | the gate's measure *is* the done-when, stated quantitatively |
 | Delivery | a named manifest path on disk; long output goes in the file and the reply is the path |
 
@@ -343,7 +343,8 @@ brief is visible rather than merely unhelpful.
 - the necessary change extends beyond the exclusive write scope;
 - the gate's required evidence cannot be produced with the available tools or
   data;
-- the time budget is spent with the gate still closed;
+- the hard stop is reached with the gate still closed, or the deadline has
+  passed with remaining work that is not a named bounded step;
 - **the work needs a workspace or resource the node was not given** — a
   compute-visible checkout a batch scheduler can reach, a longer budget for work
   that cannot be split, a staged dataset. Ask for it; the coordinator provisions

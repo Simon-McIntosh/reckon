@@ -325,7 +325,7 @@ PEER CHANNEL — knowledge only; write scopes never transfer. Run ; endpoint /st
   Reads block on filesystem events; expiry writes NEEDS-HELP to the manifest.
 
 FENCE — TIME
-  20m. Exceeding it means stop and report, never push on. Your process ends when this turn ends: never wait across a backgrounded command. Write your manifest with what you know now before starting one, and update it afterward if a later turn arrives — that is keyed to starting the wait, not to finishing the work. A run that ends mid-wait is resumable, so if you run out of turns, leave a record naming exactly what you were waiting for — set status: waiting and fill the wait_condition, wait_probe, wait_terminal and resume_brief keys in the manifest block so a resume sweep can wake you. Declaration is for a wait you hold: the wait block states something you are actually waiting on, never a note about where you are. A resumed worker whose wait is met has nothing left to wait on: record where work stands under the checkpoint key and continue, rather than writing the wait block again. So does any worker recording progress at any point, not only a resumed one.
+  20m. Your process ends when this turn ends: never wait across a backgrounded command. Write your manifest with what you know now before starting one, and update it afterward if a later turn arrives — that is keyed to starting the wait, not to finishing the work. A run that ends mid-wait is resumable, so if you run out of turns, leave a record naming exactly what you were waiting for — set status: waiting and fill the wait_condition, wait_probe, wait_terminal and resume_brief keys in the manifest block so a resume sweep can wake you. Declaration is for a wait you hold: the wait block states something you are actually waiting on, never a note about where you are. A resumed worker whose wait is met has nothing left to wait on: record where work stands under the checkpoint key and continue, rather than writing the wait block again. So does any worker recording progress at any point, not only a resumed one.
 
 FENCE — EVIDENCE (this measure is the done-when; state it quantitatively)
   the composed prompt matches the authority given to it This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node, and a failure outside this node's declared scope is reported under follow_ons rather than triaged or fixed.
@@ -369,8 +369,8 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   changed_paths: <explicit list>
   retry_failures: <failure ids for repeated runs of the same command, including unattributed failures; record each before applying the stop rule>
   landing: <exactly one line recording your landing record; promotion lands it as a comment on your plan section, so do not edit the plan>
-  tests: <the gate command that actually ran, and its result — never a template command carrying an unsubstituted placeholder>
-  test_logs: <paths on disk>. A gate log's first line names the revision it ran at, the tree, and the command; a gate or base-arm measurement run in a scratch tree also names on its header lines the absolute path of the module under test as imported (`module.__file__`) and the resolved working directory the run resolved from
+  tests: <the gate command that actually ran — the literal text a shell was handed, never a description of it and never a template command carrying an unsubstituted placeholder>. Promotion fills its gate receipt from this line, so a sentence naming the suite rather than the command cannot be re-run and is refused; the log's own `# command:` header line is the fallback when this line is absent
+  test_logs: <paths on disk>. A gate log's first line names the revision it ran at, the tree, and the command; its last line is a bare `EXIT=<code>` line, which is where promotion reads the gate's exit status — a log without one leaves the status unread. A gate or base-arm measurement run in a scratch tree also names on its header lines the absolute path of the module under test as imported (`module.__file__`) and the resolved working directory the run resolved from
   measurement_module: <only for a gate or base-arm measurement run in a scratch tree: the absolute path of the module under test as imported — the value the run printed for `module.__file__`>
   measurement_cwd: <only for a gate or base-arm measurement run in a scratch tree: the resolved working directory the run resolved from>
   negative_control_log: <the path alone, and nothing else on this line — no description, note or continuation>. Required when the node's write paths include a test file and its negative_control is not `none: <reason>`. Admission is judged on the facts the run recorded — a non-zero `EXIT=` line and at least one failing test id the head arm does not fail, falling back to the baseline's failing ids only when the manifest records no readable head arm, an arm being readable only when it declares its run complete — never on the log's wording. The log's last line is a bare line reading `EXIT=` followed by the exit code
@@ -409,8 +409,9 @@ your own probe, measurement script or helper without reaching code under test.
 Record the cause before excluding it. A missing or unclear attribution counts;
 a failure in code under test counts. A decision the plan does not settle is required;
 the necessary change exceeds your write scope; the evidence cannot be produced
-with the tools or data available; the time budget is spent with the measure
-still unmet. Asking costs one turn; thrashing costs the node.
+with the tools or data available; the hard stop is reached with the measure
+still unmet, or the deadline has passed with remaining work that is not a named
+bounded step. Asking costs one turn; thrashing costs the node.
 """
 
 
