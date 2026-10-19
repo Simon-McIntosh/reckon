@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1453",
+    "reckon/crew/recovery_review_dispatch.py:2052"
+  ],
+  "completed_at": "2026-10-19T09:33:36.015Z",
+  "dispatched_at": "2026-10-19T09:16:06Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the base arm was not run, but the gate's one failure is pre-existing by construction: test_every_module_fits_a_worker_window names reckon/crew/review.py, reckon/ledger.py and reckon/serve.py, and git diff 7e4f955f6..0b88033bf leaves all three byte-identical; the promotion records the gate as failed, classified pre-existing-failure, rather than as passed",
+      "recorded_at": "2026-10-19T09:35:59.998872+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T080612769622-a-named-lane-lets-jev-choose-its-model/manifest.md",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite and after_suite are recorded as prose rather than the required JSON objects, and both arms report the identical duration 840.13s with no base-arm log path named, so the \"zero added failures against the base arm\" claim has no independent artifact \u2014 the only preserved log (gate.log) is the head arm."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against the base; five files, all inside scope.",
+    "done_when": "read; the gate log records the nine-file pytest -rA run whose cases assert the done_when's measure.",
+    "goal": "read; the node's goal is to launch the model Jev picks from a named lane when a dispatch names a lane with several models and no model; the diff implements it.",
+    "manifest": "read; it states the gate command and result and names gate.log.",
+    "write_paths": "read; every path in the diff lies inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to launch the model Jev picks from a named lane when a dispatch names a lane with several models and no model; reckon/crew/dispatch_picker.py:988 lane_model_selection narrows the config to the named lane and applies the answer through flight.select_lane_model at dispatch_picker.py:1054, reached from reckon/crew_dispatch_commands.py:1453 and reckon/crew/recovery_review_dispatch.py:2052.\nVERDICT done_when: the done_when's cases are asserted in tests/test_a_named_lane_lets_jev_choose_its_model.py (--backend codex launches gpt-6-luna at xhigh, route mode explicit and model key luna, offered=[codex,codex-astra,codex-luna]; hold/raise/other-lane launch gpt-6-sol; --model, --local and a one-model lane ask nothing; a composed review of a codex run launches gpt-6-luna); gate.log records the nine-file pytest -rA run of them.\nVERDICT write_paths: the manifest declares nine paths; dispatch_picker.py, crew_dispatch_commands.py, recovery_review_dispatch.py, tests/test_a_named_lane_lets_jev_choose_its_model.py and the fragment are the only paths in the diff, all inside them, while dispatch_plan.py and the two add-only test files are unchanged.\nVERDICT manifest: read; status complete, it names the nine-file gate command and its one pre-existing failure in gate.log.\nVERDICT diff: read commit by commit against base 7e4f955f6; 74f38b880 adds the owner and both call sites plus the test, and 0b88033bf corrects a placeholder revision in the fragment.\nCALL_SITES: reckon/crew_dispatch_commands.py:1453, reckon/crew/recovery_review_dispatch.py:2052\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_picker.py:1054 applies the picked model through flight.select_lane_model after narrowing to the lane's backends, and crew_dispatch_commands.py:1453 and recovery_review_dispatch.py:2052 both call the owner.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate.log records the nine-file pytest -rA run at 1 failed, 63 passed, but the base arm is claimed only in prose at manifest.md:14 with no preserved base log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only dispatch_picker.py, crew_dispatch_commands.py, recovery_review_dispatch.py, the new test file and the fragment, every one inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log reddens test_a_named_lane_launches_the_model_jev_names and test_a_composed_review_of_a_codex_run_launches_the_model_jev_names on the launched model when each call site is removed, and each assertion reads the emitted payload rather than the stub's input.\nSCORE fit: 19\nJUSTIFICATION fit: dispatch_picker.py:916-1055 follows the module's docstring-and-helper idiom beside _config_without_lane at dispatch_picker.py:903, carrying no plan or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: _config_within_lane extends _config_without_lane over _lane_backend_names at dispatch_picker.py:903, and the search found no prior owner of a lane's declared models (ledger.resolve_name at ledger.py:246 reads the model catalogue, not the resolved flight config).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T080612769622-a-named-lane-lets-jev-choose-its-model/manifest.md:14 follow-on: baseline_suite and after_suite are prose rather than the required JSON objects, and both arms report the identical duration 840.13s with no base-arm log path named, so the zero-added-failures claim has no independent artifact.\n",
+  "review_run_id": "r-20261019T091349435989-review-of-a-named-lane-lets-jev-choose-its-model-0b88033bf2db",
+  "reviewed_base_sha": "7e4f955f6f4691b2be77d176e84571385aae23f7",
+  "reviewed_head_sha": "0b88033bf2db3678daa1dc7ceb2eda213e5928e0",
+  "reviewed_run_id": "r-20261019T080612769622-a-named-lane-lets-jev-choose-its-model",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T09:33:48.334953+00:00"
+}
