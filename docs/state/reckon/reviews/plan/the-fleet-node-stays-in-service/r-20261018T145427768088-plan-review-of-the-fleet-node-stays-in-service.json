@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-18T15:10:00.819Z",
+  "dispatched_at": "2026-10-18T14:55:22Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-fleet-node-stays-in-service.html:216",
+      "id": "reasoning-1",
+      "reason": "\u00a75 is a 0.5-hour node whose entire product is that ledger, so a dispatch that omits the unstated setup step spends its budget on a hard refusal the plan should have anticipated.",
+      "text": "\u00a75 says the rehearsal \"uses a probe session named for this run \u2026 passed with `--session`\" but never states the probe session must already exist live with exactly two tabs and a live Claude pane; `_rehearse`'s census (`fleet_migrate.py:726\u2013735`) raises when the name is absent from the local census and again when the session does not carry two tabs and a live Claude pane, so the first `--rehearse` invocation fails before the ledger \u00a75 exists to create is written",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ba5e2b66045e2959ec834fc89083dfb3fb2ff6ed274b710eec1756edbd41eca2",
+  "plan_slug": "the-fleet-node-stays-in-service",
+  "plan_version": 7,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261018T145427768088-plan-review-of-the-fleet-node-stays-in-service",
+  "reviewed_blob_sha": "f01c72b82f9e25f816cef482f847a2ac1c6a34a8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `fleet_migrate.py:708\u2013716` resolves to the step/description table whose `\"done\"` entry is `\"rehearsal complete for {name}\"`; `rehearsals/probe-rehearsal/ledger.json` exists and reads `next_step: \"done\"`; and \"\u00a716 of the previous plan\" resolves to `docs/plans/the-fleet-moves-to-a-new-node.html:251` (\"The cutover relays its request\u2026\", landed through `135e708e2`).",
+    "done_when": "pass \u2014 \u00a75's done-when is measurable (the fresh rehearsal ledger reaching `next_step: \"done\"` with the probe's tab list and conversation id equal before and after) and names a negative control (a probe whose recorded tab is removed, which `_verified_session(..., check_tabs=True)` refuses; `fleet_migrate.py:678\u2013688`).",
+    "evidence_paths": "pass \u2014 the rehearsal record lives at `~/.local/state/fleet/migration/rehearsals/<name>/ledger.json` (durable, under the crew state directory) and the write-up goes to the house fragment directory `docs/evidence/fragments/the-fleet-node-stays-in-service/`; neither is a scratchpad or node-local tmp.",
+    "naming": "pass \u2014 \u00a75 introduces no symbols, plan labels or ticket numbers; the cited code names (`fleet_migrate.py`, `probe-rehearsal`) carry no version tags.",
+    "reasoning": "a finding \u2014 the root-cause and caller checks hold (the resolved-ledger guard at `fleet_migrate.py:720` and the `--rehearse`/`--session` CLI surface at `reckon/project_maintenance_commands.py:41\u201343` are the real path), but \u00a75's mechanism does not name the census preconditions its own cited code enforces, so as written it cannot produce its done-when.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable: a passing rehearsal of the cutover relay at the head \u00a74 lands on.",
+    "wiring": "pass \u2014 \u00a75's dependency on \u00a74 is carried by the followup ordering (\"\u00a75 follows \u00a74\") and by the move-ready gate (`data-section=\"s5\"` `data-gated-sections=\"s8\"`, snapshot plan.html:339), and the earlier \u00a79-scheduling finding is answered by `f-tfnsis-001` naming \u00a79 and its ordering."
+  },
+  "section_digests": {
+    "_document": "bd73ac7bd1bddd2c0c4faba0bbf6eaa7c567a2613c68809ef4d970bee646bc82",
+    "s1": "6e04065e334dfddf94228e26ccc5040265b76da7397e5f58cf73c7d37f623504",
+    "s2": "6155f820ac9515ec6066931aa10a1e66fdcff1b4184ba4014c19c572b1e6dfe6",
+    "s3": "2cb481d156747fffcc333364251970f82823dcf8ed5fb1b85f1f03d49a2395df",
+    "s4": "9bf0fe68b8db66abd6daa8fdd98af93ada5d71be048a240fee7b2d68906b8b32",
+    "s5": "9f89ba6d915e0f36016ad27896e9481777f96f45ee06bdfdeb92cd5bc85bb766",
+    "s6": "6869c09a477eaafc5a4780340f667b673175561e4bca9b0640c8af759c878f77",
+    "s7": "3a45b0d0d40cbd44ec6f8209f8a125004c44cc3cdccfb33e97882ef8331f7d70",
+    "s8": "e112e1202f352739982d9a42da2469ddd34f8ab2e4c217d172c90ed776b7a354",
+    "s9": "f575efb8382bf8f279ec8c873642e49846c5abb7b4124831a6b834bc3b8756c8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T03:32:29.556756+00:00"
+}
