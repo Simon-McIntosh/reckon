@@ -50,6 +50,11 @@
     <p>Run <code>r-20261019T171535993258-epw-skills-describe-close</code>, commits <code>1161f3735</code> and <code>20b6e6b56</code>. <code>skills/reckon-edit/SKILL.md</code> documents <code>close</code> in its op table, and its archive example now uses <code>close</code>. <code>coordinator-reference.md</code>, <code>sprint-orchestration.md</code>, <code>AGENTS.md</code> and <code>skills/reckon-create/SKILL.md</code> no longer tell a coordinator to set a terminal plan status or append an already-resolved placeholder followup. The contract harness in <code>tests/test_skill_contracts.py</code> counts the refusal naming <code>close</code> as a refusal for its path, so a surviving example now fails it.</p><p>Gate: both arms exit 0. Negative control: restoring the archive example's <code>set</code> of <code>status</code> to <code>archived</code> fails the contract test, naming <code>skills/reckon-edit/SKILL.md</code>. Reviewed 113/120.</p>
   </section>
 
+  <section id="s9">
+    <h2>§9 — the reload&#x27;s untested branches have cases</h2>
+    <p>Run <code>r-20261019T171408539976-epw-reload-branches-have-cases</code>, commit <code>825cb62e7</code>. <code>tests/test_mcp_server_serves_current_code.py</code> gains three cases over the crew tool. A failing current-code answer is returned with its stamp. A child that never reaches the tool is not reported as an unchanged signature. A child that makes no answer keeps the reconnect refusal, which names why. One case exposed a defect: a child that never reached the tool read as an unchanged signature. <code>reckon/mcp.py</code>'s child now reports whether it reached the tool, so such a child makes no answer.</p><p>Gate: zero added failures against base <code>2cbe964ac</code>; the one failure is the width test, red at base. Negative control: removing the branch that lets a failing current-code answer stand makes the crew case fail on the reconnect refusal. Reviewed 110/120.</p>
+  </section>
+
 </main>
 </body>
 </html>

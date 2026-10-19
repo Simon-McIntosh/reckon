@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-informs" content="the-crew-surface-is-one-tool-and-a-few-verbs">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;every-plan-write-goes-through-edit-plan#s2&quot;,&quot;every-plan-write-goes-through-edit-plan#s3&quot;],&quot;s5&quot;:[&quot;every-plan-write-goes-through-edit-plan#s4&quot;],&quot;s6&quot;:[&quot;every-plan-write-goes-through-edit-plan#s5&quot;],&quot;s7&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;],&quot;s8&quot;:[&quot;every-plan-write-goes-through-edit-plan#s7&quot;],&quot;s9&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;],&quot;s10&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;}">
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="39">
+<meta name="plan-version" content="40">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -244,7 +244,7 @@
     <p><strong>Done when</strong> <code>tests/test_a_waiting_plan_needs_no_placeholder.py</code> lands a plan whose only remaining section is deferred under an open decision, and the landing succeeds with no new followup. The negative control locks that decision, and the same landing is then refused for want of a continuation. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>, <code>skills/reckon-edit/SKILL.md</code>, <code>tests/test_a_waiting_plan_needs_no_placeholder.py</code>.</p>
 
     <h2 id="s9">§9 — The reload&#x27;s untested branches have cases</h2>
-<section data-reckon="section" data-id="s9" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s9" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> §3 landed with three branches of the current-code answer that no test reaches. The worker and its review both named them. A failing current-code answer is tested for <code>edit_plan</code> but not for the crew tool, the path that first exposed the defect. A child interpreter that never reaches the tool returns empty params, which reads as no signature change. A child that makes no answer at all still yields the reconnect refusal.</p>
     <p><strong>Deliverable.</strong> One case each in <code>tests/test_mcp_server_serves_current_code.py</code>: the crew tool's failure returned as the current code's answer with its stamp; a child that never reaches the tool, which is not reported as an unchanged signature; and a child that makes no answer, which gets the refusal naming why. If a case exposes a defect, the fix in <code>reckon/mcp.py</code> belongs to this section.</p>
     <p><strong>Done when</strong> the three cases pass at the node's head, logged with <code>EXIT=0</code>, and each has a negative control that removes the branch it covers, after which that case fails. Write paths: <code>reckon/mcp.py</code>, <code>tests/test_mcp_server_serves_current_code.py</code>.</p>
@@ -363,7 +363,10 @@
     <div class="r-comment-body"><p>Reviewed run r-20261019T171240949016-epw-a-refused-write-names-the-next-step (head 4f387cc24, base 2cbe964): goal_fidelity 17, evidence 17, scope_discipline 18, durability 18, fit 18, reuse 15; added_failure_count 0; three follow-on findings (echo assertion in the test, by-id lookup duplication in _value_at_path, and the unwrapped resource-doc conflict path); no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261019T180010307508-review-of-epw-reload-branches-have-cases-825cb62e7f82" data-who="reckon-build" data-when="2026-10-19T18:09:11.601Z">
-    <div class="r-comment-body"><p>§9: reviewed epw-reload-branches-have-cases at head 825cb62e7f82b22ea12005e4be2a5de243542c06 (base 2cbe964a); verdict parsed, all six dimensions scored 19/14/20/19/20/18, zero added failures, two follow-on findings — the done_when&#x27;s ruff delta clause has no recorded result (measured zero), and the negative-control logs&#x27; revision headers name the base while the mutation was applied to the then-uncommitted fix; review record stored under review-records/ in the reviewed run&#x27;s directory</p></div>
+    <div class="r-comment-body"><p>§9: reviewed epw-reload-branches-have-cases at head 825cb62e7f82b22ea12005e4be2a5de243542c06 (base 2cbe964a); verdict parsed, all six dimensions scored 19/14/20/19/20/18, zero added failures, two follow-on findings — the done_when's ruff delta clause has no recorded result (measured zero), and the negative-control logs' revision headers name the base while the mutation was applied to the then-uncommitted fix; review record stored under review-records/ in the reviewed run's directory</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-19T18:12:00Z">
+    <div class="r-comment-body"><p>§9 landed: the reload's crew-tool branches have cases, and a child that never reaches the tool no longer reads as an unchanged signature (commit <code>825cb62e7</code>); zero added failures; reviewed 110/120. <a href="/reckon/evidence/archive/every-plan-write-goes-through-edit-plan-landed.html#s9">evidence</a></p></div>
 </div>
 </section>
 </main>
