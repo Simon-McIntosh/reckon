@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "taken from the reviewed run's own baseline_suite and after_suite gate logs: logs/focused-base.log reports 202 passed, failure_count 0, failure_ids [], completed true, EXIT=0 at 8d42ef7f; logs/focused-head.log reports 203 passed, failure_count 0, failure_ids [], completed true, EXIT=0 at b4df4a17d, the one extra pass being the reviewed node's own new test.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py:2755 (_attach_schedule)",
+    "reckon/serve.py:3881 (GET /crew and GET /crew/<project>)"
+  ],
+  "completed_at": "2026-10-19T05:51:29.333Z",
+  "dispatched_at": "2026-10-19T05:38:18Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": 1147,
+      "severity": "follow-on",
+      "text": "_aggregate_identity returns the same (st_mtime_ns, st_ctime_ns, st_size, st_ino) tuple as ledger._file_identity at reckon/ledger.py:1035 rather than extending the owner, so one identity convention is now spelled in two files; the node was fenced out of reckon/ledger.py, so the repair is a public aggregate-identity reader in the ledger, which the manifest already records as a follow-on."
+    },
+    {
+      "file": "tests/test_a_crew_poll_reads_the_roster_without_run_files.py",
+      "line": 156,
+      "severity": "follow-on",
+      "text": "`assert serve._crew_rows(mounts) == rows` compares a second call against the first call's own output, so both sides are produced by the code under test and the assertion passes at the base revision and under the negative control alike, where the cache is the very thing removed; the independent anchors at lines 149 and 162 carry the guard and this line does not."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-crew-poll-reads-the-roster-without-run-files.html",
+      "line": 27,
+      "severity": "follow-on",
+      "text": "the Done-when clause that the test files importing reckon/serve.py or reckon/ledger.py add no failure against base is unmeasured -- the run's own logs/affected-head.log stops at 26 percent with no summary line, shows an error and two failures by 4 percent, and no base arm covers that population, so an added failure there would be unattributed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against 8d42ef7f87a70ae5f914f856085900a67cc22c54; 9e255d8ff adds _aggregate_identity, _project_roster and _ROSTER_CACHE to reckon/serve.py, b4df4a17d lints the new test file, fdf865bdc adds the 30-line evidence fragment -- three paths, none outside the declared scope.",
+    "done_when": "the done_when names tests/test_a_crew_poll_reads_the_roster_without_run_files.py with 200 run files, one roster member and one live pointer, asserting zero stats under runs/ and zero aggregate bytes on a second call after a warming call, failing at the base revision and returning a member change on the next call; the manifest records that gate at both arms.",
+    "goal": "the node goal is that the roster read behind /crew and /crew/<project> decides a project's members from one stat of the aggregate, and reckon/serve.py:1161 `_project_roster` keys the held members on the aggregate's own identity.",
+    "manifest": "read; it records the gate result (head 1 passed EXIT=0, base 1 failed assert 200 == 0 EXIT=1), the focused paired arm (203 passed head / 202 passed base, EXIT=0 both), the declared negative control and a zero ruff delta, and names two Done-when parts it did not close.",
+    "write_paths": "the declared paths are reckon/serve.py, tests/test_a_crew_poll_reads_the_roster_without_run_files.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/a-crew-poll-reads-the-roster-without-run-files.html and a figures directory; `git diff --name-status 8d42ef7f..fdf865bd` lists exactly the first three."
+  },
+  "justifications": {
+    "durability": "tests/test_a_crew_poll_reads_the_roster_without_run_files.py:158 fails at the base revision with assert 200 == 0 and reddens again under the declared negative control, so the guard is shown to fire rather than merely to pass.",
+    "evidence": "the gate's own logs record 0 stats and 0 aggregate bytes at head against 200 stats at base, but the Done-when clause over the 318-file importer population is unmeasured -- logs/affected-head.log stops at 26 percent with no summary line and shows one E and two F markers by 4 percent, with no base arm over that population.",
+    "fit": "_ROSTER_CACHE follows the module-level cache idiom reckon/serve.py already carries at reckon/serve.py:1449 (_DISC_CACHE) and 1476 (_SIGNATURE_MEMO), and the docstrings state the mechanism with no plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/serve.py:1175-1194 returns the held members on an identity match and re-reads through ledger.load only when the aggregate moved, which is the goal's one-stat decision, and reckon/serve.py:3881 serves both /crew and /crew/<project>.",
+    "reuse": "_aggregate_identity at reckon/serve.py:1147 re-implements the one-file identity tuple ledger owns at reckon/ledger.py:1035 without extending or wrapping the owner.",
+    "scope_discipline": "git diff --name-status 8d42ef7f..fdf865bd lists only reckon/serve.py, the new test file and the evidence fragment, all inside the declared write paths, and the change adds no figure and no prose outside the landing fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the roster read behind /crew and /crew/<project> decides a project's members from one stat of the aggregate, and reckon/serve.py:1161 `_project_roster` keys the held members on the aggregate's own identity.\nVERDICT done_when: the done_when names tests/test_a_crew_poll_reads_the_roster_without_run_files.py with 200 run files, one roster member and one live pointer, asserting zero stats under runs/ and zero aggregate bytes on a second call after a warming call, failing at the base revision and returning a member change on the next call; the manifest records that gate at both arms.\nVERDICT write_paths: the declared paths are reckon/serve.py, tests/test_a_crew_poll_reads_the_roster_without_run_files.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/a-crew-poll-reads-the-roster-without-run-files.html and a figures directory; `git diff --name-status 8d42ef7f..fdf865bd` lists exactly the first three.\nVERDICT manifest: read; it records the gate result (head 1 passed EXIT=0, base 1 failed assert 200 == 0 EXIT=1), the focused paired arm (203 passed head / 202 passed base, EXIT=0 both), the declared negative control and a zero ruff delta, and names two Done-when parts it did not close.\nVERDICT diff: read commit by commit against 8d42ef7f87a70ae5f914f856085900a67cc22c54; 9e255d8ff adds _aggregate_identity, _project_roster and _ROSTER_CACHE to reckon/serve.py, b4df4a17d lints the new test file, fdf865bdc adds the 30-line evidence fragment -- three paths, none outside the declared scope.\nCALL_SITES: reckon/serve.py:2755 (_attach_schedule), reckon/serve.py:3881 (GET /crew and GET /crew/<project> runs view)\nSCORE goal_fidelity: 19\nSCORE evidence: 14\nSCORE scope_discipline: 19\nSCORE durability: 18\nSCORE fit: 19\nSCORE reuse: 5\nJUSTIFICATION goal_fidelity: reckon/serve.py:1175-1194 returns the held members on an identity match and re-reads through ledger.load only when the aggregate moved, which is the goal's one-stat decision, and reckon/serve.py:3881 serves both /crew and /crew/<project>.\nJUSTIFICATION evidence: the gate's own logs record 0 stats and 0 aggregate bytes at head against 200 stats at base, but the Done-when clause over the 318-file importer population is unmeasured -- logs/affected-head.log stops at 26 percent with no summary line and shows one E and two F markers by 4 percent, with no base arm over that population.\nJUSTIFICATION scope_discipline: git diff --name-status 8d42ef7f..fdf865bd lists only reckon/serve.py, the new test file and the evidence fragment, all inside the declared write paths, and the change adds no figure and no prose outside the landing fragment.\nJUSTIFICATION durability: tests/test_a_crew_poll_reads_the_roster_without_run_files.py:158 fails at the base revision with assert 200 == 0 and reddens again under the declared negative control, so the guard is shown to fire rather than merely to pass.\nJUSTIFICATION fit: _ROSTER_CACHE follows the module-level cache idiom reckon/serve.py already carries at reckon/serve.py:1449 (_DISC_CACHE) and 1476 (_SIGNATURE_MEMO), and the docstrings state the mechanism with no plan, ticket or version identifier.\nJUSTIFICATION reuse: _aggregate_identity at reckon/serve.py:1147 re-implements the one-file identity tuple ledger owns at reckon/ledger.py:1035 without extending or wrapping the owner.\nFINDING reckon/serve.py:1147 follow-on: _aggregate_identity returns the same (st_mtime_ns, st_ctime_ns, st_size, st_ino) tuple as ledger._file_identity at reckon/ledger.py:1035 rather than extending the owner, so one identity convention is now spelled in two files; the node was fenced out of reckon/ledger.py, so the repair is a public aggregate-identity reader in the ledger, which the manifest already records as a follow-on.\nFINDING tests/test_a_crew_poll_reads_the_roster_without_run_files.py:156 follow-on: `assert serve._crew_rows(mounts) == rows` compares a second call against the first call's own output, so both sides are produced by the code under test and the assertion passes at the base revision and under the negative control alike, where the cache is the very thing removed; the independent anchors at lines 149 and 162 carry the guard and this line does not.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/a-crew-poll-reads-the-roster-without-run-files.html:27 follow-on: the Done-when clause that the test files importing reckon/serve.py or reckon/ledger.py add no failure against base is unmeasured -- the run's own logs/affected-head.log stops at 26 percent with no summary line, shows an error and two failures by 4 percent, and no base arm covers that population, so an added failure there would be unattributed.\n",
+  "review_run_id": "r-20261019T053736243036-review-of-a-crew-poll-reads-the-roster-without-run-files-fdf865bdcafa",
+  "reviewed_base_sha": "8d42ef7f87a70ae5f914f856085900a67cc22c54",
+  "reviewed_head_sha": "fdf865bdcafabd3a8074597214ff3e3983095a98",
+  "reviewed_run_id": "r-20261019T044913095520-a-crew-poll-reads-the-roster-without-run-files",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T05:55:02.125285+00:00",
+  "total": 94
+}
