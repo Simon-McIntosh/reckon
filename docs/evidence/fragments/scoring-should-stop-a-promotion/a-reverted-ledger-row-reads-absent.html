@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="A reverted ledger row reads absent">
+  <meta name="plan-summary" content="A stage refusal under a held index lock removed the promoted run's file, but an unrelated unreadable run document made the whole-ledger read-back answer present. The receipt now checks the aggregate and target run file directly. The base importer gate had one expected failure and 23 passes; the delivered head had 24 passes, and restoring the broad read made the new case fail again.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-19">
+  <meta name="plan-verdict" content="passed">
+  <title>A reverted ledger row reads absent | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A reverted ledger row reads absent</h1>
+    <section id="a-reverted-ledger-row-reads-absent-defect">
+      <h2>Observed failure and source</h2>
+      <p>The 10:38:20Z landing record reported the run's per-run ledger file reverted after
+        <code>.git/index.lock</code> refused staging, yet the receipt warned that the row was
+        already written. The later re-promotion committed that missing per-run file. At the
+        node's base, <code>_ledger_holds_row</code> read the entire ledger union with
+        <code>use_index=False</code>. An unreadable document for any other run caused that
+        read to raise, and its exception handler answered <em>present</em>. The incident
+        receipt did not record the failed read's path or exception, so it cannot identify
+        the historical transient document; the temporary-repository test reproduces the
+        same answer through this source.</p>
+    </section>
+    <section id="a-reverted-ledger-row-reads-absent-change">
+      <h2>Read the row's durable sources</h2>
+      <p><code>_ledger_holds_row</code> now reads the aggregate and checks this run's file
+        directly. A damaged document for another run cannot make a removed row appear
+        present. An unreadable aggregate or target file still answers present, preserving
+        the receipt's refusal when absence is not proved. The test uses a real held
+        index lock, proves the rollback removed the target file, checks that re-promotion
+        lands exactly one row after the lock is removed, and checks the already-written
+        wording when the row is committed.</p>
+    </section>
+    <section id="a-reverted-ledger-row-reads-absent-measurement">
+      <h2>Measurement</h2>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Receipt</th></tr></thead>
+        <tbody>
+          <tr><td>Base <code>4bd6dce4</code></td><td>1 failed, 23 passed; EXIT=1</td><td>Already-written wording for the removed row</td></tr>
+          <tr><td>Head <code>9776b3ec</code></td><td>24 passed; EXIT=0</td><td>Re-promote wording, then one committed row</td></tr>
+          <tr><td>Old read-back restored</td><td>1 failed; EXIT=1</td><td>Already-written wording returns</td></tr>
+        </tbody>
+      </table>
+      <p>The importer suite adds zero failure ids. Ruff check reports zero findings in
+        both arms; Ruff format check reports the same one pre-existing unformatted
+        source file in both arms, while the new test file is formatted. Full logs and
+        <code>diagnosis.md</code> are in the worker's run directory.</p>
+    </section>
+  </main>
+</body>
+</html>
