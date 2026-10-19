@@ -198,4 +198,5 @@ def test_an_image_carrying_a_commit_identity_reloads_once(source, monkeypatch, c
     out = capsys.readouterr().out
     assert "deferred" not in out and "could not" not in out
     assert len(execs) == 1
-    assert execs[0][2][_IMAGE_COMMIT_ENV] == _identity(root)
+    # Derived from git directly, not from the identity the reload runs.
+    assert execs[0][2][_IMAGE_COMMIT_ENV] == _git(root, "rev-parse", "HEAD:reckon")
