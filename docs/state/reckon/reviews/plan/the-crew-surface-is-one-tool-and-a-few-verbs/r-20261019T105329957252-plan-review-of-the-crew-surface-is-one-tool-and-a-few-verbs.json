@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T11:02:15.255Z",
+  "dispatched_at": "2026-10-19T10:54:13Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:235",
+      "id": "done_when-1",
+      "reason": "a node applying \u00a77 breaks a test outside its declared write paths, and its done-when tells it those tests pass, so it will either stop blocked or mistake the red for its own regression; the plan must add `tests/test_crew_help_names_its_state.py` to \u00a77's write paths (and correct the base-state claim) or the fold cannot close.",
+      "text": "\u00a77 folds `check-review`, `check-manifest`, `repair-status`, `repair-review`, `budget-lift`, `budget-lifts`, `budget-reset`, `preflight`, `resume-ready`, `redispatch` and `unwatch` out of the command tree (\u00a71 rows :67-72) and adds `crew repair`/`crew budget`/`crew check`, but `tests/test_crew_help_names_its_state.py:135` asserts `set(_leaf_commands(cli_module.crew)) == set(STATE_PHRASES)` against a hardcoded one-row-per-current-leaf dict (:16-67, with `check-review`, `check-manifest`, `repair-status`, `repair-review`, `budget-lift`, `budget-lifts`, `budget-reset`, `preflight`, `resume-ready`, `redispatch`, `unwatch` present and no `repair`/`budget`/`check`), so the fold reddens it; that file is in no section's write paths (\u00a76 and \u00a77 both change the leaf set and neither lists it), and the done-when instead predicts the opposite, that \"the two tests that fail at base because check-review and repair-review lack a help-state row and a skill citation pass once those verbs fold\" while excluding it from the pass list. Measured at base `b5ebad09`: `tests/test_crew_help_names_its_state.py` passes (5 passed) and `tests/test_skill_contracts.py tests/test_cited_commands_exist.py` pass (74 passed) \u2014 the claimed base failure does not exist, and the tests that will break are the ones the node is not fenced to edit.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:237",
+      "id": "reasoning-1",
+      "reason": "\u00a77 (and \u00a73) name a passing test that is red for modules outside the node's fence, so the node's gate carries a pre-existing failure the plan does not acknowledge and cannot repair; the plan should record the base red and its three modules, or scope their repair to a node that owns them.",
+      "text": "\u00a77's done-when asserts \"tests/test_every_module_fits_a_worker_window.py pass\", but at the node's base that test is red: `reckon/ledger.py` (51666 estimated tokens), `reckon/serve.py` (53952) and `reckon/crew/review.py` (51584) each exceed the 50,000 bound with an empty `ALLOWLIST` (tests/test_every_module_fits_a_worker_window.py:25-54), and all three were already over the bound at the plan's own cited base `d8ff471c9` (51390/52530/51580 tokens), so the red is not new growth. None of the three is in \u00a77's write paths, and none is touched by \u00a77's mechanism.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b7d3d561ff71deb885743ef1ea4cebad18e715c9988436b061948427662c444f",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 10,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-19T11:03:14.909003+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-19T11:03:21.689608+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T11:03:14.909003+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T11:03:21.689608+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-crew-surface-is-one-tool-and-a-few-verbs.v10.json",
+  "review_run_id": "r-20261019T105329957252-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "e97c59e47c2a206ff99d6c842b277f43da6c6268",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every module \u00a77 cites resolves and emits the verb attributed to it (prompts.py:561/563 `check-manifest`; refusals.py:19-45 `preflight`/`resume-ready`; watch_unit.py:940 `unwatch`; recovery_review_subject.py:416 `check-review`; obligations.py:209 `repair-review`; recovery_classification.py:703 `repair-status`; mcp.py:2391 `resume-ready`), and `reckon/cli.py` re-exports the folded functions (lines 221, 494, 497, 500, 506, 509, 524) as the plan states.",
+    "done_when": "a finding \u2014 \u00a77's fold deletes eleven leaves that `tests/test_crew_help_names_its_state.py` enumerates by exact set equality, and that file lies in no section's write paths while the done-when predicts those tests pass.",
+    "evidence_paths": "pass \u2014 \u00a77 writes its gate and captured fixtures to the run's artifacts and names no temporary or node-local path.",
+    "naming": "pass \u2014 \u00a77 names mechanisms, not plan labels or ticket numbers.",
+    "reasoning": "a finding \u2014 \u00a77's done-when asserts `tests/test_every_module_fits_a_worker_window.py` passes, but that test is red at the node's base.",
+    "single_goal": "pass \u2014 \u00a77 carries one deliverable, the verb-family fold behind flags.",
+    "wiring": "pass \u2014 \u00a77 declares `depends-on` {s6, s5} and every section sharing one of its write paths is ordered before it by the declared graph (s3 via `reckon/crew/prompts.py`, s5 via `reckon/mcp.py` and `reckon/crew/obligations.py`, s6 via `reckon/crew/tombstones.py`, s8 via `reckon/crew_run_commands.py`); no shared writer is left concurrent."
+  },
+  "section_digests": {
+    "_document": "26fd28404590af02aa2ebae125b81f4f7629f614fb6c2a72ea68b2d0d1aff496",
+    "s1": "df3ca327aa989333473f3456bef3fcb4304fc54d8ab37eb334a92448b8837aaa",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "046c6ca210de727c41d8414a2ea42383717384c5a44aef78e262b9cf98763118",
+    "s4": "2feb22a10d53f02161e33412c6f491a2718ee9b88ffede06e39b7fc15799f5d1",
+    "s5": "530c6781675c3f9dccecf9f7e556fb74664afde36da3623d64a3b3c65e1e5267",
+    "s6": "9a81b03299612971ddf0ab0fbbfd90bae473369248b753fc1a02640f8a80bdd2",
+    "s7": "f565e248a042086d74924d1428e9325198d5d59ac3d6dde071bb5d248622e683",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T11:03:10.994800+00:00"
+}
