@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms. baseline_suite (revision 0c97cdab9031d04f41ed74b9203898d0f8527fa7) reports failure_count 1 with failure_ids [\"tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window\"], and after_suite (revision a12a2b10b4e23cf790f04bd883e514495ff51c23) reports failure_count 1 with the same single id, so the set difference is empty. Both logs are readable arms: baseline_suite.log names reckon/crew/review.py (51,584), reckon/ledger.py (51,666) and reckon/serve.py (54,746) as over the 50,000 bound, and after_suite.log names only the first two, so the increment removes a failure line rather than adding one. I reproduced the head arm myself: 1 failed, 3 passed, the failure naming only review.py and ledger.py.",
+  "call_site_count": 12,
+  "call_sites": [
+    "reckon/change_streams.py:5",
+    "reckon/change_streams.py:385",
+    "reckon/mcp_discovery.py:30",
+    "reckon/mcp_edit_plan.py:57",
+    "reckon/mcp.py:1980",
+    "reckon/project_setup_commands.py:135",
+    "reckon/project_maintenance_commands.py:593",
+    "reckon/resources.py:259",
+    "reckon/mcp_views.py:1215",
+    "reckon/fleet_index.py:168",
+    "reckon/doccheck.py:278",
+    "reckon/git_dates.py:53"
+  ],
+  "completed_at": "2026-10-19T14:46:24.947Z",
+  "dispatched_at": "2026-10-19T14:17:18Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T120757963495-serve-fits-a-worker-window-again/manifest.md",
+      "line": "17",
+      "text": "follow-on: the manifest's `negative_control_log:` names negative_control_suite_record.log, whose facts are EXIT=1 with a probe summary (FINDINGS 4) and no failing test id, while the node's declared control string ('point one repointed patch back at serve, so that census test fails') was carried out and logged in negative_control_cross_node.log (EXIT=1, tests/test_cross_node_writes_refresh_the_index.py::test_an_unread_tree_pays_no_slow_sweep red, with its failure text). Admission is read from the log the field names, so the field points at the log that does not carry the control the node declared."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the change removes two module-level names from reckon.serve's namespace, so I checked every production module that imports from it: reckon/mcp_discovery.py:30, reckon/mcp_edit_plan.py:57, reckon/mcp_views.py:1215, reckon/mcp.py:1980, reckon/fleet_index.py:168, reckon/resources.py:259, reckon/project_setup_commands.py:135, reckon/project_maintenance_commands.py:593, reckon/doccheck.py:278, reckon/change_streams.py:366 and :385, reckon/git_dates.py:53 \u2014 each names a symbol that still exists in serve.py at the head, and none imports select or struct from reckon.serve, so the removal is unreachable from runtime code.",
+    "diff": "read a12a2b10b against the prior reviewed head 2006e2ee2: two files, 16 insertions and 2 deletions \u2014 `import select` and `import struct` removed from reckon/serve.py:50 and :53, and the fragment gains two paragraphs, which I confirmed are well-formed, append rather than replace (no line of the fragment is deleted), and carry element ids prefixed with the node id.",
+    "done_when": "the done_when names the token test (its estimator no longer names reckon/serve.py at the head, and module_sizes.log records serve.py at 44,178 under the section's 45,000), scripts/check_pure_move.py, the census of test files and the negative control; its ruff clause is now met on the changed Python files, measured at 17 findings on reckon/serve.py against 17 of the same kinds at base and 19 at 2006e2ee2.",
+    "goal": "the node goal is to move the per-path git-date readers and the change watches out of reckon/serve.py into reckon/git_dates.py and reckon/change_streams.py as a pure move; read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T120757963495-serve-fits-a-worker-window-again/prompt.txt line 19, and the increment completes it by removing the two imports the move left dead.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T120757963495-serve-fits-a-worker-window-again/manifest.md; status complete, five commits (71b6cab12, 0346ee64f, ac42ba306, 2006e2ee2, a12a2b10b), baseline_suite and after_suite now flat JSON records with revision, command, exit_status, log_path, completed, failure_count and failure_ids, and failure_attribution empty.",
+    "write_paths": "read the FENCE - SCOPE list in prompt.txt; the increment's two paths (reckon/serve.py and the landing fragment under docs/evidence/fragments/the-site-answers-fast-and-agrees/) are both inside it, and no path outside it appears in a12a2b10b."
+  },
+  "justifications": {
+    "durability": "the increment adds no assertion of its own and no test in the suite fails if the two imports are reinstated, so the removal is guarded only by the ad-hoc ruff run the node logged (negative_control_unused_imports.log, EXIT=1, the two F401s at reckon/serve.py:50 and :53), which is a reproducible check but not a suite test; the node's token ratchet tests/test_every_module_fits_a_worker_window.py guards the move, not this cleanup, and the section's 45,000 target is still enforced by no test \u2014 only the 50,000 bound.",
+    "evidence": "the done_when's ruff clause is met at the head: in a full-layout archive ruff check reports 17 findings on reckon/serve.py, identical in kind and count to the 17 at base 0c97cdab9 (my own run: BLE001 1, DTZ005 4, EXE001 1, PLW0603 3, RUF100 2, SIM105 2, UP017 4 at both revisions), against 19 at 2006e2ee2 with the two lines in place, so no finding is added; ruff format --check reports the node's ten changed Python files already formatted, and tests/test_every_module_fits_a_worker_window.py no longer names reckon/serve.py (after_suite.log, reproduced at my hand: 1 failed, naming only reckon/crew/review.py and reckon/ledger.py).",
+    "fit": "the change is idiomatic dead-import removal with no new symbol, and the fragment's two added ids (serve-fits-a-worker-window-again-repair, serve-fits-a-worker-window-again-deviation) are prefixed with the node id and carry no plan, sprint or version label.",
+    "goal_fidelity": "the goal is to move the per-path git-date readers and the change watches out of reckon/serve.py into reckon/git_dates.py and reckon/change_streams.py as a pure move, and the increment carries the residue cleanup the move owed: serve.py at a12a2b10b keeps every imported name another file takes from it and drops only `select` and `struct`, verified by grep of reckon/serve.py at head returning no use of either.",
+    "reuse": "the increment adds no definition, so nothing is forked and nothing is needed from an owner; the two imports removed from reckon/serve.py remain owned by reckon/change_streams.py:5 and :7, which import select and struct itself.",
+    "scope_discipline": "the increment's diff is two files, reckon/serve.py and docs/evidence/fragments/the-site-answers-fast-and-agrees/serve-fits-a-worker-window-again.html, both in the node's declared write paths, and it removes no line from the fragment (16 insertions, 2 deletions, the deletions being the two imports)."
+  },
+  "node": "review-of-serve-fits-a-worker-window-again-a12a2b10b4e2",
+  "node:reviewed": "serve-fits-a-worker-window-again",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to move the per-path git-date readers and the change watches out of reckon/serve.py into reckon/git_dates.py and reckon/change_streams.py as a pure move; the increment with its landed head removes the two imports the move left dead in reckon/serve.py, so no residue of the move remains there.\nVERDICT done_when: the done_when names tests/test_every_module_fits_a_worker_window.py (its estimator no longer names reckon/serve.py at the head), scripts/check_pure_move.py, the census of test files and the negative control; its ruff clause is now met, measured at 17 findings on reckon/serve.py against 17 of the same kinds at base 0c97cdab9 and 19 at 2006e2ee2.\nVERDICT write_paths: read the FENCE - SCOPE list; the increment's diff touches only reckon/serve.py and docs/evidence/fragments/the-site-answers-fast-and-agrees/serve-fits-a-worker-window-again.html, both inside the declared write paths.\nVERDICT manifest: read; status complete, five commits, baseline_suite and after_suite as flat JSON records with revision, command, exit_status, log_path, completed, failure_count and failure_ids, both arms one failure, the same id, so the increment adds no failure.\nVERDICT diff: read a12a2b10b against 2006e2ee2 commit by commit: two files, 16 insertions and 2 deletions, the deletions being `import select` and `import struct` at reckon/serve.py:50 and :53, and the fragment gaining the Repair and Deviation paragraphs without losing a line.\nCALL_SITES: reckon/change_streams.py:5 (imports select and struct itself), reckon/change_streams.py:385, reckon/mcp_discovery.py:30, reckon/mcp_edit_plan.py:57, reckon/mcp.py:1980, reckon/project_setup_commands.py:135, reckon/project_maintenance_commands.py:593, reckon/resources.py:259, reckon/mcp_views.py:1215, reckon/fleet_index.py:168, reckon/doccheck.py:278, reckon/git_dates.py:53\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/serve.py at a12a2b10b keeps every name another file imports from it and uses neither select nor struct, so the pure move's residue is gone.\nSCORE evidence: 17\nJUSTIFICATION evidence: my own ruff run in a full-layout archive gives 17 findings on reckon/serve.py at both 0c97cdab9 and a12a2b10b with an identical kind histogram and 19 at 2006e2ee2, and after_suite.log naming only reckon/crew/review.py and reckon/ledger.py reproduced at my hand.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff is confined to reckon/serve.py and the landing fragment, and it appends 16 lines to the fragment while deleting none.\nSCORE durability: 10\nJUSTIFICATION durability: no suite test fails if reckon/serve.py:50 and :53 are reinstated, so the only guard is the ad-hoc ruff run in negative_control_unused_imports.log, and the section's 45,000 target is still held by no test.\nSCORE fit: 19\nJUSTIFICATION fit: the change removes dead imports and leaves the fragment's element ids (serve-fits-a-worker-window-again-repair, serve-fits-a-worker-window-again-deviation) prefixed with the node id and free of plan or version labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: the increment defines nothing, and the removed imports' capability stays with reckon/change_streams.py:5 and :7, which import select and struct themselves.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T120757963495-serve-fits-a-worker-window-again/manifest.md:17 follow-on: negative_control_log names negative_control_suite_record.log, which carries EXIT=1 and a probe summary but no failing test id, while the declared control's own log is negative_control_cross_node.log (EXIT=1, tests/test_cross_node_writes_refresh_the_index.py::test_an_unread_tree_pays_no_slow_sweep red).\n",
+  "review_run_id": "r-20261019T141453269564-review-of-serve-fits-a-worker-window-again-a12a2b10b4e2",
+  "reviewed_base_sha": "2006e2ee2c20e15d0da90235a69f3b70a82d555e",
+  "reviewed_head_sha": "a12a2b10b4e23cf790f04bd883e514495ff51c23",
+  "reviewed_run_id": "r-20261019T120757963495-serve-fits-a-worker-window-again",
+  "scores": {
+    "durability": 10,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T14:45:00+00:00",
+  "total": 102
+}
