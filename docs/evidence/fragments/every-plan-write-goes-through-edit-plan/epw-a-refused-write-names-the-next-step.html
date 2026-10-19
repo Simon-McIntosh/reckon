@@ -1,0 +1,57 @@
+<section data-reckon="evidence" id="epw-a-refused-write-names-the-next-step">
+  <h3>§7 — A refused or late edit_plan write names the caller's next step</h3>
+  <p>Four refusals now answer with the step the caller needs, each verified through
+    <code>edit_plan</code> on a temporary project in
+    <code>tests/test_a_refused_write_names_the_next_step.py</code> (eight cases, all passing at the node head).</p>
+  <ul>
+    <li id="epw-a-refused-write-names-the-next-step-conflict"><strong>Version conflict.</strong>
+      <code>_attach_changed_targets</code> in <code>reckon/mcp_edit_plan.py</code> adds a
+      <code>changed_targets</code> list — each op the refused write addressed, with the value the document
+      holds now — beside the <code>current_version</code> the conflict already carried
+      (<code>reckon/mcp_deadlines.py::_conflict_response</code>, unchanged: the current-version half already
+      held at the base, so it got no code). Case: <code>test_conflict_carries_current_version_and_targets</code>,
+      which reads the expected version back off disk rather than asserting the value it passed itself.</li>
+    <li id="epw-a-refused-write-names-the-next-step-batch"><strong>Batch.</strong>
+      <code>reckon/_store.py::collect_refused_ops</code> applies ops one at a time on a rolling copy, so a
+      state-mode batch reports <em>every</em> op the store would refuse, each with its <code>index</code> and
+      <code>reason</code>. Case: <code>test_batch_reports_every_refused_op</code> (three bad ops, three entries).</li>
+    <li id="epw-a-refused-write-names-the-next-step-request-id"><strong>Late write.</strong> An optional
+      <code>request_id</code> records a receipt (<code>reckon/_store.py::record_write_receipt</code>, keyed by an
+      opaque scope key under the state root). A retry of the same id with the same request returns the landed
+      version with <code>ok</code> and <code>replayed: true</code>; the same id with different ops is refused as
+      <code>reused_request_id</code>. Cases: <code>test_request_id_returns_the_landed_version_on_retry</code>,
+      <code>test_reused_request_id_with_different_ops_is_refused</code>.</li>
+    <li id="epw-a-refused-write-names-the-next-step-enum"><strong>Enumerated field.</strong>
+      <code>reckon/_store_section_ops.py::_enumerated_field_legal_values</code> names the legal values of a
+      section's <code>effort_hours</code> (a positive multiple of 0.25), <code>capability</code> (class and
+      requirement level lists) and <code>links</code>, and a capability refusal carries a valid example. Cases:
+      <code>test_effort_refusal_names_the_quarter_hour</code>,
+      <code>test_capability_refusal_names_legal_values_and_an_example</code>. The effort case
+      asserted only that the refusal contains <code>0.25</code>, which the raw validation detail contains
+      too, so it passed with the legal-values sentence removed; the enumerated-field control exposed that,
+      and the case now asserts the sentence the change supplies.</li>
+    <li id="epw-a-refused-write-names-the-next-step-resource"><strong>Resource write.</strong> A write to a
+      distributed project resource — a sprint, a milestone — answered through a
+      separate branch that never attached the addressed targets and never recorded a request-id
+      receipt, so a resource conflict named no <code>changed_targets</code> and a late-landed
+      resource retry was not idempotent while the plan path did both. That branch now returns
+      through <code>_attach_changed_targets</code> on <code>ProjectStateConflict</code> and records
+      its receipt on success. Cases: <code>test_sprint_conflict_names_its_changed_targets</code> (the
+      target's current value is the one the store holds, not one the test supplied),
+      <code>test_sprint_request_id_returns_the_landed_version_on_retry</code>.</li>
+  </ul>
+  <p><code>_value_at_path</code> resolves a list element by id through the store's own
+    <code>reckon/_store.py::_find_by_id</code> rather than its own lookup, so one owner answers that
+    address form.</p>
+  <p><strong>Measure.</strong> Head gate: <code>93 passed, 1 failed</code> — the single failure is
+    <code>test_every_module_fits_a_worker_window</code>, which also fails at the base arm
+    (<code>reckon/crew/review.py</code>, <code>reckon/ledger.py</code> exceed the bound), so zero failures are
+    added. The one out-of-scope failure is recorded under <code>follow_ons</code>.</p>
+  <p><strong>Negative controls.</strong> Four, one log each, every mutation applied to a copy of the node
+    revision, never committed, and reverted before the next: the <em>reused request id</em> (the digest
+    comparison short-circuited, so a reused id is answered with the earlier version), the <em>batch</em>
+    (<code>collect_refused_ops</code> returns only its first refusal), the <em>enumerated field</em> (an
+    enumerated-field refusal carries the raw validation detail without its legal-values sentence), and the
+    <em>conflict payload</em> (<code>_attach_changed_targets</code> attaches no targets and the refusal drops
+    its current version). Each names the case it must turn red; each did.</p>
+</section>
