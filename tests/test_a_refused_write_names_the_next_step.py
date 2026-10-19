@@ -11,10 +11,12 @@ Four refusals used to make the caller read more than the answer needed:
   at a time.
 
 Each case drives the change through ``edit_plan`` on a temporary project, and
-each is written so that removing the change turns it red. The node's declared
-negative control is the reused request id: reusing one id for a write with
-different ops must be refused as a reused id, never answered with the earlier
-write's version.
+each is written so that removing the change turns it red. A write to a
+distributed project resource — a sprint, a milestone — answers through the same
+two paths, so its conflict names the targets it addressed and its request id is
+idempotent as well. The node's declared negative control is the reused request
+id: reusing one id for a write with different ops must be refused as a reused
+id, never answered with the earlier write's version.
 
 Hermetic fixture mirrors ``tests/test_edit_plan_sets_a_section_field.py``: a
 temporary docs tree and mounts, with the store-backed MCP modules reloaded.
@@ -145,9 +147,12 @@ def test_conflict_carries_current_version_and_targets(setup):
     )
     assert conflict["ok"] is False
     assert conflict["error"] == "version_conflict"
-    # Without the current version the caller cannot know what to re-read.
-    assert conflict["current_version"] == 1
-    assert conflict["expected_version"] == 0
+    # Without the current version the caller cannot know what to re-read. The
+    # expectation is the version the store holds now, read back off disk: a
+    # value this test never passes, so echoing the caller's own 0 cannot
+    # satisfy it.
+    assert conflict["current_version"] == _version(docs_dir)
+    assert conflict["current_version"] != conflict["expected_version"]
     # The targets the refused write addressed, each with the value it holds now.
     targets = conflict["changed_targets"]
     assert {"index": 0, "path": "sections.s1.effort_hours", "current": 1.0} in targets
@@ -252,3 +257,88 @@ def test_capability_refusal_names_legal_values_and_an_example(setup):
     # The legal risk levels are named, and a valid example is carried.
     assert "elevated" in result["detail"] and "critical" in result["detail"]
     assert "valid example" in result["detail"]
+
+
+# ── 5. a resource write answers through the same two paths ───────────────────
+
+SPRINT = "current"
+
+
+def _sprint_edit(
+    docs_dir: Path,
+    ops: list[dict],
+    version: int,
+    request_id: str | None = None,
+    create: bool = False,
+):
+    import reckon.mcp as mcp_module
+
+    return mcp_module._edit_plan_tool(
+        PROJECT,
+        SPRINT,
+        expected_version=version,
+        checkout_path=str(docs_dir.parent),
+        mode="state",
+        doc_type="sprint",
+        ops=ops,
+        request_id=request_id,
+        create=create,
+    )
+
+
+def _make_sprint(docs_dir: Path) -> None:
+    """A distributed project corpus holding one sprint resource."""
+    from reckon import project_state
+
+    project_state.create_project_state(docs_dir, PROJECT)
+    created = _sprint_edit(
+        docs_dir, [{"op": "set", "path": "title", "value": "First"}], 0, create=True
+    )
+    assert created["ok"] is True, created
+
+
+def test_sprint_conflict_names_its_changed_targets(setup):
+    from reckon import project_state
+
+    docs_dir = setup
+    _make_sprint(docs_dir)
+    # An intervening write moves the resource on.
+    landed = _sprint_edit(
+        docs_dir, [{"op": "set", "path": "status", "value": "active"}], 1
+    )
+    assert landed["ok"] is True, landed
+
+    stored, stored_version = project_state.read_resource(
+        docs_dir, PROJECT, "sprint", SPRINT
+    )
+    # The caller retries on the version it read before that write.
+    conflict = _sprint_edit(
+        docs_dir, [{"op": "set", "path": "title", "value": "Second"}], 0
+    )
+    assert conflict["ok"] is False, conflict
+    assert conflict["error"] == "version_conflict"
+    assert conflict["current_version"] == stored_version
+    # The addressed target with the value the store holds now — a value neither
+    # the caller nor this test supplied.
+    assert {"index": 0, "path": "title", "current": stored["title"]} in (
+        conflict["changed_targets"]
+    )
+
+
+def test_sprint_request_id_returns_the_landed_version_on_retry(setup):
+    from reckon import project_state
+
+    docs_dir = setup
+    _make_sprint(docs_dir)
+    _, version = project_state.read_resource(docs_dir, PROJECT, "sprint", SPRINT)
+    ops = [{"op": "set", "path": "status", "value": "active"}]
+    first = _sprint_edit(docs_dir, ops, version, request_id="req-sprint")
+    assert first["ok"] is True, first
+    landed_version = first["new_version"]
+
+    # The retry carries the same id and ops but the pre-write version: the write
+    # already landed, so this must answer with its version, not a conflict.
+    retry = _sprint_edit(docs_dir, ops, version, request_id="req-sprint")
+    assert retry["ok"] is True, retry
+    assert retry.get("replayed") is True
+    assert retry["new_version"] == landed_version

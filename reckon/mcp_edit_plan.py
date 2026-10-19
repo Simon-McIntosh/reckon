@@ -20,6 +20,7 @@ from reckon._store import (
     OpError,
     VersionConflict,
     _docs_dir_for_project,
+    _find_by_id,
     _mounts_path,
     _receipt_scope_key,
     _resolve_html_file,
@@ -948,17 +949,10 @@ def _value_at_path(data: dict[str, Any], path: str) -> Any:
         listed = data.get(head)
         if not isinstance(listed, list):
             return _ABSENT
-        record = next(
-            (
-                item
-                for item in listed
-                if isinstance(item, dict) and str(item.get("id")) == parts[1]
-            ),
-            None,
-        )
-        if record is None:
+        hit = _find_by_id(listed, parts[1])
+        if hit is None:
             return _ABSENT
-        return record.get(parts[2], _ABSENT)
+        return hit[1].get(parts[2], _ABSENT)
     if len(parts) == 2 and head in {"decisions", "section_declarations"}:
         mapping = data.get(head)
         if not isinstance(mapping, dict):
@@ -1265,14 +1259,26 @@ def _edit_plan(
                 result["warnings"] = warnings
             if create:
                 result["created"] = True
+            if request_id and receipt_scope is not None and request_digest is not None:
+                record_write_receipt(
+                    project,
+                    receipt_scope,
+                    request_id,
+                    version=new_version,
+                    digest=request_digest,
+                )
             return result
         except ProjectStateConflict as exc:
-            return _conflict_response(
-                VersionConflict(exc.expected, exc.current, exc.current_data),
-                project=project,
-                slug=slug,
-                doc_type=canonical_doc_type,
-                operation="create" if create else "edit",
+            return _attach_changed_targets(
+                _conflict_response(
+                    VersionConflict(exc.expected, exc.current, exc.current_data),
+                    project=project,
+                    slug=slug,
+                    doc_type=canonical_doc_type,
+                    operation="create" if create else "edit",
+                ),
+                exc.current_data,
+                ops,
             )
         except ProjectStateError as exc:
             return {
