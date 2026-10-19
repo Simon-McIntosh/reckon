@@ -63,7 +63,11 @@ def setup(tmp_path, monkeypatch):
 
 
 def _make_section_plan(docs_dir: Path) -> Path:
-    """A plan whose three authored sections each carry their typed record."""
+    """A plan whose three authored sections each carry their typed record.
+
+    ``s4`` carries a heading and a record but no prose, the shape a section
+    holds in the moment between its creation and its first body write.
+    """
     authored = (
         '<!doctype html>\n<html lang="en">\n<head>'
         '<meta charset="utf-8">'
@@ -77,6 +81,7 @@ def _make_section_plan(docs_dir: Path) -> Path:
         "<p>The plan&#x27;s second body.</p>\n"
         '<h2 id="s3">&sect;3 &mdash; Three</h2>\n'
         "<p>Body three.</p>\n"
+        '<h2 id="s4">&sect;4 &mdash; Four</h2>\n'
         "</main></body>\n</html>\n"
     )
     state = {
@@ -91,6 +96,7 @@ def _make_section_plan(docs_dir: Path) -> Path:
             "s1": "implementable",
             "s2": "implementable",
             "s3": "implementable",
+            "s4": "implementable",
         },
         "sections": [
             {
@@ -101,7 +107,7 @@ def _make_section_plan(docs_dir: Path) -> Path:
                 "status": "implementable",
                 "links": [],
             }
-            for section_id in ("s1", "s2", "s3")
+            for section_id in ("s1", "s2", "s3", "s4")
         ],
     }
     path = docs_dir / "plans" / f"{PLAN}.html"
@@ -151,7 +157,7 @@ def test_set_title_rewrites_the_h2_and_keeps_its_id(setup):
     docs_dir = setup
     path = _make_section_plan(docs_dir)
     before, _ = _read(docs_dir)
-    others = {sid: _authored_bytes(before, sid) for sid in ("s2", "s3")}
+    others = {sid: _authored_bytes(before, sid) for sid in ("s2", "s3", "s4")}
 
     result = _edit(
         docs_dir,
@@ -170,6 +176,8 @@ def test_set_title_rewrites_the_h2_and_keeps_its_id(setup):
 def test_set_links_writes_the_typed_record(setup):
     docs_dir = setup
     path = _make_section_plan(docs_dir)
+    before, _ = _read(docs_dir)
+    others = {sid: _authored_bytes(before, sid) for sid in ("s2", "s3", "s4")}
 
     result = _edit(
         docs_dir,
@@ -178,28 +186,36 @@ def test_set_links_writes_the_typed_record(setup):
     )
     assert result["ok"] is True, result
 
-    _, state = _read(docs_dir)
+    text, state = _read(docs_dir)
     assert _record_for(state, "s1")["links"] == ["other-plan#s2"]
+    for sid, snapshot in others.items():
+        assert _authored_bytes(text, sid) == snapshot, sid
     _audit_ok(path)
 
 
 def test_set_effort_hours_writes_the_typed_record(setup):
     docs_dir = setup
     path = _make_section_plan(docs_dir)
+    before, _ = _read(docs_dir)
+    others = {sid: _authored_bytes(before, sid) for sid in ("s2", "s3", "s4")}
 
     result = _edit(
         docs_dir, [{"op": "set", "path": "sections.s1.effort_hours", "value": 2.25}], 0
     )
     assert result["ok"] is True, result
 
-    _, state = _read(docs_dir)
+    text, state = _read(docs_dir)
     assert _record_for(state, "s1")["effort_hours"] == 2.25
+    for sid, snapshot in others.items():
+        assert _authored_bytes(text, sid) == snapshot, sid
     _audit_ok(path)
 
 
 def test_set_capability_writes_the_typed_record(setup):
     docs_dir = setup
     path = _make_section_plan(docs_dir)
+    before, _ = _read(docs_dir)
+    others = {sid: _authored_bytes(before, sid) for sid in ("s2", "s3", "s4")}
     capability = {
         "version": "1.0",
         "class": "general",
@@ -217,8 +233,10 @@ def test_set_capability_writes_the_typed_record(setup):
     )
     assert result["ok"] is True, result
 
-    _, state = _read(docs_dir)
+    text, state = _read(docs_dir)
     assert _record_for(state, "s1")["capability"]["requirements"]["reasoning"] == "deep"
+    for sid, snapshot in others.items():
+        assert _authored_bytes(text, sid) == snapshot, sid
     _audit_ok(path)
 
 
@@ -227,7 +245,7 @@ def test_set_body_replaces_prose_holding_an_entity_apostrophe(setup):
     path = _make_section_plan(docs_dir)
     before, _ = _read(docs_dir)
     assert "The plan&#x27;s second body." in before
-    others = {sid: _authored_bytes(before, sid) for sid in ("s1", "s3")}
+    others = {sid: _authored_bytes(before, sid) for sid in ("s1", "s3", "s4")}
 
     result = _edit(
         docs_dir,
@@ -243,6 +261,39 @@ def test_set_body_replaces_prose_holding_an_entity_apostrophe(setup):
         assert _authored_bytes(text, sid) == snapshot, sid
     owed = {entry["unit"] for entry in (result["review_owed"] or [])}
     assert "s2" in owed, result
+    _audit_ok(path)
+
+
+def test_set_body_fills_a_section_that_has_no_prose_yet(setup):
+    docs_dir = setup
+    path = _make_section_plan(docs_dir)
+    before, _ = _read(docs_dir)
+    spans = _plan_html.section_field_spans(before, "s4")
+    assert spans is not None
+    # The authored span is a bare newline, which occurs throughout the document.
+    assert not before[spans[1][0] : spans[1][1]].strip()
+    assert before.count(before[spans[1][0] : spans[1][1]]) > 1
+    others = {sid: _authored_bytes(before, sid) for sid in ("s1", "s2", "s3")}
+
+    result = _edit(
+        docs_dir,
+        [{"op": "set", "path": "sections.s4.body", "value": "<p>Filled in.</p>"}],
+        0,
+    )
+    assert result["ok"] is True, result
+
+    text, state = _read(docs_dir)
+    assert "<p>Filled in.</p>" in text
+    after = _plan_html.section_field_spans(text, "s4")
+    assert after is not None
+    assert text[after[1][0] : after[1][1]].strip() == "<p>Filled in.</p>"
+    assert (
+        '<h2 id="s4">' in text and _record_for(state, "s4")["status"] == "implementable"
+    )
+    for sid, snapshot in others.items():
+        assert _authored_bytes(text, sid) == snapshot, sid
+    owed = {entry["unit"] for entry in (result["review_owed"] or [])}
+    assert "s4" in owed, result
     _audit_ok(path)
 
 
