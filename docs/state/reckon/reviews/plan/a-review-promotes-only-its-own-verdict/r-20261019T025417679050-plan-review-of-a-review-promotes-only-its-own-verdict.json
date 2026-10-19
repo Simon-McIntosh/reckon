@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T03:05:32.202Z",
+  "dispatched_at": "2026-10-19T02:55:50Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-promotes-only-its-own-verdict.html:77",
+      "id": "reasoning-1",
+      "reason": "the fallback exists precisely to close the gap the prior review raised (a row whose only dispatched-head source is its node id has no `.at-` path, so it is listed by \u00a72 yet refused by \u00a73), and a worker following the plan literally receives a run id where a head is required, so the node-id-only rows \u2014 including \u00a72's own known-correct row read through the node-id suffix \u2014 stay refused rather than corrected; the plan must name the head-extracting step, not a helper that returns the source.",
+      "text": "\u00a73's new head fallback says the verb reads \"the hex suffix of the node id through `round_node_source`\" (`reckon/crew/repair.py:310`), but `round_node_source(node_id, prefix)` is the inverse of `round_node_id`: it strips the review prefix and the trailing `-<head[:12]>` suffix and returns the *source* (the reviewed run id), discarding exactly the head the sentence says it yields; the correct route is the census's own `_node_head_suffix` (`scripts/review_rows_with_another_rounds_verdict.py:59`), which recovers `raw[len(source) + 1:]`.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "257f75ac28684b9c2d4f0e6a11e7c9097b73c0647db3a990433240cddc2dfa09",
+  "plan_slug": "a-review-promotes-only-its-own-verdict",
+  "plan_version": 32,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-19T03:15:46.813215+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T03:15:46.813215+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-review-promotes-only-its-own-verdict.v32.json",
+  "review_run_id": "r-20261019T025417679050-plan-review-of-a-review-promotes-only-its-own-verdict",
+  "reviewed_blob_sha": "cd6d0ed24487e32422da709574a60bb33e918ace",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every \u00a73 anchor resolves: crew_run_commands.py:760 (`repair-review`), obligations.py:202 (eyed as its caller), recovery_review_dispatch.py:133 (`_review_record_subject`), repair.py:310 (`round_node_source`), review.py:348 (`carried_revision_pair`), recovery_review_subject.py:102 (`same_revision`), and the four reader sites (capabilities.py:968, ledger.py:3701, picker/snapshot.py:377, picker/outcomes.py:477) each read a row's review block.",
+    "done_when": "pass \u2014 \u00a73's five done-when items are measurable and item 4 names a declared negative control (the new test file's reader cases FAILED by id at the base revision, logged under the run directory), with the red-first framing repeated on the \"Negative control\" line.",
+    "evidence_paths": "pass \u2014 the verb writes the row's committed per-run file under docs/state/<project>/runs/ and the gate log lands under the run directory; no scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 `supersede-review`, `review_correction` and the unnamed accessor carry no plan label, stage name, ticket number or version tag, and describe the mechanism rather than the history.",
+    "reasoning": "a finding \u2014 \u00a73's newly added node-id fallback names `round_node_source` as reading \"the hex suffix of the node id\", but that function returns the source (run id), not the head, so the fallback the section added is unfollowable as written.",
+    "single_goal": "pass \u2014 \u00a73's two bullets (one reader accessor, one append verb) are the two halves of one deliverable, a correction every reader honours; neither is closable on its own, so the node still closes on one verdict.",
+    "wiring": "pass \u2014 s3 declares depends-on a-review-promotes-only-its-own-verdict#s2 (a done node) and is itself the depends-on of s4; the node table's relationships all resolve."
+  },
+  "section_digests": {
+    "_document": "37efc2b77cf3646243e013d967ec9088d667b1d9ea2a5b9eef64b5497466ceb5",
+    "s1": "b5cea03aef396e4aea2b2b9c76f01fd0b684b3da7cce27ab57a3fe3cd364801d",
+    "s2": "7210c28c3600892789bd0cf6bb61f4c9e0443ff586e1b7887eb2255666cb75c1",
+    "s3": "c2be82022d6fd208ee072dba5466d22410b92cde65519f70d98274414e5cc8a1",
+    "s4": "a9322c904cf8f73d13927bdb94c285337d65beb883692d0de9754b12bbf059ca"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T03:15:40.830637+00:00"
+}
