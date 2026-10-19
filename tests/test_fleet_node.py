@@ -477,6 +477,7 @@ def test_placement_uses_the_identifier_of_the_row_it_matched(jobid) -> None:
         "srun",
         "--overlap",
         f"--jobid={jobid}",
+        "--mem=24G",
         "hostname",
     ]
 
@@ -488,7 +489,7 @@ def test_place_names_the_allocation_it_found(jobid, monkeypatch) -> None:
 
     assert result.exit_code == 0, result.output
     step = next(command for command in commands if command[0] == "srun")
-    assert step == ["srun", "--overlap", f"--jobid={jobid}", "hostname"]
+    assert step == ["srun", "--overlap", f"--jobid={jobid}", "--mem=24G", "hostname"]
 
 
 def test_place_queries_the_account_the_allocation_is_charged_to(monkeypatch) -> None:

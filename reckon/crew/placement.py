@@ -24,9 +24,10 @@ import fcntl
 import getpass
 import json
 import os
+import shlex
 import subprocess
 import time
-from collections.abc import Callable, Iterable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -54,6 +55,30 @@ RESERVATION_SCHEDULER = "salloc"
 RESERVATION_STEP_SCHEDULER = "srun"
 RESERVATION_NO_SHELL_OPTION = "--no-shell"
 RESERVATION_JOB_NAME = "reckon-reservation"
+
+# The memory a worker step carries by default, and the ceiling above which a
+# step leaves the fleet allocation for a node of its own. The allocation holds
+# 96 GB shared by every session and worker, so an undeclared step bounded to a
+# small share keeps the OOM killer from reaching the sessions when one grows.
+# A step named past the ceiling cannot sit beside them at all: it is placed as
+# a job of its own, where a whole node serves it, instead of taking the
+# allocation to the limit. The default is overridable per environment.
+DEFAULT_STEP_MEMORY_GB = 24
+STEP_MEMORY_CEILING_GB = 48
+STEP_MEMORY_ENV = "RECKON_STEP_MEMORY"
+
+# The client that gives a step a job of its own when the step is too large to
+# sit in the allocation. Only the batch client submits a job of its own from
+# inside a held allocation; a step client from there runs as a step of the held
+# job whatever partition it names. The caller continues with the result, so the
+# submission waits for the job rather than returning at once.
+STEP_JOB_SCHEDULER = "sbatch"
+STEP_JOB_WAIT_OPTION = "--wait"
+STEP_JOB_WRAP_OPTION = "--wrap"
+
+# A step too large for the allocation is placed on a debug partition, so the
+# work is sized for a debug queue rather than a production one.
+DEBUG_PARTITION_SUFFIX = "_debug"
 
 # The roster cap and the axis it is measured on. Twenty-five is the concurrency
 # the serve was observed delivering throughput for; the binding quantity is
@@ -230,6 +255,65 @@ def reservation_options(
     ]
 
 
+def step_memory_gb(
+    declared: int | None = None, environ: Mapping[str, str] | None = None
+) -> int:
+    """Whole gigabytes a worker step is bounded to.
+
+    A declared value wins; then the environment override; then the default. The
+    value is a whole number of gigabytes because that is the unit both the
+    scheduler option and the reservation's own memory are stated in. A declared
+    or environment value that cannot be read as a whole number falls back rather
+    than raising, so a malformed override never leaves a step unbounded.
+    """
+    if declared is not None:
+        return int(declared)
+    env = os.environ if environ is None else environ
+    raw = str(env.get(STEP_MEMORY_ENV) or "").strip()
+    if raw:
+        try:
+            return int(raw.rstrip("Gg"))
+        except ValueError:
+            pass
+    return DEFAULT_STEP_MEMORY_GB
+
+
+def step_memory_option(memory_gb: int) -> str:
+    """The scheduler option that bounds a step to ``memory_gb`` gigabytes."""
+    return f"--mem={int(memory_gb)}G"
+
+
+def step_memory_above_ceiling(memory_gb: int) -> bool:
+    """Whether a step of this size must leave the fleet allocation."""
+    return int(memory_gb) > STEP_MEMORY_CEILING_GB
+
+
+def declared_memory_gb(options: Sequence[str]) -> int | None:
+    """The bound a caller already named among ``options``, or None.
+
+    A placement declares a step's memory the way it declares any other resource
+    request, as a scheduler option string, so the value is read back from the
+    options rather than from a key of its own. None means no bound was named and
+    the default applies; a bound that cannot be read as a whole number is left
+    for ``step_prefix`` to re-state as the default rather than read as zero.
+    """
+    for option in options:
+        text = str(option)
+        if not text.startswith("--mem="):
+            continue
+        raw = text[len("--mem=") :].strip()
+        try:
+            return int(raw.rstrip("Gg"))
+        except ValueError:
+            return None
+    return None
+
+
+def debug_partition(partition: str = RESERVATION_PARTITION) -> str:
+    """The debug partition a step too large for the allocation is placed on."""
+    return f"{partition}{DEBUG_PARTITION_SUFFIX}"
+
+
 def step_prefix(job_id: str, options: list[str]) -> list[str]:
     """The options that place a step inside a held allocation.
 
@@ -237,8 +321,47 @@ def step_prefix(job_id: str, options: list[str]) -> list[str]:
     quota to queue behind, and the job id is resolved from the published
     reservation rather than taken on the command line, so every session's
     workers land in the one allocation.
+
+    Every step is bounded with ``--mem`` so that an undeclared worker cannot
+    grow to the allocation's limit, where the scheduler's OOM killer would pick
+    the largest process anywhere in the job. The default bound is stated here,
+    in the one owner of a step's options; a caller that already names a bound
+    keeps it, so a declared size is passed as an option rather than the prefix
+    being given a bound a second way.
     """
-    return ["--overlap", f"--jobid={job_id}", *options]
+    placed = list(options)
+    if not any(str(option).startswith("--mem=") for option in placed):
+        placed = [step_memory_option(step_memory_gb()), *placed]
+    return ["--overlap", f"--jobid={job_id}", *placed]
+
+
+def own_job_prefix(
+    memory_gb: int,
+    command: Sequence[str],
+    *,
+    partition: str = RESERVATION_PARTITION,
+    job_name: str | None = None,
+) -> list[str]:
+    """The scheduler invocation that runs a step as a job of its own.
+
+    A step sized past the allocation's ceiling is placed on a debug partition
+    rather than inside the allocation, where a whole node serves it. Only the
+    batch client submits a job of its own from inside a held allocation, so the
+    batch client is used rather than a step client, and it waits because the
+    caller continues with the result. The command is carried as the batch
+    script's body through ``--wrap``, so the argv the caller resolved is the one
+    that runs.
+    """
+    argv = [
+        STEP_JOB_SCHEDULER,
+        STEP_JOB_WAIT_OPTION,
+        f"--partition={debug_partition(partition)}",
+        step_memory_option(memory_gb),
+    ]
+    if job_name:
+        argv.append(f"--job-name={job_name}")
+    argv.extend([STEP_JOB_WRAP_OPTION, shlex.join(str(item) for item in command)])
+    return argv
 
 
 def _reservation_query_placement() -> dict[str, Any]:

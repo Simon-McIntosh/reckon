@@ -362,8 +362,17 @@ def placement_argv(job: Mapping[str, str], command: Sequence[str]) -> list[str]:
     The command becomes an overlapping step of the allocation rather than an
     allocation of its own, so it lands on the allocation's node and shares its
     control group. The job id comes from the row the allocation was found by.
+
+    The step's options are composed by :func:`reckon.crew.placement.step_prefix`,
+    the one owner of a step's options, so the memory bound a step carries is
+    stated once and this prefix is not given one of its own.
     """
-    return ["srun", "--overlap", f"--jobid={job.get('jobid', '').strip()}", *command]
+    from reckon.crew import placement
+
+    return [
+        placement.RESERVATION_STEP_SCHEDULER,
+        *placement.step_prefix(job.get("jobid", "").strip(), list(command)),
+    ]
 
 
 def node_state(node: str) -> str | None:

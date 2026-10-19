@@ -1109,6 +1109,42 @@ def apply_backend_placement(
     from reckon.crew import placement as placement_module
 
     options = [str(item) for item in placement.get("options") or ()]
+    # A step whose declared memory is past the allocation's ceiling cannot sit
+    # beside the sessions, so it is placed as a job of its own on a debug
+    # partition rather than inside the shared reservation. The declaration is
+    # read from the placement's own options, so no second key carries it, and a
+    # placement naming none stays in the allocation at the default bound.
+    declared = placement_module.declared_memory_gb(options)
+    if declared is not None and placement_module.step_memory_above_ceiling(declared):
+        batch = shutil.which(
+            placement_module.STEP_JOB_SCHEDULER,
+            path=launch_search_path(plan.environment),
+        )
+        if not batch:
+            raise LaunchResolutionError(
+                f"the declared memory of {declared} GB is above the fleet "
+                f"allocation's ceiling and must run as its own job, but "
+                f"{placement_module.STEP_JOB_SCHEDULER} cannot be resolved on the "
+                f"PATH this launch would search: "
+                f"{launch_search_path(plan.environment)} — install it or add its "
+                "directory to PATH, then retry; nothing has been launched"
+            )
+        return dataclasses.replace(
+            plan,
+            argv=[
+                os.path.abspath(batch),
+                *placement_module.own_job_prefix(
+                    declared,
+                    plan.argv,
+                    partition=str(
+                        placement.get("partition")
+                        or placement_module.RESERVATION_PARTITION
+                    ),
+                    job_name=run_id or None,
+                ),
+            ],
+            stdin_text="",
+        )
     # The one shared reservation, which any project's dispatch resolves: a
     # worker placed into it runs where it was sized to and is counted against
     # the roster that admits it.
