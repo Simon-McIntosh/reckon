@@ -16,8 +16,12 @@
   <p id="epw-a-plan-closes-in-one-op-guards">
     The close runs every guard the terminal transition fires and reports them together rather than
     one at a time: the section-ticked guard (<code>shipped</code>/<code>done</code> only), the
-    terminal-evidence record, and the pending transition gate. A plan that is refused names every
-    outstanding condition in one answer. The section-ticked guard is skipped for a
+    terminal-evidence record, the pending transition gate, the appended hiding followup and the
+    continuation. The list is not the close's own — it is
+    <code>validate_landing_patch</code>, which the merge-patch writer calls too, given a mode that
+    collects every failing guard instead of raising at the first, so one transition is judged by one
+    list and a guard added there reaches both writers. A plan that is refused names every outstanding
+    condition in one answer. The section-ticked guard is skipped for a
     <code>superseded</code> or <code>archived</code> close, which is not a landing.
   </p>
 
@@ -44,5 +48,13 @@
     <code>TERMINAL_STATUSES</code> (imported from <code>reckon/lifecycle.py</code>) is refused naming
     <code>close</code>. The declared negative control — report only the first failing guard — makes
     the three-guard case fail for the two guards it omits.
+  </p>
+
+  <p id="epw-a-plan-closes-in-one-op-scope">
+    <strong>Scope.</strong> The guard list lives in <code>validate_landing_patch</code>, which both
+    writers call, and <code>close</code> is the only op that sets a plan's terminal status. The HTTP
+    merge-patch writer behind <code>POST /plan</code> is not on that op path and still sets a
+    terminal plan status directly, judged by the same guard list but without the close's outcome
+    resolution — closing it is outside this section's scope.
   </p>
 </section>
