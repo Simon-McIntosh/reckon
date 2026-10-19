@@ -1,0 +1,32 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T00:12:31.518Z",
+  "dispatched_at": "2026-10-19T00:02:53Z",
+  "findings": [],
+  "plan_fingerprint": "147b877bc2b8133a8d236bd1a6ce2b47f2980d58a1f9be453b2e97d6d35ba1ab",
+  "plan_slug": "a-landing-never-reverts-the-checkout",
+  "plan_version": 29,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T000210684098-plan-review-of-a-landing-never-reverts-the-checkout",
+  "reviewed_blob_sha": "b101f07fa30d63c1431ac4a795a544d33bb48146",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `promotion.py:197` is `with _pointer_lock(run_id):`, `runs.py:316` is `def _pointer_lock`, `recovery_review_acceptance.py:331` is `result = promotion_module.complete(`, `reckon/crew/host_lease.py` exists with the named `HostLease`, and the cross-plan anchor `a-seat-held-elsewhere-is-not-restarted` \u00a78 resolves and states \"`flock` there is node-local\" on this GPFS home.",
+    "done_when": "pass \u2014 each of \u00a73's five done-when items is measurable (exactly one commit landed, a refusal naming the holder, a stale-lease take-over, FAILED-by-id at base, a pytest-delta plus ruff) and the section declares a genuine negative control at line 101 (at base a cross-host second promotion does not refuse, so the cross-host case fails by id).",
+    "evidence_paths": "pass \u2014 the gate and negative-control logs are written \"under the run directory\" (`~/.config/reckon/crew/runs/<run_id>/`), a durable crew path, not a node-local temporary directory, matching the convention \u00a72 already uses.",
+    "naming": "pass \u2014 the new file `tests/test_one_promotion_of_a_run_at_a_time.py` and the reused symbols (`HostLease`, `promote_review_run_itself`, `landing_check.reversals`) are named by mechanism with no plan label, stage name, ticket number or version tag.",
+    "reasoning": "pass \u2014 the stated root cause (a second promotion of the same review run on another host, unprotected because `_pointer_lock` is a node-local `flock`) matches \u00a71's record (\"the leading candidate; the reproduction models it\") and \u00a78's measurement; `HostLease.claim()` returns False for a fresh foreign holder and True for a stale one, so it produces \u00a73's done-when; and the mechanism runs on the real path with the caller named \u2014 every promotion reaches `promotion.complete` (`recovery_review_acceptance.py:214` and `:331`, `crew_run_commands.py:1910`), and the `_pointer_lock` block at `promotion.py:197` spans `_complete_locked` (called at line 471), confirming the \"whole span\" claim.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable (\"a promotion holds a claim on its run that excludes other hosts as well as other processes\"), and all five done-when items test that single claim.",
+    "wiring": "pass \u2014 \u00a73's declared depends-on resolves to `a-landing-never-reverts-the-checkout#s1`, which is `done`, and the chosen HostLease fix needs no undeclared \u00a72 edge: the \u00a72 reference at line 89 belongs to the peer-command branch \u00a73 does not adopt, and line 92's `landing.json` reference is evidence \u00a72 already landed, not a functional dependency."
+  },
+  "section_digests": {
+    "_document": "479ad99e4e7ec690c76f853bbaa2d01eaa1b8f0a44a8f6ce0f762821bdb2dd5c",
+    "s1": "ee9b8c30fd2d5b2dfb1dc7d01e8045c3f8d91294fd8bfd32b710f64690ad3daf",
+    "s2": "23098dde0aefcf0425da2867612f3318289f1d02963bc3243cc25d95d0ac066b",
+    "s3": "a4cfd8b009e65e3318fade940b3f5876a7fc82949cb305e61bd6af57a70c4eb9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T00:23:59.871395+00:00"
+}
