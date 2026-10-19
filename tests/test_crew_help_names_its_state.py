@@ -17,7 +17,9 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("ack",): "one run's obligations",
     ("admit",): "queued dispatches while the lane grants a slot",
     ("attach",): "prepared in-harness run",
-    ("budget",): "a budget group's pace, its banked reset, its lifts or backend holds",
+    (
+        "budget",
+    ): "one budget group's pace, its banked reset, its lifts or backend holds",
     ("check-review",): "a delivered run review can be filed",
     ("check-manifest",): "delivered manifest against its own node",
     ("complete",): "finished run",
