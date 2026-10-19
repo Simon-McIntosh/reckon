@@ -3,9 +3,9 @@
 The picker's names come from ``/_projects/mounts.json``, a static file, so the
 menu is populated whether or not the computed rollup at
 ``/_projects/index.json`` ever answers. Other projects' inventories are fetched
-only when a project is navigated to while the fleet home or the command palette
-is shown, one request per mounted project and no more: the shell remembers what
-it has asked for, so a re-run of the fetching effect does not repeat a request.
+only when the command palette opens, one request per mounted project and no
+more: the shell remembers what it has asked for, so a re-run of the fetching
+effect does not repeat a request.
 """
 
 from __future__ import annotations

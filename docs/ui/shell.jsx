@@ -156,6 +156,11 @@ function App() {
     bumpInv();
     loadChecksAfterDerived();
   }, [bumpInv, loadChecksAfterDerived]);
+  const previousHome = useRef(canvasView === "home");
+  useEffect(() => {
+    if (previousHome.current && canvasView !== "home") refreshProjectState();
+    previousHome.current = canvasView === "home";
+  }, [canvasView, refreshProjectState]);
   useEffect(() => {
     const changes = window.watchProjectStateChanges?.(refreshProjectState);
     return () => changes?.close();
@@ -209,6 +214,7 @@ function App() {
   });
   useEffect(() => {
     let cancelled = false;
+    let fleetRequest = 0;
     // The mount list is a static file, so the project picker is populated at
     // once and never waits on — or disappears with — the computed rollup.
     fetch("/_projects/mounts.json")
@@ -217,18 +223,23 @@ function App() {
         if (!cancelled && mounts && typeof mounts === "object") setMountNames(Object.keys(mounts).sort());
       })
       .catch(() => {});
-    fetch("/_projects/index.json")
-      .then(response => response.ok ? response.json() : null)
-      .then(data => { if (!cancelled && Array.isArray(data?.projects)) setFleetIndex(data); })
-      .catch(() => {});
-    return () => { cancelled = true; };
+    const refreshFleetIndex = () => {
+      const request = ++fleetRequest;
+      return fetch("/_projects/index.json")
+        .then(response => response.ok ? response.json() : null)
+        .then(data => { if (!cancelled && request === fleetRequest && Array.isArray(data?.projects)) setFleetIndex(data); })
+        .catch(() => {});
+    };
+    const onFleetChange = event => {
+      if (event.detail?.key === "rollup") refreshFleetIndex();
+    };
+    refreshFleetIndex();
+    window.addEventListener("reckon-fleet", onFleetChange);
+    return () => { cancelled = true; window.removeEventListener("reckon-fleet", onFleetChange); };
   }, []);
-  // Other projects' inventories feed only the fleet home and the command
-  // palette, so they are fetched when one of those is shown, one project at a
-  // time, and each arrives on its own rather than behind the slowest.
-  const wantsFleetInventories = canvasView === "home" || cmdKOpen;
+  // The command palette is the first reader of other projects' full inventories.
   useEffect(() => {
-    if (!wantsFleetInventories) return;
+    if (!cmdKOpen) return;
     const names = mountNames.length ? mountNames : (fleetIndex?.projects || []).map(entry => entry.project);
     names.forEach(name => {
       if (requestedDiscoveries.current.has(name)) return;
@@ -238,7 +249,7 @@ function App() {
         .catch(() => ({}))
         .then(discovery => setFleetDiscoveries(previous => ({ ...previous, [name]: discovery })));
     });
-  }, [wantsFleetInventories, mountNames, fleetIndex]);
+  }, [cmdKOpen, mountNames, fleetIndex]);
   const projects = useMemo(() => {
     const indexed = new Map((fleetIndex?.projects || []).map(entry => [entry.project, entry]));
     const names = [...new Set([...mountNames, ...indexed.keys()])].sort();
@@ -251,11 +262,11 @@ function App() {
       const summary = Array.isArray(state.projects) ? state.projects[0] : null;
       const discovery = fleetDiscoveries[name] || {};
       const inventory = Array.isArray(discovery.inventory) ? discovery.inventory : [];
-      const plans = Array.isArray(state.plans) ? state.plans : inventory;
       return {
         project: name,
         accent: summary?.accent || state.accent || window.ACCENTS?.[name] || "var(--accent)",
-        plans_count: Number(summary?.plans_count ?? state.counts?.total ?? plans.length ?? 0),
+        plans_count: summary?.plans_count == null ? null : Number(summary.plans_count),
+        progress: summary?.progress ?? null,
         live: liveCounts.has(name),
         live_count: liveCounts.get(name) || 0,
         active: Number(summary?.active || 0),
@@ -476,7 +487,7 @@ function App() {
             <window.ReckonShell.title.TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} onPlanMutated={bumpInv} />
             <div className="r-reader-with-attachments">
               <div className="r-body">
-                {canvasView === "home" && <window.ReckonShell.home.FleetHome projects={shownProjects} fleetRuns={window.ReckonShell.home.homeVisibleRuns(fleetRuns, shownProjects)} mountedProjectCount={projects.length} onConfigureVisibility={() => document.querySelector(".r-project-configure")?.click()} />}
+                {canvasView === "home" && <window.ReckonShell.home.FleetHome projects={shownProjects} fleetRuns={window.ReckonShell.home.homeVisibleRuns(fleetRuns, shownProjects)} mountedProjectCount={projects.length} loaded={Boolean(fleetIndex)} onConfigureVisibility={() => document.querySelector(".r-project-configure")?.click()} />}
                 {canvasView === "sprint" && <window.Sprint sprintId={route.sprint} onNav={nav} />}
                 {canvasView === "graph" && <window.GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
                 {canvasView === "crew" && <window.CrewView visibleProjects={shownProjectNames} mountedProjectCount={projects.length} selectedProject={M?.project || null} runs={fleetRuns} loaded={fleetRunsLoaded} error={fleetRunsError} />}

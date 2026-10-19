@@ -119,6 +119,7 @@ def test_dormant_and_in_flight_rows_obey_the_visible_set() -> None:
     projects = [
         {"project": "alpha", "plans_count": 2},
         {"project": "quiet", "plans_count": 0},
+        {"project": "unavailable", "plans_count": None},
     ]
     runs = [
         {"project": "alpha", "run_id": "shown"},
@@ -141,6 +142,7 @@ def test_home_surface_carries_the_six_stats_and_read_only_panels() -> None:
     assert "visible projects with no recorded work" in source
     assert "In flight" in source
     assert "polling every 3s" in source
-    assert "Just landed" in source
-    assert "last 72 hours" in source
+    assert "Recent project activity" in source
+    assert "progress across visible projects" in source
+    assert "project.progress == null" in source
     assert "action queue" not in source.lower()
