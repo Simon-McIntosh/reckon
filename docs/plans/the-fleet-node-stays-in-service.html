@@ -141,17 +141,36 @@
     <p>
       For a worker placed as a step (its argv built by
       <code>placement.step_prefix</code>), the supervisor delivers the stop to the
-      task inside the step and never to the <code>srun</code> client. §2 showed that a
-      signal to the client makes Slurm cancel the step in that second. The worker
-      chooses the delivery primitive and names it in the evidence. One candidate is
-      <code>scancel --signal=TERM</code> addressed to the step id, which signals the
-      task without cancelling the step; another is a signal <code>srun</code> forwards
-      to its task without cancelling. The supervisor then waits for the client to
-      exit by itself. A later escalation is SIGKILL delivered to the task the same
-      way, still never a cancel. The wait has no deadline shorter than a GPFS stall.
-      If the worker outlives a long ceiling, at least ten minutes, the supervisor
-      records the step's processes and their wait channels to the run directory and
-      keeps waiting.
+      sandboxed worker. That means the processes below the sandbox's PID-namespace
+      init, which are the step task's descendants other than the
+      <code>bwrap</code> processes themselves. It never signals the task itself, and
+      never the <code>srun</code> client or any process in its local subtree. Two
+      probes on 18 October set both boundaries:
+    </p>
+    <ul>
+      <li>A signal to the client made Slurm cancel step
+      <code>1281970.6508</code> in that second (§2).</li>
+      <li>A SIGTERM to the outer <code>bwrap</code> task, checked by its cgroup and
+      start time, ended step <code>1281970.6958</code> as
+      <code>CANCELLED|0:15</code> in 3.02 s. The task died of the signal, and
+      <code>slurmstepd</code> then tore down what was left in the step.</li>
+    </ul>
+    <p>
+      When the sandboxed worker exits instead, the namespace init exits with it. The
+      task then returns an exit status rather than dying of a signal.
+    </p>
+    <p>
+      The supervisor reads the task's identity from a record its wrapper writes
+      before it execs the sandbox: job, step, pid and start time. It confirms that
+      the task belongs to the step from facts local to the kernel: the task's cgroup
+      names the step, and its start time matches the record.
+      <code>scontrol listpids</code> left out a just-started task in two probes, so
+      it is not the check. The supervisor then waits for the client to exit by
+      itself. The later escalation is SIGKILL to the same inner processes, still
+      never to the task or the client, and never a cancel. The wait has no deadline
+      shorter than a GPFS stall. If the worker outlives a long ceiling of at least
+      ten minutes, the supervisor records the step's processes and their wait
+      channels to the run directory and keeps waiting.
     </p>
     <p>
       A step that ends normally can drain the node too. When the task exits,
@@ -162,14 +181,31 @@
       waiter.
     </p>
     <p>
-      Done when two things hold. A unit test proves that the stop path, for a
-      step-placed worker, delivers to the step's task and records no signal to the
-      <code>srun</code> client. And a probe on the fleet allocation stops a worker
-      step whose child ignores SIGTERM for 40 s: <code>sacct</code> then reports the
-      step <code>COMPLETED</code>, the supervisor's record names the child, and the
-      node's state is unchanged. The negative control runs the same probe through
-      the old path, a signal to the <code>srun</code> client, and shows
-      <code>CANCELLED</code>.
+      Done when two things hold. First, a unit test proves that, for a step-placed
+      worker, the stop path delivers only to processes below the sandbox init. It
+      records no signal to the task or to any process in the <code>srun</code>
+      client's local subtree.
+    </p>
+    <p>
+      Second, a probe on the fleet allocation stops a worker step whose process and
+      child both ignore SIGTERM and would sleep 120 s against the 55 s stop grace.
+      The step must end after the grace, through the SIGKILL to the inner processes,
+      well before the sleep would have finished. When it does:
+    </p>
+    <ul>
+      <li><code>sacct</code> reports the step as not <code>CANCELLED</code>, with
+      a zero signal field in its <code>ExitCode</code>. That is
+      <code>COMPLETED</code>, or <code>FAILED</code> carrying the worker's own exit
+      status.</li>
+      <li>The sender receipts show the inner processes as delivered, and show no
+      signal to the task or to the client.</li>
+      <li>The node's state is unchanged.</li>
+    </ul>
+    <p>
+      The negative controls are the two saved probes, step
+      <code>1281970.6508</code> (the client signal) and step
+      <code>1281970.6958</code> (the task signal). Both read
+      <code>CANCELLED</code>, and neither is re-run.
     </p>
 
     <h2 id="s4">&sect;4 &mdash; The migrate command starts a second move</h2>
