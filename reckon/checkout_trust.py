@@ -40,6 +40,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from reckon import git_dates
 from reckon.crew.obligation_snapshot import FOLLOWER_RELOAD_PROBE_TIMEOUT_SECONDS
 
 # The one proof that a checkout's current code loads is defined in
@@ -57,6 +58,18 @@ COMMITTED_TREE_RETENTION = 3
 # comparing identities must treat this reading as no new identity rather than as
 # a value that moved, so nothing materialises an image from a partial read.
 IDENTITY_UNKNOWN = "unknown"
+
+# Every long-running reckon process -- the followers, the producers, the MCP
+# server and queue admission -- asks once a second whether the code has moved,
+# and each read of the identity runs ``git ls-tree`` twice and one ``git mktree``
+# per composed tree. ``git mktree`` freshens an object that already exists by
+# rewriting its mtime, so every reader on every node rewrites one shared inode
+# every second with no code having moved. The identity is a function of what
+# ``HEAD`` names, so the reading of this process's own checkout is held here
+# against ``git_dates._head_identity``, which reads ``HEAD`` and the ref it names
+# as files without spawning git, and the git reads run only when that reading
+# moves.
+_identity_hold: dict[str, tuple[tuple, str]] = {}
 
 
 class IdentityReadError(Exception):
@@ -396,16 +409,39 @@ def source_code_identity(package_dir: Path, *, source_root: Path | None = None) 
     than as a moved one. A checkout git cannot answer for at all is not
     unknown; it is a checkout outside Git, which the computation answers for
     with None and which is identified by its package content stamp.
+
+    A reading is held against ``git_dates._head_identity``, the same
+    spawn-free reading of ``HEAD`` and the ref it names that
+    :mod:`reckon.change_streams` already holds its stream against, so the git
+    reads run only when the commit ``HEAD`` resolves to can have moved. A new
+    commit rewrites the loose ref and so moves that reading; ``git pack-refs``
+    removes the loose ref, and the ref's presence is part of the identity, so
+    folding it away moves the reading too. Only the checkout this process runs
+    from is held -- the root resolved here when no other is named. A caller that
+    names a source root is interrogating a tree that may have moved a moment
+    before the call, and is answered from that tree on every read. A read that
+    did not complete is never held either: it answers :data:`IDENTITY_UNKNOWN`
+    and the next read runs git, so a failure is re-reported rather than frozen
+    into a hold. A checkout outside Git has no such file to watch and keeps its
+    content-stamp behaviour on every read.
     """
+    own_root = source_root is None
     if source_root is None:
         source_root = Path(
             os.environ.get("RECKON_FOLLOWER_SOURCE_ROOT", str(package_dir.parent))
         )
+    stamp = git_dates._head_identity(source_root) if own_root else None
+    if stamp is not None:
+        held = _identity_hold.get(str(source_root))
+        if held is not None and held[0] == stamp:
+            return held[1]
     try:
         tree = _committed_reload_tree(source_root)
     except IdentityReadError:
         return IDENTITY_UNKNOWN
     if tree is not None:
+        if stamp is not None:
+            _identity_hold[str(source_root)] = (stamp, tree)
         return tree
     from reckon.crew.obligation_snapshot import code_stamp
 

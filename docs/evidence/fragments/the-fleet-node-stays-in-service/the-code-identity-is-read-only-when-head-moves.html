@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-code-identity-is-read-only-when-head-moves">
+  <meta name="plan-title" content="The code identity is read only when HEAD moves">
+  <meta name="plan-summary" content="source_code_identity holds its reading against a fingerprint of HEAD, the ref it names and packed-refs, so the per-second read spawns no git and rewrites no shared inode">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-node-stays-in-service">
+  <meta name="plan-verifies" content="reckon:the-fleet-node-stays-in-service#s10">
+  <meta name="plan-recorded-at" content="2026-10-19">
+  <meta name="plan-verdict" content="passed">
+  <title>The code identity is read only when HEAD moves — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<section id="the-code-identity-is-read-only-when-head-moves">
+  <h2>The code identity is read only when HEAD moves</h2>
+  <p><strong>Result.</strong> <code>source_code_identity</code> now holds its reading
+  against a fingerprint of the files <code>HEAD</code> resolves through &mdash;
+  <code>HEAD</code>, the ref it names and <code>packed-refs</code> &mdash; located by
+  reading <code>.git</code> and <code>commondir</code> rather than by spawning git, so
+  a worktree whose <code>.git</code> is a file is fingerprinted through its gitdir. The
+  git reads in <code>_committed_reload_tree</code> run only when that fingerprint moves.
+  A read that did not complete is never held, so <code>IDENTITY_UNKNOWN</code> keeps the
+  meaning it was given.</p>
+
+  <h3 id="the-code-identity-is-read-only-when-head-moves-figures">Measured</h3>
+  <table>
+    <thead><tr><th>Arm</th><th>Identity reads in window</th><th>git spawns</th><th>Identity object mtime</th></tr></thead>
+    <tbody>
+      <tr><td>Base revision, same quiet checkout</td><td>5 in 35.1 s (6 spawns per read)</td><td>30</td><td>moved</td></tr>
+      <tr><td>This change, same quiet checkout</td><td>30 in 30.1 s</td><td>0</td><td>unmoved</td></tr>
+      <tr><td>Base revision again, alone</td><td>9 in 61.0 s (6 spawns per read)</td><td>54</td><td>moved</td></tr>
+    </tbody>
+  </table>
+  <p>The window ran in place on the fleet allocation (<code>98dci4-clu-2002</code>, job
+  <code>1281970</code>), one identity read a second through the production call shape. The
+  base reader spawns <strong>6 git per identity read</strong>, and each of its reads costs
+  about 7 s: re-measured with the cohort arms finished and the box to itself, 9 reads took
+  61.0 s. That cost is the reading, not contention: the base reader is slower than the 1 s
+  window it is asked for, so its measured rate is 0.85&ndash;0.88 spawns a second rather
+  than the 6 a second its 1 s cadence would produce if it kept up. This change reads the
+  identity 30 times in 30.1 s and spawns no git at all. The object named is the composed
+  identity tree <code>.git/objects/c9/a7ec51&hellip;</code>, the inode <code>git mktree</code>
+  rewrote.</p>
+
+  <h3 id="the-code-identity-is-read-only-when-head-moves-tests">Checks</h3>
+  <table>
+    <thead><tr><th>Check</th><th>Node test</th></tr></thead>
+    <tbody>
+      <tr><td>Quiet ticks spawn no git after the first</td><td><code>test_the_identity_is_read_once_over_many_quiet_ticks</code></td></tr>
+      <tr><td>A commit yields the new identity</td><td><code>test_a_commit_yields_the_new_identity_on_the_next_read</code></td></tr>
+      <tr><td>Branch switch</td><td><code>test_a_branch_switch_yields_the_new_identity_on_the_next_read</code></td></tr>
+      <tr><td><code>git pack-refs</code></td><td><code>test_a_packed_ref_yields_the_new_identity_on_the_next_read</code></td></tr>
+      <tr><td>Detached HEAD</td><td><code>test_a_detached_head_yields_the_new_identity_on_the_next_read</code></td></tr>
+      <tr><td>Worktree whose <code>.git</code> is a file</td><td><code>test_a_worktree_is_stamped_through_its_gitdir</code></td></tr>
+      <tr><td>A failed read is not held; the next read runs git</td><td><code>test_a_failed_read_is_not_held_and_the_next_read_runs_git</code></td></tr>
+      <tr><td>An out-of-scope commit moves the fingerprint, not the identity</td><td><code>test_a_commit_outside_the_package_moves_the_stamp_and_runs_the_reads</code></td></tr>
+    </tbody>
+  </table>
+  <p>Every git invocation is counted as the module spawns it, and the spawn assertion is
+  taken immediately around the identity read so the assertion measures the read and not
+  the commit that precedes it. The suite clears <code>RECKON_FOLLOWER_SOURCE_ROOT</code> for
+  every check, because the production call shape resolves its root from that variable and an
+  ambient value would answer every read from a checkout the fixture never made; the gate is
+  run twice, once with the variable unset and once set to this worktree, and passes 8 passed
+  in both.</p>
+
+  <h3 id="the-code-identity-is-read-only-when-head-moves-reuse">Why no new reader, and why packed-refs needs no watch of its own</h3>
+  <p><code>reckon/git_dates.py</code> already reads <code>HEAD</code> and the ref it names as
+  files without spawning git, and <code>reckon/change_streams.py</code> already holds its
+  stream against that reading. The hold uses it directly
+  (<code>source_code_identity</code> reads <code>git_dates._head_identity</code>), so the four
+  helpers written for this change &mdash; a git-directory resolver, a <code>commondir</code>
+  follower, a file fingerprint and a head fingerprint &mdash; are deleted rather than kept
+  beside the ones that already did the same work.</p>
+  <p><code>_head_identity</code> does not watch <code>packed-refs</code>, and a commit that
+  moves a branch moves the identity anyway: a commit writes the loose ref, changing its
+  mtime, inode and size, and the ref's <em>presence</em> is part of the identity, so
+  <code>git pack-refs</code> &mdash; which deletes that loose ref into the packed file &mdash;
+  moves the identity as well. A packed-ref that later moves without a new commit changes no
+  commit id, so there is nothing to re-read. The <code>git pack-refs</code> check covers this
+  and passes.</p>
+
+  <h3 id="the-code-identity-is-read-only-when-head-moves-scope">Scope of the hold</h3>
+  <p>The hold covers the checkout this process runs from: the root resolved when no other
+  is named, which is the shape the followers, producers, MCP server and queue admission
+  all use. A caller that names a source root is answered from that tree on every read.
+  A blanket hold was written first and measured against the existing cohort: it served
+  its reading over <code>test_a_timed_out_catalogue_read_reports_unknown_not_an_absent_catalogue</code>,
+  whose second read interposes a failing catalogue read at an unmoved fingerprint, so the
+  failure could not surface and the check was red. The hold being scoped to the process's
+  own root is what keeps that failure path reachable.</p>
+
+  <h3 id="the-code-identity-is-read-only-when-head-moves-cohort">The existing cohort</h3>
+  <p>The 25 existing test files that exercise <code>source_code_identity</code> or
+  <code>follower_code_stamp</code> were run at both revisions, one log each, in place on the
+  same host. No failure is added.</p>
+  <table>
+    <thead><tr><th>Arm</th><th>Result</th><th>Failing test</th></tr></thead>
+    <tbody>
+      <tr><td>Base <code>3b652d4b</code></td><td><code>1 failed, 164 passed</code> (<code>EXIT=1</code>)</td><td><code>test_follower_freshness.py::test_running_follower_reloads_without_stream_or_registration_gap</code></td></tr>
+      <tr><td>This change</td><td><code>1 failed, 164 passed</code> (<code>EXIT=1</code>)</td><td>the same test, at the same position in the progress line</td></tr>
+    </tbody>
+  </table>
+  <p>Both arms carry the same single failure, which reproduces at the base revision, so it is
+  pre-existing and outside this change; it is reported rather than repaired here.</p>
+
+  <h3 id="the-code-identity-is-read-only-when-head-moves-negative-control">Negative control</h3>
+  <p>Declared mutation applied to a scratch extraction of the head revision:
+  <em>a commit touching nothing under</em> <code>reckon/</code> <em>or</em> <code>skills/</code>
+  <em>moves the stamp, so the git reads run, and the identity is unchanged.</em> The
+  mutation drops the ref <code>HEAD</code> names out of
+  <code>git_dates._head_identity</code> in the scratch copy, where the hold now reads it, so
+  such a commit moves no stamp. Six of the eight checks fail under it
+  (<code>6 failed, 2 passed</code>, <code>EXIT=1</code>), including the declared-property
+  check and the <code>pack-refs</code> check, and none of them fails at the head revision.</p>
+</section>
+</body>
+</html>
