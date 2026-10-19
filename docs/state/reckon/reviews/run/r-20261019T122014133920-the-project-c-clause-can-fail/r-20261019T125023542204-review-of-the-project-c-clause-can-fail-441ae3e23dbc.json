@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "The diff adds no assertion; it makes pre-existing ones load-bearing. This assertion requires the session-wide render of a B row (own entry 1) to contain \" 8w  2h  3d\" (7 from A + 1 from B). It fails if _session_counts_in_other_projects or the latest-transition selection lets C's older entry of 5 in (rendering 13w) or drops the other project's figure; nc_broken.log shows exactly that failure at this line. It compares a literal against the code's render, not against a value the test fed in, so it is independent of the value under test.",
+      "lines": "tests/test_a_pane_counts_its_session_across_projects.py:136-137"
+    },
+    {
+      "failure_condition": "This is the C clause the plan names: _scoped_watch_event(a_row, SESSION) must report working==8 with a literal 8 against the code output, so it fails if C's older 5 is summed. Before the change it could not fail on the selection, because C unpublished made _other_project_producer_is_live exclude C whatever _newest_session_event returned (repro_c_clause_unpublished.log: base test + mutation = 1 passed). After the change it can, but the negative control never reaches it: line 136 reddens first on the same mutation.",
+      "lines": "tests/test_a_pane_counts_its_session_across_projects.py:142-145"
+    },
+    {
+      "failure_condition": "The unscoped render of a B row (built from _entry(1)) must contain \" 1w  0h  0d\" and must not contain \" 8w\". The value 1 originates in the row the test built, but the guard is on the transform (an unscoped row keeps its own project's figures instead of summing), so a regression that summed across projects for a sessionless follower would make the membership fail; it is not an identity assertion.",
+      "lines": "tests/test_a_pane_counts_its_session_across_projects.py:163-164"
+    },
+    {
+      "failure_condition": "No assertion guards this line. Removing _publish(\"C\", SESSION) leaves the whole test green (repro_c_clause_unpublished.log shows the base test with the selection mutated still reports 1 passed), so the clause's sensitivity to the newest-transition selection is silently disarmed if this line is reverted.",
+      "lines": "tests/test_a_pane_counts_its_session_across_projects.py:128"
+    }
+  ],
+  "call_sites": [],
+  "completed_at": "2026-10-19T13:12:12.584Z",
+  "dispatched_at": "2026-10-19T12:51:46Z",
+  "findings": [
+    {
+      "file": "tests/test_a_pane_counts_its_session_across_projects.py",
+      "line": "136",
+      "severity": "follow-on",
+      "text": "follow-on: the negative control fails on the pre-existing cross-project render assertion at line 136, not on the C clause (lines 142-145) the plan names; logs/nc_broken.log shows the B row rendering \" 13w  2h  3d\" against the literal \" 8w  2h  3d\" at line 136. The landing line and the fragment both state \"the C clause fails\", which is a claim the recorded log does not show \u2014 the C clause's own assertions never execute under the mutation because line 136 reddens first. The substance of the deliverable is met (the mutation is caught and renders 13w), but the record overstates which assertion caught it."
+    },
+    {
+      "file": "tests/test_a_pane_counts_its_session_across_projects.py",
+      "line": "128",
+      "severity": "follow-on",
+      "text": "follow-on: the added _publish(\"C\", SESSION) is itself unguarded. Nothing asserts C's producer is published, and the run's own repro log proves that with C unpublished the selection mutation goes undetected (1 passed, EXIT=0), so reverting this one line returns the file to green while the clause it was added to arm loses its sensitivity. The guard against the regression this node exists to catch can be silently removed with no failing test."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The landed change is a test fixture and a docs fragment; neither is reachable from production runtime code, so no production call site can reach it. The production functions the test exercises (reckon/crew/recovery_watch.py:2079 _newest_session_event, :2098 _other_project_producer_is_live, :2117 _session_counts_in_other_projects, :2192 _scoped_watch_event) are not modified by this node and are reached only through the test.",
+    "diff": "Read commit by commit: 46ecc28ed publishes C's producer in the fixture (tests/test_a_pane_counts_its_session_across_projects.py:128) and rewrites the module docstring and two comments, plus adds the landing fragment; 441ae3e23 repoints the fragment's three log references from bare filenames to logs/ paths. Two files, both inside the declared scope.",
+    "done_when": "Plan \u00a766 done_when (docs/plans/the-monitor-shows-the-work-it-watches.html:534) asks that the test file pass, that a negative control mutating _newest_session_event to return the oldest partition-carrying transition make the C clause fail rendering 13w, both runs logged under the run directory ending EXIT=, and ruff add no findings; the head gate (1 passed, EXIT=0) and nc_broken.log (1 failed, EXIT=1, rendering 13w) satisfy the measure, but the failing assertion in the negative control is line 136, not the C clause the done_when names.",
+    "goal": "The source node goal (prompt.txt:32) is to publish project C's producer as live in the scoped-pane test so its clause can fail only on the newest-transition selection; the landed fixture adds _publish(\"C\", SESSION) at tests/test_a_pane_counts_its_session_across_projects.py:128, so C's liveness no longer masks _newest_session_event and C's older entry of 5 is kept out only by the selection.",
+    "manifest": "The source manifest.md records status complete, commits 46ecc28ed and 441ae3e23, the head gate result (1 passed, EXIT=0 at 441ae3e23), the negative control (1 failed, EXIT=1 rendering 13w) and ruff clean on the changed file; its baseline_suite and after_suite are empty, so no armed suite delta is carried.",
+    "write_paths": "The source prompt.txt:135-139 fences tests/test_a_pane_counts_its_session_across_projects.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-project-c-clause-can-fail.html and docs/figures/the-monitor-shows-the-work-it-watches/the-project-c-clause-can-fail; git diff 002f85b4..441ae3e23 names exactly the first two paths and no other file, and no figure was written."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T125023542204-review-of-the-project-c-clause-can-fail-441ae3e23dbc",
+  "reviewed_base_sha": "002f85b4f0df85463466aa0a8caea8297020045d",
+  "reviewed_head_sha": "441ae3e23dbc543d4a1b747f399333b2b9de3d61",
+  "reviewed_run_id": "r-20261019T122014133920-the-project-c-clause-can-fail",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_note": "The reviewed run's manifest carries no armed baseline_suite or after_suite (both null): this is a test-only node whose done_when requires no before/after suite, so added_failure_count=0 and added_failure_ids=[] are recorded as the run's own records leave them, not from a suite delta the run measured.",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T13:21:27.760923+00:00"
+}
