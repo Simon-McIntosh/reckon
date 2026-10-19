@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-informs" content="the-crew-surface-is-one-tool-and-a-few-verbs">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-plan-write-goes-through-edit-plan#s2&quot;, &quot;every-plan-write-goes-through-edit-plan#s3&quot;], &quot;s5&quot;: [&quot;every-plan-write-goes-through-edit-plan#s4&quot;], &quot;s6&quot;: [&quot;every-plan-write-goes-through-edit-plan#s5&quot;], &quot;s7&quot;: [&quot;every-plan-write-goes-through-edit-plan#s6&quot;], &quot;s8&quot;: [&quot;every-plan-write-goes-through-edit-plan#s7&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-plan-write-goes-through-edit-plan#s2&quot;, &quot;every-plan-write-goes-through-edit-plan#s3&quot;], &quot;s5&quot;: [&quot;every-plan-write-goes-through-edit-plan#s4&quot;], &quot;s6&quot;: [&quot;every-plan-write-goes-through-edit-plan#s5&quot;], &quot;s7&quot;: [&quot;every-plan-write-goes-through-edit-plan#s6&quot;], &quot;s8&quot;: [&quot;every-plan-write-goes-through-edit-plan#s7&quot;], &quot;s9&quot;: [&quot;every-plan-write-goes-through-edit-plan#s6&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -178,8 +178,11 @@
       <li>a section still implementable, named;</li>
       <li>the evidence record that a terminal status needs, named by path;</li>
       <li>a pending transition gate (<code>_require_transition_verdict</code>);</li>
-      <li>an appended followup that hides work (<code>_refuse_appended_hiding_followups</code>).</li>
+      <li>an appended followup that hides work (<code>_refuse_appended_hiding_followups</code>);</li>
+      <li>a landing status with no continuation (<code>continuation_present</code>, raising <code>CONTINUATION_REQUIRED</code>).</li>
     </ul>
+    <p>The <code>outcome</code> a <code>close</code> carries is the chain-closing outcome that resolves every open followup, so a plan whose
+      work is done satisfies the continuation guard through the close itself, with no placeholder followup.</p>
     <p>No guard is removed. The vocabulary gains one verb and <code>set</code> loses its terminal path: a <code>set</code> of
       <code>status</code> to any value in <code>TERMINAL_STATUSES</code> is refused, naming <code>close</code>, and every reckon caller that
       sets one moves to <code>close</code> in the same node. The resolved-placeholder recipe is dropped where it lives:
@@ -299,7 +302,7 @@
     <div class="r-comment-body"><p>§3 landed: a call that fails on a moved, trusted checkout is answered by the current code in a child interpreter, marked with its code stamp; only a changed tool signature still asks for a reconnect (commits <code>fad51085f</code>..<code>cbe51df12</code>); zero added failures; reviewed 106/120. Sessions get it at their next MCP reconnect. <a href="/reckon/evidence/archive/every-plan-write-goes-through-edit-plan-landed.html#s3">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261019T062621653734-epw-server-serves-current-code" data-who="reckon-build" data-when="2026-10-19T09:22:46Z">
-    <div class="r-comment-body"><p>the MCP server answers a failed call on the checkout&#x27;s current code through a child interpreter behind its stdio front, returning whatever the current code answers — success or failure — marked with served_by_code_stamp, and refusing only a changed tool signature; the moved-checkout decision and its trust check are one owner in reckon/served_code.py, called by both servers</p></div>
+    <div class="r-comment-body"><p>the MCP server answers a failed call on the checkout's current code through a child interpreter behind its stdio front, returning whatever the current code answers — success or failure — marked with served_by_code_stamp, and refusing only a changed tool signature; the moved-checkout decision and its trust check are one owner in reckon/served_code.py, called by both servers</p></div>
 </div>
 </section>
 </main>
