@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T22:57:54.705Z",
+  "dispatched_at": "2026-10-19T22:33:45Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html:189",
+      "id": "anchors_resolve-1",
+      "reason": "the deliverable names the resolver the node must read through correctly (`promotion._run_review_tier`), so the mis-attributed writer does not change the work, since both arms the deliverable offers run regardless, so nothing in the node's mechanism or its done-when depends on the attribution.",
+      "text": "\u00a710 cites `_sweep_review_tier in `reckon/crew/recovery_review_acceptance.py` as the writer of the skip, but the symbol is defined in `reckon/crew/recovery_repair_dispatch.py:1022`, is imported (not defined) in `recovery_review_acceptance.py`, and returns the tier rather than writing the record \u2014 the write site is the caller in `recovery_review_acceptance.py:486`",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html:189",
+      "id": "reasoning-1",
+      "reason": "the sentence is joined by \"or\" to the owner-resolver arm (`promotion._run_review_tier`), which both the \u00a710 done-when and the code reach, so the dead arm does not change the plan \u2014 though a node that sets out to exercise the recorded-skip arm specifically would find it unsatisfiable and should be steered to the resolver arm, if the author wants a test for it.",
+      "text": "the deliverable's alternative arm \"it reads the tier decision the sweep recorded on the pointer when that record names the run's current head\" cannot fire on the production code path, because `_sweep_review_tier`'s caller records a skip via `_record_review_dispatch(run_id, status=\"skipped\", reason=reason)` with no `reviewed_head`, so the stored `head` is None and the guard the sentence relies on (\"when that record names the run's current head\") never holds",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "3b807aa3f6670709a6591973b6b357f18a889d276ccec6b1e3bc6078a84b9cd0",
+  "plan_slug": "a-review-is-sized-to-its-risk",
+  "plan_version": 162,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T223302491827-plan-review-of-a-review-is-sized-to-its-risk",
+  "reviewed_blob_sha": "3940e38248272d1cb6d79c6a4ed8018bc5d9c308",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a710's Why attributes the skip record to `_sweep_review_tier` \"in `reckon/crew/recovery_review_acceptance.py`\", but that function is defined in `reckon/crew/recovery_repair_dispatch.py:1022` and only imported into `recovery_review_acceptance.py`; the function also returns the tier rather than writing the record, which is written by its caller there.",
+    "done_when": "pass \u2014 \u00a710's done-when names a declared negative control (remove the tier read, the tier-none case reverts to review-missing) with a measurable positive assertion; \u00a711's names one (flip the unavailable-diff scope back to measured, the root-commit case reverts to none) and pairs it with a readable-path control (a second commit changing only seed.txt resolves none).",
+    "evidence_paths": "pass \u2014 both done-whens write their logs \"under the run directory\" and end in EXIT=, i.e. the node's own durable crew run directory, not a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 no plan labels or ticket ids reach symbols or comments; the sections name mechanisms (`_review_changed_scope`, `_run_review_tier`, `review.tiers`), and the cited run ids and commit shas are evidence, not plan labels.",
+    "reasoning": "a finding \u2014 \u00a710's deliverable offers a second path (\"reads the tier decision the sweep recorded on the pointer when that record names the run's current head\") that the cited production record cannot supply: the sweep's skip is written by `_record_review_dispatch(run_id, status=\"skipped\", reason=reason)` with no `reviewed_head`, so the recorded `head` is null and the \"names the run's current head\" guard can never hold.",
+    "single_goal": "pass \u2014 \u00a710 is one deliverable (the review duty reads the tier) and \u00a711 is one deliverable (an unmeasured diff resolves the full tier); neither bundles a second outcome.",
+    "wiring": "pass \u2014 \u00a710 and \u00a711 are declared implementable in the head's section-declarations and carry their own section elements; neither names a depends-on that resolves wrong, and the work both sections touch (the tier resolver \u00a72 landed) is present."
+  },
+  "section_digests": {
+    "_document": "532c0421be48ad81bd0f0e2528a520ba4ad757ae5c831c7a313d9c6008357a0f",
+    "s1": "1bca4570a6dc141df8190260147c4603fdbd4e237bbd0fa1f635f166cdf5637b",
+    "s10": "a07df53b22b91585addeb98d5e88c71b2cd22d03d1da30561685f96e03a0aa2e",
+    "s11": "6bbc86e3fa4868ea28a6bedc4cfe44870bae0e69abb21473626929baf05d9b00",
+    "s2": "d87e94711b1191be6062f6581f0bf3c2f7793876a327c35be59e3dd37bbe72c8",
+    "s3": "865c2c7d189405d6ba0566cebd8df5e459211cc93a64a9332de51cff756b47ac",
+    "s4": "834dc20a74581e06fc6c6b99a07ea7b628c9c36d7c390cee1b4e599eeec7b070",
+    "s5": "dd9455e66ea742a997a12400b194e02c6557b19217a06db0a58f82d7d82b8fde",
+    "s6": "cb4e838e28a346993a653862da66ac934c2c1b8e7e1aa1d7cb23c7082672067d",
+    "s7": "044f93aa0d0fd0aed5a7b5b535f5b7a2efacfc541ef12f41a04af14289440d7c",
+    "s8": "a12e7aff5d1cfd541706cc743c3d78ed9c0a96dba6af2c4f8b6dbb2309ea9582",
+    "s9": "3cc2a52825983e24d6bcb3f342f8f21cbd91f2144772c41418b9a0362bf5da37"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T22:59:58.755614+00:00"
+}
