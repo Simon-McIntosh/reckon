@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Coordinators hand-edit plans when the MCP image is stale or an op is missing; the server serves current code and edit_plan writes every field they touch.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="11.75">
+  <meta name="plan-effort-hours" content="13.75">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-informs" content="the-crew-surface-is-one-tool-and-a-few-verbs">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;every-plan-write-goes-through-edit-plan#s2&quot;,&quot;every-plan-write-goes-through-edit-plan#s3&quot;],&quot;s5&quot;:[&quot;every-plan-write-goes-through-edit-plan#s4&quot;],&quot;s6&quot;:[&quot;every-plan-write-goes-through-edit-plan#s5&quot;],&quot;s7&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;],&quot;s8&quot;:[&quot;every-plan-write-goes-through-edit-plan#s7&quot;],&quot;s9&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;],&quot;s10&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;every-plan-write-goes-through-edit-plan#s2&quot;,&quot;every-plan-write-goes-through-edit-plan#s3&quot;],&quot;s5&quot;:[&quot;every-plan-write-goes-through-edit-plan#s4&quot;],&quot;s6&quot;:[&quot;every-plan-write-goes-through-edit-plan#s5&quot;],&quot;s7&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;],&quot;s8&quot;:[&quot;every-plan-write-goes-through-edit-plan#s7&quot;],&quot;s9&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;],&quot;s10&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;],&quot;s11&quot;:[&quot;every-plan-write-goes-through-edit-plan#s9&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="45">
+<meta name="plan-version" content="46">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -254,6 +254,37 @@
 <p><strong>Why.</strong> Split from §6 on 2026-10-19. With these documents in its fence, the dispatch of §6's node (<code>epw-a-plan-closes-in-one-op</code>, 14:31 UTC) was refused as a competence refusal: a context estimate of 234,819 usable input tokens against the local lane's 230,144-token window. Once §6 lands, the store refuses a terminal <code>set</code> of <code>status</code>, so any document still showing that write, or the resolved-placeholder recipe, teaches a refused op.</p>
     <p><strong>Deliverable.</strong> <code>skills/reckon-edit/SKILL.md</code> documents <code>close</code> in its op table, and its archive example uses <code>close</code>. The instructions to set a terminal status, and the recipe of appending an already-resolved "done — no followup", are replaced by <code>close</code> in <code>skills/reckon-build/references/coordinator-reference.md</code>, <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>AGENTS.md</code> and <code>skills/reckon-create/SKILL.md</code>.</p>
     <p><strong>Done when</strong> <code>tests/test_skill_contracts.py</code> and <code>tests/test_cited_commands_exist.py</code> pass at the node's head. The contract harness applies every op object the skills cite to the store, which now accepts <code>close</code> and refuses a terminal plan <code>set</code>. The harness counts only a refusal for a path as a failure (<code>_REFUSAL_FOR_PATH</code>), so this node teaches it the refusal naming <code>close</code>, and a surviving example then fails it. The gate log carries a grep of the five files for an instruction to set a terminal status or append a resolved placeholder followup, which finds none. The negative control restores the archive example's <code>set</code> of <code>status</code> to <code>archived</code>, and the contract test then fails naming <code>skills/reckon-edit/SKILL.md</code>. Write paths: <code>skills/reckon-edit/SKILL.md</code>, <code>skills/reckon-build/references/coordinator-reference.md</code>, <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>AGENTS.md</code>, <code>skills/reckon-create/SKILL.md</code>, <code>tests/test_skill_contracts.py</code>.</p>
+
+    <h2 id="s11">§11 — A slow current-code child never forces a reconnect</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> On 2026-10-19 two coordinators reported that §3's guard still forces reconnects under load, and the lead was asked to reconnect again that evening. power_convertor's sessions saw <code>read_plan</code>, <code>edit_plan</code>, <code>roadmap</code> and <code>crew</code> all answer <code>stale_server_code</code> from mid-afternoon, on a node at load 59–75. The code in <code>reckon/mcp.py</code> shows three causes:</p>
+    <ul>
+      <li><strong>An unanswered child becomes a reconnect.</strong> <code>_refuse_when_stale</code> re-runs a failed call in a child. When the child makes no answer, <code>_answer_on_current_code</code> returns <code>None</code> and <code>_stale_code_response</code> replaces the call's own failure with the refusal. Under load the child's import runs out its bound. A <code>version_conflict</code> or <code>storage-slow</code>, whose remedy is to re-read and retry, then comes back as "reconnect", and its detail says "This call failed on the current code too", though the current code never ran.</li>
+      <li><strong>One fresh interpreter per call.</strong> Once a tool has answered on current code, <code>_SERVE_ON_CURRENT_CODE</code> sends every later call of that tool to a new child first. Each child pays a full import, bounded at <code>_CURRENT_CODE_TIMEOUT_S</code> = 120 s, so on a loaded node every call waits and many fail.</li>
+      <li><strong>Every commit moves the stamp.</strong> This repository commits every few minutes, so the moved-checkout path is the normal state of a long session, not an exception.</li>
+    </ul>
+    <p><strong>Deliverable.</strong> The guard stops turning slowness into a reconnect:</p>
+    <ul>
+      <li>When the child makes no answer, the call's own result stands, error code unchanged, with <code>code_stamp_at_start</code>, <code>code_stamp_now</code> and a note that the current code did not answer within its bound. A <code>version_conflict</code> stays a <code>version_conflict</code>.</li>
+      <li>Current code is loaded once per code stamp, in one persistent child behind the stdio front. The child takes calls as request-tagged JSON lines and is reused until the stamp moves again, when it is stopped and one new child is started. A call goes to the child only once it has answered at least once. Until then the running image serves it, so a cold child never makes a call wait. The child ends when the server ends: it exits when its input pipe closes.</li>
+      <li>The <code>stale_server_code</code> refusal remains for one case only, a tool whose parameters changed. There the client holds the schema it connected with, and a reconnect is the real remedy.</li>
+    </ul>
+    <p>§3 weighed re-exec and found it cannot carry an initialised stdio session. An in-process module reload would leave live references into the old modules. A persistent child keeps §3's self-reload, which the <code>stale-image-remedy</code> decision locked, and pays the import once.</p>
+    <p>A server started before this lands still runs the old guard, so each session needs one more reconnect to pick up this one. The coordinators who reported the defect are told so when it lands.</p>
+    <p><strong>Done when</strong> <code>tests/test_a_slow_child_never_forces_a_reconnect.py</code> drives the guard on a temporary checkout whose stamp has moved, with a child it can slow or stop:</p>
+    <ul>
+      <li>A call that fails with <code>version_conflict</code>, while the child makes no answer within its bound, returns <code>version_conflict</code> with both stamps attached and no <code>reconnect</code> field.</li>
+      <li>Twenty calls after the stamp moves start one child, counted by a spawn hook. A further stamp move stops it and starts exactly one more.</li>
+      <li>A call made while the child is still cold is served by the running image without waiting on the child.</li>
+      <li>A tool whose parameters changed still returns <code>stale_server_code</code> with its <code>reconnect</code> remedy.</li>
+      <li>Closing the server's end of the pipe ends the child.</li>
+    </ul>
+    <p>Two negative controls, each logged:</p>
+    <ul>
+      <li>Restoring the refusal on an unanswered child fails the first case.</li>
+      <li>Starting a child per call fails the second.</li>
+    </ul>
+    <p><code>tests/test_mcp_server_serves_current_code.py</code> and <code>tests/test_mcp_tools.py</code> add no failure, and <code>tests/test_every_module_fits_a_worker_window.py</code> adds none either. Write paths: <code>reckon/mcp.py</code>, <code>reckon/served_code.py</code>, <code>tests/test_mcp_server_serves_current_code.py</code>, <code>tests/test_a_slow_child_never_forces_a_reconnect.py</code>. <code>reckon/mcp.py</code> is also the write path of <a href="/reckon/the-crew-surface-is-one-tool-and-a-few-verbs#s5">the-crew-surface-is-one-tool-and-a-few-verbs §5</a>, which waits for this section to land.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
