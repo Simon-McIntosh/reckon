@@ -252,6 +252,7 @@ def complete(
     live_run_waiver: str = "",
     plan_link: str = "",
     unplanned_reason: str = "",
+    dry_run: bool = False,
     promoted_by: str = "",
 ) -> dict[str, Any]:
     """Promote a run, or finish cleanup when its record already landed.
@@ -279,7 +280,13 @@ def complete(
     # possibly before that pick has answered. Wait for it here — outside the
     # pointer lock the picker itself must take — so the row carries the pick's
     # answer instead of reading as one the picker never gave.
-    _await_in_flight_shadow_pick(run_id)
+    # A dry run waits for nothing and attaches nothing: the pick's timeout is
+    # written onto the pointer, which is one of the writes a dry run promises
+    # not to make. A pick still in flight is reported instead, so the operator
+    # sees the wait a promotion would take rather than paying it here.
+    awaiting_pick = _shadow_pick_in_flight(run_id) if dry_run else False
+    if not dry_run:
+        _await_in_flight_shadow_pick(run_id)
     # The node-local pointer lock serialises a run's read-modify-write here; the
     # host lease, taken inside it, excludes a promotion of the same run on
     # another host for the whole span, before either store is written.
@@ -293,6 +300,23 @@ def complete(
         # is reported as the withdrawal it is rather than failing validation on
         # the empty project name further down.
         if not str(record.get("project") or "").strip():
+            if dry_run:
+                return _dry_run_report(
+                    run_id,
+                    record,
+                    verdict=verdict,
+                    gate_check=gate_check,
+                    refusals=(
+                        (
+                            "the run names no project, so its dispatch was "
+                            "refused before a project was resolved: a promotion "
+                            "would withdraw it — retiring its pointer and "
+                            "releasing its workspace — and write no ledger row"
+                        ),
+                    ),
+                    would_withdraw=True,
+                    would_wait_for_pick=awaiting_pick,
+                )
             return _complete_withdrawn_run(run_id, record)
         # A run review delivers its record inside its own run directory and the
         # supervisor files it into the store when the worker ends. A supervisor
@@ -300,7 +324,9 @@ def complete(
         # wrote it, and a record no store reader can find is a review that
         # never happened — so the filing is repeated here, which is the last
         # moment the run's own record still exists to be read from.
-        _file_delivered_run_reviews(record)
+        delivered_reviews = _delivered_review_records(record) if dry_run else ()
+        if not dry_run:
+            _file_delivered_run_reviews(record)
         # A review run's outcome is the review it stored, so the operator's
         # hand is not the only source for a non-passing gate's summary; the
         # refusal below stands for every run with no stored review to read.
@@ -556,7 +582,20 @@ def complete(
             run_id,
             record,
             waiver_reason=suite_delta_waiver,
+            dry_run=dry_run,
         )
+        if dry_run:
+            return _dry_run_report(
+                run_id,
+                record,
+                verdict=verdict,
+                gate_check=gate_check,
+                refusals=(),
+                no_commit=no_commit,
+                no_impl_change=no_impl_change,
+                would_file_reviews=delivered_reviews,
+                would_wait_for_pick=awaiting_pick,
+            )
         result = _complete_locked(
             run_id,
             record=record,
@@ -601,9 +640,192 @@ def complete(
 # to the live pointer within its own bound. A promotion that lands inside that
 # window would otherwise record no picker_selection, and the row would read as
 # one the picker never answered rather than one whose pick had not finished.
+_DRY_RUN_REASON_FLAGS = (
+    "--no-impl-change",
+    "--waive-unreviewed-promotion",
+    "--waive-suite-delta",
+    "--waive-boundary-refusal",
+    "--waive-resume-path",
+    "--waive-negative-control",
+    "--waive-live-run",
+    "--no-commit",
+)
+_DRY_RUN_REASON_PLACEHOLDER = "recorded by the dry run"
+
+
+def _dry_run_invocation(
+    run_id: str,
+    *,
+    verdict: str,
+    gate_check: Mapping[str, Any] | None,
+    refusals: Sequence[str],
+) -> str:
+    """The one command that would promote this run, given the state it is in.
+
+    The refusals are the run's state: each names the flag that resolves it, so
+    the invocation is assembled from the remedies the refusals themselves
+    state rather than from a second reading of the record that could drift from
+    them. A gate-check refusal names no flag — the check is what is missing —
+    so the arm for it offers the check that the passing verdict already fixes:
+    the exit status of a passing gate is zero, and the command and log are the
+    ones the promotion resolved, offered back only where they are absent. The
+    reason values are concrete text rather than placeholders, so the emitted
+    line can be run as it stands.
+    """
+    parts = ["reckon", "crew", "complete", "--run", run_id, "--gate", str(verdict)]
+    text = "\n".join(refusals)
+    if str(verdict).strip().lower() == "failed":
+        parts += [
+            "--failure-classification",
+            "pre-existing",
+            "--outcome",
+            shlex.quote("state the failure in one line"),
+        ]
+    check = gate_check if isinstance(gate_check, Mapping) else {}
+    if "the check that produced it" in text:
+        if not str(check.get("command") or "").strip():
+            parts += ["--gate-command", shlex.quote("<the gate command that ran>")]
+        if not str(check.get("log_path") or "").strip():
+            parts += ["--gate-log-path", shlex.quote("<the captured log path>")]
+        if check.get("exit_status") is None:
+            parts += [
+                "--gate-exit-status",
+                "0" if str(verdict).strip().lower() == "passed" else "<exit status>",
+            ]
+    for flag in _DRY_RUN_REASON_FLAGS:
+        if flag in text:
+            parts += [flag, shlex.quote(_DRY_RUN_REASON_PLACEHOLDER)]
+    if "--accept-path" in text:
+        parts += ["--accept-path", "<path>", shlex.quote(_DRY_RUN_REASON_PLACEHOLDER)]
+    return " ".join(parts)
+
+
+def _dry_run_report(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    verdict: str,
+    gate_check: Mapping[str, Any] | None,
+    refusals: Sequence[BaseException],
+    no_commit: str = "",
+    no_impl_change: str = "",
+    would_withdraw: bool = False,
+    would_file_reviews: Sequence[str] = (),
+    would_wait_for_pick: bool = False,
+) -> dict[str, Any]:
+    """Report every refusal a promotion would raise, without writing any of it.
+
+    A refusal is gathered rather than raised, so an operator fixing a run by
+    trial learns every way it falls short from one call. ``refusals`` is empty
+    for a run that would promote, and ``invocation`` names the one command that
+    would pass for the state the run is in — which for a run with nothing to
+    fix is the command that was just evaluated.
+
+    The three paths whose promotion writes before any guard is judged are
+    reported rather than taken: ``would_withdraw`` for a run naming no project,
+    ``would_file_reviews`` for the delivered review records a filing would move
+    into the store, and ``would_wait_for_pick`` for a deferred pick still to
+    answer. A withdrawn run has nothing to invoke — its promotion writes no
+    ledger row — so no command is offered for it.
+    """
+    messages = [str(refusal) for refusal in refusals]
+    invocation = (
+        ""
+        if would_withdraw
+        else _dry_run_invocation(
+            run_id,
+            verdict=verdict,
+            gate_check=gate_check,
+            refusals=messages,
+        )
+    )
+    report: dict[str, Any] = {
+        "ok": not messages,
+        "dry_run": True,
+        "run_id": run_id,
+        "project": str(record.get("project") or ""),
+        "gate": str(verdict),
+        "would_promote": not messages,
+        "refusal_count": len(messages),
+        "refusals": messages,
+        "invocation": invocation,
+        "would_withdraw": would_withdraw,
+        "would_file_reviews": [str(path) for path in would_file_reviews],
+        "would_wait_for_pick": would_wait_for_pick,
+    }
+    if would_file_reviews:
+        # The filing runs before the guards, so a review check that reads the
+        # store here reads it without these records. Said plainly rather than
+        # left for the operator to infer from a refusal naming no review.
+        report["notes"] = [
+            (
+                "the checks read the review store before the delivered records "
+                "listed in would_file_reviews would be filed into it"
+            )
+        ]
+    return report
+
+
+def complete_dry_run(run_id: str, **kwargs: Any) -> dict[str, Any]:
+    """Evaluate a promotion's every guard and report them, writing nothing.
+
+    The guards are the promotion's own, run in the order it runs them, so a run
+    the dry run reports as promotable promotes for real on the same evidence.
+    Every refusal is carried back rather than raised, because the value of the
+    dry run is the whole list.
+    """
+    gate = str(kwargs.get("gate") or "")
+    root = kwargs.get("root")
+    try:
+        return complete(run_id, dry_run=True, **kwargs)
+    except _PromotionRefusalError as refusal:
+        refusals: Sequence[BaseException] = list(refusal.refusals)
+    except (CrewError, ledger.LedgerError) as refusal:
+        refusals = [refusal]
+    try:
+        record = _read_pointer_or_rebuild(run_id, root=root)
+    except CrewError:
+        record = {}
+    # The invocation is built from the check the fill resolved, not from the
+    # operator's flags alone: a run whose manifest already carries the command
+    # and the log needs neither of them offered back, and offering them would
+    # name a check the run had already supplied.
+    filled_check, _filled_commits = _default_gate_evidence_from_manifest(
+        record,
+        verdict=gate,
+        gate_check=kwargs.get("gate_check"),
+        commits=kwargs.get("commits") or (),
+        no_commit_reason=str(kwargs.get("no_commit") or ""),
+    )
+    return _dry_run_report(
+        run_id,
+        record,
+        verdict=gate,
+        gate_check=filled_check,
+        refusals=refusals,
+        no_commit=str(kwargs.get("no_commit") or ""),
+        no_impl_change=str(kwargs.get("no_impl_change") or ""),
+        would_file_reviews=_delivered_review_records(record),
+        would_wait_for_pick=_shadow_pick_in_flight(run_id),
+    )
+
+
 _SHADOW_PICK_SPEC_NAME = "shadow-picker.json"
 _SHADOW_PICK_WAIT_SECONDS = 5.0
 _SHADOW_PICK_POLL_SECONDS = 0.1
+
+
+def _shadow_pick_in_flight(run_id: str) -> bool:
+    """Whether a deferred shadow pick is still to answer for this run.
+
+    Dispatch starts the advisory pick detached, so a promotion landing inside
+    the pick's window would otherwise record no selection. Both the wait and the
+    dry run's report of what it would wait for are decided here, so the two
+    cannot disagree about whether a pick is outstanding.
+    """
+    if not (run_dir(run_id) / _SHADOW_PICK_SPEC_NAME).exists():
+        return False
+    return _pointer_awaits_shadow_pick(run_id)
 
 
 def _await_in_flight_shadow_pick(run_id: str) -> None:
@@ -1844,6 +2066,30 @@ def _marker_present_in(
         f"git could not search {target} in {checkout} for the marker: "
         f"{result.stderr.strip() or result.stdout.strip() or result.returncode}"
     )
+
+
+def _delivered_review_records(record: Mapping[str, Any]) -> list[str]:
+    """The delivered review records a filing would read, resolved but unread.
+
+    The filing's own resolution decides which records a promotion would move
+    into the store, so a dry run asks the same question without writing any of
+    them: the names it reports are the ones the filing would have opened.
+    """
+    from reckon.crew import recovery_review_delivery as delivery
+    from reckon.crew import review as review_module
+
+    directory = delivery._review_record_delivery_directory(
+        record, str(record.get("project") or "")
+    )
+    if directory is None:
+        return []
+    try:
+        return [
+            str(path)
+            for path in review_module.delivered_run_review_paths(record, directory)
+        ]
+    except (OSError, ValueError):
+        return []
 
 
 def _file_delivered_run_reviews(record: Mapping[str, Any]) -> list[str]:
