@@ -547,7 +547,7 @@ Immediately after each `reckon crew complete`, the orchestrator:
 6. Re-reads the sprint resource and verifies its composed item status reflects
    the plan writeback. Item lifecycle status and implementation fraction are
    derived from plan HTML and must never be persisted in the sprint.
-7. Appends a cross-plan followup when needed, or records `done — no followup`.
+7. Appends a cross-plan followup when needed, or closes the plan with the `close` op once the chain ends.
 
 A section typed through `insert_section` carries `effort_hours` as a positive
 number of quarter hours (`0.25` steps, for example `1.25`), and its
