@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own two gate arms recorded in its manifest: baseline_suite at revision 7ee118fbff9636e2510f4ea73bedfa690fe9cbd2 (6 passed, EXIT=0, completed true, failure_count 0, log baseline_suite.log) and after_suite at revision b337017a6e1d812620a3e15fc38f758804d5bf2b (6 passed, EXIT=0, completed true, failure_count 0, log after_suite.log). Both arms completed with no failures, so no failure is added against base.",
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T073807435938-the-package-identity-tests-can-fail/after_suite.log",
+  "base_log_revision": "7ee118fbff9636e2510f4ea73bedfa690fe9cbd2",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T073807435938-the-package-identity-tests-can-fail/baseline_suite.log",
+  "call_sites": [
+    "reckon/crew_follow_commands.py:415 calls checkout_trust.materialize_committed_tree",
+    "reckon/crew/follower_registration.py:34 calls checkout_trust.source_code_identity",
+    "reckon/crew/obligation_snapshot.py:428 calls checkout_trust.source_code_identity"
+  ],
+  "completed_at": "2026-10-19T09:19:38.600Z",
+  "dispatched_at": "2026-10-19T09:02:31Z",
+  "findings": [
+    {
+      "file": "tests/test_a_commit_without_code_moves_no_identity.py",
+      "line": "202",
+      "severity": "follow-on",
+      "text": "the strengthened reload-env assertion execs[0][2][_IMAGE_COMMIT_ENV] == _git(root, 'rev-parse', 'HEAD:reckon') is not shown to fail under the recorded negative control: under the commit-keyed mutation the test fails earlier at :200 (assert len(execs) == 1, 0 execs) so :202 is never evaluated, while the manifest's negative_control_note and the fragment claim the image-carrying case now fails on its strengthened assertion. The assertion is independent and correct by construction, but the recorded control demonstrates only the two named assertions, so the evidence for this third one is overstated."
+    }
+  ],
+  "head_log_revision": "b337017a6e1d812620a3e15fc38f758804d5bf2b",
+  "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T073807435938-the-package-identity-tests-can-fail/negative-control.log",
+  "node": "review-of-the-package-identity-tests-can-fail-b337017a6e1d",
+  "note": "the landed change is confined to tests/ and docs/, so no production runtime code reaches it and the CALL_SITES line is none; the call_sites above are the production mechanisms the strengthened tests exercise, listed for a reader and excluded by the rubric's rule that a test file and the code it exercises are not production call sites of a test-only change.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make the package-identity assertions compare against independently derived values so they fail when the identity is keyed on the commit; the landed change makes test (b) compare image.name and the stamped RECKON_FOLLOWER_IMAGE_COMMIT against git rev-parse HEAD:reckon (tests/test_a_commit_without_code_moves_no_identity.py:130,136,139), the materialisation case compare its directory name against that tree id and its extracted package against git ls-tree -r --name-only <tree_id> (:166-167,178-179), and the image-carrying case's reload-env assertion against the same git value (:202).\nVERDICT done_when: the done_when names the test passing, the reload and materialisation cases compared against the git tree id and its listing, the commit-keyed negative control failing both, every log ending in EXIT= and ruff clean; the manifest records all of them and the logs bear them out elsewhere - gate-head.log ends 6 passed EXIT=0, negative-control.log ends 6 failed EXIT=1 with the assertions at :136 and :178 red, baseline_suite.log and after_suite.log end 6 passed EXIT=0, ruff.log ends EXIT=0.\nVERDICT write_paths: the manifest declares tests/test_a_commit_without_code_moves_no_identity.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-package-identity-tests-can-fail.html and a figures dir; git diff 7ee118fb..b337017a --stat lists exactly two changed paths - the test file (+21/-4) and the added fragment (+27) - both inside the grant, with no figure written.\nVERDICT manifest: read; status complete, commits 1b24b50242b3ac92b5b44df1abb00b984f07db82 and b337017a6e1d812620a3e15fc38f758804d5bf2b equal the worktree head, baseline_suite and after_suite carry completed true with 0 failures and log paths, negative_control_log is a bare path whose last line is EXIT=1, and measurement_module/measurement_cwd name the muthead scratch tree.\nVERDICT diff: read commit by commit against base 7ee118fbff9636e2510f4ea73bedfa690fe9cbd2; 1b24b502 replaces two same-derived comparisons with git-derived tree_id/listing values, b337017a fixes the reload-env assertion, and the added fragment records the reproduction and the control; nothing outside the declared file is touched.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_commit_without_code_moves_no_identity.py:136, :139, :178, :179 and :202 now compare against values git derives independently, exactly the deliverable the goal names.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head.log (6 passed, EXIT=0) and negative-control.log (6 failed, EXIT=1, assertions red at :136 and :178) are recorded in the manifest's test_logs and their last lines are EXIT values, though the third strengthened assertion is claimed rather than shown (see finding at :202).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 7ee118fb..b337017a --stat is inside the manifest's declared write paths, and the reload-env assertion the diff also fixes was named explicitly in the coordinator's resume advice.\nSCORE durability: 18\nJUSTIFICATION durability: the assertions at tests/test_a_commit_without_code_moves_no_identity.py:136 and :178 fail when source_code_identity is re-keyed on the commit (negative-control.log), but the :202 assertion is not exercised by that control - the test fails earlier at :200.\nSCORE fit: 19\nJUSTIFICATION fit: the change reuses the file's own _git helper at tests/test_a_commit_without_code_moves_no_identity.py:27 and follows its assertion style, adding no symbol and no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function or module; it composes the pre-existing _git helper at tests/test_a_commit_without_code_moves_no_identity.py:27, so no capability is forked or duplicated.\nFINDING tests/test_a_commit_without_code_moves_no_identity.py:202 follow-on: the strengthened reload-env assertion execs[0][2][_IMAGE_COMMIT_ENV] == _git(root, 'rev-parse', 'HEAD:reckon') is not shown to fail under the recorded negative control - under the commit-keyed mutation the test fails earlier at :200 (assert len(execs) == 1, 0 execs), so :202 is never evaluated, while the manifest's negative_control_note and the fragment claim the image-carrying case now fails on its strengthened assertion; the assertion is independent and correct by construction, but the recorded control demonstrates the two named assertions only, so the evidence for this third one is overstated.",
+  "review_run_id": "r-20261019T090026691085-review-of-the-package-identity-tests-can-fail-b337017a6e1d",
+  "reviewed_base_sha": "7ee118fbff9636e2510f4ea73bedfa690fe9cbd2",
+  "reviewed_head_sha": "b337017a6e1d812620a3e15fc38f758804d5bf2b",
+  "reviewed_run_id": "r-20261019T073807435938-the-package-identity-tests-can-fail",
+  "reviewer_run_id": "r-20261019T090026691085-review-of-the-package-identity-tests-can-fail-b337017a6e1d",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T09:31:04.839990+00:00"
+}
