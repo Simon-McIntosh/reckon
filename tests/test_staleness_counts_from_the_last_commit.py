@@ -92,12 +92,14 @@ def aged_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config-home"))
     # The commit map persists a cache under the configuration home; point it at
     # in-process state so the run touches nothing outside the test's repository.
-    from reckon import serve
+    from reckon import git_dates
 
-    monkeypatch.setattr(serve, "_GIT_LAST_MODIFIED_CACHE", {})
-    monkeypatch.setattr(serve, "_GIT_HEAD_MEMO", {})
-    monkeypatch.setattr(serve, "_load_git_last_modified_cache", lambda key: None)
-    monkeypatch.setattr(serve, "_store_git_last_modified_cache", lambda *a, **k: None)
+    monkeypatch.setattr(git_dates, "_GIT_LAST_MODIFIED_CACHE", {})
+    monkeypatch.setattr(git_dates, "_GIT_HEAD_MEMO", {})
+    monkeypatch.setattr(git_dates, "_load_git_last_modified_cache", lambda key: None)
+    monkeypatch.setattr(
+        git_dates, "_store_git_last_modified_cache", lambda *a, **k: None
+    )
 
     repo = tmp_path / "repo"
     docs = repo / "docs"

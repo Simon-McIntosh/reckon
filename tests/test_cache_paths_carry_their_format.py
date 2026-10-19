@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import compliance, metadata_index, serve
+from reckon import compliance, git_dates, metadata_index
 
 
 @pytest.mark.parametrize(
@@ -61,17 +61,17 @@ def test_alternating_writers_reuse_their_own_format(
             return f"writer-{version}.html" in value
 
     else:
-        owner = serve
+        owner = git_dates
         if kind == "creation":
             version_name = "_GIT_CREATION_SCHEMA_VERSION"
-            path_fn = serve._git_creation_cache_path
-            read_fn = serve._load_git_creation_cache
-            write_fn = serve._store_git_creation_cache
+            path_fn = git_dates._git_creation_cache_path
+            read_fn = git_dates._load_git_creation_cache
+            write_fn = git_dates._store_git_creation_cache
         else:
             version_name = "_GIT_LAST_MODIFIED_SCHEMA_VERSION"
-            path_fn = serve._git_last_modified_cache_path
-            read_fn = serve._load_git_last_modified_cache
-            write_fn = serve._store_git_last_modified_cache
+            path_fn = git_dates._git_last_modified_cache_path
+            read_fn = git_dates._load_git_last_modified_cache
+            write_fn = git_dates._store_git_last_modified_cache
 
         def path():
             return path_fn(key)
@@ -80,7 +80,9 @@ def test_alternating_writers_reuse_their_own_format(
             return read_fn(key)
 
         def write(version):
-            write_fn(key, serve._GitCreationEntry("stable", {"writer.html": version}))
+            write_fn(
+                key, git_dates._GitCreationEntry("stable", {"writer.html": version})
+            )
 
         def marker(value, version):
             return value.times["writer.html"] == version

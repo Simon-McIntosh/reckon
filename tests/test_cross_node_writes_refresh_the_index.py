@@ -29,7 +29,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import metadata_index, serve
+from reckon import change_streams, metadata_index, serve
 
 PROJECT = "sample"
 FAST_S = "1"
@@ -212,6 +212,7 @@ def _served(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, git: bool):
     monkeypatch.setattr(serve, "load_mounts", lambda: {PROJECT: docs})
     monkeypatch.setattr(serve, "_STATE_ROOT", state_root)
     monkeypatch.setattr(serve, "_ProjectChangeWatch", _NeverFiringWatch)
+    monkeypatch.setattr(change_streams, "_ProjectChangeWatch", _NeverFiringWatch)
     metadata_index.clear()
     serve._DISC_CACHE.clear()
     serve._SIGNATURE_MEMO.clear()

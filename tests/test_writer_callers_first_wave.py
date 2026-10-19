@@ -238,12 +238,12 @@ def _serve_cache(tmp_path, monkeypatch, module, store_name, path_name, payload_n
 
 
 def test_serve_creation_cache_output_unchanged(tmp_path, monkeypatch):
-    from reckon import serve
+    from reckon import git_dates
 
     target = _serve_cache(
         tmp_path,
         monkeypatch,
-        serve,
+        git_dates,
         "_store_git_creation_cache",
         "_git_creation_cache_path",
         "_git_creation_payload",
@@ -254,12 +254,12 @@ def test_serve_creation_cache_output_unchanged(tmp_path, monkeypatch):
 
 
 def test_serve_last_modified_cache_output_unchanged(tmp_path, monkeypatch):
-    from reckon import serve
+    from reckon import git_dates
 
     target = _serve_cache(
         tmp_path,
         monkeypatch,
-        serve,
+        git_dates,
         "_store_git_last_modified_cache",
         "_git_last_modified_cache_path",
         "_git_last_modified_payload",
@@ -428,16 +428,16 @@ def test_resources_manifest_delegates(tmp_path, monkeypatch):
 def test_serve_caches_delegate(
     tmp_path, monkeypatch, store_name, path_name, payload_name
 ):
-    from reckon import serve
+    from reckon import git_dates
 
-    calls = _capture(monkeypatch, serve)
+    calls = _capture(monkeypatch, git_dates)
     target = tmp_path / f"{store_name}.json"
     repository = tmp_path / f"repo-{store_name}"
     (repository / ".git").mkdir(parents=True)
-    entry = serve._GitCreationEntry(head="deadbeef", times={"a": 1})
-    monkeypatch.setattr(serve, path_name, lambda key: target)
-    monkeypatch.setattr(serve, payload_name, lambda key, entry: CANONICAL_PAYLOAD)
-    getattr(serve, store_name)((str(repository), "docs"), entry)
+    entry = git_dates._GitCreationEntry(head="deadbeef", times={"a": 1})
+    monkeypatch.setattr(git_dates, path_name, lambda key: target)
+    monkeypatch.setattr(git_dates, payload_name, lambda key, entry: CANONICAL_PAYLOAD)
+    getattr(git_dates, store_name)((str(repository), "docs"), entry)
 
     assert len(calls) == 1
     kwargs = calls[0]["kwargs"]

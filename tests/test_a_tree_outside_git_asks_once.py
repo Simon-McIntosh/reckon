@@ -27,7 +27,7 @@ import subprocess
 from datetime import UTC, date, datetime
 from pathlib import Path
 
-from reckon import doccheck, serve
+from reckon import doccheck, git_dates
 from reckon.doccheck import derived_plan_age
 from reckon.serve import _git_head
 
@@ -98,10 +98,10 @@ def _isolated_state(tmp_path: Path, monkeypatch):
     """
 
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
-    monkeypatch.setattr("reckon.serve._GIT_OUTSIDE_MEMO", {})
-    monkeypatch.setattr("reckon.serve._GIT_HEAD_MEMO", {})
-    monkeypatch.setattr("reckon.serve._GIT_LAST_MODIFIED_CACHE", {})
-    monkeypatch.setattr("reckon.serve._GIT_CREATION_CACHE", {})
+    monkeypatch.setattr("reckon.git_dates._GIT_OUTSIDE_MEMO", {})
+    monkeypatch.setattr("reckon.git_dates._GIT_HEAD_MEMO", {})
+    monkeypatch.setattr("reckon.git_dates._GIT_LAST_MODIFIED_CACHE", {})
+    monkeypatch.setattr("reckon.git_dates._GIT_CREATION_CACHE", {})
     yield
 
 
@@ -115,13 +115,13 @@ def _counting_git_spawns(monkeypatch):
     """
 
     calls = {"count": 0}
-    real_run_git = serve._run_git
+    real_run_git = git_dates._run_git
 
     def run_git(*args, **kwargs):
         calls["count"] += 1
         return real_run_git(*args, **kwargs)
 
-    monkeypatch.setattr(serve, "_run_git", run_git)
+    monkeypatch.setattr(git_dates, "_run_git", run_git)
     yield lambda: calls["count"]
 
 
@@ -165,7 +165,7 @@ def test_no_repository_root_answers_no_commit_without_spawning(tmp_path, monkeyp
         repo_dir = docs.parent
 
         assert _git_head(repo_dir) is None
-        assert serve._GIT_OUTSIDE_MEMO, "git's outside verdict must be remembered"
+        assert git_dates._GIT_OUTSIDE_MEMO, "git's outside verdict must be remembered"
 
         with _counting_git_spawns(monkeypatch) as spawns:
             assert _git_head(repo_dir) is None
@@ -183,7 +183,7 @@ def test_timeout_is_not_remembered_as_outside(tmp_path, monkeypatch):
         with _git_that_times_out_once(monkeypatch):
             assert _git_head(repo_dir) is None
 
-        assert serve._GIT_OUTSIDE_MEMO == {}, "a timeout must not be remembered"
+        assert git_dates._GIT_OUTSIDE_MEMO == {}, "a timeout must not be remembered"
 
         with _counting_git_spawns(monkeypatch) as spawns:
             assert _git_head(repo_dir) is None
@@ -212,7 +212,7 @@ def test_outside_root_is_remembered_under_a_non_c_locale(tmp_path, monkeypatch):
             assert _git_head(repo_dir) is None
             assert spawns() == 1
 
-        assert serve._GIT_OUTSIDE_MEMO, "the outside verdict must be remembered"
+        assert git_dates._GIT_OUTSIDE_MEMO, "the outside verdict must be remembered"
 
         with _counting_git_spawns(monkeypatch) as spawns:
             assert _git_head(repo_dir) is None
@@ -307,7 +307,7 @@ def test_nested_docs_root_below_repository_keeps_resolving_head(tmp_path, monkey
         with _git_that_times_out_once(monkeypatch):
             assert _git_head(repo_dir) is None
 
-        assert serve._GIT_OUTSIDE_MEMO == {}, "a timeout must not be remembered"
+        assert git_dates._GIT_OUTSIDE_MEMO == {}, "a timeout must not be remembered"
 
         with _counting_git_spawns(monkeypatch) as spawns:
             assert _git_head(repo_dir) == expected

@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import serve
+from reckon import change_streams, serve
 
 _MOUNT_COUNT = 3
 _ANSWER_WITHIN_S = 2.0
@@ -168,7 +168,7 @@ def served_entry_point(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     armed: list[Path] = []
     arming_started = threading.Event()
     release_arming = threading.Event()
-    real_watch = serve._ProjectChangeWatch
+    real_watch = change_streams._ProjectChangeWatch
 
     def slow_watch(tree: Path):
         arming_started.set()
@@ -177,7 +177,7 @@ def served_entry_point(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         armed.append(watch.root)
         return watch
 
-    monkeypatch.setattr(serve, "_ProjectChangeWatch", slow_watch)
+    monkeypatch.setattr(change_streams, "_ProjectChangeWatch", slow_watch)
 
     servers: list = []
 
