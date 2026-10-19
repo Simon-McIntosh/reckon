@@ -743,4 +743,4 @@ function PlanGraphStrip({ slug, onNav }) {
 // active set; the second group covers paused / completed / abandoned states.
 
 window.ReckonShell = window.ReckonShell || {};
-window.ReckonShell.plans = { readableFilterLabel, ListFilterControls, SORT_DIR_DEFAULTS, sortItems, SORT_OPTIONS, openGateCount, attachmentGroups, readingQueue, readingQueueStep, nextReadingMode, paletteItems, paletteKindLabel, artifactKindLabel, artifactStamp, artifactState, artifactIsDone, artifactImageSrc, artifactIndexRows, ArtifactIndex, selectPlanSection, ListCol, dependencyRefSlug, dependencyConeRows, dependencyConeLabel, DependencyConeCard, PlanGraphStrip, artifactRevisionQuery };
+window.ReckonShell.plans = { readableFilterLabel, ListFilterControls, SORT_DIR_DEFAULTS, sortItems, SORT_OPTIONS, openGateCount, attachmentGroups, readingQueue, readingQueueStep, nextReadingMode, paletteItems, paletteKindLabel, artifactKindLabel, artifactStamp, artifactState, artifactIsDone, artifactImageSrc, artifactIndexRows, ArtifactIndex, selectPlanSection, ListCol, dependencyRefSlug, dependencyConeRows, dependencyConeLabel, DependencyConeCard, PlanGraphStrip };
