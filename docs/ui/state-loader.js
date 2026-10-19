@@ -730,6 +730,23 @@ window.watchProjectStateChanges = function (onChange) {
     if (payload?.rows) applyIndexRowChanges(payload.rows);
     refetchDerived();
   });
+  // A fleet-scoped result — the rollup over every mount, a velocity key — has
+  // no owning project, so the server publishes it on every open stream. The
+  // key is republished on window for a view computing that key, beside the
+  // derived-state refetch the event also asks for.
+  changes.addEventListener("fleet", (event) => {
+    let payload = null;
+    try {
+      payload = JSON.parse(event?.data ?? "null");
+    } catch (cause) {
+      payload = null;
+    }
+    const fleet = payload?.fleet;
+    if (fleet && fleet.key) {
+      window.dispatchEvent(new CustomEvent("reckon-fleet", { detail: { key: fleet.key } }));
+    }
+    refetchDerived();
+  });
   return changes;
 };
 
