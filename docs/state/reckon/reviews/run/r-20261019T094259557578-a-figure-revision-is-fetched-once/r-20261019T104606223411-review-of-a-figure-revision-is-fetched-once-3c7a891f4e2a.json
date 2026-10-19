@@ -1,0 +1,39 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_spa_reader_provenance.py::test_figure_reader_uses_the_served_image_and_prints_its_source_path"
+  ],
+  "completed_at": "2026-10-19T10:54:12.470Z",
+  "dispatched_at": "2026-10-19T10:46:44Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": 3475,
+      "severity": "follow-on",
+      "text": "follow-on: the thumbnail fallback answers Cache-Control twice \u2014 `no-store` from `_send` (reckon/serve.py:3340) followed by `max-age=31536000, immutable` \u2014 and `no-store` forbids storing the response at all (RFC 9111 s5.2.2.5), so the immutable directive this node adds on that branch is inert and the figure is refetched on every view. Reachable whenever `_render_thumbnail` raises \u2014 a malformed figure, a codec-less source \u2014 the branch the sibling comment at reckon/serve.py:3466 says is deliberately supported. Receipt: a probe against this revision (worktree at 3c7a891f4, module_file .../a-figure-revision-is-fetched-once/reckon/serve.py) requesting /_thumb/sample/figures/demo/broken.png?rev=<current> printed `Cache-Control: no-store` then `Cache-Control: max-age=31536000, immutable`. Not blocking: `_send_file` and a rendered thumbnail do answer immutable, and the declared gate passes."
+    },
+    {
+      "file": "tests/test_a_figure_revision_is_fetched_once.py",
+      "line": 125,
+      "severity": "follow-on",
+      "text": "follow-on: `assert row[\"revision\"] == project.revision()` compares the row's token against the same helper that produced it (`project.revision()` at tests/test_a_figure_revision_is_fetched_once.py:76 calls `serve._file_revision`, reckon/serve.py:2973, which `_discover_plans_uncached` also calls at reckon/serve.py:2557), so the two sides move together: a `_file_revision` returning any non-empty constant would satisfy line 125 and line 126 alike. The assertion cannot catch a regression in the token; the suite catches a degenerate token only indirectly through `assert current != previous` at tests/test_a_figure_revision_is_fetched_once.py:162."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the node's goal is that a figure and its thumbnail are addressed by the row's revision and answered immutably while it holds; reckon/serve.py:_discover_plans_uncached now puts `revision` on each figure row and Handler.do_GET reads `?rev=` for the figure and thumbnail routes.\nVERDICT done_when: plan s14's measure names tests/test_a_figure_revision_is_fetched_once.py; that gate asserts the immutable header at the current revision, `no-cache` after a rewrite, and that the list and reader sources carry the revision, and logs/head.txt records 7 passed EXIT=0.\nVERDICT write_paths: read the manifest's declared paths (reckon/serve.py, docs/ui/shell-plans.jsx, docs/ui/plan.jsx, tests/test_a_figure_revision_is_fetched_once.py, the evidence fragment); every path in the diff is inside them and no path outside is touched.\nVERDICT manifest: read; status complete, four commits recorded, gate and negative-control and population arms named with their log paths and EXIT= lines.\nVERDICT diff: read commit by commit over 115273eb7..3c7a891f4 \u2014 four commits, five files, all inside the declared scope; the two docs commits carry only the evidence fragment.\nCALL_SITES: reckon/serve.py:Handler.do_GET (routes to _send_file and _serve_thumbnail), reckon/serve.py:_discover_plans_uncached (builds the row revision), docs/ui/shell-plans.jsx:440 (artifactImageSrc in the artifact list img), docs/ui/plan.jsx:1084 (readerFigureSource in the reader img)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/serve.py:3353-3360 answers immutable when `_revision_matches(requested_revision, identity)` holds and no-cache otherwise, and a rewritten figure's old revision fails that test, so the deliverable's contract holds on the principal routes.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head.txt ends EXIT=0 with 7 passed and logs/negative-control.txt ends EXIT=1 with the three immutable assertions failing, but the head population arm at logs/head-population.txt ran at f3ac0ec17 rather than the reviewed head, so 'no added failure against base' rests on that arm plus the targeted logs/regression-rerun.txt.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all five changed files sit inside the manifest's declared write paths, and the declared figures directory went unused rather than being written.\nSCORE durability: 15\nJUSTIFICATION durability: the armed negative control reddens the three immutable assertions and the SPA probe asserts literal URLs, but the row-token assertion at tests/test_a_figure_revision_is_fetched_once.py:125 is self-referential and the thumbnail fallback branch at reckon/serve.py:3475 is untested.\nSCORE fit: 17\nJUSTIFICATION fit: the new helpers follow the module's idiom (docstringed private functions beside _thumbnail_cache_path at reckon/serve.py:2966), with a minor deduction for `window.readerFigureSource = readerFigureSource` at docs/ui/plan.jsx:1316, which exists only so the gate can reach the helper outside the shell.\nSCORE reuse: 19\nJUSTIFICATION reuse: `_file_revision` (reckon/serve.py:2973) takes over the stat-identity string that was inline at reckon/serve.py:3329 and 3392 of the base, and a capability search for the served-file revision token over reckon/ found `_file_identity` (reckon/serve.py:1760, a memo staleness tuple), reckon/ledger.py:1035 and reckon/mcp_deadlines.py:188 \u2014 distinct capabilities, so nothing is forked.\nFINDING reckon/serve.py:3475 follow-on: the thumbnail fallback answers Cache-Control twice (`no-store` from _send at reckon/serve.py:3340, then `max-age=31536000, immutable`), so `no-store` nullifies the immutable directive the change adds on that branch and such a figure is refetched on every view.\nFINDING tests/test_a_figure_revision_is_fetched_once.py:125 follow-on: the row-token assertion compares against the same helper that produced the value (serve._file_revision), so it holds for any non-empty return including a constant and cannot catch a regression in the token.",
+  "review_run_id": "r-20261019T104606223411-review-of-a-figure-revision-is-fetched-once-3c7a891f4e2a",
+  "reviewed_base_sha": "115273eb743a78715068dd22a5d574fd11ee6327",
+  "reviewed_head_sha": "3c7a891f4e2a6cec1e10fee1a880e915afa8073d",
+  "reviewed_run_id": "r-20261019T094259557578-a-figure-revision-is-fetched-once",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T10:55:16.061406+00:00"
+}
