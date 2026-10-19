@@ -1,0 +1,73 @@
+<section id="the-host-handoff-test-runs-the-same-on-a-compute-node">
+  <h2>the-host-handoff-test-runs-the-same-on-a-compute-node — the reloaded-follower case no longer reads the ambient harness</h2>
+
+  <p><strong>What it depended on: the harness that launched the suite.</strong>
+  <code>test_a_reloaded_follower_adopts_launched_workers_before_it_hands_off</code> is the one
+  case in this file that drives <code>crew follow</code> <em>in the test process</em>
+  (<code>crew_follow.callback(...)</code>) rather than through a subprocess. The subprocess
+  cases scrub the ambient crew and harness variables in <code>_follower_env</code>; the
+  in-process case set only <code>RECKON_HOME</code>, <code>XDG_RUNTIME_DIR</code>,
+  <code>CLAUDE_PID</code> and <code>CLAUDE_CODE_SESSION_ID</code> and left every other variable
+  inherited. An ambient <code>CODEX_SESSION_ID</code> then makes
+  <code>_coordinator_runtime()</code> resolve the harness as <code>codex</code>, so
+  <code>_session_host_owner()</code> returns <code>None</code>,
+  <code>_session_host_fifo()</code> has no path, and <code>_hand_off_from_follower()</code> is
+  false. The follower streams instead of handing over, and the case sits in the watch loop
+  until the pytest timeout.</p>
+
+  <p><strong>It is the session, not the node.</strong> The trial job this node repairs was
+  submitted by a Codex worker (<code>backend: codex</code> on all three attempts), and a Codex
+  session exports <code>CODEX_SESSION_ID</code> to the shell it runs a job from. Location
+  tracked the symptom only because that worker's job landed on a compute node. Setting the
+  single variable <code>CODEX_SESSION_ID</code> reproduces the hang in place on the fleet
+  node.</p>
+
+  <p><strong>The change.</strong> A new <code>_isolated_harness_env</code> helper deletes the
+  ambient <code>RECKON_</code>, <code>CLAUDE_</code> and <code>CODEX_</code> variables and sets
+  the four the case needs, exactly as <code>_follower_env</code> already does for the
+  subprocess cases. The case also arms <code>lifetime="8s"</code>, so a follower that streams
+  instead of handing over ends within the case's own bound and fails naming the missing
+  handoff line rather than hanging. Only the test file changed; no product code.</p>
+
+  <table>
+    <thead>
+      <tr><th>Measure</th><th>Where</th><th>Result</th><th>Log</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>declared mutation — drop the harness isolation, run under an ambient Codex identity</td>
+        <td>fleet node 98dci4-clu-2002</td>
+        <td>red, 1 failed in 15.37s, <code>EXIT=1</code>, failing id
+        <code>test_a_reloaded_follower_adopts_launched_workers_before_it_hands_off</code>;
+        the message names the missing <code>session host now delivers</code> line</td>
+        <td><code>handoff-negative-control.log</code></td>
+      </tr>
+      <tr>
+        <td>fixed, alone, 5 trials, exclusive <code>all_debug</code>, ambient
+        <code>CODEX_SESSION_ID</code> set</td>
+        <td>compute node 98dci4-clu-3143, the node the failure was measured on</td>
+        <td>5 passed / 5, <code>EXIT=0</code>, every trial to its summary line</td>
+        <td><code>handoff-codex-1.log</code> … <code>handoff-codex-5.log</code></td>
+      </tr>
+      <tr>
+        <td>fixed, alone</td>
+        <td>fleet node 98dci4-clu-2002</td>
+        <td>1 passed in 19.83s, <code>EXIT=0</code></td>
+        <td><code>handoff-fleet-node.log</code></td>
+      </tr>
+      <tr>
+        <td>whole file, 8 cases, ambient <code>CODEX_SESSION_ID</code> set</td>
+        <td>fleet node</td>
+        <td>8 passed in 115.84s</td>
+        <td>scratch log, not retained</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Landing.</strong> <code>tests/test_follower_hands_off_to_host.py</code> at
+  <code>0e0a41506b237a89788a3d4f95f40905be8e9a7c</code>. No product source or test assertion was
+  weakened: no case is skipped, xfailed or removed. <code>ruff check</code> adds no finding;
+  <code>ruff format --check</code> reports one finding on the file, the same
+  <code>_CENSUS_LAUNCHER</code> triple-quote the file carried at the parent revision (measured
+  either side), so this change adds none.</p>
+</section>

@@ -115,6 +115,30 @@ def _follower_env(home: Path, runtime: Path, owner_pid: int) -> dict[str, str]:
     return env
 
 
+def _isolated_harness_env(
+    monkeypatch, home: Path, runtime: Path, owner_pid: int
+) -> None:
+    """Give an in-process case the same harness identity a subprocess case gets.
+
+    The reloaded case runs the follower in the test's own process, so every
+    ambient crew and harness variable reaches it unchanged -- the subprocess
+    cases scrub them in ``_follower_env``, and this is that scrub for a case
+    that cannot set its own environment before the process starts. A suite
+    running under another harness exports that harness's identity, and inherited
+    unchanged it makes the follower resolve a host for the wrong session, so the
+    handoff never fires and the follower streams where the case expects it to
+    have exited. Only what the case sets is kept, matching ``_follower_env``.
+    """
+    for key in [
+        key for key in os.environ if key.startswith(("RECKON_", "CLAUDE_", "CODEX_"))
+    ]:
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
+    monkeypatch.setenv("CLAUDE_PID", str(owner_pid))
+    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "claude-session-host-handoff")
+
+
 def _follow_argv(*args: str, session: str | None = SESSION) -> list[str]:
     argv = [
         sys.executable,
@@ -440,15 +464,17 @@ def test_a_reloaded_follower_adopts_launched_workers_before_it_hands_off(
     process, which remains their parent. A handoff taken before the adoption
     would leave the registry empty and no reaper started, so the carried child
     would stay an uncollected child of a process that has exited.
+
+    The case runs in this process, so it synthesises the Claude identity and the
+    runtime root directly and drops whatever harness exported the suite, and it
+    arms a lifetime so a follower that streams instead of handing over ends
+    within its own bound and fails on the missing line rather than hanging.
     """
     runtime = _runtime(tmp_path)
     owner = OwnerStub()
     fifo = _fifo(runtime, owner)
     descriptor = _hold_fifo(fifo)
-    monkeypatch.setenv("RECKON_HOME", str(home))
-    monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
-    monkeypatch.setenv("CLAUDE_PID", str(owner.pid))
-    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "claude-session-host-handoff")
+    _isolated_harness_env(monkeypatch, home, runtime, owner.pid)
 
     # A live child of THIS process, as a worker the previous follower image
     # launched and carried across its reload in the handover carrier.
@@ -472,7 +498,7 @@ def test_a_reloaded_follower_adopts_launched_workers_before_it_hands_off(
             attention=False,
             json_output=False,
             pretty=False,
-            lifetime=None,
+            lifetime="8s",
             width=None,
             theme=None,
             no_color=True,
