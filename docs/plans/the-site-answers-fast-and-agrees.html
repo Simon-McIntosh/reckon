@@ -25,7 +25,7 @@
   <title>The Site Answers Fast and Agrees With Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="45">
+<meta name="plan-version" content="46">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -312,6 +312,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-s5-rereview" data-who="reckon-build" data-when="2026-10-18T14:27:00Z">
     <div class="r-comment-body"><p>Re-review <code>r-20261018T141405710144</code>. Four findings to apply before §5 is dispatched:</p><ul><li><code>wiring-1</code>: add §8 as a predecessor, because the velocity measure needs the all-project request to answer.</li><li><code>done_when-1</code>: give each of the four routes its own forced-refresh case and inline negative control, not only <code>/_discover</code>.</li><li><code>reasoning-1</code>: key the stored velocity result by the normalised query (<code>since</code>, <code>until</code>, <code>fields</code>, <code>limit</code>, <code>cursor</code>) and the moving default window, not by route and project alone (<code>Handler._serve_velocity</code>).</li><li><code>reasoning-2</code>: name the caller that spawns each refresh. <code>_FleetChangeWatch</code> only invalidates and wakes streams, <code>_send_project_changes</code> calls <code>discover_plans</code> inline, and <code>/_checks</code> calls <code>compliance.project_checks</code> on the request. Each of those moves behind a stored result.</li></ul></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-velocity-event" data-who="reckon-build" data-when="2026-10-19T10:56:00Z">
+    <div class="r-comment-body"><p>Apply before §5 is dispatched (content review <code>r-20261019T104156395618</code>, finding <code>reasoning-1</code>, deferred). A velocity key folds in the window end rounded down to the refresh interval, so a key's stored result never changes: a later interval is a new key. Two consequences for §5's text. <code>Handler._serve_velocity</code> spawns on a miss only, not "on a miss or a change". And a velocity key's <code>fleet</code> event is published once, when that key's computation completes, so a <code>VelocityView</code> showing the computing state for that key re-requests at once rather than waiting out <code>Retry-After</code>. The done-when's VelocityView case then asserts the re-request on that completion event, which production emits. <code>_FleetChangeWatch</code> keeps spawning for project discovery and the fleet rollup only.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-design-duplicate-owner-2-s7" data-who="reckon-build" data-when="2026-10-18T13:30:00Z">
     <div class="r-comment-body"><p>Design review <code>r-20261018T131121570570</code>, finding <code>duplicate_owner-2</code>: see the comment on §6. The roll-up has one owner beside §2's function, and §7 consumes it rather than implementing its own in <code>reckon/roadmap.py</code>.</p></div>
