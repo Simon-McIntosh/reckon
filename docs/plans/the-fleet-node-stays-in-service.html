@@ -173,6 +173,23 @@
       channels to the run directory and keeps waiting.
     </p>
     <p>
+      There is one case where the client is signalled: a step that has not
+      started. <code>srun --overlap</code> can wait indefinitely for a step
+      allocation, and a stop must still end such a run.
+    </p>
+    <ul>
+      <li>The wrapper execs the sandbox only after its record has been written
+      (<code>&amp;&amp; exec</code>, not <code>; exec</code>), and exits non-zero
+      otherwise. So no worker runs inside a step that has no record.</li>
+      <li>If no record has appeared 30 s after the first stop attempt, the
+      supervisor checks once more that the record is still absent. It then
+      signals the client once, by pid alone, under its own sender reason. At that
+      point the signal withdraws a pending request; it does not cancel a running
+      worker.</li>
+      <li>A record that appears inside the window returns the stop to the inner
+      path.</li>
+    </ul>
+    <p>
       A step that ends normally can drain the node too. When the task exits,
       <code>slurmstepd</code> kills whatever is left in the step's cgroup under the
       same 60 s timeout. The probe therefore also checks that the sandbox's
