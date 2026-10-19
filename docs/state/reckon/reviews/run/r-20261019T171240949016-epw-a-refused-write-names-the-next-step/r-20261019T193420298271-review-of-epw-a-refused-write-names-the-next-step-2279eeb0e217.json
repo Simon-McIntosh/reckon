@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/_store_section_ops.py:201 _enumerated_field_legal_values (the effort_hours legal-values sentence the strengthened case asserts)",
+    "reckon/mcp_edit_plan.py:_edit_plan_tool (the edit_plan entry point the case drives)",
+    "reckon/_store.py _section_contract_refusal / apply_section_field_set (the write path the refusal is raised on)"
+  ],
+  "completed_at": "2026-10-19T19:43:02.705Z",
+  "dispatched_at": "2026-10-19T19:35:07Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-a-refused-write-names-the-next-step.html",
+      "line": 52,
+      "severity": "follow-on",
+      "summary": "the new Negative controls paragraph states each control 'did' turn its case red but names no log path, so the claim is not checkable from the fragment a plan reader sees; the four log paths live only in the manifest.",
+      "text": "The paragraph added at docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-a-refused-write-names-the-next-step.html:52 records the four mutations and asserts 'each names the case it must turn red; each did', which this review verified against logs/negative_control_reused_id.log, negative_control_batch.log, negative_control_enum.log and negative_control_conflict.log (each EXIT=1, each turning its named case red). The fragment itself cites none of them, so a reader of the composed evidence record cannot reach the runs that support the sentence without going to the run directory's manifest (negative_control_logs). This is the same gap the prior review recorded, now narrowed from 'not demonstrated' to 'not linked'; durability is unaffected."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against base 0750ed4a2; 7ce840aa6 replaces the vacuous '0.25' assertion in tests/test_a_refused_write_names_the_next_step.py:240 with the literal legal-values sentence and explains why in a comment, and 2279eeb0 rewrites the evidence fragment's Measure paragraph and adds a Negative controls paragraph; two files changed, both inside the declared scope.",
+    "done_when": "the plan \u00a77 Done-when requires that 'Dropping the legal values from an enumerated-field refusal fails that case'; before 7ce840aa6 the case asserted only that the refusal contains '0.25', which the raw validation detail also contains, so it passed with the sentence removed; after 7ce840aa6 the manifest's negative_control_enum.log shows test_effort_refusal_names_the_quarter_hour red (EXIT=1) with the legal-values sentence dropped, and the head gate after_suite.log records 93 passed 1 failed at 2279eeb0e against baseline 85 passed 1 failed at 2cbe964ac, zero added.",
+    "goal": "the node goal is that each edit_plan refusal names the caller's next step; the commits reviewed here are the two gained since the last review (7ce840aa6, 2279eeb0), which strengthen the enumerated-field case so it guards the sentence the change supplies and record the four negative controls in the evidence fragment; the four refusal capabilities themselves landed in the previously reviewed commits 4f387cc24/ec85170ca/0750ed4a2.",
+    "manifest": "read; status complete, it states the head gate result, names its four negative-control logs, and its baseline_suite and after_suite JSON carry revision, command, exit_status, completed, failure_count and failure_ids; after_suite's revision (2279eeb0e) equals its log's first line, and the single failure is attributed under follow_ons to peer files.",
+    "write_paths": "read the manifest's declared paths; the two paths in the diff (tests/test_a_refused_write_names_the_next_step.py and docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-a-refused-write-names-the-next-step.html) are both inside them, and no path outside them changed between 0750ed4a2 and 2279eeb0e."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T193420298271-review-of-epw-a-refused-write-names-the-next-step-2279eeb0e217",
+  "reviewed_base_sha": "0750ed4a2dfe340bca2bf30533b021d906a8c2b7",
+  "reviewed_head_sha": "2279eeb0e217ed6a9fe25ab728c21a68b67ce222",
+  "reviewed_run_id": "r-20261019T171240949016-epw-a-refused-write-names-the-next-step",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T19:43:59.898524+00:00",
+  "total": 113
+}
