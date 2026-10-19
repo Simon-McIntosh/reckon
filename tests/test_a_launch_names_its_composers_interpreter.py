@@ -23,6 +23,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from reckon import crew_follow_commands
 from reckon.crew import dispatch_launch
 from reckon.host import HostFacts
 
@@ -71,9 +72,14 @@ def _facts(*, inside: bool) -> HostFacts:
 
 
 def _apply_negative_control(monkeypatch) -> None:
-    """Apply the declared mutation: name no interpreter a shim will read."""
+    """Apply the declared mutation: name no interpreter a shim will read.
+
+    The name has one owner, ``reckon.crew_follow_commands``, which the composer
+    imports at composition time; patching it there renames the setting both
+    writers use, so the composer persists an unused name and no shim reads it.
+    """
     if NEGATIVE_CONTROL:
-        monkeypatch.setattr(dispatch_launch, "_SHIM_PYTHON_ENV", _CONTROL_VARIABLE)
+        monkeypatch.setattr(crew_follow_commands, "_SHIM_PYTHON_ENV", _CONTROL_VARIABLE)
 
 
 def _stub_directory(tmp_path: Path) -> Path:

@@ -624,12 +624,6 @@ def _shim_names(directory: str) -> list[str]:
         return []
 
 
-# The interpreter a worker's shims start. A composed launch names the composing
-# process's own interpreter under this variable so a shim resolves one that can
-# import the package even where the launch has no ``.venv`` to fall back on.
-_SHIM_PYTHON_ENV = "RECKON_SHIM_PYTHON"
-
-
 def _persisted_worker_environment(
     environment: Mapping[str, str] | None = None,
     *,
@@ -657,11 +651,16 @@ def _persisted_worker_environment(
     placement = _current_host_facts() if facts is None else facts
     persisted["PATH"] = launch_search_path(environment, facts=placement)
     # The worker shims on that PATH start an interpreter that can import the
-    # package. A launch composed out of a reload image or any tree without a
-    # ``.venv`` has none to fall back on, so the composing process names its own
-    # interpreter here, beside the PATH, and every shim the worker runs resolves
-    # it first however this process was started or reloaded. A caller that
-    # already named one keeps it.
+    # package. A launch composed out of a composing process that runs out of a
+    # reload image or any tree without a ``.venv`` has none to fall back on, so
+    # the composing process names its own interpreter here, beside the PATH, and
+    # every shim the worker runs resolves it first however this process was
+    # started or reloaded. A caller that already named one keeps it. The name
+    # has a single owner, the reloader that hands it to a replacement image, so
+    # the two writers cannot drift apart; imported here because the reloader's
+    # module imports this one.
+    from reckon.crew_follow_commands import _SHIM_PYTHON_ENV
+
     if not persisted.get(_SHIM_PYTHON_ENV):
         persisted[_SHIM_PYTHON_ENV] = sys.executable
     return persisted
