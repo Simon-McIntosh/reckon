@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-informs" content="consumers-read-reckon-through-verbs">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s3&quot;], &quot;s5&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;, &quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;, &quot;every-plan-write-goes-through-edit-plan#s3&quot;], &quot;s6&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s2&quot;, &quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;], &quot;s7&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;, &quot;the-crew-surface-is-one-tool-and-a-few-verbs#s5&quot;], &quot;s8&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s7&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s3&quot;],&quot;s5&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;,&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;,&quot;every-plan-write-goes-through-edit-plan#s3&quot;],&quot;s6&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s2&quot;,&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;],&quot;s7&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;],&quot;s8&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s7&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="21">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -207,50 +207,80 @@
         it; both go through the claim owner, <code>narrow_claim</code> and <code>release_claim</code> in <code>reckon/crew/claims.py</code>.</li>
       <li><code>crew watch --stop</code>.</li>
     </ul>
-    <p>Each folded name gets a tombstone row. <code>crew merge</code> is tombstoned, naming <code>crew complete --land</code>, when §4's
-      evidence counts no merge of a head that no run produced in the last thirty days. <code>repair-completion</code> and
+    <p>Each folded name gets a tombstone row. <code>crew merge</code> stays visible: §4's evidence counted 66 of 102 recent merges landing a
+      head that no run produced, so it remains the form for such a head and is not tombstoned. <code>repair-completion</code> and
       <code>split-runs</code> are deleted, not tombstoned, once the node shows their migrations have no input left on any mounted project, so
       they carry no successor.</p>
-    <p>Every place that names a folded verb moves to its new form in the same node. That covers reckon's skills, references and agent files,
-      and the command strings five modules build: <code>reckon/crew/prompts.py</code> (<code>check-manifest</code>),
-      <code>reckon/crew/refusals.py</code> (<code>preflight</code>, <code>resume-ready</code>), <code>reckon/crew/watch_unit.py</code>
-      (<code>unwatch</code>), <code>reckon/crew/recovery_review_subject.py</code> (<code>check-review</code>) and
-      <code>reckon/crew/obligations.py</code> (<code>repair-review</code>). Two more emit them:
-      <code>reckon/crew/recovery_classification.py</code> (<code>repair-status</code>, in the <code>exited-unfinished</code> action) and the
-      crew tool's docstring in <code>reckon/mcp.py</code> (<code>resume-ready</code>). <code>obligations.py</code> and <code>mcp.py</code> are
-      also §5's, so this section waits on §5. The list is a starting point, not the boundary. Before changing anything, the node greps
-      <code>reckon/</code> at its base for every folded name, both as a <code>reckon crew</code> command string and as an imported command
-      function. <code>reckon/cli.py</code> re-exports the folded functions by name (<code>crew_preflight</code>, <code>crew_redispatch</code>,
-      <code>crew_repair_status</code> and others), so a removed function would break every import of the CLI. A hit in a file outside its write paths stops
-      it as blocked, naming the file, so the coordinator can widen its fence.</p>
-    <p><strong>Done when</strong> <code>tests/test_crew_families_fold.py</code> checks four things:</p>
+    <p>Every place that names a folded verb moves to its new form in the node that folds it.
+      <code>tests/test_cited_commands_exist.py</code> refuses a skill citation that reaches a tombstone, so a document left naming a folded
+      verb fails that node's gate. Before changing anything, each node greps <code>reckon/</code> and <code>skills/</code> at its base for
+      every name it folds, both as a <code>reckon crew</code> command string and as an imported command function. <code>reckon/cli.py</code>
+      re-exports the folded functions by name (<code>crew_preflight</code>, <code>crew_redispatch</code>, <code>crew_repair_status</code> and
+      others), so a removed function would break every import of the CLI. A hit in a file outside the node's write paths stops it as blocked,
+      naming the file, so the coordinator can widen its fence.</p>
+    <p><strong>Four nodes.</strong> With every family in one fence the node needed about 990 KB of write paths, roughly 280,000 input tokens
+      against the local lane's 230,144-token window. Each family is therefore its own node, sized to fit. All four write
+      <code>reckon/crew_run_commands.py</code>, <code>reckon/crew/tombstones.py</code>, <code>reckon/cli.py</code>,
+      <code>tests/test_crew_help_names_its_state.py</code> and <code>tests/test_crew_families_fold.py</code>, so they run one after another
+      in the order below. Only the third and fourth write a file §5 also writes, so they wait on §5. The first two need only §6.</p>
+    <table>
+      <thead><tr><th>node</th><th>folds</th><th>write paths beyond the five shared ones</th></tr></thead>
+      <tbody>
+        <tr><td><code>cso-budget-family-folds</code></td><td><code>budget-lift</code>, <code>budget-lifts</code>, <code>budget-reset</code>,
+          <code>preflight</code> into <code>crew budget --lift|--list|--reset|--check</code></td>
+          <td><code>reckon/crew_dispatch_commands.py</code>, <code>reckon/crew/refusals.py</code>, <code>skills/reckon-build/SKILL.md</code>,
+          <code>skills/reckon-build/references/coordinator-reference.md</code>,
+          <code>skills/reckon-build/references/orchestrator-harness/claude-code.md</code>, <code>reckon/crew/AGENTS.md</code>,
+          <code>docs/AGENTS.md</code></td></tr>
+        <tr><td><code>cso-watch-family-folds</code></td><td><code>unwatch</code> into <code>crew watch --stop</code></td>
+          <td><code>reckon/crew_follow_commands.py</code> (where <code>crew watch</code> lives), <code>reckon/crew/watch_unit.py</code>,
+          <code>skills/reckon-build/SKILL.md</code>, <code>skills/reckon-build/references/coordinator-reference.md</code>,
+          <code>skills/reckon-build/references/conditional-guidance.md</code></td></tr>
+        <tr><td><code>cso-repair-and-check-families-fold</code></td><td><code>repair-status</code>, <code>repair-review</code> into
+          <code>crew repair --status|--review</code>; <code>check-manifest</code>, <code>check-review</code> into
+          <code>crew check --manifest|--review</code>, with <code>--review</code> accepting <code>--run</code></td>
+          <td><code>reckon/crew/recovery_classification.py</code>, <code>reckon/crew/obligations.py</code> (also §5's),
+          <code>reckon/crew/prompts.py</code>, <code>reckon/crew/recovery_review_subject.py</code>, <code>skills/reckon-build/SKILL.md</code>,
+          <code>skills/reckon-build/references/coordinator-reference.md</code>,
+          <code>skills/reckon-build/references/worker-verification.md</code></td></tr>
+        <tr><td><code>cso-resume-family-folds</code></td><td><code>resume-ready</code>, <code>redispatch</code> and the
+          <code>repair-status</code> + <code>widen</code> + <code>resume</code> reopening into <code>crew resume --ready</code>,
+          <code>--backend B --model M</code> and <code>--reopen --write-path P</code>; <code>widen</code> accepts any run that is not
+          running and <code>complete --accept-path</code> writes through it; <code>repair-completion</code> and <code>split-runs</code>
+          deleted</td>
+          <td><code>reckon/crew/claims.py</code>, <code>reckon/crew/gc.py</code>, <code>reckon/crew/refusals.py</code>,
+          <code>reckon/mcp.py</code> (also §5's), <code>reckon/crew/AGENTS.md</code>, <code>skills/reckon-build/SKILL.md</code>,
+          <code>skills/reckon-build/references/coordinator-reference.md</code>,
+          <code>skills/reckon-build/references/sprint-orchestration.md</code>,
+          <code>skills/reckon-build/references/conditional-guidance.md</code>, <code>skills/reckon-build/references/lane-routing.md</code>,
+          <code>skills/reckon-build/references/outage-recovery.md</code></td></tr>
+      </tbody>
+    </table>
+    <p><code>reckon/crew/recovery_watch.py</code> names <code>crew unwatch</code> only in a docstring and records <code>unwatch</code> as a
+      reason value, which is data rather than a command, so it is outside the watch node's fence. Every node leaves
+      <code>reckon/ledger.py</code>'s migration functions in place.</p>
+    <p><strong>Done when</strong> <code>tests/test_crew_families_fold.py</code> holds four checks, each node adding its own family's
+      cases:</p>
     <ul>
-      <li>Every old invocation in the table prints its successor through its tombstone, except the two deleted names, <code>widen</code>
-        (which this section keeps and widens), and <code>crew merge</code> unless §4's evidence tombstones it.
-        <code>repair-completion</code> and <code>split-runs</code> are absent from both the command tree and the tombstone registry.</li>
-      <li>Each successor gives the same answer the old verb gave at the node's base; the node captures those answers as fixtures before
+      <li>Every old invocation the node folds prints its successor through its tombstone, except the two deleted names and
+        <code>widen</code>, which this section keeps and widens. <code>repair-completion</code> and <code>split-runs</code> are absent
+        from both the command tree and the tombstone registry once the resume node lands.</li>
+      <li>Each successor gives the same answer the old verb gave at the node's base. The node captures those answers as fixtures before
         changing anything.</li>
-      <li>No string literal under <code>reckon/</code> names a tombstoned verb as a <code>reckon crew</code> command; a violation is reported
-        with its module and line.</li>
-      <li>The visible leaf count read from the command tree, tombstones excluded, is at most the base count minus the folded and deleted names
-        plus the three parent verbs this section adds (<code>crew repair</code>, <code>crew budget</code>, <code>crew check</code>), and one
-        fewer again when <code>crew merge</code> is tombstoned.</li>
+      <li>No string literal under <code>reckon/</code> names a tombstoned verb as a <code>reckon crew</code> command. A violation is
+        reported with its module and line. The budget node adds this check, and it reads the tombstone registry, so it covers each later
+        node's names as they are tombstoned.</li>
+      <li>The visible leaf count read from the command tree, tombstones excluded, is at most the node's base count minus the names it
+        folds or deletes, plus the parent verb it adds. The budget node adds <code>crew budget</code>, and the repair-and-check node adds
+        <code>crew repair</code> and <code>crew check</code>. The count is measured at each node's base, never quoted from here, because
+        other plans add verbs.</li>
     </ul>
-    <p>The negative control alters one successor's answer, and that case then fails. <code>tests/test_crew_help_names_its_state.py</code>
-      pins the exact leaf set, so it gains a state row for each new parent verb, loses the row of each folded name, and passes. The
-      help-contract tests and <code>tests/test_cited_commands_exist.py</code> pass, and <code>tests/test_every_module_fits_a_worker_window.py</code> adds no failure: it is red at base for
-      <code>reckon/ledger.py</code>, <code>reckon/serve.py</code> and <code>reckon/crew/review.py</code>, which lie outside this fence. Write paths: <code>reckon/crew_run_commands.py</code>, <code>reckon/crew_dispatch_commands.py</code>,
-      <code>reckon/crew/tombstones.py</code>, <code>reckon/crew/claims.py</code>, <code>reckon/crew/gc.py</code>,
-      <code>reckon/crew/prompts.py</code>, <code>reckon/crew/refusals.py</code>, <code>reckon/crew/watch_unit.py</code>,
-      <code>reckon/crew/recovery_review_subject.py</code>, <code>reckon/crew/obligations.py</code>,
-      <code>reckon/crew/recovery_classification.py</code>, <code>reckon/mcp.py</code>, <code>reckon/cli.py</code>,
-      <code>skills/reckon-build/SKILL.md</code>, <code>skills/reckon-build/references/coordinator-reference.md</code>,
-      <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>skills/reckon-build/references/worker-verification.md</code>,
-      <code>skills/reckon-build/references/conditional-guidance.md</code>, <code>skills/reckon-build/references/lane-routing.md</code>,
-      <code>skills/reckon-build/references/outage-recovery.md</code>,
-      <code>skills/reckon-build/references/orchestrator-harness/claude-code.md</code>, <code>reckon/crew/AGENTS.md</code>,
-      <code>docs/AGENTS.md</code>, <code>tests/test_crew_help_names_its_state.py</code>, <code>tests/test_crew_families_fold.py</code>.</p>
-
+    <p>Each node's negative control alters one of its successors' answers, and that case then fails. The node also updates
+      <code>tests/test_crew_help_names_its_state.py</code>, which pins the exact leaf set: the node adds a state row for each parent verb it
+      introduces and removes the row of each name it folds, and the test passes. The help-contract tests and
+      <code>tests/test_cited_commands_exist.py</code> pass. <code>tests/test_every_module_fits_a_worker_window.py</code> adds no
+      failure; it is red at base for <code>reckon/ledger.py</code>, <code>reckon/serve.py</code> and
+      <code>reckon/crew/review.py</code>, which lie outside every fence here.</p>
     <h2 id="s8">§8 — Every run verb takes one identity grammar</h2>
 <section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong></p>
@@ -335,7 +365,7 @@
     <div class="r-comment-body"><p>§4 landed: <code>crew complete --land</code> promotes, merges the reviewed head, checks markers survived, pushes and releases, through <code>land_merge</code>'s loop with a verify seam (commits <code>f3f485f83</code>..<code>b57fb26de</code>). <code>crew merge</code> stays: 66 of 102 recent merges landed a head no run produced. <a href="/reckon/evidence/archive/the-crew-surface-is-one-tool-and-a-few-verbs-landed.html#s4">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261019T143650682729-cso-one-call-lands-a-run" data-who="reckon-build" data-when="2026-10-19T17:24:09Z">
-    <div class="r-comment-body"><p>crew complete --land promotes a finished run and lands it in one call. One landing loop serves both callers: reckon/crew/merge.py&#x27;s land_merge takes a verify callback that runs once per attempt, after the merge is built and before the branch moves, and land is the thin caller that hands its marker check through it, so the pinned-HEAD build, the index.lock retry, the --ff-only move and the push exist once. The loop builds the merge out of objects (merge-tree, then commit-tree) so the shared index and the primary branch are untouched until one --ff-only step. The marker check is the seam: the merged tree must carry a marker the change introduced and lack any marker it removed, and a caller that refuses raises from the loop with nothing moved and nothing pushed. Markers are read from the head&#x27;s diff against the merge base of the branch before the merge, so the promotion&#x27;s own ledger commits are not attributed to the run&#x27;s change. After the push the worktree is released through the existing _release_after_promotion, which turns a withheld tree into a removal: promotion&#x27;s own release runs before the merge and withholds, and the landing&#x27;s second release runs once the head is an ancestor and removes. Each step reports under steps (promote, land, release); a failed step stops the call and names the command that resumes it. No tombstone is registered by this node.</p></div>
+    <div class="r-comment-body"><p>crew complete --land promotes a finished run and lands it in one call. One landing loop serves both callers: reckon/crew/merge.py's land_merge takes a verify callback that runs once per attempt, after the merge is built and before the branch moves, and land is the thin caller that hands its marker check through it, so the pinned-HEAD build, the index.lock retry, the --ff-only move and the push exist once. The loop builds the merge out of objects (merge-tree, then commit-tree) so the shared index and the primary branch are untouched until one --ff-only step. The marker check is the seam: the merged tree must carry a marker the change introduced and lack any marker it removed, and a caller that refuses raises from the loop with nothing moved and nothing pushed. Markers are read from the head's diff against the merge base of the branch before the merge, so the promotion's own ledger commits are not attributed to the run's change. After the push the worktree is released through the existing _release_after_promotion, which turns a withheld tree into a removal: promotion's own release runs before the merge and withholds, and the landing's second release runs once the head is an ancestor and removes. Each step reports under steps (promote, land, release); a failed step stops the call and names the command that resumes it. No tombstone is registered by this node.</p></div>
 </div>
 </section>
 </main>
