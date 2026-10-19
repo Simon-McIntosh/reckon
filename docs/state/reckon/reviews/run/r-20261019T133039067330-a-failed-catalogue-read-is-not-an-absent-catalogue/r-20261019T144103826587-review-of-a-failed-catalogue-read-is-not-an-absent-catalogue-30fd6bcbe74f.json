@@ -1,0 +1,39 @@
+{
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_a_pane_settles_when_no_work_is_live.py::test_the_real_follower_settles_when_the_host_advertises_it",
+    "tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter"
+  ],
+  "completed_at": "2026-10-19T14:56:10.263Z",
+  "dispatched_at": "2026-10-19T14:42:04Z",
+  "findings": [
+    {
+      "file": "tests/test_a_pane_settles_when_no_work_is_live.py",
+      "line": 573,
+      "severity": "follow-on",
+      "text": "follow-on: the delivered head adds a failure the base arm does not have. tests/test_a_pane_settles_when_no_work_is_live.py::test_the_real_follower_settles_when_the_host_advertises_it fails at head both in the 46-file importer suite (logs/after-importers.log) and in the isolated three-file run (logs/head-disputed-isolated.log, 2 failed / 66 passed), while the same file passes at base in isolation (logs/base-pane-isolated.log, 11 passed). The test spawns a real follower subprocess and asserts it delivered rows; it does not reference checkout_trust, source_code_identity, follower_code_stamp or materialize_committed_tree, and the early return added at reckon/crew_follow_* triggers only on IDENTITY_UNKNOWN, which a healthy git checkout does not produce. Attribution therefore reads as contention rather than as this change, but it is unresolved: it reproduces at head and not at base in isolation, so it must not be promoted past without the coordinator's own check."
+    },
+    {
+      "file": "reckon/checkout_trust.py",
+      "line": 386,
+      "severity": "follow-on",
+      "text": "follow-on: the node's done_when requires the importer suite to add no failure against base, and the recorded arms add two (added_failure_count above). The node reported them under follow_ons rather than triaging them, which its fence ('a failure outside this node's declared scope is reported under follow_ons rather than triaged or fixed') directs; the measure is nevertheless not literally met and the coordinator owns the attribution before promotion."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261019T144103826587-review-of-a-failed-catalogue-read-is-not-an-absent-catalogue-30fd6bcbe74f",
+  "reviewed_base_sha": "12d236688eeaabb59a6585536473f0148fdca6bb",
+  "reviewed_head_sha": "30fd6bcbe74f84f10452494eeb0709cda28b97a8",
+  "reviewed_run_id": "r-20261019T133039067330-a-failed-catalogue-read-is-not-an-absent-catalogue",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T14:57:49.642895+00:00"
+}
