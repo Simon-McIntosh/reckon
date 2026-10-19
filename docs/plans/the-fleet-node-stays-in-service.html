@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -533,6 +533,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-19T09:45:00Z">
     <div class="r-comment-body"><p>§6 landed (merge <code>115273eb7</code>). Every fleet worker step is bounded at 24 GB unless it declares more with <code>--set 'backends.&lt;backend&gt;.placement.options=["--ntasks=1","--mem=&lt;N&gt;G"]'</code>. Above 48 GB, a step runs in its own <code>_debug</code> allocation, limited to one hour. Review: 105 of 120, no added failures. Follow-ons: the no-reservation route builds its prefix without a bound; the default-value test reads the same constant as the code; stopping an over-ceiling worker signals that job's own <code>srun</code> client, which is outside §3's step path. Nova solves needing 52–59 GB must now declare their bound. <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s6">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261019T071431697841-review-of-a-worker-step-carries-a-memory-bound-e4a45c9b2925" data-who="reckon-build" data-when="2026-10-19T07:25:21.384Z">
+    <div class="r-comment-body"><p>reckon:the-fleet-node-stays-in-service#s6 — independent review of r-20261019T064133037110 at reviewed_base_sha 871311cd82f1bcf70282fa3a36eb66eee5737dd8 / reviewed_head_sha e4a45c9b2925065e31b99afec2460223ec6ab8f7; scores goal_fidelity 17, evidence 15, scope_discipline 16, durability 16, fit 18, reuse 5; added_failure_count 1 (tests/test_fleet_migrate_cutover.py::test_cutover_sends_request_through_its_step_argv); 1 blocking and 4 follow-on findings; record stored under the reviewed run&#x27;s review-records/</p></div>
 </div>
 </section>
 </main>

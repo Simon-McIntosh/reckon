@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_fleet_migrate_cutover.py::test_cutover_sends_request_through_its_step_argv"
+  ],
+  "completed_at": "2026-10-19T07:25:21.384Z",
+  "dispatched_at": "2026-10-19T07:15:15Z",
+  "findings": [
+    {
+      "file": "tests/test_fleet_migrate_cutover.py",
+      "line": "306",
+      "severity": "blocking",
+      "text": "blocking: the landed change inserts --mem at argv index 3 in fleet_node.placement_argv, so this file's relays[0][:8] comparison no longer matches and the suite is red at this head; it was repaired only after a widened fence at f9f72c6, so a check of this diff must include that commit."
+    },
+    {
+      "file": "reckon/crew/placement.py",
+      "line": "291",
+      "severity": "follow-on",
+      "text": "follow-on: declared_memory_gb duplicates the placement-option bound reader at reckon/crew/summary.py:132 and :162; the two parsers disagree on the space-separated '--mem 64G' and '--mem-per-cpu' forms, so a placement declared that way is priced by the admission summary but not routed over the ceiling, and the copies can drift."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "1166",
+      "severity": "follow-on",
+      "text": "follow-on: the no-live-reservation branch builds prefix = [abspath(srun), *options] without step_prefix, so a worker placed when no reservation is live gets no --mem bound, which the goal's 'every fleet worker step' does not allow."
+    },
+    {
+      "file": "tests/test_a_worker_step_carries_a_memory_bound.py",
+      "line": "74",
+      "severity": "follow-on",
+      "text": "follow-on: the expected default is built from placement.DEFAULT_STEP_MEMORY_GB, the same constant the code under test reads, so the assertion holds for any default value; only tests/test_fleet_node.py:480 pins 24G independently."
+    },
+    {
+      "file": "docs/evidence/fragments/the-fleet-node-stays-in-service/a-worker-step-carries-a-memory-bound.html",
+      "line": "37",
+      "severity": "follow-on",
+      "text": "follow-on: the measure line records 'node 1281970', repeating the job id where the host is 98dci4-clu-2002, so the evidence record misnames the machine it measured on."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal asks that every fleet worker step carry an explicit memory bound through placement.step_prefix, 24 GB by default and 48 GB at most in the allocation; reckon/crew/placement.py:317-335 now states --mem on every step_prefix call and reckon/crew/dispatch_launch.py:1119-1153 routes a >48 GB declaration to its own sbatch job on a *_debug partition.\nVERDICT done_when: the done_when names five checks - a default --mem=24G, a --set declaration reaching the step, >48 GB routed to a *_debug job, placement_argv folded into step_prefix, and a probe step's cgroup memory.max equal to its bound; tests/test_a_worker_step_carries_a_memory_bound.py covers the first four and logs/focused-gate.log records 110 passed 1 skipped while logs/probe-memory-max.log reads step_user memory.max=1073741824 for --mem=1G.\nVERDICT write_paths: the manifest declares nine write paths; git diff 871311cd82f1bcf70282fa3a36eb66eee5737dd8..e4a45c9b2925065e31b99afec2460223ec6ab8f7 changes six files, every one inside the declared set.\nVERDICT manifest: read; it names commits 79f3439914f42e236cdf98487a3811dbef28a43a and e4a45c9b2, records the 110-passed/1-skipped gate, the probe and the negative-control log, and honestly names the out-of-scope migrate-test failure under follow_ons; its baseline_suite and after_suite fields are empty.\nVERDICT diff: read both commits against base 871311cd82f1bcf70282fa3a36eb66eee5737dd8; 79f343991 changes reckon/crew/placement.py, reckon/crew/fleet_node.py and reckon/crew/dispatch_launch.py plus two test files, and e4a45c9b commits only the evidence fragment.\nCALL_SITES: reckon/crew/fleet_node.py:374 placement_argv calls placement.step_prefix, reckon/crew/dispatch_launch.py:1161 apply_backend_placement calls placement_module.step_prefix, reckon/crew/dispatch_launch.py:1136 apply_backend_placement calls placement_module.own_job_prefix, reckon/project_setup_commands.py:275 calls fleet_node.placement_argv, reckon/crew/fleet_migrate.py:238 calls fleet_node.placement_argv, reckon/crew/fleet_migrate.py:546 calls fleet_node.placement_argv, reckon/crew/fleet_migrate.py:579 calls fleet_node.placement_argv, reckon/crew/fleet_migrate.py:1004 calls fleet_node.placement_argv, reckon/crew/fleet_migrate.py:1104 calls fleet_node.placement_argv, reckon/crew/fleet_migrate.py:1191 calls fleet_node.placement_argv\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/placement.py:333 inserts the default bound inside step_prefix, but reckon/crew/dispatch_launch.py:1166 builds the no-live-reservation fallback prefix without step_prefix so that worker carries no bound.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/focused-gate.log records 110 passed 1 skipped and logs/probe-memory-max.log the 1073741824 memory.max, but the gate log's header names base revision 871311cd and the manifest's baseline_suite and after_suite arms are empty, so the log does not identify the tree it measured.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every changed path in the diff is inside the nine declared write paths, but the change to reckon/crew/fleet_node.py:374 breaks tests/test_fleet_migrate_cutover.py:306 outside that scope and needed a widened fence.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_worker_step_carries_a_memory_bound.py:106 fails if the ceiling comparison flips to >=, but line 74 builds its expected default from placement.DEFAULT_STEP_MEMORY_GB, so it passes for any default, and no test fails if own_job_prefix drops --wait.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/placement.py:258-313 names each helper by the mechanism it performs and follows the module's existing scheduler-constant idiom at placement.py:55-81.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/placement.py:291 declared_memory_gb re-implements the option-bound reader the repository already owns at reckon/crew/summary.py:132 (_option_values) and summary.py:162 (_as_bytes) for the same placement options.\nFINDING tests/test_fleet_migrate_cutover.py:306 blocking: the landed change inserts --mem at argv index 3 in fleet_node.placement_argv, so this file's relays[0][:8] comparison no longer matches and the suite is red at this head; it was repaired only after a widened fence at f9f72c6, so a check of this diff must include that commit.\nFINDING reckon/crew/placement.py:291 follow-on: declared_memory_gb duplicates the placement-option bound reader at reckon/crew/summary.py:132 and :162; the two parsers disagree on the space-separated '--mem 64G' and '--mem-per-cpu' forms, so a placement declared that way is priced by the admission summary but not routed over the ceiling, and the copies can drift.\nFINDING reckon/crew/dispatch_launch.py:1166 follow-on: the no-live-reservation branch builds prefix = [abspath(srun), *options] without step_prefix, so a worker placed when no reservation is live gets no --mem bound, which the goal's 'every fleet worker step' does not allow.\nFINDING tests/test_a_worker_step_carries_a_memory_bound.py:74 follow-on: the expected default is built from placement.DEFAULT_STEP_MEMORY_GB, the same constant the code under test reads, so the assertion holds for any default value; only tests/test_fleet_node.py:480 pins 24G independently.\nFINDING docs/evidence/fragments/the-fleet-node-stays-in-service/a-worker-step-carries-a-memory-bound.html:37 follow-on: the measure line records 'node 1281970', repeating the job id where the host is 98dci4-clu-2002, so the evidence record misnames the machine it measured on.\n",
+  "review_run_id": "r-20261019T071431697841-review-of-a-worker-step-carries-a-memory-bound-e4a45c9b2925",
+  "reviewed_base_sha": "871311cd82f1bcf70282fa3a36eb66eee5737dd8",
+  "reviewed_head_sha": "e4a45c9b2925065e31b99afec2460223ec6ab8f7",
+  "reviewed_run_id": "r-20261019T064133037110-a-worker-step-carries-a-memory-bound",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T07:25:22.307768+00:00"
+}
