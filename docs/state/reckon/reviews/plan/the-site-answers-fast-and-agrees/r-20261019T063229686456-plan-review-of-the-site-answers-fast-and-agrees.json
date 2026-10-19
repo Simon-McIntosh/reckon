@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T06:40:14.063Z",
+  "dispatched_at": "2026-10-19T06:33:16Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html:138",
+      "id": "reasoning-1",
+      "reason": "the deliverable cannot be reached by any caller.",
+      "text": "\u00a75 has the first all-project velocity request return \"a pending answer with the refresh started, and the client asks again\", but no write path covers the client: `VelocityView` fetches once per (scope, window) and renders the payload without polling or subscribing to a change stream (`docs/ui/velocity.jsx:207-233`), and it treats a 200 payload as final, so a pending answer renders as an empty velocity pane, which is the \u00a71 symptom \u00a75 exists to remove",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html:130",
+      "id": "reasoning-2",
+      "reason": "the key would name the fleet rollup by route alone (\"*\"), and its done-when case would assert one child.",
+      "text": "the generalised interface is \"keyed by route and project\" and \"single-flight per route and project\", but `/_projects/index.json` is one fleet-wide result \u2014 `collect_projects(load_mounts())` at `reckon/serve.py:3804` takes every mount \u2014 while line 137 has `_FleetChangeWatch` \"call spawn-on-change for the project whose inputs moved\", so two projects changing concurrently launch two distinct (route, project) single-flights and two `collect_projects` children writing one store, defeating the single-flight that is the section's whole mechanism for its heaviest route (7 to 17 s per \u00a71)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2a189633f1fe0ddd6d1346fca08d62aeac6ca4afd3b66b5794bc6004ed069b41",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 39,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T063229686456-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "d12cbc9e91acb410837a23c58ccad4b2e1d46abf",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a75 cites resolves in the tree (`_start_check_refresh` reckon/serve.py:3171, `_spawn_check_refresh` reckon/serve.py:3167, `_CHECK_REFRESHES` reckon/serve.py:1474, `Handler._send_project_changes` reckon/serve.py:3564, `Handler._serve_velocity` reckon/serve.py:3653, `_FleetChangeWatch` reckon/serve.py:351, `compliance.project_checks` reckon/compliance.py:247, the `/_changes/<project>` route reckon/serve.py:4184), and the \"\u00a78's evidence\" it cites (605.8 s) is present in the \u00a78 landing comment.",
+    "done_when": "pass \u2014 \u00a75's done-when forces a cold recompute of each of the four routes and gives each case its own inline negative control (\"Each case carries its own negative control, which computes that route inline, and the trivial-request bound then fails\"), so the measure can fail; the velocity case additionally asserts two `limit`-only queries are stored separately.",
+    "evidence_paths": "pass \u2014 \u00a75's gates write under the run directory and end in `EXIT=` on the same terms as \u00a72, and the live check is recorded in this plan's landing record; no gate lands in a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 \u00a75's interface names (`compute`, `read the last result`, `spawn on change`) and its prose carry no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a75's stated root cause matches \u00a71's evidence (the \"Everything slows together\" row measures `/_server` at 1.0 s beside concurrent work), and its caller list at line 137 names the production callers for all four spawns; the two findings below are against the pending-answer path and the fleet-rollup key.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable: generalise the existing check-refresh mechanism (one interface, three functions) from one route to four, with one closing verdict.",
+    "wiring": "pass \u2014 \u00a75 declares `s5: [s3, s8]` in `plan-section-depends-on`, and \u00a75's text (\"Build it after \u00a73 and \u00a78 merge; \u00a73 is the section before it in the chain\u2026\") agrees; \u00a74 and \u00a79, which \u00a75 names as landing earlier and measures, are reachable transitively (s3\u2192s14\u2192s13\u2192s12\u2192s4\u2192s9) and are already declared done."
+  },
+  "section_digests": {
+    "_document": "88ce37210fb91a9942df0a01024297398c99dbeecebe9b08aad14a9577d150a1",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "b9aa035553d395057dad26d5353e7b79c6bdec033a1ab82eb1042718d03592cd",
+    "s12": "3086e0ba68e51ca085e7178c914c92d64248be41088440dfa18abf077d5819ee",
+    "s13": "fa208e7c5f148ec329458a9824c867762bc66c986ccb7bc85745b08640484173",
+    "s14": "7f21ec58ce9adf4ba663f205fe60555a585a263354e7954c7dd99543a0d56139",
+    "s15": "884c8ab0e973894007385f537b51e29ef55bf2de18ef2cf6a25966e656f62bf2",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s3": "50f2ca1f3b1277d5f4b2d70a240688387a89a3136ad2d6aee26f0b3f324b1afc",
+    "s4": "a1ad15bdafaed28134c2565ad8374bc91928064852c10da6661f2499ca286149",
+    "s5": "ffdcd47f1ca83f119e55d48afa7b3a985125efeda1c9b5fa24ea2dccf388efa3",
+    "s6": "fdb08d5e7b8272372c8ced83ee14c031730239025c2a13ccb211329d7951673e",
+    "s7": "90073ced7051cfae8f66fd6b78f99e6ace90b008ffc6c9e5559d87a2e5c31704",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T06:42:46.955350+00:00"
+}
