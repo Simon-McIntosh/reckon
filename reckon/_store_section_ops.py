@@ -69,23 +69,16 @@ def _accepted_fields_message(section_id: str) -> str:
 
 
 def _refuse_forged_structure(section_id: str, body: str) -> None:
-    """Refuse a body that would forge a heading or a structured section."""
-    from bs4 import BeautifulSoup
+    """Refuse a body that would forge heading, structured state or plan metadata.
 
-    from reckon import _plan_html
+    The predicate is the store's, so this path refuses exactly the fragments
+    ``insert_section`` and ``append_evidence`` refuse: a heading, a structured
+    section element, or a ``plan-*`` meta that ``read_state`` would read back as
+    the plan's own metadata.
+    """
+    from reckon._store import _refuse_forged_body_structure
 
-    if _plan_html.plan_headings(body):
-        raise _op_error(
-            f"sections.{section_id}.body must not contain a heading: a body is "
-            "authored prose, and a heading inside it would forge a section"
-        )
-    if BeautifulSoup(body, "html.parser").select_one(
-        f"section[{_plan_html.RECKON_ATTRIBUTE}]"
-    ):
-        raise _op_error(
-            f"sections.{section_id}.body must not contain a structured section "
-            f"element ({_plan_html.RECKON_ATTRIBUTE})"
-        )
+    _refuse_forged_body_structure(body, subject=f"sections.{section_id}.body")
 
 
 def _require_authored_value(section_id: str, field: str, value: Any) -> str:

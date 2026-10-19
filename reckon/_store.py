@@ -807,6 +807,38 @@ def _consume_write_effects(kind: str, data: dict[str, Any]) -> list[dict[str, st
     return list(pending[1])
 
 
+def _forged_plan_structure(body: str) -> str | None:
+    """Name what a body would forge, or ``None`` when it is authored prose alone.
+
+    Three sites write an authored body into plan HTML — inserting a section,
+    appending evidence, and setting the body of a section that already exists —
+    and all three must refuse the same fragments, because
+    ``_plan_html.read_state`` reads any of them back as the plan's own
+    structure: a heading adds a section, a ``section[data-reckon]`` element adds
+    structured state, and a ``plan-*`` meta adds plan metadata. One predicate
+    keeps the three from drifting apart.
+    """
+    from bs4 import BeautifulSoup
+
+    from reckon import _plan_html
+
+    if _plan_html.plan_headings(body):
+        return "another h2"
+    soup = BeautifulSoup(body, "html.parser")
+    if soup.select_one(f"section[{_plan_html.RECKON_ATTRIBUTE}]") is not None:
+        return "structured plan state"
+    if soup.select_one('meta[name^="plan-"]') is not None:
+        return "plan metadata"
+    return None
+
+
+def _refuse_forged_body_structure(body: str, *, subject: str) -> None:
+    """Refuse a body that forges plan structure, naming the ``subject`` it was written for."""
+    forged = _forged_plan_structure(body)
+    if forged is not None:
+        raise OpError(f"{subject} must not contain {forged}")
+
+
 def _insert_authored_section(html_text: str, request: dict[str, str]) -> str:
     """Insert an h2 before structured plan state, or at the end of main prose."""
     from html import escape
@@ -822,13 +854,7 @@ def _insert_authored_section(html_text: str, request: dict[str, str]) -> str:
     if soup.find(id=section_id) is not None:
         raise OpError(f"section id {section_id!r} already exists")
 
-    body_soup = BeautifulSoup(body, "html.parser")
-    if _plan_html.plan_headings(body):
-        raise OpError("insert_section body must not contain another h2")
-    if body_soup.select_one(f"section[{_plan_html.RECKON_ATTRIBUTE}]") is not None:
-        raise OpError("insert_section body must not contain structured plan state")
-    if body_soup.select_one('meta[name^="plan-"]') is not None:
-        raise OpError("insert_section body must not contain plan metadata")
+    _refuse_forged_body_structure(body, subject="insert_section body")
 
     boundary = None
     for start, end in _plan_html.structured_section_spans(html_text):
@@ -955,18 +981,8 @@ def _evidence_section_html(request: dict[str, str]) -> str:
     """One anchored section element carrying an append's authored content."""
     from html import escape
 
-    from bs4 import BeautifulSoup
-
-    from reckon import _plan_html
-
     body = request["body"]
-    body_soup = BeautifulSoup(body, "html.parser")
-    if _plan_html.plan_headings(body):
-        raise OpError("append_evidence body must not contain another h2")
-    if body_soup.select_one(f"section[{_plan_html.RECKON_ATTRIBUTE}]") is not None:
-        raise OpError("append_evidence body must not contain structured state")
-    if body_soup.select_one('meta[name^="plan-"]') is not None:
-        raise OpError("append_evidence body must not contain plan metadata")
+    _refuse_forged_body_structure(body, subject="append_evidence body")
 
     anchor = escape(request["anchor"], quote=True)
     parts = [f'  <section id="{anchor}">', f"    <h2>{escape(request['title'])}</h2>"]

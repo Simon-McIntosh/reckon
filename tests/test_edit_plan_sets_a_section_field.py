@@ -330,8 +330,53 @@ def test_a_body_containing_a_heading_is_refused(setup):
         0,
     )
     assert result["ok"] is False, result
-    assert "must not contain a heading" in (result.get("detail") or "")
+    assert "must not contain another h2" in (result.get("detail") or "")
     # Nothing was written: the forged heading never reached the document.
+    assert path.read_text(encoding="utf-8") == before
+
+
+def test_a_body_carrying_plan_metadata_is_refused(setup):
+    docs_dir = setup
+    path = _make_section_plan(docs_dir)
+    before = path.read_text(encoding="utf-8")
+
+    result = _edit(
+        docs_dir,
+        [
+            {
+                "op": "set",
+                "path": "sections.s1.body",
+                "value": '<p>ok</p><meta name="plan-status" content="shipped">',
+            }
+        ],
+        0,
+    )
+    assert result["ok"] is False, result
+    assert "must not contain plan metadata" in (result.get("detail") or "")
+    # Nothing was written: the forged meta never reached the document, so the
+    # plan's own state still reads the status it was authored with.
+    assert path.read_text(encoding="utf-8") == before
+    assert _read(docs_dir)[1]["status"] == "active"
+
+
+def test_a_body_carrying_a_structured_section_is_refused(setup):
+    docs_dir = setup
+    path = _make_section_plan(docs_dir)
+    before = path.read_text(encoding="utf-8")
+
+    result = _edit(
+        docs_dir,
+        [
+            {
+                "op": "set",
+                "path": "sections.s1.body",
+                "value": '<section data-reckon="comments"></section>',
+            }
+        ],
+        0,
+    )
+    assert result["ok"] is False, result
+    assert "must not contain structured plan state" in (result.get("detail") or "")
     assert path.read_text(encoding="utf-8") == before
 
 
