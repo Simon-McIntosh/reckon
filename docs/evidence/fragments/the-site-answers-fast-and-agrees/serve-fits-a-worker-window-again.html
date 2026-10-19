@@ -1,0 +1,60 @@
+<section data-reckon="landing" id="serve-fits-a-worker-window-again">
+  <h2>§16 — serve.py fits a worker window again</h2>
+  <p id="serve-fits-a-worker-window-again-outcome"><strong>Outcome.</strong> Two concerns have left <code>reckon/serve.py</code> by
+    pure move. The per-path git dates — the creation and last-modified caches with their paths, payloads, loaders
+    and stores, <code>_run_git</code>, the git directory, HEAD and outside-repository readers with their memos, and
+    <code>_git_first_committed</code> and <code>_git_last_committed</code> — now live in
+    <code>reckon/git_dates.py</code>. The change streams — <code>_ProjectChangeWatch</code>,
+    <code>_FleetChangeWatch</code>, and the tree-signal and cross-node timing helpers they use — now live in
+    <code>reckon/change_streams.py</code>. Each definition moved as it stood;
+    <code>scripts/check_pure_move.py</code> reports no problem for either move: no statement was lost, duplicated,
+    or introduced except imports, and the two creation and last-modified mirrors moved as they were rather than
+    being merged.</p>
+  <p id="serve-fits-a-worker-window-again-budget"><strong>Budget.</strong> <code>reckon/serve.py</code> measured
+    <strong>54,746</strong> estimated tokens at the base revision and <strong>44,178</strong> now, under the
+    45,000 this section allows and under the 50,000 bound
+    <code>tests/test_every_module_fits_a_worker_window.py</code> holds every module to. The code it gave up sits in
+    <code>reckon/change_streams.py</code> (5,725) and <code>reckon/git_dates.py</code> (5,605); the difference is
+    the two re-export blocks this module keeps and each new module's own header. The token test no longer names
+    <code>reckon/serve.py</code>; its only remaining failures are <code>reckon/crew/review.py</code> (51,584) and
+    <code>reckon/ledger.py</code> (51,666), both measuring <em>identically</em> at the base revision, so this move
+    adds no failure of its own.</p>
+  <figure>
+    <img src="/reckon/figures/the-site-answers-fast-and-agrees/serve-fits-a-worker-window-again/module_budget.svg"
+         alt="Estimated tokens per module: serve.py falls from 54,746 before the move to 44,178 after, the moved code appears as change_streams.py at 5,725 and git_dates.py at 5,605, and crew/review.py and ledger.py remain above the 50,000 bound, each marked past it in red.">
+    <figcaption id="serve-fits-a-worker-window-again-figure">Each bar is one module's estimated token size by the
+      estimator the token test uses. The bound the test enforces is the dotted line at 50,000; the red segment is
+      the part of a bar past it. <code>serve.py</code> crosses from one side to the other, the two modules that
+      took its code are two orders of magnitude inside the bound, and the two modules the move did not touch —
+      <code>reckon/crew/review.py</code> and <code>reckon/ledger.py</code> — stay above it exactly as they measure
+      at the base revision.</figcaption>
+  </figure>
+  <p id="serve-fits-a-worker-window-again-imports"><strong>Import surface.</strong> <code>serve.py</code> still
+    imports every moved name another file imports from it, and the moved definitions reach this module's
+    <code>LOGGER</code>, <code>_STATE_ROOT</code>, <code>_invalidate_tree_views</code> and
+    <code>_walk_discovery_signature</code> through function-level back-references that resolve here at call time.
+    That is what keeps a test which rebinds one of those on <code>serve</code> reaching the moved code: the patch
+    works because the reader of the name the patch targets stayed in <code>serve.py</code>.</p>
+  <p id="serve-fits-a-worker-window-again-census"><strong>Repointed census.</strong> Every test that patched or
+    rebound a moved name, or a constant a moved reader consults, now names the module that holds it: the git date
+    caches, memos and loaders/stores to <code>reckon.git_dates</code> (<code>test_git_head_is_resolved_once</code>,
+    <code>test_a_tree_outside_git_asks_once</code>, <code>test_cache_paths_carry_their_format</code>,
+    <code>test_staleness_counts_from_the_last_commit</code>), and the project change watch to
+    <code>reckon.change_streams</code>, which is where the fleet watch arms each tree
+    (<code>test_cross_node_writes_refresh_the_index</code>,
+    <code>test_server_listens_before_it_watches</code>). Patches that still addressed <code>serve</code> were left
+    alone where the reader stayed — <code>serve.subprocess.run</code>, <code>serve._run_git</code>'s callers in
+    this module, and <code>serve._git_first_committed</code> — because those resolve against this module at call
+    time and still bind.</p>
+  <p id="serve-fits-a-worker-window-again-control"><strong>Negative control.</strong> The change-watch patch in
+    <code>tests/test_cross_node_writes_refresh_the_index.py</code> was pointed back at <code>serve</code> and
+    <code>test_an_unread_tree_pays_no_slow_sweep</code> then failed (<code>EXIT=1</code>, "an unread tree was
+    swept"), because the tree the fleet watch arms resolves the class from <code>reckon.change_streams</code>: the
+    patch has to name the module that holds the name. The file was restored afterwards and the worktree left with
+    no diff against its commit.</p>
+  <p id="serve-fits-a-worker-window-again-limits"><strong>Named limits.</strong> The pure-move check was run
+    against the revision that introduced the function-level back-references this move carries, so the moved
+    statements are compared with those lines already in them; against the orientation base revision those lines
+    read as additions to the moved functions. Only the <code>BOUND</code> the token test enforces is quoted as a
+    limit here — the 45,000 in the section text is a budget target for this section, not a test constant.</p>
+</section>
