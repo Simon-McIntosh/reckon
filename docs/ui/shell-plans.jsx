@@ -258,6 +258,59 @@ function artifactKeyOf(item) {
   return item && (item.nav_key || item.slug);
 }
 
+// The artifact feed mounts only the rows within and near the viewport, so a
+// long list — a figure index of a thousand-plus rows, each carrying a
+// thumbnail — does not put every row in the page at once. A row's measured
+// height is cached as it renders and every unmeasured row is charged the
+// running average of the measured ones, so the feed keeps the scroll height the
+// full list would have and the last row is reachable by scrolling.
+const ARTIFACT_ROW_ESTIMATE = 66;
+const ARTIFACT_ROW_OVERSCAN = 320;
+
+function artifactRowOffsets(rows, heights, estimate = ARTIFACT_ROW_ESTIMATE) {
+  const offsets = new Array(rows.length);
+  let total = 0;
+  for (let index = 0; index < rows.length; index += 1) {
+    offsets[index] = total;
+    const measured = heights[artifactKeyOf(rows[index])];
+    total += Number.isFinite(measured) && measured > 0 ? measured : estimate;
+  }
+  return { offsets, total };
+}
+
+// The half-open row range to mount for a viewport at `scrollTop`: the rows whose
+// span reaches the window, padded by `overscan`. Also returns the spacer heights
+// that stand in for the rows above and below the window.
+function artifactRowWindow(
+  rows,
+  heights,
+  scrollTop,
+  viewport,
+  overscan = ARTIFACT_ROW_OVERSCAN,
+  estimate = ARTIFACT_ROW_ESTIMATE,
+) {
+  if (rows.length === 0) return { start: 0, end: -1, top: 0, bottom: 0 };
+  const { offsets, total } = artifactRowOffsets(rows, heights, estimate);
+  const heightAt = index =>
+    (index + 1 < offsets.length ? offsets[index + 1] : total) - offsets[index];
+  const windowTop = Math.max(0, scrollTop - overscan);
+  const windowBottom = scrollTop + viewport + overscan;
+  let start = 0;
+  while (start < rows.length - 1 && offsets[start] + heightAt(start) <= windowTop) {
+    start += 1;
+  }
+  let end = rows.length - 1;
+  while (end > start && offsets[end] > windowBottom) {
+    end -= 1;
+  }
+  return {
+    start,
+    end,
+    top: offsets[start],
+    bottom: Math.max(0, total - (offsets[end] + heightAt(end))),
+  };
+}
+
 // Recompute the arrival summary for a keep/pending split; used only when the
 // state loader is absent (composed static documents) to mirror its contract.
 function summarizeArrival(pending) {
@@ -290,6 +343,46 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
   React.useEffect(() => {
     try { localStorage.setItem(hideStorage, hideDone ? "0" : "1"); } catch {}
   }, [hideDone, hideStorage]);
+
+  const feedRef = React.useRef(null);
+  const [rowHeights, setRowHeights] = React.useState({});
+  const [feedScroll, setFeedScroll] = React.useState({ top: 0, height: 0 });
+  React.useEffect(() => {
+    const feed = feedRef.current;
+    if (!feed) return undefined;
+    const sync = () => setFeedScroll(current => (
+      current.top === feed.scrollTop && current.height === feed.clientHeight
+        ? current
+        : { top: feed.scrollTop, height: feed.clientHeight }
+    ));
+    sync();
+    feed.addEventListener("scroll", sync, { passive: true });
+    let observer = null;
+    if (typeof window.ResizeObserver === "function") {
+      observer = new window.ResizeObserver(sync);
+      observer.observe(feed);
+    }
+    return () => {
+      feed.removeEventListener("scroll", sync);
+      if (observer) observer.disconnect();
+    };
+  }, []);
+  // Cache each mounted row's height for the offset model. Guarding on a real
+  // change stops the measure-and-render loop once the heights settle.
+  React.useLayoutEffect(() => {
+    const feed = feedRef.current;
+    if (!feed) return;
+    let changed = false;
+    const measured = {};
+    feed.querySelectorAll(":scope > .r-artifact-row").forEach(row => {
+      const key = row.dataset.artifactSlug;
+      const height = row.offsetHeight;
+      if (!key || !height) return;
+      measured[key] = height;
+      if (rowHeights[key] !== height) changed = true;
+    });
+    if (changed) setRowHeights(current => ({ ...current, ...measured }));
+  });
 
   const allKindRows = React.useMemo(
     () => inventory.filter(item => (item.type || "plan") === kind),
@@ -335,6 +428,14 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
       .filter(key => byKey.has(key) && !pendingKeys.has(key))
       .map(key => byKey.get(key));
   }, [inventory, kind, sortBy, sortDir, status, hideDone, pendingKeys, frozenOrder, viewKey]);
+  const rowWindow = React.useMemo(() => {
+    const measured = Object.values(rowHeights);
+    const typical = measured.length
+      ? measured.reduce((sum, value) => sum + value, 0) / measured.length
+      : ARTIFACT_ROW_ESTIMATE;
+    return artifactRowWindow(rows, rowHeights, feedScroll.top, feedScroll.height, ARTIFACT_ROW_OVERSCAN, typical);
+  }, [rows, rowHeights, feedScroll]);
+  const windowRows = rows.slice(rowWindow.start, rowWindow.end + 1);
   const revealPending = React.useCallback(() => {
     let revealed;
     if (typeof window.revealArrivals === "function") {
@@ -422,14 +523,18 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
         )}
       </header>
 
-      <div className="r-artifact-feed" data-artifact-feed={kind}>
+      <div className="r-artifact-feed" data-artifact-feed={kind} ref={feedRef}>
         {rows.length === 0 ? (
           <div className="r-artifact-empty" role="status">
             {hiddenEverything
               ? `Everything in ${label.toLowerCase()} is done for ${project}.`
               : `No ${label.toLowerCase()} in ${project}.`}
           </div>
-        ) : rows.map(item => {
+        ) : <>
+          {rowWindow.top > 0 && (
+            <div className="r-artifact-spacer" style={{ height: `${rowWindow.top}px` }} aria-hidden="true" />
+          )}
+          {windowRows.map(item => {
           const navKey = item.nav_key || item.slug;
           const itemState = artifactState(item, kind);
           const percent = Math.round(Number(item.impl || 0) * 100);
@@ -474,7 +579,11 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
               </span>
             </button>
           );
-        })}
+          })}
+          {rowWindow.bottom > 0 && (
+            <div className="r-artifact-spacer" style={{ height: `${rowWindow.bottom}px` }} aria-hidden="true" />
+          )}
+        </>}
       </div>
     </section>
   );
