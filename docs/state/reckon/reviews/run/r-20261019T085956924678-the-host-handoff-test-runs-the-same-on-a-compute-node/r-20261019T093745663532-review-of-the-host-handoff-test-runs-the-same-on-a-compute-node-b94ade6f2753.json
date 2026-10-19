@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's manifest records baseline_suite: none and after_suite: none, so it carries no suite pair to delta; its gate is the single host-handoff case, whose own arms are 5/5 EXIT=0 under the failing harness identity (handoff-codex-1..5.log) and 1/1 EXIT=0 on the fleet node, with the negative control red. The source run asserts no added failure, and no baseline/after suite exists to contradict it.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-19T10:01:03.461Z",
+  "dispatched_at": "2026-10-19T09:39:08Z",
+  "findings": [
+    {
+      "file": "tests/test_follower_hands_off_to_host.py",
+      "line": "117",
+      "severity": "follow-on",
+      "text": "follow-on: _isolated_harness_env re-implements _follower_env's key policy (tests/test_follower_hands_off_to_host.py:97 -- the same startswith((\"RECKON_\", \"CLAUDE_\", \"CODEX_\")) filter and the same four assignments) instead of deriving from it, so a change to the scrub list or the identity set must be made in two places."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T085956924678-the-host-handoff-test-runs-the-same-on-a-compute-node/manifest.md",
+      "line": "26",
+      "severity": "follow-on",
+      "text": "follow-on: the evidence_inputs cite handoff-head-*.log as \"5/5 pre-fix ... without a Codex identity\", but handoff-head.sbatch checks out REV=418c0a2e3 (the fix commit) and each log records rev=418c0a2e3, so those logs cannot show a pre-fix pass and the contrast the sentence draws is unsupported."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T085956924678-the-host-handoff-test-runs-the-same-on-a-compute-node/handoff-ruff.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the only ruff log was run at 418c0a2e3, before the one-line comprehension fold landed in 0e0a41506, so it reports a format finding at lines 132-134 that is absent from the delivered revision; no ruff log exists at the delivered revision."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit from base 3534312e to head b94ade6f2: 418c0a2e3 adds _isolated_harness_env and arms lifetime=8s, 0e0a41506 folds the comprehension to one line, b94ade6f2 adds the fragment's 73 lines; two files, +104/-5, no product code.",
+    "done_when": "the done_when asks for 5/5 alone in an exclusive all_debug job on a compute node, a fleet-node pass, the report naming the dependence, a negative control failing fast rather than hanging, rev=, host= and the literal command in every log ending in EXIT=, and no added ruff findings; handoff-codex-1.log..handoff-codex-5.log give 5/5 EXIT=0 at rev 0e0a41506, handoff-fleet-node.log gives 1 passed EXIT=0, handoff-negative-control.log is EXIT=1 naming the missing handoff line, and my re-run of ruff on the delivered revision and the base found no added finding.",
+    "goal": "the node's goal is to make the host-handoff test independent of what the fleet node provides and a compute-node job lacks; tests/test_follower_hands_off_to_host.py:479 calls _isolated_harness_env so the in-process follower synthesises its own identity and the case no longer reads the launching harness.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T085956924678-the-host-handoff-test-runs-the-same-on-a-compute-node/manifest.md; status complete, three commits, tests names the gate command and records 5 passed, negative_control_log names handoff-negative-control.log, but its evidence_inputs miscites handoff-head-*.log as a pre-fix pass and its ruff claim is carried by no log at the delivered revision.",
+    "write_paths": "the manifest declares tests/test_follower_hands_off_to_host.py, docs/evidence/fragments/the-suite-is-green-at-head/the-host-handoff-test-runs-the-same-on-a-compute-node.html and the figures directory; the diff touches the first two only and the figures path is untouched."
+  },
+  "justifications": {
+    "durability": "the guard is the pre-existing assertion at tests/test_follower_hands_off_to_host.py:508, which handoff-negative-control.log shows reddening in 15.37s rather than hanging once the scrub is removed, but it reddens only where an ambient harness identity is present, so a revert of _isolated_harness_env passes unnoticed under a Claude-hosted run.",
+    "evidence": "handoff-codex-1.log..handoff-codex-5.log each carry rev=, host=, module=, cwd= and the literal command and end EXIT=0 for 5/5 on 98dci4-clu-3143, handoff-fleet-node.log ends EXIT=0, and handoff-negative-control.log ends EXIT=1 on the handoff-marker assertion; the only ruff log (handoff-ruff.log:1) predates the style fold, so I re-ran ruff format --check on the delivered revision and on the base and got one pre-existing finding in each, no added finding.",
+    "fit": "tests/test_follower_hands_off_to_host.py:117 follows the file's module-private-helper idiom (a docstring paragraph naming the mechanism, Path and monkeypatch parameters) and the added name carries no plan, version or ticket label.",
+    "goal_fidelity": "tests/test_follower_hands_off_to_host.py:117-137 deletes the ambient RECKON_, CLAUDE_ and CODEX_ variables and sets only the four the case needs, so the in-process follower resolves the synthesised Claude identity instead of an ambient codex one and the case no longer depends on the session that launched the suite.",
+    "reuse": "the added helper duplicates the key policy already implemented by tests/test_follower_hands_off_to_host.py:97 (_follower_env) rather than deriving from it; a search over tests/ and reckon/ for an in-process harness scrub found only the sibling copy at tests/test_a_pane_settles_when_no_work_is_live.py:533 and the production scrub at reckon/crew/dispatch_watch.py:92 (_without_session_identity).",
+    "scope_discipline": "git diff --stat 3534312ed8582c5387254845a5f657ab30088fc8..b94ade6f27533fa33392338339acdd482862dca0 changes only tests/test_follower_hands_off_to_host.py and docs/evidence/fragments/the-suite-is-green-at-head/the-host-handoff-test-runs-the-same-on-a-compute-node.html, both declared write paths."
+  },
+  "node": "review-of-the-host-handoff-test-runs-the-same-on-a-compute-node-b94ade6f2753",
+  "node:reviewed": "the-host-handoff-test-runs-the-same-on-a-compute-node",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the host-handoff test independent of what the fleet node provides and a compute-node job lacks; tests/test_follower_hands_off_to_host.py:479 calls _isolated_harness_env so the in-process follower synthesises its own identity and the case no longer reads the launching harness.\nVERDICT done_when: the done_when asks for 5/5 alone in an exclusive all_debug job on a compute node, a fleet-node pass, the report naming the dependence, a negative control failing fast rather than hanging, rev=, host= and the literal command in every log ending in EXIT=, and no added ruff findings; handoff-codex-1.log..handoff-codex-5.log give 5/5 EXIT=0 at rev 0e0a41506, handoff-fleet-node.log gives 1 passed EXIT=0, handoff-negative-control.log is EXIT=1 naming the missing handoff line, and my re-run of ruff on the delivered revision and the base found no added finding.\nVERDICT write_paths: the manifest declares tests/test_follower_hands_off_to_host.py, docs/evidence/fragments/the-suite-is-green-at-head/the-host-handoff-test-runs-the-same-on-a-compute-node.html and the figures directory; the diff touches the first two only and the figures path is untouched.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T085956924678-the-host-handoff-test-runs-the-same-on-a-compute-node/manifest.md; status complete, three commits, tests names the gate command and records 5 passed, negative_control_log names handoff-negative-control.log, but its evidence_inputs miscites handoff-head-*.log as a pre-fix pass and its ruff claim is carried by no log at the delivered revision.\nVERDICT diff: read commit by commit from base 3534312e to head b94ade6f2: 418c0a2e3 adds _isolated_harness_env and arms lifetime=8s, 0e0a41506 folds the comprehension to one line, b94ade6f2 adds the fragment's 73 lines; two files, +104/-5, no product code.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_follower_hands_off_to_host.py:117-137 deletes the ambient RECKON_, CLAUDE_ and CODEX_ variables and sets only the four the case needs, so the in-process follower resolves the synthesised Claude identity instead of an ambient codex one and the case no longer depends on the session that launched the suite.\nSCORE evidence: 16\nJUSTIFICATION evidence: handoff-codex-1.log..handoff-codex-5.log each carry rev=, host=, module=, cwd= and the literal command and end EXIT=0 for 5/5 on 98dci4-clu-3143, handoff-fleet-node.log ends EXIT=0, and handoff-negative-control.log ends EXIT=1 on the handoff-marker assertion; the only ruff log (handoff-ruff.log:1) predates the style fold, so I re-ran ruff format --check on the delivered revision and on the base and got one pre-existing finding in each, no added finding.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 3534312ed8582c5387254845a5f657ab30088fc8..b94ade6f27533fa33392338339acdd482862dca0 changes only tests/test_follower_hands_off_to_host.py and docs/evidence/fragments/the-suite-is-green-at-head/the-host-handoff-test-runs-the-same-on-a-compute-node.html, both declared write paths.\nSCORE durability: 14\nJUSTIFICATION durability: the guard is the pre-existing assertion at tests/test_follower_hands_off_to_host.py:508, which handoff-negative-control.log shows reddening in 15.37s rather than hanging once the scrub is removed, but it reddens only where an ambient harness identity is present, so a revert of _isolated_harness_env passes unnoticed under a Claude-hosted run.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_follower_hands_off_to_host.py:117 follows the file's module-private-helper idiom (a docstring paragraph naming the mechanism, Path and monkeypatch parameters) and the added name carries no plan, version or ticket label.\nSCORE reuse: 10\nJUSTIFICATION reuse: the added helper duplicates the key policy already implemented by tests/test_follower_hands_off_to_host.py:97 (_follower_env) rather than deriving from it; a search over tests/ and reckon/ for an in-process harness scrub found only the sibling copy at tests/test_a_pane_settles_when_no_work_is_live.py:533 and the production scrub at reckon/crew/dispatch_watch.py:92 (_without_session_identity).\nFINDING tests/test_follower_hands_off_to_host.py:117 follow-on: _isolated_harness_env re-implements _follower_env's key policy (tests/test_follower_hands_off_to_host.py:97 -- the same startswith((\"RECKON_\", \"CLAUDE_\", \"CODEX_\")) filter and the same four assignments) instead of deriving from it, so a change to the scrub list or the identity set must be made in two places.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T085956924678-the-host-handoff-test-runs-the-same-on-a-compute-node/manifest.md:26 follow-on: the evidence_inputs cite handoff-head-*.log as \"5/5 pre-fix ... without a Codex identity\", but handoff-head.sbatch checks out REV=418c0a2e3 (the fix commit) and each log records rev=418c0a2e3, so those logs cannot show a pre-fix pass and the contrast the sentence draws is unsupported.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T085956924678-the-host-handoff-test-runs-the-same-on-a-compute-node/handoff-ruff.log:1 follow-on: the only ruff log was run at 418c0a2e3, before the one-line comprehension fold landed in 0e0a41506, so it reports a format finding at lines 132-134 that is absent from the delivered revision; no ruff log exists at the delivered revision.\n",
+  "review_run_id": "r-20261019T093745663532-review-of-the-host-handoff-test-runs-the-same-on-a-compute-node-b94ade6f2753",
+  "reviewed_base_sha": "3534312ed8582c5387254845a5f657ab30088fc8",
+  "reviewed_head_sha": "b94ade6f27533fa33392338339acdd482862dca0",
+  "reviewed_run_id": "r-20261019T085956924678-the-host-handoff-test-runs-the-same-on-a-compute-node",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 10,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T09:55:25.126871+00:00",
+  "total": 98
+}
