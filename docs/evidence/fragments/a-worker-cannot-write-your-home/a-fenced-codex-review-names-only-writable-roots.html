@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="One rule, fence_writable_roots, states which declared roots stay writable inside the fence; the fence's grant loop uses it and the fenced dialect is handed only those, so a sealed delivery store is never named writable to codex's own sandbox.">
   <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
   <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s16">
-  <meta name="plan-commits" content="9e9bd575,ee6bcfd9,a6046b43">
+  <meta name="plan-commits" content="9e9bd575,ee6bcfd9,a6046b43,3a6d3e48">
   <meta name="plan-recorded-at" content="2026-10-19">
   <title>A fenced codex review is told only the roots the fence leaves writable — evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -36,15 +36,17 @@
     review store, the run directory and a declared review-records path under the store, and finds the
     codex argv carries <code>--add-dir</code> for the review-records path and for no sealed store;
     every <code>--add-dir</code> it does carry is either bound writable by the fence or outside every
-    sealed path; the fence's writable binds equal the ones the pre-change rule composes for the same
-    inputs, read from the revision that introduced the rule; and an unfenced launch keeps every
+    sealed path; the fence's writable binds are exactly the declared roots the sealed stores do not
+    cover — the run directory, the declared review-records path beneath the store, and the plan-write
+    lock namespace — plus the fence's own additions, spelled out rather than recovered from history, so
+    the case reads no git log and skips no clone; and an unfenced launch keeps every
     <code>--add-dir</code>. The declared negative control — the unfiltered writable set passed to the
-    dialect again — reddens the run at <code>EXIT=1</code> with the reports root's
+    dialect again — reddens the run at <code>EXIT=1</code> with the sealed stores'
     <code>--add-dir</code> named.
   </p>
   <p id="a-fenced-codex-review-names-only-writable-roots-gate">
     The named gate over the eight files adds no failure against the base: base
-    <code>b97740c8</code> 82 passed, <code>EXIT=0</code>; head <code>a6046b43</code> 86 passed,
+    <code>b97740c8</code> 82 passed, <code>EXIT=0</code>; head <code>3a6d3e48</code> 86 passed,
     <code>EXIT=0</code>. Both arms ran in the foreground with <code>TMPDIR</code> at its default. One
     existing assertion had to move with the change:
     <code>tests/test_sandbox_delivery.py::test_investigation_delivers_to_a_temporary_reports_directory</code>
