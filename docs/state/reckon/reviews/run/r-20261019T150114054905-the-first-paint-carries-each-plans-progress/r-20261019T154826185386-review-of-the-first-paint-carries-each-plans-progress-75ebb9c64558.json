@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Reddens if the index row stops carrying impl: `index_impl[slug]` becomes None while `derived` stays the parsed figure, so `assert index_impl[slug] == pytest.approx(derived)` fails; the negative control (metadata_index._resource_row dropped of impl, armed by RECKON_TEST_INDEX_DROPS_PLAN_PROGRESS=1) reproduces exactly this, 2 failed EXIT=1 in logs/negative_control.log. The independent side is `_plan_html.parse_meta(...)[\"impl\"]`, not the served row under test.",
+      "lines": "tests/test_the_first_paint_carries_each_plans_progress.py:194-222"
+    },
+    {
+      "failure_condition": "Reddens if a plan row omits impl: `assert all(row.get(\"impl\") is not None ...)` fails, and `assert \"impl\" in metadata_index.ROW_FIELDS` fails if the field is dropped from the shape.",
+      "lines": "tests/test_the_first_paint_carries_each_plans_progress.py:225-232"
+    },
+    {
+      "failure_condition": "Line 337 reddens if the loader drops the row's impl on first paint (paint value becomes None, not 0.4/0.9); line 338 compares against INDEX_ROWS, the same rows the test handed the loader, so it holds whatever the loader does and is not itself a guard (recorded as a follow-on finding).",
+      "lines": "tests/test_page_paints_from_the_index.py:337-338"
+    }
+  ],
+  "call_sites": [
+    "reckon/metadata_index.py:_resource_row (sets row[\"impl\"] for plan resources)",
+    "reckon/metadata_index.py:<module> ROW_FIELDS/_VERSION (row shape and rebuild trigger)",
+    "reckon/serve.py:1547 (discovery inventory row already carries impl from the same parse_meta)",
+    "docs/ui/state-loader.js:97 mapInventoryRow (spreads the index row onto the plan object)",
+    "docs/ui/shell-plans.jsx:780 (renders Math.round(plan.impl*100) on the plan row)"
+  ],
+  "completed_at": "2026-10-19T15:58:47.087Z",
+  "dispatched_at": "2026-10-19T15:49:51Z",
+  "findings": [
+    {
+      "file": "tests/test_page_paints_from_the_index.py",
+      "line": "338",
+      "severity": "follow-on",
+      "text": "follow-on: `assert paint[\"impl\"][:2] == [r[\"impl\"] for r in INDEX_ROWS if r[\"type\"] == \"plan\"]` compares the loader's output against the same INDEX_ROWS the test itself hands to the loader through the recording fetch, so its two sides move together and it holds whatever the loader does with impl; the independent check is the literal on the line above (`assert paint[\"impl\"][:2] == [0.4, 0.9]`, tests/test_page_paints_from_the_index.py:337), which does fail if the loader drops impl. The assertion is therefore not a guard on its own and the first-paint durability rests on the literal line, which is present."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against base 9cb987718a; 6086e723a changes reckon/metadata_index.py (ROW_FIELDS gains impl, _VERSION 5->6, `row[\"impl\"] = rec[\"impl\"]` for plans) and the three test files, and 75ebb9c64 adds only the landing fragment under docs/evidence/fragments/.",
+    "done_when": "The done_when names a test that serves a temporary project and asserts every plan's impl in /_index equals its /_discover value, including a declared-unrecorded and a partial-hours plan, plus a negative control that drops impl; tests/test_the_first_paint_carries_each_plans_progress.py holds that test and asserts each row against `_plan_html.parse_meta`, and the manifest records logs/head_three_files.log `18 passed` EXIT=0, logs/head_focused.log `77 passed` EXIT=0 against logs/base_focused.log `75 passed` EXIT=0, and logs/negative_control.log `2 failed` EXIT=1.",
+    "goal": "The node goal is `Carry each plan's derived progress as impl on its index row so the first paint draws every progress bar`; reckon/metadata_index.py:748 sets `row[\"impl\"] = rec[\"impl\"]` for a plan resource and ROW_FIELDS at :69 gains `impl`, so the served index row carries the figure the SPA already reads at docs/ui/shell-plans.jsx:780.",
+    "manifest": "Read at <run>/manifest.md; status complete, commits 6086e723ae3588b644bd0284c10443bcb3cbecda and 75ebb9c64, the gate command recorded verbatim, a bare negative_control_log path, and baseline_suite/after_suite objects that both reach their summary line at failure_count 0.",
+    "write_paths": "The manifest's orientation_write_paths lists metadata_index.py, serve.py, state-loader.js, the three test files, the landing fragment and a figures directory; `git diff --stat 9cb987718a34817b185ec743e664c38d1a27469a 75ebb9c64558e86aa395cdc10f9769dd804e6823` names six files, every one inside the list."
+  },
+  "project": "reckon",
+  "review": "VERDICT goal: the node goal is `Carry each plan's derived progress as impl on its index row so the first paint draws every progress bar`; reckon/metadata_index.py:748 sets `row[\"impl\"] = rec[\"impl\"]` for a plan resource and ROW_FIELDS at :69 gains `impl`, so the served index row carries the figure docs/ui/shell-plans.jsx:780 already renders.\nVERDICT done_when: the done_when names a test serving a temporary project that asserts every plan's impl in /_index equals its /_discover value at two derivation edges, plus a negative control; tests/test_the_first_paint_carries_each_plans_progress.py is that test, and the manifest records 18 passed EXIT=0 (head_three_files.log), 77 passed vs 75 passed at base (head_focused.log/base_focused.log) and 2 failed EXIT=1 (negative_control.log).\nVERDICT write_paths: the manifest declares reckon/metadata_index.py, reckon/serve.py, docs/ui/state-loader.js, three test files, the fragment and a figures dir; `git diff --stat 9cb987718a 75ebb9c64` names six files, all inside the list.\nVERDICT manifest: read at <run>/manifest.md; status complete with two commits, the literal gate command, a bare negative_control_log path, and baseline_suite/after_suite that both reach their summary line with failure_count 0.\nVERDICT diff: read commit by commit against 9cb987718a; 6086e723a changes reckon/metadata_index.py and the three tests, 75ebb9c64 adds only the landing fragment.\nCALL_SITES: reckon/metadata_index.py:_resource_row, reckon/serve.py:1547, docs/ui/state-loader.js:97, docs/ui/shell-plans.jsx:780\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/metadata_index.py:748 carries impl on the plan index row and docs/ui/state-loader.js:97 spreads the row onto the plan object, so the first paint draws the bar from the index alone.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head_three_files.log records `18 passed` EXIT=0 and logs/negative_control.log `2 failed` EXIT=1, but the done_when's rug-check/format clause is named in no log the manifest cites (the worker ran it un-logged); I verified `ruff check --no-cache` clean and `ruff format --check` 'all files already formatted' on the four changed Python files independently.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in `git diff --stat 9cb987718a 75ebb9c64` is inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the declared negative control drops impl from reckon/metadata_index.py:_resource_row and reddens tests/test_the_first_paint_carries_each_plans_progress.py twice (2 failed, EXIT=1), and that test pins each row against `_plan_html.parse_meta` rather than against the served row itself.\nSCORE fit: 19\nJUSTIFICATION fit: the added branch at reckon/metadata_index.py:745 follows the surrounding row-dict idiom and its comment states the mechanism (the first paint's bar) rather than a plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change calls `_plan_html.parse_meta` (reckon/serve.py:1547 does the same for the discovery row) rather than re-deriving the figure, so it extends the single existing owner of impl derivation and forks nothing.\nFINDING tests/test_page_paints_from_the_index.py:338 follow-on: the assertion compares the loader's output against the same INDEX_ROWS the test hands the loader, so its two sides move together and it is not a guard on its own; the independent literal at :337 carries the check.",
+  "review_run_id": "r-20261019T154826185386-review-of-the-first-paint-carries-each-plans-progress-75ebb9c64558",
+  "reviewed_base_sha": "9cb987718a34817b185ec743e664c38d1a27469a",
+  "reviewed_head_sha": "75ebb9c64558e86aa395cdc10f9769dd804e6823",
+  "reviewed_run_id": "r-20261019T150114054905-the-first-paint-carries-each-plans-progress",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T15:59:55.318970+00:00"
+}
