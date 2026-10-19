@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_scoring_dispatches_its_review.py::test_an_unattached_session_refuses_the_automatic_dispatch_too"
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-19T17:43:15.318Z",
+  "dispatched_at": "2026-10-19T17:30:01Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-stored-review-carries-its-total.html",
+      "line": "34",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment states 'five isolated runs that fail with scores 90', but the source it cites, state-probe-findings.md, records six (repro-1.log .. repro-6.log), and all six repro logs on disk carry 'scores 90' and fail; a committed evidence record undercounts its own cited probe."
+    },
+    {
+      "file": "docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-stored-review-carries-its-total.html",
+      "line": "34",
+      "severity": "follow-on",
+      "text": "follow-on: the probe logs the fragment leans on (repro-*.log, sha2-*.log) live only under /tmp/reckon-crew-scratch/r-20261019T124040554227-a-stored-review-carries-its-total/, node-local scratch that dies with the allocation, while the fragment is committed to the repository; the durable record cites 36 runs of evidence that no later reader can open, and only state-probe-strace.log and state-probe-sha-scan.log were copied into the run directory."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T124040554227-a-stored-review-carries-its-total/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's tests and artifacts lines quote 'head 2 failed and 1037 passed' and 'head failures a strict subset of base', which no log supports and which its own armed after_suite object contradicts: after-suite.log at the reviewed head c5a07967e ends '3 failed, 1036 passed' with an added id absent from base and a base id dropped, so the strict-subset claim is false for the final arm and the quoted figures belong to the earlier ff2155a57 arm."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T124040554227-a-stored-review-carries-its-total/after-suite.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T124040554227-a-stored-review-carries-its-total/baseline-suite.log"
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion, only a fixture input change at tests/test_one_automatic_repair_round_per_run.py:151, and reverting it to six 15s would redden the unchanged '75' in reason assertion at :263 only when the fixture's random first-head sha lacks the substring 75, so the guard is probabilistic rather than a test that fails whenever the regression returns.",
+    "evidence": "after-suite.log at the reviewed head ends '3 failed, 1036 passed ... EXIT=1' against baseline-suite.log '3 failed, 1036 passed ... EXIT=1' with one added id, and fresh-warm/fresh-1..5.log and warm-1..5.log each end '3 passed ... EXIT=0' (ten of ten), but the fragment undercounts its probe and the manifest quotes a stale 2-failed/1037-passed arm its own logs do not carry.",
+    "fit": "tests/test_one_automatic_repair_round_per_run.py:141 carries a comment stating the mechanism, uses review_module.REVIEW_DIMENSIONS with zip(strict=True), and the fragment's new section follows the sibling-section idiom with no plan or ticket identifier in a name.",
+    "goal_fidelity": "the gained commits land docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-stored-review-carries-its-total.html:26 and tests/test_one_automatic_repair_round_per_run.py:151, making the repair-round fixture's six scores sum to its recorded 75 so the derived total and the stored total agree, which is the \u00a723 derivation reaching its last inconsistent consumer.",
+    "reuse": "the diff adds no function, class or module, so no capability is forked; a search over tests/ and reckon/crew/ found no other owner of a stored-total fixture, and the fixture consumes the module constant it should.",
+    "scope_discipline": "git diff b3ea84199..81331dba4 changes exactly the two files the review names, and the repair-round test is outside the original five declared write paths but was added by the resume's scope grant, so both changes are authorised."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the review store derive a landed record's total from its six scores (plan \u00a723).\nVERDICT done_when: the done_when names six store cases, a base/after importer arm, a negative control and durable EXIT-terminated logs; the gained commits do not touch those cases and the arms are recorded in baseline-suite.log and after-suite.log.\nVERDICT write_paths: the source node was fenced to reckon/crew/review.py, reckon/crew/recovery_review_subject.py, tests/test_a_stored_review_carries_its_total.py, the fragment and the figures dir; the gained commits change the fragment and tests/test_one_automatic_repair_round_per_run.py, the latter added by the resume's scope grant.\nVERDICT manifest: read; it records the derivation, the arms and the fresh/warm runs, but its tests and artifacts lines quote a 2-failed/1037-passed head arm that its own after_suite object and after-suite.log contradict.\nVERDICT diff: read commit by commit against b3ea84199; cb8e7da9f makes the repair-round fixture's six scores sum to 75, c5a07967e records the state probe in the fragment, 81331dba4 notes the repeat arm, and only the fragment and the one test file change.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the gained commits land docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-stored-review-carries-its-total.html:26 and tests/test_one_automatic_repair_round_per_run.py:151, making the fixture's six scores sum to its recorded 75 so the derived and stored totals agree.\nSCORE evidence: 13\nJUSTIFICATION evidence: after-suite.log ends '3 failed, 1036 passed' with one added id and fresh-warm/ logs end '3 passed' ten of ten, but the fragment at :34 undercounts its probe and the manifest at :15 quotes a stale head arm its own logs do not carry.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff b3ea84199..81331dba4 changes exactly the fragment and tests/test_one_automatic_repair_round_per_run.py, the latter inside the resume's scope grant.\nSCORE durability: 14\nJUSTIFICATION durability: the diff adds no assertion; reverting the fixture at tests/test_one_automatic_repair_round_per_run.py:151 would redden the '75' in reason assertion at :263 only when the random first-head sha lacks 75, so the guard is probabilistic.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_one_automatic_repair_round_per_run.py:141 comments the mechanism and uses review_module.REVIEW_DIMENSIONS, and the fragment's new section follows the sibling-section idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module and forks no capability; the search over tests/ and reckon/crew/ found no other owner of a stored-total fixture.\nFINDING docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-stored-review-carries-its-total.html:34 follow-on: 'five isolated runs that fail with scores 90' contradicts the cited state-probe-findings.md, which records six (repro-1.log .. repro-6.log), all failing with scores 90.\nFINDING docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-stored-review-carries-its-total.html:34 follow-on: the cited repro-*.log and sha2-*.log probe evidence lives in node-local /tmp scratch, not the run directory, so the committed fragment cites runs no later reader can open.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T124040554227-a-stored-review-carries-its-total/manifest.md:15 follow-on: the tests and artifacts lines quote 'head 2 failed and 1037 passed' and 'a strict subset of base', which after-suite.log at the reviewed head contradicts with '3 failed, 1036 passed' and an added id absent from base.\n",
+  "review_run_id": "r-20261019T172915908355-review-of-a-stored-review-carries-its-total-81331dba471d",
+  "reviewed_base_sha": "b3ea84199f724585488a787f27785848c3f4c9ec",
+  "reviewed_head_sha": "81331dba471d77dfa4462578fc67c4d5f669226c",
+  "reviewed_run_id": "r-20261019T124040554227-a-stored-review-carries-its-total",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T17:47:00+00:00",
+  "total": 102
+}
