@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 4,
+  "added_failure_ids": [
+    "tests/test_producer_reads_only_what_changed.py::test_incremental_transitions_match_the_whole_file_path",
+    "tests/test_the_watcher_sweeps_unfollowed_sessions.py::test_the_watcher_sweeps_only_the_sessions_nobody_follows[single-event]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_deliberate_stop_is_not_restarted[producer-term]",
+    "tests/test_the_departure_row_says_how_and_what_it_spent.py::test_four_departures_render_three_pane_words"
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3456 (format_watch_transition)",
+    "reckon/crew_follow_commands.py:3651 (format_watch_transition)",
+    "reckon/crew/query.py:867 (watch_event_paths, now shared)",
+    "reckon/crew/recovery.py:439 (re-export of format_watch_transition)"
+  ],
+  "completed_at": "2026-10-19T14:16:18.442Z",
+  "dispatched_at": "2026-10-19T14:00:58Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "2139",
+      "severity": "follow-on",
+      "text": "follow-on: the \u00a765 done-when's clause that the importers of reckon/crew/recovery_watch.py add no failure against base is measured only at ebce175f4 \u2014 the after-suite log's own header reads `revision=ebce175f42f751b2bcf4cf02f8e74ccc07a08d39` \u2014 which is one commit before the delivered head 30fc083ca that this line lands at, so the head revision has no importer-suite arm and its coverage rests on the single focused test; the four head-only failure ids carried as added failures on this run are still present on the recorded delta and I could not in this review reach a measurement of the head itself."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-scoped-pane-reuses-the-events-path-owner.html",
+      "line": "28",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment's suite paragraph says the importers were run 'at both arms ... base 7 failed, 413 passed, 2 errors, head 6 failed, 414 passed, 2 errors' without naming the head revision, while line 27 above it names 30fc083ca as 'the delivered head'; the head arm of that pair is ebce175f4 per logs/after-suite.log, so a reader takes the two 'head's as one revision when they are not."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both gained commits against 3f3796f05; 30fc083ca replaces `watch_dir = own.parent` plus `sorted(watch_dir.glob(f\"*{own.suffix}\"))` with a function-local `from reckon.crew.query import watch_event_paths` and `candidates = watch_event_paths()` in reckon/crew/recovery_watch.py, and b49ec8a81 rewrites only the fragment's summary, its what-paragraph and the head figure.",
+    "done_when": "the \u00a765 done-when names the base/head git grep pair, tests/test_a_pane_counts_its_session_across_projects.py passing, every log ending EXIT=, the importers adding no failure against base as baseline_suite/after_suite, and ruff adding no findings; I read all four logs and re-ran the head grep (EXIT=1), but the importer arm's after_suite is recorded at ebce175f4 rather than the delivered head 30fc083ca, so that clause has no measurement at the revision that lands.",
+    "goal": "the source node's goal is to route the scoped pane's other-project events-file lookup through watch_stream_path, the owner of that path; the gained commits extend the same single-owner discipline to the listing, reckon/crew/recovery_watch.py:2139 taking its candidates from watch_event_paths (reckon/crew/query.py:646) in place of a local glob.",
+    "manifest": "read; it records base 002f85b4f, baseline_suite 7 failed/413 passed/2 errors and after_suite 6 failed/414 passed/2 errors with their log paths, the grep base/head pair and the focused test at head 30fc083ca, ruff 4 findings at both arms with format clean, and a flake attribution for every head-only id.",
+    "write_paths": "the source node declared reckon/crew/recovery_watch.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-scoped-pane-reuses-the-events-path-owner.html and its figures directory; `git diff --stat 3f3796f05..b49ec8a81` lists exactly reckon/crew/recovery_watch.py and the fragment, both inside those paths."
+  },
+  "justifications": {
+    "durability": "the gained diff adds no assertion, and the one test that reaches the changed line \u2014 tests/test_a_pane_counts_its_session_across_projects.py, which writes its events through runs.watch_stream_path at line 66 and asserts ` 8w  2h  3d` at line 100 \u2014 guards the listing's result rather than the deduplication, so restoring the removed `sorted(watch_dir.glob(...))` leaves it green: nothing reddens if this refactor regresses.",
+    "evidence": "logs/grep-events-base.log ends EXIT=0 with the WATCH_EVENTS_SUFFIX line and logs/grep-events-head.log ends EXIT=1 empty at 30fc083ca, and logs/focused-test.log records 1 passed in 5.43s at that same head, but logs/after-suite.log's header names revision ebce175f4 one commit short of the delivered head, so the done-when's importer clause and its four added failure ids are not measured at the revision that lands.",
+    "fit": "the function-local import and its cycle comment match the module's own idiom (reckon/crew/recovery_watch.py already carries 13 function-local imports), the stated cycle is real because reckon/crew/query.py:15 imports recovery and reckon/crew/recovery.py:384 imports this module, and no plan label, ticket reference or forbidden suffix name is introduced.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:2139 now takes the listing from watch_event_paths, whose reckon/crew/query.py:651 body `sorted(root.glob(f\"*{WATCH_EVENT_SUFFIX}\"))` over `(home or crew_home())/\"watch\"` is the same directory the removed local `own.parent` resolved to, so the listing is routed through its owner and no second spelling of the events listing survives in the module.",
+    "reuse": "the gained change removes a duplicate rather than adding one: the inline `sorted(watch_dir.glob(f\"*{own.suffix}\"))` it deletes was the second implementation of the events listing that reckon/crew/query.py:646 already owns as watch_event_paths, so the addition extends the owner and the file now holds no glob of the watch directory at all.",
+    "scope_discipline": "`git diff --stat 3f3796f05..b49ec8a81` lists only reckon/crew/recovery_watch.py (7 changed lines) and the \u00a765 evidence fragment (6 changed lines), both inside the source node's declared write paths, and the fragment adds no figure or evidence prose beyond the landing record it is allowed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to route the scoped pane's other-project events-file lookup through watch_stream_path, the owner of that path; the gained commits extend the same single-owner discipline to the listing, reckon/crew/recovery_watch.py:2139 taking its candidates from watch_event_paths (reckon/crew/query.py:646) in place of a local glob.\nVERDICT done_when: the \u00a765 done-when names the base/head git grep pair, tests/test_a_pane_counts_its_session_across_projects.py passing, every log ending EXIT=, the importers adding no failure against base as baseline_suite/after_suite, and ruff adding no findings; I read all four logs and re-ran the head grep (EXIT=1), but the importer arm's after_suite is recorded at ebce175f4 rather than the delivered head 30fc083ca, so that clause has no measurement at the revision that lands.\nVERDICT write_paths: the source node declared reckon/crew/recovery_watch.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-scoped-pane-reuses-the-events-path-owner.html and its figures directory; `git diff --stat 3f3796f05..b49ec8a81` lists exactly reckon/crew/recovery_watch.py and the fragment, both inside those paths.\nVERDICT manifest: read; it records base 002f85b4f, baseline_suite 7 failed/413 passed/2 errors and after_suite 6 failed/414 passed/2 errors with their log paths, the grep base/head pair and the focused test at head 30fc083ca, ruff 4 findings at both arms with format clean, and a flake attribution for every head-only id.\nVERDICT diff: read both gained commits against 3f3796f05; 30fc083ca replaces `watch_dir = own.parent` plus `sorted(watch_dir.glob(f\"*{own.suffix}\"))` with a function-local `from reckon.crew.query import watch_event_paths` and `candidates = watch_event_paths()` in reckon/crew/recovery_watch.py, and b49ec8a81 rewrites only the fragment's summary, its what-paragraph and the head figure.\nCALL_SITES: reckon/crew_follow_commands.py:3456 (format_watch_transition), reckon/crew_follow_commands.py:3651 (format_watch_transition), reckon/crew/query.py:867 (watch_event_paths, now shared), reckon/crew/recovery.py:439 (re-export of format_watch_transition)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:2139 now takes the listing from watch_event_paths, whose reckon/crew/query.py:651 body `sorted(root.glob(f\"*{WATCH_EVENT_SUFFIX}\"))` over `(home or crew_home())/\"watch\"` is the same directory the removed local `own.parent` resolved to, so the listing is routed through its owner and no second spelling of the events listing survives in the module.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/grep-events-base.log ends EXIT=0 with the WATCH_EVENTS_SUFFIX line and logs/grep-events-head.log ends EXIT=1 empty at 30fc083ca, and logs/focused-test.log records 1 passed in 5.43s at that same head, but logs/after-suite.log's header names revision ebce175f4 one commit short of the delivered head, so the done-when's importer clause and its four added failure ids are not measured at the revision that lands.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 3f3796f05..b49ec8a81` lists only reckon/crew/recovery_watch.py (7 changed lines) and the \u00a765 evidence fragment (6 changed lines), both inside the source node's declared write paths, and the fragment adds no figure or evidence prose beyond the landing record it is allowed.\nSCORE durability: 15\nJUSTIFICATION durability: the gained diff adds no assertion, and the one test that reaches the changed line \u2014 tests/test_a_pane_counts_its_session_across_projects.py, which writes its events through runs.watch_stream_path at line 66 and asserts ` 8w  2h  3d` at line 100 \u2014 guards the listing's result rather than the deduplication, so restoring the removed `sorted(watch_dir.glob(...))` leaves it green: nothing reddens if this refactor regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the function-local import and its cycle comment match the module's own idiom (reckon/crew/recovery_watch.py already carries 13 function-local imports), the stated cycle is real because reckon/crew/query.py:15 imports recovery and reckon/crew/recovery.py:384 imports this module, and no plan label, ticket reference or forbidden suffix name is introduced.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained change removes a duplicate rather than adding one: the inline `sorted(watch_dir.glob(f\"*{own.suffix}\"))` it deletes was the second implementation of the events listing that reckon/crew/query.py:646 already owns as watch_event_paths, so the addition extends the owner and the file now holds no glob of the watch directory at all.\nFINDING reckon/crew/recovery_watch.py:2139 follow-on: the \u00a765 done-when's clause that the importers of reckon/crew/recovery_watch.py add no failure against base is measured only at ebce175f4 \u2014 the after-suite log's own header reads `revision=ebce175f42f751b2bcf4cf02f8e74ccc07a08d39` \u2014 which is one commit before the delivered head 30fc083ca that this line lands at, so the head revision has no importer-suite arm and its coverage rests on the single focused test; the four head-only failure ids carried as added failures on this run are still present on the recorded delta and I could not in this review reach a measurement of the head itself.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-scoped-pane-reuses-the-events-path-owner.html:28 follow-on: the fragment's suite paragraph says the importers were run 'at both arms ... base 7 failed, 413 passed, 2 errors, head 6 failed, 414 passed, 2 errors' without naming the head revision, while line 27 above it names 30fc083ca as 'the delivered head'; the head arm of that pair is ebce175f4 per logs/after-suite.log, so a reader takes the two 'head's as one revision when they are not.\n",
+  "review_run_id": "r-20261019T140006617930-review-of-the-scoped-pane-reuses-the-events-path-owner-b49ec8a81b69",
+  "reviewed_base_sha": "3f3796f05165d096b9e359bcb2736cd67300cca3",
+  "reviewed_head_sha": "b49ec8a81b6911b7fef4b5aef2b6ca038b380efd",
+  "reviewed_run_id": "r-20261019T122313863139-the-scoped-pane-reuses-the-events-path-owner",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T14:20:00+00:00",
+  "total": 107
+}
