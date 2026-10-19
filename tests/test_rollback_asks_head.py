@@ -51,7 +51,9 @@ def test_head_path_survives_unrelated_restore_failure(repository, monkeypatch):
     assert tracked.is_file(), (
         "HEAD carries this path; restore failure cannot authorize unlink"
     )
-    assert tracked.read_text() == "landing content\n"
+    assert (
+        tracked.read_text() == _git(repository, "show", "HEAD:tracked file.txt").stdout
+    )
 
 
 def test_path_absent_from_head_is_dropped(repository, monkeypatch):
