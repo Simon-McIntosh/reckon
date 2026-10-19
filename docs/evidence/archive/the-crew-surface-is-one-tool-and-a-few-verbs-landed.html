@@ -57,6 +57,15 @@
 <p>Both are folded into §9's <code>cso-crew-view-filters-live-runs</code> node. A third finding, that the manifest's changed paths omitted <code>tests/test_skill_contracts.py</code>, is exempted: the coordinator confirmed that one-row change from the diff.</p>
   </section>
 
+  <section id="s7-budget">
+    <h2>§7 — the budget family folds behind crew budget</h2>
+    <p>Run <code>r-20261019T202350268699-cso-budget-family-folds</code>, head <code>84409ad3b</code>.
+<code>budget-lift</code>, <code>budget-lifts</code>, <code>budget-reset</code> and <code>preflight</code> fold into one <code>crew budget</code> verb, taking <code>--lift</code>, <code>--list</code>, <code>--reset</code> and <code>--check</code>. Each retired name is a tombstone that prints its successor with the case's flag and the caller's arguments, then exits 10. <code>--check</code> keeps the pre-flight exit code 3 for a held backend. The skills, the agent files and <code>reckon/crew/refusals.py</code> cite the folded form.</p>
+<p><strong>Test.</strong> <code>tests/test_crew_families_fold.py</code> holds each folded flag to the answer its retired verb gave at the node's base, captured as fixtures before the fold. It refuses any string literal under <code>reckon/</code> that names a tombstoned verb as a crew command.</p>
+<p><strong>Gate.</strong> At <code>84409ad3b</code>, 163 passed and 1 failed. The failure is <code>test_every_module_fits_a_worker_window</code>, the same two offenders as the base arm, so zero failures are added. The negative control, which alters one <code>crew budget</code> flag's answer, failed that flag's case. Logs are in <code>~/.config/reckon/crew/runs/r-20261019T202350268699-cso-budget-family-folds/</code>.</p>
+<p><strong>Repairs.</strong> The first round added 12 failures in <code>tests/test_crew_budget_lift_cli.py</code>, which still invoked the retired names and sat outside the fence. The fence was widened and the callers repointed. The review at <code>0274b1227</code> then found three evidence-record gaps, plus a dropped <code>crew_pick</code> re-export, a tautological assertion and a frozen leaf count; all six were repaired. The review at <code>84409ad3b</code> scored 108/120 with nothing blocking. Its one follow-on, a leaf-count identity, is exempted because the help-state test pins the exact leaf set.</p>
+  </section>
+
 </main>
 </body>
 </html>
