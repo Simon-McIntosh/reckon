@@ -50,6 +50,25 @@ from reckon.crew.obligation_snapshot import FOLLOWER_RELOAD_PROBE_TIMEOUT_SECOND
 IMPORT_PROBE_TIMEOUT = FOLLOWER_RELOAD_PROBE_TIMEOUT_SECONDS
 COMMITTED_TREE_RETENTION = 3
 
+# A real code identity is a git object id: a 40-digit tree, or a 64-digit
+# content digest for a package outside Git. This value collides with neither, so
+# it is the reading the identity computation yields when a read it depends on did
+# not answer at all. A failed read is not an absent catalogue: a process
+# comparing identities must treat this reading as no new identity rather than as
+# a value that moved, so nothing materialises an image from a partial read.
+IDENTITY_UNKNOWN = "unknown"
+
+
+class IdentityReadError(Exception):
+    """A git read the identity depends on did not answer.
+
+    Raised where a read could not be completed -- a timeout, an ``OSError``, or
+    a subprocess that failed to run -- so the computation can tell that apart
+    from a read that answered negatively. A read that ran and answered no, such
+    as a checkout carrying no catalogue, is not a failure and does not raise.
+    """
+
+
 # Pruning keeps the newest images and removes the rest, but two states must
 # never be removed whatever the ranking says.
 #
@@ -214,6 +233,12 @@ def committed_reckon_tree(root: Path) -> str | None:
     it moves no follower or producer and extracts no reload tree. Git names a
     tree by its content, so two commits with the same package read alike
     however many commits sit between them.
+
+    A git that cannot be run, or that answers no -- no such tree, or no
+    repository at all -- returns None, which the caller reads as a checkout
+    outside Git and identifies by its package content stamp instead. This
+    reader does not distinguish a failed read from an absent package; the
+    catalogue reader in ``_committed_catalogue_blob`` is the one that does.
     """
     try:
         result = subprocess.run(
@@ -225,8 +250,12 @@ def committed_reckon_tree(root: Path) -> str | None:
         )
     except (OSError, subprocess.SubprocessError):
         return None
+    if result.returncode != 0:
+        return None
     tree = result.stdout.strip()
-    return tree if result.returncode == 0 and len(tree) == 40 else None
+    if len(tree) != 40:
+        return None
+    return tree
 
 
 def _mktree(root: Path, entries: str) -> str | None:
@@ -250,7 +279,12 @@ def _committed_catalogue_blob(root: Path) -> str | None:
     """The catalogue blob at ``HEAD``, or None when the checkout carries none.
 
     The catalogue is data a checkout may legitimately lack -- a wheel install
-    carries no ``docs/``.
+    carries no ``docs/``. ``ls-tree`` is asked rather than ``rev-parse`` because
+    it answers whether or not the path exists: it exits zero both when the path
+    is present, naming its blob, and when it is absent, naming nothing, and
+    exits non-zero only when it could not answer at all. So empty output is
+    git's own statement that ``HEAD`` carries no such path, and a read that did
+    not complete is raised as unknown rather than counted as absence.
     """
     try:
         result = subprocess.run(
@@ -258,19 +292,34 @@ def _committed_catalogue_blob(root: Path) -> str | None:
                 "git",
                 "-C",
                 str(root),
-                "rev-parse",
-                "--verify",
-                f"HEAD:{CATALOGUE_RELATIVE_PATH}",
+                "ls-tree",
+                "HEAD",
+                "--",
+                CATALOGUE_RELATIVE_PATH,
             ],
             capture_output=True,
             text=True,
             timeout=IMPORT_PROBE_TIMEOUT,
             check=False,
         )
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise IdentityReadError(
+            f"reading {CATALOGUE_RELATIVE_PATH} did not complete: {exc}"
+        ) from exc
+    if result.returncode != 0:
+        raise IdentityReadError(
+            f"reading {CATALOGUE_RELATIVE_PATH} could not be answered"
+        )
+    lines = result.stdout.strip().splitlines()
+    if not lines:
         return None
-    blob = result.stdout.strip()
-    return blob if result.returncode == 0 and len(blob) == 40 else None
+    fields = lines[0].split("\t", 1)[0].split()
+    blob = fields[2] if len(fields) == 3 else ""
+    if len(blob) != 40:
+        raise IdentityReadError(
+            f"reading {CATALOGUE_RELATIVE_PATH} answered no usable blob"
+        )
+    return blob
 
 
 def _reload_tree_with_catalogue(root: Path, base_entries: str, blob: str) -> str | None:
@@ -299,6 +348,18 @@ def _committed_reload_tree(root: Path) -> str | None:
     catalogue edit reloads processes to read the new models and an edit outside
     the three moves nothing. A checkout carrying no catalogue yields the
     package-and-scripts tree unchanged.
+
+    Only the catalogue's own read answers with the failure that earns an
+    unknown identity (see ``_committed_catalogue_blob``): that read runs only
+    after the listing below has answered for the package and scripts, so it
+    describes a checkout that should have answered. Everything else -- a git
+    that cannot be run, a checkout with no repository or no ``HEAD``, or a
+    tree this process cannot compose because it may not write to the object
+    store -- returns None, which the caller reads as a checkout outside Git
+    and identifies by its package content stamp instead. That keeps a
+    checkout this process merely cannot read through git on the identity it
+    had before, rather than reporting it unknown and stopping every reader
+    that would otherwise follow it.
     """
     try:
         entries = subprocess.run(
@@ -308,28 +369,42 @@ def _committed_reload_tree(root: Path) -> str | None:
             timeout=IMPORT_PROBE_TIMEOUT,
             check=False,
         )
-        if entries.returncode != 0:
-            return None
-        names = {line.rsplit("\t", 1)[-1] for line in entries.stdout.splitlines()}
-        if "skills" not in names:
-            return committed_reckon_tree(root)
-        if names != {"reckon", "skills"}:
-            return None
     except (OSError, subprocess.SubprocessError):
+        return None
+    if entries.returncode != 0:
+        return None
+    names = {line.rsplit("\t", 1)[-1] for line in entries.stdout.splitlines()}
+    if "skills" not in names:
+        return committed_reckon_tree(root)
+    if names != {"reckon", "skills"}:
         return None
     blob = _committed_catalogue_blob(root)
     if blob is None:
-        return _mktree(root, entries.stdout)
-    return _reload_tree_with_catalogue(root, entries.stdout, blob)
+        tree = _mktree(root, entries.stdout)
+    else:
+        tree = _reload_tree_with_catalogue(root, entries.stdout, blob)
+    return tree
 
 
 def source_code_identity(package_dir: Path, *, source_root: Path | None = None) -> str:
-    """Identify the package and scripts, or hash a package outside Git."""
+    """Identify the package and scripts, or hash a package outside Git.
+
+    A catalogue read that did not complete, on a checkout whose package and
+    scripts git answered for, yields :data:`IDENTITY_UNKNOWN` rather than a
+    partial identity: a failed read is not an absent catalogue, and a caller
+    comparing identities must treat this reading as no new identity rather
+    than as a moved one. A checkout git cannot answer for at all is not
+    unknown; it is a checkout outside Git, which the computation answers for
+    with None and which is identified by its package content stamp.
+    """
     if source_root is None:
         source_root = Path(
             os.environ.get("RECKON_FOLLOWER_SOURCE_ROOT", str(package_dir.parent))
         )
-    tree = _committed_reload_tree(source_root)
+    try:
+        tree = _committed_reload_tree(source_root)
+    except IdentityReadError:
+        return IDENTITY_UNKNOWN
     if tree is not None:
         return tree
     from reckon.crew.obligation_snapshot import code_stamp
