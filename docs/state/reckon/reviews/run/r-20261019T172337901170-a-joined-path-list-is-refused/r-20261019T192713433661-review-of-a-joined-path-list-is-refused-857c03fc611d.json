@@ -1,0 +1,37 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-19T19:41:57.161Z",
+  "dispatched_at": "2026-10-19T19:29:56Z",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": 2352,
+      "severity": "follow-on",
+      "text": "retry_failures is a list whose entries a guard consumes one at a time (reports.py:1056 counted_retry_failures; reports.py:2352 reads retry_failures as a list and reports.py:2446 tests membership as set(retry_failures) & after_ids), so by the membership rule the widened comment states at reports.py:98-107 it belongs in _GUARDED_LIST_KEYS and does not; probed read-only at the reviewed head, parse_manifest('...\\nretry_failures: tests/a.py::t1; tests/b.py::t2\\n') is ACCEPTED as ['tests/a.py::t1; tests/b.py::t2'], one entry matching neither id, so a joined retry-failure list silently under-counts the retries the stop rule counts. Not a regression against this delta's base (5eb4dd58 refused retry_failures no more than it refused test_logs or commits) and the entry-token predicate would already refuse it if the field were listed, so it does not hold the node."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": 831,
+      "severity": "follow-on",
+      "text": "_COMMIT_IDENTIFIER_TOKEN = re.compile(r\"[0-9a-fA-F]{7,40}\") duplicates the commit-identifier pattern the same module already owns at reports.py:1260 (_RECORDED_REVISION, [0-9a-fA-F]{7,64}, used at reports.py:1301 and reports.py:1973) and beside _HEAD_KEYED_RECORD_NAME/_HEAD_KEYED_SUFFIX at reports.py:1624/2515; the addition neither extends nor wraps that owner, it adds a fifth near-identical hex-identifier regex with an arbitrarily narrower upper bound. The mechanism the constant serves (_looks_like_a_list_entry_token, reports.py:835) does extend the existing owner _refuse_joined_list_separator (reports.py:869), which is why this is scored as a lexical duplication rather than a forked capability, and it is recorded rather than held."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261019T192713433661-review-of-a-joined-path-list-is-refused-857c03fc611d",
+  "reviewed_base_sha": "5eb4dd585980880c2d66daf419803ddcf1ba2066",
+  "reviewed_head_sha": "857c03fc611d7e0a66961718e4e7553c352d46d5",
+  "reviewed_run_id": "r-20261019T172337901170-a-joined-path-list-is-refused",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T19:43:28.518243+00:00",
+  "total": 104
+}
