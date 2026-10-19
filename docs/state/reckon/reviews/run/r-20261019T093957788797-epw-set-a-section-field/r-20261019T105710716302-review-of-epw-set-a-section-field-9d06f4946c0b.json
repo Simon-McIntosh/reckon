@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:1259 (_edit_plan_tool applies the op batch through _store.apply_ops, reaching _apply_set and the landed sections.<id>.<field> dispatch)",
+    "reckon/mcp.py:3193 (_edit_plan_tool is registered as the edit_plan MCP tool whose state path reaches the dispatch)",
+    "reckon/_store.py:1954 (_replace_authored_html, the text-mode caller that now shares _replace_authored_span with the section-field path)"
+  ],
+  "completed_at": "2026-10-19T11:05:58.443Z",
+  "dispatched_at": "2026-10-19T10:57:51Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T093957788797-epw-set-a-section-field/manifest.md",
+      "line": 18,
+      "severity": "follow-on",
+      "text": "after_suite names revision bb771b53d8c8c8badd0bd568523f8211e5a8c3e0 while the log it points to, logs/gate-head.log, has a first line naming 9d06f4946c0bfcf7a902bc7b424ab6a3085ab2de, and the manifest's artifacts line (line 20) quotes that log's summary as '2 failed, 170 passed in 135.17s' where the log now reads '138.64s'. The final refactor commit 9d06f4946 landed at 12:53 after the manifest was last written at 12:51, and its gate re-run at 12:55 overwrote gate-head.log without the record being refreshed, so a reader following after_suite.revision reads an ancestor rather than the reviewed head. The gate evidence itself is sound: gate-head.log ran at the reviewed head and reports the same 2 failed / 170 passed as the manifest claims."
+    },
+    {
+      "file": "docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-set-a-section-field.html",
+      "line": 34,
+      "severity": "follow-on",
+      "text": "The landing fragment states 'The gate ran at head 583bb8417', a revision three commits behind the reviewed head 9d06f4946; the fragment was committed before the final refactor and was not refreshed, so the anchor names a revision the gate log no longer supports."
+    },
+    {
+      "file": "reckon/_store_section_ops.py",
+      "line": 53,
+      "severity": "follow-on",
+      "text": "The queued-effect collection (the _SECTION_FIELD_EDITS ContextVar at line 53 with begin_section_field_edits at 66, _queue_section_field_edit at 71 and consume_section_field_edits at 81) reproduces the mechanism reckon/_store.py already owns at lines 770-817 (_SECTION_INSERTIONS/_EVIDENCE_APPENDS with _begin_write_effects, _queue_section_insertion and _consume_section_insertions): the same (working-dict-identity, list) ContextVar shape, the same 'no active write-effect collection' refusal and the same consume-and-clear body. The module imports from reckon._store already, so the collection could have been added beside the store's two and driven from _begin_write_effects rather than a third copy living in the new module; it duplicates the owner rather than extending it. This is the only duplicated mechanism left after the repair round removed the _section_by_id/_find_by_id duplication."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The landed dispatch is reached from reckon/mcp_edit_plan.py:1259 (_edit_plan_tool calls _store.apply_ops, which calls _apply_set at the sections head) and it is exposed as the edit_plan MCP tool registered in reckon/mcp.py:3193; the shared replacement path _replace_authored_span is reached from the text path at reckon/_store.py:1954. No other production path writes plan section fields.",
+    "diff": "Read commit by commit against base fb8a5315: 634395541 adds reckon/_store_section_ops.py, a 38-line section_field_spans helper in reckon/_plan_html.py, the set dispatch and effect consumption in reckon/_store.py, one SKILL.md op-table row and the test file; c3b7d7605 trims backticks from that SKILL.md row; 62e650f90 adds the landing fragment; a9b1b950a splits _replace_authored_span out of _replace_authored_html and addresses the body by span; 583bb8417 extends the test file to the prose-less body case and the other-section byte checks on all five fields; bb771b53d updates the fragment; 9d06f4946 deletes the module's private _section_by_id and calls the store's _find_by_id directly.",
+    "done_when": "The done_when names tests/test_edit_plan_sets_a_section_field.py plus five companion files run through pytest with zero added failures against the base arm; logs/gate-head.log ran at the reviewed head 9d06f4946 and ends '2 failed, 170 passed' EXIT=1, logs/gate-base.log runs at fb8a5315 and ends '2 failed, 160 passed' EXIT=1, and the two FAILED ids are identical (test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt, test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window), so added=0. One clause of the done_when is not literally satisfiable: it states tests/test_every_module_fits_a_worker_window.py passes, but that test fails at head and at base on modules outside the node's scope, honestly recorded under follow_ons.",
+    "goal": "The node goal is to accept a set whose path is sections.<id>.<field> over title, links, effort_hours, capability and body, with the body written through text mode's replacement path; reckon/_store_section_ops.py:154 apply_section_field_set handles all five fields and reckon/_store.py:1323-1332 routes the queued title/body edits through apply_section_field_edits with replace_span=_replace_authored_span, the same body _replace_authored_html at reckon/_store.py:1486 delegates to and the text path calls at reckon/_store.py:1954.",
+    "manifest": "Read; it reports seven commits through bb771b53d (omitting the final refactor 9d06f4946), the six-file gate as 170 passed / 2 failed at head against 160 / same 2 at base, the negative control that restores the text-match placement and reddens test_set_body_fills_a_section_that_has_no_prose_yet, a second forged-structure control, and the two pre-existing failures under follow_ons. Its after_suite revision (bb771b53) and quoted summary line disagrees with the log it cites (see FINDING at manifest.md:18).",
+    "write_paths": "The declared paths are reckon/_store.py, reckon/_store_section_ops.py, reckon/_plan_html.py, reckon/mcp.py, reckon/mcp_edit_plan.py, skills/reckon-edit/SKILL.md, tests/test_edit_plan_sets_a_section_field.py, docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-set-a-section-field.html and docs/figures/.../epw-set-a-section-field; the diff touches six of them (reckon/_store.py, reckon/_store_section_ops.py, reckon/_plan_html.py, skills/reckon-edit/SKILL.md, tests/test_edit_plan_sets_a_section_field.py and the landing fragment) and no path outside them. mcp.py, mcp_edit_plan.py and the figures dir were in scope and were not needed."
+  },
+  "justifications": {
+    "durability": "tests/test_edit_plan_sets_a_section_field.py:156-297 exercises all five fields, each asserting every other section's authored title and body bytes are unchanged against a snapshot read from the file before the write, so a write that disturbed a neighbour would redden; the two guards are shown to fire by the mutated runs at logs/negative-control.log and logs/negative-control-forged-structure.log, each EXIT=1 on a test id the head arm passes, though the forged-structure control merely changes the refusal message because a section-without-todo guard also refuses the same body.",
+    "evidence": "logs/gate-head.log's first line names the reviewed head 9d06f4946 and its last two lines read '2 failed, 170 passed' and EXIT=1, and logs/gate-base.log runs at fb8a5315 with the same two FAILED ids, so the manifest's zero added failures is read from the logs rather than claimed; the manifest's own after_suite revision and quoted timing are stale against that log, which is the finding above.",
+    "fit": "reckon/_store_section_ops.py follows the store's idiom of a module whose docstring states the mechanism and whose OpError is imported lazily inside a helper at line 57 to avoid the import cycle, and its names (section_field_spans, apply_section_field_set, _replace_authored_span) carry no version, ticket or plan label, though its begin/consume helpers are public where the store's counterparts (_consume_section_insertions) are private.",
+    "goal_fidelity": "reckon/_store_section_ops.py:154 accepts exactly the five fields the goal names, refuses sections.<id>.status naming section_declarations.<id> at line 168, and reckon/_store.py:1331 applies title/body through replace_span=_replace_authored_span, the one body _replace_authored_html at reckon/_store.py:1486 also uses, so 'written through text mode's replacement path' is met.",
+    "reuse": "The module extends the owners it depends on (SectionRecord for validation at line 143, _find_by_id for the section lookup at line 169, _replace_authored_html for the write, plan_headings and section_record_id in _plan_html), and the repair round removed the earlier _section_by_id duplicate of _find_by_id, but the queued-effect collection at reckon/_store_section_ops.py:53-87 still reproduces the mechanism reckon/_store.py:770-817 owns rather than extending it, so one added definition duplicates an owned mechanism.",
+    "scope_discipline": "Every path in the diff (reckon/_store.py, reckon/_store_section_ops.py, reckon/_plan_html.py, skills/reckon-edit/SKILL.md, tests/test_edit_plan_sets_a_section_field.py, the landing fragment) is inside the declared write paths, and no change the goal does not imply rides along."
+  },
+  "project": "reckon",
+  "raw_text": "see item_verdicts, scores and justifications",
+  "review_run_id": "r-20261019T105710716302-review-of-epw-set-a-section-field-9d06f4946c0b",
+  "reviewed_base_sha": "fb8a53156da84ce443bea1fec8b3242d6f22dfdb",
+  "reviewed_head_sha": "9d06f4946c0bfcf7a902bc7b424ab6a3085ab2de",
+  "reviewed_run_id": "r-20261019T093957788797-epw-set-a-section-field",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T11:05:00+00:00"
+}
