@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T05:52:53.641Z",
+  "dispatched_at": "2026-10-19T05:45:52Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:24 (s6 depends-on; s6 write paths line 186, s5 write paths lines 163-165)",
+      "id": "wiring-1",
+      "reason": "the plan's own earlier wiring finding was this same shape (\u00a74 writing a path \u00a72 owns with no edge) and was repaired by adding a dependency, so this collision needs the same edge (s6 depends-on s5, or the followup sequencing \u00a75 after \u00a76).",
+      "text": "\u00a75 and \u00a76 both declare `reckon/mcp.py`, and both edit the shared `_crew` function (\u00a75 adds eight actions to it; \u00a76 moves its inline view dispatch out to `mcp_views.py`), yet the declared graph orders neither before the other \u2014 a roadmap releasing \u00a75 and \u00a76 concurrently launches two exclusive-scope writers at the same region of one file and one change is lost or reworked",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:211 (s7 done-when) / :194-205 (s7 mechanism)",
+      "id": "reasoning-1",
+      "reason": "the node implementing \u00a77 as written cannot pass its own gate, so the measure must be restated as a net (base minus the folded names plus the new parents) or the gate is quietly reworded until it passes and measures nothing.",
+      "text": "the \u00a77 measure reads \"the visible leaf count ... is at most the base count minus the folded names\", but the node folds eleven names away (repair-status, repair-review, budget-lift, budget-lifts, budget-reset, preflight, check-manifest, check-review, resume-ready, redispatch, unwatch) and introduces three new leaves `crew repair`, `crew budget`, `crew check` that do not exist in the command tree today (verified: no `@crew.command(name=\"repair\"|\"budget\"|\"check\")` anywhere under reckon/), so a correct implementation leaves base\u221211+3 = base\u22128 and the assertion demanding \u2264 base\u221211 fails",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "57b027c0310ac9299ae2f12042bb68469356d105a65c8140b6ee46132ea928e6",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 2,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-19T05:53:53.240673+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-19T05:54:01.127501+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:54:01.127501+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:53:53.240673+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-crew-surface-is-one-tool-and-a-few-verbs.v2.json",
+  "review_run_id": "r-20261019T054507391444-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "433838cca7fb7e00e9b11a97fd1dfbf54c93366e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 resolved each cited symbol: `land_merge` (reckon/crew/merge.py:309), `_release_after_promotion` (reckon/crew/promotion_release.py:476), `narrow_claim` (reckon/crew/claims.py:90) and `release_claim` (:128); `reckon/mcp_views.py` exists and `_crew` (reckon/mcp.py:1621) dispatches its views inline as \u00a76 states; `crew list` builds its own rows (reckon/crew_run_commands.py:211); the extensionless hrefs resolve as `<path>.html` \u2014 docs/research/what-coordinators-report-about-the-reckon-surface.html carries `s3`/`s4`, docs/plans/every-plan-write-goes-through-edit-plan.html carries `s3`, and docs/plans/consumers-read-reckon-through-verbs.html exists.",
+    "done_when": "pass \u2014 every implementable section names a measurable done-when with a declared negative control, including \u00a73 (three guards, plus a control that truncates the dry run to its first failure), \u00a74 (marker check refuses a dropped change), \u00a76 (parity control registers a view on the MCP tool only) and \u00a77 (control alters one successor's answer).",
+    "evidence_paths": "pass \u2014 evidence and gate measurements land in the run's report/evidence, and the only temporary trees named (the \u00a73 and \u00a74 test repositories) are test scaffolding, not the evidence store.",
+    "naming": "pass \u2014 the new paths and symbols carry no plan labels, stage names, ticket numbers or version tags (`tombstones.py`, `mcp_views.py`, `test_crew_families_fold.py`, `crew check --manifest`), and no comment encodes changelog prose.",
+    "reasoning": "a finding \u2014 \u00a77's mechanism does not produce its own done-when: it folds eleven names away but also adds three leaves that do not exist today, so the visible count lands at base\u22128, not `base \u2212 (folded names)` as the measure demands.",
+    "single_goal": "pass \u2014 each node names one deliverable closed by one gate; \u00a73's three changes all attach to `crew complete`'s refusal surface and are measured by one test file.",
+    "wiring": "a finding \u2014 \u00a75 and \u00a76 both declare `reckon/mcp.py` in their write paths with no ordering edge between them (\u00a75 depends on s4 and `every-plan-write-goes-through-edit-plan#s3`; \u00a76 depends on s2 and s4)."
+  },
+  "section_digests": {
+    "_document": "26fd28404590af02aa2ebae125b81f4f7629f614fb6c2a72ea68b2d0d1aff496",
+    "s1": "df3ca327aa989333473f3456bef3fcb4304fc54d8ab37eb334a92448b8837aaa",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "046c6ca210de727c41d8414a2ea42383717384c5a44aef78e262b9cf98763118",
+    "s4": "2feb22a10d53f02161e33412c6f491a2718ee9b88ffede06e39b7fc15799f5d1",
+    "s5": "530c6781675c3f9dccecf9f7e556fb74664afde36da3623d64a3b3c65e1e5267",
+    "s6": "9a81b03299612971ddf0ab0fbbfd90bae473369248b753fc1a02640f8a80bdd2",
+    "s7": "1db522110ea29765d73ec0ca94d67077edea7dff6cd3696df369d8d24a77cc27",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T05:53:49.212792+00:00"
+}
