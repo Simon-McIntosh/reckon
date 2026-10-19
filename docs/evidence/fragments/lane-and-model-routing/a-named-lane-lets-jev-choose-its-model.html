@@ -1,0 +1,51 @@
+<article class="landed-report" data-run-id="r-20261019T080612769622-a-named-lane-lets-jev-choose-its-model" data-node="a-named-lane-lets-jev-choose-its-model">
+<h3 id="a-named-lane-lets-jev-choose-its-model-summary">A named lane lets Jev choose its model</h3>
+<p>A dispatch that names a lane declaring more than one model, and names no
+model, now lets the picker choose the model inside that lane. Before this change
+<code>--backend codex</code> always launched the lane's declared default, so a
+lane offering <code>sol</code>, <code>astra</code> and <code>luna</code> could
+only ever run the one model its flight happened to declare first.</p>
+<p id="a-named-lane-lets-jev-choose-its-model-mechanism">One owner carries the
+ask, in <code>reckon/crew/dispatch_picker.py</code>. It narrows the
+configuration to the named lane's backends through a sibling of
+<code>_config_without_lane</code>, built on <code>_lane_backend_names</code>,
+re-asks disabled, and puts that narrowed configuration through
+<code>dispatch_picker_selection</code>, so the picker is offered the lane's own
+models alone. The answer's model is applied through
+<code>flight.select_lane_model</code>, the same call <code>plan_dispatch</code>
+uses for a picker route's model. The lane never changes: a hold, a refusal, a
+fallback, a timeout or a model of another lane launches the lane default exactly
+as before, and the ask runs only where the resolved flight sets
+<code>routing.picker: route</code>, so a <code>--model</code> request,
+<code>--local</code>, a one-model lane and a paired or shadow arm all remain
+unasked.</p>
+<p id="a-named-lane-lets-jev-choose-its-model-callsites">The CLI's named-lane
+path (<code>reckon/crew_dispatch_commands.py</code>) and the review reflex
+(<code>reckon/crew/recovery_review_dispatch.py</code>) both call the owner, so a
+composed review of a run recorded on <code>codex</code> reaches the same ask as
+a coordinator's own <code>--backend codex</code>. The run still records
+<code>route_mode: explicit</code>; its <code>picker_selection</code> records the
+in-lane ask and its <code>model_key</code> records the model launched.</p>
+<table id="a-named-lane-lets-jev-choose-its-model-gate">
+<thead><tr><th>Arm</th><th>Revision</th><th>Log summary</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Head</td><td><code>WORKTREE</code></td><td>1 failed, 63 passed in 840.13s</td><td>EXIT=1</td></tr>
+</tbody></table>
+<p id="a-named-lane-lets-jev-choose-its-model-logs">The gate runs the nine named
+test files under <code>pytest -rA</code>, logged as
+<code>gate.log</code> in the run directory. Its one failure is
+<code>test_every_module_fits_a_worker_window</code>, naming
+<code>reckon/crew/review.py</code>, <code>reckon/ledger.py</code> and
+<code>reckon/serve.py</code> — three files this node does not touch
+(<code>git diff --name-only</code> lists only <code>dispatch_picker.py</code>,
+<code>crew_dispatch_commands.py</code> and
+<code>recovery_review_dispatch.py</code>), so the finding is present at the base
+revision and this change adds no failure against it.</p>
+<p id="a-named-lane-lets-jev-choose-its-model-negative">The negative control
+removes each call alone. With the CLI's call removed, the
+<code>--backend codex</code> case fails on the launched model
+(<code>assert 'gpt-6-sol' == 'gpt-6-luna'</code>); with the reflex's call
+removed, the composed-review case fails the same way on the same assertion, so
+each call site is load-bearing rather than merely present. Both arms are logged
+in <code>negative-control.log</code>.</p>
+</article>
