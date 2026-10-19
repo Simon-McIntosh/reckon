@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed manifest's after_suite gate log (logs/gate-repair.log, revision f4fade14a, 78 passed, EXIT=0, failure_ids []): the head arm holds no failure, so no failure can be added against any base and the count is 0. The reviewed manifest records no baseline_suite for this round, so no baseline id list existed either way; this 0 is a property of the empty head arm, not a base-to-head diff.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/serve.py:2869 Handler.do_GET /_projects/index.json answers the fleet rollup through route_results._served_result",
+    "reckon/serve.py:3182 Handler.do_GET /_checks/<project> reads and starts the checks refresh through route_results._served_result and :3193 route_results._start_refresh",
+    "reckon/serve.py:3241 Handler.do_GET /_discover/<project> answers discovery through route_results._served_result",
+    "reckon/serve.py:2617 Handler._send_project_changes reads route_results._stored_discovery and route_results._fleet_versions",
+    "reckon/serve.py:3903 serve.main calls route_results.set_enabled(True), :3954 set_enabled(False)",
+    "reckon/change_streams.py:374 _FleetChangeWatch._spawn_changes starts route_results._start_refresh on a change",
+    "reckon/route_results.py:336 _refresh_main is the child entry point invoked as python -m reckon.route_results"
+  ],
+  "completed_at": "2026-10-19T18:40:56.967Z",
+  "dispatched_at": "2026-10-19T18:24:32Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-site-answers-fast-and-agrees/the-slow-routes-answer-from-stored-results.html",
+      "line": "9",
+      "severity": "follow-on",
+      "text": "follow-on: the Repair-gate row states '78 passed in 104.77s', but the gate log the fragment cites, logs/gate-repair.log, ends '78 passed in 114.84s (0:01:54)' at revision f4fade14a and the reviewed manifest records 114.84s; the landing record carries a duration that does not reconcile with its own log, so a reader matching the fragment against the log finds a figure neither source supports."
+    },
+    {
+      "file": "docs/evidence/fragments/the-site-answers-fast-and-agrees/the-slow-routes-answer-from-stored-results.html",
+      "line": "9",
+      "severity": "follow-on",
+      "text": "follow-on: the same row closes with '</tr></tr>' - an extra closing tag after the '</td>', so the served fragment emits malformed table markup for the row this change added."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T170311227338-the-slow-routes-answer-from-stored-results/logs/gate-repair.log",
+    "baseline_suite": null
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Seven production call sites reach the moved module: the three route handlers and the change-stream handler in reckon/serve.py (rollup :2869, checks :3182/:3193, discovery :3241, stream :2617), serve.main's opt-in at :3903/:3954, _FleetChangeWatch._spawn_changes at reckon/change_streams.py:374, and the child entry point reckon/route_results.py:336; the node's own test files are excluded.",
+    "diff": "Read commit by commit from 58e739298a3e374517e581dc078281cec4c28ff7 to f4fade14ac87dcbb19ad5b4665df316be0e92641; 7edb11505 extracts the machinery into reckon/route_results.py (353 new lines, serve.py losing the same) and repoints the handlers, 1cde2f2d7 repoints three drift assertions, f4fade14a updates the landing fragment - all inside the extended scope.",
+    "done_when": "The repair-round done-when asks for one answering commit per finding, the manifest naming each by id ('acted fc98e62bd2f: 1cde2f2d7'), and a negative control that reverts the answering commit and confirms the named check fails; the manifest carries the 'acted' line, logs/gate-repair.log records 78 passed EXIT=0 at f4fade14a including tests/test_served_code_drift.py, and logs/negative-control-repair.log records 2 failed with AttributeError at :301/:482 and EXIT=1 when the answering commit's test change is undone.",
+    "goal": "The gained commits are the repair round for this run - answer the drift finding (fc98e62bd2f) and move the stored-result machinery out of reckon/serve.py - and the repair-round brief (resume-1-advice.txt) is the goal in force for them: 1cde2f2d7 points tests/test_served_code_drift.py:301/:307/:482 at reckon.route_results._REFRESH_ENABLED, and 7edb11505 moves the store, child registry, spawn, waiter, publish and child entry into reckon/route_results.py.",
+    "manifest": "Read; it records status complete, the three gained commits beside the two earlier ones, the 78-passed EXIT=0 gate at logs/gate-repair.log, the drift repair's negative control at logs/negative-control-repair.log, the module-width measure and the 'acted fc98e62bd2f: 1cde2f2d7' answer; its after_suite arm is readable with failure_ids [] and no baseline_suite is declared.",
+    "write_paths": "The repair round extended the scope to tests/test_served_code_drift.py and reckon/route_results.py, so the fourteen declared paths of the manifest cover every changed path; git diff 58e739298a3e374517e581dc078281cec4c28ff7..f4fade14ac87dcbb19ad5b4665df316be0e92641 changes only reckon/serve.py, reckon/change_streams.py, reckon/route_results.py, tests/test_document_compliance.py, tests/test_served_code_drift.py, tests/test_the_slow_routes_answer_from_stored_results.py and the always-permitted landing fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_served_code_drift.py:301/:307/:482 now assert reckon.route_results._REFRESH_ENABLED, and logs/negative-control-repair.log shows those two tests reddening with AttributeError when the answering commit is reverted, so the repair is guarded rather than merely green.",
+    "evidence": "logs/gate-repair.log ends '78 passed in 114.84s' EXIT=0 at f4fade14a and logs/negative-control-repair.log ends EXIT=1 with 2 failed AttributeError at tests/test_served_code_drift.py:301 and :482, but the landing fragment at line 9 records the same gate as 104.77s, a figure its own cited log contradicts.",
+    "fit": "reckon/route_results.py:59-336 follows the module-level-privates idiom of reckon/serve.py it was split from, its child entry encodes the key as 'kind:project' as change_streams.py:374 passes it, and no added symbol carries a plan, phase or ticket label.",
+    "goal_fidelity": "reckon/route_results.py:52 set_enabled, :220 _start_refresh, :267 _served_result and :336 _refresh_main carry the moved machinery, and the handlers at reckon/serve.py:2869/:3182/:3241 call into it, so the repair-round goal of answering the finding and splitting the module is what landed.",
+    "reuse": "reckon/route_results.py:59 reuses metadata_index._persisted_cache_path and :90 reuses reckon._store.write_json_atomically, both owners the pre-split code already used, and the change moves the machinery rather than forking a second implementation of it.",
+    "scope_discipline": "git diff 58e739298a3e374517e581dc078281cec4c28ff7..f4fade14ac87dcbb19ad5b4665df316be0e92641 changes only paths the repair round granted (resume-1-advice.txt line 15) plus the always-permitted fragment, and no file outside that set appears."
+  },
+  "notes": "The gained commits are a repair round, so the goal/done_when judged are the repair-round brief (resume-1-advice.txt) rather than the original node goal, which 26e86459 already met and the prior review (58e739298) scored. No added assertion compares a value against the same variable the test passed in: route_results._REFRESH_ENABLED is a module global serve.main sets, and the drift tests read it independently, as the negative control confirms by reddening on revert. The module-width claim was spot-checked: reckon.crew.routing._tokens_for_bytes reads reckon/serve.py at 44,441 and reckon/route_results.py at 3,371 against the ~44,500 target.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The gained commits are the repair round for this run - answer the drift finding (fc98e62bd2f) and move the stored-result machinery out of reckon/serve.py - and the repair-round brief (resume-1-advice.txt) is the goal in force for them: 1cde2f2d7 points tests/test_served_code_drift.py:301/:307/:482 at reckon.route_results._REFRESH_ENABLED, and 7edb11505 moves the store, child registry, spawn, waiter, publish and child entry into reckon/route_results.py.\nVERDICT done_when: The repair-round done-when asks for one answering commit per finding, the manifest naming each by id ('acted fc98e62bd2f: 1cde2f2d7'), and a negative control that reverts the answering commit and confirms the named check fails; the manifest carries the answering line, logs/gate-repair.log records 78 passed EXIT=0 at f4fade14a including tests/test_served_code_drift.py, and logs/negative-control-repair.log records 2 failed with AttributeError at :301/:482 and EXIT=1 when the answering commit's test change is undone.\nVERDICT write_paths: The repair round extended the scope to tests/test_served_code_drift.py and reckon/route_results.py, so the fourteen declared paths of the manifest cover every changed path; git diff 58e739298a3e374517e581dc078281cec4c28ff7..f4fade14ac87dcbb19ad5b4665df316be0e92641 changes only reckon/serve.py, reckon/change_streams.py, reckon/route_results.py, tests/test_document_compliance.py, tests/test_served_code_drift.py, tests/test_the_slow_routes_answer_from_stored_results.py and the always-permitted landing fragment.\nVERDICT manifest: Read; it records status complete, the three gained commits beside the two earlier ones, the 78-passed EXIT=0 gate at logs/gate-repair.log, the drift repair's negative control at logs/negative-control-repair.log, the module-width measure and the 'acted fc98e62bd2f: 1cde2f2d7' answer; its after_suite arm is readable with failure_ids [] and no baseline_suite is declared.\nVERDICT diff: Read commit by commit from 58e739298a3e374517e581dc078281cec4c28ff7 to f4fade14ac87dcbb19ad5b4665df316be0e92641; 7edb11505 extracts the machinery into reckon/route_results.py (353 new lines, serve.py losing the same) and repoints the handlers, 1cde2f2d7 repoints three drift assertions, f4fade14a updates the landing fragment - all inside the extended scope.\nCALL_SITES: reckon/serve.py:2869 Handler.do_GET /_projects/index.json, reckon/serve.py:3182 Handler.do_GET /_checks/<project>, reckon/serve.py:3241 Handler.do_GET /_discover/<project>, reckon/serve.py:2617 Handler._send_project_changes, reckon/serve.py:3903 serve.main set_enabled, reckon/change_streams.py:374 _FleetChangeWatch._spawn_changes, reckon/route_results.py:336 _refresh_main\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/route_results.py:52 set_enabled, :220 _start_refresh, :267 _served_result and :336 _refresh_main carry the moved machinery, and the handlers at reckon/serve.py:2869/:3182/:3241 call into it, so the repair-round goal of answering the finding and splitting the module is what landed.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-repair.log ends '78 passed in 114.84s' EXIT=0 at f4fade14a and logs/negative-control-repair.log ends EXIT=1 with 2 failed AttributeError at tests/test_served_code_drift.py:301 and :482, but the landing fragment at line 9 records the same gate as 104.77s, a figure its own cited log contradicts.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 58e739298a3e374517e581dc078281cec4c28ff7..f4fade14ac87dcbb19ad5b4665df316be0e92641 changes only paths the repair round granted (resume-1-advice.txt line 15) plus the always-permitted fragment, and no file outside that set appears.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_served_code_drift.py:301/:307/:482 now assert reckon.route_results._REFRESH_ENABLED, and logs/negative-control-repair.log shows those two tests reddening with AttributeError when the answering commit is reverted, so the repair is guarded rather than merely green.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/route_results.py:59-336 follows the module-level-privates idiom of reckon/serve.py it was split from, its child entry encodes the key as 'kind:project' as change_streams.py:374 passes it, and no added symbol carries a plan, phase or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/route_results.py:59 reuses metadata_index._persisted_cache_path and :90 reuses reckon._store.write_json_atomically, both owners the pre-split code already used, and the change moves the machinery rather than forking a second implementation of it.\nFINDING docs/evidence/fragments/the-site-answers-fast-and-agrees/the-slow-routes-answer-from-stored-results.html:9 follow-on: the Repair-gate row states '78 passed in 104.77s', but the gate log it cites, logs/gate-repair.log, ends '78 passed in 114.84s' at f4fade14a and the manifest records 114.84s, so the landing record carries a figure that does not reconcile with its own log.\nFINDING docs/evidence/fragments/the-site-answers-fast-and-agrees/the-slow-routes-answer-from-stored-results.html:9 follow-on: the same row closes with '</tr></tr>', an extra closing tag, so the served fragment emits malformed table markup for the row this change added.\n",
+  "review_run_id": "r-20261019T182254327699-review-of-the-slow-routes-answer-from-stored-results-f4fade14ac87",
+  "reviewed_base_sha": "58e739298a3e374517e581dc078281cec4c28ff7",
+  "reviewed_head_sha": "f4fade14ac87dcbb19ad5b4665df316be0e92641",
+  "reviewed_run_id": "r-20261019T170311227338-the-slow-routes-answer-from-stored-results",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T18:36:00.000000+00:00",
+  "total": 110
+}
