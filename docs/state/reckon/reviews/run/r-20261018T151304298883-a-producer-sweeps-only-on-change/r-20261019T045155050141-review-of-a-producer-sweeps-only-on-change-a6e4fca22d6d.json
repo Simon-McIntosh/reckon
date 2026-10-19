@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "test_quiet_cycles_list_nothing_and_spawn_no_git counts real calls: _install_list_counter wraps recovery_watch.list_live and _install_spawn_counter counts git argv seen by subprocess.run. Reinstating the fixed-beat sweep advances the listing counter at every boundary, so `marks['list'][1] == marks['list'][0]` and `marks['spawn'][1] == marks['spawn'][0]` redden. Neither side is a value the test handed to the code; the counters observe the code's own calls, so the assertion is independent of the values under test.",
+      "lines": "tests/test_a_producer_sweeps_only_on_change.py:196-204"
+    },
+    {
+      "failure_condition": "test_a_touched_pointer_sweeps_exactly_once asserts `marks[1] - marks[0] == 1`, marks being list_live call counts read at boundaries while os.utime moves a pointer's mtime. This is the assertion the declared negative control reddens (negative-control.log, EXIT=1, `assert (1 - 1) == 1`), so its failure condition is demonstrated: a stamp that ignores mtime leaves the touch invisible and the delta 0.",
+      "lines": "tests/test_a_producer_sweeps_only_on_change.py:215-218"
+    },
+    {
+      "failure_condition": "test_a_death_is_delivered_within_one_beat_with_no_file_change flips the fixture's monkeypatched liveness flag (tests/test_a_producer_sweeps_only_on_change.py:120-127) and asserts the yielded transitions name every live run. If _quiet_beat_snapshots dropped its _fresh_liveness re-probe and served the cached snapshot, no transition would be yielded and the assertion would redden.",
+      "lines": "tests/test_a_producer_sweeps_only_on_change.py:221-233"
+    },
+    {
+      "failure_condition": "No assertion in the added file can fail on the omission named in the first finding: nothing drives a change confined to a run's exit/worker/attempt record, a review-store candidate, a worktree head or the budget-lift document while the pointer, stream and manifest hold still. The durability score rests on the three assertions above, which guard the gate's firing and the liveness path, not the completeness of the fingerprint the plan \u00a79 requires.",
+      "lines": "tests/test_a_producer_sweeps_only_on_change.py (whole file)"
+    }
+  ],
+  "completed_at": "2026-10-19T05:04:27.339Z",
+  "dispatched_at": "2026-10-19T04:53:04Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "2303",
+      "severity": "blocking",
+      "text": "blocking: the quiet-beat path serves a cached snapshot without re-deriving the input key, and the change token omits the inputs that key covers. _quiet_beat_snapshots (recovery_watch.py:2303) re-takes only _fresh_liveness and otherwise returns _refresh_snapshot(stored, ...), never recomputing _snapshot_reuse_key (recovery_watch.py:980). That key is built from _classification_inputs (reckon/crew/recovery_memo.py:390), whose set includes the run directory's exit/worker/attempt records (_CLASSIFICATION_RUN_RECORDS), the review store's candidates (_review_input_identities) and the run's worktree git head. _crew_home_change_token (recovery_watch.py:2232) stamps only live/, runs/, each live pointer, each live run's newest stream and its manifest, so a change confined to a run-dir record, a review-store candidate or the worktree head -- with no pointer, stream or manifest movement -- leaves the stored snapshot in place and the transition unreported. The plan \u00a79 done-when requires that every input a gated sweep reads be covered by the change signal, naming the classification inputs behind a reused snapshot; the change does not deliver it. The base revision classified on every beat, so this is a correctness regression on exactly the quiet fleet the gate targets. It has to be repaired (extend the token to the reuse-key inputs, or recompute the key on the quiet path) before the node can land."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "2543",
+      "severity": "blocking",
+      "text": "blocking: _sweep_lift_rows now sits inside `if sweep:` (recovery_watch.py:2543) while the document it reads is not in the fingerprint. The fold reads <config-home>/budget-lifts.json via reckon/crew/budget_lift.py:142 lifts_path -> lift_watch.sweep -> budget_lift.read_document (budget_lift.py:216); _crew_home_change_token (recovery_watch.py:2232) stamps only live/, runs/, each live pointer, each live run's newest stream and its manifest, so granting or ending a lift moves no stamped file and the fold waits for an unrelated pointer, stream, manifest or directory-mtime movement. The base revision folded the document on every poll. The plan \u00a79 done-when explicitly names the budget-lift document as an input that must be covered by the change signal; it is not, so the fold's delay is unbounded on a fleet whose only run is idle. Repair by including the document (or the config home) in the token."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "2218",
+      "severity": "follow-on",
+      "text": "follow-on: _stat_stamp re-implements a capability the repository already owns. reckon/capabilities.py:1292 defines the public file_stamp(path) -> list[int] | None, documented as a cheap [mtime_ns, size] stamp of one path or None when absent -- the same two fields this function returns, differing only in the container (list vs tuple) and the absent sentinel (None vs the string \"absent\"). file_stamp is already the idiom inside reckon/crew (reckon/crew/routing.py:3189, :3478), so recovery_watch.py could import and call it rather than fork it. This is the basis for the reuse score."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "recovery_watch.py:watch_ticker (2247) is the changed function. It is reached in production via recovery_watch.py:watch_follow:2506 (2522 yields from watch_ticker), re-exported at reckon/crew/recovery.py:445, called from reckon/crew/crew_follow_commands.py:3620; the producer process is launched as `crew watch --project <p>` by reckon/crew/dispatch_watch.py:_watch_producer_argv:312, reached through reckon/crew/dispatch_watch.py:_ensure_watch_producer:432 and reckon/crew/dispatch.py:289, and reckon/crew/watch_unit.py:397.",
+    "call_sites_line": "CALL_SITES: reckon/crew/recovery_watch.py:watch_follow:2506, reckon/crew/recovery.py:445, reckon/crew/crew_follow_commands.py:3620, reckon/crew/dispatch_watch.py:_watch_producer_argv:312, reckon/crew/dispatch.py:_ensure_watch_producer (dispatch.py:289)",
+    "diff": "Read commit by commit against 284c31716. 2f129ebc9 rewrites the watch_ticker loop (recovery_watch.py:2522-2580) to gate the listing, the walk and the git sweeps on a stat-only home fingerprint and adds _stat_stamp, _crew_home_change_token, _run_streams and _quiet_beat_snapshots plus the new test file. d84d1d601 adds the landing fragment. a6e4fca22 -- the only commit on top of the prior reviewed head d84d1d601 -- edits only the fragment, replacing the ten-pointer measurement with the fleet-scale one. Three files total, all inside the declared scope.",
+    "done_when": "The source prompt.txt done_when has three arms. Arms one and three (quiet cycles take no listing and spawn no git, then a touched pointer pulls exactly one sweep; a death with no file moved still transitions within a beat) are asserted by tests/test_a_producer_sweeps_only_on_change.py:196, :215 and :221. Arm two (the strace) was run separately and is recorded in fleet-syscall-gate.log: openat 22 per cycle against the base's 418-471 (4.7 %, passes the tenth), stat 99 against 297-334 (29.7 %, does NOT pass the tenth the done_when states). The worker records this honestly and leaves the work unpromoted; the plan section 9 was afterwards edited (commit 05c9dc8db) to set the stat target at half, which 99 meets. The plan \u00a79 done-when also requires every input a gated sweep reads to be covered by the change signal with one test per input; the gate does not assert that, and the change does not provide it (see findings).",
+    "goal": "The source prompt.txt goal (NODE line) asks that the crew watch producer run its live listing, run-directory walk and git sweeps only when the crew home changes, keeping only the per-run liveness probe on the fixed beat. Landed: recovery_watch.py:2530 computes a stat-only token every poll (recovery_watch.py:_crew_home_change_token:2232) and the listing, handover read and git sweeps run only under `if sweep:` at recovery_watch.py:2532, while the quiet beat re-takes only _fresh_liveness per run via recovery_watch.py:_quiet_beat_snapshots:2303. The gate also took the lift fold (recovery_watch.py:2543) and the orphan sweep, which the goal did not name.",
+    "manifest": "The source manifest.md records status in-progress with a checkpoint, the commits 2f129ebc9, d84d1d601 and a6e4fca22, the 3-test node gate (node-gate.log, 3 passed, EXIT=0), the declared negative control (negative-control.log, EXIT=1, one failing id), the fleet-syscall-gate.log per-cycle figures, a failure_attribution for the adjacent cost case, and a blocker naming the stat shortfall. baseline_suite and after_suite are prose naming the ten-run parity command, its revisions and its red/red counts rather than JSON blobs.",
+    "write_paths": "The source prompt.txt declares reckon/crew/recovery_watch.py, reckon/crew/runs.py, tests/test_a_producer_sweeps_only_on_change.py, the evidence fragment docs/evidence/fragments/the-fleet-node-stays-in-service/a-producer-sweeps-only-on-change.html and the figures dir. git diff --stat 284c31716..a6e4fca22d6d names exactly three files -- recovery_watch.py, the test file and the fragment -- and nothing else; runs.py and the figures dir were declared but not touched. All changed paths are inside the declared set."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T045155050141-review-of-a-producer-sweeps-only-on-change-a6e4fca22d6d",
+  "reviewed_base_sha": "284c31716ff9af26a17c74eb907bb2448b18b29c",
+  "reviewed_head_sha": "a6e4fca22d6d38d93253df1e2b574fcf5fc2f172",
+  "reviewed_run_id": "r-20261018T151304298883-a-producer-sweeps-only-on-change",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 14,
+    "reuse": 5,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T05:04:28.193958+00:00"
+}
