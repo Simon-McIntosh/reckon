@@ -344,12 +344,16 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
     try { localStorage.setItem(hideStorage, hideDone ? "0" : "1"); } catch {}
   }, [hideDone, hideStorage]);
 
+  // The window is for the lists that carry a thumbnail per row: those are the
+  // ones whose row count runs into the thousands and whose images cost the most
+  // to mount. A document list keeps rendering in full.
+  const windowsRows = showsImages;
   const feedRef = React.useRef(null);
   const [rowHeights, setRowHeights] = React.useState({});
   const [feedScroll, setFeedScroll] = React.useState({ top: 0, height: 0 });
   React.useEffect(() => {
     const feed = feedRef.current;
-    if (!feed) return undefined;
+    if (!feed || !windowsRows) return undefined;
     const sync = () => setFeedScroll(current => (
       current.top === feed.scrollTop && current.height === feed.clientHeight
         ? current
@@ -366,12 +370,12 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
       feed.removeEventListener("scroll", sync);
       if (observer) observer.disconnect();
     };
-  }, []);
+  }, [windowsRows]);
   // Cache each mounted row's height for the offset model. Guarding on a real
   // change stops the measure-and-render loop once the heights settle.
   React.useLayoutEffect(() => {
     const feed = feedRef.current;
-    if (!feed) return;
+    if (!feed || !windowsRows) return;
     let changed = false;
     const measured = {};
     feed.querySelectorAll(":scope > .r-artifact-row").forEach(row => {
@@ -429,12 +433,13 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
       .map(key => byKey.get(key));
   }, [inventory, kind, sortBy, sortDir, status, hideDone, pendingKeys, frozenOrder, viewKey]);
   const rowWindow = React.useMemo(() => {
+    if (!windowsRows) return { start: 0, end: rows.length - 1, top: 0, bottom: 0 };
     const measured = Object.values(rowHeights);
     const typical = measured.length
       ? measured.reduce((sum, value) => sum + value, 0) / measured.length
       : ARTIFACT_ROW_ESTIMATE;
     return artifactRowWindow(rows, rowHeights, feedScroll.top, feedScroll.height, ARTIFACT_ROW_OVERSCAN, typical);
-  }, [rows, rowHeights, feedScroll]);
+  }, [windowsRows, rows, rowHeights, feedScroll]);
   const windowRows = rows.slice(rowWindow.start, rowWindow.end + 1);
   const revealPending = React.useCallback(() => {
     let revealed;
