@@ -23,6 +23,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from reckon.mcp import SERVED_BY_CODE_STAMP
+
 SOURCE_PACKAGE = Path(__file__).resolve().parents[1] / "reckon"
 
 _DRIVER = r'''
@@ -227,13 +229,15 @@ def test_a_dirty_moved_checkout_keeps_the_original_failure(tmp_path: Path) -> No
     assert "Extra inputs are not permitted" in second.get("detail", "")
 
 
-def test_a_clean_moved_checkout_answers_stale_server_code(tmp_path: Path) -> None:
-    """A committed, clean, importable checkout is trusted, so the refusal fires.
+def test_a_clean_moved_checkout_answers_on_the_current_code(tmp_path: Path) -> None:
+    """A committed, clean, importable checkout is trusted, so its answer is served.
 
     Committing the move leaves every byte where it was and the tree clean
     against ``HEAD``; the code stamp still differs from the one the server
-    imported. The tree can be loaded, so the move is the stale image's and the
-    reconnect is the answer.
+    imported. The tree can be loaded, so the call is re-run on it and its own
+    answer returned. The current code fails this call too, and that failure is
+    the caller's real answer — a reconnect would only deliver it a turn later —
+    so it stands, marked with the stamp of the code that served it.
     """
     root = _committed_checkout(tmp_path)
     payload = _run_server(tmp_path, root, "clean")
@@ -241,11 +245,14 @@ def test_a_clean_moved_checkout_answers_stale_server_code(tmp_path: Path) -> Non
 
     first, second = payload["first"], payload["second"]
     assert first.get("ok") is True, f"a fresh server must answer normally: {first!r}"
-    assert second.get("error") == "stale_server_code", (
-        f"a clean moved checkout must answer with the remedy, got {second!r}"
+    assert second.get("error") != "stale_server_code", (
+        f"a clean moved checkout answers on its current code, got {second!r}"
     )
-    assert "Extra inputs are not permitted" in second["original_error"]
-    assert "reconnect" in second["detail"].lower()
+    assert second.get("error") == "crew_error"
+    assert "Extra inputs are not permitted" in second.get("detail", "")
+    assert second.get(SERVED_BY_CODE_STAMP), (
+        f"an answer the current code served names the stamp that served it: {second!r}"
+    )
 
 
 def test_the_source_holds_one_import_probe() -> None:

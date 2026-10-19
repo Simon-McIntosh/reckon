@@ -1,0 +1,63 @@
+<article class="r-fragment" data-node="epw-server-serves-current-code">
+  <h2 id="epw-server-serves-current-code-heading">The MCP server answers a failed call on the checkout's current code</h2>
+
+  <section data-reckon="section" data-id="epw-server-serves-current-code-mechanism">
+    <h3 id="epw-server-serves-current-code-mechanism-heading">The stdio mechanism, and why re-exec cannot carry an initialised session</h3>
+    <p>The HTTP server owns its process: <code>_CodeReload</code> drains its handlers and calls
+      <code>os.execv</code>, and a re-executed image is simply a new server, because every caller
+      reconnects to a listener. A stdio MCP server has no listener to reconnect to. Its client holds
+      the session it opened with <code>initialize</code>, and a replacement process has received no
+      <code>initialize</code> — the front the client is talking to would have to be discarded for the
+      connection to survive, which is the reconnect the section exists to remove.</p>
+    <p>So the front stays and the <em>current code runs behind it</em>. When a call fails, the guard
+      asks the moved-checkout owner (<code>reckon.served_code.moved_checkout</code>) whether the code
+      has moved and whether the moved tree is trusted, and if both hold it runs the same call against
+      the checkout in a child interpreter (<code>_CURRENT_CODE_RUNNER</code>) whose answer stands in
+      for the stale image's. That child is disposable and holds no session, which is exactly why the
+      mechanism can be restarted per call where the server cannot.</p>
+    <p>Three verdicts follow, and each is a case of the gate:</p>
+    <ul>
+      <li>The current code answers — that answer is returned, and the session serves its later calls
+        on the current code (<code>_SERVE_ON_CURRENT_CODE</code>) rather than falling back to the
+        image.</li>
+      <li>The current code also fails the call — its own failure is returned, carrying the stamp of the current code and the error text under it. A reconnect cannot help when the current code gives the same failure, and returning "reconnect" there keeps the stale image's failure masked, which is half of what this section exists to fix. — <strong>delivered, unverified at the fence</strong>: see the state below.</li>
+      <li>The tool's parameter list changed on disk — always refused, naming that tool, because the
+        client holds the schema it connected with and no in-process answer can stand for it.</li>
+    </ul>
+  </section>
+
+  <section data-reckon="section" data-id="epw-server-serves-current-code-factoring">
+    <h3 id="epw-server-serves-current-code-factoring-heading">One owner for the moved-checkout decision</h3>
+    <p><code>reckon/served_code.py</code> now owns <code>MovedCheckout</code>, <code>code_fingerprints</code>,
+      <code>served_code_moved</code> (the HTTP server's half, comparing the executed-code report's
+      fingerprints) and <code>moved_checkout</code> (the MCP server's half, comparing the checkout's
+      code identity and running the shared trust check). <code>reckon/serve.py</code> calls
+      <code>served_code_moved</code> and no longer carries its own fingerprinting; <code>reckon/mcp.py</code>
+      calls <code>moved_checkout</code>. Neither server carries a check of its own.</p>
+  </section>
+
+  <section data-reckon="section" data-id="epw-server-serves-current-code-state">
+    <h3 id="epw-server-serves-current-code-state-heading">State at hand-off</h3>
+    <p>All six subprocess cases of the gate pass, and the case that was red for two attempts is the one
+      that exposed the deepest defect. Its call is <code>crew</code> rather than <code>edit_plan</code>,
+      and its <em>child</em> — a fresh import of the checkout, guard included — composed a refusal of
+      its own and handed that back as the answer the current code gave. The guard read a refusal where
+      an answer should have been and returned it, so the caller was told to reconnect for a call the
+      current code had answered. The child now runs the tool rather than a second copy of the decision,
+      and an answer that is the refusal itself is read as no answer at all, so this decision is made
+      once, in the server the client is talking to.</p>
+    <p>Three defects were found on the way, and the first two were in fixtures rather than the
+      mechanism: the simulated checkout-ahead wrapped the registered tool, which made the tool manager
+      classify an async tool as sync and never await the call; a tool that <em>raises</em> left the
+      child with no answer to print, so its exception is now the answer it returns; and the child's own
+      guard was the third.</p>
+    <p>The declared negative control was run at the node head: with the current-code re-run disabled so
+      the guard falls back, <code>test_a_call_on_a_moved_checkout_answers_on_the_current_code</code> fails
+      on <code>stale_server_code</code> — the log records it (<code>negative-control.log</code>), and the
+      mutation was reverted without being committed. The acceptance is therefore a check that can fail,
+      not a case that passes for want of anything to test. Two failures remain in the wider gate file set,
+      <code>test_every_module_fits_a_worker_window</code> and
+      <code>test_structural_invariants::test_only_the_shared_parser_calls_fromisoformat</code>; both fail at
+      the dispatch base as well, so neither is this node's, and neither is triaged here.</p>
+  </section>
+</article>
