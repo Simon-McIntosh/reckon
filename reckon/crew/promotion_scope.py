@@ -36,6 +36,7 @@ from reckon.crew.review import review_path
 from reckon.crew.routing import (
     _boundary_tree_roots,
     _git,
+    _git_blob,
     _repository_tree_snapshot,
     _shadow_patch_retained,
     _shadow_worktree_records,
@@ -1679,11 +1680,18 @@ def _restore_landing_writes(
     are restored from HEAD; a path absent from HEAD (created by this
     promotion) is dropped from the index and, once its entry is gone, from the
     working tree. Recovery is best-effort because the refusal that triggers it
-    (a stuck index or other git failure) can itself block these git calls, and
-    a tracked path whose restore is refused keeps its working-tree write — the
-    retry commits that write, so taking it back would discard the recorded
-    comment. What a refusal does not leave behind is a staged entry the run's
-    own commit never covered.
+    (a stuck index or other git failure) can itself block these git calls.
+
+    A refused whole-path restore is an index-write failure, and the same lock
+    that refused the landing is usually what refused it, so the fallback
+    settles each path without the index: a path HEAD carries is rewritten in
+    the working tree from HEAD's blob, read through plumbing that takes no
+    index lock, and a path HEAD never carried is dropped from the index and
+    unlinked once the entry is gone. A path the fallback cannot restore — the
+    index already stages a change at it, or git cannot read its blob or write
+    its file — keeps its landing write and is named in the refusal, so a
+    caller sees which file to restore before re-promoting. What a refusal
+    never leaves behind is a staged entry the run's own commit did not cover.
 
     The result is a per-path report keyed by the path as written: True for a
     path that no longer carries the landing write — restored from HEAD, or
@@ -1750,9 +1758,9 @@ def _restore_tracked_landing_write(checkout: Path, path: Path, relative: str) ->
 
     The whole-path restore writes the index, so the lock another process holds
     has refused it; the same content is recovered here by reading HEAD's blob
-    with plumbing that takes no index lock and writing it over the working-tree
-    file. The path then carries its committed content again, with no staged
-    entry this run never committed.
+    with ``git show``, which reads the object store and takes no index lock,
+    and writing it over the working-tree file. The path then carries its
+    committed content again, with no staged entry this run never committed.
 
     A path the index already carries a change for is reported unrestored rather
     than half-restored: clearing that entry needs the lock the fallback is
@@ -1763,7 +1771,7 @@ def _restore_tracked_landing_write(checkout: Path, path: Path, relative: str) ->
     """
     if _path_has_a_staged_change(checkout, path):
         return False
-    blob = _head_blob_bytes(checkout, relative)
+    blob = _git_blob(checkout, "HEAD", relative)
     if blob is None:
         return False
     try:
@@ -1771,26 +1779,6 @@ def _restore_tracked_landing_write(checkout: Path, path: Path, relative: str) ->
     except OSError:
         return False
     return True
-
-
-def _head_blob_bytes(checkout: Path, relative: str) -> bytes | None:
-    """HEAD's blob content for ``relative``, read without the index lock.
-
-    ``git cat-file blob`` is plumbing that reads the object store alone, so it
-    answers while another process holds ``.git/index.lock`` — the lock the
-    whole-path restore needs and the reason this fallback exists. ``None`` when
-    git cannot read the blob, which reports the path unrestored rather than
-    claiming a restore that did not happen.
-    """
-    result = subprocess.run(
-        ["git", "cat-file", "blob", f"HEAD:{relative}"],
-        cwd=str(checkout),
-        capture_output=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        return None
-    return result.stdout
 
 
 def _path_has_a_staged_change(checkout: Path, path: Path) -> bool:

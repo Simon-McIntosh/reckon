@@ -97,9 +97,7 @@ def test_an_unreadable_blob_names_the_plan_file_as_unrestored(repository, monkey
     """
     root, plan = repository
     plan.write_text("landing narrative the refusal left behind\n", encoding="utf-8")
-    monkeypatch.setattr(
-        promotion_scope, "_head_blob_bytes", lambda *args, **kwargs: None
-    )
+    monkeypatch.setattr(promotion_scope, "_git_blob", lambda *args, **kwargs: None)
     lock = _hold_index_lock(root)
     try:
         with pytest.raises(promotion.CrewError) as caught:
