@@ -1252,8 +1252,11 @@ def _write_state_locked(
 
     # Consume against the exact op-working object before a commutative comment
     # merge can replace ``data`` with a fresh mapping.
+    from reckon import _store_section_ops
+
     section_insertions = _consume_section_insertions(data)
     evidence_appends = _consume_evidence_appends(data)
+    section_field_edits = _store_section_ops.consume_section_field_edits(data)
 
     if expected_version != cur_version:
         merged_comments = _comment_append_onto_current(data, cur_state)
@@ -1317,6 +1320,13 @@ def _write_state_locked(
             )
         for request in section_insertions:
             source_text = _insert_authored_section(source_text, request)
+        if section_field_edits:
+            # A section's title and body are authored HTML the state writer
+            # leaves alone, so a set of either arrives here as an edit to apply
+            # through the one replacement path rather than as a state change.
+            source_text = _store_section_ops.apply_section_field_edits(
+                source_text, section_field_edits, replace=_replace_authored_html
+            )
     except ValueError as exc:
         raise OpError(str(exc)) from exc
     if evidence_appends:
@@ -2481,6 +2491,11 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
         raise OpError(f"unsupported index set path {path!r}")
 
     # ── plan set ──
+    if head == "sections" and len(parts) >= 2:
+        from reckon import _store_section_ops
+
+        _store_section_ops.apply_section_field_set(working, parts, value, warnings)
+        return
     if head == "section_declarations" and len(parts) == 2:
         from reckon._schema import SECTION_DECLARATION_ENUM
 
@@ -3533,6 +3548,9 @@ def apply_ops(
     previous_status = str(working.get("status") or "").strip().lower()
     warnings: list[str] = []
     _begin_write_effects(working)
+    from reckon import _store_section_ops
+
+    _store_section_ops.begin_section_field_edits(working)
     for n, op in enumerate(ops):
         if not isinstance(op, dict):
             raise OpError(f"op #{n} is not an object")
