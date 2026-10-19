@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-19T08:01:27.312Z",
+  "dispatched_at": "2026-10-19T07:29:33Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "1135",
+      "severity": "blocking",
+      "text": "blocking: the over-ceiling branch composes argv as [os.path.abspath(batch), *own_job_prefix(...)], but own_job_prefix (reckon/crew/placement.py:356) already leads with the literal STEP_JOB_SCHEDULER, so the argv is ['/abs/sbatch', 'sbatch', '--wait', '--wrap', ...]; sbatch receives the token 'sbatch' as its positional batch script beside --wrap, so the documented route for a >48 GB declaration does not launch and the goal's 'a declaration above the ceiling routed to its own job' is not met in practice."
+    },
+    {
+      "file": "reckon/crew/placement.py",
+      "line": "291",
+      "severity": "blocking",
+      "text": "blocking: declared_memory_gb duplicates the placement-option bound reader the repository already owns at reckon/crew/summary.py:132 (_option_values, called for ('--mem','--mem-per-cpu') at summary.py:399) and reads only the '--mem=' form, so the two disagree: a placement declaring ['--mem','64G'] is priced at 64 GB by the admission summary but read as undeclared here, and step_prefix (reckon/crew/placement.py:322) then injects a second, conflicting '--mem=24G' because placement.py:331 also tests only the '--mem=' spelling; '--mem-per-cpu' is likewise unpriced here."
+    },
+    {
+      "file": "tests/test_a_worker_step_carries_a_memory_bound.py",
+      "line": "99",
+      "severity": "follow-on",
+      "text": "follow-on: the ceiling test asserts argv[0] == SBATCH but never that the scheduler name appears exactly once, so it stays green on the duplicated-scheduler argv produced by dispatch_launch.py:1135 and cannot catch the blocking defect it was written to cover."
+    },
+    {
+      "file": "tests/test_a_worker_step_carries_a_memory_bound.py",
+      "line": "74",
+      "severity": "follow-on",
+      "text": "follow-on: the expected default is built from placement.DEFAULT_STEP_MEMORY_GB, which the code under test also reads, so the assertion holds for any value of that constant and cannot fail on a wrong default; only tests/test_fleet_node.py:480 pins 24G independently."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "1166",
+      "severity": "follow-on",
+      "text": "follow-on: the no-live-reservation branch builds prefix = [os.path.abspath(found), *options] without step_prefix, so a worker placed while no reservation is live runs as its own allocation carrying no --mem bound; it is not a fleet step, but the goal's 'every fleet worker step' is only met while a single shared reservation is held."
+    },
+    {
+      "file": "docs/evidence/fragments/the-fleet-node-stays-in-service/a-worker-step-carries-a-memory-bound.html",
+      "line": "37",
+      "severity": "follow-on",
+      "text": "follow-on: the measure line records 'job 1281970, node 1281970', repeating the job id where the host is 98dci4-clu-2002, so the evidence record misnames the machine the gate ran on."
+    },
+    {
+      "file": "docs/evidence/fragments/the-fleet-node-stays-in-service/a-worker-step-carries-a-memory-bound.html",
+      "line": "36",
+      "severity": "follow-on",
+      "text": "follow-on: the measure line states the focused gate ran '110 passed, 1 skipped', which no log supports \u2014 logs/focused-gate.log and the manifest both record 127 passed, 1 skipped \u2014 so the evidence figure does not reconcile with the gate log it stands for."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks that every fleet worker step carry an explicit memory bound through placement.step_prefix, 24 GB by default and 48 GB at most inside the allocation, with a larger declaration placed as a job of its own; reckon/crew/placement.py:321-335 states --mem on every step_prefix and reckon/crew/dispatch_launch.py:1117-1147 routes a >48 GB declaration to its own batch job, but that branch assembles a broken argv, so the ceiling clause is not met in practice.\nVERDICT done_when: the done_when names a default --mem on the placed srun argv, a bound declared through dispatch --set reaching the step, a >48 GB declaration routed to a *_debug job, fleet_node.placement_argv folded into step_prefix, and a probe step's cgroup memory.max equal to its bound; tests/test_a_worker_step_carries_a_memory_bound.py covers the first four, logs/focused-gate.log records 127 passed 1 skipped in place, and logs/probe-memory-max.log reads step_user memory.max=1073741824 for --mem=1G.\nVERDICT write_paths: the manifest declares nine write paths; git diff 871311cd82f1bcf70282fa3a36eb66eee5737dd8..0da8545c25b6c6b1f50d3aa2c01cb053a08ac14b changes seven files \u2014 reckon/crew/placement.py, reckon/crew/fleet_node.py, reckon/crew/dispatch_launch.py, tests/test_fleet_node.py, tests/test_a_worker_step_carries_a_memory_bound.py, tests/test_fleet_migrate_cutover.py and the evidence fragment \u2014 every one inside the declared set once the coordinator's resumed advice widened the scope to tests/test_fleet_migrate_cutover.py.\nVERDICT manifest: read; it names commits 79f3439914f42e236cdf98487a3811dbef28a43a, e4a45c9b2925065e31b99afec2460223ec6ab8f7, f9f72c6fe6eb348e186c23e1271fd4df9d8e98dc and 0da8545c25b6c6b1f50d3aa2c01cb053a08ac14b, records the focused gate at 127 passed 1 skipped with gate-base.log and gate-head.log at 120 passed 1 skipped each, the probe and the negative-control log, and names the widened cutover scope; it still carries status: in-progress at this revision and its worktree head has since advanced, so the record does not yet read terminal.\nVERDICT diff: read commit by commit against base 871311cd82f1bcf70282fa3a36eb66eee5737dd8; 79f3439914 changes the three production modules and two test files, e4a45c9b2 and 0da8545c2 commit only the evidence fragment, and f9f72c6fe repairs tests/test_fleet_migrate_cutover.py, whose base-revision hard-coded argv offsets the new --mem option broke.\nCALL_SITES: reckon/crew/fleet_node.py:374 placement_argv calls placement.step_prefix, reckon/crew/dispatch_launch.py:1161 apply_backend_placement calls placement_module.step_prefix, reckon/crew/dispatch_launch.py:1136 apply_backend_placement calls placement_module.own_job_prefix, reckon/project_setup_commands.py:275 calls fleet_node.placement_argv, reckon/crew/fleet_migrate.py:238, :546, :579, :1004, :1104 and :1191 call fleet_node.placement_argv\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/placement.py:331 supplies the default bound and reckon/crew/placement.py:291 reads a declared one, but reckon/crew/dispatch_launch.py:1135 emits a duplicated scheduler token, so the >48 GB route the goal names cannot launch.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/focused-gate.log records 127 passed 1 skipped in place and logs/probe-memory-max.log reads step_user memory.max=1073741824 for --mem=1G, but the fragment's measure line at docs/evidence/fragments/the-fleet-node-stays-in-service/a-worker-step-carries-a-memory-bound.html:36 states 110 passed and cites no log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff sits inside the declared write paths once tests/test_fleet_migrate_cutover.py is counted through the coordinator's widened scope, and no unrelated file is touched.\nSCORE durability: 8\nJUSTIFICATION durability: tests/test_a_worker_step_carries_a_memory_bound.py:99 asserts only argv[0] == SBATCH so it stays green on the duplicated-scheduler argv that breaks the route it covers, and line 74 reads the code's own constant, so no added assertion fails on a wrong default.\nSCORE fit: 14\nJUSTIFICATION fit: reckon/crew/placement.py:338-468 names each helper by its mechanism and follows the module's constant idiom, but own_job_prefix embeds the scheduler literal where the surrounding idiom at reckon/crew/dispatch_launch.py:1152-1166 resolves the executable and keeps the prefix to options.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/crew/placement.py:291 declared_memory_gb re-implements the option-bound reader the repository already owns at reckon/crew/summary.py:132 (_option_values) instead of extending it, and the two disagree on the space-separated '--mem 64G' and '--mem-per-cpu' spellings.\nFINDING reckon/crew/dispatch_launch.py:1135 blocking: the over-ceiling branch prepends the resolved batch path and own_job_prefix then repeats the literal scheduler name, so argv is ['/abs/sbatch', 'sbatch', '--wait', ...] and the documented >48 GB route cannot launch.\nFINDING reckon/crew/placement.py:291 blocking: declared_memory_gb duplicates summary._option_values and reads only the '--mem=' spelling, so a placement declaring ['--mem','64G'] is priced at 64 GB by the summary but read as undeclared here and step_prefix adds a second, conflicting --mem=24G.\nFINDING tests/test_a_worker_step_carries_a_memory_bound.py:99 follow-on: the ceiling assertion checks argv[0] but not that the scheduler appears once, so the duplicated token passes the gate.\nFINDING tests/test_a_worker_step_carries_a_memory_bound.py:74 follow-on: the expected default is drawn from the same constant the code reads, so the assertion passes for any default.\nFINDING reckon/crew/dispatch_launch.py:1166 follow-on: the no-live-reservation branch places a worker with no --mem bound.\nFINDING docs/evidence/fragments/the-fleet-node-stays-in-service/a-worker-step-carries-a-memory-bound.html:37 follow-on: the measure line names the job id 1281970 as the node where the host is 98dci4-clu-2002.\n",
+  "review_run_id": "r-20261019T072841968148-review-of-a-worker-step-carries-a-memory-bound-0da8545c25b6",
+  "reviewed_base_sha": "871311cd82f1bcf70282fa3a36eb66eee5737dd8",
+  "reviewed_head_sha": "0da8545c25b6c6b1f50d3aa2c01cb053a08ac14b",
+  "reviewed_run_id": "r-20261019T064133037110-a-worker-step-carries-a-memory-bound",
+  "scores": {
+    "durability": 8,
+    "evidence": 14,
+    "fit": 14,
+    "goal_fidelity": 12,
+    "reuse": 4,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T08:01:30.127667+00:00"
+}
