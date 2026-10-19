@@ -1,0 +1,93 @@
+<article class="landed-report" data-run-id="r-20261019T202350268699-cso-budget-family-folds" data-node="cso-budget-family-folds">
+<h3 id="cso-budget-family-folds-summary">The budget verb family folds behind one parent</h3>
+<p id="cso-budget-family-folds-change"><strong>Change.</strong>
+Four sibling verbs become one <code>crew budget</code> command selected by
+flag, so the crew surface shrinks without any answer changing. The retired
+invocations and their folded forms are:</p>
+<table>
+<thead><tr><th>Retired verb</th><th>Folded form</th></tr></thead>
+<tbody>
+<tr><td><code>crew budget-lift</code></td><td><code>crew budget --lift</code></td></tr>
+<tr><td><code>crew budget-lifts</code></td><td><code>crew budget --list</code></td></tr>
+<tr><td><code>crew budget-reset</code></td><td><code>crew budget --reset</code></td></tr>
+<tr><td><code>crew preflight</code></td><td><code>crew budget --check</code></td></tr>
+</tbody>
+</table>
+<p>The four retired names answer through the tombstone registry in
+<code>reckon/crew/tombstones.py</code>. A tombstone gains a
+<code>flags</code> tuple: a folded family needs the successor's own flag ahead
+of the caller's arguments, because the caller's options alone do not select a
+case within the parent. So <code>crew budget-lift --group g --multiple 1.8</code>
+prints the invocation <code>reckon crew budget --lift --group g --multiple
+1.8</code> and exits <code>10</code>.</p>
+<p>In <code>reckon/crew_run_commands.py</code> the three command bodies become
+helpers (<code>_budget_reset_payload</code>, <code>_budget_lift_payload</code>,
+<code>_budget_lifts_payload</code>) and one <code>crew_budget</code> command
+dispatches to them by flag. In <code>reckon/crew_dispatch_commands.py</code> the
+pre-flight command becomes <code>_budget_check_report</code>, a helper that
+composes the report and returns it with its exit status (<code>3</code> when a
+backend is held), so the folded <code>--check</code> keeps pre-flight's exit
+code. <code>reckon/cli.py</code> re-exports the folded command in place of the
+four; <code>reckon/crew/refusals.py</code> and the skill and reference documents
+move their citations to the folded form.
+
+<h3 id="cso-budget-family-folds-test">Test</h3>
+<p>Four checks hold the fold, all in
+<code>tests/test_crew_families_fold.py</code>. Every retired name answers through
+its tombstone: it exits <code>10</code> and its JSON names the successor with the
+flag that names its own case and the caller's arguments carried across. Each
+folded flag is held to the answer its retired verb gave — the answers were
+captured from the retired verbs at this node's base revision before the fold,
+and are embedded as a fixture, compared after normalising instants,
+identifiers, repository paths and the acting user, since a grant records a time
+and an id a fresh run cannot reproduce. Each case runs against its own config
+home, so a grant, a clear and a banked reset do not accumulate across cases.
+No string literal under <code>reckon/</code> names a tombstoned verb as a crew
+verb, reported with module and line (the registry module is exempt — it is where
+the names are defined). And the visible leaf count, read from the live command
+tree, is the base count less the four retired names plus the one parent verb:
+<code>48 - 4 + 1 = 45</code>. One row replaces the four retired rows in
+<code>tests/test_crew_help_names_its_state.py</code>.</p>
+<p id="cso-budget-family-folds-measure"><strong>Measure.</strong> Gate:
+<code>tests/test_crew_families_fold.py</code>,
+<code>tests/test_crew_help_names_its_state.py</code>,
+<code>tests/test_a_retired_verb_names_its_successor.py</code>,
+<code>tests/test_cited_commands_exist.py</code>,
+<code>tests/test_skill_contracts.py</code>,
+<code>tests/test_every_module_fits_a_worker_window.py</code>,
+<code>tests/test_budget_lift.py</code>,
+<code>tests/test_crew_budget_lift_cli.py</code>,
+<code>tests/test_preflight_runs_remaining.py</code> and
+<code>tests/test_the_preflight_reads_the_lift.py</code>, run with the main
+checkout's <code>.venv/bin/python -m pytest -p no:cacheprovider</code>. Base arm
+at <code>0fa62dca44a63a65382c140c82a003dd7a660e02</code> in a scratch tree (the
+new test file absent): <code>6 failed, 154 passed</code>, <code>EXIT=1</code>.
+Head arm at <code>f7a8cbcfc</code> (one commit above the base): <code>16 failed,
+148 passed</code>, <code>EXIT=1</code>.</p>
+<p><strong>Delta.</strong> Two base-arm failures clear at the head: the fold
+repoints the citations, so
+<code>test_cited_commands_exist.py::test_every_cited_command_and_flag_resolves</code>
+and
+<code>test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code>
+pass. Two head-arm failures I introduced in scope are fixed before this
+measure. Three head failures (<code>test_ship_skill_authors_the_budget_fence_alone</code>,
+<code>test_ship_crew_surface_lists_each_budget_lift_form_on_its_own_line</code>,
+<code>test_ship_cli_instructions_match_registered_commands_and_flags</code>) and
+<code>test_every_module_fits_a_worker_window.py</code> reproduce identically at
+the base and are pre-existing. The remaining twelve are added by this change and
+live in <code>tests/test_crew_budget_lift_cli.py</code>, which is <strong>outside
+this node's write fence</strong>: that file still invokes the four retired names
+directly and asserts on their answers, so it fails against the folded surface.
+They are recorded under <code>follow_ons</code> rather than fixed here. Ruff
+<code>check</code> and <code>format --check</code> are clean on every changed
+path. Logs <code>gate-head.log</code> and <code>gate-base.log</code> under the
+run directory, each ending in an <code>EXIT=</code> line.</p>
+<p id="cso-budget-family-folds-control"><strong>Negative control.</strong>
+Appending one field to <code>_budget_lifts_payload</code>'s answer — the
+<code>--list</code> successor's payload only — reddens exactly that case in
+<code>test_each_budget_flag_gives_the_answer_the_old_verb_gave</code> and no
+other: the four remaining flag cases keep passing, and the three other checks
+in the file keep passing. That is the property the brief's negative control
+names, that altering one successor's answer fails its own fixture case and no
+other.</p>
+</article>
