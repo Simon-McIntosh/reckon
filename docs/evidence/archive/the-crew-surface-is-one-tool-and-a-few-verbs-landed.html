@@ -35,6 +35,28 @@
     <p>Run <code>r-20261019T143650682729-cso-one-call-lands-a-run</code>, seven commits <code>f3f485f83</code> to <code>b57fb26de</code>. <code>crew complete --land</code> promotes the run, then merges its reviewed head, checks that the change's markers survived the merge, pushes, and releases the worktree through the existing release after promotion. A failed step stops the call and names the command that resumes from it. The landing loop is <code>land_merge</code>'s own: it gained a <code>verify</code> seam that judges the built merge before the branch moves, and <code>land</code> passes the dropped-change check through it, so <code>crew merge</code> and <code>complete --land</code> share one loop. <code>crew merge</code>'s behaviour is unchanged.</p><p>Count: over the thirty days to 2026-10-19, 66 of the 102 merges on <code>main</code> landed a head that no ledger row names. So <code>crew merge</code> stays as the form for a head with no run, and §7 does not tombstone it; the fold's visible-leaf target is 66, not 65. Gate: zero added failures; the one failure is the width test, red at base. Negative control: a merge resolved so the change is dropped is refused by the marker check, with nothing pushed. Reviews scored 92, then the repair brought reuse to 20 of 20. The repair round was the reflex's own.</p>
   </section>
 
+  <section id="s6">
+    <h2>§6 — the read verbs become one crew view</h2>
+    <p>Run <code>r-20261019T182016743616-cso-read-verbs-become-crew-view</code> landed five commits, the last <code>e5aec958b</code>.</p>
+<p><strong>What changed.</strong> <code>serve_crew_view</code> in <code>reckon/mcp_views.py</code> now serves every crew read view, with <code>CREW_VIEWS</code> as the one registry. The view dispatch that lived inline in the MCP <code>crew</code> tool's <code>_crew</code> moved there verbatim. The tool keeps only its recover actions, its refusal for an undeclared view, and the delegation. A new verb, <code>reckon crew view &lt;name&gt;</code>, takes every argument the tool's views take and prints the same document, so a hook or script reaches a view without the MCP transport.</p>
+<p><strong>Census.</strong> Each of the five read verbs keeps a caller or a flag outside the node's fence, so all five stayed visible. Their retirement is now §9:</p>
+<ul>
+<li><code>list</code>: <code>reckon/mcp_deadlines.py</code> hands it out, five tests drive it, and it filters by <code>--phase</code> and <code>--mine</code>.</li>
+<li><code>ledger</code>: <code>reckon/crew/refusals.py</code> names it in a remedy, and a test drives it.</li>
+<li><code>velocity</code>: a test drives it.</li>
+<li><code>directory</code>: <code>worktree_fleet.py</code> calls it, and so does a guide in imas-ambix.</li>
+<li><code>drain</code>: its <code>--leave</code> option is a write with no view successor.</li>
+</ul>
+<p><strong>Gate.</strong> The first round was blocked on one line outside the fence, the <code>crew view</code> row in the flag map of <code>tests/test_skill_contracts.py</code>. The fence was widened to that file, and the worker added the row in <code>0e9c62f8f</code>. At the head, 91 passed and 1 failed. The failure is <code>test_every_module_fits_a_worker_window</code> on <code>reckon/crew/review.py</code> and <code>reckon/ledger.py</code>, the same as the base arm, so zero failures are added. Logs are in <code>~/.config/reckon/crew/runs/r-20261019T182016743616-cso-read-verbs-become-crew-view/</code>: <code>base-arm.log</code>, <code>gate-head-2.log</code> and <code>negative-control.log</code>.</p>
+<p><strong>Negative control.</strong> Registering a view on the tool only (<code>CREW_TOOL_VIEWS</code> plus <code>tool-only-view</code>) failed the registry case, naming it.</p>
+<p><strong>Review.</strong> At <code>e5aec958b</code> the independent review scored 18, 15, 15, 14, 18 and 20, with no added failures and nothing blocking. It found two weaknesses in the new test:</p>
+<ul>
+<li>The registry case compares one tuple with itself, so only the monkeypatch control can make it fail.</li>
+<li>The output parity case drives one argument vector.</li>
+</ul>
+<p>Both are folded into §9's <code>cso-crew-view-filters-live-runs</code> node. A third finding, that the manifest's changed paths omitted <code>tests/test_skill_contracts.py</code>, is exempted: the coordinator confirmed that one-row change from the diff.</p>
+  </section>
+
 </main>
 </body>
 </html>

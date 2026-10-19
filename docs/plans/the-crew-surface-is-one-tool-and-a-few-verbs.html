@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-informs" content="consumers-read-reckon-through-verbs">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s3&quot;],&quot;s5&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;,&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;,&quot;every-plan-write-goes-through-edit-plan#s3&quot;],&quot;s6&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s2&quot;,&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;],&quot;s7&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;],&quot;s8&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s7&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s3&quot;],&quot;s5&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;,&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;,&quot;every-plan-write-goes-through-edit-plan#s3&quot;],&quot;s6&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s2&quot;,&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;],&quot;s7&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;],&quot;s8&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s7&quot;],&quot;s9&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s7&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -167,12 +167,14 @@
       <code>tests/test_crew_tool_carries_the_write_verbs.py</code>.</p>
 
     <h2 id="s6">§6 — The read verbs become one <code>crew view</code></h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>crew view &lt;name&gt;</code> serves every view the MCP <code>crew</code> tool serves, through
       one function both call. No such function exists yet: <code>_crew</code> in <code>reckon/mcp.py</code> dispatches its views inline, and
       <code>crew list</code> builds its own rows. So the view dispatch moves into <code>reckon/mcp_views.py</code>, and <code>crew list</code>'s
       row builder is retired in its favour. It is the transport for hooks and scripts. <code>list</code>, <code>ledger</code>,
-      <code>directory</code>, <code>drain</code> and <code>velocity</code> each become a tombstone naming its view.</p>
+      <code>directory</code>, <code>drain</code> and <code>velocity</code> each become a tombstone naming its view, which §9 does: this
+      node's census found a caller or a flag for every one of them outside its fence, so it landed <code>crew view</code> with all five
+      still visible.</p>
     <p>Other repositories call these verbs, and <code>consumers-read-reckon-through-verbs</code> made their JSON a contract. So the node
       first lists every invocation of the five verbs in the tracked files of every mounted project.</p>
     <ul>
@@ -182,16 +184,15 @@
         tombstoned only then.</li>
     </ul>
     <p><strong>Done when</strong> <code>tests/test_crew_view_serves_every_view.py</code> checks that, for each view, <code>crew view</code>
-      prints what the MCP tool returns for the same arguments, and that each tombstoned verb exits with §2's code. The census of callers is
-      in the evidence. Every citation of the five verbs in reckon's skills and agent files is repointed to <code>crew view</code>, and
-      <code>tests/test_cited_commands_exist.py</code> passes, which it cannot while a citation names a tombstone. The negative control
+      prints what the MCP tool returns for the same arguments. The census of callers is in the evidence, and
+      <code>tests/test_cited_commands_exist.py</code> passes. Repointing the five verbs' citations moves to §9 with their tombstones. The negative control
       registers a view on the MCP tool only, and the parity case then fails naming it. Write paths: <code>reckon/crew_run_commands.py</code>,
       <code>reckon/mcp.py</code>, <code>reckon/mcp_views.py</code>, <code>reckon/crew/tombstones.py</code>, <code>reckon/hooks</code>,
       <code>skills/reckon-build/SKILL.md</code>, <code>skills/reckon-build/references/coordinator-reference.md</code>,
       <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>skills/reckon-review/SKILL.md</code>,
       <code>reckon/crew/AGENTS.md</code>, <code>tests/test_crew_help_names_its_state.py</code>,
       <code>tests/test_crew_view_serves_every_view.py</code>. <code>tests/test_crew_help_names_its_state.py</code> pins the exact leaf set,
-      so it gains a row for <code>crew view</code>, loses the rows of the five tombstoned read verbs, and passes.</p>
+      so it gains a row for <code>crew view</code> and passes.</p>
 
     <h2 id="s7">§7 — The verb families fold behind flags</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -202,7 +203,8 @@
       <li><code>crew check --manifest|--review</code>; <code>--review</code> accepts <code>--run</code>.</li>
       <li><code>crew resume --ready</code>, <code>crew resume --backend B --model M</code>, and
         <code>crew resume --reopen --write-path P</code>. <code>--model</code> is what <code>redispatch</code> lacked;
-        <code>--reopen</code> replaces <code>repair-status</code>, <code>widen</code> and <code>resume</code>.</li>
+        <code>--reopen</code> replaces the three-call reopening sequence of <code>repair-status</code>, <code>widen</code> and
+        <code>resume</code>. <code>widen</code> itself stays, as the fifth check below requires.</li>
       <li><code>widen</code> accepts any run that is not running, and <code>complete --accept-path</code> writes the same fence record through
         it; both go through the claim owner, <code>narrow_claim</code> and <code>release_claim</code> in <code>reckon/crew/claims.py</code>.</li>
       <li><code>crew watch --stop</code>.</li>
@@ -302,6 +304,38 @@
       naming it. Write paths: <code>reckon/crew_run_commands.py</code>, <code>reckon/crew_dispatch_commands.py</code>,
       <code>reckon/crew/plan_review.py</code>, <code>tests/test_run_verbs_share_one_identity_grammar.py</code>.</p>
 
+    <h2 id="s9">§9 — The old read verbs retire behind crew view</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §6 landed <code>crew view</code> and the one function both surfaces call, and kept all five read verbs visible. Its census found a caller or a flag for each one outside its fence:</p>
+    <ul>
+      <li><code>crew list</code> is handed out by <code>reckon/mcp_deadlines.py</code> as a deadline refusal's answer, and five test files drive it. It filters by <code>--phase</code> and <code>--mine</code>, which <code>crew view live</code> does not take.</li>
+      <li><code>crew ledger</code> is named in a remedy in <code>reckon/crew/refusals.py</code> and driven by <code>tests/test_findings_read_by_path.py</code>.</li>
+      <li><code>crew velocity</code> is driven by <code>tests/test_crew_velocity_cli.py</code>.</li>
+      <li><code>crew directory</code> is invoked by <code>skills/reckon-build/scripts/worktree_fleet.py</code> and by a guide in another project (<code>imas-ambix</code> <code>ops/lane-cycle/AGENTS.md</code>).</li>
+      <li><code>crew drain</code> carries <code>--leave</code>, which records a pointer disposition: a write with no view successor.</li>
+    </ul>
+    <p><strong>Deliverable.</strong> <code>list</code>, <code>ledger</code> and <code>velocity</code> become tombstones naming their <code>crew view</code> successors (§2), once every reckon caller and citation has moved. <code>directory</code> stays visible until the foreign guide migrates, and <code>drain</code> stays visible for its write. Both are out of scope here. Four nodes, one after another, because each writes <code>reckon/crew_run_commands.py</code> or <code>tests/test_skill_contracts.py</code>, and each is sized to the local lane's window:</p>
+    <table>
+      <thead><tr><th>node</th><th>does</th><th>write paths</th></tr></thead>
+      <tbody>
+        <tr><td><code>cso-ledger-and-velocity-retire</code></td><td>moves the callers and citations of <code>ledger</code> and <code>velocity</code> to <code>crew view</code> and tombstones both</td>
+          <td><code>reckon/crew_run_commands.py</code>, <code>reckon/crew/tombstones.py</code>, <code>reckon/cli.py</code>, <code>reckon/crew/refusals.py</code>, <code>tests/test_findings_read_by_path.py</code>, <code>tests/test_crew_velocity_cli.py</code>, <code>tests/test_skill_contracts.py</code>, <code>tests/test_crew_help_names_its_state.py</code>, <code>skills/reckon-build/SKILL.md</code>, <code>skills/reckon-build/references/coordinator-reference.md</code>, <code>skills/reckon-review/SKILL.md</code>, <code>reckon/crew/AGENTS.md</code>, <code>tests/test_read_verbs_retire_behind_crew_view.py</code></td></tr>
+        <tr><td><code>cso-crew-view-filters-live-runs</code></td><td>gives <code>crew view live</code> and the MCP <code>live</code> view <code>--phase</code> and <code>--mine</code>, answering what <code>crew list</code> answers for them. It also makes §6's parity test able to fail. The registry case compares the views the MCP tool's schema advertises with the dispatcher's, rather than one shared tuple with itself. The output case drives every <code>crew view</code> option through both surfaces, not one argument vector.</td>
+          <td><code>reckon/mcp_views.py</code>, <code>reckon/crew_run_commands.py</code>, <code>tests/test_crew_view_serves_every_view.py</code>, <code>tests/test_skill_contracts.py</code></td></tr>
+        <tr><td><code>cso-list-callers-move-to-crew-view</code></td><td>moves every reckon caller and citation of <code>crew list</code> to <code>crew view live</code></td>
+          <td><code>reckon/mcp_deadlines.py</code>, <code>tests/test_crew.py</code>, <code>tests/test_crew_recover.py</code>, <code>tests/test_crew_surface_parity.py</code>, <code>tests/test_crew_watch_visibility.py</code>, <code>tests/test_held_dispatch_is_queued.py</code>, <code>skills/reckon-build/SKILL.md</code>, <code>skills/reckon-build/references/coordinator-reference.md</code>, <code>reckon/crew/AGENTS.md</code></td></tr>
+        <tr><td><code>cso-list-retires</code></td><td>tombstones <code>crew list</code></td>
+          <td><code>reckon/crew_run_commands.py</code>, <code>reckon/crew/tombstones.py</code>, <code>reckon/cli.py</code>, <code>tests/test_skill_contracts.py</code>, <code>tests/test_crew_help_names_its_state.py</code>, <code>tests/test_read_verbs_retire_behind_crew_view.py</code></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Done when</strong> <code>tests/test_read_verbs_retire_behind_crew_view.py</code> holds, at the last node's head:</p>
+    <ul>
+      <li>Each retired verb's answers are captured as fixtures at the base of the node that moves its callers. That covers <code>crew list</code> with <code>--project</code>, <code>--phase</code>, <code>--mine</code> and <code>--session</code>, <code>crew ledger</code> with each <code>--view</code>, and <code>crew velocity</code>. At the head, <code>crew view</code> gives each fixture's answer.</li>
+      <li><code>list</code>, <code>ledger</code> and <code>velocity</code> exit with §2's tombstone code, naming their successors.</li>
+      <li>No string literal under <code>reckon/</code> names any of the three as a <code>reckon crew</code> command.</li>
+    </ul>
+    <p>Each node's gate passes <code>tests/test_cited_commands_exist.py</code>, <code>tests/test_skill_contracts.py</code> and <code>tests/test_crew_help_names_its_state.py</code>, which loses one row per tombstoned verb, and adds no failure to <code>tests/test_every_module_fits_a_worker_window.py</code>. The filter node's negative control drops <code>--mine</code> from the <code>live</code> view, and its fixture case then fails. A second control drops one option from <code>crew view</code>'s CLI plumbing, and the output parity case then fails naming it. Each retiring node's control points one tombstone at the wrong view, and the successor case then fails.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="coordinator-surface" data-choice="mcp" data-by="Simon McIntosh" data-when="2026-10-19">
@@ -376,7 +410,10 @@
     <div class="r-comment-body"><p>review-of-cso-read-verbs-become-crew-view-e5aec958b38f: independent review of r-20261019T182016743616-cso-read-verbs-become-crew-view at head e5aec958b against base 9c353762e, scoring goal_fidelity 18, evidence 15, scope_discipline 15, durability 14, fit 18, reuse 20, added_failure_count 0, and three follow-on findings on the tautological surface-parity assertion, the single-vector parity case, and a changed file missing from the reviewed manifest's changed_paths; the review record is at review-records/r-20261019T182016743616-cso-read-verbs-become-crew-view.json.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261019T182016743616-cso-read-verbs-become-crew-view" data-who="reckon-build" data-when="2026-10-19T19:52:14Z">
-    <div class="r-comment-body"><p>cso-read-verbs-become-crew-view: every crew read view is now served by serve_crew_view in reckon/mcp_views.py, called by both the crew MCP tool and a new `crew view &lt;name&gt;` CLI verb, with a parity test that fails naming a view registered on one surface only; all five read verbs stay visible for now, because crew list is reached by reckon/mcp_deadlines.py:184 and carries --phase, --mine and --session that crew view does not, crew ledger by reckon/crew/refusals.py:78, crew directory by a foreign project&#x27;s guide (imas-ambix ops/lane-cycle/AGENTS.md:40), crew velocity by tests/test_crew_velocity_cli.py, and crew drain carries a --leave write half with no view successor; the gate at the final head is 1 failed, 91 passed, the failure being the pre-existing module-window case.</p></div>
+    <div class="r-comment-body"><p>cso-read-verbs-become-crew-view: every crew read view is now served by serve_crew_view in reckon/mcp_views.py, called by both the crew MCP tool and a new `crew view &lt;name&gt;` CLI verb, with a parity test that fails naming a view registered on one surface only; all five read verbs stay visible for now, because crew list is reached by reckon/mcp_deadlines.py:184 and carries --phase, --mine and --session that crew view does not, crew ledger by reckon/crew/refusals.py:78, crew directory by a foreign project's guide (imas-ambix ops/lane-cycle/AGENTS.md:40), crew velocity by tests/test_crew_velocity_cli.py, and crew drain carries a --leave write half with no view successor; the gate at the final head is 1 failed, 91 passed, the failure being the pre-existing module-window case.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-19T20:20:00Z">
+    <div class="r-comment-body"><p>§6 landed: every crew read view is served by one function, <code>serve_crew_view</code>, which both the MCP <code>crew</code> tool and a new <code>crew view &lt;name&gt;</code> verb call. A parity test fails naming any view registered on one surface only. Zero failures added. The five read verbs stay visible, each with a caller or flag outside the fence; retiring them is §9. <a href="/reckon/evidence/archive/the-crew-surface-is-one-tool-and-a-few-verbs-landed.html#s6">evidence</a></p></div>
 </div>
 </section>
 </main>
