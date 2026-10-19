@@ -48,12 +48,47 @@ _REFRESH_ENABLED = False
 _REFRESH_CHILDREN: dict[tuple[str, ...], subprocess.Popen] = {}
 _REFRESH_LOCK = threading.Lock()
 
+#: How long the running children are given to stop once they are asked to,
+#: before they are killed. A derivation is seconds of work, so a child that has
+#: not gone by then is one that would not go at all.
+_STOP_TIMEOUT_S = 5.0
+
 
 def set_enabled(enabled: bool) -> None:
     """Set whether a route answers from its stored result."""
 
     global _REFRESH_ENABLED  # noqa: PLW0603 — one switch for the whole process
     _REFRESH_ENABLED = enabled
+
+
+def stop_children() -> None:
+    """Stop every running refresh child, so none outlives this process.
+
+    A child is a separate process holding the interpreter and writing a stored
+    result, so one left running past the server's own exit writes into a home
+    its owner is removing, and under a code reload keeps deriving for an image
+    nobody can reach. Each running child is asked to terminate, given a bounded
+    time to go, and killed if it will not. The registry is emptied first, so a
+    child started while this runs is not stopped by the same call.
+    """
+
+    with _REFRESH_LOCK:
+        children = list(_REFRESH_CHILDREN.values())
+        _REFRESH_CHILDREN.clear()
+    for child in children:
+        if child.poll() is not None:
+            continue
+        with contextlib.suppress(OSError):
+            child.terminate()
+    deadline = time.monotonic() + _STOP_TIMEOUT_S
+    for child in children:
+        try:
+            child.wait(timeout=max(0.0, deadline - time.monotonic()))
+        except subprocess.TimeoutExpired:
+            with contextlib.suppress(OSError):
+                child.kill()
+            with contextlib.suppress(subprocess.TimeoutExpired):
+                child.wait(timeout=1.0)
 
 
 def _refresh_store_path(key: tuple[str, ...]) -> Path:

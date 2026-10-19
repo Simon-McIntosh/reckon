@@ -48,6 +48,7 @@ import mimetypes
 import os
 import re
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -1102,6 +1103,11 @@ class _CodeReload:
         with self._idle:
             self._idle.wait_for(lambda: self._active == 0, timeout=3)
         self.server.server_close()
+        # The exec below replaces this image, and returns only on failure, so
+        # the release that runs on a normal exit would never run. Stop the
+        # refresh children here: they hold the derivation this image started,
+        # and the image that replaces it can start its own.
+        route_results.stop_children()
         argv = [sys.executable, *sys.orig_argv[1:]]
         self.exec_(sys.executable, argv)
 
@@ -3887,6 +3893,43 @@ def start_fleet_change_watch(mounts: dict[str, Path]) -> _FleetChangeWatch:
     return _FLEET_WATCH
 
 
+def _unwind_on_termination(signum: int, frame: object) -> None:
+    """Unwind on SIGTERM, so a killed server releases what it started.
+
+    The served process is the only parent its refresh children have, and a
+    child left running writes a stored result into a home whose owner is
+    already removing it. Ctrl-C already unwinds and runs the release; raising
+    here gives a term signal the same path rather than an image that dies
+    without one.
+    """
+
+    raise SystemExit(128 + signum)
+
+
+def _install_termination_unwind() -> object | None:
+    """Make SIGTERM unwind; return the handler it displaced.
+
+    Returns None where no handler may be installed — off the main thread, or
+    where the platform has no SIGTERM — and the caller hands the value back to
+    :func:`_remove_termination_unwind`.
+    """
+
+    if threading.current_thread() is not threading.main_thread():
+        return None
+    if not hasattr(signal, "SIGTERM"):
+        return None
+    return signal.signal(signal.SIGTERM, _unwind_on_termination)
+
+
+def _remove_termination_unwind(previous: object | None) -> None:
+    """Put back the handler :func:`_install_termination_unwind` displaced."""
+
+    if previous is None:
+        return
+    with contextlib.suppress(ValueError, TypeError):
+        signal.signal(signal.SIGTERM, previous)
+
+
 def main(
     port: int = 8765,
     host: str | None = None,
@@ -3901,6 +3944,7 @@ def main(
     executed = served_code.ExecutedSource(_SOURCE_SNAPSHOT.root)
     _EXECUTED_SOURCE = executed if executed.start() else None
     route_results.set_enabled(True)
+    previous_sigterm = _install_termination_unwind()
     try:
         _resolve_paths(mounts_file)
         # A log left oversized by an earlier run is bounded as the server
@@ -3948,6 +3992,12 @@ def main(
         # what this function set up for the served process, so a caller that
         # ran it in a thread gets the library defaults back rather than a
         # module still acting as a server.
+        #
+        # The refresh children go first: each one writes a stored result under
+        # the configuration home this process was serving, so one left running
+        # past this point writes into a home its owner may already be removing.
+        route_results.stop_children()
+        _remove_termination_unwind(previous_sigterm)
         if _EXECUTED_SOURCE is not None:
             _EXECUTED_SOURCE.stop()
         _EXECUTED_SOURCE = None

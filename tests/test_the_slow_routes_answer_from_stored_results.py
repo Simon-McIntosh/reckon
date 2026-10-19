@@ -13,9 +13,14 @@ computes inline under the same delay — under which the latency bound fails.
 
 from __future__ import annotations
 
+import contextlib
 import http.client
 import json
 import os
+import signal
+import socket
+import subprocess
+import sys
 import threading
 import time
 from pathlib import Path
@@ -33,6 +38,52 @@ BOUND = 0.05
 _INLINE_MUTATION = "RECKON_SLOW_ROUTES_INLINE"
 _PER_PROJECT_MUTATION = "RECKON_SLOW_ROUTES_PER_PROJECT"
 _PER_PROJECT_EVENTS_MUTATION = "RECKON_SLOW_ROUTES_PER_PROJECT_EVENTS"
+_NO_REAP_MUTATION = "RECKON_SLOW_ROUTES_NO_REAP"
+
+#: A served process whose refresh child is made to run long. The child writes
+#: into the served home shortly after it starts and then holds the interpreter,
+#: so a child left running past the server's exit writes into a home its owner
+#: is removing — the failure the reaping this test pins exists to prevent.
+_SERVE_DRIVER = """
+import os
+import pathlib
+import subprocess
+import sys
+
+from reckon import route_results, serve
+
+home = pathlib.Path(os.environ["DRIVER_HOME"])
+pid_file = pathlib.Path(os.environ["DRIVER_PID_FILE"])
+marker = home / "child-wrote-here.txt"
+
+child_code = (
+    "import pathlib, time;"
+    "time.sleep(" + os.environ["DRIVER_CHILD_MARK_S"] + ");"
+    "pathlib.Path(" + repr(str(marker)) + ").write_text('written');"
+    "time.sleep(" + os.environ["DRIVER_CHILD_LONG_S"] + ")"
+)
+
+
+def spawn(argv):
+    child = subprocess.Popen(
+        [sys.executable, "-c", child_code], stdin=subprocess.DEVNULL
+    )
+    with pid_file.open("a") as handle:
+        handle.write(str(child.pid) + "\\n")
+    return child
+
+
+route_results._spawn_refresh = spawn
+route_results._refresh_result = lambda key: None
+if os.environ.get("DRIVER_NO_REAP"):
+    route_results.stop_children = lambda: None
+
+serve.main(
+    port=int(os.environ["DRIVER_PORT"]),
+    host="127.0.0.1",
+    mounts_file=pathlib.Path(os.environ["DRIVER_MOUNTS"]),
+)
+"""
 
 
 def _plan_page(project: str, slug: str) -> str:
@@ -317,3 +368,128 @@ def test_a_fleet_event_reaches_a_stream_through_the_parent_waiter(served, monkey
         serve._FLEET_WATCH = None
 
     assert [entry.get("fleet", {}).get("key") for entry in fleet_events] == ["rollup"]
+
+
+# ── No refresh child outlives the server that started it ─────────────────
+
+
+def _free_port() -> int:
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        return probe.getsockname()[1]
+
+
+def _recorded_pids(path: Path) -> list[int]:
+    if not path.exists():
+        return []
+    return [int(line) for line in path.read_text(encoding="utf-8").split() if line]
+
+
+def _alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def _wait_for_pids(path: Path, timeout: float) -> list[int]:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        pids = _recorded_pids(path)
+        if pids:
+            return pids
+        time.sleep(0.1)
+    return []
+
+
+def _wait_all_gone(pids: list[int], timeout: float) -> list[int]:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        left = [pid for pid in pids if _alive(pid)]
+        if not left:
+            return []
+        time.sleep(0.1)
+    return [pid for pid in pids if _alive(pid)]
+
+
+def test_no_refresh_child_outlives_the_server_that_started_it(tmp_path: Path) -> None:
+    """A term signal to the server must take its refresh children with it.
+
+    The child is a separate process writing a stored result under the served
+    home. A harness that terminates the server and then removes that home finds
+    it repopulated under it, and the removal fails. The child here writes into
+    the home a fixed time after it starts and then holds the interpreter, so a
+    child left running is visible both as a live pid and as that write.
+    """
+
+    docs = _project(tmp_path, PROJECT, ("alpha",))
+    mounts_file = tmp_path / "mounts.json"
+    mounts_file.write_text(json.dumps({PROJECT: str(docs)}), encoding="utf-8")
+    home = tmp_path / "home"
+    home.mkdir()
+    pid_file = tmp_path / "child-pids"
+    driver = tmp_path / "serve_driver.py"
+    driver.write_text(_SERVE_DRIVER, encoding="utf-8")
+    port = _free_port()
+    mark_s = 1.2
+    env = {
+        **os.environ,
+        "PYTHONPATH": str(Path(serve.__file__).resolve().parents[1]),
+        "RECKON_HOME": str(home),
+        "DRIVER_HOME": str(home),
+        "DRIVER_PID_FILE": str(pid_file),
+        "DRIVER_MOUNTS": str(mounts_file),
+        "DRIVER_PORT": str(port),
+        "DRIVER_CHILD_MARK_S": str(mark_s),
+        "DRIVER_CHILD_LONG_S": "60",
+    }
+    if os.environ.get(_NO_REAP_MUTATION):
+        env["DRIVER_NO_REAP"] = "1"
+    server = subprocess.Popen(
+        [sys.executable, str(driver)],
+        env=env,
+        cwd=str(tmp_path),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        deadline = time.monotonic() + 45
+        while time.monotonic() < deadline:
+            try:
+                with socket.create_connection(("127.0.0.1", port), timeout=2):
+                    break
+            except OSError:
+                time.sleep(0.1)
+        else:
+            raise AssertionError("the served process never listened")
+
+        started = time.monotonic()
+        # A miss on a route is what starts the child; the driver makes every
+        # route a miss, so one request is enough.
+        assert _Harness(port, {}, mounts_file).get(f"/_discover/{PROJECT}")[0] == 200
+        pids = _wait_for_pids(pid_file, timeout=30)
+        assert pids, "the served process started no refresh child"
+        assert all(_alive(pid) for pid in pids), pids
+
+        server.terminate()
+        server.wait(timeout=15)
+
+        left = _wait_all_gone(pids, timeout=8)
+        assert left == [], f"refresh child(ren) {left} outlived the server"
+
+        # The same child, unreaped, writes into the served home a fixed time
+        # after it starts; the reaping is what keeps that write from happening.
+        remaining = mark_s + 1.0 - (time.monotonic() - started)
+        if remaining > 0:
+            time.sleep(remaining)
+        assert not (home / "child-wrote-here.txt").exists()
+    finally:
+        if server.poll() is None:
+            server.kill()
+            server.wait(timeout=10)
+        for pid in _recorded_pids(pid_file):
+            with contextlib.suppress(ProcessLookupError):
+                os.kill(pid, signal.SIGKILL)
