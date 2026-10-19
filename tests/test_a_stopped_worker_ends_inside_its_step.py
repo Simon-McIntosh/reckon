@@ -210,12 +210,12 @@ def test_step_identity_mismatch_refuses_signal(
 
 
 @pytest.mark.parametrize("terminal_manifest", [False, True])
-@pytest.mark.parametrize("record_arrives", [False, True])
-def test_pending_step_stop_settles_before_signalling_client(
+@pytest.mark.parametrize("record_at", [None, 15, 36])
+def test_unverified_step_never_signals_client(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     terminal_manifest: bool,
-    record_arrives: bool,
+    record_at: int | None,
 ) -> None:
     run = tmp_path / "run"
     run.mkdir()
@@ -239,15 +239,25 @@ def test_pending_step_stop_settles_before_signalling_client(
         )
     clock = SimpleNamespace(now=0.0)
     monkeypatch.setattr(dispatch_launch.time, "monotonic", lambda: clock.now)
+
+    def advance(seconds: float) -> None:
+        clock.now += seconds
+        if (
+            record_at is not None
+            and clock.now >= record_at
+            and not (run / "step-task.txt").exists()
+        ):
+            (run / "step-task.txt").write_text("1281970 17 303 88\n")
+
     monkeypatch.setattr(
         dispatch_launch.time,
         "sleep",
-        lambda seconds: setattr(clock, "now", clock.now + seconds),
+        advance,
     )
     monkeypatch.setattr(
         dispatch_launch.os,
         "waitpid",
-        lambda pid, _: (pid, 0) if clock.now >= 39 else (0, 0),
+        lambda pid, _: (pid, 0) if clock.now >= 45 else (0, 0),
     )
     monkeypatch.setattr(process_signal, "_process_comm", lambda pid: "srun")
     monkeypatch.setattr(process_signal, "_process_start_time", lambda pid: "77")
@@ -257,12 +267,12 @@ def test_pending_step_stop_settles_before_signalling_client(
         process_signal.os, "kill", lambda pid, sig: sent.append((pid, sig))
     )
     inner: list[tuple[int, str]] = []
+    attempts: list[float] = []
 
     def signal_step(pid: int, sig: int, **kwargs: object) -> list[int]:
         assert pid == 101
-        assert sig == signal.SIGTERM or record_arrives
-        if record_arrives and clock.now >= 15 and not (run / "step-task.txt").exists():
-            (run / "step-task.txt").write_text("1281970 17 303 88\n")
+        assert sig == signal.SIGTERM or record_at is not None
+        attempts.append(clock.now)
         if (run / "step-task.txt").exists():
             inner.append((sig, str(kwargs["reason"])))
             return [303]
@@ -286,14 +296,18 @@ def test_pending_step_stop_settles_before_signalling_client(
         )
         == 0
     )
-    if record_arrives:
+    assert sent == []
+    assert all(
+        attempt <= attempts[0] + 30 or (record_at is not None and attempt >= record_at)
+        for attempt in attempts
+    )
+    if record_at is not None:
         assert inner
-        assert sent == []
         assert ended == [303]
     else:
         assert inner == []
-        assert sent == [(101, signal.SIGTERM)]
-        assert ended == [101]
+        assert ended == []
+    if record_at is None or record_at > 30:
         receipts = [
             json.loads(line)
             for line in (run / "senders.jsonl").read_text().splitlines()
@@ -302,9 +316,10 @@ def test_pending_step_stop_settles_before_signalling_client(
             (entry["reason"], entry.get("outcome"), entry["target_pid"])
             for entry in receipts
         ] == [
-            ("stop-before-step-started", None, 101),
-            ("stop-before-step-started", "delivered", 101),
+            ("stop-before-step-unverified", "refused", 101),
         ]
+    else:
+        assert not (run / "senders.jsonl").exists()
 
 
 @pytest.mark.skipif(

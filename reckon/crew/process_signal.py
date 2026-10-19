@@ -460,22 +460,21 @@ def _step_worker_client(run_dir: str | Path | None) -> int | None:
     return None
 
 
-def signal_pending_step_client(pid: int, run_dir: str | Path, *, reason: str) -> bool:
-    """End a pending srun request only while its step task has not started."""
-    worker = _worker_record(run_dir)
-    if (
-        not _run_uses_step(run_dir)
-        or (Path(run_dir) / "step-task.txt").exists()
-        or not worker
-        or worker.get("pid") != pid
-        or _process_comm(pid) != "srun"
-        or not worker.get("pid_start_time")
-        or _process_start_time(pid) != str(worker["pid_start_time"])
-    ):
+def refuse_unverified_step_client(
+    pid: int, run_dir: str | Path, *, reason: str
+) -> bool:
+    """Record why an unverified step's client cannot be safely stopped."""
+    if not _run_uses_step(run_dir) or (Path(run_dir) / "step-task.txt").exists():
         return False
-    return _signal_one(
-        pid, signal.SIGTERM, reason=reason, run_dir=run_dir, allow_group=False
+    _write_sender_record(
+        run_dir,
+        target_pid=pid,
+        reason=reason,
+        sig=signal.SIGTERM,
+        outcome="refused",
+        detail="step task record absent; an active step cannot be excluded",
     )
+    return True
 
 
 def _cgroup_names_step(cgroup: str, required: tuple[str, str]) -> bool:

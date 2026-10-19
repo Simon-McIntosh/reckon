@@ -50,13 +50,17 @@
   and the step's zero signal field show the task stayed alive while the sandbox
   reaped its descendants.</p>
 
-  <p>A pending <code>srun --overlap</code> request has no step task to signal.
-  The supervisor now waits 30 s from its first stop attempt without a step
-  record, then signals the recorded client PID once, with the sender reason
-  <code>stop-before-step-started</code>. A record appearing during that window
-  keeps the stop on the inner processes. Four unit cases cover both outcomes
-  for run-stop and terminal-manifest stopping; the focused gate passed 34 tests
-  with one allocation-only skip. The inner allocation probes were not rerun:
+  <p>Absence of <code>step-task.txt</code> cannot prove that an
+  <code>srun --overlap</code> request is still pending: a step may be active
+  before or without that record. After 30 s without a record, the supervisor
+  writes one <code>stop-before-step-unverified</code> refusal and stops retrying
+  the empty signal path. It continues waiting for the client to exit or for
+  a late record, which reopens the inner stop path. No client signal is sent.
+  Six unit cases cover absent, early and late records for both run-stop and
+  terminal-manifest stopping. The focused gate passed 36 tests with one
+  allocation-only skip. A request that stays pending can hold its slot while
+  the supervisor waits; no signal-based cancellation is safe without positive
+  proof that its step never became active. The inner allocation probes were not rerun:
   their signal path did not change.</p>
 
   <p>The node read <code>draining — Kill task failed</code> before and after the
@@ -67,7 +71,7 @@
 
   <p>Receipts: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T150822949393-a-stopped-worker-ends-inside-its-step/probe-inner-one.log</code>
   and <code>probe-inner-two.log</code>, their adjacent <code>senders.jsonl</code>
-  and <code>exit.json</code> records, <code>pending-step-focused.log</code>,
+  and <code>exit.json</code> records, <code>review-repair-focused-two.log</code>,
   <code>diagnostic-probe.log</code>, and the
   saved <code>negative-control.log</code> and <code>probe-head-one.log</code> for the
   two cancellation controls.</p>

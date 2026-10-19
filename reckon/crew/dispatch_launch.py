@@ -47,7 +47,7 @@ from reckon.crew.routing import (
     _repository_tree_snapshot,
     signal_worker,
 )
-from reckon.crew.process_signal import _run_uses_step, signal_pending_step_client
+from reckon.crew.process_signal import _run_uses_step, refuse_unverified_step_client
 from reckon.crew.runs import (
     _mutate_pointer,
     _pointer_lock,
@@ -2926,7 +2926,7 @@ def _reap_worker_on_its_terminal_manifest(
     stop_deadline: float | None = None
     stop_killed = False
     pending_step_since: float | None = None
-    pending_client_signalled = False
+    pending_client_refused = False
     wait_started_at: float | None = None
     long_wait_recorded = False
     while True:
@@ -2941,7 +2941,7 @@ def _reap_worker_on_its_terminal_manifest(
             stop_requested is not None
             and stop_deadline is None
             and not stop_killed
-            and not pending_client_signalled
+            and (not pending_client_refused or (run_directory / "step-task.txt").exists())
             and stop_requested.is_set()
         ):
             # A stop reaches the run's worker and its children. A placed
@@ -3029,7 +3029,7 @@ def _reap_worker_on_its_terminal_manifest(
         if (
             deadline is not None
             and signalled_at is None
-            and not pending_client_signalled
+            and (not pending_client_refused or (run_directory / "step-task.txt").exists())
             and now >= deadline
         ):
             delivered = signal_worker(
@@ -3051,7 +3051,6 @@ def _reap_worker_on_its_terminal_manifest(
                     wait_started_at = now
         elif (
             signalled_at is not None
-            and not pending_client_signalled
             and now - signalled_at >= _WORKER_GRACE_KILL_SECONDS
         ):
             # The worker ignored the grace signal. SIGKILL cannot be ignored,
@@ -3072,16 +3071,15 @@ def _reap_worker_on_its_terminal_manifest(
             pending_step_since = None
         elif (
             pending_step_since is not None
-            and not pending_client_signalled
+            and not pending_client_refused
             and now - pending_step_since >= _STEP_START_SETTLE_SECONDS
-            and signal_pending_step_client(
-                pid, run_directory, reason="stop-before-step-started"
+            and refuse_unverified_step_client(
+                pid, run_directory, reason="stop-before-step-unverified"
             )
         ):
-            pending_client_signalled = True
-            stop_killed = True
-            signalled_at = now
-            _record_ended(ended_pids, [pid])
+            # An absent wrapper record cannot distinguish a pending request
+            # from an active step. Wait for the record or the client's exit.
+            pending_client_refused = True
             if wait_started_at is None:
                 wait_started_at = now
         if (
