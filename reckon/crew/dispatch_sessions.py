@@ -1065,6 +1065,133 @@ def _carry_fence_unprotected(
         record.pop("fence_unprotected_paths", None)
 
 
+#: The words a provider uses to map a launch. Only a ``turn.failed`` whose own
+#: error message begins with this text is a model-capacity refusal: the account
+#: is not spent and only the one model is unavailable, so the remedy is another
+#: model of the same lane rather than a different lane. The same words quoted
+#: anywhere else in the stream are prose, not the event, and are never read here.
+MODEL_CAPACITY_REFUSAL_PREFIX = "Selected model is at capacity"
+
+
+def _latest_attempt_capacity_refusal(record: Mapping[str, Any]) -> str | None:
+    """The launched model when the latest attempt ended in a capacity turn.failed.
+
+    The stream's own terminal event is the authority, read from the end: the
+    first terminal event decides, so a clean end or any other terminal failure
+    declines whatever prose the stream also carries. Only a ``turn.failed`` whose
+    error message begins with the capacity prefix names the refusal. Returns the
+    model id the attempt launched, or ``None`` for any other ending.
+    """
+    log_path = str(record.get("log_path") or "").strip()
+    if not log_path or not Path(log_path).exists():
+        return None
+    events, _malformed = _backends.cached_stream_events(log_path)
+    for event in reversed(events):
+        kind = str(event.get("type") or "")
+        if kind not in _TERMINAL_STREAM_KINDS:
+            continue
+        if kind != "turn.failed":
+            return None
+        detail = _backends._error_detail(event)
+        if not detail.startswith(MODEL_CAPACITY_REFUSAL_PREFIX):
+            return None
+        agent = record.get("agent")
+        model = ""
+        if isinstance(agent, Mapping):
+            model = str(agent.get("model") or "").strip()
+        return model or None
+    return None
+
+
+#: The event kinds that end a stream. Only the latest of these decides how an
+#: attempt ended; the others are read the same way ``observe`` reads them, so a
+#: refusal is recognised on the event rather than on any text beside it.
+_TERMINAL_STREAM_KINDS = frozenset(
+    ("turn.completed", "turn.failed", "thread.error", "error", "stream.error")
+)
+
+
+def _capacity_resume_swap(
+    record: Mapping[str, Any], config: Mapping[str, Any] | None
+) -> dict[str, Any] | None:
+    """Choose the model a capacity-refused run resumes on, or decline.
+
+    A resume of a run whose latest attempt was refused for model capacity must
+    relaunch another model of the same lane, keeping the session. The refused
+    model is the attempt's recorded model mapped to its lane key through the
+    lane's declared models, and it is left out of the ask. When the ask holds,
+    fails, times out, or names the refused or an undeclared model, the resume
+    takes the lane's first declared model other than the refused one.
+
+    Declines — returning ``None`` — whenever the last attempt ended any other
+    way, the lane declares no other model, or the recorded model maps to no
+    declared key, each of which leaves the resume on its recorded model.
+    """
+    refused_model = _latest_attempt_capacity_refusal(record)
+    if not refused_model or not isinstance(config, Mapping):
+        return None
+    backend = str(record.get("backend") or "").strip()
+    if not backend:
+        return None
+    from reckon.crew import dispatch_picker as picker
+
+    lane = picker.lane_of_backend(config, backend)
+    declared = picker.lane_declared_models(config, lane)
+    block = (config.get("lanes") or {}).get(lane)
+    models = block.get("models") if isinstance(block, Mapping) else None
+    if not declared or not isinstance(models, Mapping):
+        return None
+    refused_key = next(
+        (
+            key
+            for key in declared
+            if str((models.get(key) or {}).get("model") or "").strip() == refused_model
+        ),
+        "",
+    )
+    if not refused_key:
+        return None
+    others = tuple(key for key in declared if key != refused_key)
+    if not others:
+        return None
+    selection: Mapping[str, Any] | None = None
+    try:
+        node = _recorded_task_node(record)
+    except CrewError:
+        node = None
+    if node is not None and picker.lane_names_a_choice(config, lane):
+        _applied, selection = picker.lane_model_selection(
+            node=node,
+            config=config,
+            backend=lane,
+            project=str(record.get("project") or ""),
+            repo=Path(str(record.get("repo") or ".")),
+            session=str(record.get("session") or ""),
+            exclude=(refused_key,),
+        )
+    chosen_key = ""
+    if isinstance(selection, Mapping) and str(selection.get("action") or "") == "route":
+        named = str(selection.get("model") or "").strip()
+        if named in others:
+            chosen_key = named
+    if not chosen_key:
+        chosen_key = others[0]
+    entry = models.get(chosen_key)
+    entry = entry if isinstance(entry, Mapping) else {}
+    chosen_model = str(entry.get("model") or "").strip()
+    if not chosen_model:
+        return None
+    return {
+        "lane": lane,
+        "refused_model": refused_model,
+        "refused_key": refused_key,
+        "model": chosen_model,
+        "effort": entry.get("effort"),
+        "model_key": chosen_key,
+        "selection": selection,
+    }
+
+
 def resume_plan(
     run_id: str,
     advice: str,
@@ -1125,6 +1252,15 @@ def resume_plan(
             f"{session.get('detail') or 'no session authority resolved'}"
         )
     backend = _backend_settings(record, config)
+    # A run whose latest attempt was refused for model capacity relaunches
+    # another model of the same lane. The recorded model and effort would
+    # otherwise win the merge below, so the swap is applied to the settings the
+    # launch is built from, exactly where the resume reads its model.
+    capacity_swap = _capacity_resume_swap(record, config)
+    if capacity_swap is not None:
+        backend["model"] = capacity_swap["model"]
+        if capacity_swap["effort"] is not None:
+            backend["effort"] = capacity_swap["effort"]
     _carry_declared_placement(backend, record, config)
     _carry_declared_gate_documents(backend, record, config)
     lane_gate = _dispatch_lane_gate(backend)
@@ -1243,6 +1379,30 @@ def resume_plan(
         # exactly as the primary dispatch does.
         current["fenced"] = _plan_composed_the_fence(plan)
         current["session_resumed"] = _launched_prior_session(plan) is not None
+        # A capacity swap moved the model, not the lane, so the record gains a
+        # model_changes entry beside lane_changes rather than a lane change: the
+        # lane itself is untouched. The recorded model key must move with the
+        # model, because the ledger prefers it over agent.model and a key left
+        # naming the refused model would credit this attempt's outcome to it.
+        if capacity_swap is not None:
+            agent = dict(current.get("agent") or {})
+            agent["model"] = capacity_swap["model"]
+            if capacity_swap["effort"] is not None:
+                agent["effort"] = capacity_swap["effort"]
+            current["agent"] = agent
+            current["model_key"] = capacity_swap["model_key"]
+            changes = [dict(item) for item in current.get("model_changes") or ()]
+            changes.append(
+                {
+                    "lane": capacity_swap["lane"],
+                    "from_model": capacity_swap["refused_model"],
+                    "from_model_key": capacity_swap["refused_key"],
+                    "to_model": capacity_swap["model"],
+                    "to_model_key": capacity_swap["model_key"],
+                    "reason": "model-capacity",
+                }
+            )
+            current["model_changes"] = changes
         if fresh_reason:
             current["session_id"] = None
             current["session_harness"] = None

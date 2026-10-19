@@ -930,15 +930,25 @@ def lane_declared_models(config: Mapping[str, Any], lane: str) -> tuple[str, ...
     return tuple(str(key) for key in models)
 
 
-def _config_within_lane(config: Mapping[str, Any], lane: str) -> dict[str, Any]:
-    """The configuration narrowed to one lane's backends.
+def _config_within_lane(
+    config: Mapping[str, Any], lane: str, exclude: Iterable[str] = ()
+) -> dict[str, Any]:
+    """The configuration narrowed to one lane's backends, minus named models.
 
     The sibling of :func:`_config_without_lane`: where that removes a lane's
     backends from the offering, this keeps only them, so an ask narrowed to one
     lane is offered that lane's models alone. The default backend is moved onto
     the lane when it sits outside it, so a fallback the picker answers with
     still resolves inside the lane rather than to a backend the ask never saw.
+
+    ``exclude`` names model keys the ask must not be offered. A candidate is
+    enumerated from the lane's ``models`` block, so removing a key there is what
+    leaves that model out of the offering; the derived ``<lane>-<key>`` backend
+    that names it is dropped beside it so no other view of this ask still offers
+    it. The lane's own default entry stays, but with the excluded key gone from
+    ``models`` the enumeration no longer yields it.
     """
+    refused = {str(key) for key in exclude}
     kept = _lane_backend_names(config, lane)
     narrowed: dict[str, Any] = {
         **config,
@@ -946,8 +956,25 @@ def _config_within_lane(config: Mapping[str, Any], lane: str) -> dict[str, Any]:
             name: backend
             for name, backend in (config.get("backends") or {}).items()
             if str(name) in kept
+            and not (refused and str(backend.get("model_key") or "") in refused)
         },
     }
+    if refused:
+        lanes = config.get("lanes")
+        block = lanes.get(lane) if isinstance(lanes, Mapping) else None
+        models = block.get("models") if isinstance(block, Mapping) else None
+        if isinstance(models, Mapping):
+            narrowed["lanes"] = {
+                **lanes,
+                lane: {
+                    **block,
+                    "models": {
+                        key: model
+                        for key, model in models.items()
+                        if str(key) not in refused
+                    },
+                },
+            }
     if lane in narrowed["backends"]:
         narrowed["default_backend"] = lane
     return narrowed
@@ -1003,6 +1030,7 @@ def lane_model_selection(
     orchestrator_assessment: Mapping[str, Any] | None = None,
     due: str | None = None,
     urgency: str | None = None,
+    exclude: Iterable[str] = (),
 ) -> tuple[Mapping[str, Any], dict[str, Any] | None]:
     """Ask Jev for a model inside one named lane, and apply the one it names.
 
@@ -1010,22 +1038,32 @@ def lane_model_selection(
     never reaches the other model that suits the work, so the named lane's own
     models are offered to the picker here and the answer's model is applied to
     the configuration through :func:`reckon.flight.select_lane_model`, exactly
-    as a picker route's model is applied to a routed lane.
+    as a picker route's model is applied to a dispatch's routed lane.
+
+    ``exclude`` names model keys the ask must leave out of the offering — the
+    model a run's last attempt was refused for, when the refusal is a capacity
+    refusal of one model of the lane. An excluded key is neither offered nor
+    accepted as the answer, so a pick that names it reads as no valid pick and
+    leaves the configuration untouched, exactly as a hold or a fallback does.
 
     The lane never changes. A lane declaring fewer than two models, a flight
     whose ``routing.picker`` is not ``route``, a hold, a refusal, a fallback, a
-    pick naming no model of this lane, and a name that reaches no lane at all
-    each leave the configuration untouched and launch the lane default as
-    before; the ask is still returned so the run records what the picker said.
-    Returns ``(config, selection)`` with the selection ``None`` when no ask ran.
+    pick naming no model of this lane (an excluded one included), and a name
+    that reaches no lane at all each leave the configuration untouched and
+    launch the lane default as before; the ask is still returned so the run
+    records what the picker said. Returns ``(config, selection)`` with the
+    selection ``None`` when no ask ran.
     """
     if not lane_names_a_choice(config, backend):
         return config, None
     lane = backend
-    keys = lane_declared_models(config, lane)
+    excluded = {str(key) for key in exclude}
+    keys = tuple(
+        key for key in lane_declared_models(config, lane) if key not in excluded
+    )
     selection = dispatch_picker_selection(
         node=node,
-        config=_config_within_lane(config, lane),
+        config=_config_within_lane(config, lane, exclude=excluded),
         project=project,
         repo=repo,
         session=session,
