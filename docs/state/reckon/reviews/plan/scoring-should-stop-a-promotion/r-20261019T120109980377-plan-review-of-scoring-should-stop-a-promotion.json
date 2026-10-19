@@ -1,0 +1,214 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T12:13:22.119Z",
+  "dispatched_at": "2026-10-19T12:01:52Z",
+  "findings": [
+    {
+      "anchor": "plan#s6",
+      "id": "reasoning-1",
+      "reason": "a worker fenced to \u00a76's paths cannot call the resolver that produces the capability refusal, so the node ships a check its own caller never invokes.",
+      "text": "\u00a76's done-when requires \"the role is refused on a lane that cannot read an image\", and the plan's own gate `g-ssp-figure-lane` states \u00a76 \"must route through select_profile_backend\", but \u00a76's write paths are `reckon/crew/figure_review.py`, `reckon/crew/prompts/figure-review.md`, `reckon/crew/recovery.py` and `tests/test_figure_review.py` \u2014 the resolver lives at `reckon/flight.py:1980` and the review dispatch site at `reckon/crew/recovery_review_dispatch.py:1594`, neither inside the fence",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan#s3",
+      "id": "done_when-1",
+      "reason": "a node can satisfy every clause of \u00a73's measure while leaving the generic brief in place, which the section itself calls \"weaker than the manual one it replaced\", so the measure cannot distinguish done from the defect it was written to remove.",
+      "text": "\u00a73's body states the composed dispatch \"must carry the profile, not the generic line\" and that \"the composed brief names the profile it selected\", yet \u00a73's done-when measures only dispatch-on-cadence, idempotence, refusal-continuation and coverage, and names no negative control",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan#s6",
+      "id": "done_when-2",
+      "reason": "without a declared control the node cannot show its figure-dispatch trigger and capability refusal actually fire, which is the same gap \u00a78\u2013\u00a714 each close with an explicit \"negative control restores\u2026\" clause.",
+      "text": "\u00a76's done-when asserts five behaviours but declares no negative control (no mutation, no inverse case that must stay green)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan#s2c",
+      "id": "wiring-1",
+      "reason": "a completed section ships the guard unreachable in production, which is precisely the \u00a71 failure the plan exists to remove, and nothing on the roadmap wires it.",
+      "text": "\u00a72c records `promotion.sweep_promoted_revisions` as landed and its body comment states \"the sweep has no command-line entry point yet; that is new work, a `reckon crew landed-sweep` subcommand in reckon/cli.py\", but the symbol is reached only from `tests/test_promotion_landed_sweep.py` (no production caller in `reckon/`), and no section, followup or \u00a77 row schedules the subcommand",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan#s11",
+      "id": "wiring-2",
+      "reason": "a coordinator can schedule \u00a711 ahead of \u00a73 and build the \"reflex owns dispatch\" branch against an unarmed reflex, the exact ordering \u00a77 exists to prevent.",
+      "text": "\u00a711's mechanism (\"While the reflex is armed for the session, the review-missing obligation says the reflex will dispatch the review\") presupposes the \u00a73 reflex, but \u00a711 declares no dependency on \u00a73, and \u00a77's sequencing table covers only \u00a72\u2013\u00a76, leaving the implementable \u00a78, \u00a711, \u00a713 and \u00a714 with no declared prerequisite",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan#gates",
+      "id": "anchors_resolve-1",
+      "reason": "the cited evidence exists and is reachable through the sibling plan, so only the link is broken, not the claim.",
+      "text": "the gate `g-ssp-figure-lane`'s evidence href is the whole sentence `a-review-can-see-the-figure \u00a71, promoted run r-20260922T204207559107-\u2026 (commits f2ea9301, 428477c7): BackendConfig declares\u2026` rather than a path, so the \"Evidence\" link resolves to no file",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "plan#s8",
+      "id": "single_goal-1",
+      "reason": "all three are properties of the same index fix and a worker failing the latency bound would report it alongside the correctness result, so splitting changes bookkeeping rather than the mechanism.",
+      "text": "\u00a78's one done-when carries two correctness measures (in-place rewrite re-indexed; misfiled-at-asked-head found) plus a performance bound (obligations timing within 3 s of the stub), which are independent verdicts",
+      "type": "single_goal",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "23fce1192fabfdc9bdf46b53182e49d7cc58a2ddef566ee17ed99bab425a5fbd",
+  "plan_slug": "scoring-should-stop-a-promotion",
+  "plan_version": 210,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "\u00a76 is not built in this session and \u00a714 does not touch it; reported to the lead for the plan's owner",
+      "when": "2026-10-19T12:16:09.469379+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "\u00a73 is not built in this session and \u00a714 does not touch it; reported to the lead for the plan's owner",
+      "when": "2026-10-19T12:16:18.244059+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-2",
+      "reason": "\u00a76 is not built in this session and \u00a714 does not touch it; reported to the lead for the plan's owner",
+      "when": "2026-10-19T12:16:26.752535+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "\u00a72c is a landed section this session did not build; the unreachable sweep entry point is reported to the lead for the plan's owner",
+      "when": "2026-10-19T12:16:35.969245+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-2",
+      "reason": "\u00a714 reads its own ledger row back and does not depend on the review reflex; \u00a711's prerequisite on \u00a73 is reported to the lead for the plan's owner",
+      "when": "2026-10-19T12:16:43.853022+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "the gate's evidence link belongs to \u00a76's gate, which \u00a714 does not touch; reported to the lead",
+      "when": "2026-10-19T12:16:51.840268+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "\u00a78 is not built in this session and \u00a714 does not touch it; reported to the lead for the plan's owner",
+      "when": "2026-10-19T12:17:00.331337+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the gate's evidence link belongs to \u00a76's gate, which \u00a714 does not touch; reported to the lead",
+      "when": "2026-10-19T12:16:51.840268+00:00"
+    },
+    "done_when-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a73 is not built in this session and \u00a714 does not touch it; reported to the lead for the plan's owner",
+      "when": "2026-10-19T12:16:18.244059+00:00"
+    },
+    "done_when-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a76 is not built in this session and \u00a714 does not touch it; reported to the lead for the plan's owner",
+      "when": "2026-10-19T12:16:26.752535+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a76 is not built in this session and \u00a714 does not touch it; reported to the lead for the plan's owner",
+      "when": "2026-10-19T12:16:09.469379+00:00"
+    },
+    "single_goal-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a78 is not built in this session and \u00a714 does not touch it; reported to the lead for the plan's owner",
+      "when": "2026-10-19T12:17:00.331337+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a72c is a landed section this session did not build; the unreachable sweep entry point is reported to the lead for the plan's owner",
+      "when": "2026-10-19T12:16:35.969245+00:00"
+    },
+    "wiring-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a714 reads its own ledger row back and does not depend on the review reflex; \u00a711's prerequisite on \u00a73 is reported to the lead for the plan's owner",
+      "when": "2026-10-19T12:16:43.853022+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-scoring-should-stop-a-promotion.v210.json",
+  "review_run_id": "r-20261019T120109980377-plan-review-of-scoring-should-stop-a-promotion",
+  "reviewed_blob_sha": "64d94234dcc7a680aae21d88aa2536ef0ba1ee0c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 one gate evidence href is a prose sentence rather than a path, so it resolves nowhere; every other href (evidence anchors, the `background-agent-fitness-and-dispatch-scope` plan, all nine figures) resolves.",
+    "done_when": "a finding \u2014 \u00a73's done-when omits the profiled-brief requirement its own body calls necessary, and neither \u00a73 nor \u00a76 names a declared negative control.",
+    "evidence_paths": "pass \u2014 evidence lands under `docs/evidence/archive/` and figures under `docs/figures/`, and every cited anchor and figure resolves; the `/tmp` control-log case is cited as the defect, not committed as the remedy.",
+    "naming": "pass \u2014 new files and fixtures are named by mechanism (`test_promotion_landed_sweep.py`, `test_a_failed_staging_reads_its_row_back.py`, `figure_review.py`), and the section-derived anchor slugs (`s2d-ledger-write-cannot-shrink`) appear only as emitted artifact ids, which is the permitted verdict-key carve-out.",
+    "reasoning": "a finding \u2014 \u00a76's stated mechanism runs through `select_profile_backend`, which its declared write paths do not contain, so the node cannot make its own refusal reachable on the real code path.",
+    "single_goal": "a finding \u2014 \u00a78 carries two correctness clauses and a latency bound in one done-when.",
+    "wiring": "a finding \u2014 every `plan-informs` target resolves and \u00a72c records an unwired sweep, but the reflex \u00a73 the still-open \u00a711 and \u00a78/\u00a713/\u00a714 presuppose is covered by no declared dependency and no \u00a77 sequencing row."
+  },
+  "section_digests": {
+    "_document": "d20f1dcc7fe7316bcafc2f36cc843b371088b586c60d72005c5a045d6fe565cf",
+    "s1": "80bb6f490cd042d9e8a687df7c507b613bebe3f255fe6d6acc39cd1af3fc764e",
+    "s10": "58ce55634b1139deebbacc64374dfc3b9f95a048256fae52ae6bbbd611fe06e1",
+    "s11": "12ca91ff46282400591910a71afc454966a0e7b0db697803af45c408f0538a6d",
+    "s12": "8fc0e32c910c072509963e1cde86a06ef0f38637847779509acf73cfea049ac1",
+    "s13": "4468d3febaa235841362d43149cd5a148b22dc43e3e4a449e7ad5535064cd12b",
+    "s14": "1f02a67dbccf92b3b1181cfcd86eb28b5ab9819cd64cd48a914154e883a8c6ec",
+    "s2": "a5b9af7082beec0446285c38e1363c16558ff8c37672b48d76c4fad4ccd81080",
+    "s2c": "5a7c7c8511a9e1dbc3faface290e2ae70fdda908b18a85ba8f64620edbeda54e",
+    "s2d": "338c41385c9011225386aa9a609c32e76003fd1a6cf6dcb58635c80b47d331ce",
+    "s2e": "ee6560c4da65bc28976152bca3855cbca84be7c1540b6f4c77398968add70550",
+    "s2f": "576cde224cd92bba95eb0b27946230a24ef2446fff19cc0fe636279c704a0dee",
+    "s2g": "11fa9736b2aae90ccde19fe3710f1263c44daa94aa4844aa5fb1b7611ecd6e81",
+    "s2h": "2f7fd9478dc7416b5794b2e20fec7373e94791bec72c397ad0f1df4d7f8f45e9",
+    "s2i": "ed065c467b7652cbb12d681845b9e5193fc90adea484f8079e42384d12495b6d",
+    "s2j": "1769663e0f36bba5566f26d92be1be4afd31143190193436fbbf04a43eab04f1",
+    "s2k": "b6fc2df79162c3ad10da610e5e395ce821e547abe29de1885d84d41c99a4c235",
+    "s3": "9ef758880694a735dd49d88e2b4b01b48aee693a77d3896b3bdd80154e7b2c9a",
+    "s4": "5d67d3bc9b218a16bcb96f699b7124495b1513588f4f43f4ec3f4d405ba4d4f7",
+    "s4b": "d36b747f10c15eb1483ce3b0ec1509e0a1686c6833add3864e91cc58c2379ac2",
+    "s5": "5a862e80db57f1eb9b94f987c151bd5bdf079e76a863d6d06a6e6f5235de9780",
+    "s5b": "8df4ec55ed3f4389206b15ec05b1e195f5f5456485befa9c07c4c7adf2322fc6",
+    "s5c": "c9b831d300f0c91f91adbd39bcfcf5d7c4fe233f5d636a4e21536fecb4bd36ce",
+    "s5d": "727b4b1219350bbc522610128fb2941c897901d031f8a8c5b4da5122751e1cd6",
+    "s5e": "5951f48eb75dff6738971cf54a98fc62a8612b9a8b7bd28f6a091123bb293313",
+    "s5f": "a6ef0c694960ee9ede9f159280853afddb2b3bdd09f3240c727fa1218787dc87",
+    "s5g": "05818b1088a6bf35a2c04bb635269f99c53b36d961c81f0524a36d0c3ec64a87",
+    "s5h": "7e3b60d10c806794b185f1f6bd75809b83e45a3d2d37f37128ceabed5d403e96",
+    "s5i": "c590c4926015c0cfb65faa25a45f32b22be05a55d7e5c577c37cb6532fc1f433",
+    "s5j": "714fbc2c52e98b0a935445988c0e7853221c00e10353af7b8b434b957c9dd0ad",
+    "s6": "efbbec7034e3043c3f08ab60360de4044a8a4ba680cdcd8e4a633994fd59bbd6",
+    "s7": "771dbccd4221eeadbd02945dd919f84c6c4ba28cfad8d2b03b42ddbcef0c1fe8",
+    "s8": "87d06c23a29b8b2827c560b7acea2a33336f873a6d9499845f8f0406ac2aa83a",
+    "s9": "b662fb73af4ef5b1b8896350c0864a2c266c5d1d78b138194c74fda976971741"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T12:16:04.788684+00:00"
+}
