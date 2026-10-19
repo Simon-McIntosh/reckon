@@ -1,19 +1,23 @@
-"""A list value joined by a separator the parser does not split is refused.
+"""A path list joined by a separator the parser does not split is refused.
 
 A manifest's list fields are split on commas and newlines. A worker that writes
-several entries on one line joined by a semicolon instead gets a value read as a
+several *paths* on one line joined by a semicolon instead gets a value read as a
 single entry: the first path satisfies the write-scope audit and every path
 after the separator is never checked at all, so the guard looks applied while
 covering one entry. The refusal names the field and the separator rather than
 reading the joined value, so the scope audit sees every entry or a refusal and
 never a joined string.
 
+The refusal is scoped to the fields whose entries the scope audit reads —
+``changed_paths`` and the ``orientation_write_paths`` declaration — and every
+other list field keeps the reading it had. A prose field such as ``follow_ons``
+or ``blockers`` routinely names a path after a semicolon as ordinary
+punctuation, and refusing it would refuse a delivered manifest for its wording
+rather than for a joined path list, so a semicolon there is left as written.
+
 The accepted forms are asserted beside the refusal: the same paths written
 comma-separated and as a JSON array still parse into separate entries and the
 out-of-scope entry is reported, so the rule refuses a join and not the paths.
-The negative half of the path-like test is asserted too — a semicolon inside a
-prose item whose tail is a word rather than a path is left alone — because the
-rule fires on the shape of a joined path list, not on every semicolon.
 """
 
 from __future__ import annotations
@@ -35,23 +39,27 @@ COMMA_PATHS = f"{REPORTS_ROOT}/x.html, scripts/foo.py, logs/bar.log"
 JSON_PATHS = f'["{REPORTS_ROOT}/x.html", "scripts/foo.py", "logs/bar.log"]'
 OUT_OF_SCOPE = ("scripts/foo.py", "logs/bar.log")
 
+# A prose list field naming two paths either side of a semicolon. This is
+# ordinary writing in a follow_ons or a blocker, not a joined path list.
+PROSE_WITH_PATHS = "see scripts/foo.py; logs/bar.log for the run logs"
 
-def _manifest(changed_paths: str) -> str:
-    return "\n".join(
-        [
-            "node: a-joined-path-list-is-refused",
-            "status: complete",
-            "commits: 1a2b3c4",
-            "tests: pytest -q tests/x.py (passed)",
-            f"changed_paths: {changed_paths}",
-        ]
-    )
+
+def _manifest(changed_paths: str = "none", **extra: str) -> str:
+    lines = [
+        "node: a-joined-path-list-is-refused",
+        "status: complete",
+        "commits: 1a2b3c4",
+        "tests: pytest -q tests/x.py (passed)",
+        f"changed_paths: {changed_paths}",
+    ]
+    lines.extend(f"{key}: {value}" for key, value in extra.items())
+    return "\n".join(lines)
 
 
 def _node() -> TaskNode:
     return TaskNode(
         id="a-joined-path-list-is-refused",
-        goal="refuse a list value joined by an unsplit separator",
+        goal="refuse a path list joined by an unsplit separator",
         plan="scoring-should-stop-a-promotion",
         write_paths=[REPORTS_ROOT],
     )
@@ -63,7 +71,7 @@ def _audit(changed_paths: str, tree: Path) -> dict:
     )
 
 
-def test_a_joined_path_list_is_refused(tmp_path: Path) -> None:
+def test_a_joined_changed_paths_list_is_refused(tmp_path: Path) -> None:
     # The joined value is refused at the parse, naming the field and the
     # separator, rather than read as one entry.
     with pytest.raises(ManifestParseError) as raised:
@@ -79,6 +87,16 @@ def test_a_joined_path_list_is_refused(tmp_path: Path) -> None:
     joined = "\n".join(audit["findings"])
     assert "changed_paths" in joined
     assert "';'" in joined
+
+
+def test_a_joined_orientation_write_paths_list_is_refused() -> None:
+    # The write-path declaration is a path list too, so the same join there is
+    # refused the same way, naming that field.
+    with pytest.raises(ManifestParseError) as raised:
+        parse_manifest(_manifest(orientation_write_paths=JOINED_PATHS))
+    message = str(raised.value)
+    assert "orientation_write_paths" in message
+    assert "';'" in message
 
 
 def test_the_same_paths_comma_separated_still_parse_into_entries(
@@ -113,9 +131,7 @@ def test_the_same_paths_as_a_json_array_still_parse_into_entries(
         assert path in stray
 
 
-def test_an_entry_retaining_a_semicolon_after_splitting_is_refused(
-    tmp_path: Path,
-) -> None:
+def test_an_entry_retaining_a_semicolon_after_splitting_is_refused() -> None:
     # A value whose comma-split leaves a semicolon and a path in one entry is
     # refused the same way: the join is caught whether it spans the whole value
     # or survives inside a single entry.
@@ -126,9 +142,21 @@ def test_an_entry_retaining_a_semicolon_after_splitting_is_refused(
     assert "';'" in str(raised.value)
 
 
-def test_a_semicolon_in_prose_is_left_alone(tmp_path: Path) -> None:
-    # A semicolon whose tail is a word rather than a path is prose, not a
-    # joined path list, so a blocker written that way is read as written.
+def test_follow_ons_prose_naming_two_paths_is_accepted() -> None:
+    # A prose field that names two paths either side of a semicolon is not a
+    # joined path list, so it is read as written rather than refused. The same
+    # text written as changed_paths is refused, which shows the refusal is
+    # scoped to the path fields rather than to the semicolon.
+    parsed = parse_manifest(_manifest(follow_ons=PROSE_WITH_PATHS))
+    assert parsed["follow_ons"] == [PROSE_WITH_PATHS]
+
+    with pytest.raises(ManifestParseError) as raised:
+        parse_manifest(_manifest(PROSE_WITH_PATHS))
+    assert "changed_paths" in str(raised.value)
+
+
+def test_a_semicolon_in_blocker_prose_is_left_alone() -> None:
+    # A blocker written as one sentence with a semicolon stays prose.
     prose = "tried the smoke run; it failed on the warm start"
     manifest = "\n".join(
         [
@@ -138,5 +166,4 @@ def test_a_semicolon_in_prose_is_left_alone(tmp_path: Path) -> None:
             "changed_paths: none",
         ]
     )
-    parsed = parse_manifest(manifest)
-    assert parsed["blockers"] == [prose]
+    assert parse_manifest(manifest)["blockers"] == [prose]

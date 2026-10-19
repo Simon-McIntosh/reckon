@@ -86,6 +86,18 @@ _MANIFEST_LIST_KEYS = (
 )
 _NONE_VALUES = {"", "none", "n/a", "-", "nil"}
 
+# The list fields whose entries are paths the write-scope audit reads. A value
+# joined by a separator the parser does not split is refused for these fields
+# only: the scope audit consumes their entries one by one, so a joined value
+# would scope-check the first entry and silently pass every entry after the
+# separator. Every other list field — ``artifacts``, ``evidence_inputs``,
+# ``follow_ons``, ``blockers`` — carries prose, where a semicolon before a path
+# is ordinary punctuation rather than a join, and those fields keep the reading
+# they had. ``orientation_write_paths`` is declared here beside the other list
+# fields because it is a path list too, named as a declaration rather than a
+# delivery, and the same join escapes the same audit.
+_PATH_LIST_KEYS = frozenset({"changed_paths", "orientation_write_paths"})
+
 # The status spellings a worker writes. This is the single statement of the
 # vocabulary: the classifier decides "was the worker working, not done" against
 # these same sets, and the reader refuses a status word that is in neither set
@@ -757,9 +769,10 @@ def _normalise_manifest_fields(
 ) -> dict[str, Any]:
     """Apply the typed post-processing shared by both manifest formats."""
     has_retry_failures = "retry_failures" in fields
+    for name in _PATH_LIST_KEYS:
+        _refuse_joined_list_separator(name, fields.get(name), path=path)
     for name in _MANIFEST_LIST_KEYS:
         value = fields.get(name)
-        _refuse_joined_list_separator(name, value, path=path)
         fields[name] = (
             _coerce_commit_identifiers(value)
             if name == "commits"
@@ -832,12 +845,15 @@ def _joined_list_separator_candidates(value: Any) -> list[str]:
 
 
 def _refuse_joined_list_separator(field: str, value: Any, *, path: str | None) -> None:
-    """Refuse a list field whose entries a semicolon joins instead of a comma.
+    """Refuse a path-list field whose entries a semicolon joins instead of a comma.
 
-    The finding names the field and the separator, and the entry the separator
-    stands before, so its author can rewrite the value as a comma list or a
-    JSON array. ``None`` and an explicit nothing are left alone: this rule
-    judges a joined value, not an empty one.
+    Called only for the fields in :data:`_PATH_LIST_KEYS`, whose entries the
+    write-scope audit reads: a joined value there would be scope-checked as one
+    entry and pass every path after the separator. The finding names the field
+    and the separator, and the entry the separator stands before, so its author
+    can rewrite the value as a comma list or a JSON array. ``None`` and an
+    explicit nothing are left alone: this rule judges a joined value, not an
+    empty one.
     """
     for candidate in _joined_list_separator_candidates(value):
         for match in _SEMICOLON_THEN_TOKEN.finditer(candidate):
