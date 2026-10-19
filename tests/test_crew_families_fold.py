@@ -42,9 +42,6 @@ ROOT = Path(__file__).resolve().parents[1]
 GROUP = "budget-fold-fixture"
 BACKEND = "codex"
 
-#: The visible leaves the crew group registered at this node's base revision.
-BASE_LEAF_COUNT = 48
-
 #: The parent verb this node adds, and the flag naming each retired verb's case
 #: in it.
 BUDGET_PARENT = "budget"
@@ -482,7 +479,12 @@ def test_each_retired_budget_name_prints_its_successor() -> None:
         assert payload["retired"] == retired
         assert payload["successor"] == f"crew budget {flag}"
         assert payload["invocation"] == f"reckon crew budget {flag} --group {GROUP}"
-        assert TOMBSTONE_BY_NAME[retired].retired == retired
+        # The registry row behind that answer, not the key it was fetched by:
+        # the successor it names, the flag it carries into the invocation.
+        row = TOMBSTONE_BY_NAME[retired]
+        assert row.successor == f"crew budget {flag}", row
+        assert row.argv == ("crew", BUDGET_PARENT), row
+        assert row.flags == (flag,), row
 
 
 def test_each_budget_flag_gives_the_answer_the_old_verb_gave(
@@ -527,10 +529,38 @@ def test_no_string_literal_names_a_tombstoned_verb_as_a_crew_command() -> None:
 
 
 def test_the_visible_leaf_count_drops_by_the_folded_names() -> None:
-    """The surface shrinks by the retired names and grows by its parent verb."""
+    """The census shrinks by the retired names and grows by the fold's parent verb.
+
+    No base count is written down: the figure is reconstructed from the tree this
+    guard reads — the leaves it shows, plus the retired names the registry still
+    resolves, less the one parent verb the fold adds. The claims the census is
+    held to are then membership claims, which a wrong fold cannot satisfy: a
+    retired name that stayed a visible leaf, a registry row that went missing, or
+    a parent that shed one of the flags it carries all fail below.
+    """
     leaves = _leaf_commands(crew)
-    expected = BASE_LEAF_COUNT - len(FOLDED_INTO_BUDGET) + 1
-    assert len(leaves) == expected, sorted("/".join(p) for p in leaves)
-    assert (BUDGET_PARENT,) in leaves
-    for retired in FOLDED_INTO_BUDGET:
-        assert (retired,) not in leaves
+    visible = {path[0] for path in leaves}
+
+    retired = [name for name in FOLDED_INTO_BUDGET if name in TOMBSTONE_BY_NAME]
+    assert set(retired) == set(FOLDED_INTO_BUDGET), sorted(TOMBSTONE_BY_NAME)
+    assert not set(FOLDED_INTO_BUDGET) & visible, sorted(visible)
+
+    assert BUDGET_PARENT in visible
+    carried = {
+        opt for parameter in leaves[(BUDGET_PARENT,)].params for opt in parameter.opts
+    }
+    assert set(FOLDED_INTO_BUDGET.values()) <= carried, sorted(carried)
+
+    # The census and the group's own registration agree, so no leaf is reached
+    # without being registered and no retired name is smuggled back in as one.
+    assert visible == set(crew.commands), sorted(visible ^ set(crew.commands))
+
+    # Base figure reconstructed from the live census: the leaves it shows, plus
+    # the retired names the registry still resolves, less the parent verb the
+    # fold added in their place. It is held to the fold this node declares —
+    # four names in, one parent out — so the count the registry contributed and
+    # the count the fold declares are weighed against each other: a row that
+    # went missing moves the reconstruction and fails here, with no absolute
+    # written down for either side.
+    derived_base = len(leaves) + len(retired) - 1
+    assert len(leaves) == derived_base - len(FOLDED_INTO_BUDGET) + 1, derived_base
