@@ -26,7 +26,7 @@
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -266,7 +266,8 @@
     <p><strong>Deliverable.</strong> The guard stops turning slowness into a reconnect:</p>
     <ul>
       <li>When the child makes no answer, the call's own result stands, error code unchanged, with <code>code_stamp_at_start</code>, <code>code_stamp_now</code> and a note that the current code did not answer within its bound. A <code>version_conflict</code> stays a <code>version_conflict</code>.</li>
-      <li>Current code is loaded once per code stamp, in one persistent child behind the stdio front. The child takes calls as request-tagged JSON lines and is reused until the stamp moves again, when it is stopped and one new child is started. A call goes to the child only once it has answered at least once. Until then the running image serves it, so a cold child never makes a call wait. The child ends when the server ends: it exits when its input pipe closes.</li>
+      <li>Current code is loaded once per code stamp, in one persistent child behind the stdio front. When the guard first sees the stamp move, it starts the child and sends a readiness probe. The child imports the checkout, reports each tool's parameter names, and runs no tool. It is warm once it has answered the probe. It takes calls as request-tagged JSON lines and is reused until the stamp moves again, when it is stopped and one new child is started. The probe's parameter names are also what detect a changed tool signature. The child ends when the server ends: it exits when its input pipe closes.</li>
+      <li>While the child is cold, the running image serves every call, and a failed call keeps its own result as above, so a cold child never makes a call wait. Once the child is warm, a call of a tool that has fallen back goes to the child instead of the image, so it runs once. If the child does not answer a routed read within its bound, the read falls back to the image. A routed write (<code>edit_plan</code>, or <code>crew</code> with an <code>action</code>) is never re-run on the image. It returns a timeout saying the call may have landed, which names the re-read to make before retrying.</li>
       <li>The <code>stale_server_code</code> refusal remains for one case only, a tool whose parameters changed. There the client holds the schema it connected with, and a reconnect is the real remedy.</li>
     </ul>
     <p>§3 weighed re-exec and found it cannot carry an initialised stdio session. An in-process module reload would leave live references into the old modules. A persistent child keeps §3's self-reload, which the <code>stale-image-remedy</code> decision locked, and pays the import once.</p>
@@ -275,14 +276,21 @@
     <ul>
       <li>A call that fails with <code>version_conflict</code>, while the child makes no answer within its bound, returns <code>version_conflict</code> with both stamps attached and no <code>reconnect</code> field.</li>
       <li>Twenty calls after the stamp moves start one child, counted by a spawn hook. A further stamp move stops it and starts exactly one more.</li>
-      <li>A call made while the child is still cold is served by the running image without waiting on the child.</li>
-      <li>A tool whose parameters changed still returns <code>stale_server_code</code> with its <code>reconnect</code> remedy.</li>
+      <li>A call made while the child is still cold is served by the running image without waiting on the child. The child turns warm on its probe answer, and its call log shows no tool call sent to warm it.</li>
+      <li>Once the child is warm, a call of a tool that has fallen back runs once, in the child. The image's call count for that tool stays at zero.</li>
+      <li>A routed write that the child does not answer within its bound returns the may-have-landed timeout, and the image's write count stays at zero.</li>
+      <li>A tool whose parameters changed, as the probe reports them, still returns <code>stale_server_code</code> with its <code>reconnect</code> remedy.</li>
       <li>Closing the server's end of the pipe ends the child.</li>
     </ul>
-    <p>Two negative controls, each logged:</p>
+    <p>Each case has a negative control, and each control's log is kept:</p>
     <ul>
       <li>Restoring the refusal on an unanswered child fails the first case.</li>
       <li>Starting a child per call fails the second.</li>
+      <li>Making a cold call wait for the child, or warming it with the caller's own call, fails the third.</li>
+      <li>Running a routed call on the image as well as the child fails the fourth.</li>
+      <li>Re-running a timed-out write on the image fails the fifth.</li>
+      <li>Ignoring the probe's parameter names fails the sixth.</li>
+      <li>Leaving the child running after the pipe closes fails the seventh.</li>
     </ul>
     <p><code>tests/test_mcp_server_serves_current_code.py</code> and <code>tests/test_mcp_tools.py</code> add no failure, and <code>tests/test_every_module_fits_a_worker_window.py</code> adds none either. Write paths: <code>reckon/mcp.py</code>, <code>reckon/served_code.py</code>, <code>tests/test_mcp_server_serves_current_code.py</code>, <code>tests/test_a_slow_child_never_forces_a_reconnect.py</code>. <code>reckon/mcp.py</code> is also the write path of <a href="/reckon/the-crew-surface-is-one-tool-and-a-few-verbs#s5">the-crew-surface-is-one-tool-and-a-few-verbs §5</a>, which waits for this section to land.</p>
 
