@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T14:18:12.792Z",
+  "dispatched_at": "2026-10-19T14:04:28Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:206",
+      "id": "done_when-1",
+      "reason": "the node can run its named check, see \"none\", and close \u00a76 while the archive flow it documents is refused at runtime, so the verification for \"every reckon caller that sets one moves to `close`\" is narrower than the claim it certifies.",
+      "text": "the gate greps \"the three recipe files and skills/reckon-create/SKILL.md\" (coordinator-reference.md, sprint-orchestration.md, AGENTS.md, reckon-create/SKILL.md) for \"an instruction to ... set a terminal status, which finds none\", but `skills/reckon-edit/SKILL.md:636` still instructs `ops=[{\"op\":\"set\",\"path\":\"status\",\"value\":\"archived\"}]`, a terminal value \u00a76 makes a refusal, and it is in neither the gate grep set nor the census's \"tests/ and reckon/\" scope",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ddb48b39b818c00b3825b000537568a6e9b51e845a9f09c1baf4357088169692",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 26,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-19T14:19:25.546040+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T14:19:25.546040+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-plan-write-goes-through-edit-plan.v26.json",
+  "review_run_id": "r-20261019T140344768869-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "ff3164176ff61471351d27e851a77106d199b2a7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/lifecycle.py`, `validate_landing_patch`, `_require_transition_verdict` (reckon/_store.py:3563), `_refuse_appended_hiding_followups` (:3390), `continuation_present` (:3359), `CONTINUATION_REQUIRED` (:3302) and the five base test files all resolve; the resolved-placeholder recipe does live in coordinator-reference.md:1017,1029,1144, sprint-orchestration.md:550 and AGENTS.md:267,296 as the section claims.",
+    "done_when": "a finding \u2014 \u00a76's gate greps four files for a surviving \"set a terminal status\" instruction and omits `skills/reckon-edit/SKILL.md`, which carries one at :636.",
+    "evidence_paths": "pass \u2014 the gate writes to the run's own log with `EXIT=0`; no session scratchpad or node-local path is named.",
+    "naming": "pass \u2014 the proposed test file and symbols carry no plan, sprint or ticket identifiers, and the prose describes the mechanism rather than a tracker entry.",
+    "reasoning": "pass \u2014 the qualified guard list matches `validate_landing_patch` (:3526-3541): section-ticked and continuation are gated on `_LANDED_STATUSES`, and the evidence and transition-verdict guards fire for every `TERMINAL_STATUSES` value, so the \"superseded or archived close is not newly refused\" claim holds against both the ops path (`_write_state_locked`, :1313-1322) and the patch path.",
+    "single_goal": "pass \u2014 the `close` op, the `set status` refusal, the recipe drop and the op-table entry are one coupled deliverable with one test file and one version-step measure.",
+    "wiring": "pass \u2014 \u00a76 depends only on \u00a75 (done); the `deferred-continuation` decision was moved off s6 onto `data-sections=\"s8\"`, so \u00a76 is dispatchable, and the s9\u2190s6 edge added by the same change orders \u00a79 behind \u00a76 for the shared `reckon/mcp.py` write."
+  },
+  "section_digests": {
+    "_document": "aea24b8be36466854f5f5e1fec63f708605f2a200a01ed0c8f89462e621467e8",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s2": "737250903251177035b357be3d656b549480337bc454f97615634dada495e251",
+    "s3": "4150e9281b9c0fe1173e9c23f5582efb0662d22f1d36944861d3033f988d479c",
+    "s4": "e0390ff35ac5e425fa3060cede9882af598c54dc89e0a6069101b3971f8e8367",
+    "s5": "699b049fe374b1219d8b917168575594a5bcb9255bbe13efdbf1d0c928562a86",
+    "s6": "e213f51713d397d36d9ac85430c1e0fe3d1a57fd84b3131962e6c8ee45c58eeb",
+    "s7": "80062db679255aff5087534386e7372545e1cd3414916db8329aec79a1a8388d",
+    "s8": "f9dd6299834b4d039fd1f45b37141d5e265075b4cfd7f341357bea21196f5b35",
+    "s9": "bd2c3090ecc9a89ad8c0b2f7312aae077382dd2709954d9e27f449e984d622a8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T14:19:21.163912+00:00"
+}
