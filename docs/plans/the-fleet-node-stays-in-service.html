@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-moves-to-a-new-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -128,7 +128,7 @@
     </p>
 
     <h2 id="s3">&sect;3 &mdash; A stopped worker ends inside its step</h2>
-    <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       The step must end by its own task exiting, never by the scheduler's kill. The
       per-run supervisor already owns a worker's parentage, its stop signals and its
@@ -500,6 +500,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261018T150822949393-a-stopped-worker-ends-inside-its-step" data-who="reckon-build" data-when="2026-10-19T06:14:46Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-fleet-node-stays-in-service/a-stopped-worker-ends-inside-its-step.html — pending-step query resolves squeue from PATH even when placed argv names a host shim; client and inner target assertions are distinct; focused gate 44 passed, 1 skipped, added_failures=0; live inner path unchanged, prior step 1281970.7012 FAILED|9:0 after 60.06 s.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-19T06:30:00Z">
+    <div class="r-comment-body"><p>§3 landed (merge <code>a80d85d25</code>). Placed workers are stopped below the sandbox init. Live steps ended <code>FAILED|9:0</code> with no cancellation and the node state unchanged, against two CANCELLED controls. A not-yet-started step's client is signalled once, only when <code>squeue</code> lists no step named after the run. The change adds 24 test cases in 12 functions; the ledger row was promoted with 23, missing the skipped live probe. Review: 105 of 120, no added failures. Follow-ons: two pending-step assertions echo their own inputs (<code>inner_sent</code>, and the receipt's <code>target_pid</code>). <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s3">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261018T151304298883-a-producer-sweeps-only-on-change" data-who="reckon-build" data-when="2026-10-19T05:58:55Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-fleet-node-stays-in-service/a-producer-sweeps-only-on-change.html</p></div>
