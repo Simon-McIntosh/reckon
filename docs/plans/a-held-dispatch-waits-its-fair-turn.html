@@ -25,7 +25,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="193">
+<meta name="plan-version" content="194">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;implementable&quot;,&quot;s31&quot;:&quot;implementable&quot;,&quot;s32&quot;:&quot;implementable&quot;,&quot;s33&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -663,6 +663,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261019T074224750696-a-discard-keeps-the-admission-record" data-who="reckon-build" data-when="2026-10-19T08:35:32.333Z">
     <div class="r-comment-body"><p>_write_discard_record in reckon/crew/promotion.py keeps the discarded pointer's admission record on the marker it already writes — queued_at, session, backend, reason, hold (with its nested held) and the failure fields _stamp_failure stamps — via the new DISCARD_ADMISSION_KEYS tuple, leaving a key the pointer never carried off the record rather than writing it null, wherever the marker lands (run directory or discards spool); focused gate tests/test_a_discard_keeps_the_admission_record.py 3 passed EXIT=0, negative control red (2 failed, 1 passed, EXIT=1) with the first case failing, and the promotion-importer population added 0 failures against base (head 7 failed / 644 passed, the same 7 ids failing on a clean HEAD extraction)</p></div>
+</div>
+<div class="r-comment" data-section="s32" data-id="c-run-r-20261019T133014889888-review-of-a-queued-review-composition-reports-itself-queued-825178fb3ea9" data-who="reckon-build" data-when="2026-10-19T13:48:12.893Z">
+    <div class="r-comment-body"><p>Reviewed r-20261019T122526603151-a-queued-review-composition-reports-itself-queued at base 002f85b4f0df85463466aa0a8caea8297020045d / head 825178fb3ea96bb4e69bc304220050b3c47d5f79 and stored a parsed record scoring goal_fidelity 19, evidence 16, scope_discipline 20, durability 16, fit 17, reuse 5, with added_failure_count 0 and three follow-on findings; the change delivers §32&#x27;s deliverable (a held `crew review` reports the queued crew run and exits 0, a paused gate exits 75, and the code-review branch catches LaneHeld), and the three findings are a duplicated held-result payload, an uncaught plain LanePaused on the code-review branch, and a truncated orientation_base_sha in the reviewed manifest.</p></div>
 </div>
 </section>
 </main>

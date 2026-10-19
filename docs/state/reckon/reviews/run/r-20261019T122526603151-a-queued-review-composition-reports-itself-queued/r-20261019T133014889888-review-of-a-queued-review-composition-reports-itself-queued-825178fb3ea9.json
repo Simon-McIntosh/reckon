@@ -1,0 +1,79 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Reddens on the declared regression: the negative control restores the error-passthrough branch and this case fails at `assert result.exit_code == 0` with `1 == 0` (<run>/negative-control-error-passthrough.log). The `run_id`/`position` assertions compare the CLI's output against the queued record the stub was handed, but the code under test chooses between two run ids the test supplies separately (the queued record's at :96 and the composed directory's at :100), so a swap or a fallback to the report's own id reddens them; they are not self-comparing.",
+      "lines": "tests/test_a_queued_review_reports_queued.py:93-101"
+    },
+    {
+      "failure_condition": "Reddens on the declared regression: it fails at `assert result.exit_code == 75` with `1 == 75` in the negative-control log. It also reddens if `_emit_held_review`'s no-queued branch were folded back into the generic error path, which is the shape the node repaired.",
+      "lines": "tests/test_a_queued_review_reports_queued.py:111-114"
+    },
+    {
+      "failure_condition": "Reddens if `dispatch_awaiting_reviews` stopped sorting on the report's own `error` field, or reported the source run's id rather than the report's `run_id`: it asserts lane_paused == [COMPOSED_ID] while the stubbed source pointer is `r-source` (reckon/crew/recovery_review_acceptance.py:504-506), so the two ids are independent of each other and only the report's own id satisfies it. It is a reading of an unchanged file, not a guard on the diff.",
+      "lines": "tests/test_a_queued_review_reports_queued.py:151-154"
+    },
+    {
+      "failure_condition": "Reddens if the `except LaneHeld` block at reckon/crew_dispatch_commands.py:2506 is removed: the exception then reaches `except (ValueError, OSError, CrewError)` at :2583 and the command reports `crew_error` at exit 1, failing `assert result.exit_code == 0`. The report_run_id assertion is independent: it is computed by the production helper `plan_review.code_review_report_directory(subject).name`, not by a literal the test wrote. Not covered by the negative control, which mutates only the plan-review branch.",
+      "lines": "tests/test_a_queued_review_reports_queued.py:173-182"
+    },
+    {
+      "failure_condition": "Reddens under the same removal as the fourth case, the other way: without the `except LaneHeld` block the command reports `crew_error` at exit 1 rather than `lane-paused` at 75, failing both `assert result.exit_code == 75` and `assert payload[\"error\"] != \"crew_error\"`. `assert payload[\"error\"] != \"crew_error\"` is redundant with the `== \"lane-paused\" line above it but is not wrong.",
+      "lines": "tests/test_a_queued_review_reports_queued.py:201-204"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2280 crew_review (the crew review click command, its only production entry)",
+    "reckon/crew_dispatch_commands.py:2310 crew_review -> _run_review (the function the change lives in)",
+    "reckon/crew/plan_review.py:160 review_invocation (emits the `reckon crew review ...` command string every surface hands an agent, so the new exit code and payload are what those readers act on)",
+    "reckon/crew/plan_review.py:182 answer_invocation (emits the `reckon crew review ... --answer` command string, which shares the command the change governs)",
+    "reckon/crew/recovery_review_acceptance.py:506 dispatch_awaiting_reviews (sorts the composition report this branch newly reads, on `report.get(\"error\") == \"lane-paused\"`; the node asserts this is unchanged)"
+  ],
+  "completed_at": "2026-10-19T13:48:12.893Z",
+  "dispatched_at": "2026-10-19T13:31:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": "270",
+      "severity": "follow-on",
+      "text": "follow-on: `_emit_held_review` re-implements the held-result payload the module already builds inline in the `crew dispatch` branch, `except LaneHeld as exc:` at reckon/crew_dispatch_commands.py:1995-2039 (the queued payload at 2015-2028 and the lane-paused payload at 2029-2039). The new helper's two payloads are the same key set as that branch's (`ok`, `queued`, `phase`, `detail`, `run_id`, `position`, `reason`, `lane_gate`, plus `report_run_id`; and `ok`/`error`/`detail`/`reason`/`lane_gate`), and the queued detail sentence is the same string. The two must now be kept in step by hand, so the contract \u00a732 fixes for `crew review` can drift from the `crew dispatch` contract it was fixed to match. It does not block landing: the export payloads agree today."
+    },
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": "2506",
+      "severity": "follow-on",
+      "text": "follow-on: the code-review branch catches `LaneHeld` but not its plain parent `LanePaused` (reckon/crew/dispatch_admission.py:1170-1182, `class LaneHeld(LanePaused)`), so a paused lane gate raised through `plan_review.dispatch_code_review` (reckon/crew/dispatch.py:1540) is still caught by the generic `except (ValueError, OSError, CrewError)` at reckon/crew_dispatch_commands.py:2583 and reported as `crew_error` at exit 1, where the plan-review branch now reports `lane-paused` at exit 75. `crew review --around` therefore reads a paused gate differently from `crew review --plan`, which is the same asymmetry the node repaired for `LaneHeld` one level down the hierarchy. \u00a732's measured case was a router hold, so this is outside the declared deliverable and does not hold the node."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T122526603151-a-queued-review-composition-reports-itself-queued/manifest.md",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: `orientation_base_sha` is written as `002f85b4f0df85463466aa0caea8297020045d`, 38 hex characters rather than 40, so it resolves to no object (`git cat-file -t` answers `Not a valid object name`). The base the diff was actually taken from is `002f85b4f0df85463466aa0a8caea8297020045d`, recovered as the parent of the landing commit `6dc83c4706410b9071d3373c2e825385879e1a38`; a reader checking the manifest's revision against the tree cannot do so from the manifest alone."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against base 002f85b4f0df85463466aa0a8caea8297020045d: 6dc83c470 adds `_emit_held_review` and the two branches that use it in reckon/crew_dispatch_commands.py and the 204-line test file; 825178fb3 adds only the 5-line evidence fragment. No other file is touched.",
+    "done_when": "The done_when is plan \u00a732's `Done when`: five click-runner cases, `EXIT=` logs, the negative control restoring the error-passthrough branch with the first case then failing, no added failure against base, and no ruff findings. tests/test_a_queued_review_reports_queued.py holds all five cases with the named assertions, its log at <run>/gate-new-tests.log ends `EXIT=0` with `5 passed`, the negative control at <run>/negative-control-error-passthrough.log ends `EXIT=1` with 2 failed, and the two arm logs carry the base revision and their command lines; the done_when's ruff clause is not itself logged in the run directory.",
+    "goal": "The node's goal is `Make crew review report a queued composition the way crew dispatch reports a queued dispatch`; plan \u00a732 (`reckon:a-held-dispatch-waits-its-fair-turn`) states the same deliverable, and reckon/crew_dispatch_commands.py:270-323 `_emit_held_review` plus the two new call sites at :2506 and :2564 implement exactly it.",
+    "manifest": "Read; it records status complete, both commits (6dc83c470, 825178fb3), the gate result and its log path, a negative_control_log path that is a bare path, and baseline_suite/after_suite objects whose failure_ids I re-derived from the two arm logs; its `orientation_base_sha` is truncated to 38 hex characters, recorded as a finding.",
+    "write_paths": "The declared write paths are reckon/crew_dispatch_commands.py, tests/test_a_queued_review_reports_queued.py, docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-queued-review-composition-reports-itself-queued.html and docs/figures/a-held-dispatch-waits-its-fair-turn/a-queued-review-composition-reports-itself-queued; `git diff --stat 002f85b4f0df85463466aa0a8caea8297020045d 825178fb` names exactly three files and every one is inside that list (the figures directory is unused, which \u00a732 permits)."
+  },
+  "project": "reckon",
+  "review": "VERDICT goal: the node goal is `Make crew review report a queued composition the way crew dispatch reports a queued dispatch`, and reckon/crew_dispatch_commands.py:270-323 `_emit_held_review` with its two call sites at :2506 and :2564 delivers exactly that, matching plan \u00a732's deliverable text.\nVERDICT done_when: plan \u00a732's `Done when` names five click-runner cases and the negative control; tests/test_a_queued_review_reports_queued.py holds all five, its log <run>/gate-new-tests.log ends `EXIT=0` with `5 passed`, and <run>/negative-control-error-passthrough.log ends `EXIT=1` with the first two cases failed.\nVERDICT write_paths: the manifest declares four paths; `git diff --stat 002f85b4f0df85463466aa0a8caea8297020045d 825178fb3ea96bb4e69bc304220050b3c47d5f79` names three changed files and every one is inside them.\nVERDICT manifest: read; it records both commits, the gate and negative-control log paths, and the two arm objects, whose failure_ids I re-derived from <run>/importer-base-arm.log and <run>/importer-head-arm.log (6 identical ids each); its `orientation_base_sha` is 38 hex characters and resolves to no object.\nVERDICT diff: read commit by commit; 6dc83c470 changes reckon/crew_dispatch_commands.py and adds the test file, 825178fb3 adds only the 5-line evidence fragment, and nothing else is touched.\nCALL_SITES: reckon/crew_dispatch_commands.py:2280 crew_review, reckon/crew_dispatch_commands.py:2310 _run_review, reckon/crew/plan_review.py:160 review_invocation, reckon/crew/plan_review.py:182 answer_invocation, reckon/crew/recovery_review_acceptance.py:506 dispatch_awaiting_reviews\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_dispatch_commands.py:2564-2579 reports a queued composition as `ok`/`queued` with the queued run's id at exit 0 and a paused gate at exit 75, which is the held-dispatch contract at :1995-2039.\nSCORE evidence: 16\nJUSTIFICATION evidence: <run>/gate-new-tests.log records the named file's run as `5 passed in 3.27s` with `EXIT=0` and the negative control records `2 failed` with `EXIT=1`, but neither arm of the importer comparison declares `completed`, so the `no added failure` claim rests on the 60 and 61 files that reached their summary line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 002f85b4f0df85463466aa0a8caea8297020045d 825178fb3ea96bb4e69bc304220050b3c47d5f79` lists only reckon/crew_dispatch_commands.py, tests/test_a_queued_review_reports_queued.py and the evidence fragment, all inside the four declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: the negative-control log shows tests/test_a_queued_review_reports_queued.py:94 and :112 failing when the error-passthrough branch is restored, and the fourth and fifth cases name their failure condition (removing the `except LaneHeld` block at reckon/crew_dispatch_commands.py:2506) though the control does not exercise them.\nSCORE fit: 17\nJUSTIFICATION fit: the helper sits beside `_lane_paused_detail` at reckon/crew_dispatch_commands.py:255 and uses the module's own `_emit(...)` idiom, and the in-body `from reckon.crew.dispatch import LaneHeld` at :2502 matches the local-import style of `_dispatch` at :1268.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew_dispatch_commands.py:270 `_emit_held_review` rebuilds the same held-result payload the `crew dispatch` branch already builds inline at :2015-2039 in the same module, duplicating an owned capability without extending its owner.\nFINDING reckon/crew_dispatch_commands.py:270 follow-on: `_emit_held_review` duplicates the held-result payload the module already builds at :2015-2039, so the review contract can drift from the dispatch contract it was written to match.\nFINDING reckon/crew_dispatch_commands.py:2506 follow-on: only `LaneHeld` is caught, so a plain `LanePaused` paused gate on `crew review --around` still reaches the generic handler at :2583 and reports `crew_error` at exit 1, unlike the plan-review branch's `lane-paused` at exit 75.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T122526603151-a-queued-review-composition-reports-itself-queued/manifest.md:2 follow-on: `orientation_base_sha` is 38 hex characters and resolves to no object, so the revision the manifest names cannot be checked against the tree.\n",
+  "review_run_id": "r-20261019T133014889888-review-of-a-queued-review-composition-reports-itself-queued-825178fb3ea9",
+  "reviewed_base_sha": "002f85b4f0df85463466aa0a8caea8297020045d",
+  "reviewed_head_sha": "825178fb3ea96bb4e69bc304220050b3c47d5f79",
+  "reviewed_run_id": "r-20261019T122526603151-a-queued-review-composition-reports-itself-queued",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T13:51:37.809499+00:00"
+}
