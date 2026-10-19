@@ -1716,17 +1716,17 @@ def _restore_one_landing_write(checkout: Path, path: Path) -> bool:
     """Settle one landing write as far as a held index lock allows.
 
     The whole-path restore is a single index-writing call, so a lock another
-    process holds refuses it and leaves the working-tree write in place. The
-    working tree is left as the attempt wrote it on purpose: the retry commits
-    that write, so a plan file taken back from HEAD would lose the comment the
-    retry is recording. What must not survive is a staged entry, because a
-    peer's next commit could take it without this run ever having committed.
+    process holds refuses it and leaves the working-tree write in place. A
+    tracked path is then returned to its committed content by
+    :func:`_restore_tracked_landing_write`, which rewrites the working-tree
+    file from HEAD's blob without writing the index the lock protects. What
+    must not survive is a staged entry, because a peer's next commit could
+    take it without this run ever having committed.
 
-    A tracked path therefore keeps its write and is reported as surviving. A
-    path HEAD never carried is dropped from the index, and its file is removed
-    only once the entry is confirmed gone: a lock that refuses the drop would
-    otherwise leave the index staging a path no longer on disk, which is a
-    commit of content a reader cannot see in the working tree.
+    A path HEAD never carried is dropped from the index, and its file is
+    removed only once the entry is confirmed gone: a lock that refuses the
+    drop would otherwise leave the index staging a path no longer on disk,
+    which is a commit of content a reader cannot see in the working tree.
     """
     try:
         relative = Path(path).resolve().relative_to(checkout.resolve()).as_posix()
@@ -1734,7 +1734,7 @@ def _restore_one_landing_write(checkout: Path, path: Path) -> bool:
         return False
     committed = _git(checkout, "cat-file", "-e", f"HEAD:{relative}", check=False)
     if committed.returncode == 0:
-        return False
+        return _restore_tracked_landing_write(checkout, path, relative)
     _git(checkout, "rm", "--cached", "--force", "--", str(path), check=False)
     if _path_has_a_staged_change(checkout, path):
         return False
@@ -1743,6 +1743,54 @@ def _restore_one_landing_write(checkout: Path, path: Path) -> bool:
     except OSError:
         return False
     return True
+
+
+def _restore_tracked_landing_write(checkout: Path, path: Path, relative: str) -> bool:
+    """Rewrite a tracked path's working tree from HEAD's blob, index untouched.
+
+    The whole-path restore writes the index, so the lock another process holds
+    has refused it; the same content is recovered here by reading HEAD's blob
+    with plumbing that takes no index lock and writing it over the working-tree
+    file. The path then carries its committed content again, with no staged
+    entry this run never committed.
+
+    A path the index already carries a change for is reported unrestored rather
+    than half-restored: clearing that entry needs the lock the fallback is
+    running without, and rewriting only the working tree would leave the index
+    staging content no reader can see. A blob git cannot read, or a file it
+    cannot write, reports the path unrestored too, so the refusal names the
+    file a coordinator must restore before re-promoting.
+    """
+    if _path_has_a_staged_change(checkout, path):
+        return False
+    blob = _head_blob_bytes(checkout, relative)
+    if blob is None:
+        return False
+    try:
+        Path(path).write_bytes(blob)
+    except OSError:
+        return False
+    return True
+
+
+def _head_blob_bytes(checkout: Path, relative: str) -> bytes | None:
+    """HEAD's blob content for ``relative``, read without the index lock.
+
+    ``git cat-file blob`` is plumbing that reads the object store alone, so it
+    answers while another process holds ``.git/index.lock`` — the lock the
+    whole-path restore needs and the reason this fallback exists. ``None`` when
+    git cannot read the blob, which reports the path unrestored rather than
+    claiming a restore that did not happen.
+    """
+    result = subprocess.run(
+        ["git", "cat-file", "blob", f"HEAD:{relative}"],
+        cwd=str(checkout),
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return None
+    return result.stdout
 
 
 def _path_has_a_staged_change(checkout: Path, path: Path) -> bool:
@@ -2025,6 +2073,26 @@ def _resolved_path_key(path: str | Path) -> str:
         return str(path)
 
 
+def _unrestored_landing_writes(rollback: Mapping[str, bool]) -> str:
+    """Name the landing writes a rollback could not return to their committed state.
+
+    The refusal keeps its own message and appends this clause, so a coordinator
+    reading the receipt alone learns which files still carry a landing write and
+    must be restored before re-promoting. An unreadable report names nothing,
+    because a path the rollback did not claim is not one this clause can point
+    a reader at.
+    """
+    unrestored = sorted(
+        str(path) for path, restored in (rollback or {}).items() if not restored
+    )
+    if not unrestored:
+        return ""
+    return (
+        " These landing writes could not be restored and still carry their "
+        "landing content in the working tree: " + ", ".join(unrestored)
+    )
+
+
 def _landing_refusal(message: str, rollback: Mapping[str, bool]) -> CrewError:
     """A refused landing commit that carries its rollback's per-path report.
 
@@ -2194,7 +2262,8 @@ def _commit_landing_writes(
         )
         raise _landing_refusal(
             f"could not stage the landing writes for run {run_id!r} in "
-            f"{checkout}: {staged.stderr.strip() or staged.stdout.strip()}",
+            f"{checkout}: {staged.stderr.strip() or staged.stdout.strip()}"
+            f"{_unrestored_landing_writes(rollback)}",
             rollback,
         )
     subject = subject or f"promote({run_id}): {verdict}"
@@ -2250,7 +2319,8 @@ def _commit_landing_writes(
         )
         raise _landing_refusal(
             f"could not commit the landing writes for run {run_id!r} in "
-            f"{checkout}: {committed.stderr.strip() or committed.stdout.strip()}",
+            f"{checkout}: {committed.stderr.strip() or committed.stdout.strip()}"
+            f"{_unrestored_landing_writes(rollback)}",
             rollback,
         )
     mismatched = _landing_path_mismatches(checkout, targets)

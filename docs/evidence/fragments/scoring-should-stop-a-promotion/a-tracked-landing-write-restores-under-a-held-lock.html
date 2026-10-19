@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="A tracked landing write is restored under a held lock">
+  <meta name="plan-summary" content="A stage refusal under a held .git/index.lock left the plan file's landing comment in the working tree, so the rollback reported {plan file: false} and a re-promotion would have met a half-landed write the run did not make. The rollback's fallback now rewrites a tracked path in the working tree from HEAD's blob, read with lock-free plumbing, and names a path it could not restore in the refusal.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-19">
+  <meta name="plan-verdict" content="passed">
+  <title>A tracked landing write is restored under a held lock | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A tracked landing write is restored under a held lock</h1>
+
+    <section id="a-tracked-landing-write-restores-under-a-held-lock-defect">
+      <h2>The defect</h2>
+      <p>The rollback that follows a refused landing restores each path the promotion wrote
+        with <code>git restore --source=HEAD --staged --worktree</code>, a single
+        index-writing call. The lock that refused the landing is still held, so that restore
+        is refused too, and the fallback <code>_restore_one_landing_write</code> could only
+        settle a path <code>HEAD</code> never carried — it dropped an untracked file from the
+        index, and for a tracked path it returned <em>unrestored</em> and left the
+        working-tree write in place. The plan file the landing had written is tracked, so its
+        landing comment survived the rollback.</p>
+      <p>Reproduced at base <code>a346c2e1</code> with a temporary repository
+        (<code>repro_tracked_restore.py</code>, log <code>reproduced at base</code>): a
+        tracked plan file carrying a landing narrative was asked to settle with a real
+        <code>.git/index.lock</code> held. The report was
+        <code>{plan.html: False}</code> and the working tree still carried
+        <code>"landing narrative the refusal left behind\n"</code> against
+        <code>HEAD</code>'s <code>"committed plan\n"</code>.</p>
+    </section>
+
+    <section id="a-tracked-landing-write-restores-under-a-held-lock-change">
+      <h2>The change</h2>
+      <p>In <code>reckon/crew/promotion_scope.py</code>, when the index-dependent restore is
+        refused and <code>HEAD</code> carries the path, the fallback now calls
+        <code>_restore_tracked_landing_write</code>. It reads <code>HEAD</code>'s blob with
+        <code>git cat-file blob</code> — plumbing that takes no index lock, so it answers
+        while another process holds <code>.git/index.lock</code> — and writes it over the
+        working-tree file. The path carries its committed content again with no staged entry
+        this run never committed.</p>
+      <p>A path the index already carries a change for is reported unrestored rather than
+        half-restored: clearing that entry needs the lock the fallback is running without,
+        and rewriting only the working tree would leave the index staging content no reader
+        can see. A blob git cannot read, or a file it cannot write, reports the path
+        unrestored too — and <code>_unrestored_landing_writes</code> appends those paths to
+        the refusal, so a coordinator reading the receipt sees which file to restore before
+        re-promoting.</p>
+    </section>
+
+    <section id="a-tracked-landing-write-restores-under-a-held-lock-measurement">
+      <h2>Measurement</h2>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Receipt</th></tr></thead>
+        <tbody>
+          <tr><td>Base reproduction</td><td><code>{plan: false}</code>; content unchanged</td><td><code>repro-base.log</code></td></tr>
+          <tr><td>Head reproduction</td><td><code>{plan: true}</code>; content equals HEAD</td><td><code>repro-after.log</code></td></tr>
+          <tr><td>Node cases, head</td><td>2 passed; EXIT=0</td><td><code>focused-node.log</code></td></tr>
+          <tr><td>Declared mutation</td><td>1 failed, 1 passed; EXIT=1</td><td><code>negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p id="a-tracked-landing-write-restores-under-a-held-lock-importer-note">Importer
+        suite and Ruff comparisons are recorded by the node's manifest
+        (<code>baseline_suite</code>, <code>after_suite</code>). Logs are in the worker's run
+        directory under
+        <code>r-20261019T164023450593-a-tracked-landing-write-restores-under-a-held-lock</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
