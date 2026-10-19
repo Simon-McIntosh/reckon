@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="A stage refusal under a held .git/index.lock left the plan file's landing comment in the working tree, so the rollback reported {plan file: false} and a re-promotion would have met a half-landed write the run did not make. The rollback's fallback now rewrites a tracked path in the working tree from HEAD's blob, read with lock-free plumbing, and names a path it could not restore in the refusal.">
   <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
   <meta name="plan-recorded-at" content="2026-10-19">
-  <meta name="plan-verdict" content="qualified">
+  <meta name="plan-verdict" content="passed">
   <title>A tracked landing write is restored under a held lock | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -64,9 +64,10 @@
           <tr><td>Base reproduction</td><td><code>{plan: false}</code>; content unchanged</td><td><code>repro-base.log</code></td></tr>
           <tr><td>Head reproduction</td><td><code>{plan: true}</code>; content equals HEAD</td><td><code>repro-after.log</code></td></tr>
           <tr><td>Node cases, head</td><td>2 passed; EXIT=0</td><td><code>focused-node.log</code></td></tr>
+          <tr><td>Node cases plus the repaired rollback test</td><td>14 passed; EXIT=0</td><td><code>focused-node.log</code></td></tr>
           <tr><td>Declared mutation</td><td>1 failed, 1 passed; EXIT=1</td><td><code>negative-control.log</code></td></tr>
           <tr><td>Importers, base <code>a346c2e1</code></td><td>1 failed, 165 passed; EXIT=1</td><td><code>baseline-importers.log</code></td></tr>
-          <tr><td>Importers, head</td><td>2 failed, 166 passed; EXIT=1</td><td><code>after-importers.log</code></td></tr>
+          <tr><td>Importers, head</td><td>1 failed, 167 passed; EXIT=1</td><td><code>after-importers.log</code></td></tr>
         </tbody>
       </table>
       <figure>
@@ -75,22 +76,27 @@
           node below. Both refuse the index-writing restore; only the lower one recovers the
           committed content.</figcaption>
       </figure>
-      <p id="a-tracked-landing-write-restores-under-a-held-lock-importer-note">The importer
-        suites differ by exactly one test, which is reported rather than fixed because it
-        lives outside this node's write fence.
+      <p id="a-tracked-landing-write-restores-under-a-held-lock-importer-note">Both arms
+        carry the same single failure, a pre-existing dispatch test unrelated to this
+        change, and the head arm adds none: the two arms differ by
+        <strong>two passing tests</strong>, this node's own cases.
         <code>tests/test_rollback_asks_head.py::test_head_path_survives_unrelated_restore_failure</code>
-        asserts that a HEAD-tracked path whose whole-path restore is refused <em>keeps</em>
-        its landing write in the working tree — the pre-existing behaviour this node's SPEC
-        supersedes. It passed at base (<code>12 passed</code>, EXIT=0) and fails at head
-        (<code>1 failed, 11 passed</code>, EXIT=1, <code>assert 'committed content\n' ==
-        'landing content\n'</code>). This is the same circumstance the plan records for the
-        <code>s2d-receipt-two-states</code> node: the node reported the out-of-scope test and
-        the coordinator granted the extension. The behaviour that test was written to
-        protect — a refused restore must not authorise unlinking a path HEAD carries — is
-        unaffected and still asserted by its <code>is_file()</code> clause. Ruff comparisons
-        and both suite objects are recorded by the node's manifest
-        (<code>baseline_suite</code>, <code>after_suite</code>): <code>ruff check</code>
-        clean and zero added format hunks. Logs are in the worker's run directory under
+        asserted that a HEAD-tracked path whose whole-path restore is refused <em>keeps</em>
+        its landing write in the working tree — the behaviour this node's SPEC supersedes,
+        and the one test that would have been reddened by the change. It sits outside this
+        node's write fence, so the node reported it rather than editing it, and the
+        coordinator granted the extension; the assertion now reads HEAD's content through
+        git and compares against it. Only that assertion changed: the test still requires
+        the whole-path restore to be attempted exactly once, and still requires the tracked
+        file to exist afterwards, because a refused restore must never authorise unlinking the
+        path HEAD carries. Both importer arms were re-run at the repaired head, base from
+        a fresh <code>git archive a346c2e1</code>, and neither the node cases nor the
+        importers add a failure. Ruff adds no finding either: <code>ruff check</code> is
+        clean on the node's own paths and <code>ruff format --check</code>'s hunks on
+        <code>promotion_scope.py</code> are the six pre-existing ones, byte-identical
+        between base and head. Both suite objects are recorded by the node's manifest
+        (<code>baseline_suite</code>, <code>after_suite</code>). Logs are in the worker's run
+        directory under
         <code>r-20261019T164023450593-a-tracked-landing-write-restores-under-a-held-lock</code>.</p>
     </section>
   </main>
