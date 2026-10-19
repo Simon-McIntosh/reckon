@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T19:47:50.040Z",
+  "dispatched_at": "2026-10-19T19:37:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-fleet-node-stays-in-service.html:568",
+      "id": "wiring-1",
+      "reason": "the plan's own readiness signal and its dispatch authority say go while its content says stop, so a node's dispatch is spent on work the plan has already established it cannot run.",
+      "text": "the driving followup `f-tfnsis-001` schedules \u00a75 after \u00a74 with no mention that \u00a75 cannot be dispatched until the lead chooses a route, while \u00a75 itself (line 313, added in 1fb558c1a) says \"\u00a75 is not dispatched until that choice is made\" and the section still declares `data-status=\"implementable\"`; a coordinator dispatching from the followup repeats the launch refusal already recorded in comment `c-s5-authority` (2026-10-19 05:47)",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e5fe7d9908cee19e0a1fc65b2920407b4fcdb8adc770fff048284059e238512c",
+  "plan_slug": "the-fleet-node-stays-in-service",
+  "plan_version": 33,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T193625539333-plan-review-of-the-fleet-node-stays-in-service",
+  "reviewed_blob_sha": "3e52c6781d9db9c73c6db214a2dca0c1a3ff2911",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor in the changed units resolves: `checkout_trust.py:707` (`reckon_imports`), `checkout_trust.py:389`, `checkout_trust.py:344`, `crew_follow_commands.py:221` (the retry-gap constant), `follower_registration.py:444`, `dispatch_admission.py:1773`, and `fleet_migrate.py:708\u2013716 / 722\u2013734 / 768\u2013773`; the gate evidence href now names an existing fragment file.",
+    "done_when": "pass \u2014 each changed section declares a measurable negative control (\u00a75's probe with a recorded tab removed before the check, which must be refused; \u00a711's materialised tree carrying a module that fails to import), and \u00a711's measurement carries a base-revision positive control (sixteen probes at base, one at the change).",
+    "evidence_paths": "pass \u2014 no changed unit directs evidence to a scratchpad or a node-local temporary directory; the corrected gate href and \u00a72's done-when both land under `docs/evidence/fragments/the-fleet-node-stays-in-service/`, which exists.",
+    "naming": "pass \u2014 the changed prose carries no plan labels, stage names, ticket numbers or version tags, and no changelog prose beyond the mechanism it states.",
+    "reasoning": "pass \u2014 \u00a711's root cause matches its cited evidence (63 first-parent moves of `reckon/` or `skills/` on main in 24 h, checked against `git log --first-parent`), its mechanism (one recorded verdict per materialised tree, serialised by an exclusive lock) produces the measure it asserts (one probe for sixteen askers), and the caller is named and real (`reckon_imports`, reached from `crew_follow_commands.py:329`).",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable (a rehearsal of the current head) and \u00a711 one (one import proof per materialised tree); neither is a bundle of independent changes.",
+    "wiring": "a finding \u2014 \u00a75 still declares `data-status=\"implementable\"` and the driving followup `f-tfnsis-001` schedules it (\"\u00a75 follows \u00a74\") with no mention that \u00a75 cannot be dispatched until the lead chooses a route, though \u00a75's own closing paragraph (line 313) says \"\u00a75 is not dispatched until that choice is made\"."
+  },
+  "section_digests": {
+    "_document": "5986c0b7b234f5f2f65453592f4ab696bb6296894df68cc61cea3d8207dd2e17",
+    "s1": "6e04065e334dfddf94228e26ccc5040265b76da7397e5f58cf73c7d37f623504",
+    "s10": "c539e5905cb53e6787632e997cf365eaac45733be5302985d423b16c58f35bba",
+    "s11": "b73ab34f30be0638d368185944151c1d51b20bc09d55a01d22a7492089cbd074",
+    "s2": "6155f820ac9515ec6066931aa10a1e66fdcff1b4184ba4014c19c572b1e6dfe6",
+    "s3": "5d0267647607a9ea2291a47d2f1faa4d8070d76e274abc94d1d1487ab7d3f1ea",
+    "s4": "9bf0fe68b8db66abd6daa8fdd98af93ada5d71be048a240fee7b2d68906b8b32",
+    "s5": "75dc509fc1a18ffdfecbd3511d159b7ce939377b3c956d53204972e722a91b5e",
+    "s6": "6869c09a477eaafc5a4780340f667b673175561e4bca9b0640c8af759c878f77",
+    "s7": "3a45b0d0d40cbd44ec6f8209f8a125004c44cc3cdccfb33e97882ef8331f7d70",
+    "s8": "e112e1202f352739982d9a42da2469ddd34f8ab2e4c217d172c90ed776b7a354",
+    "s9": "1ce7342558f8dc5f1587a8a947ef2a1b639355d9f39e517ee72d8e930177a2ba"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T19:50:10.170986+00:00"
+}
