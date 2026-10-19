@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T19:21:14.281Z",
+  "dispatched_at": "2026-10-19T19:09:04Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:24",
+      "id": "wiring-1",
+      "reason": "the declared graph omits the \u00a75-before-\u00a77 ordering the plan's own text requires, so two of \u00a77's four nodes can be dispatched against files a sibling section is mid-write.",
+      "text": "\u00a77 declares `depends-on` `s6` alone, yet its own mechanism (plan:225) requires the `cso-repair-and-check-families-fold` and `cso-resume-family-folds` nodes to wait on \u00a75, because they write `reckon/crew/obligations.py` (also \u00a75's, plan:242) and `reckon/mcp.py` (also \u00a75's, plan:252), and \u00a75 declares `depends-on` `s4`,`s6` (plan:24) so the graph orders neither before the other \u2014 a roadmap that releases \u00a75 and \u00a77 concurrently launches \u00a77's third and fourth nodes against a `reckon/crew/obligations.py` and `reckon/mcp.py` that \u00a75 still holds.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:206",
+      "id": "done_when-1",
+      "reason": "a deliverable the section asserts but no measure and no negative control covers cannot be reviewed or shown by the node's gate, so either a fifth check is added or the change moves to a node that measures it.",
+      "text": "\u00a77's mechanism adds `widen` accepting any run that is not running and `complete --accept-path` writing the same fence record through `narrow_claim`/`release_claim` (plan:206-207), but \u00a77's four done-when checks measure only tombstone output, successor parity, string-literal hygiene and the visible-leaf count (plan:262-277); no check drives `widen` on a non-running run or `complete --accept-path`, so that behaviour could regress with every gate green.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e845711d911a4cf719ee3bbaba8308a0977428071acac28180022acc4ae79b9e",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T190727315828-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "9b6d0c82131196b6806af66ccf7371bddf343e48",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited module resolves (`reckon/crew/tombstones.py`, `reckon/crew_follow_commands.py`, `reckon/crew/refusals.py`, `reckon/crew/claims.py`, `reckon/crew/recovery_watch.py`, `reckon/crew_families_fold.py` is a stated write path this node creates), the cited commits `d8ff471c9` and `18739912f` exist, `reckon/cli.py` does re-export `crew_preflight`/`crew_redispatch`/`crew_repair_status`/`crew_split_runs`/`crew_unwatch`/`crew_resume_ready`, and the extensionless hrefs resolve as `.html` (the census doc is `docs/research/what-coordinators-report-about-the-reckon-surface.html`).",
+    "done_when": "a finding \u2014 \u00a77's mechanism (plan:206) adds `widen` accepting any non-running run and `complete --accept-path` writing a fence record through the claim owner, but none of the four done-when checks (plan:262-277) exercises either, so that deliverable has no gate and no negative control.",
+    "evidence_paths": "pass \u2014 \u00a77 writes code and tests under the repository tree and names no scratchpad or node-local temporary path; the earlier sections' evidence sits under docs/evidence/.",
+    "naming": "pass \u2014 \u00a77's write paths and the `cso-*` identities are plan node names, and no version tag, ticket number or plan label reaches a file, symbol or comment.",
+    "reasoning": "pass \u2014 \u00a77's root cause matches its cited evidence (crew merge stays visible because \u00a74 measured 66 of 102 merges landing a head no run produced; the four-node split is justified by the 280,000-token fence against the 230,144-token lane), and the fold's mechanism (tombstone registry read by the grep check, `reckon/cli.py` re-exports named as the caller that must not break) is capable of producing the section's measure (plan:171-194) and names the caller it relies on.",
+    "single_goal": "pass \u2014 each of \u00a77's four nodes folds one verb family, and the sibling sections each name one deliverable.",
+    "wiring": "a finding \u2014 \u00a77's mechanism (plan:225) says its third and fourth nodes wait on \u00a75 because they write `reckon/crew/obligations.py` and `reckon/mcp.py`, but \u00a77's declared `depends-on` (plan:24) names only `s6`, and \u00a75 and \u00a77 are siblings under `s6`."
+  },
+  "section_digests": {
+    "_document": "26fd28404590af02aa2ebae125b81f4f7629f614fb6c2a72ea68b2d0d1aff496",
+    "s1": "df3ca327aa989333473f3456bef3fcb4304fc54d8ab37eb334a92448b8837aaa",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "bfc4b93502cb69a2a5878f9c282da2cbab878f4f49482f263fdfc074dfce4ba8",
+    "s4": "2feb22a10d53f02161e33412c6f491a2718ee9b88ffede06e39b7fc15799f5d1",
+    "s5": "4a0b632aaec0c9b2538edeab874ccd9fd39723e2eef864da9ae65a3f72b6695c",
+    "s6": "77d39fe1cb51bc28d79918ed4f2d3851be11a57276b9a2e23324cac51736ddb7",
+    "s7": "8c7812a13c3ac31bb95a7647c6df893c5a083d81826302b2edfc2347341923cc",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T19:29:40.369810+00:00"
+}
