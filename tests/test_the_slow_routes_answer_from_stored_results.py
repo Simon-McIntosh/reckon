@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import metadata_index, serve
+from reckon import metadata_index, route_results, serve
 
 PROJECT = "sample"
 OTHER = "other"
@@ -89,15 +89,15 @@ def _apply_inline_mutation(monkeypatch: pytest.MonkeyPatch) -> None:
         time.sleep(DELAY)
         return {"marker": "inline", "pending": 0}
 
-    monkeypatch.setattr(serve, "_refresh_result", lambda key: None)
-    monkeypatch.setattr(serve, "_route_compute", slow_compute)
-    monkeypatch.setattr(serve, "_compute_refresh", slow_compute)
+    monkeypatch.setattr(route_results, "_refresh_result", lambda key: None)
+    monkeypatch.setattr(route_results, "_route_compute", slow_compute)
+    monkeypatch.setattr(route_results, "_compute_refresh", slow_compute)
 
 
 def _apply_per_project_events_mutation(monkeypatch: pytest.MonkeyPatch) -> None:
     """Publish only per-project events, so no fleet event reaches a stream."""
 
-    monkeypatch.setattr(serve, "_is_fleet_key", lambda key: False)
+    monkeypatch.setattr(route_results, "_is_fleet_key", lambda key: False)
 
 
 def _apply_per_project_mutation(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -106,8 +106,8 @@ def _apply_per_project_mutation(monkeypatch: pytest.MonkeyPatch) -> None:
     def per_project(self, tree: Path) -> None:
         project = self._projects.get(Path(tree).resolve(), "")
         if project:
-            serve._start_refresh(("discover", project))
-            serve._start_refresh(("rollup", project))
+            route_results._start_refresh(("discover", project))
+            route_results._start_refresh(("rollup", project))
 
     monkeypatch.setattr(serve._FleetChangeWatch, "_spawn_changes", per_project)
 
@@ -123,8 +123,8 @@ def served(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
     snapshot = (serve._MOUNTS_FILE, serve._STATE_ROOT, serve._SHARED_ROOT)
     serve._resolve_paths(mounts_file)
-    monkeypatch.setattr(serve, "_REFRESH_ENABLED", True)
-    serve._REFRESH_CHILDREN.clear()
+    monkeypatch.setattr(route_results, "_REFRESH_ENABLED", True)
+    route_results._REFRESH_CHILDREN.clear()
     metadata_index.clear()
     serve._DISC_CACHE.clear()
     if os.environ.get(_INLINE_MUTATION):
@@ -147,7 +147,7 @@ def served(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         serve._MOUNTS_FILE, serve._STATE_ROOT, serve._SHARED_ROOT = snapshot
         # One watch per served process: drop the one this case started.
         serve._FLEET_WATCH = None
-        serve._REFRESH_CHILDREN.clear()
+        route_results._REFRESH_CHILDREN.clear()
         metadata_index.clear()
         serve._DISC_CACHE.clear()
 
@@ -160,13 +160,13 @@ def _latency_case(
 ) -> None:
     prior = {"marker": "prior", "pending": 0}
     recomputed = {"marker": "recomputed", "pending": 0}
-    serve._store_refresh_result(key, prior)
+    route_results._store_refresh_result(key, prior)
     done = threading.Event()
 
     def slow_spawn(argv):
         def run():
             time.sleep(DELAY)
-            serve._store_refresh_result(key, recomputed)
+            route_results._store_refresh_result(key, recomputed)
             done.set()
 
         threading.Thread(target=run, daemon=True).start()
@@ -180,9 +180,9 @@ def _latency_case(
 
         return _Child()
 
-    monkeypatch.setattr(serve, "_spawn_refresh", slow_spawn)
-    serve._REFRESH_CHILDREN.clear()
-    assert serve._start_refresh(key) is True
+    monkeypatch.setattr(route_results, "_spawn_refresh", slow_spawn)
+    route_results._REFRESH_CHILDREN.clear()
+    assert route_results._start_refresh(key) is True
 
     started = time.monotonic()
     status, body, headers = harness.get(path)
@@ -217,17 +217,17 @@ def test_the_fleet_rollup_answers_from_the_prior_result(served, monkeypatch):
 def test_the_stream_reads_the_store_and_spawns_only_on_a_miss(served, monkeypatch):
     spawned: list[tuple[str, ...]] = []
     monkeypatch.setattr(
-        serve, "_start_refresh", lambda key: spawned.append(key) or True
+        route_results, "_start_refresh", lambda key: spawned.append(key) or True
     )
 
-    assert serve._stored_discovery(PROJECT, served.mounts[PROJECT]) is None
+    assert route_results._stored_discovery(PROJECT, served.mounts[PROJECT]) is None
     assert spawned == [("discover", PROJECT)]
 
     spawned.clear()
-    serve._store_refresh_result(
+    route_results._store_refresh_result(
         ("discover", PROJECT), {"provenance": {"content_digest": "d"}}
     )
-    assert serve._stored_discovery(PROJECT, served.mounts[PROJECT]) == {
+    assert route_results._stored_discovery(PROJECT, served.mounts[PROJECT]) == {
         "provenance": {"content_digest": "d"}
     }
     assert spawned == []
@@ -253,8 +253,8 @@ def _record_spawns(monkeypatch) -> list[str]:
         keys.append(argv[argv.index("--key") + 1])
         return _Child()
 
-    monkeypatch.setattr(serve, "_spawn_refresh", spawn)
-    serve._REFRESH_CHILDREN.clear()
+    monkeypatch.setattr(route_results, "_spawn_refresh", spawn)
+    route_results._REFRESH_CHILDREN.clear()
     return keys
 
 
@@ -302,8 +302,8 @@ def test_a_fleet_event_reaches_a_stream_through_the_parent_waiter(served, monkey
     stream = _Stream(served.port, PROJECT)
     try:
         assert stream.next_event()[0] == "ready"
-        serve._store_refresh_result(("rollup",), {"updated": "v0"})
-        assert serve._start_refresh(("rollup",)) is True
+        route_results._store_refresh_result(("rollup",), {"updated": "v0"})
+        assert route_results._start_refresh(("rollup",)) is True
 
         deadline = time.monotonic() + 20
         fleet_events: list[dict] = []

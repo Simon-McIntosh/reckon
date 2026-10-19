@@ -37,7 +37,6 @@ POST versioned write contract — see reckon/serve.py for full details.
 
 from __future__ import annotations
 
-import argparse
 import contextlib
 import gzip
 import hashlib
@@ -74,6 +73,7 @@ from reckon import (
     fleet_index,
     ledger,
     metadata_index,
+    route_results,
     served_code,
 )
 from reckon._store import (
@@ -1021,15 +1021,10 @@ _SOURCE_SNAPSHOT: served_code.SourceSnapshot | None = None
 # only changes to these, because a file the server never runs cannot change
 # what it serves.
 _EXECUTED_SOURCE: served_code.ExecutedSource | None = None
-# Route results are computed out of process (see _start_refresh). Only the
-# served process opts in, in main(); a handler driven by a test or another
+# Route results are computed out of process (see reckon.route_results). Only
+# the served process opts in, in main(); a handler driven by a test or another
 # caller answers from a stored result or derives one inline, and starts no
 # child that would write a cache outside its sandbox.
-_REFRESH_ENABLED = False
-_REFRESH_CHILDREN: dict[tuple[str, ...], subprocess.Popen] = {}
-_REFRESH_LOCK = threading.Lock()
-_REFRESH_SCHEMA = "reckon-route-result"
-_REFRESH_STORE_VERSION = 1
 _SIGNATURE_MEMO: dict[tuple[str, str, str], tuple[float, tuple[int, int]]] = {}
 _SIGNATURE_MEMO_LOCK = threading.Lock()
 # The served process opts into the longer window; the library default stays 0
@@ -2187,284 +2182,8 @@ def _project_for_root(root: Path) -> str:
 # ── Stored route results ──────────────────────────────────────────────────
 #
 # A route whose derivation is expensive — discovery, the checks summary, the
-# fleet rollup — answers from a stored result rather than deriving it on the
-# request path. One key names one stored result, and the machinery that keeps
-# it current is generic: compute (the child's entry point), read the last
-# result (what a request answers from), and spawn on change (single-flight per
-# key). The document-verdict refresh is the first instance of the generic one.
-
-#: The route key kinds whose results a change to any project touches, so the
-#: result is published to every open stream as one fleet event rather than to
-#: the changed project's stream alone.
-_FLEET_KEY_KINDS = frozenset({"rollup", "velocity"})
-
-
-def _refresh_store_path(key: tuple[str, ...]) -> Path:
-    return metadata_index._persisted_cache_path(
-        "route-result", _REFRESH_STORE_VERSION, *key, str(_MOUNTS_FILE or "")
-    )
-
-
-def _refresh_result(key: tuple[str, ...]) -> tuple[object, float, str] | None:
-    """Return ``(result, age_seconds, version)`` for a key, or None.
-
-    Age is read from the store file's own mtime, so a route can report how
-    stale the answer it serves is without recording a clock of its own.
-    """
-
-    path = _refresh_store_path(key)
-    try:
-        stat = path.stat()
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    if (
-        not isinstance(raw, dict)
-        or raw.get("schema") != _REFRESH_SCHEMA
-        or raw.get("key") != list(key)
-    ):
-        return None
-    age = max(0.0, time.time() - stat.st_mtime)
-    return raw.get("result"), age, str(raw.get("version", ""))
-
-
-def _store_refresh_result(key: tuple[str, ...], result: object) -> str:
-    """Write one key's stored result; return the version it was written under."""
-
-    version = str(time.time_ns())
-    payload = {
-        "schema": _REFRESH_SCHEMA,
-        "key": list(key),
-        "version": version,
-        "result": result,
-    }
-    try:
-        write_json_atomically(
-            _refresh_store_path(key),
-            payload,
-            fsync=False,
-            indent=None,
-            ensure_ascii=False,
-        )
-    except OSError as exc:
-        print(f"could not store {key} result: {exc}", flush=True)
-    return version
-
-
-def _is_fleet_key(key: tuple[str, ...]) -> bool:
-    return key[0] in _FLEET_KEY_KINDS
-
-
-def _compute_refresh(key: tuple[str, ...]) -> object:
-    """Derive one key's result — the child's entry point, and a cold route's."""
-
-    mounts = load_mounts()
-    kind = key[0]
-    if kind == "discover":
-        project = key[1]
-        result = discover_plans(mounts[project], project, _STATE_ROOT)
-        return _attach_schedule(result, project, mounts, reference=datetime.now(UTC))
-    if kind == "checks":
-        project = key[1]
-        docs_dir = Path(mounts[project])
-        compliance.refresh(docs_dir, project)
-        return compliance.project_checks(docs_dir, project)
-    if kind == "rollup":
-        return collect_projects(mounts)
-    raise ValueError(f"unknown refresh key: {key!r}")
-
-
-def _route_compute(key: tuple[str, ...]) -> object:
-    """A route's own derivation, which the refresh child's differs from.
-
-    The checks child checks every pending document before storing the summary,
-    so the summary it stores is the checked one; a route that found nothing
-    stored still has to report how many documents are pending, which is the
-    count its own derivation produces. Every other key derives the same
-    payload in both places.
-    """
-
-    if key[0] == "checks":
-        project = key[1]
-        return compliance.project_checks(Path(load_mounts()[project]), project)
-    return _compute_refresh(key)
-
-
-def _spawn_refresh(argv: list[str]) -> subprocess.Popen:
-    return subprocess.Popen(argv, stdin=subprocess.DEVNULL)
-
-
-def _publish_refresh(key: tuple[str, ...]) -> None:
-    """Wake the streams a finished refresh belongs to.
-
-    A fleet-scoped result goes to every open stream, recorded by key so each
-    stream writes one event for a key whose version moved. A project-scoped
-    result wakes that project's stream, which re-reads it.
-    """
-
-    watch = _FLEET_WATCH
-    if watch is None or not watch.running:
-        return
-    stored = _refresh_result(key)
-    if stored is None:
-        return
-    if _is_fleet_key(key):
-        watch.publish_fleet(key, stored[2])
-        return
-    root = _refresh_key_root(key)
-    if root is not None:
-        watch.notify(root)
-
-
-def _refresh_key_root(key: tuple[str, ...]) -> Path | None:
-    """The docs tree a project-scoped key belongs to, or None."""
-
-    if len(key) < 2:
-        return None
-    try:
-        mounts = load_mounts()
-    except Exception:  # noqa: BLE001 — a mount fault must not kill the waiter
-        return None
-    path = mounts.get(key[1])
-    return Path(path) if path is not None else None
-
-
-def _refresh_waiter(key: tuple[str, ...], child: subprocess.Popen) -> None:
-    """Wait for one refresh child, then publish what it stored.
-
-    A child lost before it stores is a miss, not a crash: the key keeps
-    whatever it last stored and the next request starts a fresh child.
-    """
-
-    with contextlib.suppress(Exception):
-        child.wait()
-    with _REFRESH_LOCK:
-        if _REFRESH_CHILDREN.get(key) is child:
-            _REFRESH_CHILDREN.pop(key, None)
-    _publish_refresh(key)
-
-
-def _start_refresh(key: tuple[str, ...]) -> bool:
-    """Derive one key's result in a child process; True while one is running.
-
-    A cold derivation holds the interpreter for seconds — a rollup of every
-    mount, a compliance pass over a large project — so it runs out of process,
-    at lower priority, and writes the store the route reads. At most one child
-    runs per key, and a parent waiter thread waits on it so a fleet-scoped
-    result reaches every open stream.
-    """
-
-    if not _REFRESH_ENABLED:
-        return False
-    with _REFRESH_LOCK:
-        running = _REFRESH_CHILDREN.get(key)
-        if running is not None and running.poll() is None:
-            return True
-        argv = [
-            sys.executable,
-            "-m",
-            "reckon.serve",
-            "_refresh",
-            "--key",
-            ":".join(key),
-        ]
-        if _MOUNTS_FILE is not None:
-            argv += ["--mounts", str(_MOUNTS_FILE)]
-        nice = shutil.which("nice")
-        if nice:
-            argv = [nice, "-n", "10", *argv]
-        try:
-            child = _spawn_refresh(argv)
-        except OSError as exc:
-            print(f"refresh for {key} did not start: {exc}", flush=True)
-            return False
-        if child is None:
-            return False
-        _REFRESH_CHILDREN[key] = child
-        threading.Thread(
-            target=_refresh_waiter,
-            args=(key, child),
-            name=f"reckon-refresh-wait-{key[0]}",
-            daemon=True,
-        ).start()
-        return True
-
-
-def _served_result(
-    key: tuple[str, ...], *, spawn_on_miss: bool = True
-) -> tuple[object, float]:
-    """Answer one route from its stored result; derive a cold miss inline.
-
-    A stored result is returned at once with the age a route reports in a
-    response header. Only when nothing is stored does the request pay for the
-    derivation, and the route also starts the child that will store a fresh
-    one, so the next request answers from the store.
-
-    A handler that is not the served process keeps its old behaviour: it
-    derives the route inline and starts nothing, so a test or an embedded
-    caller neither reads a result another process left nor writes a store.
-    """
-
-    if not _REFRESH_ENABLED:
-        return _route_compute(key), 0.0
-    stored = _refresh_result(key)
-    if stored is not None:
-        return stored[0], stored[1]
-    result = _route_compute(key)
-    if spawn_on_miss:
-        _start_refresh(key)
-    return result, 0.0
-
-
-def _stored_discovery(project: str, docs_dir: Path) -> object | None:
-    """Read a project's stored discovery, spawning a change-free refresh on a miss.
-
-    The change stream reads discovery through here rather than deriving it: a
-    change-driven recompute is the fleet watch's job, so a stream that finds
-    nothing stored starts one and answers from what it has. A handler that is
-    not the served process derives it inline, as it did before there was a
-    store to read.
-    """
-
-    if not _REFRESH_ENABLED:
-        return discover_plans(docs_dir, project, _STATE_ROOT)
-    stored = _refresh_result(("discover", project))
-    if stored is None:
-        _start_refresh(("discover", project))
-        return None
-    return stored[0]
-
-
-def _discovery_digest(result: object) -> str:
-    if not isinstance(result, dict):
-        return ""
-    provenance = result.get("provenance")
-    if not isinstance(provenance, dict):
-        return ""
-    return str(provenance.get("content_digest", ""))
-
-
-def _fleet_versions() -> dict[str, str]:
-    """The fleet-scoped result versions the parent has published, by key."""
-
-    watch = _FLEET_WATCH
-    if watch is None or not watch.running:
-        return {}
-    return watch.fleet_versions()
-
-
-def _refresh_main(argv: list[str]) -> int:
-    """Child entry point: derive one key's result and store it."""
-
-    parser = argparse.ArgumentParser(prog="python -m reckon.serve _refresh")
-    parser.add_argument("--key", required=True)
-    parser.add_argument("--mounts", default=None)
-    args = parser.parse_args(argv)
-    _resolve_paths(Path(args.mounts) if args.mounts else None)
-    key = tuple(args.key.split(":"))
-    result = _compute_refresh(key)
-    _store_refresh_result(key, result)
-    return 0
+# fleet rollup — is answered from the stored result that reckon.route_results
+# keeps current for its key, so the request path never holds the derivation.
 
 
 def _resolve_plan_file(
@@ -2895,10 +2614,12 @@ class Handler(BaseHTTPRequestHandler):
             # Discovery is read from its stored result rather than derived on
             # the stream: a change-driven recompute belongs to the fleet watch,
             # so this spawns only when nothing is stored yet.
-            digest = _discovery_digest(_stored_discovery(project, docs_dir))
+            digest = route_results._discovery_digest(
+                route_results._stored_discovery(project, docs_dir)
+            )
             # The fleet-scoped versions this stream has already told the reader
             # about; the ones already published when it opens are not news.
-            sent_fleet = _fleet_versions()
+            sent_fleet = route_results._fleet_versions()
             # The rows the stream diffs against: what a page painting from
             # /_index holds when its stream opens.
             known = {
@@ -2925,7 +2646,7 @@ class Handler(BaseHTTPRequestHandler):
                 # the parent's waiter, which wakes this stream. One event per
                 # key whose version moved, even when this project's own rows
                 # are unchanged.
-                current_fleet = _fleet_versions()
+                current_fleet = route_results._fleet_versions()
                 moved_fleet = {
                     key: version
                     for key, version in current_fleet.items()
@@ -2953,7 +2674,9 @@ class Handler(BaseHTTPRequestHandler):
                     # the resolver behind the next digest is the expensive
                     # half of a change, and a reader must not wait on it.
                     self._write_project_event("change", rows=row_changes)
-                next_digest = _discovery_digest(_stored_discovery(project, docs_dir))
+                next_digest = route_results._discovery_digest(
+                    route_results._stored_discovery(project, docs_dir)
+                )
                 if next_digest == digest:
                     continue
                 digest = next_digest
@@ -3143,7 +2866,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/_projects/index.json":
-            rollup, age = _served_result(("rollup",))
+            rollup, age = route_results._served_result(("rollup",))
             self._send_json(
                 HTTPStatus.OK, rollup, headers={"X-Result-Age": f"{age:.3f}"}
             )
@@ -3456,7 +3179,9 @@ class Handler(BaseHTTPRequestHandler):
             if len(parts) == 1:
                 key = ("checks", project)
                 try:
-                    summary, age = _served_result(key, spawn_on_miss=False)
+                    summary, age = route_results._served_result(
+                        key, spawn_on_miss=False
+                    )
                 except Exception as exc:  # noqa: BLE001
                     self._send_json(
                         HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -3465,7 +3190,7 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 summary = dict(summary)
                 summary["refreshing"] = bool(summary.get("pending")) and (
-                    _start_refresh(key)
+                    route_results._start_refresh(key)
                 )
                 self._send_json(
                     HTTPStatus.OK,
@@ -3513,7 +3238,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             _note_tree_read(disc_mounts[project])
             try:
-                result, age = _served_result(("discover", project))
+                result, age = route_results._served_result(("discover", project))
             except Exception as exc:  # noqa: BLE001
                 self._send_json(
                     HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -4171,12 +3896,11 @@ def main(
 ) -> None:
     global _SIGNATURE_TTL_S  # noqa: PLW0603 — the served process opts into reuse
     global _SOURCE_SNAPSHOT  # noqa: PLW0603 — recorded once, as the code loads
-    global _REFRESH_ENABLED  # noqa: PLW0603 — the served process opts in
     global _EXECUTED_SOURCE  # noqa: PLW0603 — recorded from here on
     _SOURCE_SNAPSHOT = served_code.take_snapshot()
     executed = served_code.ExecutedSource(_SOURCE_SNAPSHOT.root)
     _EXECUTED_SOURCE = executed if executed.start() else None
-    _REFRESH_ENABLED = True
+    route_results.set_enabled(True)
     try:
         _resolve_paths(mounts_file)
         # A log left oversized by an earlier run is bounded as the server
@@ -4227,11 +3951,9 @@ def main(
         if _EXECUTED_SOURCE is not None:
             _EXECUTED_SOURCE.stop()
         _EXECUTED_SOURCE = None
-        _REFRESH_ENABLED = False
+        route_results.set_enabled(False)
         _SOURCE_SNAPSHOT = None
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "_refresh":
-        raise SystemExit(_refresh_main(sys.argv[2:]))
     main()

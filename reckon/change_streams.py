@@ -367,12 +367,12 @@ class _FleetChangeWatch:
         change to several projects at once starts one rollup child.
         """
 
-        from reckon import serve
+        from reckon import route_results
 
         project = self._projects.get(Path(tree).resolve(), "")
         if project:
-            serve._start_refresh(("discover", project))
-        serve._start_refresh(("rollup",))
+            route_results._start_refresh(("discover", project))
+        route_results._start_refresh(("rollup",))
 
     # ── The cross-node detector ───────────────────────────────────────────
 

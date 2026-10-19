@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import compliance, file_memo, metadata_index, serve
+from reckon import compliance, file_memo, metadata_index, route_results, serve
 
 _PROJECT = "sample"
 
@@ -246,11 +246,11 @@ def refresh_starts(monkeypatch: pytest.MonkeyPatch) -> list[list[str]]:
         started.append(list(argv))
         return _Process()
 
-    monkeypatch.setattr(serve, "_spawn_refresh", spawn)
-    monkeypatch.setattr(serve, "_REFRESH_ENABLED", True)
-    serve._REFRESH_CHILDREN.clear()
+    monkeypatch.setattr(route_results, "_spawn_refresh", spawn)
+    monkeypatch.setattr(route_results, "_REFRESH_ENABLED", True)
+    route_results._REFRESH_CHILDREN.clear()
     yield started
-    serve._REFRESH_CHILDREN.clear()
+    route_results._REFRESH_CHILDREN.clear()
 
 
 def test_project_route_starts_one_refresh_while_documents_are_pending(
@@ -266,10 +266,7 @@ def test_project_route_starts_one_refresh_while_documents_are_pending(
     assert second["refreshing"] is True
     assert len(refresh_starts) == 1
     argv = refresh_starts[0]
-    assert argv[argv.index("-m") + 1 : argv.index("-m") + 3] == [
-        "reckon.serve",
-        "_refresh",
-    ]
+    assert argv[argv.index("-m") + 1] == "reckon.route_results"
     assert argv[argv.index("--key") + 1] == f"checks:{_PROJECT}"
 
 
@@ -277,7 +274,7 @@ def test_a_library_handler_never_starts_a_refresh(docs_dir: Path, monkeypatch):
     # Only the served process opts in; a handler under test or in another
     # caller must not start a child that writes a cache outside its sandbox.
     started: list[list[str]] = []
-    monkeypatch.setattr(serve, "_spawn_refresh", started.append)
+    monkeypatch.setattr(route_results, "_spawn_refresh", started.append)
     with _served() as port:
         status, body = _get(port, f"/_checks/{_PROJECT}")
 
