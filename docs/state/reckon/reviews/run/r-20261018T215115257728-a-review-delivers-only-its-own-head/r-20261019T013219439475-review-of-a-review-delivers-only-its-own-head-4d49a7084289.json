@@ -1,0 +1,80 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Accepting the legacy path as delivery again makes _delivered_review_record return the predecessor round and promote_review_run_itself refuse nothing, so the None assertion at 217 and promoted-is-false at 220 redden; gate-base-arm.log shows exactly this.",
+      "lines": "tests/test_a_review_promotes_only_its_own_verdict.py:213-235"
+    },
+    {
+      "failure_condition": "Dropping the same_revision, review_run_id or dispatch-time check lets the mismatched record at the head-keyed path deliver, so that case's None assertion reddens.",
+      "lines": "tests/test_a_review_promotes_only_its_own_verdict.py:246-262"
+    },
+    {
+      "failure_condition": "Removing the no-head refusal at recovery_review_acceptance.py:320 makes promote_review_run_itself promote on the legacy round, so the promoted-is-false and reason assertions redden.",
+      "lines": "tests/test_a_review_promotes_only_its_own_verdict.py:264-275"
+    }
+  ],
+  "assertion_independence": "Each added assertion is the code under test's own return value against a fixture the test did not hand that function: the None assertions read _delivered_review_record's output, and the promotion assertions read the ledger row and refusal reason the production sweep produced. No added assertion compares a value against the same variable the test passed in.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:330",
+    "reckon/crew/recovery_review_acceptance.py:416",
+    "reckon/crew/promotion_checks.py:1152",
+    "reckon/crew/promotion_checks.py:2327",
+    "reckon/crew/recovery_review_delivery.py:366"
+  ],
+  "completed_at": "2026-10-19T01:43:37.842Z",
+  "dispatched_at": "2026-10-19T01:34:02Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_delivery.py",
+      "line": "81",
+      "severity": "follow-on",
+      "text": "follow-on: _is_run_review_node answers 'is this a run review' only when the node id carries REVIEW_NODE_PREFIX, so in promote_review_run_itself (reckon/crew/recovery_review_acceptance.py:320) the refusal that names the missing head is reached only for a review-prefixed node id; a run review hand-launched under a coordinator's own node id \u2014 a case recovery_review_delivery.py:57 and recovery_review_dispatch.py:150 both document as real \u2014 declares only a legacy path and is refused by the generic 'stored no readable record' branch instead of one naming the head. The refusal is still fail-closed, so this is a message-fidelity gap, not a delivery hole: _delivered_review_record returns None for any record that is not at a declared head-keyed path, so such a review cannot be promoted on another round's verdict."
+    }
+  ],
+  "item_rounds": {
+    "diff": "Read commit by commit against 820d1f1c3; nine files, 492 insertions and 42 deletions, with production change confined to reckon/crew/recovery_review_delivery.py (the four-condition predicate, _is_run_review_node, _declared_head_keyed_record, _review_dispatch_instant) and reckon/crew/recovery_review_acceptance.py:314-338 (the no-head refusal), the rest test updates and the one-line documentation correction at 4d49a7084.",
+    "done_when": "The done-when names the four conditions, the no-head refusal in promote_review_run_itself, the new test file tests/test_a_review_promotes_only_its_own_verdict.py, a base-arm negative control and a literal pytest command; the delivered head's gate covers seven declared files, 41 passed at 4d49a7084 (gate-head-arm.log EXIT=0), and the same seven files against base product code 820d1f1c3 give 36 passed / 5 failed (gate-base-arm.log EXIT=1), the five being exactly the new file's predecessor-round, three mismatch and no-head cases.",
+    "goal": "The node goal is to make a run review count as delivered only by a record of the head its declared head-keyed write path names; reckon/crew/recovery_review_delivery.py:302-343 restricts delivery to a record at the declared .at-<head> path that describes that head (review_described_head/same_revision), names this run when it carries a review_run_id, and postdates this run's dispatch, removing the legacy path and the any-head glob.",
+    "manifest": "Read; it names the eight commits through 4d49a7084, states the seven-file gate at 41 passed with base 36/5, gives baseline_suite and after_suite receipts whose ids reconcile with the gate logs, records negative_control_log negative-control-base-arm.log, and answers the prior round's finding by id ('acted fec6e826477: 4d49a7084289e7a7c866d8c06dd040188dd4ffeb').",
+    "write_paths": "The dispatch fence for this node grants reckon/crew/recovery_review_delivery.py, reckon/crew/recovery_review_dispatch.py, reckon/crew/recovery_review_acceptance.py, six test files and the evidence fragment; the final round's scope was widened across resumes to add tests/test_a_review_without_its_run_id_still_promotes.py, tests/test_bookkeeping_follows_the_run.py and tests/test_promotion_keeps_every_round.py, so every one of the nine paths in the diff is inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_promotes_only_its_own_verdict.py:213-275 fails on a reverted legacy-path acceptance and on each dropped check, and gate-base-arm.log:178-182 shows exactly those five ids FAILED at the base product code, so each guard is shown to fire rather than merely passing.",
+    "evidence": "gate-head-arm.log reports 41 passed at 4d49a7084 and gate-base-arm.log reports the five new cases FAILED at 820d1f1c3, and the manifest's baseline_suite/after_suite failure_ids match those logs line for line.",
+    "fit": "reckon/crew/recovery_review_delivery.py:81-141 and :302-343 follow the surrounding style and carry mechanism names (_declared_head_keyed_record, _review_dispatch_instant) with no plan, ticket or version labels.",
+    "goal_fidelity": "reckon/crew/recovery_review_delivery.py:326-343 returns None unless the declared .at-<head> path holds a complete record describing that head after this run's dispatch, so the legacy path and the any-head glob are no delivery.",
+    "reuse": "Every added definition builds on an existing owner \u2014 _declared_head_keyed_record reuses _review_store_record_paths and _review_record_subject, _is_run_review_node reads the id grammar through repair.round_node_source, and _review_dispatch_instant reuses review.run_record_times and review.run_id_dispatch_time.",
+    "scope_discipline": "Every path in the diff (reckon/crew/recovery_review_delivery.py, reckon/crew/recovery_review_acceptance.py, the six named tests, the fragment) is inside the node's declared write paths, and recovery_review_dispatch.py is touched not at all."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a run review count as delivered only by a record of the head its declared head-keyed write path names; reckon/crew/recovery_review_delivery.py:302-343 restricts delivery to a record at the declared .at-<head> path that describes that head, names this run when it carries a review_run_id, and postdates this run's dispatch.\nVERDICT done_when: the done-when names the four conditions, the no-head refusal and the new test file; gate-head-arm.log reports 41 passed at 4d49a7084 and gate-base-arm.log reports exactly the five new cases FAILED at 820d1f1c3, so the gate asserts the measure.\nVERDICT write_paths: the fence grants nine paths and the final scope was widened across resumes to cover all three extra test files; every path in the diff is inside the declared scope.\nVERDICT manifest: read; it names the eight commits, the seven-file gate at 41 passed against base 36/5, receipts that reconcile with the gate logs, negative-control-base-arm.log, and the answer to the prior round's finding by id.\nVERDICT diff: read commit by commit against 820d1f1c3; nine files, production change confined to reckon/crew/recovery_review_delivery.py and reckon/crew/recovery_review_acceptance.py:314-338, the rest test updates and the one-line documentation correction at 4d49a7084.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:330, reckon/crew/recovery_review_acceptance.py:416, reckon/crew/promotion_checks.py:1152, reckon/crew/promotion_checks.py:2327, reckon/crew/recovery_review_delivery.py:366\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_delivery.py:326-343 returns None unless the declared .at-<head> path holds a complete record describing that head after this run's dispatch, so the legacy path and the any-head glob are no delivery.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head-arm.log reports 41 passed at 4d49a7084 and gate-base-arm.log reports the five new cases FAILED at 820d1f1c3, and the manifest's baseline_suite/after_suite failure_ids match those logs line for line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the node's declared write paths (reckon/crew/recovery_review_delivery.py, reckon/crew/recovery_review_acceptance.py, the six named tests, the fragment) and nothing outside them is touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_review_promotes_only_its_own_verdict.py:213-275 fails on a reverted legacy-path acceptance and on each dropped check, and gate-base-arm.log:178-182 shows exactly those five ids FAILED at the base product code, so each guard is shown to fire rather than merely passing.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_review_delivery.py:81-141 and :302-343 follow the surrounding style and carry mechanism names (_declared_head_keyed_record, _review_dispatch_instant) with no plan, ticket or version labels.\nSCORE reuse: 18\nJUSTIFICATION reuse: every added definition builds on an existing owner \u2014 _declared_head_keyed_record reuses _review_store_record_paths and _review_record_subject, _is_run_review_node reads the id grammar through repair.round_node_source, and _review_dispatch_instant reuses review.run_record_times and review.run_id_dispatch_time.\nFINDING reckon/crew/recovery_review_delivery.py:81 follow-on: _is_run_review_node answers 'is this a run review' only when the node id carries REVIEW_NODE_PREFIX, so in promote_review_run_itself (reckon/crew/recovery_review_acceptance.py:320) the refusal that names the missing head is reached only for a review-prefixed node id; a run review hand-launched under a coordinator's own node id declares only a legacy path and is refused by the generic 'stored no readable record' branch instead of one naming the head, though the refusal is still fail-closed.\n",
+  "review_run_id": "r-20261019T013219439475-review-of-a-review-delivers-only-its-own-head-4d49a7084289",
+  "reviewed_base_sha": "820d1f1c3b266f525cc2b5216257cc0047326183",
+  "reviewed_commits": [
+    "b0050ee0fc693cc1835ad82ffc9ddbffa51a93f7",
+    "7857d10099c67452bc84bb0d4da82264eb34a375",
+    "76c6302b2ec6570a4ecaa3a97730f1e67ca47696",
+    "257db0207de0b3c4fce8ac61a5a0d1a8abef34db",
+    "2957d714a9b0f7c81260905ef6336dbfee0abc8e",
+    "e521edb86ebb1e3d2f44beb88968509b94cdb496",
+    "870b8e31ec4f4df6efab99eed0235f7645213ff8",
+    "4d49a7084289e7a7c866d8c06dd040188dd4ffeb"
+  ],
+  "reviewed_head_sha": "4d49a7084289e7a7c866d8c06dd040188dd4ffeb",
+  "reviewed_run_id": "r-20261018T215115257728-a-review-delivers-only-its-own-head",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T01:44:03.054737+00:00",
+  "total": 113
+}
