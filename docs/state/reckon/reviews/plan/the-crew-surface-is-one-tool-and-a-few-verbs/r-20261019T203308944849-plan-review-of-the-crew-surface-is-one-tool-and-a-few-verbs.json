@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T20:46:27.813Z",
+  "dispatched_at": "2026-10-19T20:33:54Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:24",
+      "id": "wiring-1",
+      "reason": "the ordered serialization \u00a77 uses internally for exactly this reason is missing between \u00a78 and \u00a79, so the plan needs an s9-on-s8 edge (or the reverse) and \u00a79 added to the followup's order list.",
+      "text": "\u00a78 and \u00a79 both declare `depends-on` s7 and nothing else, and both write `reckon/crew_run_commands.py` (\u00a78 at plan:304; \u00a79's first and fourth nodes at plan:322 and plan:328), while the driving followup's ordering sentence (plan:367: \"\u00a74, \u00a76, \u00a77 and \u00a78 then run in order\") does not mention \u00a79 at all \u2014 so a roadmap that releases \u00a78 when s7 lands also releases \u00a79's first node, and two workers edit one file",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:75",
+      "id": "reasoning-1",
+      "reason": "the headline figure is a claim the plan makes about its own outcome and now contradicts its own sections; the earlier review declined exactly this line on the arithmetic \u00a79 has since invalidated.",
+      "text": "\u00a71 says the fold \"leaves 65 visible leaves, or 66 if \u00a74 finds `crew merge` still landing heads\", but the arithmetic that produced 65/66 counted \u00a76 as removing all five read verbs (-4); \u00a76 has since landed keeping all five (plan:175-177) and \u00a79 now retires only `list`, `ledger` and `velocity` (-2 with \u00a76's added `crew view`), so the same accounting yields 67, or 68 with `crew merge` retained \u2014 and \u00a74's evidence says `crew merge` is retained (plan:212-213), making the current sentence wrong by two",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:333",
+      "id": "done_when-1",
+      "reason": "as written the node cannot produce its own required evidence and stops as blocked on a write-scope refusal, so either the capture moves to the node that owns the test file or that file joins the mover's fence.",
+      "text": "the done-when requires \"Each retired verb's answers are captured as fixtures at the base of the node that moves its callers\", covering `crew list` with `--project`, `--phase`, `--mine` and `--session`, but the node that moves `crew list`'s callers (`cso-list-callers-move-to-crew-view`) does not list `tests/test_read_verbs_retire_behind_crew_view.py` among its write paths (plan:326), the file those fixtures must be recorded in",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:314",
+      "id": "anchors_resolve-1",
+      "reason": "the keep-`directory`-visible count rests on a caller census, and this citation is a false positive in it; the decision still stands on the verified imas-ambix caller (ops/lane-cycle/AGENTS.md:40), but the census claim itself needs correcting before it is quoted as evidence.",
+      "text": "\u00a79's Why asserts \"`crew directory` is invoked by `skills/reckon-build/scripts/worktree_fleet.py` and by a guide in another project\", but that script contains no invocation of the verb: every occurrence of \"directory\" in it is a local variable for the config directory, and it reads live run pointers directly rather than shelling out (\"Read live run pointers directly from the transient crew directory\", worktree_fleet.py:126)",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4f42eb806676a723fe815ae90807ef63626526f27f288da329e8507731eb3443",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 26,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T203308944849-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "14eeac5297949a48d562e0d7bb13bce64d6da92c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a79's Why cites `skills/reckon-build/scripts/worktree_fleet.py` as an invoker of `crew directory` (docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:314), and that file contains no such invocation.",
+    "done_when": "a finding \u2014 \u00a79's fixture bullet (docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:333) assigns the `crew list` answer capture to the node that moves its callers, whose declared write paths exclude the test file those fixtures live in.",
+    "evidence_paths": "pass \u2014 the changed units name durable in-repo paths (tests/test_read_verbs_retire_behind_crew_view.py, the landed evidence page under docs/evidence/archive/), and no gate log or fixture is sent to a scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 the \u00a77 and \u00a79 node names and prose carry no plan labels, stage names, ticket numbers or version tags into code, and the new symbol the plan introduces (`serve_crew_view`) is named by what it does.",
+    "reasoning": "a finding \u2014 \u00a79 retires three of the five read verbs and keeps two, where the arithmetic behind \u00a71's headline leaf count (docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:75) assumed all five retire.",
+    "single_goal": "pass \u2014 each \u00a77 node names one family and each \u00a79 node one verb change or one retiring step; the filter node's rework of \u00a76's parity test is the negative-control harness for the filter it adds, not a second deliverable.",
+    "wiring": "a finding \u2014 \u00a79 declares `depends-on` s7 alone (docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:24), and \u00a78 does the same, yet both write `reckon/crew_run_commands.py`, so the declared graph releases the two sections concurrently onto one file."
+  },
+  "section_digests": {
+    "_document": "e8bb1db2690392c8b5611dbda930de65632d9202673b2fc818afac5a0a609348",
+    "s1": "df3ca327aa989333473f3456bef3fcb4304fc54d8ab37eb334a92448b8837aaa",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "bfc4b93502cb69a2a5878f9c282da2cbab878f4f49482f263fdfc074dfce4ba8",
+    "s4": "2feb22a10d53f02161e33412c6f491a2718ee9b88ffede06e39b7fc15799f5d1",
+    "s5": "4a0b632aaec0c9b2538edeab874ccd9fd39723e2eef864da9ae65a3f72b6695c",
+    "s6": "e037f188e4e0784a7a39a208f621ec226cacdda5308e5f226d6ba3e104345522",
+    "s7": "7a66876ae7177f3cc833a9fc9c2885beceef03cf567843584a885f144155809b",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6",
+    "s9": "90caa39782c4dff9d857d2e4a38af2bcb6331d1c1d2479002accf0250dcb2c87"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T21:01:03.041711+00:00"
+}
