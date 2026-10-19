@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:892",
+    "reckon/crew/dispatch_sessions.py:1638"
+  ],
+  "completed_at": "2026-10-19T20:09:03.783Z",
+  "dispatched_at": "2026-10-19T19:54:12Z",
+  "findings": [
+    {
+      "file": "tests/test_time_fence_follows_the_attempt.py",
+      "line": "185",
+      "severity": "follow-on",
+      "text": "follow-on: the seconds-left command string is re-derived here rather than reused from the module that owns it, tests/test_a_time_fence_names_its_clock.py:35 (asserted at :120); the command format is now spelled in two test modules, so a change to it must be updated in both or one assertion silently stops matching the composer."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatch_claims.py:892 composes the worker prompt through compose_prompt and is the runtime path reaching the changed separator; reckon/crew/dispatch_sessions.py:1638 restates the fence for a resumed attempt through time_fence_statement alone (unchanged, and it appends no period), so the defect and the fix do not apply there.",
+    "diff": "read both commits against base 3b652d4bc: 59636fe5d changes 2 lines in reckon/crew/prompts.py and adds tests/test_the_time_fence_reads_cleanly.py (87 lines) plus a 5-line edit at tests/test_time_fence_follows_the_attempt.py:185; 93843283b adds the 37-line landing fragment; 131 insertions, 3 deletions.",
+    "done_when": "the gate asserts the done_when: tests/test_the_time_fence_reads_cleanly.py composes all three shapes (launch instant with 1.5, launch instant without, no launch instant) and checks no two consecutive periods plus the bare form reading \"20m. Your process ends\"; the assertion at tests/test_time_fence_follows_the_attempt.py:185 fails when the command is dropped (negative-control-dropped-command.log, EXIT=1); the two arms are logged in the run directory (gate-base.log 1 failed / 75 passed at 3b652d4bc, gate-head.log 1 failed / 80 passed at 93843283b) with the same failure id; ruff delta is zero on the staged paths.",
+    "goal": "the goal is to end every time-fence sentence with one period and point the stale clock assertion at the seconds-left command; reckon/crew/prompts.py:695 now supplies the period in the bare-duration branch (else f\"{time_budget}.\") and :721 drops the period the template appended after {time_fence}, and tests/test_time_fence_follows_the_attempt.py:185-189 asserts the seconds-left command instead of a bare `date -u`.",
+    "manifest": "read; it reports status complete, commits 59636fe5d and 93843283b, a runnable tests: command, both arms with failure ids, the two negative-control logs and the reproduction of the defect, but its baseline_suite and after_suite both carry only revision short-sha 93843283b for the head arm.",
+    "write_paths": "the manifest declares reckon/crew/prompts.py, tests/test_the_time_fence_reads_cleanly.py, tests/test_time_fence_follows_the_attempt.py, docs/evidence/fragments/test-time-is-not-the-nodes-time/the-time-fence-reads-cleanly.html and docs/figures/test-time-is-not-the-nodes-time/the-time-fence-reads-cleanly; git diff --stat 3b652d4bc 93843283b lists the first four and nothing else, and no figure was written."
+  },
+  "justifications": {
+    "durability": "the new assertions fail when the fix is reverted (negative-control-restored-period.log restores the unconditional period and reddens all 5 cases in tests/test_the_time_fence_reads_cleanly.py, EXIT=1) and the changed assertion fails when the command is dropped (negative-control-dropped-command.log, tests/test_time_fence_follows_the_attempt.py:186 AssertionError, EXIT=1), so each added assertion names a condition under which it fails.",
+    "evidence": "gate-head.log and gate-base.log are the two arms over the same 7 pre-existing files plus the new one, both ending in a bare EXIT= line, and the single failure id is identical in both (tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window), so the added-failure delta the manifest claims is what the logs show.",
+    "fit": "tests/test_the_time_fence_reads_cleanly.py mirrors the module docstring, injected-instant and local _node()/_compose() helper shape of tests/test_a_time_fence_names_its_clock.py, and the added names (test_the_bare_duration_form_reads_cleanly, _fence_block) carry no plan, phase or ticket label.",
+    "goal_fidelity": "reckon/crew/prompts.py:695 gives the bare form its own period and :721 removes the template's period, so both forms end in exactly one period, and the composed source-run prompt (prompt.txt, FENCE \u2014 TIME) shows the defect it repairs: \"past the deadline.. Your process ends\".",
+    "reuse": "the assertion added at tests/test_time_fence_follows_the_attempt.py:185 re-derives the seconds-left command string that tests/test_a_time_fence_names_its_clock.py:35 already constructs and asserts at :120, so one command format is now owned by two test modules without either extending the other.",
+    "scope_discipline": "every path in git diff --stat 3b652d4bc 93843283b is inside the manifest's declared write paths, the change is 131 insertions and 3 deletions with no unrelated cleanup, and no file outside the scope was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to end every time-fence sentence with one period and point the stale clock assertion at the seconds-left command; reckon/crew/prompts.py:695 now supplies the period in the bare-duration branch (else f\"{time_budget}.\") and :721 drops the period the template appended after {time_fence}, and tests/test_time_fence_follows_the_attempt.py:185-189 asserts the seconds-left command instead of a bare `date -u`.\nVERDICT done_when: the gate asserts the done_when: tests/test_the_time_fence_reads_cleanly.py composes all three shapes (launch instant with 1.5, launch instant without, no launch instant) and checks no two consecutive periods plus the bare form reading \"20m. Your process ends\"; the assertion at tests/test_time_fence_follows_the_attempt.py:185 fails when the command is dropped (negative-control-dropped-command.log, EXIT=1); the two arms are logged in the run directory (gate-base.log 1 failed / 75 passed at 3b652d4bc, gate-head.log 1 failed / 80 passed at 93843283b) with the same failure id; ruff delta is zero on the staged paths.\nVERDICT write_paths: the manifest declares reckon/crew/prompts.py, tests/test_the_time_fence_reads_cleanly.py, tests/test_time_fence_follows_the_attempt.py, docs/evidence/fragments/test-time-is-not-the-nodes-time/the-time-fence-reads-cleanly.html and docs/figures/test-time-is-not-the-nodes-time/the-time-fence-reads-cleanly; git diff --stat 3b652d4bc 93843283b lists the first four and nothing else, and no figure was written.\nVERDICT manifest: read; it reports status complete, commits 59636fe5d and 93843283b, a runnable tests: command, both arms with failure ids, the two negative-control logs and the reproduction of the defect, but its baseline_suite and after_suite both carry only revision short-sha 93843283b for the head arm.\nVERDICT diff: read both commits against base 3b652d4bc: 59636fe5d changes 2 lines in reckon/crew/prompts.py and adds tests/test_the_time_fence_reads_cleanly.py (87 lines) plus a 5-line edit at tests/test_time_fence_follows_the_attempt.py:185; 93843283b adds the 37-line landing fragment; 131 insertions, 3 deletions.\nCALL_SITES: reckon/crew/dispatch_claims.py:892 compose_prompt call, reckon/crew/dispatch_sessions.py:1638 time_fence_statement call\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:695 gives the bare form its own period and :721 removes the template's period, so both forms end in exactly one period, and the composed source-run prompt (prompt.txt, FENCE \u2014 TIME) shows the defect it repairs: \"past the deadline.. Your process ends\".\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log and gate-base.log are the two arms over the same 7 pre-existing files plus the new one, both ending in a bare EXIT= line, and the single failure id is identical in both (tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window), so the added-failure delta the manifest claims is what the logs show.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --stat 3b652d4bc 93843283b is inside the manifest's declared write paths, the change is 131 insertions and 3 deletions with no unrelated cleanup, and no file outside the scope was touched.\nSCORE durability: 19\nJUSTIFICATION durability: the new assertions fail when the fix is reverted (negative-control-restored-period.log restores the unconditional period and reddens all 5 cases in tests/test_the_time_fence_reads_cleanly.py, EXIT=1) and the changed assertion fails when the command is dropped (negative-control-dropped-command.log, tests/test_time_fence_follows_the_attempt.py:186 AssertionError, EXIT=1), so each added assertion names a condition under which it fails.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_the_time_fence_reads_cleanly.py mirrors the module docstring, injected-instant and local _node()/_compose() helper shape of tests/test_a_time_fence_names_its_clock.py, and the added names (test_the_bare_duration_form_reads_cleanly, _fence_block) carry no plan, phase or ticket label.\nSCORE reuse: 15\nJUSTIFICATION reuse: the assertion added at tests/test_time_fence_follows_the_attempt.py:185 re-derives the seconds-left command string that tests/test_a_time_fence_names_its_clock.py:35 already constructs and asserts at :120, so one command format is now owned by two test modules without either extending the other.\nFINDING tests/test_time_fence_follows_the_attempt.py:185 follow-on: the seconds-left command string is re-derived here rather than reused from the module that owns it, tests/test_a_time_fence_names_its_clock.py:35 (asserted at :120); the command format is now spelled in two test modules, so a change to it must be updated in both or one assertion silently stops matching the composer.\n",
+  "review_run_id": "r-20261019T195312566139-review-of-the-time-fence-reads-cleanly-93843283bf61",
+  "reviewed_base_sha": "3b652d4bced9351d34da511fecb2ebcb6376b02c",
+  "reviewed_head_sha": "93843283bf61cac00b7f34c767238addf20d7c8f",
+  "reviewed_run_id": "r-20261019T193541643761-the-time-fence-reads-cleanly",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T20:05:00Z",
+  "total": 108
+}
