@@ -1,7 +1,7 @@
 <article class="r-fragment" data-node="epw-server-serves-current-code">
   <h2 id="epw-server-serves-current-code-heading">The MCP server answers a failed call on the checkout's current code</h2>
 
-  <section data-reckon="section" data-id="epw-server-serves-current-code-mechanism">
+  <section id="epw-server-serves-current-code-mechanism">
     <h3 id="epw-server-serves-current-code-mechanism-heading">The stdio mechanism, and why re-exec cannot carry an initialised session</h3>
     <p>The HTTP server owns its process: <code>_CodeReload</code> drains its handlers and calls
       <code>os.execv</code>, and a re-executed image is simply a new server, because every caller
@@ -26,7 +26,7 @@
     </ul>
   </section>
 
-  <section data-reckon="section" data-id="epw-server-serves-current-code-factoring">
+  <section id="epw-server-serves-current-code-factoring">
     <h3 id="epw-server-serves-current-code-factoring-heading">One owner for the moved-checkout decision</h3>
     <p><code>reckon/served_code.py</code> now owns <code>MovedCheckout</code>, <code>code_fingerprints</code>,
       <code>served_code_moved</code> (the HTTP server's half, comparing the executed-code report's
@@ -36,7 +36,7 @@
       calls <code>moved_checkout</code>. Neither server carries a check of its own.</p>
   </section>
 
-  <section data-reckon="section" data-id="epw-server-serves-current-code-state">
+  <section id="epw-server-serves-current-code-state">
     <h3 id="epw-server-serves-current-code-state-heading">State at hand-off</h3>
     <p>All six subprocess cases of the gate pass, and the case that was red for two attempts is the one
       that exposed the deepest defect. Its call is <code>crew</code> rather than <code>edit_plan</code>,

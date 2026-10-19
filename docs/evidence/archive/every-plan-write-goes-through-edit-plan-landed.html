@@ -55,6 +55,30 @@
     <p>Run <code>r-20261019T171408539976-epw-reload-branches-have-cases</code>, commit <code>825cb62e7</code>. <code>tests/test_mcp_server_serves_current_code.py</code> gains three cases over the crew tool. A failing current-code answer is returned with its stamp. A child that never reaches the tool is not reported as an unchanged signature. A child that makes no answer keeps the reconnect refusal, which names why. One case exposed a defect: a child that never reached the tool read as an unchanged signature. <code>reckon/mcp.py</code>'s child now reports whether it reached the tool, so such a child makes no answer.</p><p>Gate: zero added failures against base <code>2cbe964ac</code>; the one failure is the width test, red at base. Negative control: removing the branch that lets a failing current-code answer stand makes the crew case fail on the reconnect refusal. Reviewed 110/120.</p>
   </section>
 
+  <section id="s7">
+    <h2>§7 — a refused or late write names the next step</h2>
+    <p>Run <code>r-20261019T171240949016-epw-a-refused-write-names-the-next-step</code>, commits <code>4f387cc24</code>,
+<code>ec85170ca</code>, <code>0750ed4a2</code>, <code>7ce840aa6</code> and <code>2279eeb0e</code>. Four refusals now answer with the caller's next step,
+each driven through <code>edit_plan</code> on a temporary project in <code>tests/test_a_refused_write_names_the_next_step.py</code> (eight cases):</p>
+<ul>
+<li><strong>Version conflict.</strong> Beside <code>current_version</code>, the refusal carries <code>changed_targets</code>: each op the refused write addressed, with the value the document holds now.</li>
+<li><strong>Batch.</strong> <code>collect_refused_ops</code> in <code>reckon/_store.py</code> reports every op the store would refuse, each with its index and reason, rather than the first.</li>
+<li><strong>Late write.</strong> An optional <code>request_id</code> returns the landed version on a retry of the same request, and a reused id with different ops is refused as <code>reused_request_id</code>.</li>
+<li><strong>Enumerated field.</strong> A refused <code>effort_hours</code>, <code>capability</code> or <code>links</code> names its legal values, and a capability refusal carries a valid example.</li>
+</ul>
+<p>The first round's review found that writes to sprint and milestone resources skipped both the conflict targets and the receipt. They now go through the same two paths, with cases of their own.</p>
+<p><strong>Gate.</strong> At head <code>2279eeb0e</code>, 93 passed and 1 failed. The failure is <code>test_every_module_fits_a_worker_window</code> on <code>reckon/crew/review.py</code> and <code>reckon/ledger.py</code>, the same two offenders as the base arm, so zero failures are added. Logs: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T171240949016-epw-a-refused-write-names-the-next-step/logs/baseline.log</code> and <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T171240949016-epw-a-refused-write-names-the-next-step/logs/after_suite.log</code>.</p>
+<p><strong>Negative controls.</strong> Each mutation was applied to a copy of the node revision, and each turned exactly the case it names red:</p>
+<ul>
+<li>A reused request id answered with the earlier version: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T171240949016-epw-a-refused-write-names-the-next-step/logs/negative_control_reused_id.log</code>.</li>
+<li>The batch returning only its first refusal: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T171240949016-epw-a-refused-write-names-the-next-step/logs/negative_control_batch.log</code>.</li>
+<li>An enumerated-field refusal without its legal-values sentence: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T171240949016-epw-a-refused-write-names-the-next-step/logs/negative_control_enum.log</code>. This control exposed that the effort case passed vacuously, and <code>7ce840aa6</code> repaired it.</li>
+<li>A conflict with no targets and no current version: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T171240949016-epw-a-refused-write-names-the-next-step/logs/negative_control_conflict.log</code>.</li>
+<li>The first round's reused-id control: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T171240949016-epw-a-refused-write-names-the-next-step/logs/negative_control.log</code>.</li>
+</ul>
+<p><strong>Review.</strong> At <code>2279eeb0e</code> the independent review scored 18, 18, 20, 19, 18 and 20 with no added failures. Its one follow-on finding, that the fragment's control paragraph named no log paths, is answered by this record.</p>
+  </section>
+
 </main>
 </body>
 </html>
