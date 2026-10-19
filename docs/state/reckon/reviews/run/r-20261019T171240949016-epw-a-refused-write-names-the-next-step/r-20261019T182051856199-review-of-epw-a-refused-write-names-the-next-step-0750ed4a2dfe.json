@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp.py:3194 edit_plan tool registered via _deadline_tool into _edit_plan_tool",
+    "reckon/mcp_edit_plan.py:_edit_plan_tool",
+    "reckon/_store.py:2637 apply_section_field_set (the enumerated-field refusal path)",
+    "reckon/_store.py:apply_ops (the batch guard _apply_one_op now dispatches through)"
+  ],
+  "completed_at": "2026-10-19T18:39:46.832Z",
+  "dispatched_at": "2026-10-19T18:22:31Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-a-refused-write-names-the-next-step.html",
+      "line": 44,
+      "severity": "follow-on",
+      "summary": "the run records one negative control (the reused request_id) where the plan's Done-when asks each change that reproduced at the base to have its own; the batch and enumerated-field controls named in the plan are not demonstrated in the record.",
+      "text": "The plan \u00a77 Done-when requires each change that reproduced at the base to carry its own negative control (\"Reporting only the first refused op fails the batch case\"; \"Dropping the legal values from an enumerated-field refusal fails that case\"), but only the reused-id mutation is logged (logs/negative_control.log, EXIT=1). The batch and enumerated-field guards are independently falsifiable by reading (removing the refused_ops attach raises KeyError; removing _enumerated_field_legal_values drops \"0.25\" from the refusal), so durability is intact, but the per-change negative-control evidence the measure names is only partially recorded."
+    },
+    {
+      "file": "reckon/mcp_edit_plan.py",
+      "line": 935,
+      "severity": "follow-on",
+      "summary": "_value_at_path mirrors a subset of the address forms _apply_set accepts (the section/followup/gate/question/research list heads and the decisions/section_declarations maps) without an owner both can extend, so the two resolutions must be kept in sync by hand.",
+      "text": "reckon/mcp_edit_plan.py:935 enumerates the set-path address forms independently of reckon/_store.py:2547 _apply_set's own dispatch, so a new form added to the write side is not seen by the read side that reports changed_targets. It correctly delegates the by-id lookup to the store's _find_by_id (reckon/_store.py:2396), so the prior review's specific concern is repaired; the remaining duplication is the form list only."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "the production call site is the edit_plan MCP tool registered in reckon/mcp.py:3194 via _deadline_tool into reckon/mcp_edit_plan.py:_edit_plan_tool; the batch and enumerated-field changes are reached through reckon/_store.py apply_ops and apply_section_field_set.",
+    "diff": "read all three commits (4f387cc24, ec85170ca, 0750ed4a2) against base 2cbe964; the first adds the four refusal capabilities, the second routes the distributed-resource branch through _attach_changed_targets and record_write_receipt and points _value_at_path at _find_by_id, the third records the resource half; five files changed, all inside the declared scope.",
+    "done_when": "the done_when names the four-file pytest gate plus a ruff delta floor; the manifest records after_suite 93 passed 1 failed (EXIT=1) and baseline 85 passed 1 failed (EXIT=1) with the same single failure id test_every_module_fits_a_worker_window, so zero failures are added; both after_suite revision and the log's first line read 0750ed4a2dfe.",
+    "goal": "the node goal is that each edit_plan refusal names the caller's next step (a version conflict carrying current version and changed targets, a batch reporting every refused op, a request_id that answers a late-landed retry with its version, enumerated-field refusals naming legal values); the diff implements all four in reckon/mcp_edit_plan.py, reckon/_store.py and reckon/_store_section_ops.py, and the resource branch now answers through the same two paths.",
+    "manifest": "read; status complete, it states the head gate result, names its three log paths, and its baseline_suite and after_suite JSON carry revision, command, exit_status, completed, failure_count and failure_ids; the single failure is attributed under follow_ons to peer files.",
+    "write_paths": "read the manifest's declared paths; every path in the diff (reckon/mcp_edit_plan.py, reckon/_store.py, reckon/_store_section_ops.py, tests/test_a_refused_write_names_the_next_step.py, docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-a-refused-write-names-the-next-step.html) is inside them, and no path outside them changed."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T182051856199-review-of-epw-a-refused-write-names-the-next-step-0750ed4a2dfe",
+  "reviewed_base_sha": "2cbe964ac844108f42cd6d6e5ece006ce0444b06",
+  "reviewed_head_sha": "0750ed4a2dfe340bca2bf30533b021d906a8c2b7",
+  "reviewed_run_id": "r-20261019T171240949016-epw-a-refused-write-names-the-next-step",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T18:45:05.882441+00:00"
+}
