@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="the-monitor-shows-the-work-it-watches">
+  <title>A failed catalogue read is not an absent catalogue | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A failed catalogue read is not an absent catalogue</h1>
+      <p class="lead">The code identity folds the model catalogue, with the package and its dispatch scripts, into one content tree naming what a reloading process will run. The catalogue reader returned <code>None</code> both when <code>HEAD</code> carried no catalogue and when its <code>git</code> read failed &mdash; a timeout under load included. One failed read therefore yielded the catalogue-less tree, a valid-looking identity every follower and producer reloads onto, launching with no model named until the next good read moved the identity back and forced a second reload. A read that did not answer now leaves the identity unknown, and the reloader keeps the image it is running.</p>
+    </header>
+
+    <section id="a-failed-catalogue-read-is-not-an-absent-catalogue-defect">
+      <h2>The gap: one failed read changed the code identity</h2>
+      <p><code>_committed_catalogue_blob</code> in <code>reckon/checkout_trust.py</code> asked <code>git rev-parse --verify HEAD:docs/state/reckon/model-catalogue.yaml</code> and returned <code>None</code> on any non-zero exit or on <code>OSError</code>/<code>SubprocessError</code>. <code>_committed_reload_tree</code> read that <code>None</code> as &ldquo;a checkout with no catalogue&rdquo; and returned the package-and-scripts tree. So a read that never answered was indistinguishable from git answering that the path is absent, and the identity computation produced a different tree either way. <code>committed_reckon_tree</code> folded its own failed read the same way.</p>
+      <p>The reproduction is the first case of the gate: a temporary repository whose <code>HEAD</code> carries the catalogue, with the catalogue read made to raise <code>subprocess.TimeoutExpired</code>. At the base code the identity comes back as the catalogue-less tree; at the delivered code it comes back as <code>IDENTITY_UNKNOWN</code>. The declared negative control below re-applies that folding and the first case fails again.</p>
+    </section>
+
+    <section id="a-failed-catalogue-read-is-not-an-absent-catalogue-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/checkout_trust.py</code> gains <code>IDENTITY_UNKNOWN</code> (the value <code>"unknown"</code>, which collides with neither a 40-digit tree id nor a 64-digit content digest) and <code>IdentityReadError</code>, raised where a read could not be completed.</li>
+        <li>The catalogue is now read with <code>git ls-tree HEAD -- &lt;path&gt;</code>, which answers whether or not the path exists &#8212; exit zero naming the blob when present, exit zero naming nothing when absent, and non-zero only when it could not answer. So empty output is git's own statement of absence, and a non-zero exit or an unfinished read is raised rather than read as absence. <code>committed_reckon_tree</code> similarly raises on a read that did not complete, and only returns <code>None</code> when git ran and answered that there is no such tree.</li>
+        <li><code>_committed_reload_tree</code> propagates an <code>IdentityReadError</code> rather than returning a partial tree, and <code>source_code_identity</code> catches it to report <code>IDENTITY_UNKNOWN</code>. A checkout that genuinely lacks the catalogue still yields the package-and-scripts tree, and a package outside Git is still hashed directly.</li>
+        <li><code>reckon/crew_follow_commands.py</code>: <code>_FollowerReloader.poll</code> treats an unknown reading as no new identity &#8212; it returns before comparing, keeping its current image and its recorded stamp rather than materialising a tree from a partial read. The producer's reloader is the same class, so it gets the same treatment.</li>
+      </ul>
+    </section>
+
+    <section id="a-failed-catalogue-read-is-not-an-absent-catalogue-the-gate">
+      <h2>The gate</h2>
+      <p><code>tests/test_a_failed_catalogue_read_is_not_an_absent_catalogue.py</code> builds a temporary checkout carrying the package, its dispatch script and the catalogue. The first case makes the catalogue read raise <code>TimeoutExpired</code> and requires the identity to be <code>IDENTITY_UNKNOWN</code>, distinct from the catalogue-less tree. The second case removes the catalogue from <code>HEAD</code> and requires the package-and-scripts tree. The third requires a fully successful read to fold the catalogue in, confirmed by materialising the identity and finding the catalogue file inside the image. The fourth arms a reloader on a good stamp, then feeds it <code>IDENTITY_UNKNOWN</code> and requires it to keep its recorded stamp, to run its check without re-executing, and never to materialise a tree.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Delivered head, <code>tests/test_a_failed_catalogue_read_is_not_an_absent_catalogue.py</code></td><td>4 passed, <code>EXIT=0</code></td><td><code>logs/head-arm.log</code></td></tr>
+          <tr><td>Delivered head, the 46 test files importing <code>reckon/checkout_trust.py</code> or <code>reckon/crew_follow_commands.py</code></td><td>3 failed, 415 passed, <code>EXIT=1</code> (failures outside this node's scope; see below)</td><td><code>logs/after-importers.log</code></td></tr>
+          <tr><td>Base revision <code>12d236688</code>, the same 46 importer files</td><td>1 failed, 415 passed, 2 errors, <code>EXIT=1</code>; the one failure is shared with the head arm and both errors did not reproduce in isolation</td><td><code>logs/base-importers.log</code></td></tr>
+          <tr><td>Declared negative control, fold restored and guard dropped</td><td>2 failed, 2 passed, <code>EXIT=1</code>; the failing ids are the first case and the reloader case, neither of which the head arm fails</td><td><code>logs/negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>Logs live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T133039067330-a-failed-catalogue-read-is-not-an-absent-catalogue/</code>. Every arm ran in the assigned worktree or a scratch extraction of the delivered revision under the run's scratch, with <code>reckon.checkout_trust</code> imported from the tree that tree names on its own header lines.</p>
+      <p>The three importer-suite failures at the delivered head &#8212; <code>test_a_pane_settles_when_no_work_is_live.py::test_the_real_follower_settles_when_the_host_advertises_it</code>, and two in <code>test_removed_flag_migration.py</code> &#8212; are reported for the coordinator to attribute against the base arm; this node's declared scope is <code>reckon/checkout_trust.py</code> and <code>reckon/crew_follow_commands.py</code>, and none of the three exercises the identity computation this node changed.</p>
+    </section>
+
+    <section id="a-failed-catalogue-read-is-not-an-absent-catalogue-negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>restore folding a failed catalogue read into an absent catalogue; the first case then returns the catalogue-less tree and the reloader reloads</em>. Applied to a scratch extraction of the delivered revision: in <code>_committed_catalogue_blob</code> the two <code>raise IdentityReadError(&hellip;)</code> statements are replaced with <code>return None</code>, and the reloader's unknown-reading guard is removed. Both modules are recompiled to prove the mutation is loadable. <code>test_a_timed_out_catalogue_read_reports_unknown_not_an_absent_catalogue</code> then fails (<code>reading</code> is the catalogue-less tree, not unknown) and <code>test_a_reloader_given_an_unknown_identity_keeps_its_recorded_stamp</code> fails (<code>assert execs == []</code> &mdash; the reloader re-executes). The scratch tree is discarded; the delivered worktree is not touched.</p>
+    </section>
+
+    <section id="a-failed-catalogue-read-is-not-an-absent-catalogue-commits">
+      <h2>Commits</h2>
+      <p><code>f94ec6674</code> &mdash; fix(crew): a failed catalogue read leaves the code identity unknown. Reads the catalogue with <code>ls-tree</code> so absence is git's own answer, raises <code>IdentityReadError</code> on a read that did not complete, reports <code>IDENTITY_UNKNOWN</code> from <code>source_code_identity</code>, and has <code>_FollowerReloader.poll</code> keep its image on an unknown reading. Changes <code>reckon/checkout_trust.py</code>, <code>reckon/crew_follow_commands.py</code>, <code>tests/test_a_failed_catalogue_read_is_not_an_absent_catalogue.py</code>.</p>
+    </section>
+  </main>
+</body>
+</html>

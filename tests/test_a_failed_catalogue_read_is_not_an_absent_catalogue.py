@@ -173,8 +173,3 @@ def test_a_reloader_given_an_unknown_identity_keeps_its_recorded_stamp(
 
     assert reloader.code_stamp == recorded
     assert execs == []
-
-
-def tmp_path_images(tmp_path: Path) -> Path:
-    """The reload-tree cache for a test: one root, named once so every read agrees."""
-    return tmp_path / "images"
