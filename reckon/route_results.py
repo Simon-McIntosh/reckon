@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -32,11 +33,6 @@ from pathlib import Path
 
 from reckon import compliance, metadata_index
 from reckon._store import write_json_atomically
-
-#: The route key kinds whose results a change to any project touches, so the
-#: result is published to every open stream as one fleet event rather than to
-#: the changed project's stream alone.
-_FLEET_KEY_KINDS = frozenset({"rollup", "velocity"})
 
 _REFRESH_SCHEMA = "reckon-route-result"
 _REFRESH_STORE_VERSION = 1
@@ -52,6 +48,7 @@ _REFRESH_LOCK = threading.Lock()
 #: before they are killed. A derivation is seconds of work, so a child that has
 #: not gone by then is one that would not go at all.
 _STOP_TIMEOUT_S = 5.0
+_VELOCITY_REFRESH_S = 15 * 60
 
 
 def set_enabled(enabled: bool) -> None:
@@ -146,7 +143,77 @@ def _store_refresh_result(key: tuple[str, ...], result: object) -> str:
 
 
 def _is_fleet_key(key: tuple[str, ...]) -> bool:
-    return key[0] in _FLEET_KEY_KINDS
+    return key[0] == "rollup" or (key[0] == "velocity" and key[1] == "*")
+
+
+def velocity_key(
+    project: str,
+    since: str | None,
+    until: str | None,
+    fields: str | None,
+    limit: int | None,
+    cursor: str | None,
+) -> tuple[str, ...]:
+    """Key a velocity answer by scope and its normalised request."""
+
+    from reckon import velocity
+
+    if since is None and until is None:
+        return "velocity", project, "default"
+    start = velocity.stamp(since)
+    end = velocity.stamp(until)
+    selected = ",".join(
+        sorted({part.strip() for part in (fields or "").split(",") if part.strip()})
+    )
+    return (
+        "velocity",
+        project,
+        "window",
+        velocity.iso(start) if start is not None else (since or ""),
+        velocity.iso(end) if end is not None else (until or ""),
+        selected,
+        str(limit) if limit is not None else "",
+        cursor or "",
+    )
+
+
+def velocity_default_response(
+    project: str,
+    stored: object,
+    fields: str | None,
+    limit: int | None,
+    cursor: str | None,
+) -> dict:
+    """Select a caller's blocks from the unpaged stored default report."""
+
+    from reckon import velocity
+
+    if not isinstance(stored, dict) or stored.get("ok") is False:
+        return stored
+    return velocity.select_view_blocks(
+        project, stored, fields=fields, limit=limit, cursor=cursor
+    )
+
+
+def velocity_result(key: tuple[str, ...]) -> tuple[object, float] | None:
+    """Read a velocity answer and refresh a stale moving window."""
+
+    if not _REFRESH_ENABLED:
+        return _route_compute(key), 0.0
+    stored = _refresh_result(key)
+    if stored is None:
+        if not _start_refresh(key):
+            raise OSError(f"velocity refresh did not start for {key[1]}")
+        return None
+    result, age, _version = stored
+    if key[2] == "default":
+        from reckon import velocity
+
+        end = result.get("window", {}).get("end") if isinstance(result, dict) else None
+        end_epoch = velocity.stamp(end)
+        if end_epoch is None or time.time() - end_epoch > _VELOCITY_REFRESH_S:
+            _start_refresh(key)
+    return result, age
 
 
 def _compute_refresh(key: tuple[str, ...]) -> object:
@@ -173,6 +240,34 @@ def _compute_refresh(key: tuple[str, ...]) -> object:
         return compliance.project_checks(docs_dir, project)
     if kind == "rollup":
         return collect_projects(mounts)
+    if kind == "velocity":
+        from reckon import velocity
+
+        project = key[1]
+        if key[2] == "default":
+            from reckon.serve import _velocity_default_window
+
+            since, until = _velocity_default_window()
+            checkouts = (
+                {name: str(Path(docs).parent) for name, docs in mounts.items()}
+                if project == "*"
+                else {project: str(Path(mounts[project]).parent)}
+            )
+            return velocity.report(checkouts, start=since, end=until)
+        since, until = key[3], key[4] or None
+        fields = key[5] or None
+        limit = int(key[6]) if key[6] else None
+        cursor = key[7] or None
+        checkout = str(Path(mounts[project]).parent) if project != "*" else None
+        return velocity.view(
+            project,
+            since=since,
+            until=until,
+            checkout_path=checkout,
+            fields=fields,
+            limit=limit,
+            cursor=cursor,
+        )
     raise ValueError(f"unknown refresh key: {key!r}")
 
 
@@ -267,16 +362,23 @@ def _start_refresh(key: tuple[str, ...]) -> bool:
     if not _REFRESH_ENABLED:
         return False
     with _REFRESH_LOCK:
-        running = _REFRESH_CHILDREN.get(key)
-        if running is not None and running.poll() is None:
+        scope = key[:2] if key[0] == "velocity" else key
+        if any(
+            (child_key[:2] if child_key[0] == "velocity" else child_key) == scope
+            and child.poll() is None
+            for child_key, child in _REFRESH_CHILDREN.items()
+        ):
             return True
         argv = [
             sys.executable,
             "-m",
             "reckon.route_results",
-            "--key",
-            ":".join(key),
         ]
+        argv += (
+            ["--key-json", json.dumps(key)]
+            if key[0] == "velocity"
+            else ["--key", ":".join(key)]
+        )
         if _MOUNTS_FILE is not None:
             argv += ["--mounts", str(_MOUNTS_FILE)]
         nice = shutil.which("nice")
@@ -374,10 +476,18 @@ def _refresh_main(argv: list[str]) -> int:
     from reckon.serve import _resolve_paths
 
     parser = argparse.ArgumentParser(prog="python -m reckon.route_results")
-    parser.add_argument("--key", required=True)
+    key_args = parser.add_mutually_exclusive_group(required=True)
+    key_args.add_argument("--key")
+    key_args.add_argument("--key-json")
     parser.add_argument("--mounts", default=None)
     args = parser.parse_args(argv)
-    key = tuple(args.key.split(":"))
+    key = (
+        tuple(json.loads(args.key_json))
+        if args.key_json
+        else tuple(args.key.split(":"))
+    )
+    if args.mounts:
+        os.environ["RECKON_MOUNTS_PATH"] = args.mounts
     _resolve_paths(Path(args.mounts) if args.mounts else None)
     result = _compute_refresh(key)
     _store_refresh_result(key, result)

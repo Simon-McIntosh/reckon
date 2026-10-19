@@ -3216,82 +3216,15 @@ OPTIONAL_BLOCKS = frozenset(
 )
 
 
-def view(
-    project,
-    *,
-    since,
-    until=None,
-    checkout_path=None,
-    fields=None,
-    limit=None,
-    cursor=None,
-):
-    """Compose the velocity view for a caller-named window, for either surface.
+def select_view_blocks(project, payload, *, fields=None, limit=None, cursor=None):
+    """Select requested blocks and page cells from one unpaged velocity report.
 
-    One composition serves the MCP read and the command line, so the two
-    surfaces cannot disagree about a window. It owns the whole derivation the
-    caller sees: the window parsing, the mount resolution, the default summary
-    and the paging of the project-lane-day cells.
-
-    ``project`` is one mounted project's name, or ``"*"`` for every mounted
-    checkout. ``since`` names the window start and is refused by name when
-    absent or unparseable, because there is no safe default: a view that
-    silently measured "since forever" would report a window the caller did not
-    ask for. ``until`` names the window close and defaults to now.
-
-    The per-project, per-lane and per-day tables are the default answer. Every
-    other block is served only when named in ``fields``, and the
-    project-lane-day cells — the largest block — are paged by ``limit`` and
-    ``cursor``: the count names the size of what is withheld. An unrecognised
-    field is refused with the accepted set named.
-
-    Returns the payload both surfaces emit. A refusal is a payload carrying
-    ``ok: False`` and a ``detail`` naming the reason, so a caller reads the
-    same shape whether the request is served or refused.
+    The report remains whole so a stored default window can answer every
+    cursor from the same result.
     """
-    from reckon._store import _docs_dir_for_project
-    from reckon.flight import mounted_project_docs
     from reckon.mcp_views import ViewRequestError, error_response, paginate
 
-    if since is None or stamp(since) is None:
-        return {
-            "ok": False,
-            "error": "crew_error",
-            "project": project,
-            "view": "velocity",
-            "detail": (
-                "the velocity view needs since=<window start, ISO-8601>; "
-                "it is absent or unparseable"
-            ),
-        }
-    window_end = until if until is not None else iso(time.time())
-    if stamp(window_end) is None:
-        return {
-            "ok": False,
-            "error": "crew_error",
-            "project": project,
-            "view": "velocity",
-            "detail": (
-                "until, when given, must be an ISO-8601 clock; it is unparseable"
-            ),
-        }
-    if project == "*":
-        checkouts = {
-            name: str(docs.parent) for name, docs in mounted_project_docs().items()
-        }
-    else:
-        docs_dir = _docs_dir_for_project(project, checkout_path)
-        if docs_dir is None:
-            return {
-                "ok": False,
-                "error": "crew_error",
-                "project": project,
-                "view": "velocity",
-                "detail": f"project {project!r} has no readable docs directory",
-            }
-        checkouts = {project: str(docs_dir.parent)}
-    payload = report(checkouts, start=since, end=window_end)
-    cells = payload.pop("by_project_day_lane", [])
+    cells = payload.get("by_project_day_lane", [])
     if isinstance(fields, str):
         requested = [part.strip() for part in fields.split(",")]
     else:
@@ -3332,3 +3265,82 @@ def view(
         response["by_project_day_lane"] = page
         response["pagination"] = pagination
     return response
+
+
+def view(
+    project,
+    *,
+    since,
+    until=None,
+    checkout_path=None,
+    fields=None,
+    limit=None,
+    cursor=None,
+):
+    """Compose the velocity view for a caller-named window, for either surface.
+
+    One composition serves the MCP read and the command line, so the two
+    surfaces cannot disagree about a window. It owns the whole derivation the
+    caller sees: the window parsing, the mount resolution, the default summary
+    and the paging of the project-lane-day cells.
+
+    ``project`` is one mounted project's name, or ``"*"`` for every mounted
+    checkout. ``since`` names the window start and is refused by name when
+    absent or unparseable, because there is no safe default: a view that
+    silently measured "since forever" would report a window the caller did not
+    ask for. ``until`` names the window close and defaults to now.
+
+    The per-project, per-lane and per-day tables are the default answer. Every
+    other block is served only when named in ``fields``, and the
+    project-lane-day cells — the largest block — are paged by ``limit`` and
+    ``cursor``: the count names the size of what is withheld. An unrecognised
+    field is refused with the accepted set named.
+
+    Returns the payload both surfaces emit. A refusal is a payload carrying
+    ``ok: False`` and a ``detail`` naming the reason, so a caller reads the
+    same shape whether the request is served or refused.
+    """
+    from reckon._store import _docs_dir_for_project
+    from reckon.flight import mounted_project_docs
+
+    if since is None or stamp(since) is None:
+        return {
+            "ok": False,
+            "error": "crew_error",
+            "project": project,
+            "view": "velocity",
+            "detail": (
+                "the velocity view needs since=<window start, ISO-8601>; "
+                "it is absent or unparseable"
+            ),
+        }
+    window_end = until if until is not None else iso(time.time())
+    if stamp(window_end) is None:
+        return {
+            "ok": False,
+            "error": "crew_error",
+            "project": project,
+            "view": "velocity",
+            "detail": (
+                "until, when given, must be an ISO-8601 clock; it is unparseable"
+            ),
+        }
+    if project == "*":
+        checkouts = {
+            name: str(docs.parent) for name, docs in mounted_project_docs().items()
+        }
+    else:
+        docs_dir = _docs_dir_for_project(project, checkout_path)
+        if docs_dir is None:
+            return {
+                "ok": False,
+                "error": "crew_error",
+                "project": project,
+                "view": "velocity",
+                "detail": f"project {project!r} has no readable docs directory",
+            }
+        checkouts = {project: str(docs_dir.parent)}
+    payload = report(checkouts, start=since, end=window_end)
+    return select_view_blocks(
+        project, payload, fields=fields, limit=limit, cursor=cursor
+    )

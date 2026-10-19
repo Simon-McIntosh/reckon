@@ -189,37 +189,78 @@ function VelocityView({ visibleProjects, mountedProjectCount, selectedProject })
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [inflightWindow, setInflightWindow] = useState(null);
+  const [computingKey, setComputingKey] = useState("");
 
   useEffect(() => {
     let active = true;
+    let retryTimer = null;
+    let requestedAgain = false;
+    let requesting = false;
+    let pendingKey = "";
+    setPayload(null);
+    setComputingKey("");
+    setLoaded(false);
     setInflightWindow(window);
-    (async () => {
+    const request = async () => {
+      if (requesting) {
+        requestedAgain = true;
+        return;
+      }
+      requesting = true;
       try {
         const response = await fetch(velocityRequestUrl(scope, window), {
           cache: "no-store",
         });
         const body = await response.json().catch(() => null);
+        if (!active) return;
+        if (response.status === 202) {
+          pendingKey = body?.key || response.headers?.get("X-Result-Key") || "";
+          setComputingKey(pendingKey);
+          setPayload(null);
+          setError("");
+          const retryAfter = Number(response.headers?.get("Retry-After"));
+          retryTimer = globalThis.setTimeout(request, Math.max(1, retryAfter || 5) * 1000);
+          return;
+        }
         if (!response.ok || !body || body.ok === false) {
           throw new Error(
             (body && body.detail) ||
               `velocity route returned ${response.status}`
           );
         }
-        if (!active) return;
+        pendingKey = "";
+        setComputingKey("");
         setPayload(body);
         setError("");
       } catch (cause) {
         if (!active) return;
+        pendingKey = "";
+        setComputingKey("");
         setError(cause instanceof Error ? cause.message : "velocity route unavailable");
       } finally {
+        requesting = false;
         if (active) {
           setInflightWindow(null);
           setLoaded(true);
+          if (requestedAgain) {
+            requestedAgain = false;
+            globalThis.clearTimeout(retryTimer);
+            request();
+          }
         }
       }
-    })();
+    };
+    const onFleet = event => {
+      if (!pendingKey || event?.detail?.key !== pendingKey) return;
+      globalThis.clearTimeout(retryTimer);
+      request();
+    };
+    globalThis.addEventListener("reckon-fleet", onFleet);
+    request();
     return () => {
       active = false;
+      globalThis.clearTimeout(retryTimer);
+      globalThis.removeEventListener("reckon-fleet", onFleet);
     };
   }, [scope, window]);
 
@@ -287,7 +328,13 @@ function VelocityView({ visibleProjects, mountedProjectCount, selectedProject })
         </div>
       ) : null}
 
-      {payload && !error && inflightWindow === null && (
+      {computingKey && !error && (
+        <div className="r-velocity-loading" role="status">
+          Computing {velocityWindowLabel(window)} — this window can take minutes.
+        </div>
+      )}
+
+      {payload && !error && !computingKey && inflightWindow === null && (
         <>
           <VelocityAggregateTable labelKey="project" label="By project" rows={payload.by_project} />
           <VelocityAggregateTable labelKey="lane" label="By lane" rows={payload.by_lane} />

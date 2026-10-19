@@ -2744,8 +2744,6 @@ class Handler(BaseHTTPRequestHandler):
                 return
             checkout_path = str(mounts[project].parent)
         since, until = named("since"), named("until")
-        if since is None and until is None:
-            since, until = _velocity_default_window()
         limit = None
         raw_limit = named("limit")
         if raw_limit not in (None, ""):
@@ -2754,21 +2752,60 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError:
                 self._send(HTTPStatus.BAD_REQUEST, b"bad limit")
                 return
-        payload = velocity_module.view(
-            project,
-            since=since,
-            until=until,
-            checkout_path=checkout_path,
-            fields=named("fields"),
-            limit=limit,
-            cursor=named("cursor"),
+        if (
+            not route_results._REFRESH_ENABLED
+            or (since is None and until is not None)
+            or (since is not None and velocity_module.stamp(since) is None)
+            or (until is not None and velocity_module.stamp(until) is None)
+        ):
+            if since is None and until is None:
+                since, until = _velocity_default_window()
+            payload = velocity_module.view(
+                project,
+                since=since,
+                until=until,
+                checkout_path=checkout_path,
+                fields=named("fields"),
+                limit=limit,
+                cursor=named("cursor"),
+            )
+            if not payload.get("ok"):
+                self._send_json(HTTPStatus.BAD_REQUEST, payload)
+            else:
+                self._send_json(HTTPStatus.OK, payload)
+            return
+        key = route_results.velocity_key(
+            project, since, until, named("fields"), limit, named("cursor")
         )
+        try:
+            answer = route_results.velocity_result(key)
+        except OSError as exc:
+            self._send_json(
+                HTTPStatus.SERVICE_UNAVAILABLE,
+                {"error": "velocity_refresh_unavailable", "detail": str(exc)},
+                headers={"Retry-After": "5"},
+            )
+            return
+        headers = {"X-Result-Key": ":".join(key)}
+        if answer is None:
+            self._send_json(
+                HTTPStatus.ACCEPTED,
+                {"status": "computing", "key": headers["X-Result-Key"]},
+                headers={**headers, "Retry-After": "5"},
+            )
+            return
+        payload, age = answer
+        headers["X-Result-Age"] = f"{age:.3f}"
+        if key[2] == "default":
+            payload = route_results.velocity_default_response(
+                project, payload, named("fields"), limit, named("cursor")
+            )
         if not payload.get("ok"):
             # The view refuses a missing or unparseable start by name, so the
             # client reads the reason as a 400 rather than an empty body.
-            self._send_json(HTTPStatus.BAD_REQUEST, payload)
+            self._send_json(HTTPStatus.BAD_REQUEST, payload, headers=headers)
             return
-        self._send_json(HTTPStatus.OK, payload)
+        self._send_json(HTTPStatus.OK, payload, headers=headers)
 
     def do_GET(self) -> None:  # noqa: N802
         parsed = urlsplit(self.path)
