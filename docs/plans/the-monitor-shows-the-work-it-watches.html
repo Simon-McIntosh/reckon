@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="407">
+<meta name="plan-version" content="409">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1514,6 +1514,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 <div class="r-comment" data-section="s62" data-id="c-s62-launches-recovered" data-who="reckon-build" data-when="2026-10-19T03:58:00Z">
     <div class="r-comment-body"><p>Automatic launches recovered without §62. From 03:19Z on 2026-10-19 the review reflex's automatic dispatches launched and completed: <code>r-20261019T031833…</code>, <code>r-20261019T033255…</code> and <code>r-20261019T034353…</code>. That is consistent with the diagnosis: the next commit to <code>reckon/</code> made the long-running processes reload with §61's code, which exports the interpreter. §62 stays open as hardening, so a launch no longer depends on how its composer was last reloaded. It waits on peer run <code>r-20261018T150822949393</code>, which holds <code>reckon/crew/dispatch_launch.py</code>.</p></div>
 </div>
+<div class="r-comment" data-section="s62" data-id="c-run-r-20261019T125341832344-review-of-a-launch-names-its-composers-interpreter-c6716adc830b" data-who="reckon-build" data-when="2026-10-19T13:18:07.022Z">
+    <div class="r-comment-body"><p>review of monitor §62 at c6716adc8: 94/120, blocking</p></div>
+</div>
 <div class="r-comment" data-section="s64" data-id="c-s64-superseded" data-who="reckon-build" data-when="2026-10-19T04:30:00Z">
     <div class="r-comment-body"><p>§64 is superseded by §63. Its review found that a picker-fallback dispatch already records its model when it runs from a checkout: live fallback pointers carry <code>deepseek-v4.1-flash</code> / <code>dsv4.1-flash</code> and <code>gpt-6-sol</code> / <code>sol6</code>. The blank model comes from dispatches made by reloaded processes, whose image lacks the model catalogue. That is the cause §63 now fixes. No separate change to the agent record is needed.</p></div>
 </div>
@@ -1588,6 +1591,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s66" data-id="c-run-r-20261019T125023542204-review-of-the-project-c-clause-can-fail-441ae3e23dbc" data-who="reckon-build" data-when="2026-10-19T13:12:12.584Z">
     <div class="r-comment-body"><p>independent review of run r-20261019T122014133920-the-project-c-clause-can-fail at head 441ae3e23 — goal_fidelity 19, evidence 16, scope_discipline 20, durability 13, fit 18, reuse 20, two follow-on findings (the negative control reddens at line 136, not the named C clause; the added _publish("C", SESSION) is itself unguarded); record at review-records/r-20261019T122014133920-the-project-c-clause-can-fail.json</p></div>
+</div>
+<div class="r-comment" data-section="s65" data-id="c-run-r-20261019T131044317469-review-of-the-scoped-pane-reuses-the-events-path-owner-3f3796f05165" data-who="reckon-build" data-when="2026-10-19T13:29:33.874Z">
+    <div class="r-comment-body"><p>§65 review stored: run r-20261019T122313863139 scored goal_fidelity 20, evidence 13, scope_discipline 20, durability 15, fit 18, reuse 20 (total 106) over base 002f85b4f and head 3f3796f05, with added_failure_count 4 derived from the run's own baseline_suite (9 ids) and after_suite (8 ids) logs and two follow-on findings — the importer-suite delta unmet by the recorded figures, and the watch-directory glob still duplicating query.watch_event_paths; neither blocks the node.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">

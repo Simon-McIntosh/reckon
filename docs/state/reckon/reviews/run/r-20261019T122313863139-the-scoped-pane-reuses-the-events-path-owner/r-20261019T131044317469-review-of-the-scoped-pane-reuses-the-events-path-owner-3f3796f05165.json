@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 4,
+  "added_failure_ids": [
+    "tests/test_producer_reads_only_what_changed.py::test_incremental_transitions_match_the_whole_file_path",
+    "tests/test_the_watcher_sweeps_unfollowed_sessions.py::test_the_watcher_sweeps_only_the_sessions_nobody_follows[single-event]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_deliberate_stop_is_not_restarted[producer-term]",
+    "tests/test_the_departure_row_says_how_and_what_it_spent.py::test_four_departures_render_three_pane_words"
+  ],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2235 (_session_counts_in_other_projects called by format_watch_transition)"
+  ],
+  "completed_at": "2026-10-19T13:29:33.874Z",
+  "dispatched_at": "2026-10-19T13:11:33Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "2130",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when requires recovery_watch.py's importers to show no added failure against base, but the run's own recorded arms show four head-only failure ids \u2014 tests/test_producer_reads_only_what_changed.py::test_incremental_transitions_match_the_whole_file_path, tests/test_the_watcher_sweeps_unfollowed_sessions.py::test_the_watcher_sweeps_only_the_sessions_nobody_follows[single-event], tests/test_a_crashed_producer_is_restarted.py::test_deliberate_stop_is_not_restarted[producer-term] and tests/test_the_departure_row_says_how_and_what_it_spent.py::test_four_departures_render_three_pane_words \u2014 so the measure's absence-of-added-failure clause is satisfied by attribution rather than by the figures, and each of those ids lacks a base-mode counterpart while the change is a behaviour-preserving path resolution whose only production caller is format_watch_transition."
+    },
+    {
+      "file": "reckon/crew/query.py",
+      "line": "651",
+      "severity": "follow-on",
+      "text": "follow-on: watch_event_paths already owns \"every project's watch stream\" as sorted(root.glob(f\"*{WATCH_EVENT_SUFFIX}\")) over crew_home()/watch, which is exactly what reckon/crew/recovery_watch.py:2136 still computes inline as sorted(watch_dir.glob(f\"*{own.suffix}\")); the node edited that line and left it duplicating query.py's helper, so the second spelling of the events path that this section set out to remove survives on the very line it changed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read both commits against base 002f85b4f; ebce175f4 changes reckon/crew/recovery_watch.py only (adds the watch_stream_path import at line 43, deletes the WATCH_EVENTS_SUFFIX constant at old line 2067 and moves its comment into the function docstring, resolves `own` and the glob suffix through the owner), and 3f3796f05 adds only the evidence fragment \u2014 no product behaviour changes.",
+    "done_when": "the done-when names `git grep -n '\\.events\"' reckon/crew/recovery_watch.py` and its base/head pair, tests/test_a_pane_counts_its_session_across_projects.py passing, every log ending EXIT=, no added failure across recovery_watch.py's importers, and ruff adding no finding; the worker ran all five and recorded them, but the importer-suite clause fails on the recorded delta (see the finding on reckon/crew/recovery_watch.py:2130).",
+    "goal": "the node goal is to route the scoped pane's other-project events-file lookup through watch_stream_path, the owner of that path; reckon/crew/recovery_watch.py:2129 now reads `own = watch_stream_path(project)` in place of `own = watch_lock_path(project).with_suffix(WATCH_EVENTS_SUFFIX)`, so the goal is met exactly.",
+    "manifest": "read; it records base 002f85b4f and head ebce175f4, baseline_suite 7 failed/413 passed/2 errors and after_suite 6 failed/414 passed/2 errors with their logs, ruff 4 findings at both arms, the named test present and passing in the head arm, and a flake attribution for every head-only id.",
+    "write_paths": "the node declared reckon/crew/recovery_watch.py and its evidence fragment; `git diff --stat 002f85b4f..3f3796f05` shows exactly those two paths and nothing else."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion at all, and the named test tests/test_a_pane_counts_its_session_across_projects.py passes identically before and after this behaviour-preserving change, so nothing reddens if the duplicate constant is reinstated; what the test does guard is path identity \u2014 it writes its events through runs.watch_stream_path (tests/test_a_pane_counts_its_session_across_projects.py:66) and asserts the summed total at line 129, so a scan that resolved a different suffix than the owner would drop the total and fail.",
+    "evidence": "the grep logs (logs/grep-events-base.log ends EXIT=0 with the WATCH_EVENTS_SUFFIX line, logs/grep-events-head.log ends EXIT=1 empty) and logs/ruff-head.log (4 = base 4, format clean) record the done-when's structural clauses, but the importer-suite clause does not hold on the recorded delta: baseline_suite.failure_ids has 9 ids and after_suite.failure_ids has 8, four of which are absent from base, so \"no added failure against base\" is met only by the worker's flake attribution rather than by the recorded figures.",
+    "fit": "the change keeps the module's own idiom (a derived `own.suffix` feeding the same `glob(f\"*{...}\")` shape already used in reckon/crew/query.py:651), removes a name rather than adding one, and introduces no plan label or forbidden spelling, though `own.suffix` silently yields empty if the owner ever returns a name with no suffix where no check would speak.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:2129 and :2136 both resolve their path from watch_stream_path, and watch_stream_path (reckon/crew/run_paths.py:31) is byte-identical to the expression it replaces, so the lookup is routed through the owner as the goal states.",
+    "reuse": "the landed change extends the existing owner rather than forking it \u2014 reckon/crew/recovery_watch.py:2129 delegates the path to watch_stream_path in reckon/crew/run_paths.py:31 exactly as the plan directs, and no definition is added or duplicated; the search over reckon/crew for the same capability found that owner plus a deeper sibling, query.watch_event_paths (reckon/crew/query.py:646), which is noted as a follow-on rather than charged to this change.",
+    "scope_discipline": "`git diff --stat 002f85b4f..3f3796f05` lists only reckon/crew/recovery_watch.py and the landing fragment, both inside the manifest's declared write paths, and the fragment carries no figure or evidence prose beyond what the node was permitted."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to route the scoped pane's other-project events-file lookup through watch_stream_path, the owner of that path; reckon/crew/recovery_watch.py:2129 now reads `own = watch_stream_path(project)` in place of `own = watch_lock_path(project).with_suffix(WATCH_EVENTS_SUFFIX)`, so the goal is met exactly.\nVERDICT done_when: the done-when names `git grep -n '\\.events\"' reckon/crew/recovery_watch.py` and its base/head pair, tests/test_a_pane_counts_its_session_across_projects.py passing, every log ending EXIT=, no added failure across recovery_watch.py's importers, and ruff adding no finding; the worker ran all five and recorded them, but the importer-suite clause fails on the recorded delta (see the finding on reckon/crew/recovery_watch.py:2130).\nVERDICT write_paths: the node declared reckon/crew/recovery_watch.py and its evidence fragment; `git diff --stat 002f85b4f..3f3796f05` shows exactly those two paths and nothing else.\nVERDICT manifest: read; it records base 002f85b4f and head ebce175f4, baseline_suite 7 failed/413 passed/2 errors and after_suite 6 failed/414 passed/2 errors with their logs, ruff 4 findings at both arms, the named test present and passing in the head arm, and a flake attribution for every head-only id.\nVERDICT diff: read both commits against base 002f85b4f; ebce175f4 changes reckon/crew/recovery_watch.py only (adds the watch_stream_path import at line 43, deletes the WATCH_EVENTS_SUFFIX constant at old line 2067 and moves its comment into the function docstring, resolves `own` and the glob suffix through the owner), and 3f3796f05 adds only the evidence fragment \u2014 no product behaviour changes.\nCALL_SITES: reckon/crew/recovery_watch.py:2235 (_session_counts_in_other_projects called by format_watch_transition)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:2129 and :2136 both resolve their path from watch_stream_path, and watch_stream_path (reckon/crew/run_paths.py:31) is byte-identical to the expression it replaces, so the lookup is routed through the owner as the goal states.\nSCORE evidence: 13\nJUSTIFICATION evidence: the grep logs (logs/grep-events-base.log ends EXIT=0 with the WATCH_EVENTS_SUFFIX line, logs/grep-events-head.log ends EXIT=1 empty) and logs/ruff-head.log (4 = base 4, format clean) record the done-when's structural clauses, but the importer-suite clause does not hold on the recorded delta: baseline_suite.failure_ids has 9 ids and after_suite.failure_ids has 8, four of which are absent from base, so \"no added failure against base\" is met only by the worker's flake attribution rather than by the recorded figures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 002f85b4f..3f3796f05` lists only reckon/crew/recovery_watch.py and the landing fragment, both inside the manifest's declared write paths, and the fragment carries no figure or evidence prose beyond what the node was permitted.\nSCORE durability: 15\nJUSTIFICATION durability: the diff adds no assertion at all, and the named test tests/test_a_pane_counts_its_session_across_projects.py passes identically before and after this behaviour-preserving change, so nothing reddens if the duplicate constant is reinstated; what the test does guard is path identity \u2014 it writes its events through runs.watch_stream_path (tests/test_a_pane_counts_its_session_across_projects.py:66) and asserts the summed total at line 129, so a scan that resolved a different suffix than the owner would drop the total and fail.\nSCORE fit: 18\nJUSTIFICATION fit: the change keeps the module's own idiom (a derived `own.suffix` feeding the same `glob(f\"*{...}\")` shape already used in reckon/crew/query.py:651), removes a name rather than adding one, and introduces no plan label or forbidden spelling, though `own.suffix` silently yields empty if the owner ever returns a name with no suffix where no check would speak.\nSCORE reuse: 20\nJUSTIFICATION reuse: the landed change extends the existing owner rather than forking it \u2014 reckon/crew/recovery_watch.py:2129 delegates the path to watch_stream_path in reckon/crew/run_paths.py:31 exactly as the plan directs, and no definition is added or duplicated; the search over reckon/crew for the same capability found that owner plus a deeper sibling, query.watch_event_paths (reckon/crew/query.py:646), which is noted as a follow-on rather than charged to this change.\nFINDING reckon/crew/recovery_watch.py:2130 follow-on: the done-when requires recovery_watch.py's importers to show no added failure against base, but the run's own recorded arms show four head-only failure ids \u2014 tests/test_producer_reads_only_what_changed.py::test_incremental_transitions_match_the_whole_file_path, tests/test_the_watcher_sweeps_unfollowed_sessions.py::test_the_watcher_sweeps_only_the_sessions_nobody_follows[single-event], tests/test_a_crashed_producer_is_restarted.py::test_deliberate_stop_is_not_restarted[producer-term] and tests/test_the_departure_row_says_how_and_what_it_spent.py::test_four_departures_render_three_pane_words \u2014 so the measure's absence-of-added-failure clause is satisfied by attribution rather than by the figures, and each of those ids lacks a base-mode counterpart while the change is a behaviour-preserving path resolution whose only production caller is format_watch_transition.\nFINDING reckon/crew/query.py:651 follow-on: watch_event_paths already owns \"every project's watch stream\" as sorted(root.glob(f\"*{WATCH_EVENT_SUFFIX}\")) over crew_home()/watch, which is exactly what reckon/crew/recovery_watch.py:2136 still computes inline as sorted(watch_dir.glob(f\"*{own.suffix}\")); the node edited that line and left it duplicating query.py's helper, so the second spelling of the events path that this section set out to remove survives on the very line it changed.",
+  "review_run_id": "r-20261019T131044317469-review-of-the-scoped-pane-reuses-the-events-path-owner-3f3796f05165",
+  "reviewed_base_sha": "002f85b4f0df85463466aa0a8caea8297020045d",
+  "reviewed_head_sha": "3f3796f05165d096b9e359bcb2736cd67300cca3",
+  "reviewed_run_id": "r-20261019T122313863139-the-scoped-pane-reuses-the-events-path-owner",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T13:21:38.111452+00:00",
+  "total": 106
+}
