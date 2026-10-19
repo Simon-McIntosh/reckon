@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:1259",
+    "reckon/mcp_edit_plan.py:1468",
+    "reckon/_store.py:3361"
+  ],
+  "completed_at": "2026-10-19T16:23:23.177Z",
+  "dispatched_at": "2026-10-19T16:07:21Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "3336",
+      "severity": "follow-on",
+      "text": "follow-on: _raise_close_guards re-implements the guard selection and ordering that validate_landing_patch (:3601) already owns rather than extending it, and the two lists have already diverged -- validate_landing_patch calls _refuse_appended_hiding_followups at :3617 while the new function has no counterpart -- so one transition is judged by two lists that disagree."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": "3347",
+      "severity": "follow-on",
+      "text": "follow-on: section 6 names _refuse_appended_hiding_followups among the guards a close fires and the close path runs four of the five named guards; the omission is vacuous on the op path today because the append handler refuses a hiding followup itself (reckon/_store.py:2936, read directly), but the plan's enumeration is unmet and a change to that handler would reopen the hole silently."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T150035471538-epw-a-plan-closes-in-one-op/manifest.md",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite's command carries the angle-bracket placeholder <venv> where the absolute interpreter path belongs (the same placeholder is in the command= header of baseline-arm.log:2 and negative-control.log:2), which the node's own manifest contract forbids, so the base arm cannot be re-run from the record even though the head arm's recorded command is fully absolute."
+    },
+    {
+      "file": "tests/test_continuation.py",
+      "line": "276",
+      "severity": "follow-on",
+      "text": "follow-on: the plan arm of test_only_plans_owe_a_continuation now raises on the new terminal-status 'set' refusal at reckon/_store.py:2570 rather than on the continuation rule its name and docstring assert, so the assertion holds even if the continuation rule is removed for plans and no longer verifies what it claims; this file is inside the node's write paths and its other terminal sets were migrated, so this one was passed over."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "3532",
+      "severity": "follow-on",
+      "text": "follow-on: the landed refusal is reached through the op vocabulary only, so the merge-patch writer still lands a plan with {'status': 'done'} and the 'one spelling' the change states holds on one of the two write paths; section 6 scopes the refusal to the op 'set' and gives the describing documents to section 10, so this is recorded for routing rather than as a defect of this node."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/mcp_edit_plan.py:1259 (apply_ops called from _edit_plan), reckon/mcp_edit_plan.py:1468 (_edit_plan called from the edit_plan tool handler) and reckon/_store.py:3361 (the _OP_DISPATCH entry the batch loop reaches).",
+    "diff": "read commit 225b9927f against base fecbdc829d96eac18bc0e5e084bfc5cc110ca0c3 -- nine files, +515/-26; reckon/_store.py gains _apply_close/:3290 and _raise_close_guards/:3336 plus the set-refusal at :2570, reckon/mcp.py gains the op-vocabulary entry at :1612, and the five existing test files move their op-path terminal writes to close.",
+    "done_when": "read; the three done-when cases exist at tests/test_a_plan_closes_in_one_op.py:98, :139 and :191 (the third parametrized over TERMINAL_STATUSES imported from reckon/lifecycle.py), and the manifest records the eight-file gate across after-suite.log (158 passed, EXIT=0) and after-suite-tail.log (the single failure, which baseline-arm.log shows fails at base too), with the negative control red at negative-control.log:4.",
+    "goal": "the node's goal is one op that sets a terminal plan status, resolves every open followup with its outcome and reports every failing transition guard together; reckon/_store.py:3290 adds {op:'close', status, outcome, by[, superseded_by]}, resolves the open followups at :3323-3331 and reports the guards together at :3336-3356, and a terminal plan 'set' is refused naming close at :2570-2580.",
+    "manifest": "read; it reports status complete, commit 225b9927f, both suite arms with revision/command/exit_status/completed/failure_ids, the negative-control log and the evidence fragment, though baseline_suite's recorded command carries a '<venv>' placeholder (manifest.md:14).",
+    "write_paths": "the manifest declares eleven paths including reckon/_store.py, reckon/mcp.py and the six test files; the commit's nine changed paths are all inside them, and reckon/_store_section_ops.py and the docs/figures directory are declared but untouched rather than exceeded."
+  },
+  "justifications": {
+    "durability": "tests/test_a_plan_closes_in_one_op.py:98-136 fails if the close stops resolving followups, :139-178 plus the negative control fails if the guards stop being reported together, and :191-198 fails if the terminal 'set' refusal is withdrawn -- but the landing also disarmed tests/test_continuation.py:276, which now reddens on that same refusal instead of the continuation rule it names.",
+    "evidence": "the gate is recorded rather than claimed: after-suite.log (EXIT=0, 158 passed) at head 225b9927f, after-suite-tail.log for the two files run separately, baseline-arm.log proving the one failure pre-exists at fecbdc82, and negative-control.log showing the aggregate-report assertion red when only the first guard is reported.",
+    "fit": "reckon/_store.py:3290 follows the _apply_<verb> handler idiom and registers in _OP_DISPATCH at :3361, its docstrings state the mechanism with no plan or ticket identifier, and the private _RECENT_PLAN_HTML ContextVar at :794 sits beside _WRITE_EFFECTS in the file's own style.",
+    "goal_fidelity": "reckon/_store.py:3290-3356 sets any TERMINAL_STATUSES value, resolves every open followup with the close's outcome and reports four of the five guards section 6 names together, and the refusal at :2570 keeps the terminal path single-spelled on the op vocabulary.",
+    "reuse": "reckon/_store.py:3336 forks the guard set and ordering that validate_landing_patch already owns at :3601 instead of extending it, and the fork has already diverged.",
+    "scope_discipline": "git show --stat 225b9927f lists nine paths, every one inside the manifest's declared write paths, with no source file outside reckon/_store.py and reckon/mcp.py and no plan or index state written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is one op that sets a terminal plan status, resolves every open followup with its outcome and reports every failing transition guard together; reckon/_store.py:3290 adds {op:'close', status, outcome, by[, superseded_by]}, resolves the open followups at :3323-3331 and reports the guards together at :3336-3356, and a terminal plan 'set' is refused naming close at :2570-2580.\nVERDICT done_when: read; the three done-when cases exist at tests/test_a_plan_closes_in_one_op.py:98, :139 and :191 (the third parametrized over TERMINAL_STATUSES imported from reckon/lifecycle.py), and the manifest records the eight-file gate across after-suite.log (158 passed, EXIT=0) and after-suite-tail.log (the single failure, which baseline-arm.log shows fails at base too), with the negative control red at negative-control.log:4.\nVERDICT write_paths: the manifest declares eleven paths including reckon/_store.py, reckon/mcp.py and the six test files; the commit's nine changed paths are all inside them, and reckon/_store_section_ops.py and the docs/figures directory are declared but untouched rather than exceeded.\nVERDICT manifest: read; it reports status complete, commit 225b9927f, both suite arms with revision/command/exit_status/completed/failure_ids, the negative-control log and the evidence fragment, though baseline_suite's recorded command carries a '<venv>' placeholder (manifest.md:14).\nVERDICT diff: read commit 225b9927f against base fecbdc829d96eac18bc0e5e084bfc5cc110ca0c3 -- nine files, +515/-26; reckon/_store.py gains _apply_close/:3290 and _raise_close_guards/:3336 plus the set-refusal at :2570, reckon/mcp.py gains the op-vocabulary entry at :1612, and the five existing test files move their op-path terminal writes to close.\nCALL_SITES: reckon/mcp_edit_plan.py:1259, reckon/mcp_edit_plan.py:1468, reckon/_store.py:3361\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/_store.py:3290-3356 sets any TERMINAL_STATUSES value, resolves every open followup with the close's outcome and reports four of the five guards section 6 names together, and the refusal at :2570 keeps the terminal path single-spelled on the op vocabulary.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate is recorded rather than claimed: after-suite.log (EXIT=0, 158 passed) at head 225b9927f, after-suite-tail.log for the two files run separately, baseline-arm.log proving the one failure pre-exists at fecbdc82, and negative-control.log showing the aggregate-report assertion red when only the first guard is reported.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat 225b9927f lists nine paths, every one inside the manifest's declared write paths, with no source file outside reckon/_store.py and reckon/mcp.py and no plan or index state written.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_plan_closes_in_one_op.py:98-136 fails if the close stops resolving followups, :139-178 plus the negative control fails if the guards stop being reported together, and :191-198 fails if the terminal 'set' refusal is withdrawn -- but the landing also disarmed tests/test_continuation.py:276, which now reddens on that same refusal instead of the continuation rule it names.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/_store.py:3290 follows the _apply_<verb> handler idiom and registers in _OP_DISPATCH at :3361, its docstrings state the mechanism with no plan or ticket identifier, and the private _RECENT_PLAN_HTML ContextVar at :794 sits beside _WRITE_EFFECTS in the file's own style.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/_store.py:3336 forks the guard set and ordering that validate_landing_patch already owns at :3601 instead of extending it, and the fork has already diverged.\nFINDING reckon/_store.py:3336 follow-on: _raise_close_guards re-implements the guard selection and ordering that validate_landing_patch (:3601) already owns rather than extending it, and the two lists have already diverged -- validate_landing_patch calls _refuse_appended_hiding_followups at :3617 while the new function has no counterpart -- so one transition is judged by two lists that disagree.\nFINDING reckon/_store.py:3347 follow-on: section 6 names _refuse_appended_hiding_followups among the guards a close fires and the close path runs four of the five named guards; the omission is vacuous on the op path today because the append handler refuses a hiding followup itself (reckon/_store.py:2936, read directly), but the plan's enumeration is unmet and a change to that handler would reopen the hole silently.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T150035471538-epw-a-plan-closes-in-one-op/manifest.md:14 follow-on: baseline_suite's command carries the angle-bracket placeholder <venv> where the absolute interpreter path belongs (the same placeholder is in the command= header of baseline-arm.log:2 and negative-control.log:2), which the node's own manifest contract forbids, so the base arm cannot be re-run from the record even though the head arm's recorded command is fully absolute.\nFINDING tests/test_continuation.py:276 follow-on: the plan arm of test_only_plans_owe_a_continuation now raises on the new terminal-status 'set' refusal at reckon/_store.py:2570 rather than on the continuation rule its name and docstring assert, so the assertion holds even if the continuation rule is removed for plans and no longer verifies what it claims; this file is inside the node's write paths and its other terminal sets were migrated, so this one was passed over.\nFINDING reckon/serve.py:3532 follow-on: the landed refusal is reached through the op vocabulary only, so the merge-patch writer still lands a plan with {'status': 'done'} and the 'one spelling' the change states holds on one of the two write paths; section 6 scopes the refusal to the op 'set' and gives the describing documents to section 10, so this is recorded for routing rather than as a defect of this node.\n",
+  "review_run_id": "r-20261019T160631890530-review-of-epw-a-plan-closes-in-one-op-225b9927f2a3",
+  "reviewed_base_sha": "fecbdc829d96eac18bc0e5e084bfc5cc110ca0c3",
+  "reviewed_head_sha": "225b9927f2a3b6b02de14371bcbba57953c8c4f0",
+  "reviewed_run_id": "r-20261019T150035471538-epw-a-plan-closes-in-one-op",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T16:20:44Z",
+  "total": 89
+}
