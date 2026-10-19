@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-19T19:18:51.041Z",
+  "dispatched_at": "2026-10-19T18:57:58Z",
+  "findings": [
+    {
+      "file": "docs/figures/scoring-should-stop-a-promotion/a-tracked-landing-write-restores-under-a-held-lock/rollback-path-under-a-held-lock.svg",
+      "line": 1,
+      "severity": "follow-on",
+      "text": "The node's landing contract states \"Your done-when names no artifact, so this node writes no figure and no evidence prose outside the landing fragment, which is always permitted\", yet the node wrote this figure (commit 83a7d9db6) and embedded it in the fragment at docs/evidence/fragments/scoring-should-stop-a-promotion/a-tracked-landing-write-restores-under-a-held-lock.html. The same dispatch lists the figure directory in FENCE - SCOPE, so its two clauses contradict each other; the figure is docs-only and harms nothing at runtime, but a spec-exact node should not have produced it, and the contradiction between the granted write path and the contract clause is a dispatch defect worth resolving before the next doc node."
+    },
+    {
+      "file": "docs/figures/scoring-should-stop-a-promotion/a-tracked-landing-write-restores-under-a-held-lock/rollback-path-under-a-held-lock.svg",
+      "line": 47,
+      "severity": "follow-on",
+      "text": "The landed SVG is not the revision its own review inspected. figure-review.log (run dir, 19:20) records the accepted render at sha256 c1bbe4ab8acf96624227c8757f8b5fc5615b9762838427bc6a248fdab10f0148, but the file at reviewed head 99e8c506 hashes b8e6b55974c8dd2967330b0c0ac9fd1574b237c7faa3685ecf4dab8a9f66a88f: commit 99e8c5063 rewrote the non-rendered <desc> (line 4) and this drawn label (line 47) from \"git cat-file blob HEAD:<path>\" to \"git show HEAD:<path>\" after the accepted render. The edit only shortens a drawn string and rewords a description that is not painted, so the accepted layout is not invalidated and no collision is introduced, but the landed figure was never rendered and looked at, which the figure mandate requires of the revision that ships."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the node goal is to restore a tracked landing write from HEAD's blob while the index lock is held; reckon/crew/promotion_scope.py:1761 _restore_tracked_landing_write reads HEAD's blob through the shared _git_blob and writes it over the working-tree file with the index untouched, and :2064 _unrestored_landing_writes names the paths it could not restore in the refusal.\nVERDICT done_when: the done_when asks for a temporary-repository test under a real .git/index.lock asserting content equal to HEAD's, a blob-unreadable second case whose refusal names the file, a negative control, EXIT= on every log, importer arms and ruff; the manifest records each, focused-node.log ends EXIT=0 (14 passed), negative-control.log ends EXIT=1 (1 failed, 1 passed), and baseline_suite/after_suite carry the two arms.\nVERDICT write_paths: the source node's FENCE - SCOPE grants reckon/crew/promotion_scope.py, tests/test_a_tracked_landing_write_restores_under_a_held_lock.py, the evidence fragment and the figure directory, and resume-1-advice.txt:1 granted tests/test_rollback_asks_head.py for test_head_path_survives_unrelated_*_failure only; every path the diff changes is inside that set.\nVERDICT manifest: read; status complete, baseline_suite 1 failed/165 passed and after_suite 1 failed/167 passed carry the same single pre-existing failure (tests/test_a_paired_dispatch_hides_each_arm.py::test_the_primary_arm_cannot_read_the_shadows_session_directory) with added_failure_ids empty, and the negative control reddens case 1 as declared.\nVERDICT diff: read commit by commit from a346c2e1 to 99e8c5063d; eight commits across five files, the change confined to the restorer and its two refusal messages, one new test, one repaired test under the grant, the evidence fragment and one figure.\nCALL_SITES: reckon/crew/promotion.py:1672, reckon/crew_run_commands.py:922, reckon/crew/promotion_release.py:636, reckon/crew/promotion_gate.py:960, reckon/crew/promotion_scope.py:2240\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:1761 rewrites the working-tree file from HEAD's blob via _git_blob with no index write, which is exactly the goal, verified under a real .git/index.lock by tests/test_a_tracked_*_held_lock.py::test_a_tracked_landing_write_is_restored_under_a_held_lock.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate tests/test_a_tracked_landing_write_restores_under_a_held_lock.py asserts report[path] is True and plan content == git show HEAD's blob, matching the done_when's \"content equal to HEAD's\", and its result is recorded in focused-node.log (14 passed, EXIT=0) rather than claimed.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: every changed path is inside the declared set, but the node wrote a figure its landing contract forbade (contract clause vs the granted figure path at docs/figures/scoring-should-stop-a-promotion/a-tracked-landing-write-restores-under-a-held-lock/line 1), and that figure was edited after its own review (line 47).\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the removed blob fallback (returning False for a tracked path) reddens tests/test_a_tracked_landing_write_restores_under_a_held_lock.py case 1 (\"the rollback must report the plan file restored\", assert False is True), which negative-control.log records as 1 failed, 1 passed EXIT=1; the index-already-stages and OSError-on-write branches of _restore_tracked_landing_write carry no assertion.\nSCORE fit: 19\nJUSTIFICATION fit: the added reckon/crew/promotion_scope.py:1761 and :2064 follow the file's private-helper idiom and describe their mechanism, the stale rationale the prior review flagged at _restore_landing_writes is now rewritten, and no name carries a plan, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: _restore_tracked_landing_write at reckon/crew/promotion_scope.py:1761 reads HEAD's blob through the existing owner reckon/crew/routing.py:981 _git_blob, and the duplicate reader (_head_blob_bytes) the earlier review scored 5 is absent from the reviewed head.\nFINDING docs/figures/scoring-should-stop-a-promotion/a-tracked-landing-write-restores-under-a-held-lock/rollback-path-under-a-held-lock.svg:1 follow-on: the node wrote and embedded a figure although its landing contract states the done-when names no artifact so no figure may be written; the dispatch's FENCE - SCOPE grants the figure path, so the two clauses conflict and the node followed the grant.\nFINDING docs/figures/scoring-should-stop-a-promotion/a-tracked-landing-write-restores-under-a-held-lock/rollback-path-under-a-held-lock.svg:47 follow-on: the landed figure hashes b8e6b559 but its own figure-review.log records the accepted render at sha256 c1bbe4ab, so the revision that ships (edited in commit 99e8c5063 after the review) was never rendered and looked at.",
+  "review_run_id": "r-20261019T185605026748-review-of-a-tracked-landing-write-restores-under-a-held-lock-99e8c5063d1a",
+  "reviewed_base_sha": "a346c2e1495c564e6c724a469ca8996ed3b7ff8d",
+  "reviewed_head_sha": "99e8c5063d1adf0ae0556dcb1668b316acc39c45",
+  "reviewed_run_id": "r-20261019T164023450593-a-tracked-landing-write-restores-under-a-held-lock",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T19:32:16.687976+00:00",
+  "total": 107
+}
