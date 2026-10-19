@@ -126,15 +126,17 @@ def test_a_commit_under_reckon_moves_identity_and_materializes_a_tree(source):
     _commit_file(root, "reckon/example.py", "VALUE = 'second'\n", "Change package file")
     after = _identity(root)
     assert after != before
+    # Derived from git directly, not from the identity the reload runs.
+    tree_id = _git(root, "rev-parse", "HEAD:reckon")
 
     reloader.poll({})
 
     assert len(execs) == 1
     image = _executed_root(execs)
-    assert image.name == after
+    assert image.name == tree_id
     assert (image / "reckon" / "__init__.py").is_file()
     assert (image / "reckon" / "example.py").read_text() == "VALUE = 'second'\n"
-    assert execs[0][2][_IMAGE_COMMIT_ENV] == after
+    assert execs[0][2][_IMAGE_COMMIT_ENV] == tree_id
 
 
 def test_a_follower_and_a_producer_on_the_same_package_compare_equal(
@@ -160,11 +162,21 @@ def test_materialize_extracts_only_the_package_under_its_prefix(source):
     root, _ = source
     _commit_file(root, "NOTES.md", "outside the package\n", "Notes outside package")
     identity = _identity(root)
+    # Derived from git directly: the tree the package came from and its files.
+    tree_id = _git(root, "rev-parse", "HEAD:reckon")
+    listing = _git(root, "ls-tree", "-r", "--name-only", tree_id)
 
     image, _, _, pin = checkout_trust.materialize_committed_tree(root, identity)
     os.close(pin)
 
-    assert image.name == identity
+    extracted = sorted(
+        str(entry.relative_to(image / "reckon"))
+        for entry in (image / "reckon").rglob("*")
+        if entry.is_file()
+    )
+
+    assert image.name == tree_id
+    assert extracted == sorted(listing.splitlines())
     assert (image / "reckon" / "__init__.py").is_file()
     assert not (image / "NOTES.md").exists()
     # Only the package and the image's own bookkeeping; no repository file that
