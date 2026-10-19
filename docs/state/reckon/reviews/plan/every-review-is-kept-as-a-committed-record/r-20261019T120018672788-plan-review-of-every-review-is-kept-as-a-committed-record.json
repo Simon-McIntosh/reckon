@@ -1,0 +1,141 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T12:08:24.528Z",
+  "dispatched_at": "2026-10-19T12:01:01Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:191",
+      "id": "done_when-1",
+      "reason": "a node could satisfy the done-when by refusing at delivery alone and leave the promotion-end silent drop untouched and unmeasured, and if the fix needs `promotion_checks.py` the node must stop blocked or exceed its write scope.",
+      "text": "\u00a722's done-when writes a subjectless record into a review run's declared path, runs the delivery check, and asserts \"refused or the subject stamped\"; it has no case that a review run's *promotion* now files the record, yet the section's own comment `c-s22-silent-skip` (line 366 area, data-section s22) names a second instance where \"promotion did not refuse \u2026 but filed nothing\" and states \"no promotion of a review run may succeed while its record goes unfiled\", and that fix would live in `reckon/crew/promotion_checks.py`, which is absent from the section's declared write paths (`the module owning the delivery-time check`, `reckon/crew/review.py`, the test file)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:191",
+      "id": "anchors_resolve-1",
+      "reason": "the mechanism the section relies on (promotion refuses a subjectless record with that message) is verified in code; only the \"near line 2409\" pointer is imprecise, and nothing a node builds depends on which function carries the refusal.",
+      "text": "\u00a722's Why cites \"Promotion then refused it in `reckon/crew/review.py` (near line 2409)\", but the cited message sits in `store_review` at `reckon/crew/review.py:2467` (the staging writer) and in the promotion reader `store_committed_review` at `reckon/crew/review.py:3105`; line 2409 is nearest neither, and the promotion-path copy is ~700 lines away",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:191",
+      "id": "reasoning-1",
+      "reason": "the plan deliberately delegates one binary design choice to the implementing node's first step and both routes satisfy the goal, so naming the module or picking a route sharpens the brief without altering what the section requires.",
+      "text": "\u00a722's deliverable hands the node a choice the plan does not settle \u2014 refuse at delivery, or stamp the subject from the record's path \u2014 with \"The first step states which, and why\", and names its delivery-time write path only as \"the module owning the delivery-time record check (name it from the code before editing)\" rather than citing it (the module is `reckon/crew/recovery_review_delivery.py`)",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:195",
+      "id": "reasoning-2",
+      "reason": "the direction the census supports (reviewers omit `total`) is if anything understated, and the mechanism it motivates \u2014 `_review_is_complete` requires an integer `total` (`reckon/crew/recovery_review_subject.py:1041`) \u2014 is verified in code, so no node's behaviour changes; a live-store snapshot cannot be reproduced exactly later.",
+      "text": "\u00a723's Why states \"Eight of the nine run reviews stored under `docs/state/reckon/reviews/run/` between 05:43Z and 09:05Z that morning have six scores and `total: null`\", but a census of that tree for `completed_at` in that window counts 22 records with six scores, of which 16 carry `total: null` and 6 carry a total (94, 91, 110, 111, 103, 111)",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "ebd6a4c8634337ce9195a99f5311f8345d03d7855b6204a63bbdf9dbfadfd74c",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 171,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "\u00a722 is not built in this session and is not touched by \u00a723; its owner settles it when \u00a722 is dispatched",
+      "when": "2026-10-19T12:14:46.782643+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "\u00a722 is not built in this session and is not touched by \u00a723; its owner settles it when \u00a722 is dispatched",
+      "when": "2026-10-19T12:14:55.045896+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "\u00a722 is not built in this session and is not touched by \u00a723; its owner settles it when \u00a722 is dispatched",
+      "when": "2026-10-19T12:15:02.264123+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-19T12:15:08.984605+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a722 is not built in this session and is not touched by \u00a723; its owner settles it when \u00a722 is dispatched",
+      "when": "2026-10-19T12:14:55.045896+00:00"
+    },
+    "done_when-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a722 is not built in this session and is not touched by \u00a723; its owner settles it when \u00a722 is dispatched",
+      "when": "2026-10-19T12:14:46.782643+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a722 is not built in this session and is not touched by \u00a723; its owner settles it when \u00a722 is dispatched",
+      "when": "2026-10-19T12:15:02.264123+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T12:15:08.984605+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v171.json",
+  "review_run_id": "r-20261019T120018672788-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "c49123c4569eab2c8bc991ae70eaa8694ca1a1cd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "two findings \u2014 \u00a722's promotion citation \"(near line 2409)\" does not resolve to the promotion reader, and \u00a723's census \"Eight of the nine run reviews stored \u2026 between 05:43Z and 09:05Z\" does not reproduce (22 records carry six scores in that window, 6 with a total).",
+    "done_when": "a finding \u2014 \u00a722's done-when exercises only the delivery-time check and asserts nothing about the promotion end, so the silent-drop instance the section's own comment (`c-s22-silent-skip`) names is unmeasured.",
+    "evidence_paths": "pass \u2014 both sections log their negative controls \"under the run directory\", which is the run's own `/home/ITER/mcintos/.config/reckon/crew/runs/<run>/` evidence path, not a scratchpad.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number reaches the sections' symbols or comments; the mechanism is stated in code terms throughout.",
+    "reasoning": "a finding \u2014 \u00a722's deliverable leaves its own mechanism undecided (\"Either \u2026 or \u2026; the first step states which\") and does not name the delivery-time check module.",
+    "single_goal": "pass \u2014 \u00a722 has one goal (\"a review run cannot finish with a record that promotion will refuse\") and \u00a723 one (\"a stored review carries the total its scores make\"); \u00a722's two mechanisms are alternatives for one goal, not two deliverables.",
+    "wiring": "pass \u2014 \u00a722 and \u00a723 each carry an open followup that dispatches them (`f-erikacr-022`, `f-erikacr-023`), both are declared `implementable` in `plan-section-declarations`, and \u00a723 states its shared-file constraint on \u00a722 (`reckon/crew/review.py`)."
+  },
+  "section_digests": {
+    "_document": "5cc71d49fb57c2b70ca5c9f5404e6472ee5c4b1170dc823a1b419dd5d61d7a97",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "bb85d80dcb9e0286d21a8ca6acd3af79e736c64c84b5ac85569fc6ce2c73863b",
+    "s13": "18a2d10f1e3c66be8277b7b4ef2922db7611cded7589553da5347b9a1ee5cd0f",
+    "s14": "90fd381b5f80417031410428331e779266feb4e517d89e5237d29cbe1c5e4700",
+    "s15": "72f678eb5f0bc62870da1cc4637f6db55365548aa9b52f46884cc0b3551a6ae7",
+    "s16": "7a5788c2a3fa1a2f0029d46feab7c3ed8a6b2a35c6ca9788fbe9911d5ab9cb56",
+    "s17": "86a993485a8a8461fd1e5e336bf8623e585cd4540daa1e5b5e78af2a0c172ce5",
+    "s18": "c89ae3a282a47cc0790b201cd56e732fc633876a1f1bd4dea1ae9521bd21574a",
+    "s19": "1ae8ba274c5965e60610446e8b60f06c93772468c117cf677c3fe8e2efeff862",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s20": "c4d6ffe26d4b44f9ab15c017f5c0524d7dd00fbe4c8d2d2f707923425bb50092",
+    "s21": "931b2870fb36b75949015af97ccfe184a222d06e1a7706463e9da0e5dc06b1e7",
+    "s22": "6574cd53cba003ceaa5bf39f4e436b0016f15f4822a35435ffa2791a99917430",
+    "s23": "5f95828be7f38bb449a4d56cb5e7a7b3373afdb06360a877db4a688868b3fef7",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "85877b77c395ca8a1482bef5887cfc72cbf6109174dba2c01265aa015a906d73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T12:14:43.291895+00:00"
+}
