@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="370">
+<meta name="plan-version" content="371">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1468,6 +1468,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s61" data-id="c-run-r-20261019T000300604250-a-reloaded-process-launches-through-its-interpreter" data-who="reckon-build" data-when="2026-10-19T00:29:31.127Z">
     <div class="r-comment-body"><p>A process reloaded into an image now launches its shims through the interpreter it runs under. The reloader adds RECKON_SHIM_PYTHON=sys.executable to the environment it hands the replacement image unless a caller already set one (reckon/crew_follow_commands.py). Measure: 2 focused tests pass - a re-exec into a materialised image carries the interpreter and keeps a caller's value, and the image's srun shim resolves it and never reaches a python3.12 stub on PATH; the declared negative control drops the export and the shim reaches the stub (EXIT=1); the 43-file importer population was 361 passed at base and 363 at head with 0 failing ids on either arm.</p></div>
+</div>
+<div class="r-comment" data-section="s62" data-id="c-s62-launches-recovered" data-who="reckon-build" data-when="2026-10-19T03:58:00Z">
+    <div class="r-comment-body"><p>Automatic launches recovered without §62. From 03:19Z on 2026-10-19 the review reflex's automatic dispatches launched and completed: <code>r-20261019T031833…</code>, <code>r-20261019T033255…</code> and <code>r-20261019T034353…</code>. That is consistent with the diagnosis: the next commit to <code>reckon/</code> made the long-running processes reload with §61's code, which exports the interpreter. §62 stays open as hardening, so a launch no longer depends on how its composer was last reloaded. It waits on peer run <code>r-20261018T150822949393</code>, which holds <code>reckon/crew/dispatch_launch.py</code>.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
