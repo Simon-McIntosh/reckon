@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s56">
+  <meta name="plan-recorded-at" content="2026-10-19">
+  <meta name="plan-verdict" content="passed">
+  <title>A pane counts its session's workers across every project it follows | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-pane-counts-its-session-across-projects-landing" data-node="a-pane-counts-its-session-across-projects" data-reckon="landed" data-when="2026-10-19">
+  <h2>A session-scoped row counts that session's workers in every watched project</h2>
+  <p>A follower scoped to one session relays one project's stream, while the session may work in several projects at once, each with its own watcher and events file under the watch directory. <code>_scoped_watch_event</code> in <code>reckon/crew/recovery_watch.py</code> took a row's counters from that row's own project's <code>session_counts</code> entry, so consecutive rows from different projects reported different populations under one unlabelled column and the figure jumped (7w, 8w, 7w, 3w… within 17 minutes on 2026-10-18). The row's own project's figures are still its session's entry; the session's entry from the newest transition carrying <code>session_counts</code> in each other project's events file is now added. Each other file is read from its tail in chunks (<code>_newest_session_counts</code>), so a row's cost does not grow with an events file's history. A project whose newest such transition carries no entry for the session adds nothing, and a follower with no session is one project's pane and keeps that project's counts. The scoped event carries the session-wide figures the pane renders (<code>working</code>/<code>blocked</code>/<code>unpromoted</code>/<code>waiting</code>) beside the row's own project's figures under <code>project_*</code>, so a consumer of either reading loses nothing. <strong>Commit <code>8398fec58</code>.</strong></p>
+  <p><strong>Gate.</strong> <code>tests/test_a_pane_counts_its_session_across_projects.py</code> in a temporary crew home with three projects' events files: session S is 7 working in A and 1 in B, project C's newest transition carries 5 for another session and no entry for S. A row from B and a row from A each render <code> 8w</code>; the scoped event carries <code>working == 8</code> beside <code>project_working == 1</code>; an unscoped row renders B's own <code> 1w</code>; and after a B transition takes S's B count to zero the next A row renders <code> 7w</code>. 1 passed. <strong>Population.</strong> The 48-file importer cohort of <code>reckon/crew/recovery_watch.py</code>: head arm 10 failed / 409 passed / 1 error, base arm (the five files that failed at head, run at base) 7 failed / 32 passed. Re-run serially at head, the three subprocess-heavy files that carried the head-only ids pass except <code>test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[crash]</code> and <code>::test_repeated_crashes_reach_a_reported_limit</code>, both red at base as well — 2 failed / 20 passed — so the head-only ids were parallel-run flakes and <strong>0 failures are added</strong> by this change. Logs: <code>logs/importers-head.log</code>, <code>logs/importers-base.log</code>, <code>logs/head-serial.log</code>. <code>ruff check</code> adds no findings and <code>ruff format --check</code> passes on the changed files (the four pre-existing findings in <code>recovery_watch.py</code> are present at base).</p>
+  <p><strong>Negative control.</strong> Restoring <code>_scoped_watch_event</code> to take the row's own project's <code>session_counts</code> entry only makes the B row render <code> 1w</code> and the test fails: 1 failed, <code>EXIT=1</code>. Log under the run directory: <code>logs/negative-control.log</code>.</p>
+</article>
+</body>
+</html>
