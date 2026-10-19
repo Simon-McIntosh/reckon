@@ -1,4 +1,4 @@
-"""The budget-lift and budget-lifts verbs: grant, clear and list a pace lift.
+"""The budget verb's pace lift: grant, clear and list it behind its flags.
 
 Every test runs through click's runner against the real command, resolving a
 flight configuration and a published headroom document this file writes into a
@@ -129,7 +129,7 @@ def _invoke(*args, env=None):
 def test_grant_projects_the_multiple_against_the_reset_and_admits(fleet):
     multiple = 1.8
     result = _invoke(
-        "budget-lift",
+        "budget", "--lift",
         "--group", GROUP,
         "--multiple", str(multiple),
         "--reason", "spend the week on the release",
@@ -156,7 +156,7 @@ def test_grant_projects_the_multiple_against_the_reset_and_admits(fleet):
 
 def test_grant_is_refused_while_a_run_id_is_set(fleet):
     result = _invoke(
-        "budget-lift",
+        "budget", "--lift",
         "--group", GROUP,
         "--multiple", "1.8",
         "--reason", "lift from inside a run",
@@ -169,7 +169,7 @@ def test_grant_is_refused_while_a_run_id_is_set(fleet):
 
 def test_grant_is_refused_for_an_undeclared_group(fleet):
     result = _invoke(
-        "budget-lift",
+        "budget", "--lift",
         "--group", "not-a-wallet",
         "--multiple", "1.8",
         "--reason", "lift an undeclared group",
@@ -183,7 +183,7 @@ def test_grant_is_refused_above_the_declared_max_multiple(fleet):
     ceilings = bl.ceilings(None)
     overtaking = ceilings.max_multiple + 0.5
     result = _invoke(
-        "budget-lift",
+        "budget", "--lift",
         "--group", GROUP,
         "--multiple", str(overtaking),
         "--reason", "lift past the ceiling",
@@ -194,17 +194,17 @@ def test_grant_is_refused_above_the_declared_max_multiple(fleet):
 
 
 def test_grant_requires_exactly_one_form_and_a_reason(fleet):
-    none = _invoke("budget-lift", "--group", GROUP, "--reason", "no form")
+    none = _invoke("budget", "--lift", "--group", GROUP, "--reason", "no form")
     assert none.exit_code != 0
     both = _invoke(
-        "budget-lift",
+        "budget", "--lift",
         "--group", GROUP,
         "--multiple", "1.8",
         "--uncapped",
         "--reason", "two forms",
     )
     assert both.exit_code != 0
-    no_reason = _invoke("budget-lift", "--group", GROUP, "--multiple", "1.8")
+    no_reason = _invoke("budget", "--lift", "--group", GROUP, "--multiple", "1.8")
     assert no_reason.exit_code != 0
 
     assert not (fleet.home / bl.LIFTS_LEAF).exists()
@@ -212,7 +212,7 @@ def test_grant_requires_exactly_one_form_and_a_reason(fleet):
 
 def test_drain_by_and_uncapped_are_accepted_forms(fleet):
     by = _invoke(
-        "budget-lift",
+        "budget", "--lift",
         "--group", GROUP,
         "--drain-by", "12h",
         "--reason", "drain by noon",
@@ -221,7 +221,7 @@ def test_drain_by_and_uncapped_are_accepted_forms(fleet):
     assert json.loads(by.output)["form"] == bl.DRAIN_BY
 
     uncapped = _invoke(
-        "budget-lift",
+        "budget", "--lift",
         "--group", GROUP,
         "--uncapped",
         "--reason", "release the hold",
@@ -232,49 +232,49 @@ def test_drain_by_and_uncapped_are_accepted_forms(fleet):
 
 def test_clear_revokes_the_governing_lift_and_none_is_a_no_op(fleet):
     granted = _invoke(
-        "budget-lift", "--group", GROUP, "--multiple", "1.8", "--reason", "first"
+        "budget", "--lift", "--group", GROUP, "--multiple", "1.8", "--reason", "first"
     )
     assert granted.exit_code == 0, granted.output
     lift_id = json.loads(granted.output)["lift_id"]
 
-    cleared = _invoke("budget-lift", "--clear", "--group", GROUP)
+    cleared = _invoke("budget", "--lift", "--clear", "--group", GROUP)
     assert cleared.exit_code == 0, cleared.output
     payload = json.loads(cleared.output)
     assert payload["action"] == "clear"
     assert payload["lift_id"] == lift_id
     assert payload["cleared"]["cleared_at"]
 
-    again = _invoke("budget-lift", "--clear", "--group", GROUP)
+    again = _invoke("budget", "--lift", "--clear", "--group", GROUP)
     assert again.exit_code == 0, again.output
     assert json.loads(again.output)["cleared"] is None
 
 
 def test_clear_by_id_refuses_an_id_of_another_group(fleet):
     other = _invoke(
-        "budget-lift", "--group", GROUP, "--multiple", "1.8", "--reason", "theirs"
+        "budget", "--lift", "--group", GROUP, "--multiple", "1.8", "--reason", "theirs"
     )
     lift_id = json.loads(other.output)["lift_id"]
 
     refused = _invoke(
-        "budget-lift", "--clear", "--group", "someone-else", "--id", lift_id
+        "budget", "--lift", "--clear", "--group", "someone-else", "--id", lift_id
     )
     assert refused.exit_code != 0
     assert lift_id in refused.output
 
 
-def test_budget_lifts_lists_active_and_recent_newest_first(fleet):
+def test_budget_list_shows_active_and_recent_newest_first(fleet):
     first = json.loads(
         _invoke(
-            "budget-lift", "--group", GROUP, "--multiple", "1.5", "--reason", "older"
+            "budget", "--lift", "--group", GROUP, "--multiple", "1.5", "--reason", "older"
         ).output
     )["lift_id"]
     second = json.loads(
         _invoke(
-            "budget-lift", "--group", GROUP, "--multiple", "2.0", "--reason", "newer"
+            "budget", "--lift", "--group", GROUP, "--multiple", "2.0", "--reason", "newer"
         ).output
     )["lift_id"]
 
-    listed = _invoke("budget-lifts", "--group", GROUP)
+    listed = _invoke("budget", "--list", "--group", GROUP)
     assert listed.exit_code == 0, listed.output
     payload = json.loads(listed.output)
     assert payload["count"] == 2
@@ -283,7 +283,7 @@ def test_budget_lifts_lists_active_and_recent_newest_first(fleet):
     # Newest first: the second grant is at the head.
     assert ids[0] == second
 
-    all_rows = json.loads(_invoke("budget-lifts").output)
+    all_rows = json.loads(_invoke("budget", "--list").output)
     assert all_rows["count"] >= 2
 
 
@@ -295,7 +295,7 @@ def _config() -> dict:
 def test_grant_from_the_future_is_recorded_inert_until_then(fleet):
     starts = datetime.now(UTC) + timedelta(days=1)
     result = _invoke(
-        "budget-lift",
+        "budget", "--lift",
         "--group", GROUP,
         "--multiple", "1.8",
         "--from", starts.isoformat(),
@@ -323,7 +323,7 @@ def test_grant_from_the_future_is_recorded_inert_until_then(fleet):
 def test_until_an_iso_time_pins_the_lift_end(fleet):
     end = datetime.now(UTC) + timedelta(hours=3)
     result = _invoke(
-        "budget-lift",
+        "budget", "--lift",
         "--group", GROUP,
         "--multiple", "1.8",
         "--until", end.isoformat(),
@@ -338,7 +338,7 @@ def test_until_an_iso_time_pins_the_lift_end(fleet):
 def test_until_a_duration_pins_the_lift_end(fleet):
     before = datetime.now(UTC)
     result = _invoke(
-        "budget-lift",
+        "budget", "--lift",
         "--group", GROUP,
         "--multiple", "1.8",
         "--until", "12h",
@@ -355,7 +355,7 @@ def test_until_a_duration_pins_the_lift_end(fleet):
 
 def test_clock_five_hour_anchors_the_lift_to_that_window(fleet):
     result = _invoke(
-        "budget-lift",
+        "budget", "--lift",
         "--group", GROUP,
         "--multiple", "1.8",
         "--clock", "five_hour",
@@ -372,7 +372,7 @@ def test_clock_five_hour_anchors_the_lift_to_that_window(fleet):
 def test_session_grant_is_scoped_to_that_session(fleet):
     session = "sess-abc123"
     result = _invoke(
-        "budget-lift",
+        "budget", "--lift",
         "--group", GROUP,
         "--multiple", "1.8",
         "--session", session,
@@ -386,7 +386,7 @@ def test_session_grant_is_scoped_to_that_session(fleet):
 
 def test_global_and_session_together_are_refused(fleet):
     result = _invoke(
-        "budget-lift",
+        "budget", "--lift",
         "--group", GROUP,
         "--multiple", "1.8",
         "--global",
