@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 1,
+  "added_failure_derivation": "added_failure_count is the after arm minus the base arm from the reviewed run's own logs: baseline-suite.log (e18f609b2, 87 passed, 0 failed, EXIT=0) against after-suite.log (785509df4, 86 passed, 1 failed, EXIT=1). The manifest attributes that one id as pre-existing, reproduced standalone at the base revision in a /tmp scratch extraction; that reproduction is not stored as a log path under the run directory, so the stored logs alone support this stricter count.",
+  "added_failure_ids": [
+    "tests/test_follower_freshness.py::test_running_follower_reloads_without_stream_or_registration_gap"
+  ],
+  "call_sites": [
+    "reckon/crew_follow_commands.py:354",
+    "reckon/checkout_trust.py:928",
+    "reckon/crew/queue_admission.py:525",
+    "reckon/served_code.py:740"
+  ],
+  "completed_at": "2026-10-19T23:00:48.706Z",
+  "dispatched_at": "2026-10-19T22:44:28Z",
+  "findings": [
+    {
+      "file": "reckon/checkout_trust.py",
+      "line": 755,
+      "severity": "follow-on",
+      "text": "_published_image re-implements the published-image recogniser the repository already owns. The identical predicate (a 40-hex directory name plus a .complete marker) is inlined at reckon/checkout_trust.py:469 in running_code_identity, and the .complete half alone at reckon/crew_follow_commands.py:297, reckon/checkout_trust.py:229 and :484. The addition duplicates the owner rather than extending it, so a change to what marks a published image must now be made in a second place."
+    },
+    {
+      "file": "tests/test_a_moved_checkout_is_proved_importable_once.py",
+      "line": 266,
+      "severity": "follow-on",
+      "text": "assert first != second cannot fail and does not guard the jitter it names: first is the doubled 120 s gap minus jitter and second is the 240 s gap minus jitter, so the two differ by 120 s even with the jitter removed entirely. The discriminating assertion is line 257 (assert 0.0 < first < first_gap), which reddens at zero jitter because first then equals first_gap; this test's durability rests on that line, not on line 266."
+    },
+    {
+      "file": "manifest.md",
+      "line": 11,
+      "severity": "follow-on",
+      "text": "The gate command the manifest records does not name the node's own new test file: tests/test_a_moved_checkout_is_proved_importable_once.py is absent from the tests: line and no green head-arm log for it is stored in test_logs (only the mutated red arm, negative-control.log). The done_when's test bullets are the assertions in that file, so their pass is carried in artifacts as a claim rather than a recorded run; 10/10 were re-verified at head 167e407f4 during this review."
+    },
+    {
+      "file": "reckon/checkout_trust.py",
+      "line": 817,
+      "severity": "follow-on",
+      "text": "_record_import_verdict writes the verdict into the image directory and the lock file .import-probe.lock is created there too, while that directory's own mtime is the ranking key the pruner sorts by at reckon/checkout_trust.py:232 (_images_ranked_for_pruning). Proving an image therefore moves its retention rank; benign for the active image, but the proof and the retention order are coupled through one filesystem attribute that neither mechanism documents."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_moved_checkout_is_proved_importable_once.py:96 fails if the shared verdict is removed \u2014 the negative control mutation _published_image always False reddens it with EXIT=1 in negative-control.log \u2014 so the guard is verified by reinstating the regression.",
+    "evidence": "The measure is recorded in sixteen-change.log (1 probe, 16 answers inside 30 s, EXIT=0) against sixteen-base.log (16 probes), but the node's own test file has no stored head-arm green log and the manifest's tests: line (manifest.md:11) names 13 other files.",
+    "fit": "reckon/checkout_trust.py:817 follows the module's existing json/contextlib/rename idiom and the helpers are module-private with mechanism names; no plan, ticket or version label appears in any added file, symbol or comment.",
+    "goal_fidelity": "reckon/checkout_trust.py:878 opens .import-probe.lock inside the image directory and :817 records the interpreter-keyed verdict by rename, so concurrent askers on one image read one verdict, as the goal states.",
+    "reuse": "reckon/checkout_trust.py:755 duplicates the published-image recogniser already inlined at reckon/checkout_trust.py:469 in running_code_identity rather than extending it.",
+    "scope_discipline": "Every path in the diff (reckon/checkout_trust.py, reckon/crew_follow_commands.py, tests/test_a_moved_checkout_is_proved_importable_once.py, docs/evidence/fragments/the-fleet-node-stays-in-service/a-moved-checkout-is-proved-importable-once.html) is a declared write path."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T224345895827-review-of-a-moved-checkout-is-proved-importable-once-167e407f4d0a",
+  "reviewed_base_sha": "e18f609b25288dcc83622c3d6680ea404b7251e8",
+  "reviewed_head_sha": "167e407f4d0a34bfb5965fbada2ebb6ebbada79f",
+  "reviewed_run_id": "r-20261019T220614190732-a-moved-checkout-is-proved-importable-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T23:01:56.184918+00:00",
+  "total": 93,
+  "verdicts": {
+    "diff": "Read commit by commit against e18f609b2: 785509df4 adds the shared verdict, its lock and the retry jitter to reckon/checkout_trust.py and reckon/crew_follow_commands.py, and 167e407f4 adds only the evidence fragment \u2014 four files, +499/-9, nothing outside the goal.",
+    "done_when": "The done_when names one measurement (16 askers on a fresh image: 16 probes at base, 1 at the change, all answers inside 30 s) and eight test bullets; both are present \u2014 sixteen-base.log and sixteen-change.log carry the measurement with EXIT=0 and 16/1 probes, and tests/test_a_moved_checkout_is_proved_importable_once.py carries the bullets, 10 passed and re-verified at 167e407f4 during this review.",
+    "goal": "Read the node's goal (record reckon_imports' verdict once per materialised tree and interpreter, under an exclusive lock in the tree's directory, so concurrent askers start one probe and read its verdict): reckon/checkout_trust.py:861 _published_image_imports takes the image's exclusive lock at :878 (the lock lives in the image directory), re-reads under it at :881, and records the verdict under an interpreter-keyed name at :817; the goal is delivered.",
+    "manifest": "Read; it records commits 785509df4 and 167e407f4, the paired baseline (87 passed) and after (86 passed, 1 failed) arms with an attribution for the one id, and the 16-asker numbers; its tests: line names 13 files and omits the node's own new test file.",
+    "write_paths": "The source node declared five paths (reckon/checkout_trust.py, reckon/crew_follow_commands.py, tests/test_a_moved_checkout_is_proved_importable_once.py, docs/evidence/fragments/the-fleet-node-stays-in-service/a-moved-checkout-is-proved-importable-once.html, docs/figures/the-fleet-node-stays-in-service/a-moved-checkout-is-proved-importable-once); the diff changes four files and every one is inside that list."
+  }
+}
