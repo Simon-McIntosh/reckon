@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="940" height="470" viewBox="0 0 940 470" role="img" aria-labelledby="title desc">
 <title id="title">A tracked landing write left behind by a held index lock, and the restore that recovers it</title>
-<desc id="desc">Two rows of one rollback path. In both, another process holds .git/index.lock, so the single index-writing whole-path restore exits 128. Top row, base a346c2e1: the fallback settled a path HEAD carries by reporting it unrestored, so the working tree kept the landing narrative the promotion had written, an edit the run never made for the next promotion to meet. Bottom row, this node: the fallback reads HEAD's blob with git cat-file blob, plumbing that takes no index lock, and writes it over the working-tree file, so the path carries its committed content again and the report is true. A footnote names the cases still reported unrestored and now named in the refusal: a path the index already stages, a blob git cannot read, and a file it cannot write.</desc>
+<desc id="desc">Two rows of one rollback path. In both, another process holds .git/index.lock, so the single index-writing whole-path restore exits 128. Top row, base a346c2e1: the fallback settled a path HEAD carries by reporting it unrestored, so the working tree kept the landing narrative the promotion had written, an edit the run never made for the next promotion to meet. Bottom row, this node: the fallback reads HEAD's blob with git show, which reads the object store without taking the index lock, and writes it over the working-tree file, so the path carries its committed content again and the report is true. A footnote names the cases still reported unrestored and now named in the refusal: a path the index already stages, a blob git cannot read, and a file it cannot write.</desc>
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/></marker></defs>
 <g font-family="sans-serif" font-size="14" fill="#172033">
 <text x="24" y="30" font-size="18" font-weight="bold">The lock that refuses the landing also refuses the restore</text>
@@ -44,7 +44,7 @@
 <text x="314" y="310" font-size="13" fill="#334155">same EXIT 128, same cause</text>
 
 <g font-family="monospace" font-size="12" fill="#14532d">
-<text x="588" y="290">git cat-file blob HEAD:&lt;path&gt;</text>
+<text x="588" y="290">git show HEAD:&lt;path&gt;</text>
 </g>
 <text x="588" y="310" font-size="13" fill="#14532d">takes no index lock</text>
 
