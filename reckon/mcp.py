@@ -1608,7 +1608,8 @@ _DOS_DONTS = {
 
 #: The edit_plan op vocabulary, inlined for the context injector.
 _OP_VOCAB = {
-    "set": "{op:'set', path:'<dotted>', value:<any>} — artifact scalars, decisions.<key>.<field>, followups.<id>.prompt; one top-level field on a sprint/milestone/blocker/project resource; review scalars and the priority list. impl clamps to 0..1, plan-only.",
+    "set": "{op:'set', path:'<dotted>', value:<any>} — artifact scalars, decisions.<key>.<field>, followups.<id>.prompt; one top-level field on a sprint/milestone/blocker/project resource; review scalars and the priority list. impl clamps to 0..1, plan-only. A terminal plan 'status' is not settable here — use close.",
+    "close": "{op:'close', status:'<terminal>', outcome, by[, superseded_by]} — closes a plan in one write: sets the status and resolves every open followup with the outcome, reporting every failing terminal guard together. A terminal 'set' of status is refused naming this op.",
     "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; sprint items; timeline events; review findings. target 'sections' writes a section (item: id, title, body) or attaches a record to an <h2 id> already in the file (item: id, no body); effort_hours, capability and links are required on either shape. followup prompt is one /reckon-build line.",
     "resolve": "{op:'resolve', target:'followups'|'questions'|'findings', id, by, outcome|resolution} — sets resolved_at/by + outcome/resolution; finding status derives from resolved_at.",
     "lock": "{op:'lock', key, choice, rationale, by} — merges the lock into decisions[key], preserving authored title/context/choices.",

@@ -123,10 +123,9 @@ def test_recorded_verdict_allows_same_terminal_write(verdict_op, tmp_path):
 
 def test_ops_and_patch_boundaries_refuse_terminal_transition():
     plan = _plan()
+    close = {"op": "close", "status": "done", "outcome": "closing", "by": "reckon-build"}
     with pytest.raises(_store.OpError, match=r"outcome-gate.*producer#outcome"):
-        _store.apply_ops(
-            deepcopy(plan), [{"op": "set", "path": "status", "value": "done"}], False
-        )
+        _store.apply_ops(deepcopy(plan), [close], False)
     with pytest.raises(_store.OpError, match=r"outcome-gate.*producer#outcome"):
         _store.validate_landing_patch({**plan, "status": "done"}, {"status": "done"})
 
@@ -189,7 +188,16 @@ def test_unrecognised_verdict_cannot_release_closure():
     plan = _plan(_gate(verdict="pending"))
     with pytest.raises(_store.OpError, match=r"outcome-gate.*producer#outcome"):
         _store.apply_ops(
-            plan, [{"op": "set", "path": "status", "value": "done"}], False
+            plan,
+            [
+                {
+                    "op": "close",
+                    "status": "done",
+                    "outcome": "closing",
+                    "by": "reckon-build",
+                }
+            ],
+            False,
         )
 
 
@@ -200,13 +208,49 @@ def test_closure_gate_does_not_add_followup_requirement():
     assert report["ready_now"][0]["dispatchable"] is True
 
 
-def test_verdict_and_terminal_write_can_share_one_batch():
+@pytest.fixture()
+def mounted_consumer_evidence(tmp_path, monkeypatch):
+    """Mount project ``sample`` with the evidence record a close requires."""
+    import json
+
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    docs = tmp_path / "repo" / "docs"
+    record = docs / "evidence" / "archive" / "consumer-landed.html"
+    docs.mkdir(parents=True)
+    record.parent.mkdir(parents=True)
+    record.write_text(
+        write_state(
+            _store.new_plan_html("sample", "consumer-landed"),
+            {
+                "type": "evidence",
+                "slug": "consumer-landed",
+                "title": "Consumer evidence",
+                "evidence_for": ["consumer"],
+                "version": 0,
+            },
+        ),
+        encoding="utf-8",
+    )
+    (config_home / "mounts.json").write_text(
+        json.dumps({"sample": str(docs)}), encoding="utf-8"
+    )
+    return docs
+
+
+def test_verdict_and_terminal_write_can_share_one_batch(mounted_consumer_evidence):
     plan = _plan()
     _store.apply_ops(
         plan,
         [
             {"op": "pass", "id": "outcome-gate", "evidence": "receipt"},
-            {"op": "set", "path": "status", "value": "done"},
+            {
+                "op": "close",
+                "status": "done",
+                "outcome": "the gate verdict and the landing share one batch — no followup",
+                "by": "reckon-build",
+            },
         ],
         False,
     )

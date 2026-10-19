@@ -99,7 +99,6 @@ def test_a_landing_with_no_continuation_is_refused(setup) -> None:
         "plan-a",
         [
             {"op": "set", "path": "impl", "value": 1.0},
-            {"op": "set", "path": "status", "value": "shipped"},
             {
                 "op": "resolve",
                 "target": "followups",
@@ -181,14 +180,12 @@ def test_a_landing_may_instead_record_that_the_chain_closes(setup) -> None:
         project,
         "plan-a",
         [
-            {"op": "set", "path": "status", "value": "shipped"},
             {
-                "op": "resolve",
-                "target": "followups",
-                "id": "f1",
+                "op": "close",
+                "status": "shipped",
+                "outcome": "all sections landed — no followup",
                 "by": "reckon-build",
-                "outcome": "all sections landed — done, no followup",
-            },
+            }
         ],
         0,
     )
@@ -212,8 +209,19 @@ def test_a_later_write_after_an_explicit_closure_still_passes(setup) -> None:
             ],
         },
     )
+    evidence_dir = docs_dir / "evidence" / "archive"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    _plan_html(
+        evidence_dir,
+        "plan-a-landed",
+        {"version": 0, "evidence_for": ["plan-a"]},
+        artifact_type="evidence",
+    )
     result = mcp_module._edit_plan(
-        project, "plan-a", [{"op": "set", "path": "status", "value": "done"}], 0
+        project,
+        "plan-a",
+        [{"op": "close", "status": "done", "outcome": "closed", "by": "reckon-build"}],
+        0,
     )
     assert result["ok"] is True
 
@@ -394,9 +402,12 @@ def test_full_implementation_does_not_carry_its_own_continuation(setup) -> None:
 
 
 @pytest.mark.parametrize("status", ["shipped", "done"])
-def test_new_terminal_status_without_continuation_is_refused(status: str) -> None:
+def test_new_terminal_status_is_refused_naming_close(status: str) -> None:
+    # A terminal plan status has one spelling: the close op, which carries the
+    # continuation. The set verb no longer reaches the continuation guard, so a
+    # terminal set is refused here, naming the op that replaces it.
     state = {"type": "plan", "status": "active", "impl": 0.5, "followups": []}
-    with pytest.raises(_store_module.OpError, match="plan landing leaves"):
+    with pytest.raises(_store_module.OpError, match="close"):
         _store_module.apply_ops(
             state,
             [{"op": "set", "path": "status", "value": status}],

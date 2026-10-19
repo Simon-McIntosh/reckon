@@ -684,6 +684,7 @@ def _read_state(
     from reckon import _plan_html
 
     state, text = _plan_html.read_state_and_text_file(html_file)
+    _RECENT_PLAN_HTML.set(((project, slug), text))
     state = _state_with_diagnostics(project, text, state, root)
     state["todos"] = _plan_html.derive_section_todos(text, state)
     version = int(state.get("version", 0) or 0)
@@ -787,6 +788,12 @@ _WRITE_EFFECT_KINDS = (
 _WRITE_EFFECTS: dict[str, ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None]] = {
     kind: ContextVar(f"reckon_{kind}", default=None) for kind in _WRITE_EFFECT_KINDS
 }
+
+# The most recently read plan's HTML, kept so an op batch applied to that plan
+# can see the document it was applied to even when its project is not mounted.
+_RECENT_PLAN_HTML: ContextVar[tuple[tuple[str, str], str] | None] = ContextVar(
+    "reckon_recent_plan_html", default=None
+)
 
 
 def _begin_write_effects(working: dict[str, Any]) -> None:
@@ -2560,6 +2567,17 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
         raise OpError(f"unsupported index set path {path!r}")
 
     # ── plan set ──
+    if (
+        head == "status"
+        and len(parts) == 1
+        and str(working.get("type", "plan") or "plan") == "plan"
+        and str(value or "").strip().lower() in TERMINAL_STATUSES
+    ):
+        raise OpError(
+            "a plan's terminal status is set with the 'close' op, not 'set': "
+            "{op:'close', status, outcome, by} sets the status and resolves "
+            "every open followup in one write"
+        )
     if head == "sections" and len(parts) >= 2:
         from reckon import _store_section_ops
 
@@ -3269,8 +3287,78 @@ def _apply_move(working: dict, op: dict, is_index: bool, warnings: list[str]) ->
     sprints[ti] = {**ts, "items": to_items}
 
 
+def _apply_close(
+    working: dict, op: dict, is_index: bool, warnings: list[str]
+) -> None:
+    """Set a terminal status and resolve every open followup in one write.
+
+    The single op that closes a plan: it sets the close's status, resolves every
+    open followup with the close's outcome, and then runs every guard the
+    terminal transition fires, reporting them together so one refusal names
+    everything still outstanding rather than only the first.
+
+    The close itself supplies the chain-closing continuation: its outcome is the
+    record that ends the plan's work, so no placeholder followup is appended.
+    """
+    if is_index:
+        raise OpError("close op is plan-only")
+    status = str(op.get("status") or "").strip().lower()
+    if status not in TERMINAL_STATUSES:
+        raise OpError(
+            "close requires a terminal status (one of "
+            f"{', '.join(sorted(TERMINAL_STATUSES))}); got {op.get('status')!r}"
+        )
+    outcome = str(op.get("outcome") or "").strip()
+    if not outcome:
+        raise OpError("close op requires a non-empty 'outcome'")
+    by = str(op.get("by") or "").strip()
+    if not by:
+        raise OpError("close op requires a 'by'")
+    previous_status = str(working.get("status") or "").strip().lower()
+
+    working["status"] = status
+    if op.get("superseded_by"):
+        working["superseded_by"] = op["superseded_by"]
+    for followup in working.get("followups") or []:
+        if isinstance(followup, dict) and _entry_is_open(followup):
+            followup.update(
+                {
+                    "outcome": outcome,
+                    "resolved_at": _utc_ts(),
+                    "resolved_by": by,
+                    "status": "resolved",
+                }
+            )
+
+    _raise_close_guards(working, status, previous_status)
+
+
+def _raise_close_guards(working: dict, status: str, previous_status: str) -> None:
+    """Run every terminal-transition guard and report all failures together."""
+    failures: list[str] = []
+
+    def collect(guard, *args) -> None:
+        try:
+            guard(*args)
+        except OpError as exc:
+            failures.append(str(exc))
+
+    if status in _LANDED_STATUSES and previous_status not in TERMINAL_STATUSES:
+        collect(_require_every_section_ticked, working, _plan_html_text(working))
+    collect(_require_transition_verdict, working, "plan-terminal")
+    project = str(working.get("project") or "")
+    slug = str(working.get("slug") or "")
+    if project and slug:
+        collect(_require_terminal_evidence, project, slug, status)
+    if status in _LANDED_STATUSES and not continuation_present(working):
+        failures.append(CONTINUATION_REQUIRED)
+    if failures:
+        raise OpError("close refused: " + "; ".join(failures))
+
+
 _OP_DISPATCH = {
     "set": _apply_set,
+    "close": _apply_close,
     "append": _apply_append,
     "resolve": _apply_resolve,
     "lock": _apply_lock,
@@ -3482,6 +3570,9 @@ def _plan_html_text(state: dict[str, Any]) -> str | None:
     slug = str(state.get("slug") or "")
     if not project or not slug:
         return None
+    recent = _RECENT_PLAN_HTML.get()
+    if recent is not None and recent[0] == (project, slug):
+        return recent[1]
     try:
         html_file = _resolve_html_file(project, slug)
         if html_file is None or not html_file.is_file():
