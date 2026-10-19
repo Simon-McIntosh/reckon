@@ -1,0 +1,86 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T20:08:17.211Z",
+  "dispatched_at": "2026-10-19T19:49:49Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html:189",
+      "id": "done_when-1",
+      "reason": "the gate would admit a node that silently drops the run from the coordinator's view rather than clearing its review duty, the opposite of what the section sets out to do.",
+      "text": "the done-when asserts only that the tier-none run's obligation \"is not review-missing\", while the deliverable names a positive outcome (\"the kind it would have once reviewed: promotable when its other checks pass\"), so an implementation that returns no duty item at all, or a wrong kind, satisfies the negative assertion while violating the deliverable",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html:189",
+      "id": "reasoning-1",
+      "reason": "naming the pure classifier rather than the owner resolver points the node at re-deriving the tier inputs, the exact sweep-versus-obligations divergence the section's closing sentence exists to prevent.",
+      "text": "the deliverable reads the tier \"or the tier itself through `review_tiers`\", while its closing sentence requires the tier rule be \"read from its owner, not restated\"; the owner resolver the sweep itself reads through is `promotion._run_review_tier` (invoked after the block in `_sweep_review_tier`, `reckon/crew/recovery_repair_dispatch.py:1022`), which injects the resolved `review.tiers` flight ceiling, so a node reading `review_tiers.review_tier` directly must re-gather the changed paths, changed lines, spec level and capability risk the section forbids it to restate",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "660c0597e2682f865da577fe9259254d2c09c7b396bae0550620108f1c7a367c",
+  "plan_slug": "a-review-is-sized-to-its-risk",
+  "plan_version": 159,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-19T20:09:14.879358+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-19T20:09:21.451548+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T20:09:14.879358+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T20:09:21.451548+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-review-is-sized-to-its-risk.v159.json",
+  "review_run_id": "r-20261019T194905229079-plan-review-of-a-review-is-sized-to-its-risk",
+  "reviewed_blob_sha": "980fd77ddac068b5e7f079a1b3da07e17a74681b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/recovery_review_acceptance.py`, `reckon/crew/obligations.py` and the run `r-20261019T181215792224-s23-population-at-merge` all resolve; the cited `_sweep_review_tier` call site is in recovery_review_acceptance.py:481.",
+    "done_when": "a finding \u2014 the measure asserts only that the tier-none run's duty is \"not review-missing\", not the positive kind the deliverable names.",
+    "evidence_paths": "pass \u2014 the done-when puts every gate log under the run directory and terminates it with EXIT=, not in a scratchpad or node-local path.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number reaches code; \"\u00a710\" appears only as a plan heading and the followup id stays in the plan.",
+    "reasoning": "a finding \u2014 the deliverable names `review_tiers` as the fallback tier reader while requiring the tier rule be read from its owner, and the two name different functions.",
+    "single_goal": "pass \u2014 s10 carries one deliverable: make the obligations view read the review tier so a tier-none run stops holding a review-missing duty.",
+    "wiring": "pass \u2014 s10 declares no depends-on/informs/gates link, and the two landed sections it builds on (\u00a72's tier rule and the \u00a75 tier-none sweep skip) are both done, so no dependency it needs is missing."
+  },
+  "section_digests": {
+    "_document": "67b4e13052096da820f474a8ef45e72e4fb9f3b27a52e4eaf390b37aef183da9",
+    "s1": "1bca4570a6dc141df8190260147c4603fdbd4e237bbd0fa1f635f166cdf5637b",
+    "s10": "b0e628039dbdc11462cc429489e6eecb1f9f558e89358cc60b8ec0a9c0bcf49c",
+    "s2": "d87e94711b1191be6062f6581f0bf3c2f7793876a327c35be59e3dd37bbe72c8",
+    "s3": "865c2c7d189405d6ba0566cebd8df5e459211cc93a64a9332de51cff756b47ac",
+    "s4": "834dc20a74581e06fc6c6b99a07ea7b628c9c36d7c390cee1b4e599eeec7b070",
+    "s5": "dd9455e66ea742a997a12400b194e02c6557b19217a06db0a58f82d7d82b8fde",
+    "s6": "cb4e838e28a346993a653862da66ac934c2c1b8e7e1aa1d7cb23c7082672067d",
+    "s7": "044f93aa0d0fd0aed5a7b5b535f5b7a2efacfc541ef12f41a04af14289440d7c",
+    "s8": "a12e7aff5d1cfd541706cc743c3d78ed9c0a96dba6af2c4f8b6dbb2309ea9582",
+    "s9": "3cc2a52825983e24d6bcb3f342f8f21cbd91f2144772c41418b9a0362bf5da37"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T20:09:10.132376+00:00"
+}
