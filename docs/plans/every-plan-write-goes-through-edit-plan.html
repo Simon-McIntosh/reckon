@@ -26,7 +26,7 @@
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -297,6 +297,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-19T09:10:00Z">
     <div class="r-comment-body"><p>§3 landed: a call that fails on a moved, trusted checkout is answered by the current code in a child interpreter, marked with its code stamp; only a changed tool signature still asks for a reconnect (commits <code>fad51085f</code>..<code>cbe51df12</code>); zero added failures; reviewed 106/120. Sessions get it at their next MCP reconnect. <a href="/reckon/evidence/archive/every-plan-write-goes-through-edit-plan-landed.html#s3">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261019T062621653734-epw-server-serves-current-code" data-who="reckon-build" data-when="2026-10-19T09:22:46Z">
+    <div class="r-comment-body"><p>the MCP server answers a failed call on the checkout&#x27;s current code through a child interpreter behind its stdio front, returning whatever the current code answers — success or failure — marked with served_by_code_stamp, and refusing only a changed tool signature; the moved-checkout decision and its trust check are one owner in reckon/served_code.py, called by both servers</p></div>
 </div>
 </section>
 </main>
