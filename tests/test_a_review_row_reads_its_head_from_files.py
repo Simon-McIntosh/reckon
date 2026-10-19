@@ -60,6 +60,13 @@ def _seed_repo(root: Path, config_home: Path) -> None:
         ("commit", "-q", "-m", "test: seed the review-row-head fixture"),
     ):
         _git(root, *arguments)
+    # A run's tier is read from the diff of the commit it cites against that
+    # commit's own parent, so the seed commit cannot be the one a run cites.
+    # The runtime source lands in a second commit, and the runs below cite it.
+    (root / "reckon").mkdir()
+    (root / "reckon" / "fixture_runtime.py").write_text("VALUE = 1\n", encoding="utf-8")
+    _git(root, "add", "reckon/fixture_runtime.py")
+    _git(root, "commit", "-q", "-m", "test: seed a runtime source")
     (config_home / "mounts.json").write_text(
         json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
     )

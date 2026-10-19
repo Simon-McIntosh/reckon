@@ -29,6 +29,7 @@ OBSERVED_AT = datetime(2026, 10, 2, 12, 0, tzinfo=UTC)
 
 
 def _commit(repository: Path, name: str, body: str) -> str:
+    (repository / name).parent.mkdir(parents=True, exist_ok=True)
     (repository / name).write_text(body, encoding="utf-8")
     _git(repository, "add", name)
     _git(repository, "commit", "-q", "-m", f"test: {body.strip()}")
@@ -125,7 +126,7 @@ def test_a_review_of_an_earlier_head_reads_review_missing(
     """The obligation names the review read and the head the run moved to."""
     run_id = "run-head-moved"
     reviewed_head = _git(repository, "rev-parse", "HEAD")
-    head = _commit(repository, "repair.txt", "repair\n")
+    head = _commit(repository, "reckon/repair_module.py", "REPAIR = 1\n")
     _write_complete_run(
         repository, tmp_path, run_id=run_id, node_id="head-moved", head=head
     )

@@ -101,6 +101,14 @@ def config_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         ("commit", "-q", "-m", "test: seed obligation view fixture"),
     ):
         census._git(repo, *arguments)
+    # A run's tier is read from the diff of the commit it cites against that
+    # commit's own parent, so a cited root commit measures no path at all. The
+    # runtime source lands in a second commit, which is what a run that owes a
+    # review cites.
+    (repo / "reckon").mkdir()
+    (repo / "reckon" / "fixture_runtime.py").write_text("VALUE = 1\n", encoding="utf-8")
+    census._git(repo, "add", "reckon/fixture_runtime.py")
+    census._git(repo, "commit", "-q", "-m", "test: seed a runtime source")
     (home / "mounts.json").write_text(
         json.dumps({PROJECT: str(repo / "docs")}), encoding="utf-8"
     )

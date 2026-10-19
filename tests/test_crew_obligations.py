@@ -38,6 +38,14 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         ("commit", "-q", "-m", "test: seed obligation fixture"),
     ):
         _git(root, *arguments)
+    # A run's tier is read from the diff of the commit it cites against that
+    # commit's own parent, so a cited root commit measures no path at all. The
+    # runtime source therefore lands in a second commit, which is what a run
+    # that owes a review cites.
+    (root / "reckon").mkdir()
+    (root / "reckon" / "fixture_runtime.py").write_text("VALUE = 1\n", encoding="utf-8")
+    _git(root, "add", "reckon/fixture_runtime.py")
+    _git(root, "commit", "-q", "-m", "test: seed a runtime source")
     (config_home / "mounts.json").write_text(
         json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
     )
@@ -365,7 +373,10 @@ def test_a_review_of_an_earlier_head_is_still_missing(
     worktree = tmp_path / "head-moved-tree"
     _git(repository, "worktree", "add", "-q", "--detach", str(worktree), "HEAD")
     (worktree / "seed.txt").write_text("new head\n", encoding="utf-8")
-    _git(worktree, "add", "seed.txt")
+    (worktree / "reckon" / "fixture_runtime.py").write_text(
+        "VALUE = 2\n", encoding="utf-8"
+    )
+    _git(worktree, "add", "seed.txt", "reckon/fixture_runtime.py")
     _git(worktree, "commit", "-q", "-m", "test: move reviewed head")
     head = _git(worktree, "rev-parse", "HEAD")
     manifest = tmp_path / "manifests" / f"{run_id}.md"
