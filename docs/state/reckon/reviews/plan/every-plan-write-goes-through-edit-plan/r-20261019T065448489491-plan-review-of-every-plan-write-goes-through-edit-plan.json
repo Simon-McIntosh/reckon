@@ -1,0 +1,105 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T07:00:20.057Z",
+  "dispatched_at": "2026-10-19T06:55:28Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:188",
+      "id": "done_when-1",
+      "reason": "a node implementing \u00a76 exactly as written would turn five declared-clean files red and be fenced out of repairing them, the same defect \u00a76's sibling \u00a73 and \u00a74 avoid by naming the existing tests that must keep passing.",
+      "text": "\u00a76's done-when has three cases, all about the `close` verb and the `set` refusal, and states nothing about the existing suite; but refusing `set status` to any value in `TERMINAL_STATUSES` breaks the landing write that at least five test files use as their subject: `tests/test_terminal_status_needs_every_section_ticked.py` (`LAND = {\"op\": \"set\", \"path\": \"status\", \"value\": \"done\"}`), `tests/test_every_section_has_a_declaration.py:278` (asserts the refusal names `s2` and `declaration`, which the new `close` refusal pre-empts), `tests/test_closure_gates.py:128,192,209` (drives `_store.apply_ops` with `set status done` to reach the outcome-gate guard), and `tests/test_continuation.py:102,184,216,265,402` \u2014 none of these paths appear in \u00a76's write paths, which list only the new `tests/test_a_plan_closes_in_one_op.py`",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:185",
+      "id": "done_when-2",
+      "reason": "an unmeasured clause of the deliverable is one a node can skip and still close on a green gate, which is what the done-when exists to prevent.",
+      "text": "the deliverable's third clause, that the resolved-placeholder recipe is dropped from `coordinator-reference.md`, `sprint-orchestration.md` and `AGENTS.md`, has no case in the done-when and no grep in its evidence, so a node could leave every `done \u2014 no followup` instruction in place and still pass all three cases",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:183",
+      "id": "reasoning-1",
+      "reason": "the caller left behind keeps instructing a write \u00a76 has just made refuse, and adding the file to the write paths is what makes the \"every caller\" claim true.",
+      "text": "\u00a76 states that after the change \"every reckon caller that sets one moves to `close` in the same node\", but `skills/reckon-create/SKILL.md:609` tells the author to set `plan-status` on the transition to `shipped` (\"authored on lifecycle transitions (draft \u2192 active \u2192 shipped)\") and that file is in no \u00a76 write path, so the claim holds only for the two references and `AGENTS.md` it names",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3ec06cbf99f4b1573813d7512f60aa75a755c505894d45d570d3750f9bd0eeb4",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 7,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-19T07:01:46.706726+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-2",
+      "reason": "",
+      "when": "2026-10-19T07:01:52.352958+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-19T07:01:58.240718+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T07:01:46.706726+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T07:01:52.352958+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T07:01:58.240718+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-plan-write-goes-through-edit-plan.v7.json",
+  "review_run_id": "r-20261019T065448489491-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "6444da8736ae120ce7cf484fba139d2900b48103",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `TERMINAL_STATUSES` resolves at `reckon/lifecycle.py:9`, `_require_transition_verdict` at `reckon/_store.py:3463`, `_refuse_appended_hiding_followups` at `reckon/_store.py:3290`, and the resolved-placeholder recipe resolves in all three files \u00a76 now names (`coordinator-reference.md:1012,1024,1139`, `sprint-orchestration.md:548`, `AGENTS.md:266,295`).",
+    "done_when": "a finding \u2014 \u00a76's done-when names only the new test file, while the `set status` refusal it introduces breaks at least five existing test files that exercise that exact write, none of them named and none in its write paths.",
+    "evidence_paths": "pass \u2014 \u00a76 writes no gate log of its own to a temporary path; its evidence is the pytest artifact and the node's own gate log under the run directory.",
+    "naming": "pass \u2014 \u00a76 introduces `close` and `tests/test_a_plan_closes_in_one_op.py`, both named by behaviour; the only numbered identifiers are existing symbols it cites.",
+    "reasoning": "a finding \u2014 the deliverable's claim that \"every reckon caller that sets one moves to `close` in the same node\" is unsupported: `skills/reckon-create/SKILL.md:609` instructs authoring `plan-status` on the transition to `shipped`, and that file is named nowhere in \u00a76.",
+    "single_goal": "pass \u2014 \u00a76's parts (the `close` verb, the `set` terminal path it replaces, the doc updates that follow) all serve the one stated goal, a plan closing in one write.",
+    "wiring": "pass \u2014 s6 depends-on s5 resolves, s6 is declared implementable with no open decision scoped to it (the `deferred-continuation` row now carries `data-sections=\"s8\"`), and the s7\u2190s6 and s8\u2190s7 edges resolve."
+  },
+  "section_digests": {
+    "_document": "fe4a479ee96126b12c62c0412b79792f0a50e08659c72cafd18db1e0bd618c9a",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s2": "737250903251177035b357be3d656b549480337bc454f97615634dada495e251",
+    "s3": "4150e9281b9c0fe1173e9c23f5582efb0662d22f1d36944861d3033f988d479c",
+    "s4": "e0390ff35ac5e425fa3060cede9882af598c54dc89e0a6069101b3971f8e8367",
+    "s5": "699b049fe374b1219d8b917168575594a5bcb9255bbe13efdbf1d0c928562a86",
+    "s6": "4fb0a2c68c6a0773fc3572c7473d90f559cf3b329ae4948178cbc0f6f0439829",
+    "s7": "80062db679255aff5087534386e7372545e1cd3414916db8329aec79a1a8388d",
+    "s8": "f9dd6299834b4d039fd1f45b37141d5e265075b4cfd7f341357bea21196f5b35"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T07:01:43.675310+00:00"
+}
