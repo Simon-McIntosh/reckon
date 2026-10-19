@@ -221,13 +221,24 @@ function artifactCaptionPresent(value) {
   return text !== "" && text !== "-" && text !== "—";
 }
 
+// The URL carries the figure's revision, so the server answers it immutable
+// while the file's bytes still match and the browser fetches it once; a changed
+// figure yields a new revision, hence a new URL, and is fetched again. Recorded
+// once here and reused by the reader so both build the same URL for a row.
+function artifactRevisionQuery(item) {
+  const revision = item && item.revision;
+  return revision ? "?rev=" + encodeURIComponent(revision) : "";
+}
+
 // A list row draws a figure from its thumbnail: the server downscales each one
 // to a 200 px long edge and caches it, so a list of captures loads in a
 // fraction of the bytes. A href that is not a project path — an inline data:
-// capture, a fabricated state — is drawn as given.
+// capture, a href drawn as given.
 function artifactImageSrc(item) {
   const href = (item && item.href) || "";
-  if (href.startsWith("/") && !href.startsWith("//")) return "/_thumb" + href;
+  if (href.startsWith("/") && !href.startsWith("//")) {
+    return "/_thumb" + href + artifactRevisionQuery(item);
+  }
   return href;
 }
 

@@ -420,8 +420,12 @@ function readerStepTarget(list, selectedKey, selectedSlug, direction) {
 }
 
 function readerFigureSource(item, project) {
-  if (item?.href) return item.href;
-  return `/${project}/figures/${item?.slug || ""}`;
+  const href = item?.href || `/${project}/figures/${item?.slug || ""}`;
+  // The reader's image URL carries the figure's revision, so a changed figure is
+  // fetched again rather than served from an immutable cache entry. The format
+  // matches the list row's thumbnail URL built in shell-plans.jsx.
+  const revision = item?.revision;
+  return revision ? `${href}?rev=${encodeURIComponent(revision)}` : href;
 }
 
 function readerFigurePath(item) {
@@ -1309,3 +1313,4 @@ function GenericBody({ PG, decs, onUpdateDec, comments }) {
 
 window.Plan = Plan;
 window.GenericBody = GenericBody;
+window.readerFigureSource = readerFigureSource;

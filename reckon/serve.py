@@ -2552,6 +2552,13 @@ def _discover_plans_uncached(
         figure["created"], figure["edited"] = _row_times(
             figure_path, repo_dir, git_times, git_last_times
         )
+        # The revision addresses this figure's bytes, so the surface can build a
+        # URL the server will answer immutable while the file still matches. An
+        # unreadable file carries none, and its URL falls back to revalidation.
+        try:
+            figure["revision"] = _file_revision(figure_path.stat())
+        except OSError:
+            figure["revision"] = ""
         inventory.append(figure)
 
     # ── Distributed project state ──────────────────────────────────────────
@@ -2963,6 +2970,32 @@ def safe_join(root: Path, rel: str) -> Path | None:
     return target
 
 
+def _file_revision(stat: os.stat_result) -> str:
+    """Return the revision token a served file is addressed by.
+
+    Derived from the file's stat identity — inode, size and modification time —
+    so a rewritten file yields a new token and an untouched one yields the same
+    token across processes. It is the same value the ETag is built from, so a
+    URL carrying it as ``?rev=`` and the response's validator agree by
+    construction.
+    """
+
+    return f"{stat.st_ino:x}-{stat.st_size:x}-{stat.st_mtime_ns:x}"
+
+
+# A response whose URL carried the file's current revision cannot change while
+# that revision holds, so the browser may keep it for a year without asking
+# again. A year is the ceiling most caches accept; ``immutable`` tells them the
+# revalidation a normal ``max-age`` still permits never applies here.
+_IMMUTABLE_CACHE = "max-age=31536000, immutable"
+
+
+def _revision_matches(requested: str | None, identity: str) -> bool:
+    """Whether a URL's revision addresses the file's current bytes."""
+
+    return requested is not None and requested == identity
+
+
 def _thumbnail_cache_path(source: Path, identity: str) -> Path:
     """Return the cache file for one source revision, under the config home.
 
@@ -3310,13 +3343,21 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _send_file(self, target: Path, ctype: str) -> None:
+    def _send_file(
+        self, target: Path, ctype: str, requested_revision: str | None = None
+    ) -> None:
         """Serve a file the browser may keep, revalidated by its stat identity.
 
         ``no-cache`` makes every use revalidate, so a changed figure or
         stylesheet is seen on the next load, while an unchanged one costs a
         304 instead of its bytes — the difference between a refresh that
         re-downloads every image and one that downloads none.
+
+        When the request names the file's *current* revision (``?rev=<token>``,
+        the token the index row carries) the bytes cannot change while that
+        revision holds, so the answer is ``immutable`` and the browser fetches
+        it once. A revision that no longer matches, or none at all, falls back
+        to ``no-cache`` and is revalidated as before.
 
         A text response — a figure, stylesheet, script or document — over the
         compression threshold is gzipped when the client asks for it. The
@@ -3326,12 +3367,17 @@ class Handler(BaseHTTPRequestHandler):
         """
         try:
             stat = target.stat()
-            identity = f"{stat.st_ino:x}-{stat.st_size:x}-{stat.st_mtime_ns:x}"
+            identity = _file_revision(stat)
             etag = f'"{identity}"'
+            cache_control = (
+                _IMMUTABLE_CACHE
+                if _revision_matches(requested_revision, identity)
+                else "no-cache"
+            )
             if etag in (self.headers.get("If-None-Match") or ""):
                 self.send_response(HTTPStatus.NOT_MODIFIED)
                 self.send_header("ETag", etag)
-                self.send_header("Cache-Control", "no-cache")
+                self.send_header("Cache-Control", cache_control)
                 self.end_headers()
                 return
             body = target.read_bytes()
@@ -3354,12 +3400,14 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(compressed)))
         else:
             self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Cache-Control", cache_control)
         self.send_header("ETag", etag)
         self.end_headers()
         self.wfile.write(compressed if compressed is not None else body)
 
-    def _serve_thumbnail(self, path: str) -> None:
+    def _serve_thumbnail(
+        self, path: str, requested_revision: str | None = None
+    ) -> None:
         """Serve a figure's thumbnail: 200 px on its long edge, cached on disk.
 
         The response is revalidated by an ETag derived from the source's stat
@@ -3369,6 +3417,11 @@ class Handler(BaseHTTPRequestHandler):
         icon rather than the whole drawing; a source that cannot be rendered,
         an SVG included, is served as it is rather than reported as a server
         failure.
+
+        The thumbnail's bytes are a pure function of the source revision, so a
+        request naming the source's current revision is answered
+        ``immutable``; a revision that no longer matches falls back to
+        ``no-cache``.
         """
 
         rel = path[len("/_thumb/") :]
@@ -3389,12 +3442,17 @@ class Handler(BaseHTTPRequestHandler):
         except OSError:
             self._send(HTTPStatus.NOT_FOUND, b"figure not readable")
             return
-        identity = f"{stat.st_ino:x}-{stat.st_size:x}-{stat.st_mtime_ns:x}"
+        identity = _file_revision(stat)
+        cache_control = (
+            _IMMUTABLE_CACHE
+            if _revision_matches(requested_revision, identity)
+            else "no-cache"
+        )
         etag = f'"thumb-{identity}"'
         if etag in (self.headers.get("If-None-Match") or ""):
             self.send_response(HTTPStatus.NOT_MODIFIED)
             self.send_header("ETag", etag)
-            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Cache-Control", cache_control)
             self.end_headers()
             return
         try:
@@ -3410,12 +3468,17 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(HTTPStatus.NOT_FOUND, b"figure not readable")
                 return
             ctype, _ = mimetypes.guess_type(str(target))
-            self._send(HTTPStatus.OK, body, ctype or "application/octet-stream")
+            self._send(
+                HTTPStatus.OK,
+                body,
+                ctype or "application/octet-stream",
+                headers={"Cache-Control": cache_control},
+            )
             return
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", "image/png")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Cache-Control", cache_control)
         self.send_header("ETag", etag)
         self.end_headers()
         self.wfile.write(body)
@@ -3683,7 +3746,12 @@ class Handler(BaseHTTPRequestHandler):
         self._send_json(HTTPStatus.OK, payload)
 
     def do_GET(self) -> None:  # noqa: N802
-        path = unquote(urlsplit(self.path).path)
+        parsed = urlsplit(self.path)
+        path = unquote(parsed.path)
+        # The revision a URL carries, if any. It addresses the bytes the surface
+        # already has an index row for; a figure or thumbnail whose URL names
+        # the file's current revision is answered immutable.
+        requested_revision = parse_qs(parsed.query).get("rev", [None])[0] or None
         if path != "/_server" and self._refuse_stale_code():
             return
 
@@ -4049,7 +4117,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path.startswith("/_thumb/"):
-            self._serve_thumbnail(path)
+            self._serve_thumbnail(path, requested_revision)
             return
 
         if path.startswith("/_index/"):
@@ -4331,7 +4399,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         ctype, _ = mimetypes.guess_type(str(target))
-        self._send_file(target, ctype or "application/octet-stream")
+        self._send_file(target, ctype or "application/octet-stream", requested_revision)
 
     def _read_body(self) -> tuple[bool, object]:
         length = int(self.headers.get("Content-Length", "0"))
