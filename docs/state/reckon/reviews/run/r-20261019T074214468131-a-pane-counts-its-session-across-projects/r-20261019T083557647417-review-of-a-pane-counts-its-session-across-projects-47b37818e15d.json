@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own two cohort logs: baseline importers-base.log (7 failed/32 passed, EXIT=1, run over the five files that failed at head) and head importers-head.log (10 failed/409 passed/1 error, EXIT=1). The raw set difference is 5 ids \u2014 test_a_crashed_producer_is_restarted.py::test_a_steady_run_resets_the_delay_and_crash_count, ::test_deliberate_stop_is_not_restarted[lease], ::test_deliberate_stop_is_not_restarted[producer-term], test_watch_version_stamp.py::test_identity_names_the_installed_version_and_start_time, and an ERROR on test_the_watcher_sweeps_unfollowed_sessions.py::test_the_watcher_sweeps_only_the_sessions_nobody_follows[single-event] \u2014 and the reviewed manifest attributes every one of them as a parallel-run flake under retry_failures; the run's serial re-run log (head-serial.log) covers those three files and re-runs the remainder green, leaving only test_crashed_producer_reoccupies_the_seat[crash] and test_repeated_crashes_reach_a_reported_limit red, both red at base as well. So no failure is added by the change and the list above is recorded as a zero, not as an unmeasured value.",
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2279",
+    "reckon/crew_follow_commands.py:3435",
+    "reckon/crew_follow_commands.py:3630"
+  ],
+  "completed_at": "2026-10-19T08:58:21.543Z",
+  "dispatched_at": "2026-10-19T08:37:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": 2074,
+      "severity": "follow-on",
+      "text": "_newest_session_counts re-implements the chunked from-the-tail stream read that reckon/crew/runs.py:2093 already owns as _iter_stream_lines_backwards (same 64 KiB chunk walk, same skip of an undecodable line); the addition duplicates the owner rather than wrapping it, so the same read now carries two implementations that can drift."
+    },
+    {
+      "file": "tests/test_a_pane_counts_its_session_across_projects.py",
+      "line": 97,
+      "severity": "follow-on",
+      "text": "the project_working/project_blocked/project_unpromoted assertions compare the scoped event's fields with the entry the test itself passed in at :63, so the two sides move together: they redden only if the keys vanish, never if the pass-through corrupts a value."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": 2120,
+      "severity": "follow-on",
+      "text": "_session_counts_in_other_projects adds each other project's newest transition entry with no age bound, so a project whose watcher has stopped keeps contributing the session's last published figure to every row of the pane indefinitely; the plan asks for the newest entry, but nothing retires a stale file's entry the way the live-pointer path re-derives its population."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T074214468131-a-pane-counts-its-session-across-projects/logs/importers-head.log",
+      "line": 1,
+      "severity": "follow-on",
+      "text": "the head arm's header names revision e8c804a98 (the node's base) though the arm measured the changed module, so a suite-delta replay keyed on that line attributes the head result to the base commit; my own re-run of the named test at 47b37818e passes (1 passed in 2.21s), so only the header is wrong."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T074214468131-a-pane-counts-its-session-across-projects/manifest.md",
+      "line": 1,
+      "severity": "follow-on",
+      "text": "the manifest records its suite arms under tests:/test_logs: prose and carries no baseline_suite or after_suite object, so this record's added-failure count was derived from those named logs (importers-base.log at e8c804a98, importers-head.log) rather than parsed by the store's own arm reader."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against e8c804a98: 8398fec58 rewrites _scoped_watch_event and adds _newest_session_counts, _session_counts_in_other_projects and _live_project_session_counts plus the new test file; 47b37818e adds only the landing fragment; the three changed paths are +310/-31 and all inside the fence.",
+    "done_when": "The done-when is the five-clause two-project measure plus a negative control, EXIT= logs, no added failures in the importer cohort, and clean ruff; tests/test_a_pane_counts_its_session_across_projects.py asserts the five clauses verbatim (8w on a B row and an A row, 7w after B drops to 0, nothing added for a project with no entry for the session, 1w unscoped, project_*/session-wide carried together) and the manifest records that run, the control and the cohort delta.",
+    "goal": "The goal is that a session-scoped follower's row counters count that session's workers across every project's events file; reckon/crew/recovery_watch.py:2120 supplies the missing part by reading each other project's events file's newest transition carrying session_counts and adding the session's entry.",
+    "manifest": "Read: status complete, commits 8398fec58 and 47b37818e, the gate (1 passed) and the importer cohort (head 10 failed/409 passed/1 error, base 7 failed/32 passed, serial re-run of the three flaky files 2 failed/20 passed), and the negative control path; it carries no baseline_suite/after_suite fields, so the suite delta lives in test_logs prose.",
+    "write_paths": "The declared scope is reckon/crew/recovery_watch.py, tests/test_a_pane_counts_its_session_across_projects.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-pane-counts-its-session-across-projects.html and the docs/figures directory of the same node; git diff e8c804a98..47b37818e lists the first three and nothing else."
+  },
+  "justifications": {
+    "durability": "The rendered-figure assertions are independent of the change under test \u2014 the test plants 7 in project A's events file and 1 in the row and requires 8w at tests/test_a_pane_counts_its_session_across_projects.py:85-86, 7w after B drops to 0 at :111 \u2014 and the recorded negative control reddens the B row to 1w, but the project_* pass-through assertions at :97-99 compare against the values the test itself handed in.",
+    "evidence": "The named gate tests/test_a_pane_counts_its_session_across_projects.py measures each done-when clause and its log records 1 passed EXIT=0, but the head arm's log header names the base revision and the reviewed manifest carries no baseline_suite/after_suite fields, so the suite delta had to be read from the manifest's test_logs prose rather than from machine-readable arms.",
+    "fit": "The added symbols carry no plan, sprint or ticket label and their docstrings state the mechanism (reckon/crew/recovery_watch.py:2187-2205), matching the surrounding module, but WATCH_EVENTS_SUFFIX at :2066 restates the \".events\" literal that reckon/crew/run_paths.py:31 already owns.",
+    "goal_fidelity": "The row's counters now sum the session's entry from every other project's events file, exactly as the goal states: reckon/crew/recovery_watch.py:2183 re-scopes to the row's own project, reckon/crew/recovery_watch.py:2120 adds each other project's newest entry, and a follower with no session is left on its own project's counts.",
+    "reuse": "_newest_session_counts at reckon/crew/recovery_watch.py:2074 re-implements the chunked tail read the repository already owns at reckon/crew/runs.py:2093 (_iter_stream_lines_backwards), without extending or wrapping that owner; the cross-project session sum itself has no existing owner \u2014 a grep for session_counts over reckon/ finds it only in the changed module.",
+    "scope_discipline": "git diff e8c804a98..47b37818e changes exactly reckon/crew/recovery_watch.py, tests/test_a_pane_counts_its_session_across_projects.py and the declared landing fragment, all inside the fence (the granted figure directory is unused)."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: e8c804a989c27707e0663cbe1dfc454c97e01d69\nreviewed_head_sha: 47b37818e15df34a5e42048d49d4099ca8add2b4\n\nVERDICT goal: the goal is that a session-scoped follower's row counters count that session's workers across every project's events file; reckon/crew/recovery_watch.py:2120 supplies the missing part by reading each other project's events file's newest transition carrying session_counts and adding the session's entry.\nVERDICT done_when: the done-when is the five-clause two-project measure plus a negative control, EXIT= logs, no added failures in the importer cohort, and clean ruff; tests/test_a_pane_counts_its_session_across_projects.py asserts the five clauses verbatim and the manifest records that run, the control and the cohort delta.\nVERDICT write_paths: the declared scope is reckon/crew/recovery_watch.py, tests/test_a_pane_counts_its_session_across_projects.py and the node's fragment (plus an unused figure directory); git diff e8c804a98..47b37818e lists the first three and nothing else.\nVERDICT manifest: read; status complete, commits 8398fec58 and 47b37818e, the gate (1 passed), the importer cohort delta, and the negative-control path; it carries no baseline_suite/after_suite fields, so the suite delta lives in test_logs prose.\nVERDICT diff: read commit by commit against e8c804a98; 8398fec58 rewrites _scoped_watch_event and adds three helpers plus the test, 47b37818e adds only the fragment, all three paths inside the fence.\nCALL_SITES: reckon/crew/recovery_watch.py:2279, reckon/crew_follow_commands.py:3435, reckon/crew_follow_commands.py:3630\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:2183 re-scopes to the row's own project and :2120 adds each other project's newest entry, which is the goal's deliverable exactly as the plan states it.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_pane_counts_its_session_across_projects.py measures each clause and its log records 1 passed EXIT=0, but the head arm's header names the base revision and the reviewed manifest carries no machine-readable suite arms.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff e8c804a98..47b37818e is one of the node's declared write paths, and the granted figure directory is unused.\nSCORE durability: 18\nJUSTIFICATION durability: the rendered-figure assertions at tests/test_a_pane_counts_its_session_across_projects.py:85-86 and :111 redden if the cross-project sum is removed, as the recorded control shows, but :97-99 assert the pass-through against the values the test supplied.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/recovery_watch.py:2187-2205 follows the module's docstring idiom and carries no plan label, but :2066 restates the \".events\" literal reckon/crew/run_paths.py:31 already owns.\nSCORE reuse: 5\nJUSTIFICATION reuse: _newest_session_counts at reckon/crew/recovery_watch.py:2074 duplicates the capability reckon/crew/runs.py:2093 owns (_iter_stream_lines_backwards) instead of extending it, though the cross-project sum itself has no prior owner.\nFINDING reckon/crew/recovery_watch.py:2074 follow-on: _newest_session_counts re-implements the chunked from-the-tail read that reckon/crew/runs.py:2093 already owns as _iter_stream_lines_backwards; the addition duplicates rather than wraps the owner.\nFINDING tests/test_a_pane_counts_its_session_across_projects.py:97 follow-on: the project_* assertions compare against the entry the test itself passed in at :63, so they move together and redden only if the keys are removed.\nFINDING reckon/crew/recovery_watch.py:2120 follow-on: each other project's newest entry is added with no age bound, so a stopped watcher's last published session figure keeps contributing to every row indefinitely.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T074214468131-a-pane-counts-its-session-across-projects/logs/importers-head.log:1 follow-on: the head arm's header names the base revision e8c804a98 though it measured the changed module, so a delta replay keyed on that line attributes the result to the wrong commit.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T074214468131-a-pane-counts-its-session-across-projects/manifest.md:1 follow-on: the manifest carries no baseline_suite or after_suite object, so the added-failure derivation had to read its test_logs prose instead of machine-readable arms.\n",
+  "review_run_id": "r-20261019T083557647417-review-of-a-pane-counts-its-session-across-projects-47b37818e15d",
+  "reviewed_base_sha": "e8c804a989c27707e0663cbe1dfc454c97e01d69",
+  "reviewed_head_sha": "47b37818e15df34a5e42048d49d4099ca8add2b4",
+  "reviewed_run_id": "r-20261019T074214468131-a-pane-counts-its-session-across-projects",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T09:14:29.116041+00:00"
+}
