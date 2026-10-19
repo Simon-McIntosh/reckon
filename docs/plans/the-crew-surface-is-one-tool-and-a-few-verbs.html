@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-informs" content="consumers-read-reckon-through-verbs">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s3&quot;], &quot;s5&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;, &quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;, &quot;every-plan-write-goes-through-edit-plan#s3&quot;], &quot;s6&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s2&quot;, &quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;], &quot;s7&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;, &quot;the-crew-surface-is-one-tool-and-a-few-verbs#s5&quot;], &quot;s8&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s7&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -128,7 +128,7 @@
       <code>reckon/crew/reports.py</code>, <code>reckon/crew/prompts.py</code>, <code>tests/test_complete_reports_every_refusal.py</code>.</p>
 
     <h2 id="s4">§4 — One call lands a run</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> Four reports keep a scratch script that lands a run. One ran it about forty times a session. The script
       completes the run and merges its reviewed head without touching the shared index. It checks that the change survived the merge, pushes
       over the port a compute node allows, and releases the worktree.</p>
@@ -329,7 +329,10 @@
     <div class="r-comment-body"><p>read run r-20261019T143650682729-cso-one-call-lands-a-run at base 1eb8d8dc65178127695c57ca210ea4edcca8d7ab and reviewed head 5fc6243b361f8c924cef46ef13a788e485c5c8a7 and stored a parsed second-opinion review: goal_fidelity 19, evidence 17, scope_discipline 18, durability 17, fit 16, reuse 5 (total 92), added_failure_count 0 with no added failure ids; two follow-on findings, both about reckon/crew/merge.py — the new land copies land_merge's whole landing loop instead of extending it, and the gate arm ran one docs-only commit before the reviewed head.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261019T172514871247-review-of-cso-one-call-lands-a-run-b57fb26de543" data-who="reckon-build" data-when="2026-10-19T17:34:09.672Z">
-    <div class="r-comment-body"><p>review of run r-20261019T143650682729-cso-one-call-lands-a-run at head b57fb26de (base 5fc6243b3): reuse repaired to 20 (land now extends land_merge through the verify seam, verified against the diff and a capability search), evidence 19 (gate arm runs at the recorded head), durability 19 (the seam&#x27;s guard reddens on the reverted commit per revert-f76.log). added_failure_count 0, added_failure_ids []. One follow-on finding: a MergePushOutstandingError raised through land no longer carries the survived block, which no production caller reads.</p></div>
+    <div class="r-comment-body"><p>review of run r-20261019T143650682729-cso-one-call-lands-a-run at head b57fb26de (base 5fc6243b3): reuse repaired to 20 (land now extends land_merge through the verify seam, verified against the diff and a capability search), evidence 19 (gate arm runs at the recorded head), durability 19 (the seam's guard reddens on the reverted commit per revert-f76.log). added_failure_count 0, added_failure_ids []. One follow-on finding: a MergePushOutstandingError raised through land no longer carries the survived block, which no production caller reads.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-19T17:40:00Z">
+    <div class="r-comment-body"><p>§4 landed: <code>crew complete --land</code> promotes, merges the reviewed head, checks markers survived, pushes and releases, through <code>land_merge</code>'s loop with a verify seam (commits <code>f3f485f83</code>..<code>b57fb26de</code>). <code>crew merge</code> stays: 66 of 102 recent merges landed a head no run produced. <a href="/reckon/evidence/archive/the-crew-surface-is-one-tool-and-a-few-verbs-landed.html#s4">evidence</a></p></div>
 </div>
 </section>
 </main>
