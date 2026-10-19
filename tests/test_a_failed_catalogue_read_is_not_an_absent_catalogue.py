@@ -127,6 +127,37 @@ def test_a_checkout_without_the_catalogue_still_yields_the_package_tree(
     assert identity != checkout_trust.IDENTITY_UNKNOWN
 
 
+def test_a_checkout_git_cannot_answer_for_keeps_its_package_stamp(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A checkout git cannot be read through is not unknown: it keeps the fallback.
+
+    Unknown is reserved for a catalogue read that failed on a checkout git
+    answered for -- the case the first test covers. A tree this process cannot
+    compose, because the object store is not writable for it, and a directory
+    that is no repository at all, are both a checkout read outside Git: each
+    keeps the identity it had before, the package's own content stamp, rather
+    than leaving every reader that would follow it with an unknown code
+    identity and no reload.
+    """
+    from reckon.crew.obligation_snapshot import code_stamp
+
+    root = _source(tmp_path, catalogue=True)
+    monkeypatch.setattr(
+        checkout_trust, "_committed_tree_cache", lambda: tmp_path / "images"
+    )
+    monkeypatch.setattr(checkout_trust, "_mktree", lambda *args, **kwargs: None)
+    uncomposed = checkout_trust.source_code_identity(root / "reckon", source_root=root)
+    assert uncomposed == code_stamp(root / "reckon")
+    assert uncomposed != checkout_trust.IDENTITY_UNKNOWN
+
+    unreadable = checkout_trust.source_code_identity(
+        root / "reckon", source_root=tmp_path / "no-repository"
+    )
+    assert unreadable == code_stamp(root / "reckon")
+    assert unreadable != checkout_trust.IDENTITY_UNKNOWN
+
+
 def test_a_successful_read_folds_the_catalogue_in(tmp_path: Path, monkeypatch) -> None:
     """Every read succeeds with the catalogue present: it is folded in as today."""
     root = _source(tmp_path, catalogue=True)

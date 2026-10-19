@@ -234,10 +234,11 @@ def committed_reckon_tree(root: Path) -> str | None:
     tree by its content, so two commits with the same package read alike
     however many commits sit between them.
 
-    A read that did not complete is raised rather than read as absence: a
-    checkout git could not answer for is not a checkout without a package. A
-    git that ran and answered no -- no such tree, or no repository at all --
-    returns None, which the caller reads as a checkout outside Git.
+    A git that cannot be run, or that answers no -- no such tree, or no
+    repository at all -- returns None, which the caller reads as a checkout
+    outside Git and identifies by its package content stamp instead. This
+    reader does not distinguish a failed read from an absent package; the
+    catalogue reader in ``_committed_catalogue_blob`` is the one that does.
     """
     try:
         result = subprocess.run(
@@ -247,13 +248,13 @@ def committed_reckon_tree(root: Path) -> str | None:
             timeout=IMPORT_PROBE_TIMEOUT,
             check=False,
         )
-    except (OSError, subprocess.SubprocessError) as exc:
-        raise IdentityReadError(f"reading HEAD:reckon did not complete: {exc}") from exc
+    except (OSError, subprocess.SubprocessError):
+        return None
     if result.returncode != 0:
         return None
     tree = result.stdout.strip()
     if len(tree) != 40:
-        raise IdentityReadError("reading HEAD:reckon answered an unusable id")
+        return None
     return tree
 
 
@@ -348,11 +349,17 @@ def _committed_reload_tree(root: Path) -> str | None:
     the three moves nothing. A checkout carrying no catalogue yields the
     package-and-scripts tree unchanged.
 
-    A read that did not complete is raised -- from the listing, the catalogue
-    lookup, or the tree composition -- so a partial read never yields an
-    identity. A git that ran and answered no repository, or a checkout whose
-    top level is neither of the two paths, returns None, which the caller reads
-    as a checkout outside Git.
+    Only the catalogue's own read answers with the failure that earns an
+    unknown identity (see ``_committed_catalogue_blob``): that read runs only
+    after the listing below has answered for the package and scripts, so it
+    describes a checkout that should have answered. Everything else -- a git
+    that cannot be run, a checkout with no repository or no ``HEAD``, or a
+    tree this process cannot compose because it may not write to the object
+    store -- returns None, which the caller reads as a checkout outside Git
+    and identifies by its package content stamp instead. That keeps a
+    checkout this process merely cannot read through git on the identity it
+    had before, rather than reporting it unknown and stopping every reader
+    that would otherwise follow it.
     """
     try:
         entries = subprocess.run(
@@ -362,10 +369,8 @@ def _committed_reload_tree(root: Path) -> str | None:
             timeout=IMPORT_PROBE_TIMEOUT,
             check=False,
         )
-    except (OSError, subprocess.SubprocessError) as exc:
-        raise IdentityReadError(
-            f"listing HEAD:reckon,skills did not complete: {exc}"
-        ) from exc
+    except (OSError, subprocess.SubprocessError):
+        return None
     if entries.returncode != 0:
         return None
     names = {line.rsplit("\t", 1)[-1] for line in entries.stdout.splitlines()}
@@ -378,20 +383,19 @@ def _committed_reload_tree(root: Path) -> str | None:
         tree = _mktree(root, entries.stdout)
     else:
         tree = _reload_tree_with_catalogue(root, entries.stdout, blob)
-    if tree is None:
-        raise IdentityReadError("composing the reload tree did not complete")
     return tree
 
 
 def source_code_identity(package_dir: Path, *, source_root: Path | None = None) -> str:
     """Identify the package and scripts, or hash a package outside Git.
 
-    A read the committed-tree computation depends on that did not complete
-    yields :data:`IDENTITY_UNKNOWN` rather than a partial identity: a failed
-    read is not an absent catalogue, and a caller comparing identities must
-    treat this reading as no new identity rather than as a moved one. A package
-    outside Git, which the computation answers for with None, is still hashed
-    directly.
+    A catalogue read that did not complete, on a checkout whose package and
+    scripts git answered for, yields :data:`IDENTITY_UNKNOWN` rather than a
+    partial identity: a failed read is not an absent catalogue, and a caller
+    comparing identities must treat this reading as no new identity rather
+    than as a moved one. A checkout git cannot answer for at all is not
+    unknown; it is a checkout outside Git, which the computation answers for
+    with None and which is identified by its package content stamp.
     """
     if source_root is None:
         source_root = Path(
