@@ -220,6 +220,26 @@
       before and after, recorded in the evidence fragment. The negative control is a
       probe whose recorded tab is removed before the check, which must be refused.
     </p>
+    <p>
+      The probe session has to exist before the first <code>--rehearse</code>
+      call. The census refuses a name it cannot find in the local session census.
+      It also refuses a session that lacks two tabs and a live Claude pane
+      (<code>fleet_migrate.py:722–734</code>). So the node first writes a layout
+      <code>~/.config/zellij/layouts/probe-&lt;name&gt;.kdl</code> with two tabs,
+      matching the probe of 8 October: <code>conversation</code>, running a Claude
+      conversation that has one exchange, and <code>shell</code>. It then asks the
+      node's supervisor to start the session with the request line
+      <code>session probe-&lt;name&gt; probe-&lt;name&gt;</code> on the fleet
+      request FIFO, the same relay the rehearsal's own start step uses
+      (<code>fleet_migrate.py:768–773</code>). Starting through the supervisor puts
+      the Claude pane outside the worker's sandbox, where its transcript can be
+      written. Every call runs with the fleet's zellij socket directory
+      (<code>XDG_RUNTIME_DIR</code> and <code>ZELLIJ_SOCKET_DIR</code> under
+      <code>/tmp/&lt;uid&gt;-fleet</code>), because a plain shell sees every session
+      as exited. When the rehearsal has passed, the node ends
+      <code>probe-&lt;name&gt;</code> by name and removes both its layouts. It never
+      uses a focus-relative zellij action.
+    </p>
 
     <h2 id="s6">&sect;6 &mdash; A worker step carries a memory bound</h2>
     <section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
