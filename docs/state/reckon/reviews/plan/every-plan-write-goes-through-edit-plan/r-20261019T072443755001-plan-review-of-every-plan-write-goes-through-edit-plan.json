@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T07:36:46.996Z",
+  "dispatched_at": "2026-10-19T07:25:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:197",
+      "id": "done_when-1",
+      "reason": "the fence and the census both need widening to `tests/test_edit_plan.py` (and the census rule needs to exclude the sprint/inventory sub-path writes in `tests/test_project_state.py:1703,1777` and `tests/test_edit_plan.py:500,536`), otherwise the section cannot be dispatched as written; this is the same defect the section was widened to fix, one file short.",
+      "text": "\u00a76 states \"The base already shows `tests/test_terminal_status_needs_every_section_ticked.py`, `tests/test_every_section_has_a_declaration.py`, `tests/test_closure_gates.py` and `tests/test_continuation.py`\", but `tests/test_edit_plan.py:1596` and `:1674` also write a plan terminal status through the same op (`{\"op\": \"set\", \"path\": \"status\", \"value\": \"shipped\"}` via `_edit_plan`), and `tests/test_edit_plan.py` is not among \u00a76's write paths \u2014 so \u00a76's own rule (\"a hit in a file outside the write paths below stops the node as blocked\") halts the node at the first grep, before any deliverable is written.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ce2b119333329f0e9e7a900125dcfcfe56e2fab3d48677c664fadbb21756c48d",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 11,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-19T07:37:42.057684+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T07:37:42.057684+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-plan-write-goes-through-edit-plan.v11.json",
+  "review_run_id": "r-20261019T072443755001-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "8acd12da6d8980fae57bf3010e874407ad8c7725",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `TERMINAL_STATUSES` (`reckon/lifecycle.py:9`), `_require_transition_verdict` (`reckon/_store.py:3463`), `_refuse_appended_hiding_followups` (`reckon/_store.py:3290`) and the four named test files all resolve; the resolved-placeholder recipe does live at `skills/reckon-build/references/coordinator-reference.md:1017,1029`, `skills/reckon-build/references/sprint-orchestration.md:550` and `AGENTS.md:267`, as \u00a76 now states.",
+    "done_when": "a finding \u2014 \u00a76's new census paragraph names four test files as the base census of terminal-status writes, but at base the same op form is also written by `tests/test_edit_plan.py`, which \u00a76's write paths exclude, so \u00a76's own block rule stops the node.",
+    "evidence_paths": "pass \u2014 \u00a76 writes source and skill paths, and its landing evidence follows the repository's `docs/evidence/archive/<slug>-landed.html` record that \u00a72's landing (`c-close-s2`) already uses; the section names no scratch or node-local path.",
+    "naming": "pass \u2014 \u00a76 introduces `close`, `superseded_by`, `request_id`-free vocabulary and cites no plan label, ticket number or version tag.",
+    "reasoning": "pass \u2014 the mechanism (one op running the four terminal guards together) is reached through `apply_ops` \u2192 `validate_landing_patch`, and the two named guards are called from that path; the stated cause (17 no-continuation and 27 hides-work refusals, \u00a71's 44) matches the cited census.",
+    "single_goal": "pass \u2014 \u00a76's parts (one `close` verb, the `set status` refusal, retiring the placeholder recipe, documenting `close`) all serve the one goal in the plan if the section contains a plan closure; none is independently closeable.",
+    "wiring": "pass \u2014 \u00a76 declares `plan-section-depends-on` on \u00a75, \u00a77 declares on \u00a76, \u00a78 on \u00a77, and the shared-file sections (\u00a74\u2192\u00a75\u2192\u00a76) are ordered against their common `reckon/_store.py`; no declared edge points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "fe4a479ee96126b12c62c0412b79792f0a50e08659c72cafd18db1e0bd618c9a",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s2": "737250903251177035b357be3d656b549480337bc454f97615634dada495e251",
+    "s3": "4150e9281b9c0fe1173e9c23f5582efb0662d22f1d36944861d3033f988d479c",
+    "s4": "e0390ff35ac5e425fa3060cede9882af598c54dc89e0a6069101b3971f8e8367",
+    "s5": "699b049fe374b1219d8b917168575594a5bcb9255bbe13efdbf1d0c928562a86",
+    "s6": "e917c55e5c827b84ba06a2d36c751533961af6d5c4c8531a2c11220a973d46af",
+    "s7": "80062db679255aff5087534386e7372545e1cd3414916db8329aec79a1a8388d",
+    "s8": "f9dd6299834b4d039fd1f45b37141d5e265075b4cfd7f341357bea21196f5b35"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T07:37:39.045510+00:00"
+}
