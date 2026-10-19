@@ -47,7 +47,7 @@ from reckon.crew.routing import (
     _repository_tree_snapshot,
     signal_worker,
 )
-from reckon.crew.process_signal import _run_uses_step, refuse_unverified_step_client
+from reckon.crew.process_signal import _run_uses_step, signal_pending_step_client
 from reckon.crew.runs import (
     _mutate_pointer,
     _pointer_lock,
@@ -1064,9 +1064,9 @@ def resolve_launch_executable(
 
 
 _STEP_TASK_WRAPPER = (
-    "start=$(awk '{print $22}' \"/proc/$$/stat\"); "
+    "start=$(awk '{print $22}' \"/proc/$$/stat\") && "
     'printf "%s %s %s %s\\n" "$SLURM_JOB_ID" "$SLURM_STEP_ID" "$$" "$start" '
-    '> "$RECKON_STEP_RECORD"; exec "$@"'
+    '> "$RECKON_STEP_RECORD" && exec "$@"'
 )
 
 
@@ -1074,6 +1074,8 @@ def apply_backend_placement(
     plan: _backends.LaunchPlan,
     backend: Mapping[str, Any],
     project: str | None = None,
+    *,
+    run_id: str | None = None,
 ) -> _backends.LaunchPlan:
     """Prefix an already-resolved launch with its backend's declared placement.
 
@@ -1122,6 +1124,8 @@ def apply_backend_placement(
             os.path.abspath(found),
             *placement_module.step_prefix(str(reservation["job_id"]), options),
         ]
+        if run_id:
+            prefix.append(f"--job-name={run_id}")
     else:
         prefix = [os.path.abspath(found), *options]
     if step_placed:
@@ -1194,7 +1198,12 @@ def resolve_backend_placement(
     hold = placement_module.ensure_reservation(project=project)
     if payload is not None:
         payload["placement_reservation"] = _placement_hold_payload(hold)
-    return apply_backend_placement(plan, backend, project)
+    return apply_backend_placement(
+        plan,
+        backend,
+        project,
+        run_id=str(payload.get("run_id") or "") if payload else None,
+    )
 
 
 # How long a declared job-id probe is given to answer, and how many times it is
@@ -2926,7 +2935,7 @@ def _reap_worker_on_its_terminal_manifest(
     stop_deadline: float | None = None
     stop_killed = False
     pending_step_since: float | None = None
-    pending_client_refused = False
+    pending_step_resolution: str | None = None
     wait_started_at: float | None = None
     long_wait_recorded = False
     while True:
@@ -2941,7 +2950,7 @@ def _reap_worker_on_its_terminal_manifest(
             stop_requested is not None
             and stop_deadline is None
             and not stop_killed
-            and (not pending_client_refused or (run_directory / "step-task.txt").exists())
+            and (pending_step_resolution is None or (run_directory / "step-task.txt").exists())
             and stop_requested.is_set()
         ):
             # A stop reaches the run's worker and its children. A placed
@@ -3029,7 +3038,7 @@ def _reap_worker_on_its_terminal_manifest(
         if (
             deadline is not None
             and signalled_at is None
-            and (not pending_client_refused or (run_directory / "step-task.txt").exists())
+            and (pending_step_resolution is None or (run_directory / "step-task.txt").exists())
             and now >= deadline
         ):
             delivered = signal_worker(
@@ -3071,17 +3080,17 @@ def _reap_worker_on_its_terminal_manifest(
             pending_step_since = None
         elif (
             pending_step_since is not None
-            and not pending_client_refused
+            and pending_step_resolution is None
             and now - pending_step_since >= _STEP_START_SETTLE_SECONDS
-            and refuse_unverified_step_client(
-                pid, run_directory, reason="stop-before-step-unverified"
-            )
         ):
-            # An absent wrapper record cannot distinguish a pending request
-            # from an active step. Wait for the record or the client's exit.
-            pending_client_refused = True
-            if wait_started_at is None:
-                wait_started_at = now
+            # The scheduler can distinguish a pending request from a named
+            # active step. An unreadable answer leaves the client untouched.
+            pending_step_resolution = signal_pending_step_client(pid, run_directory)
+            if pending_step_resolution is not None:
+                if pending_step_resolution == "delivered":
+                    _record_ended(ended_pids, [pid])
+                if wait_started_at is None:
+                    wait_started_at = now
         if (
             wait_started_at is not None
             and not long_wait_recorded

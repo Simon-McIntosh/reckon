@@ -6,12 +6,15 @@ import os
 import shutil
 import signal
 import subprocess
+import sys
 import threading
 import time
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+
+from reckon._backends import LaunchPlan
 
 process_signal = importlib.import_module("reckon.crew.process_signal")
 dispatch_launch = importlib.import_module("reckon.crew.dispatch_launch")
@@ -210,12 +213,16 @@ def test_step_identity_mismatch_refuses_signal(
 
 
 @pytest.mark.parametrize("terminal_manifest", [False, True])
-@pytest.mark.parametrize("record_at", [None, 15, 36])
-def test_unverified_step_never_signals_client(
+@pytest.mark.parametrize(
+    ("record_at", "scheduler_step"),
+    [(None, None), (None, "1281970.17"), (36, "1281970.17"), (15, None)],
+)
+def test_pending_step_signal_requires_scheduler_clearance(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     terminal_manifest: bool,
     record_at: int | None,
+    scheduler_step: str | None,
 ) -> None:
     run = tmp_path / "run"
     run.mkdir()
@@ -224,7 +231,7 @@ def test_unverified_step_never_signals_client(
             {
                 "pid": 101,
                 "pid_start_time": "77",
-                "argv": ["/usr/bin/srun", "--jobid=1281970"],
+                "argv": ["/usr/bin/srun", "--jobid=1281970", f"--job-name={run.name}"],
             }
         )
     )
@@ -262,6 +269,15 @@ def test_unverified_step_never_signals_client(
     monkeypatch.setattr(process_signal, "_process_comm", lambda pid: "srun")
     monkeypatch.setattr(process_signal, "_process_start_time", lambda pid: "77")
     monkeypatch.setattr(process_signal.os, "getpgid", lambda pid: 101)
+    queries: list[list[str]] = []
+
+    def list_steps(command: list[str], **_: object) -> SimpleNamespace:
+        queries.append(command)
+        named = f"{scheduler_step} {run.name}\n" if scheduler_step else ""
+        return SimpleNamespace(returncode=0, stdout="1281970.batch batch\n" + named)
+
+    monkeypatch.setattr(process_signal, "subprocess", subprocess, raising=False)
+    monkeypatch.setattr(process_signal.subprocess, "run", list_steps)
     sent: list[tuple[int, int]] = []
     monkeypatch.setattr(
         process_signal.os, "kill", lambda pid, sig: sent.append((pid, sig))
@@ -296,7 +312,16 @@ def test_unverified_step_never_signals_client(
         )
         == 0
     )
-    assert sent == []
+    assert len(queries) == (0 if record_at == 15 else 1)
+    assert all(
+        query[1:] == ["--steps", "--jobs", "1281970", "--noheader", "--format=%i %j"]
+        for query in queries
+    )
+    if scheduler_step is None and record_at is None:
+        assert sent == [(101, signal.SIGTERM)]
+        assert ended == [101]
+    else:
+        assert sent == []
     assert all(
         attempt <= attempts[0] + 30 or (record_at is not None and attempt >= record_at)
         for attempt in attempts
@@ -304,22 +329,155 @@ def test_unverified_step_never_signals_client(
     if record_at is not None:
         assert inner
         assert ended == [303]
-    else:
+    elif scheduler_step is not None:
         assert inner == []
         assert ended == []
-    if record_at is None or record_at > 30:
+    if record_at != 15:
         receipts = [
             json.loads(line)
             for line in (run / "senders.jsonl").read_text().splitlines()
         ]
-        assert [
-            (entry["reason"], entry.get("outcome"), entry["target_pid"])
-            for entry in receipts
-        ] == [
-            ("stop-before-step-unverified", "refused", 101),
-        ]
+        if scheduler_step is None:
+            assert [
+                (entry["reason"], entry.get("outcome"), entry["target_pid"])
+                for entry in receipts
+            ] == [
+                ("stop-before-step-started", None, 101),
+                ("stop-before-step-started", "delivered", 101),
+            ]
+        else:
+            assert [
+                (entry["reason"], entry.get("outcome"), entry["target_pid"])
+                for entry in receipts
+            ] == [
+                ("stop-before-step-unverified", "refused", 101),
+            ]
+            assert scheduler_step in receipts[0]["outcome_detail"]
     else:
         assert not (run / "senders.jsonl").exists()
+
+
+def test_step_wrapper_does_not_exec_after_record_write_failure(tmp_path: Path) -> None:
+    marker = tmp_path / "executed"
+    command = f"from pathlib import Path; Path({str(marker)!r}).touch()"
+    environment = os.environ | {
+        "SLURM_JOB_ID": "1281970",
+        "SLURM_STEP_ID": "17",
+        "RECKON_STEP_RECORD": str(tmp_path / "missing" / "step-task.txt"),
+    }
+    answer = subprocess.run(
+        [
+            "/bin/sh",
+            "-c",
+            dispatch_launch._STEP_TASK_WRAPPER,
+            "sh",
+            sys.executable,
+            "-c",
+            command,
+        ],
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert answer.returncode != 0
+    assert not marker.exists()
+
+
+def test_placed_step_is_named_for_its_run(monkeypatch: pytest.MonkeyPatch) -> None:
+    from reckon import flight
+    from reckon.crew import placement
+
+    backend = {"placement": {"scheduler": "srun", "options": []}}
+    monkeypatch.setattr(flight, "placement_for", lambda _: backend["placement"])
+    monkeypatch.setattr(
+        placement, "ensure_reservation", lambda **_: {"job_id": "1281970"}
+    )
+    monkeypatch.setattr(placement, "read_reservation", lambda _: {"job_id": "1281970"})
+    monkeypatch.setattr(placement, "reservation_alive", lambda _: True)
+    monkeypatch.setattr(
+        placement, "step_prefix", lambda job, _: ["--overlap", f"--jobid={job}"]
+    )
+    monkeypatch.setattr(
+        dispatch_launch.shutil, "which", lambda *_, **__: "/usr/bin/srun"
+    )
+    plan = LaunchPlan(
+        backend="probe",
+        dialect="codex",
+        argv=["/usr/bin/python3", "-c", "pass"],
+        cwd="/work/tree",
+        stdin_text="",
+        environment={"PATH": "/usr/bin"},
+        final_message_path=None,
+        resumed_session=None,
+    )
+    placed = dispatch_launch.resolve_backend_placement(
+        plan, backend, payload={"run_id": "r-probe-name"}
+    )
+    assert "--job-name=r-probe-name" in placed.argv
+
+
+@pytest.mark.parametrize(("exit_code", "output"), [(1, ""), (0, "")])
+def test_unreadable_step_listing_never_signals_client(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, exit_code: int, output: str
+) -> None:
+    run = tmp_path / "run"
+    run.mkdir()
+    (run / "worker.json").write_text(
+        json.dumps(
+            {
+                "pid": 101,
+                "pid_start_time": "77",
+                "argv": ["/usr/bin/srun", "--jobid=1281970", f"--job-name={run.name}"],
+            }
+        )
+    )
+    monkeypatch.setattr(
+        process_signal.subprocess,
+        "run",
+        lambda *_, **__: SimpleNamespace(returncode=exit_code, stdout=output),
+    )
+    monkeypatch.setattr(
+        process_signal.os,
+        "kill",
+        lambda *_: pytest.fail("scheduler absence was not verified"),
+    )
+    assert process_signal.signal_pending_step_client(101, run) is None
+    assert not (run / "senders.jsonl").exists()
+
+
+def test_pending_client_start_mismatch_refuses_signal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run = tmp_path / "run"
+    run.mkdir()
+    (run / "worker.json").write_text(
+        json.dumps(
+            {
+                "pid": 101,
+                "pid_start_time": "77",
+                "argv": ["/usr/bin/srun", "--jobid=1281970", f"--job-name={run.name}"],
+            }
+        )
+    )
+    monkeypatch.setattr(
+        process_signal.subprocess,
+        "run",
+        lambda *_, **__: SimpleNamespace(returncode=0, stdout="1281970.batch batch\n"),
+    )
+    monkeypatch.setattr(process_signal, "_process_comm", lambda _: "srun")
+    monkeypatch.setattr(process_signal, "_process_start_time", lambda _: "78")
+    monkeypatch.setattr(
+        process_signal.os,
+        "kill",
+        lambda *_: pytest.fail("recycled client pid was signalled"),
+    )
+    assert process_signal.signal_pending_step_client(101, run) == "refused"
+    records = [
+        json.loads(row) for row in (run / "senders.jsonl").read_text().splitlines()
+    ]
+    assert records[0]["outcome"] == "refused"
+    assert "identity" in records[0]["outcome_detail"]
 
 
 @pytest.mark.skipif(
@@ -352,6 +510,7 @@ def test_fleet_step_finishes_after_inner_stop(tmp_path: Path) -> None:
         "--cpus-per-task=1",
         "--mem=1G",
         "--cpu-bind=none",
+        f"--job-name={run.name}",
         "/bin/sh",
         "-c",
         dispatch_launch._STEP_TASK_WRAPPER,
@@ -397,6 +556,12 @@ def test_fleet_step_finishes_after_inner_stop(tmp_path: Path) -> None:
                 time.sleep(0.1)
             job, step, task_pid, start_tick = step_record.read_text().split()
             step_id = f"{job}.{step}"
+            listed = subprocess.run(
+                ["squeue", "--steps", "--jobs", job, "--noheader", "--format=%i %j"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
             child_pids = [
                 candidate
                 for candidate in process_signal._running_descendants(int(task_pid))
@@ -478,7 +643,7 @@ def test_fleet_step_finishes_after_inner_stop(tmp_path: Path) -> None:
                         "-j",
                         step_id,
                         "-o",
-                        "JobIDRaw,State,ExitCode",
+                        "JobIDRaw,JobName,State,ExitCode",
                     ],
                     capture_output=True,
                     text=True,
@@ -489,7 +654,7 @@ def test_fleet_step_finishes_after_inner_stop(tmp_path: Path) -> None:
                     for line in receipt.stdout.splitlines()
                     if line.split("|")[0] == step_id
                 ]
-                if rows and not rows[0].split("|")[1].startswith(
+                if rows and not rows[0].split("|")[2].startswith(
                     ("RUNNING", "PENDING")
                 ):
                     break
@@ -502,7 +667,7 @@ def test_fleet_step_finishes_after_inner_stop(tmp_path: Path) -> None:
                 flush=True,
             )
             assert rows
-            _, state, exit_code = rows[0].split("|")
+            _, step_name, state, exit_code = rows[0].split("|")
             assert state in {"COMPLETED", "FAILED"}
             assert exit_code.split(":")[1] == "0"
             assert state_after == state_before
@@ -518,9 +683,24 @@ def test_fleet_step_finishes_after_inner_stop(tmp_path: Path) -> None:
             assert all(
                 row["target_pid"] not in bwrap_pids | client_tree for row in receipts
             )
+            assert step_name == run.name
+            if listed.returncode == 0:
+                assert f"{step_id} {run.name}" in listed.stdout.splitlines()
+            else:
+                print(f"squeue_unreadable={listed.stderr.strip()!r}", flush=True)
         finally:
             if client.poll() is None:
-                client.terminate()
+                if step_record.exists():
+                    job, step, task_pid, start_tick = step_record.read_text().split()
+                    process_signal._signal_step_task(
+                        run,
+                        f"{job}.{step}",
+                        int(task_pid),
+                        start_tick,
+                        signal.SIGKILL,
+                        "probe-cleanup",
+                        None,
+                    )
                 client.wait(timeout=65)
             artifact_home = os.environ.get("RECKON_STEP_PROBE_ARTIFACT_DIR")
             if artifact_home:

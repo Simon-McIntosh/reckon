@@ -24,7 +24,7 @@
   descendants below the sandbox's <code>bwrap</code> processes. It leaves the
   <code>srun</code> client, its local subtree, the task, and every <code>bwrap</code>
   processes unsignalled. After a 55 s stop grace, SIGKILL reached the two inner
-  processes. The final step ended after 60.05 s as <code>FAILED|9:0</code>: the signal
+  processes. The named-step probe ended after 60.06 s as <code>FAILED|9:0</code>: the signal
   field is zero, and Slurm did not cancel the step.</p>
 
   <table>
@@ -34,10 +34,12 @@
       <tr><td>Saved task control, <code>1281970.6958</code></td><td>Outer <code>bwrap</code> task</td><td><code>CANCELLED|0:15</code> in 3.02 s</td></tr>
       <tr><td>Inner stop, <code>1281970.6964</code></td><td>Inner PIDs <code>2804055</code> and <code>2804060</code>, TERM then KILL</td><td><code>FAILED|9:0</code> in 60.04 s</td></tr>
       <tr><td>Final inner stop, <code>1281970.6972</code></td><td>Inner PIDs <code>2861709</code> and <code>2861710</code>, TERM then KILL</td><td><code>FAILED|9:0</code> in 60.05 s</td></tr>
+      <tr><td>Probe read failure, <code>1281970.7009</code></td><td>Test cleanup signalled <code>srun</code> after an <code>squeue</code> exit 1</td><td><code>CANCELLED by 39486</code>; probe stopped before inner path</td></tr>
+      <tr><td>Named inner stop, <code>1281970.7012</code></td><td>Inner PIDs <code>3285658</code> and <code>3285666</code>, TERM then KILL</td><td><code>FAILED|9:0</code> in 60.06 s</td></tr>
     </tbody>
   </table>
 
-  <p>Each live probe's worker and child both ignored SIGTERM and slept for 120 s,
+  <p>Each passing inner probe's worker and child both ignored SIGTERM and slept for 120 s,
   longer than the 55 s grace. The task tree contained two <code>bwrap</code> PIDs
   (<code>2804052</code>, <code>2804054</code>) above the inner pair. Its local
   <code>srun</code> tree contained <code>2804032</code> and <code>2804033</code>.
@@ -48,30 +50,38 @@
   pair, and no signal entry for any protected PID. Each supervisor exit record
   names only its inner pair. These receipts, the roughly 60 s duration,
   and the step's zero signal field show the task stayed alive while the sandbox
-  reaped its descendants.</p>
+  reaped its descendants. In the named probe, the protected bwrap PIDs were
+  <code>3285643</code> and <code>3285657</code>, and its local srun PIDs were
+  <code>3285616</code> and <code>3285619</code>. The sender record names neither.</p>
 
   <p>Absence of <code>step-task.txt</code> cannot prove that an
   <code>srun --overlap</code> request is still pending: a step may be active
-  before or without that record. After 30 s without a record, the supervisor
-  writes one <code>stop-before-step-unverified</code> refusal and stops retrying
-  the empty signal path. It continues waiting for the client to exit or for
-  a late record, which reopens the inner stop path. No client signal is sent.
-  Six unit cases cover absent, early and late records for both run-stop and
-  terminal-manifest stopping. The focused gate passed 36 tests with one
-  allocation-only skip. A request that stays pending can hold its slot while
-  the supervisor waits; no signal-based cancellation is safe without positive
-  proof that its step never became active. The inner allocation probes were not rerun:
-  their signal path did not change.</p>
+  before that record. The wrapper now requires a successful record write before
+  it execs the sandbox. Each placed step is named for its run id. After 30 s
+  without a record, the supervisor asks <code>squeue --steps</code> for that
+  name in the fleet job. A listed step produces one refusal naming its id;
+  the client stays alive. If the scheduler lists the job's other steps but no
+  step with this name, a verified client PID receives one TERM under
+  <code>stop-before-step-started</code>. A late task record reopens the inner path.
+  An unreadable or empty scheduler answer signals nothing and is retried.
+  The focused gate passed 43 tests with one allocation-only skip, including
+  the three scheduler branches, late record, failed record write and unreadable
+  scheduler answer, plus a recycled client PID refusal.</p>
 
   <p>The node read <code>draining — Kill task failed</code> before and after the
-  probes; its state did not change. Both allocation probes passed separately.
+  probes; its state did not change. The first named probe was invalidated by
+  its own <code>squeue</code> read and test cleanup; the corrected probe passed.
+  <code>sacct</code> records its job name as <code>probe</code>. The live
+  <code>squeue</code> read intermittently exited 1, which the production guard
+  treats as unreadable rather than as absence.
   After ten minutes of a still-live client, the supervisor now records the
   step's processes and wait channels in <code>step-wait.json</code> and continues
   waiting. A direct diagnostic check wrote one process and its wait channel.</p>
 
   <p>Receipts: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T150822949393-a-stopped-worker-ends-inside-its-step/probe-inner-one.log</code>
   and <code>probe-inner-two.log</code>, their adjacent <code>senders.jsonl</code>
-  and <code>exit.json</code> records, <code>review-repair-focused-two.log</code>,
+  and <code>exit.json</code> records, <code>scheduler-live-probe-valid.log</code>,
+  <code>scheduler-repair-focused-final.log</code>,
   <code>diagnostic-probe.log</code>, and the
   saved <code>negative-control.log</code> and <code>probe-head-one.log</code> for the
   two cancellation controls.</p>

@@ -1,6 +1,7 @@
 import json
 import os
 import signal
+import subprocess
 import sys
 
 from reckon._store import _config_home
@@ -460,21 +461,89 @@ def _step_worker_client(run_dir: str | Path | None) -> int | None:
     return None
 
 
-def refuse_unverified_step_client(
-    pid: int, run_dir: str | Path, *, reason: str
-) -> bool:
-    """Record why an unverified step's client cannot be safely stopped."""
+def signal_pending_step_client(pid: int, run_dir: str | Path) -> str | None:
+    """End a pending srun only when Slurm confirms its named step is absent."""
+    argv = _step_argv(run_dir)
     if not _run_uses_step(run_dir) or (Path(run_dir) / "step-task.txt").exists():
-        return False
-    _write_sender_record(
-        run_dir,
-        target_pid=pid,
-        reason=reason,
-        sig=signal.SIGTERM,
-        outcome="refused",
-        detail="step task record absent; an active step cannot be excluded",
+        return None
+    jobs = [
+        word.removeprefix("--jobid=") for word in argv if word.startswith("--jobid=")
+    ]
+    names = [
+        word.removeprefix("--job-name=")
+        for word in argv
+        if word.startswith("--job-name=")
+    ]
+    if len(jobs) != 1 or not jobs[0].isdigit() or names != [Path(run_dir).name]:
+        return None
+    try:
+        answer = subprocess.run(
+            [
+                str(Path(argv[0]).with_name("squeue")),
+                "--steps",
+                "--jobs",
+                jobs[0],
+                "--noheader",
+                "--format=%i %j",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if answer.returncode != 0:
+        return None
+    steps = [line.split(maxsplit=1) for line in answer.stdout.splitlines()]
+    if not steps or any(
+        len(parts) != 2 or not parts[0].startswith(jobs[0] + ".") for parts in steps
+    ):
+        return None
+    named = next(
+        (step for step, name in steps if name == names[0] or names[0].startswith(name)),
+        None,
     )
-    return True
+    if named:
+        _write_sender_record(
+            run_dir,
+            target_pid=pid,
+            reason="stop-before-step-unverified",
+            sig=signal.SIGTERM,
+            outcome="refused",
+            detail=f"scheduler lists step {named} named {names[0]!r}",
+        )
+        return "refused"
+    worker = _worker_record(run_dir)
+    if (Path(run_dir) / "step-task.txt").exists():
+        return None
+    if (
+        not worker
+        or worker.get("pid") != pid
+        or not worker.get("pid_start_time")
+        or _process_comm(pid) != "srun"
+        or _process_start_time(pid) != str(worker["pid_start_time"])
+    ):
+        _write_sender_record(
+            run_dir,
+            target_pid=pid,
+            reason="stop-before-step-started",
+            sig=signal.SIGTERM,
+            outcome="refused",
+            detail="client identity differs",
+        )
+        return "refused"
+    return (
+        "delivered"
+        if _signal_one(
+            pid,
+            signal.SIGTERM,
+            reason="stop-before-step-started",
+            run_dir=run_dir,
+            allow_group=False,
+        )
+        else None
+    )
 
 
 def _cgroup_names_step(cgroup: str, required: tuple[str, str]) -> bool:
