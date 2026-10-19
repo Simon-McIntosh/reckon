@@ -26,7 +26,10 @@
       section's <code>effort_hours</code> (a positive multiple of 0.25), <code>capability</code> (class and
       requirement level lists) and <code>links</code>, and a capability refusal carries a valid example. Cases:
       <code>test_effort_refusal_names_the_quarter_hour</code>,
-      <code>test_capability_refusal_names_legal_values_and_an_example</code>.</li>
+      <code>test_capability_refusal_names_legal_values_and_an_example</code>. The effort case
+      asserted only that the refusal contains <code>0.25</code>, which the raw validation detail contains
+      too, so it passed with the legal-values sentence removed; the enumerated-field control exposed that,
+      and the case now asserts the sentence the change supplies.</li>
     <li id="epw-a-refused-write-names-the-next-step-resource"><strong>Resource write.</strong> A write to a
       distributed project resource — a sprint, a milestone — answered through a
       separate branch that never attached the addressed targets and never recorded a request-id
@@ -43,7 +46,12 @@
   <p><strong>Measure.</strong> Head gate: <code>93 passed, 1 failed</code> — the single failure is
     <code>test_every_module_fits_a_worker_window</code>, which also fails at the base arm
     (<code>reckon/crew/review.py</code>, <code>reckon/ledger.py</code> exceed the bound), so zero failures are
-    added. Negative control (reuse a request id for a write with different ops and answer it with the earlier
-    version): <code>EXIT=1</code>, <code>1 failed, 7 passed</code>, the reused-id case failing. The one
-    out-of-scope failure is recorded under <code>follow_ons</code>.</p>
+    added. The one out-of-scope failure is recorded under <code>follow_ons</code>.</p>
+  <p><strong>Negative controls.</strong> Four, one log each, every mutation applied to a copy of the node
+    revision, never committed, and reverted before the next: the <em>reused request id</em> (the digest
+    comparison short-circuited, so a reused id is answered with the earlier version), the <em>batch</em>
+    (<code>collect_refused_ops</code> returns only its first refusal), the <em>enumerated field</em> (an
+    enumerated-field refusal carries the raw validation detail without its legal-values sentence), and the
+    <em>conflict payload</em> (<code>_attach_changed_targets</code> attaches no targets and the refusal drops
+    its current version). Each names the case it must turn red; each did.</p>
 </section>
