@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/_backends.py:2197",
+    "reckon/_worker_fence.py:1514"
+  ],
+  "completed_at": "2026-10-19T10:37:05.464Z",
+  "dispatched_at": "2026-10-19T10:30:32Z",
+  "findings": [
+    {
+      "file": "tests/test_a_fenced_codex_review_names_only_writable_roots.py",
+      "line": "242",
+      "severity": "follow-on",
+      "text": "follow-on: the expected set's node-tmp and lock components are read from the same helpers the fence consumes (node_tmp_runtime_paths() at 242, fixture.lock() at 244-246), so that part of assert granted == expected at 249 holds whatever the fence composes and cannot catch a regression inside those helpers; the value under test and the expectation move together for those two groups, though the literal run/records/worktree components do guard the property the node cares about."
+    },
+    {
+      "file": "tests/test_a_fenced_codex_review_names_only_writable_roots.py",
+      "line": "44",
+      "severity": "follow-on",
+      "text": "follow-on: NEGATIVE_CONTROL_MUTATION is now unreferenced in the file (sibling tests such as tests/test_run_home_hooks_are_interpreter_bound.py:139 print theirs) and its text names 'the reports root's --add-dir' while the reworded docstring at lines 30-31 and the negative-control log both name 'the sealed stores'', setting the file's own statement of the mutation against the log it points at."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the change adds no production code; the production sites the rewritten test reaches through launch_plan are reckon/_backends.py:2197 and reckon/_worker_fence.py:1514.",
+    "diff": "read both commits against 2919cb242; 3a6d3e48 rewrites the test (drops the git-history fixture and its imports, makes the records path a live property, states the bind expectation, adds a sealed-store re-open guard) and ea46415f5 updates only the fragment's prose and plan-commits, both inside scope.",
+    "done_when": "the parent done_when names six properties and a gate over the new file plus seven named files; the manifest records head 86 passed EXIT=0 at 3a6d3e48 against base 82 passed EXIT=0 at b97740c8 and the negative control 3 failed EXIT=1; the rewritten bind property stands in for 'a --bind list equal to the base's'.",
+    "goal": "the reviewed increment's goal, per the resume advice at resume-2-advice.txt, is to state the fence's writable binds as literal expectations rather than recover them from git history; tests/test_a_fenced_codex_review_names_only_writable_roots.py:233 implements that and the history-walking fixture is gone.",
+    "manifest": "read; it records the run's commits ending at ea46415f5, the head gate over the eight files at 86 passed EXIT=0 (revision 3a6d3e48), and the negative control at 3 failed EXIT=1, with the three logs named by path.",
+    "write_paths": "the declared scope is reckon/_worker_fence.py, reckon/_backends.py, the new test file and the fragment; the reviewed diff touches only the test file and docs/evidence/fragments/a-worker-cannot-write-your-home/a-fenced-codex-review-names-only-writable-roots.html."
+  },
+  "justifications": {
+    "durability": "the literal components of expected at tests/test_a_fenced_codex_review_names_only_writable_roots.py:233 make assert granted == expected fail if a bind moves, but its node-tmp and lock components read the same helpers the fence consumes.",
+    "evidence": "the manifest records head 86 passed EXIT=0 at 3a6d3e48 against base 82 passed EXIT=0 at b97740c8 and the negative control 3 failed EXIT=1, all in logs/negative-control.log, logs/baseline-suite.log, logs/after-suite.log.",
+    "fit": "the rewrite drops the unused importlib/subprocess machinery and states the mechanism, but NEGATIVE_CONTROL_MUTATION at tests/test_a_fenced_codex_review_names_only_writable_roots.py:44 is left unreferenced and its text is stale against the reworded docstring.",
+    "goal_fidelity": "tests/test_a_fenced_codex_review_names_only_writable_roots.py:233 states the fence's writable binds as literal expectations and asserts them at line 249, replacing the git-history read the coordinator's resume advice asked to drop.",
+    "reuse": "no fork: the per-file Fixture and its read-the-helper expectation mirror tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:207, the existing idiom for a fence grant check.",
+    "scope_discipline": "the diff of 2919cb242..ea46415f5 touches only tests/test_a_fenced_codex_review_names_only_writable_roots.py and docs/evidence/fragments/a-worker-cannot-write-your-home/a-fenced-codex-review-names-only-writable-roots.html, both declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed increment's goal, per the resume advice at resume-2-advice.txt, is to state the fence's writable binds as literal expectations rather than recover them from git history; tests/test_a_fenced_codex_review_names_only_writable_roots.py:233 implements that and the history-walking fixture is gone.\nVERDICT done_when: the parent done_when names six properties and a gate over the new file plus seven named files; the manifest records head 86 passed EXIT=0 at 3a6d3e48 against base 82 passed EXIT=0 at b97740c8 and the negative control 3 failed EXIT=1; the rewritten bind property stands in for 'a --bind list equal to the base's'.\nVERDICT write_paths: the declared scope is reckon/_worker_fence.py, reckon/_backends.py, the new test file and the fragment; the reviewed diff touches only the test file and docs/evidence/fragments/a-worker-cannot-write-your-home/a-fenced-codex-review-names-only-writable-roots.html.\nVERDICT manifest: read; it records the run's commits ending at ea46415f5, the head gate over the eight files at 86 passed EXIT=0 (revision 3a6d3e48), and the negative control at 3 failed EXIT=1, with the three logs named by path.\nVERDICT diff: read both commits against 2919cb242; 3a6d3e48 rewrites the test (drops the git-history fixture and its imports, makes the review-records path a live property, states the bind expectation, adds a sealed-store re-open guard) and ea46415f5 updates only the fragment's prose and plan-commits, both inside scope.\nCALL_SITES: reckon/_backends.py:2197, reckon/_worker_fence.py:1514\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_fenced_codex_review_names_only_writable_roots.py:233 states the fence's writable binds as literal expectations and asserts them at line 249, replacing the git-history read the resume advice asked to drop.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records head 86 passed EXIT=0 at 3a6d3e48 against base 82 passed EXIT=0 at b97740c8 and the negative control 3 failed EXIT=1, all in logs/negative-control.log, logs/baseline-suite.log, logs/after-suite.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff of 2919cb242..ea46415f5 touches only tests/test_a_fenced_codex_review_names_only_writable_roots.py and docs/evidence/fragments/a-worker-cannot-write-your-home/a-fenced-codex-review-names-only-writable-roots.html, both declared paths.\nSCORE durability: 17\nJUSTIFICATION durability: the literal components of expected at tests/test_a_fenced_codex_review_names_only_writable_roots.py:233 make assert granted == expected fail if a bind moves, but its node-tmp and lock components read the same helpers the fence consumes.\nSCORE fit: 16\nJUSTIFICATION fit: the rewrite drops the unused importlib/subprocess machinery and states the mechanism, but NEGATIVE_CONTROL_MUTATION at tests/test_a_fenced_codex_review_names_only_writable_roots.py:44 is left unreferenced and its text is stale against the reworded docstring.\nSCORE reuse: 20\nJUSTIFICATION reuse: no fork: the per-file Fixture and its read-the-helper expectation mirror tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:207, the existing idiom for a fence grant check.\nFINDING tests/test_a_fenced_codex_review_names_only_writable_roots.py:242 follow-on: the expected set's node-tmp and lock components are read from the same helpers the fence consumes (node_tmp_runtime_paths() at 242, fixture.lock() at 244-246), so that part of assert granted == expected at 249 holds whatever the fence composes and cannot catch a regression inside those helpers; the literal run/records/worktree components do guard the property.\nFINDING tests/test_a_fenced_codex_review_names_only_writable_roots.py:44 follow-on: NEGATIVE_CONTROL_MUTATION is unreferenced in the file and its text names 'the reports root's --add-dir' while the reworded docstring at lines 30-31 and the negative-control log both name 'the sealed stores'', setting the file's own statement of the mutation against its log.\n",
+  "review_run_id": "r-20261019T102952818894-review-of-a-fenced-codex-review-names-only-writable-roots-ea46415f52c5",
+  "reviewed_base_sha": "2919cb242114414180bb42f1395b451a75f6daf5",
+  "reviewed_head_sha": "ea46415f52c5481dce5da816fcb7dd4eb8b52b56",
+  "reviewed_run_id": "r-20261019T084231626128-a-fenced-codex-review-names-only-writable-roots",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T10:39:17.537839+00:00",
+  "total": 110
+}
