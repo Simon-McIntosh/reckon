@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T07:07:44.701Z",
+  "dispatched_at": "2026-10-19T06:59:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-site-answers-fast-and-agrees.html:128",
+      "id": "reasoning-1",
+      "reason": "the mechanism (recompute off the request path) and its gate do not depend on the rollup's exact figure, so the number is a prose slip a reader can correct from \u00a71 without altering any node's work.",
+      "text": "\u00a75's Why cites \"a rollup (7 to 17 s)\" as the fleet rollup's cost, but \u00a71's evidence puts `/_projects/index.json` at \"26 s in\" (line 60) and carries no 7\u201317 s rollup measurement, so the stated cost disagrees with the evidence the section rests on",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/the-site-answers-fast-and-agrees.html:139",
+      "id": "done_when-1",
+      "reason": "the obvious reading (warm a stored result, then force a refresh, then assert the age header) is what line 136 requires and what the per-route negative controls already fence, so a builder resolves the wording without changing the deliverable.",
+      "text": "the opening clause says the test \"forces a cold recompute of each of the four routes for a temporary project\", but a genuinely cold first computation has no prior result (line 136: a request waits when no result exists, and velocity's first all-project request returns 202), so it cannot also \"answer from the prior result with an age header\"; the fleet rollup is additionally fleet-wide, not \"for a temporary project\"",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "5cae18a54e6ebd92b79babc4a074797203415cf4763fe6a5794fb50ace63d40f",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 42,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T065828239869-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "2158efa63413c1a638a32891f614f8e86f2cb410",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol, test file and cross-section figure \u00a75 cites resolves, checked above (\u00a78's 605.8 s is in its close comment; \u00a79's durations are defined in \u00a79).",
+    "done_when": "pass \u2014 each of the four routes carries a forced-refresh case with its own inline negative control (the trivial-request 50 ms bound fails when the route is computed inline), the fleet-rollup case asserts one child against a per-project control, the new fleet-event case asserts one `fleet` event against a per-project-only control, and the production p95-under-1 s bound is falsifiable.",
+    "evidence_paths": "pass \u2014 gate logs sit under the run directory on \u00a72's terms, not a node-local or scratchpad path, and each ends in EXIT=.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number reaches a symbol; \u00a75's prose cites sections as sections, not as code identifiers.",
+    "reasoning": "a finding \u2014 the Why's \"rollup (7 to 17 s)\" is not carried by the plan's own evidence.",
+    "single_goal": "pass \u2014 one goal (answer each derived route from its last computed result), with the `fleet` event as the delivery half of that one result, not a second deliverable.",
+    "wiring": "pass \u2014 \u00a75's depends-on is [s3, s8], both resolve, \u00a75's text matches (\"build it after \u00a73 and \u00a78 merge\"), \u00a74/\u00a79 are done so no ordering edge is needed, and every \u00a75 write path (serve.py, compliance.py, state-loader.js, velocity.jsx) is supplied by a predecessor."
+  },
+  "section_digests": {
+    "_document": "88ce37210fb91a9942df0a01024297398c99dbeecebe9b08aad14a9577d150a1",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "b9aa035553d395057dad26d5353e7b79c6bdec033a1ab82eb1042718d03592cd",
+    "s12": "3086e0ba68e51ca085e7178c914c92d64248be41088440dfa18abf077d5819ee",
+    "s13": "fa208e7c5f148ec329458a9824c867762bc66c986ccb7bc85745b08640484173",
+    "s14": "7f21ec58ce9adf4ba663f205fe60555a585a263354e7954c7dd99543a0d56139",
+    "s15": "884c8ab0e973894007385f537b51e29ef55bf2de18ef2cf6a25966e656f62bf2",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s3": "50f2ca1f3b1277d5f4b2d70a240688387a89a3136ad2d6aee26f0b3f324b1afc",
+    "s4": "a1ad15bdafaed28134c2565ad8374bc91928064852c10da6661f2499ca286149",
+    "s5": "da4f276387318740d6c58d98c1f99ec30a2c4cae490a7b5140dcb8fc1abfe0a8",
+    "s6": "fdb08d5e7b8272372c8ced83ee14c031730239025c2a13ccb211329d7951673e",
+    "s7": "90073ced7051cfae8f66fd6b78f99e6ace90b008ffc6c9e5559d87a2e5c31704",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T07:10:04.903154+00:00"
+}
