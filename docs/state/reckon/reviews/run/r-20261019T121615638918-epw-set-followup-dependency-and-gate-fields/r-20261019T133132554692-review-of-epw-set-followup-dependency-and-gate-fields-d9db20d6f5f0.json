@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:_edit_plan_tool",
+    "reckon/mcp.py:3193",
+    "reckon/_store.py:_apply_set",
+    "reckon/_store.py:_write_state_locked",
+    "reckon/roadmap.py:_plan_section_deps"
+  ],
+  "completed_at": "2026-10-19T13:55:09.207Z",
+  "dispatched_at": "2026-10-19T13:32:58Z",
+  "findings": [
+    {
+      "file": "tests/test_edit_plan_sets_followup_dependency_and_gate_fields.py",
+      "line": 372,
+      "severity": "follow-on",
+      "text": "assert path.read_text(encoding=\"utf-8\") asserts only that the file is non-empty, so it holds whatever the code under test does and guards nothing; the same vacuous assertion appears at line 433."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_edit_plan_sets_followup_dependency_and_gate_fields.py:375-390 fails if the declaration-removal refusal regresses (verified by the recorded negative-control log at EXIT=1), though the two trailing non-assertions at :372 and :433 guard nothing.",
+    "evidence": "the manifest's after_suite records gate-head.log with 225 passed / 1 failed against the base arm's 214 passed / 1 failed, and the fragment at docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-set-followup-dependency-and-gate-fields.html carries one verdict per surface.",
+    "fit": "the handlers follow the module's existing op-error idiom at reckon/_store_section_ops.py:267, but the new kind constant at :87 is named META_REMOVALS_KIND_NAME against the sibling _KIND suffixes.",
+    "goal_fidelity": "reckon/_store_section_ops.py:497 apply_null_removal plus the three set handlers at :292, :321 and :373 cover every surface the goal names, and the dispatch at reckon/_store.py:2494-2642 reaches each.",
+    "reuse": "reckon/_store_section_ops.py:352 reuses _schema.parse_plan_ref, the same grammar reckon/roadmap.py:39 imports, and the removal path reuses _plan_html._set_meta/_remove_meta and the store's _find_by_id/_entry_is_open; no forked capability was found.",
+    "scope_discipline": "every path in the diff is inside the manifest's declared write paths, and no file the diff touches lies outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to accept edit_plan sets of an open followup's title and body, a section's dependency refs, an open gate's measure and required_evidence, and a null that removes a key, through the section-field handlers; reckon/_store_section_ops.py:292-548 adds all four surfaces and reckon/_store.py:2494-2642 dispatches them from the set op.\nVERDICT done_when: the done-when is the seven-file pytest gate green with zero added failures; the manifest records gate-head.log at 8d95156a0 with 225 passed / 1 failed against the base arm's 214 passed / 1 failed, the same pre-existing test_every_module_fits_a_worker_window, so the gate asserts the measure.\nVERDICT write_paths: the reviewed manifest declares eight exclusive paths; every path the diff touches, including reckon/_store.py, reckon/_store_section_ops.py, skills/reckon-edit/SKILL.md, tests/test_edit_plan_sets_followup_dependency_and_gate_fields.py and the evidence fragment, lies inside them.\nVERDICT manifest: read; it names commits 8986e12bf..d9db20d6f, records both gate logs and the negative-control log, and its negative_control_note records that a first control did not discriminate until the assertion was tightened to name section_declarations.s1.\nVERDICT diff: read commit by commit against 57c397a5, five files and 928 insertions, all inside the declared scope; reckon/_plan_html.py and reckon/mcp.py were declared but not needed, and no source file outside the scope was touched.\nCALL_SITES: reckon/mcp_edit_plan.py:_edit_plan_tool, reckon/mcp.py:3193, reckon/_store.py:_apply_set, reckon/_store.py:_write_state_locked, reckon/roadmap.py:_plan_section_deps\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store_section_ops.py:497 apply_null_removal plus the three set handlers at :292, :321 and :373 cover every surface the goal names, and the dispatch at reckon/_store.py:2494-2642 reaches each.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest's after_suite records gate-head.log with 225 passed / 1 failed against the base arm's 214 passed / 1 failed, and the fragment at docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-set-followup-dependency-and-gate-fields.html carries one verdict per surface.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared write paths, and no file the diff touches lies outside them.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_edit_plan_sets_followup_dependency_and_gate_fields.py:375-390 fails if the declaration-removal refusal regresses (verified by the recorded negative-control log at EXIT=1), though the two trailing non-assertions at :372 and :433 guard nothing.\nSCORE fit: 17\nJUSTIFICATION fit: the handlers follow the module's existing op-error idiom at reckon/_store_section_ops.py:267, but the new kind constant at :87 is named META_REMOVALS_KIND_NAME against the sibling _KIND suffixes.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/_store_section_ops.py:352 reuses _schema.parse_plan_ref, the same grammar reckon/roadmap.py:39 imports, and the removal path reuses _plan_html._set_meta/_remove_meta and the store's _find_by_id/_entry_is_open; no forked capability was found.\nFINDING tests/test_edit_plan_sets_followup_dependency_and_gate_fields.py:372 follow-on: assert path.read_text(encoding=\"utf-8\") asserts only that the file is non-empty, so it holds whatever the code under test does and guards nothing; the same vacuous assertion appears at line 433.\n",
+  "review_run_id": "r-20261019T133132554692-review-of-epw-set-followup-dependency-and-gate-fields-d9db20d6f5f0",
+  "reviewed_base_sha": "57c397a59b0dc6830ef46b58d729bdf18e59aca0",
+  "reviewed_head_sha": "d9db20d6f5f00f49cb85c16a49c41fa406dda00c",
+  "reviewed_run_id": "r-20261019T121615638918-epw-set-followup-dependency-and-gate-fields",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T13:57:35.281247+00:00",
+  "total": 108,
+  "verdicts": {
+    "call_sites": "verified against reckon/mcp_edit_plan.py:_edit_plan_tool, reckon/mcp.py:3193, reckon/_store.py:_apply_set, reckon/_store.py:_write_state_locked and the consumer reckon/roadmap.py:_plan_section_deps.",
+    "diff": "read commit by commit against 57c397a5, five files and 928 insertions, all inside the declared scope; reckon/_plan_html.py and reckon/mcp.py were declared but not needed, and no source file outside the scope was touched.",
+    "done_when": "the done-when is the seven-file pytest gate green with zero added failures; the manifest records gate-head.log at 8d95156a0 with 225 passed / 1 failed against the base arm's 214 passed / 1 failed, the same pre-existing test_every_module_fits_a_worker_window, so the gate asserts the measure.",
+    "goal": "the node goal is to accept edit_plan sets of an open followup's title and body, a section's dependency refs, an open gate's measure and required_evidence, and a null that removes a key, through the section-field handlers; reckon/_store_section_ops.py:292-548 adds all four surfaces and reckon/_store.py:2494-2642 dispatches them from the set op.",
+    "manifest": "read; it names commits 8986e12bf..d9db20d6f, records both gate logs and the negative-control log, and its negative_control_note records that a first control did not discriminate until the assertion was tightened to name section_declarations.s1.",
+    "write_paths": "the reviewed manifest declares eight exclusive paths; every path the diff touches, including reckon/_store.py, reckon/_store_section_ops.py, skills/reckon-edit/SKILL.md, tests/test_edit_plan_sets_followup_dependency_and_gate_fields.py and the evidence fragment, lies inside them."
+  }
+}
