@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -505,7 +505,10 @@
     <div class="r-comment-body"><p>§3 landed (merge <code>a80d85d25</code>). Placed workers are stopped below the sandbox init. Live steps ended <code>FAILED|9:0</code> with no cancellation and the node state unchanged, against two CANCELLED controls. A not-yet-started step's client is signalled once, only when <code>squeue</code> lists no step named after the run. The change adds 24 test cases in 12 functions; the ledger row was promoted with 23, missing the skipped live probe. Review: 105 of 120, no added failures. Follow-ons: two pending-step assertions echo their own inputs (<code>inner_sent</code>, and the receipt's <code>target_pid</code>). <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s3">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261019T061601420607-review-of-a-stopped-worker-ends-inside-its-step-4596a01ba67e" data-who="reckon-build" data-when="2026-10-19T06:24:08.618Z">
-    <div class="r-comment-body"><p>review of r-20261018T150822949393-a-stopped-worker-ends-inside-its-step at 4596a01ba: the prior review&#x27;s blocking finding is resolved — reckon/crew/process_signal.py:480 now resolves squeue with shutil.which(&quot;squeue&quot;) instead of Path(argv[0]).with_name(&quot;squeue&quot;) — scores goal_fidelity 18, evidence 14, scope_discipline 20, durability 16, fit 19, reuse 18; added_failure_count 0, added_failure_ids []; two follow-on findings on non-independent assertions at tests/test_a_stopped_worker_ends_inside_its_step.py:331 and :473; no blocking finding.</p></div>
+    <div class="r-comment-body"><p>review of r-20261018T150822949393-a-stopped-worker-ends-inside-its-step at 4596a01ba: the prior review's blocking finding is resolved — reckon/crew/process_signal.py:480 now resolves squeue with shutil.which("squeue") instead of Path(argv[0]).with_name("squeue") — scores goal_fidelity 18, evidence 14, scope_discipline 20, durability 16, fit 19, reuse 18; added_failure_count 0, added_failure_ids []; two follow-on findings on non-independent assertions at tests/test_a_stopped_worker_ends_inside_its_step.py:331 and :473; no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261019T042001309375-review-of-a-stopped-worker-ends-inside-its-step-a6808040694c" data-who="reckon-build" data-when="2026-10-19T04:34:19Z">
+    <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T150822949393-a-stopped-worker-ends-inside-its-step/review-records/r-20261018T150822949393-a-stopped-worker-ends-inside-its-step.at-a6808040694c0ba2c2dd6e2533b585d9cb45a251.json — parsed six-dimension review of base 8afeb0709f341be7690765c47387ebc69cb4dbe6 through head a6808040694c0ba2c2dd6e2533b585d9cb45a251; 4 findings including 2 blocking, added failures unmeasured.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261018T151304298883-a-producer-sweeps-only-on-change" data-who="reckon-build" data-when="2026-10-19T05:58:55Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-fleet-node-stays-in-service/a-producer-sweeps-only-on-change.html</p></div>
